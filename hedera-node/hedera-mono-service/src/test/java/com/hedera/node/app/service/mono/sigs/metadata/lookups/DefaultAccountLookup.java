@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.metadata.lookups;
 
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.IMMUTABLE_ACCOUNT;
@@ -33,8 +34,7 @@ public class DefaultAccountLookup implements AccountSigMetaLookup {
     private final AliasManager aliasManager;
     private final Supplier<AccountStorageAdapter> accounts;
 
-    public DefaultAccountLookup(
-            final AliasManager aliasManager, final Supplier<AccountStorageAdapter> accounts) {
+    public DefaultAccountLookup(final AliasManager aliasManager, final Supplier<AccountStorageAdapter> accounts) {
         this.aliasManager = aliasManager;
         this.accounts = accounts;
     }
@@ -56,6 +56,15 @@ public class DefaultAccountLookup implements AccountSigMetaLookup {
         }
     }
 
+    @Override
+    public EntityNum unaliasedAccount(AccountID idOrAlias) {
+        if (isAlias(idOrAlias)) {
+            return aliasManager.lookupIdBy(idOrAlias.getAlias());
+        } else {
+            return fromAccountId(idOrAlias);
+        }
+    }
+
     private SafeLookupResult<AccountSigningMetadata> lookupByNumber(final EntityNum id) {
         var account = accounts.get().get(id);
         if (account == null) {
@@ -66,8 +75,7 @@ public class DefaultAccountLookup implements AccountSigMetaLookup {
                 return SafeLookupResult.failure(IMMUTABLE_ACCOUNT);
             }
             return new SafeLookupResult<>(
-                    new AccountSigningMetadata(
-                            account.getAccountKey(), account.isReceiverSigRequired()));
+                    new AccountSigningMetadata(account.getAccountKey(), account.isReceiverSigRequired()));
         }
     }
 }

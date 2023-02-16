@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.CUSTOM_PAYER_ACCOUNT_KT;
@@ -56,22 +57,20 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenUpdateWithoutAffectingKeys() {
         final var txn = txnFrom(UPDATE_WITH_NO_KEYS_AFFECTED);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_ADMIN_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_ADMIN_KT.asKey()));
     }
 
     @Test
     void tokenUpdateReplacingTreasury() {
         final var txn = txnFrom(UPDATE_REPLACING_TREASURY);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
@@ -86,22 +85,20 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenUpdateReplacingTreasuryWithPayer() {
         final var txn = txnFrom(UPDATE_REPLACING_TREASURY_AS_PAYER);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_ADMIN_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_ADMIN_KT.asKey()));
     }
 
     @Test
     void tokenUpdateReplacingTreasuryWithCustomPayer() {
         final var txn = txnFrom(UPDATE_REPLACING_TREASURY_AS_CUSTOM_PAYER);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
@@ -116,22 +113,20 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenUpdateReplacingTreasuryWithNonExistingAccount() {
         final var txn = txnFrom(UPDATE_REPLACING_WITH_MISSING_TREASURY);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertTrue(context.failed());
         assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, context.getStatus());
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_ADMIN_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_ADMIN_KT.asKey()));
     }
 
     @Test
     void tokenUpdateReplacingAdminKey() {
         final var txn = txnFrom(UPDATE_REPLACING_ADMIN_KEY);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
@@ -146,67 +141,59 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenUpdateWithSupplyKeyedToken() {
         final var txn = txnFrom(UPDATE_WITH_SUPPLY_KEYED_TOKEN);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_ADMIN_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_ADMIN_KT.asKey()));
     }
 
     @Test
     void tokenUpdateWithKYCKeyedToken() {
         final var txn = txnFrom(UPDATE_WITH_KYC_KEYED_TOKEN);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_ADMIN_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_ADMIN_KT.asKey()));
     }
 
     @Test
     void tokenUpdateWithFreezeKeyedToken() {
         final var txn = txnFrom(UPDATE_WITH_FREEZE_KEYED_TOKEN);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_ADMIN_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_ADMIN_KT.asKey()));
     }
 
     @Test
     void tokenUpdateWithWipeKeyedToken() {
         final var txn = txnFrom(UPDATE_WITH_WIPE_KEYED_TOKEN);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_ADMIN_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_ADMIN_KT.asKey()));
     }
 
     @Test
     void tokenUpdateMissingToken() {
         final var txn = txnFrom(UPDATE_WITH_MISSING_TOKEN);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertTrue(context.failed());
@@ -218,7 +205,7 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenUpdateTokenWithoutAdminKey() {
         final var txn = txnFrom(UPDATE_WITH_MISSING_TOKEN_ADMIN_KEY);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
@@ -230,7 +217,7 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenUpdateTokenWithNewAutoRenewAccount() {
         final var txn = txnFrom(TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
@@ -245,22 +232,20 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenUpdateTokenWithNewAutoRenewAccountAsPayer() {
         final var txn = txnFrom(TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT_AS_PAYER);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_ADMIN_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_ADMIN_KT.asKey()));
     }
 
     @Test
     void tokenUpdateTokenWithNewAutoRenewAccountAsCustomPayer() {
         final var txn = txnFrom(TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT_AS_CUSTOM_PAYER);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
@@ -275,15 +260,13 @@ class TokenUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenUpdateTokenWithMissingNewAutoRenewAccount() {
         final var txn = txnFrom(TOKEN_UPDATE_WITH_MISSING_AUTO_RENEW_ACCOUNT);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertTrue(context.failed());
         assertEquals(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT, context.getStatus());
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_ADMIN_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_ADMIN_KT.asKey()));
     }
 }
