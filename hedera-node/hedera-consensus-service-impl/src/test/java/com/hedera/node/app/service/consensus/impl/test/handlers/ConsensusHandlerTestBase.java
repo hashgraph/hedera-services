@@ -23,8 +23,12 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.QueryContext;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -78,5 +82,19 @@ public class ConsensusHandlerTestBase {
     void commonSetUp() {
         given(states.<Long, MerkleTopic>get(TOPICS)).willReturn(topics);
         store = new ReadableTopicStore(states);
+    }
+
+    protected void givenValidTopic() {
+        given(topics.get(topicNum)).willReturn(topic);
+        given(topic.getMemo()).willReturn(memo);
+        given(topic.getAdminKey()).willReturn((JKey) adminKey);
+        given(topic.getSubmitKey()).willReturn((JKey) adminKey);
+        given(topic.getAutoRenewDurationSeconds()).willReturn(100L);
+        given(topic.getAutoRenewAccountId()).willReturn(EntityId.fromGrpcAccountId(autoRenewId));
+        given(topic.getExpirationTimestamp()).willReturn(RichInstant.MISSING_INSTANT);
+        given(topic.getSequenceNumber()).willReturn(1L);
+        given(topic.getRunningHash()).willReturn(new byte[48]);
+        given(topic.getKey()).willReturn(EntityNum.fromLong(topicNum));
+        given(topic.isDeleted()).willReturn(false);
     }
 }

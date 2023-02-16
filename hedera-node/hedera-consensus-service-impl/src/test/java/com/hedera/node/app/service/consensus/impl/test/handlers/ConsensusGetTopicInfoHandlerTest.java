@@ -27,9 +27,7 @@ import static org.mockito.BDDMockito.given;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -150,20 +148,6 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(100L).build())
                 .setLedgerId(ledgerId)
                 .build();
-    }
-
-    private void givenValidTopic() {
-        given(topics.get(topicNum)).willReturn(topic);
-        given(topic.getMemo()).willReturn(memo);
-        given(topic.getAdminKey()).willReturn((JKey) adminKey);
-        given(topic.getSubmitKey()).willReturn((JKey) adminKey);
-        given(topic.getAutoRenewDurationSeconds()).willReturn(100L);
-        given(topic.getAutoRenewAccountId()).willReturn(EntityId.fromGrpcAccountId(autoRenewId));
-        given(topic.getExpirationTimestamp()).willReturn(RichInstant.MISSING_INSTANT);
-        given(topic.getSequenceNumber()).willReturn(1L);
-        given(topic.getRunningHash()).willReturn(new byte[48]);
-        given(topic.getKey()).willReturn(EntityNum.fromLong(topicNum));
-        given(topic.isDeleted()).willReturn(false);
     }
 
     private Query createGetTopicInfoQuery(int topicId) throws Throwable {
