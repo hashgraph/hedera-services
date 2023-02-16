@@ -30,6 +30,7 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TopicID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -41,11 +42,16 @@ public class ConsensusHandlerTestBase {
     protected final Key key = A_COMPLEX_KEY;
     protected final String payerId = "0.0.3";
     protected final AccountID payer = asAccount(payerId);
+    protected final AccountID autoRenewId = asAccount("0.0.4");
     protected final Timestamp consensusTimestamp =
             Timestamp.newBuilder().setSeconds(1_234_567L).build();
     protected final HederaKey payerKey = asHederaKey(A_COMPLEX_KEY).get();
+    protected final HederaKey adminKey = asHederaKey(A_COMPLEX_KEY).get();
     protected final Long payerNum = payer.getAccountNum();
     protected final Long topicNum = 1L;
+    protected final TopicID topicId = TopicID.newBuilder().setTopicNum(topicNum).build();
+    protected final String beneficiaryIdStr = "0.0.3";
+    protected final long paymentAmount = 1_234L;
 
     @Mock
     protected ReadableKVState<Long, MerkleTopic> topics;
@@ -58,6 +64,9 @@ public class ConsensusHandlerTestBase {
 
     @Mock
     protected ReadableStates states;
+
+    @Mock
+    protected ReadableTopicStore.TopicMetadata topicMetadata;
 
     protected ReadableTopicStore store;
 

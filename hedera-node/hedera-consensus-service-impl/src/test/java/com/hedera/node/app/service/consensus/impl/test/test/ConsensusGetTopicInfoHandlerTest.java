@@ -18,12 +18,17 @@ package com.hedera.node.app.service.consensus.impl.test.test;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.ResponseType.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
 import com.hedera.node.app.service.consensus.impl.test.test.handlers.ConsensusHandlerTestBase;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,8 +81,49 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
         assertFalse(subject.needsAnswerOnlyCost(COST_ANSWER_STATE_PROOF));
     }
 
-    protected Query createGetTopicInfoQuery(int topicId) throws Throwable {
-        final var payment = payerSponsoredTransfer(payerId, COMPLEX_KEY_ACCOUNT_KT, "0.0.3", 1_234L);
+    @Test
+    void validatesQueryWhenValidTopic() throws Throwable {
+        givenValidTopic();
+
+        final var query = createGetTopicInfoQuery(topicNum.intValue());
+        final var response = subject.validate(query, store);
+        assertEquals(OK, response);
+    }
+
+    @Test
+    void validatesQueryIfInvalidTopic() throws Throwable {
+        given(topics.get(topicNum)).willReturn(null);
+
+        final var query = createGetTopicInfoQuery(topicNum.intValue());
+        final var response = subject.validate(query, store);
+        assertEquals(INVALID_TOPIC_ID, response);
+    }
+
+    @Test
+    void validatesQueryIfDeletedTopic() throws Throwable {
+        givenValidTopic();
+        given(topic.isDeleted()).willReturn(true);
+
+        final var query = createGetTopicInfoQuery(topicNum.intValue());
+        final var response = subject.validate(query, store);
+        assertEquals(INVALID_TOPIC_ID, response);
+    }
+
+    private void givenValidTopic() {
+        given(topics.get(topicNum)).willReturn(topic);
+        given(topic.getMemo()).willReturn("topic memo");
+        given(topic.getAdminKey()).willReturn((JKey) adminKey);
+        given(topic.getAutoRenewDurationSeconds()).willReturn(100L);
+        given(topic.getAutoRenewAccountId()).willReturn(EntityId.fromGrpcAccountId(autoRenewId));
+        given(topic.getExpirationTimestamp()).willReturn(RichInstant.MISSING_INSTANT);
+        given(topic.getSequenceNumber()).willReturn(1L);
+        given(topic.getRunningHash()).willReturn(new byte[48]);
+        given(topic.getKey()).willReturn(EntityNum.fromLong(topicNum));
+        given(topic.isDeleted()).willReturn(false);
+    }
+
+    private Query createGetTopicInfoQuery(int topicId) throws Throwable {
+        final var payment = payerSponsoredTransfer(payerId, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
         final var data = ConsensusGetTopicInfoQuery.newBuilder()
                 .setTopicID(TopicID.newBuilder().setTopicNum(topicId).build())
                 .setHeader(QueryHeader.newBuilder().setPayment(payment).build())

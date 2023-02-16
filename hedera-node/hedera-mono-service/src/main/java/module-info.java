@@ -25,7 +25,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.contract.impl,
             com.hedera.node.app.service.contract.impl.test,
             com.hedera.node.app.service.consensus.impl,
-            com.hedera.node.app;
+            com.hedera.node.app,
+            com.hedera.node.app.service.consensus.impl.test;
     exports com.hedera.node.app.service.mono.utils to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app.service.schedule.impl,

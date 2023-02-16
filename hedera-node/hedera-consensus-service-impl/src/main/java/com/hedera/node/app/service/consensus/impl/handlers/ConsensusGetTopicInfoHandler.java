@@ -76,7 +76,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if validation fails
      */
-    public ResponseCodeEnum validate(@NonNull final Query query, final ReadableTopicStore topicStore)
+    public ResponseCodeEnum validate(@NonNull final Query query, @NonNull final ReadableTopicStore topicStore)
             throws PreCheckException {
         final ConsensusGetTopicInfoQuery op = query.getConsensusGetTopicInfo();
         if (op.hasTopicID()) {
@@ -106,9 +106,9 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
             @NonNull final Query query,
             @NonNull final ResponseHeader header,
             @NonNull final ReadableTopicStore topicStore,
-            @NonNull QueryContext queryContext) {
-        final ConsensusGetTopicInfoQuery op = query.getConsensusGetTopicInfo();
-        final ConsensusGetTopicInfoResponse.Builder response = ConsensusGetTopicInfoResponse.newBuilder();
+            @NonNull final QueryContext queryContext) {
+        final var op = query.getConsensusGetTopicInfo();
+        final var response = ConsensusGetTopicInfoResponse.newBuilder();
         response.setTopicID(op.getTopicID());
 
         final var responseType = op.getHeader().getResponseType();
@@ -125,8 +125,17 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
         return Response.newBuilder().setConsensusGetTopicInfo(response).build();
     }
 
+    /**
+     * Provides information about a topic.
+     * @param topicID the topic to get information about
+     * @param topicStore the topic store
+     * @param queryContext context for executing the query
+     * @return the information about the topic
+     */
     private Optional<ConsensusTopicInfo> infoForTopic(
-            @NonNull final TopicID topicID, @NonNull final ReadableTopicStore topicStore, QueryContext queryContext) {
+            @NonNull final TopicID topicID,
+            @NonNull final ReadableTopicStore topicStore,
+            @NonNull final QueryContext queryContext) {
         final var metaOrFailure = topicStore.getTopicMetadata(topicID);
         if (metaOrFailure.failed()) {
             return Optional.empty();

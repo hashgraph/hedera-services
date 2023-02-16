@@ -84,6 +84,19 @@ public class ReadableTopicStore {
                 topic.isDeleted());
     }
 
+    /**
+     * Topic metadata
+     * @param memo topic's memo
+     * @param adminKey topic's admin key
+     * @param submitKey topic's submit key
+     * @param autoRenewDurationSeconds topic's auto-renew duration in seconds
+     * @param autoRenewAccountId topic's auto-renew account id
+     * @param expirationTimestamp topic's expiration timestamp
+     * @param sequenceNumber topic's sequence number
+     * @param runningHash topic's running hash
+     * @param key topic's key
+     * @param isDeleted topic's deleted flag
+     */
     public record TopicMetadata(
             Optional<String> memo,
             Optional<HederaKey> adminKey,
@@ -96,9 +109,22 @@ public class ReadableTopicStore {
             long key,
             boolean isDeleted) {}
 
+    /**
+     * Returns the topics metadata if the topic exists. If the topic doesn't exist returns failure reason.
+     * @param metadata topic's metadata
+     * @param failureReason failure reason if the topic doesn't exist
+     */
     public record TopicMetaOrLookupFailureReason(TopicMetadata metadata, ResponseCodeEnum failureReason) {
         public boolean failed() {
             return failureReason != null;
+        }
+
+        public static TopicMetaOrLookupFailureReason withFailureReason(final ResponseCodeEnum response) {
+            return new TopicMetaOrLookupFailureReason(null, response);
+        }
+
+        public static TopicMetaOrLookupFailureReason withTopicMeta(final TopicMetadata meta) {
+            return new TopicMetaOrLookupFailureReason(meta, null);
         }
     }
 }
