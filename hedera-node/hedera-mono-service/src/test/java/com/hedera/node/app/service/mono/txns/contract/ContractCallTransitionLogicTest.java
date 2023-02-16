@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.hedera.node.app.service.mono.txns.contract;
 
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
@@ -76,47 +75,39 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ContractCallTransitionLogicTest {
-    private final ContractID target =
-            ContractID.newBuilder().setContractNum(9_999L).build();
-    private final ByteString alias = ByteStringUtils.wrapUnsafely(
-            new byte[] {48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 49, 50});
+    private final ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
+    private final ByteString alias =
+            ByteStringUtils.wrapUnsafely(
+                    new byte[] {
+                        48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 49,
+                        50
+                    });
     private long gas = 1_234;
     private long sent = 1_234L;
     private static final long maxGas = 666_666L;
     private static final BigInteger biOfferedGasPrice = BigInteger.valueOf(111L);
 
-    @Mock
-    private TransactionContext txnCtx;
+    @Mock private TransactionContext txnCtx;
 
-    @Mock
-    private PlatformTxnAccessor accessor;
+    @Mock private PlatformTxnAccessor accessor;
 
-    @Mock
-    private AccountStore accountStore;
+    @Mock private AccountStore accountStore;
 
-    @Mock
-    private HederaWorldState worldState;
+    @Mock private HederaWorldState worldState;
 
-    @Mock
-    private TransactionRecordService recordService;
+    @Mock private TransactionRecordService recordService;
 
-    @Mock
-    private CallEvmTxProcessor evmTxProcessor;
+    @Mock private CallEvmTxProcessor evmTxProcessor;
 
-    @Mock
-    private GlobalDynamicProperties properties;
+    @Mock private GlobalDynamicProperties properties;
 
-    @Mock
-    private CodeCache codeCache;
+    @Mock private CodeCache codeCache;
 
-    @Mock
-    private SigImpactHistorian sigImpactHistorian;
+    @Mock private SigImpactHistorian sigImpactHistorian;
 
-    @Mock
-    private AliasManager aliasManager;
+    @Mock private AliasManager aliasManager;
 
-    @Mock
-    private EntityAccess entityAccess;
+    @Mock private EntityAccess entityAccess;
 
     private TransactionBody contractCallTxn;
     private final Account senderAccount = new Account(new Id(0, 0, 1002));
@@ -126,17 +117,18 @@ class ContractCallTransitionLogicTest {
 
     @BeforeEach
     void setup() {
-        subject = new ContractCallTransitionLogic(
-                txnCtx,
-                accountStore,
-                worldState,
-                recordService,
-                evmTxProcessor,
-                properties,
-                codeCache,
-                sigImpactHistorian,
-                aliasManager,
-                entityAccess);
+        subject =
+                new ContractCallTransitionLogic(
+                        txnCtx,
+                        accountStore,
+                        worldState,
+                        recordService,
+                        evmTxProcessor,
+                        properties,
+                        codeCache,
+                        sigImpactHistorian,
+                        aliasManager,
+                        entityAccess);
     }
 
     @Test
@@ -158,20 +150,34 @@ class ContractCallTransitionLogicTest {
         given(txnCtx.activePayer()).willReturn(ourAccount());
         // and:
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
+        given(
+                        accountStore.loadContract(
+                                new Id(
+                                        target.getShardNum(),
+                                        target.getRealmNum(),
+                                        target.getContractNum())))
                 .willReturn(contractAccount);
         //        given(properties.isAutoCreationEnabled()).willReturn(true); // TODO: maybe new
         // flag
         // and:
-        var results = TransactionProcessingResult.successful(
-                null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress(), Map.of(), List.of());
-        given(evmTxProcessor.execute(
-                        senderAccount,
-                        contractAccount.getId().asEvmAddress(),
-                        gas,
-                        sent,
+        var results =
+                TransactionProcessingResult.successful(
+                        null,
+                        1234L,
+                        0L,
+                        124L,
                         Bytes.EMPTY,
-                        txnCtx.consensusTime()))
+                        contractAccount.getId().asEvmAddress(),
+                        Map.of(),
+                        List.of());
+        given(
+                        evmTxProcessor.execute(
+                                senderAccount,
+                                contractAccount.getId().asEvmAddress(),
+                                gas,
+                                sent,
+                                Bytes.EMPTY,
+                                txnCtx.consensusTime()))
                 .willReturn(results);
         given(worldState.getCreatedContractIds()).willReturn(List.of(target));
         // when:
@@ -193,27 +199,45 @@ class ContractCallTransitionLogicTest {
         // and:
         senderAccount.initBalance(1234L);
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
+        given(
+                        accountStore.loadContract(
+                                new Id(
+                                        target.getShardNum(),
+                                        target.getRealmNum(),
+                                        target.getContractNum())))
                 .willReturn(contractAccount);
         given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
         // and:
-        var results = TransactionProcessingResult.successful(
-                null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress(), Map.of(), List.of());
-        given(evmTxProcessor.executeEth(
-                        senderAccount,
-                        contractAccount.getId().asEvmAddress(),
-                        gas,
-                        sent,
+        var results =
+                TransactionProcessingResult.successful(
+                        null,
+                        1234L,
+                        0L,
+                        124L,
                         Bytes.EMPTY,
-                        txnCtx.consensusTime(),
-                        biOfferedGasPrice,
-                        relayerAccount,
-                        maxGas))
+                        contractAccount.getId().asEvmAddress(),
+                        Map.of(),
+                        List.of());
+        given(
+                        evmTxProcessor.executeEth(
+                                senderAccount,
+                                contractAccount.getId().asEvmAddress(),
+                                gas,
+                                sent,
+                                Bytes.EMPTY,
+                                txnCtx.consensusTime(),
+                                biOfferedGasPrice,
+                                relayerAccount,
+                                maxGas))
                 .willReturn(results);
         given(worldState.getCreatedContractIds()).willReturn(List.of(target));
         // when:
         subject.doStateTransitionOperation(
-                accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice);
+                accessor.getTxn(),
+                senderAccount.getId(),
+                relayerAccount.getId(),
+                maxGas,
+                biOfferedGasPrice);
 
         // then:
         verify(recordService).externaliseEvmCallTransaction(any());
@@ -225,12 +249,16 @@ class ContractCallTransitionLogicTest {
     @Test
     void verifyExternaliseContractResultCallSuccessfulLazyCreate() {
         // setup:
-        var op = TransactionBody.newBuilder()
-                .setContractCall(ContractCallTransactionBody.newBuilder()
-                        .setGas(gas)
-                        .setAmount(sent)
-                        .setContractID(
-                                ContractID.newBuilder().setEvmAddress(alias).build()));
+        var op =
+                TransactionBody.newBuilder()
+                        .setContractCall(
+                                ContractCallTransactionBody.newBuilder()
+                                        .setGas(gas)
+                                        .setAmount(sent)
+                                        .setContractID(
+                                                ContractID.newBuilder()
+                                                        .setEvmAddress(alias)
+                                                        .build()));
         contractCallTxn = op.build();
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
@@ -238,26 +266,41 @@ class ContractCallTransitionLogicTest {
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
         given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
         // and:
-        var results = TransactionProcessingResult.successful(
-                null, 1234L, 0L, 124L, Bytes.EMPTY, Address.wrap(Bytes.wrap(alias.toByteArray())), Map.of(), List.of());
-        given(evmTxProcessor.executeEth(
-                        senderAccount,
-                        Address.wrap(Bytes.wrap(alias.toByteArray())),
-                        gas,
-                        sent,
+        var results =
+                TransactionProcessingResult.successful(
+                        null,
+                        1234L,
+                        0L,
+                        124L,
                         Bytes.EMPTY,
-                        txnCtx.consensusTime(),
-                        biOfferedGasPrice,
-                        relayerAccount,
-                        maxGas))
+                        Address.wrap(Bytes.wrap(alias.toByteArray())),
+                        Map.of(),
+                        List.of());
+        given(
+                        evmTxProcessor.executeEth(
+                                senderAccount,
+                                Address.wrap(Bytes.wrap(alias.toByteArray())),
+                                gas,
+                                sent,
+                                Bytes.EMPTY,
+                                txnCtx.consensusTime(),
+                                biOfferedGasPrice,
+                                relayerAccount,
+                                maxGas))
                 .willReturn(results);
-        given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM).willReturn(EntityNum.fromLong(666L));
+        given(aliasManager.lookupIdBy(alias))
+                .willReturn(EntityNum.MISSING_NUM)
+                .willReturn(EntityNum.fromLong(666L));
         given(properties.isAutoCreationEnabled()).willReturn(true);
         given(properties.isLazyCreationEnabled()).willReturn(true);
         given(properties.evmVersion()).willReturn(EVM_VERSION_0_34);
         // when:
         subject.doStateTransitionOperation(
-                accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice);
+                accessor.getTxn(),
+                senderAccount.getId(),
+                relayerAccount.getId(),
+                maxGas,
+                biOfferedGasPrice);
 
         // then:
         verify(recordService).externaliseEvmCallTransaction(any());
@@ -267,12 +310,16 @@ class ContractCallTransitionLogicTest {
     @Test
     void verifyExternaliseFailedContractResultCallLazyCreate() {
         // setup:
-        var op = TransactionBody.newBuilder()
-                .setContractCall(ContractCallTransactionBody.newBuilder()
-                        .setGas(gas)
-                        .setAmount(sent)
-                        .setContractID(
-                                ContractID.newBuilder().setEvmAddress(alias).build()));
+        var op =
+                TransactionBody.newBuilder()
+                        .setContractCall(
+                                ContractCallTransactionBody.newBuilder()
+                                        .setGas(gas)
+                                        .setAmount(sent)
+                                        .setContractID(
+                                                ContractID.newBuilder()
+                                                        .setEvmAddress(alias)
+                                                        .build()));
         contractCallTxn = op.build();
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
@@ -280,18 +327,26 @@ class ContractCallTransitionLogicTest {
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
         given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
         // and:
-        var results = TransactionProcessingResult.failed(
-                1234L, 0L, 124L, Optional.of(Bytes.EMPTY), Optional.empty(), Map.of(), List.of());
-        given(evmTxProcessor.executeEth(
-                        senderAccount,
-                        Address.wrap(Bytes.wrap(alias.toByteArray())),
-                        gas,
-                        sent,
-                        Bytes.EMPTY,
-                        txnCtx.consensusTime(),
-                        biOfferedGasPrice,
-                        relayerAccount,
-                        maxGas))
+        var results =
+                TransactionProcessingResult.failed(
+                        1234L,
+                        0L,
+                        124L,
+                        Optional.of(Bytes.EMPTY),
+                        Optional.empty(),
+                        Map.of(),
+                        List.of());
+        given(
+                        evmTxProcessor.executeEth(
+                                senderAccount,
+                                Address.wrap(Bytes.wrap(alias.toByteArray())),
+                                gas,
+                                sent,
+                                Bytes.EMPTY,
+                                txnCtx.consensusTime(),
+                                biOfferedGasPrice,
+                                relayerAccount,
+                                maxGas))
                 .willReturn(results);
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
         given(properties.isAutoCreationEnabled()).willReturn(true);
@@ -300,7 +355,11 @@ class ContractCallTransitionLogicTest {
 
         // when:
         subject.doStateTransitionOperation(
-                accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice);
+                accessor.getTxn(),
+                senderAccount.getId(),
+                relayerAccount.getId(),
+                maxGas,
+                biOfferedGasPrice);
 
         // then:
         verify(worldState, never()).getCreatedContractIds();
@@ -311,12 +370,16 @@ class ContractCallTransitionLogicTest {
     @Test
     void verifyEthLazyCreateThrowsWhenAmountIsZero() {
         // setup:
-        var op = TransactionBody.newBuilder()
-                .setContractCall(ContractCallTransactionBody.newBuilder()
-                        .setGas(gas)
-                        .setAmount(0)
-                        .setContractID(
-                                ContractID.newBuilder().setEvmAddress(alias).build()));
+        var op =
+                TransactionBody.newBuilder()
+                        .setContractCall(
+                                ContractCallTransactionBody.newBuilder()
+                                        .setGas(gas)
+                                        .setAmount(0)
+                                        .setContractID(
+                                                ContractID.newBuilder()
+                                                        .setEvmAddress(alias)
+                                                        .build()));
         contractCallTxn = op.build();
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
@@ -329,26 +392,36 @@ class ContractCallTransitionLogicTest {
 
         // when:
         assertFailsWith(
-                () -> subject.doStateTransitionOperation(
-                        accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice),
+                () ->
+                        subject.doStateTransitionOperation(
+                                accessor.getTxn(),
+                                senderAccount.getId(),
+                                relayerAccount.getId(),
+                                maxGas,
+                                biOfferedGasPrice),
                 INVALID_ACCOUNT_ID);
     }
 
     @Test
     void verifyEthLazyCreateThrowsWhenRelayerNull() {
         // setup:
-        var op = TransactionBody.newBuilder()
-                .setContractCall(ContractCallTransactionBody.newBuilder()
-                        .setGas(gas)
-                        .setAmount(0)
-                        .setContractID(
-                                ContractID.newBuilder().setEvmAddress(alias).build()));
+        var op =
+                TransactionBody.newBuilder()
+                        .setContractCall(
+                                ContractCallTransactionBody.newBuilder()
+                                        .setGas(gas)
+                                        .setAmount(0)
+                                        .setContractID(
+                                                ContractID.newBuilder()
+                                                        .setEvmAddress(alias)
+                                                        .build()));
         contractCallTxn = op.build();
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
         // and:
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(accountStore.loadContract(EntityNum.MISSING_NUM.toId())).willThrow(InvalidTransactionException.class);
+        given(accountStore.loadContract(EntityNum.MISSING_NUM.toId()))
+                .willThrow(InvalidTransactionException.class);
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
 
         final var txn = accessor.getTxn();
@@ -362,18 +435,23 @@ class ContractCallTransitionLogicTest {
     @Test
     void verifyEthLazyCreateThrowsWhenEvmVersion030() {
         // setup:
-        var op = TransactionBody.newBuilder()
-                .setContractCall(ContractCallTransactionBody.newBuilder()
-                        .setGas(gas)
-                        .setAmount(0)
-                        .setContractID(
-                                ContractID.newBuilder().setEvmAddress(alias).build()));
+        var op =
+                TransactionBody.newBuilder()
+                        .setContractCall(
+                                ContractCallTransactionBody.newBuilder()
+                                        .setGas(gas)
+                                        .setAmount(0)
+                                        .setContractID(
+                                                ContractID.newBuilder()
+                                                        .setEvmAddress(alias)
+                                                        .build()));
         contractCallTxn = op.build();
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
         // and:
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(accountStore.loadContract(EntityNum.MISSING_NUM.toId())).willThrow(InvalidTransactionException.class);
+        given(accountStore.loadContract(EntityNum.MISSING_NUM.toId()))
+                .willThrow(InvalidTransactionException.class);
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
         given(properties.evmVersion()).willReturn(EVM_VERSION_0_30);
 
@@ -383,25 +461,31 @@ class ContractCallTransitionLogicTest {
         // when:
         assertThrows(
                 InvalidTransactionException.class,
-                () -> subject.doStateTransitionOperation(
-                        txn, senderAccountId, relayerAccountId, maxGas, biOfferedGasPrice));
+                () ->
+                        subject.doStateTransitionOperation(
+                                txn, senderAccountId, relayerAccountId, maxGas, biOfferedGasPrice));
     }
 
     @Test
     void verifyEthLazyCreateThrowsWhenAutoCreationNotEnabled() {
         // setup:
-        var op = TransactionBody.newBuilder()
-                .setContractCall(ContractCallTransactionBody.newBuilder()
-                        .setGas(gas)
-                        .setAmount(0)
-                        .setContractID(
-                                ContractID.newBuilder().setEvmAddress(alias).build()));
+        var op =
+                TransactionBody.newBuilder()
+                        .setContractCall(
+                                ContractCallTransactionBody.newBuilder()
+                                        .setGas(gas)
+                                        .setAmount(0)
+                                        .setContractID(
+                                                ContractID.newBuilder()
+                                                        .setEvmAddress(alias)
+                                                        .build()));
         contractCallTxn = op.build();
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
         // and:
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(accountStore.loadContract(EntityNum.MISSING_NUM.toId())).willThrow(InvalidTransactionException.class);
+        given(accountStore.loadContract(EntityNum.MISSING_NUM.toId()))
+                .willThrow(InvalidTransactionException.class);
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
         given(properties.evmVersion()).willReturn(EVM_VERSION_0_34);
         given(properties.isAutoCreationEnabled()).willReturn(false);
@@ -412,25 +496,31 @@ class ContractCallTransitionLogicTest {
         // when:
         assertThrows(
                 InvalidTransactionException.class,
-                () -> subject.doStateTransitionOperation(
-                        txn, senderAccountId, relayerAccountId, maxGas, biOfferedGasPrice));
+                () ->
+                        subject.doStateTransitionOperation(
+                                txn, senderAccountId, relayerAccountId, maxGas, biOfferedGasPrice));
     }
 
     @Test
     void verifyEthLazyCreateThrowsWhenLazyCreationNotEnabled() {
         // setup:
-        var op = TransactionBody.newBuilder()
-                .setContractCall(ContractCallTransactionBody.newBuilder()
-                        .setGas(gas)
-                        .setAmount(0)
-                        .setContractID(
-                                ContractID.newBuilder().setEvmAddress(alias).build()));
+        var op =
+                TransactionBody.newBuilder()
+                        .setContractCall(
+                                ContractCallTransactionBody.newBuilder()
+                                        .setGas(gas)
+                                        .setAmount(0)
+                                        .setContractID(
+                                                ContractID.newBuilder()
+                                                        .setEvmAddress(alias)
+                                                        .build()));
         contractCallTxn = op.build();
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
         // and:
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(accountStore.loadContract(EntityNum.MISSING_NUM.toId())).willThrow(InvalidTransactionException.class);
+        given(accountStore.loadContract(EntityNum.MISSING_NUM.toId()))
+                .willThrow(InvalidTransactionException.class);
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
         given(properties.evmVersion()).willReturn(EVM_VERSION_0_34);
         given(properties.isAutoCreationEnabled()).willReturn(true);
@@ -441,20 +531,26 @@ class ContractCallTransitionLogicTest {
         final var relayerAccountId = relayerAccount.getId(); // when:
         assertThrows(
                 InvalidTransactionException.class,
-                () -> subject.doStateTransitionOperation(
-                        txn, senderAccountId, relayerAccountId, maxGas, biOfferedGasPrice));
+                () ->
+                        subject.doStateTransitionOperation(
+                                txn, senderAccountId, relayerAccountId, maxGas, biOfferedGasPrice));
     }
 
     @Test
     void verifyEthLazyCreateThrowsWhenEvmAddressInBodyIsNotValid() {
         // setup:
-        var op = TransactionBody.newBuilder()
-                .setContractCall(ContractCallTransactionBody.newBuilder()
-                        .setGas(gas)
-                        .setAmount(sent)
-                        .setContractID(ContractID.newBuilder()
-                                .setEvmAddress(ByteStringUtils.wrapUnsafely("randomBytes".getBytes()))
-                                .build()));
+        var op =
+                TransactionBody.newBuilder()
+                        .setContractCall(
+                                ContractCallTransactionBody.newBuilder()
+                                        .setGas(gas)
+                                        .setAmount(sent)
+                                        .setContractID(
+                                                ContractID.newBuilder()
+                                                        .setEvmAddress(
+                                                                ByteStringUtils.wrapUnsafely(
+                                                                        "randomBytes".getBytes()))
+                                                        .build()));
         contractCallTxn = op.build();
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
@@ -469,8 +565,13 @@ class ContractCallTransitionLogicTest {
         // when:
         assertThrows(
                 InvalidTransactionException.class,
-                () -> subject.doStateTransitionOperation(
-                        accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice));
+                () ->
+                        subject.doStateTransitionOperation(
+                                accessor.getTxn(),
+                                senderAccount.getId(),
+                                relayerAccount.getId(),
+                                maxGas,
+                                biOfferedGasPrice));
 
         // then:
         verify(recordService, never()).externaliseEvmCallTransaction(any());
@@ -492,16 +593,29 @@ class ContractCallTransitionLogicTest {
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
 
         // and:
-        var results = TransactionProcessingResult.successful(
-                null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress(), Map.of(), List.of());
-        given(evmTxProcessor.execute(
-                        senderAccount,
-                        new Account(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum()))
-                                .canonicalAddress(),
-                        gas,
-                        sent,
+        var results =
+                TransactionProcessingResult.successful(
+                        null,
+                        1234L,
+                        0L,
+                        124L,
                         Bytes.EMPTY,
-                        txnCtx.consensusTime()))
+                        contractAccount.getId().asEvmAddress(),
+                        Map.of(),
+                        List.of());
+        given(
+                        evmTxProcessor.execute(
+                                senderAccount,
+                                new Account(
+                                                new Id(
+                                                        target.getShardNum(),
+                                                        target.getRealmNum(),
+                                                        target.getContractNum()))
+                                        .canonicalAddress(),
+                                gas,
+                                sent,
+                                Bytes.EMPTY,
+                                txnCtx.consensusTime()))
                 .willReturn(results);
         given(worldState.getCreatedContractIds()).willReturn(List.of(target));
         // when:
@@ -519,12 +633,14 @@ class ContractCallTransitionLogicTest {
     void verifyProcessorCallingWithCorrectCallData() {
         // setup:
         ByteString functionParams = ByteString.copyFromUtf8("0x00120");
-        var op = TransactionBody.newBuilder()
-                .setContractCall(ContractCallTransactionBody.newBuilder()
-                        .setGas(gas)
-                        .setAmount(sent)
-                        .setFunctionParameters(functionParams)
-                        .setContractID(target));
+        var op =
+                TransactionBody.newBuilder()
+                        .setContractCall(
+                                ContractCallTransactionBody.newBuilder()
+                                        .setGas(gas)
+                                        .setAmount(sent)
+                                        .setFunctionParameters(functionParams)
+                                        .setContractID(target));
         contractCallTxn = op.build();
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
@@ -532,18 +648,32 @@ class ContractCallTransitionLogicTest {
         given(txnCtx.accessor()).willReturn(accessor);
         // and:
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
+        given(
+                        accountStore.loadContract(
+                                new Id(
+                                        target.getShardNum(),
+                                        target.getRealmNum(),
+                                        target.getContractNum())))
                 .willReturn(contractAccount);
         // and:
-        var results = TransactionProcessingResult.successful(
-                null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress(), Map.of(), List.of());
-        given(evmTxProcessor.execute(
-                        senderAccount,
+        var results =
+                TransactionProcessingResult.successful(
+                        null,
+                        1234L,
+                        0L,
+                        124L,
+                        Bytes.EMPTY,
                         contractAccount.getId().asEvmAddress(),
-                        gas,
-                        sent,
-                        Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())),
-                        txnCtx.consensusTime()))
+                        Map.of(),
+                        List.of());
+        given(
+                        evmTxProcessor.execute(
+                                senderAccount,
+                                contractAccount.getId().asEvmAddress(),
+                                gas,
+                                sent,
+                                Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())),
+                                txnCtx.consensusTime()))
                 .willReturn(results);
         given(worldState.getCreatedContractIds()).willReturn(List.of(target));
         // when:
@@ -564,9 +694,8 @@ class ContractCallTransitionLogicTest {
     @Test
     void successfulPreFetch() {
         final var targetAlias = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e25");
-        final var target = ContractID.newBuilder()
-                .setEvmAddress(ByteString.copyFrom(targetAlias))
-                .build();
+        final var target =
+                ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(targetAlias)).build();
         final var targetNum = EntityNum.fromLong(1234);
         final var txnBody = Mockito.mock(TransactionBody.class);
         final var ccTxnBody = Mockito.mock(ContractCallTransactionBody.class);
@@ -641,24 +770,39 @@ class ContractCallTransitionLogicTest {
         // and:
         senderAccount.initBalance(1233L);
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-        given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
+        given(
+                        accountStore.loadContract(
+                                new Id(
+                                        target.getShardNum(),
+                                        target.getRealmNum(),
+                                        target.getContractNum())))
                 .willReturn(contractAccount);
 
-        given(evmTxProcessor.executeEth(any(), any(), anyLong(), anyLong(), any(), any(), any(), any(), anyLong()))
+        given(
+                        evmTxProcessor.executeEth(
+                                any(), any(), anyLong(), anyLong(), any(), any(), any(), any(),
+                                anyLong()))
                 .willThrow(InvalidTransactionException.class);
         // then:
         assertThrows(
                 InvalidTransactionException.class,
-                () -> subject.doStateTransitionOperation(
-                        accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice));
+                () ->
+                        subject.doStateTransitionOperation(
+                                accessor.getTxn(),
+                                senderAccount.getId(),
+                                relayerAccount.getId(),
+                                maxGas,
+                                biOfferedGasPrice));
     }
 
     private void givenValidTxnCtx() {
-        var op = TransactionBody.newBuilder()
-                .setContractCall(ContractCallTransactionBody.newBuilder()
-                        .setGas(gas)
-                        .setAmount(sent)
-                        .setContractID(target));
+        var op =
+                TransactionBody.newBuilder()
+                        .setContractCall(
+                                ContractCallTransactionBody.newBuilder()
+                                        .setGas(gas)
+                                        .setAmount(sent)
+                                        .setContractID(target));
         contractCallTxn = op.build();
     }
 

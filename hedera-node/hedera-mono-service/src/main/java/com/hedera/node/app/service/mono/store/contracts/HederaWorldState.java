@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.hedera.node.app.service.mono.store.contracts;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -186,7 +185,8 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
         @SuppressWarnings("unchecked")
         private void addAllStorageUpdatesToStateChanges() {
             for (UpdateTrackingLedgerAccount<? extends Account> uta :
-                    (Collection<UpdateTrackingLedgerAccount<? extends Account>>) this.getTouchedAccounts()) {
+                    (Collection<UpdateTrackingLedgerAccount<? extends Account>>)
+                            this.getTouchedAccounts()) {
                 final var storageUpdates = uta.getUpdatedStorage().entrySet();
                 if (!storageUpdates.isEmpty()) {
                     final Map<Bytes, Pair<Bytes, Bytes>> accountChanges =
@@ -195,7 +195,9 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
                         UInt256 key = entry.getKey();
                         UInt256 originalStorageValue = uta.getOriginalStorageValue(key);
                         UInt256 updatedStorageValue = uta.getStorageValue(key);
-                        accountChanges.put(key, new ImmutablePair<>(originalStorageValue, updatedStorageValue));
+                        accountChanges.put(
+                                key,
+                                new ImmutablePair<>(originalStorageValue, updatedStorageValue));
                     }
                 }
             }
@@ -208,7 +210,8 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
             // was a CONTRACT_CREATION; so we must have details from a HAPI ContractCreate
             final var hapiCustomizer = wrappedWorldView().hapiSenderCustomizer();
             if (hapiCustomizer == null) {
-                throw new IllegalStateException("Base updater asked for customizer, but no details from HAPI are set");
+                throw new IllegalStateException(
+                        "Base updater asked for customizer, but no details from HAPI are set");
             }
             return hapiCustomizer;
         }
@@ -268,8 +271,9 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
                 final var n = wrapped.provisionalContractCreations.size();
                 Objects.requireNonNull(wrapped.usageLimits).assertCreatableContracts(n);
                 if (dynamicProperties.shouldEnforceAccountCreationThrottleForContracts()) {
-                    final var creationCapacity = !Objects.requireNonNull(wrapped.handleThrottling)
-                            .shouldThrottleNOfUnscaled(n, HederaFunctionality.CryptoCreate);
+                    final var creationCapacity =
+                            !Objects.requireNonNull(wrapped.handleThrottling)
+                                    .shouldThrottleNOfUnscaled(n, HederaFunctionality.CryptoCreate);
                     validateResourceLimit(creationCapacity, CONSENSUS_GAS_EXHAUSTED);
                 }
             }
@@ -289,14 +293,16 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
                 final SigImpactHistorian impactHistorian,
                 final Collection<Address> deletedAddresses,
                 final Collection<UpdateTrackingLedgerAccount<Account>> updatedAccounts) {
-            deletedAddresses.forEach(address -> {
-                final var accountId = accountIdFromEvmAddress(address);
-                validateTrue(impactHistorian != null, FAIL_INVALID);
-                impactHistorian.markEntityChanged(accountId.getAccountNum());
-                trackIfNewlyCreated(accountId, entityAccess, provisionalCreations);
-            });
+            deletedAddresses.forEach(
+                    address -> {
+                        final var accountId = accountIdFromEvmAddress(address);
+                        validateTrue(impactHistorian != null, FAIL_INVALID);
+                        impactHistorian.markEntityChanged(accountId.getAccountNum());
+                        trackIfNewlyCreated(accountId, entityAccess, provisionalCreations);
+                    });
             for (final var updatedAccount : updatedAccounts) {
-                if (updatedAccount.getNonce() == HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE) {
+                if (updatedAccount.getNonce()
+                        == HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE) {
                     continue;
                 }
 
@@ -314,8 +320,10 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
                 log.error("Account {} missing in tracking ledgers", accountId);
                 return;
             }
-            final var isSmartContract = (Boolean) trackingAccounts().get(accountId, AccountProperty.IS_SMART_CONTRACT);
-            if (Boolean.TRUE.equals(isSmartContract) && !entityAccess.isExtant(asTypedEvmAddress(accountId))) {
+            final var isSmartContract =
+                    (Boolean) trackingAccounts().get(accountId, AccountProperty.IS_SMART_CONTRACT);
+            if (Boolean.TRUE.equals(isSmartContract)
+                    && !entityAccess.isExtant(asTypedEvmAddress(accountId))) {
                 provisionalContractCreations.add(asContract(accountId));
             }
         }
@@ -330,7 +338,8 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
                 final var accountId = updatedAccount.getAccountId();
                 final var kvUpdates = updatedAccount.getUpdatedStorage();
                 if (!kvUpdates.isEmpty()) {
-                    kvUpdates.forEach((key, value) -> entityAccess.putStorage(accountId, key, value));
+                    kvUpdates.forEach(
+                            (key, value) -> entityAccess.putStorage(accountId, key, value));
                 }
             }
             entityAccess.flushStorage(trackingAccounts());
