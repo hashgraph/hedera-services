@@ -68,6 +68,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -87,15 +88,25 @@ class ContractCallTransitionLogicTest {
     private static final BigInteger biOfferedGasPrice = BigInteger.valueOf(111L);
 
     @Mock private TransactionContext txnCtx;
+
     @Mock private PlatformTxnAccessor accessor;
+
     @Mock private AccountStore accountStore;
+
     @Mock private HederaWorldState worldState;
+
     @Mock private TransactionRecordService recordService;
+
     @Mock private CallEvmTxProcessor evmTxProcessor;
+
     @Mock private GlobalDynamicProperties properties;
+
     @Mock private CodeCache codeCache;
+
     @Mock private SigImpactHistorian sigImpactHistorian;
+
     @Mock private AliasManager aliasManager;
+
     @Mock private EntityAccess entityAccess;
 
     private TransactionBody contractCallTxn;
@@ -180,6 +191,7 @@ class ContractCallTransitionLogicTest {
 
     @Test
     void verifyExternaliseContractResultCallEth() {
+        InOrder inOrder = Mockito.inOrder(worldState);
         // setup:
         givenValidTxnCtx();
         // and:
@@ -229,8 +241,9 @@ class ContractCallTransitionLogicTest {
 
         // then:
         verify(recordService).externaliseEvmCallTransaction(any());
-        verify(worldState).getCreatedContractIds();
         verify(txnCtx).setTargetedContract(target);
+        inOrder.verify(worldState).clearProvisionalContractCreations();
+        inOrder.verify(worldState).getCreatedContractIds();
     }
 
     @Test
@@ -291,7 +304,6 @@ class ContractCallTransitionLogicTest {
 
         // then:
         verify(recordService).externaliseEvmCallTransaction(any());
-        verify(worldState, never()).getCreatedContractIds();
         verify(txnCtx).setTargetedContract(IdUtils.asContract("0.0." + 666L));
     }
 

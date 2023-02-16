@@ -108,6 +108,8 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             final Id relayerId,
             final long maxGasAllowanceInTinybars,
             final BigInteger offeredGasPrice) {
+        worldState.clearProvisionalContractCreations();
+
         var op = contractCallTxn.getContractCall();
 
         // --- Load the model objects ---

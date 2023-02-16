@@ -150,8 +150,11 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             final Id relayerId,
             final long maxGasAllowance,
             final BigInteger userOfferedGasPrice) {
+        worldState.clearProvisionalContractCreations();
+
         // --- Translate from gRPC types ---
         final var op = contractCreateTxn.getContractCreateInstance();
+
         var key =
                 op.hasAdminKey()
                         ? validator.attemptToDecodeOrThrow(op.getAdminKey(), SERIALIZATION_FAILED)

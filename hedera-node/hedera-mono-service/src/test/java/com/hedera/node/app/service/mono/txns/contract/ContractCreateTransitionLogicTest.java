@@ -47,6 +47,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -128,24 +129,43 @@ class ContractCreateTransitionLogicTest {
     private long gas = 33_333;
     private long customAutoRenewPeriod = 100_001L;
     private Long balance = 1_234L;
+
     @Mock private HederaFs hfs;
+
     @Mock private OptionValidator validator;
+
     @Mock private TransactionContext txnCtx;
+
     @Mock private SignedTxnAccessor accessor;
+
     @Mock private AccountStore accountStore;
+
     @Mock private HederaWorldState worldState;
+
     @Mock private EntityCreator entityCreator;
+
     @Mock private RecordsHistorian recordsHistorian;
+
     @Mock private TransactionRecordService recordServices;
+
     @Mock private CreateEvmTxProcessor evmTxProcessor;
+
     @Mock private ContractCreateTransactionBody transactionBody;
+
     @Mock private GlobalDynamicProperties properties;
+
     @Mock private SigImpactHistorian sigImpactHistorian;
+
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
+
     @Mock private Account autoRenewModel;
+
     @Mock private AccountStorageAdapter accounts;
+
     @Mock private NodeInfo nodeInfo;
+
     @Mock private AliasManager aliasManager;
+
     private ContractCreateTransitionLogic subject;
     private TransactionBody contractCreateTxn;
     private MockedStatic<SidecarUtils> sidecarUtilsMockedStatic;
@@ -381,6 +401,7 @@ class ContractCreateTransitionLogicTest {
 
     @Test
     void usesContractKeyWhenEmptyAdminKeySetInOp() {
+        final var inOrder = inOrder(worldState);
         final var op =
                 ContractCreateTransactionBody.newBuilder()
                         .setFileID(bytecodeSrc)
@@ -441,6 +462,8 @@ class ContractCreateTransitionLogicTest {
                         balance,
                         Bytes.fromHexString(contractByteCodeString),
                         txnCtx.consensusTime());
+        inOrder.verify(worldState).clearProvisionalContractCreations();
+        inOrder.verify(worldState).getCreatedContractIds();
     }
 
     @Test

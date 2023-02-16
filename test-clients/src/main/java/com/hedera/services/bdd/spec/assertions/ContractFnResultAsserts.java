@@ -45,6 +45,8 @@ import org.junit.jupiter.api.Assertions;
 public class ContractFnResultAsserts extends BaseErroringAssertsProvider<ContractFunctionResult> {
     static final Logger log = LogManager.getLogger(ContractFnResultAsserts.class);
 
+    private static final Random rand = new Random(); // NOSONAR
+
     public static ContractFnResultAsserts resultWith() {
         return new ContractFnResultAsserts();
     }
@@ -238,6 +240,18 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
         return this;
     }
 
+    public ContractFnResultAsserts createdContractIdsCount(int n) {
+        registerProvider(
+                (spec, o) -> {
+                    ContractFunctionResult result = (ContractFunctionResult) o;
+                    Assertions.assertEquals(
+                            n,
+                            result.getCreatedContractIDsCount(), // NOSONAR
+                            "Wrong number of createdContractIds!");
+                });
+        return this;
+    }
+
     /* Helpers to create the provider for #resultThruAbi. */
     public static Function<HapiSpec, Function<Object[], Optional<Throwable>>> isContractWith(
             ContractInfoAsserts theExpectedInfo) {
@@ -246,7 +260,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
                     try {
                         Assertions.assertEquals(
                                 1, actualObjs.length, "Extra contract function return values!");
-                        String implicitContract = "contract" + new Random().nextInt();
+                        String implicitContract = "contract" + rand.nextInt();
                         ContractID contract =
                                 TxnUtils.asContractId(
                                         Bytes.fromHexString(((Address) actualObjs[0]).toString())
@@ -299,19 +313,15 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
     private static Optional<Throwable> matchErrors(Object[] expecteds, Object[] actuals) {
         try {
             for (int i = 0; i < Math.max(expecteds.length, actuals.length); i++) {
-                try {
-                    Object expected = expecteds[i];
-                    Object actual = actuals[i];
-                    Assertions.assertNotNull(expected);
-                    Assertions.assertNotNull(actual);
-                    Assertions.assertEquals(expected.getClass(), actual.getClass());
-                    if (expected instanceof byte[]) {
-                        Assertions.assertArrayEquals((byte[]) expected, (byte[]) actual);
-                    } else {
-                        Assertions.assertEquals(expected, actual);
-                    }
-                } catch (Exception e) {
-                    return Optional.of(e);
+                Object expected = expecteds[i];
+                Object actual = actuals[i];
+                Assertions.assertNotNull(expected);
+                Assertions.assertNotNull(actual);
+                Assertions.assertEquals(expected.getClass(), actual.getClass());
+                if (expected instanceof byte[] expectedBytes) {
+                    Assertions.assertArrayEquals(expectedBytes, (byte[]) actual);
+                } else {
+                    Assertions.assertEquals(expected, actual);
                 }
             }
         } catch (Exception e) {
@@ -328,19 +338,18 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
                 Object actual = actuals[i];
                 Assertions.assertNotNull(expected);
                 Assertions.assertNotNull(actual);
-                if (expected instanceof byte[]) {
-                    int expectedLength = ((byte[]) expected).length;
+                if (expected instanceof byte[] expectedBytes) {
+                    int expectedLength = expectedBytes.length;
                     Assertions.assertEquals(expectedLength, ((byte[]) actual).length);
                     // reject all zero result as not random
                     Assertions.assertFalse(
                             Arrays.equals(new byte[expectedLength], (byte[]) actual));
-                } else if (expected instanceof Integer) {
+                } else if (expected instanceof Integer expectedInt) {
                     Assertions.assertTrue(
                             ((BigInteger) actual).intValue() >= 0
-                                    && ((BigInteger) actual).intValue()
-                                            < ((Integer) expected).intValue());
+                                    && ((BigInteger) actual).intValue() < expectedInt.intValue());
                 } else {
-                    throw new Exception(
+                    throw new Exception( // NOSONAR
                             String.format(
                                     "Invalid Random result, expected %s , actual %s",
                                     expecteds[i], actuals[i]));
