@@ -846,8 +846,14 @@ workflows:
             - attach_workspace:
                 at: /
 
-
   GCP-Daily-Services-Crypto-Restart-4N-1C:
+    triggers:
+      - schedule:
+          cron: "15 6 * * *"
+          filters:
+            branches:
+              only:
+                - develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -866,7 +872,7 @@ workflows:
   GCP-Daily-Services-Update-Ubuntu1804-4N-2C:
     triggers:
       - schedule:
-          cron: "30 19 * * *"
+          cron: "0 3 * * *"
           filters:
             branches:
               only:
@@ -889,7 +895,7 @@ workflows:
   GCP-Daily-Services-Update-Rhel7-4N-2C:
     triggers:
       - schedule:
-          cron: "30 19 * * *"
+          cron: "15 3 * * *"
           filters:
             branches:
               only:
@@ -912,7 +918,7 @@ workflows:
   GCP-Daily-Services-Update-Rhel8-4N-2C:
     triggers:
       - schedule:
-          cron: "30 19 * * *"
+          cron: "30 3 * * *"
           filters:
             branches:
               only:
@@ -935,7 +941,7 @@ workflows:
   GCP-Daily-Services-Update-CentOS7-4N-2C:
     triggers:
       - schedule:
-          cron: "30 19 * * *"
+          cron: "45 3 * * *"
           filters:
             branches:
               only:
@@ -979,6 +985,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Update-4N-2C:
+    triggers:
+      - schedule:
+          cron: "30 22 * * *"
+          filters:
+            branches:
+              only:
+                - develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -995,6 +1008,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Update-Abort-4N-2C:
+    triggers:
+      - schedule:
+          cron: "15 22 * * *"
+          filters:
+            branches:
+              only:
+                - develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1011,6 +1031,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-Update-DisPreUpdate-4N-2C:
+    triggers:
+      - schedule:
+          cron: "45 22 * * *"
+          filters:
+            branches:
+              only:
+                - develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1029,7 +1056,7 @@ workflows:
   GCP-Daily-Services-Update-Reconnect-4N-2C:
     triggers:
       - schedule:
-          cron: "26 19 * * *"
+          cron: "15 22 * * *"
           filters:
             branches:
               only:
@@ -1052,7 +1079,7 @@ workflows:
   GCP-Daily-Services-Comp-Update-Reconnect-Abort-4N-2C:
     triggers:
       - schedule:
-          cron: "35 19 * * *"
+          cron: "15 23 * * *"
           filters:
             branches:
               only:
@@ -1075,7 +1102,7 @@ workflows:
   GCP-Daily-Services-Comp-Update-Reconnect-Abort-DisPreUpdate-4N-2C:
     triggers:
       - schedule:
-          cron: "40 19 * * *"
+          cron: "30 23 * * *"
           filters:
             branches:
               only:
@@ -1514,9 +1541,8 @@ jobs:
             ./gradlew assemble --scan
             
             # Build JRS
-            cd /swirlds-platform/regression; git checkout 03190-D-add-blocknumber-validator;
+            cd /swirlds-platform/regression
             ./gradlew assemble --scan --parallel
-
 
       - run:
           name: Save PEM file to keys folder
@@ -1593,10 +1619,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "jeffrey-test"
+        default: "hedera-regression"
       slack_summary_channel:
         type: string
-        default: "jeffrey-test"
+        default: "hedera-regression-summary"
       workflow-name:
         type: string
         default: ""
