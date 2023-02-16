@@ -29,7 +29,7 @@ permissions:
 env:
   GITHUB_CLI_VERSION: 2.21.2
   YQ_CLI_VERSION: 4.30.8
-  WORKFLOW_CONFIG_FILE: ".github/workflows/config/release.yaml"
+  WORKFLOW_CONFIG_FILE: ".github/workflows/config/node-release.yaml"
   RELEASE_BRANCH_CHECK_SCRIPT: ".github/workflows/support/scripts/release-branch-check.sh"
 
 jobs:

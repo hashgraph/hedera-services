@@ -1,4 +1,4 @@
-[![Build Application](https://github.com/hashgraph/hedera-services/actions/workflows/flow-build-application.yaml/badge.svg?branch=develop)](https://github.com/hashgraph/hedera-services/actions/workflows/flow-build-application.yaml)
+[![Build Application](https://github.com/hashgraph/hedera-services/actions/workflows/node-flow-build-application.yaml/badge.svg?branch=develop)](https://github.com/hashgraph/hedera-services/actions/workflows/flow-build-application.yaml)
 [![codecov](https://codecov.io/github/hashgraph/hedera-services/coverage.svg?branch=master&token=ZPMV8C93DV)](README.md)
 [![Latest Version](https://img.shields.io/github/v/tag/hashgraph/hedera-services?sort=semver&label=version)](README.md)
 [![Made With](https://img.shields.io/badge/made_with-java-blue)](https://github.com/hashgraph/hedera-services/)

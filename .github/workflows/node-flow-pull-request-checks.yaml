@@ -35,7 +35,7 @@ concurrency:
 jobs:
   build:
     name: Code
-    uses: ./.github/workflows/comp-compile-application-code.yaml
+    uses: ./.github/workflows/node-comp-compile-application-code.yaml
     with:
       enable-spotless-check: false
     secrets:
@@ -43,7 +43,7 @@ jobs:
 
   spotless:
     name: Spotless
-    uses: ./.github/workflows/comp-compile-application-code.yaml
+    uses: ./.github/workflows/node-comp-compile-application-code.yaml
     with:
       custom-job-label: "Check"
       enable-javadoc: false
@@ -66,7 +66,7 @@ jobs:
 
   unit-tests:
     name: Unit Tests
-    uses: ./.github/workflows/comp-compile-application-code.yaml
+    uses: ./.github/workflows/node-comp-compile-application-code.yaml
     needs:
       - unit-label-check
     with:
@@ -82,7 +82,7 @@ jobs:
 
   eet-tests:
     name: E2E Tests
-    uses: ./.github/workflows/comp-compile-application-code.yaml
+    uses: ./.github/workflows/node-comp-compile-application-code.yaml
     needs:
       - unit-label-check
     with:
@@ -98,7 +98,7 @@ jobs:
 
   integration-tests:
     name: Integration Tests
-    uses: ./.github/workflows/comp-compile-application-code.yaml
+    uses: ./.github/workflows/node-comp-compile-application-code.yaml
     needs:
       - unit-label-check
     with:

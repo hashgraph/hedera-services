@@ -75,7 +75,7 @@ defaults:
 jobs:
   code:
     name: Code
-    uses: ./.github/workflows/comp-compile-application-code.yaml
+    uses: ./.github/workflows/node-comp-compile-application-code.yaml
     with:
       java-version: ${{ github.event.inputs.java-version || '17.0.3' }}
       java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
