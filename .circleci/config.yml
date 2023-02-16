@@ -1002,13 +1002,6 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Update-Abort-4N-2C:
-    triggers:
-      - schedule:
-          cron: "26 19 * * *"
-          filters:
-            branches:
-              only:
-                - develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1025,13 +1018,6 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-Update-DisPreUpdate-4N-2C:
-    triggers:
-      - schedule:
-          cron: "35 19 * * *"
-          filters:
-            branches:
-              only:
-                - develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
