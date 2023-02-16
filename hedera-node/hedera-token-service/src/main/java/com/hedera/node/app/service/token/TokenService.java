@@ -27,10 +27,12 @@ import java.util.ServiceLoader;
  */
 public interface TokenService extends Service {
 
+    String NAME = "TokenService";
+
     @NonNull
     @Override
     default String getServiceName() {
-        return TokenService.class.getSimpleName();
+        return NAME;
     }
 
     /**

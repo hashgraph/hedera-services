@@ -27,10 +27,12 @@ import java.util.ServiceLoader;
  */
 public interface FreezeService extends Service {
 
+    String NAME = "FreezeService";
+
     @NonNull
     @Override
     default String getServiceName() {
-        return FreezeService.class.getSimpleName();
+        return NAME;
     }
 
     /**

@@ -30,7 +30,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
@@ -89,7 +89,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, false);
-        final var context = new PrehandleHandlerContext(store, txn, payer);
+        final var context = new PreHandleContext(store, txn, payer);
         subject.preHandle(context);
         basicMetaAssertions(context, 3, false, OK);
         assertEquals(payerKey, context.getPayerKey());
@@ -102,7 +102,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(accounts.get(owner.getAccountNum())).willReturn(null);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, false);
-        final var context = new PrehandleHandlerContext(store, txn, payer);
+        final var context = new PreHandleContext(store, txn, payer);
         subject.preHandle(context);
         basicMetaAssertions(context, 0, true, INVALID_ALLOWANCE_OWNER_ID);
         assertEquals(payerKey, context.getPayerKey());
@@ -115,7 +115,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(owner, false);
-        final var context = new PrehandleHandlerContext(store, txn, owner);
+        final var context = new PreHandleContext(store, txn, owner);
         subject.preHandle(context);
         basicMetaAssertions(context, 0, false, OK);
         assertEquals(ownerKey, context.getPayerKey());
@@ -129,7 +129,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(accounts.get(delegatingSpender.getAccountNum())).willReturn(payerAccount);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, true);
-        final var context = new PrehandleHandlerContext(store, txn, payer);
+        final var context = new PreHandleContext(store, txn, payer);
         subject.preHandle(context);
         basicMetaAssertions(context, 3, false, OK);
         assertEquals(payerKey, context.getPayerKey());
@@ -144,7 +144,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(accounts.get(delegatingSpender.getAccountNum())).willReturn(null);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, true);
-        final var context = new PrehandleHandlerContext(store, txn, payer);
+        final var context = new PreHandleContext(store, txn, payer);
         subject.preHandle(context);
         assertEquals(payerKey, context.getPayerKey());
         basicMetaAssertions(context, 2, true, INVALID_DELEGATING_SPENDER);
