@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.regression;
 
 import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.relocatedIfNotPresentInWorkingDir;
@@ -70,7 +71,8 @@ public class TargetNetworkPrep extends HapiSuite {
     }
 
     private HapiSpec ensureSystemStateAsExpected() {
-        final var emptyKey = Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
+        final var emptyKey =
+                Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
         final var snapshot800 = "800startBalance";
         final var snapshot801 = "801startBalance";
         final var civilian = "civilian";
@@ -78,8 +80,7 @@ public class TargetNetworkPrep extends HapiSuite {
         try {
             final var defaultPermissionsLoc = "src/main/resource/api-permission.properties";
             final var stylized121 =
-                    Files.readString(
-                            relocatedIfNotPresentInWorkingDir(Paths.get(defaultPermissionsLoc)));
+                    Files.readString(relocatedIfNotPresentInWorkingDir(Paths.get(defaultPermissionsLoc)));
             final var serde = StandardSerdes.SYS_FILE_SERDES.get(122L);
 
             return defaultHapiSpec("EnsureDefaultSystemFiles")
@@ -88,22 +89,21 @@ public class TargetNetworkPrep extends HapiSuite {
                             fileUpdate(API_PERMISSIONS)
                                     .payingWith(GENESIS)
                                     .contents(serde.toValidatedRawFile(stylized121)),
-                            overridingAllOf(
-                                    Map.of(
-                                            CHAIN_ID_PROP,
-                                            "298",
-                                            STAKING_FEES_NODE_REWARD_PERCENTAGE,
-                                            "10",
-                                            STAKING_FEES_STAKING_REWARD_PERCENTAGE,
-                                            "10",
-                                            "staking.isEnabled",
-                                            "true",
-                                            "staking.maxDailyStakeRewardThPerH",
-                                            "100",
-                                            "staking.rewardRate",
-                                            "100_000_000_000",
-                                            "staking.startThreshold",
-                                            "100_000_000")))
+                            overridingAllOf(Map.of(
+                                    CHAIN_ID_PROP,
+                                    "298",
+                                    STAKING_FEES_NODE_REWARD_PERCENTAGE,
+                                    "10",
+                                    STAKING_FEES_STAKING_REWARD_PERCENTAGE,
+                                    "10",
+                                    "staking.isEnabled",
+                                    "true",
+                                    "staking.maxDailyStakeRewardThPerH",
+                                    "100",
+                                    "staking.rewardRate",
+                                    "100_000_000_000",
+                                    "staking.startThreshold",
+                                    "100_000_000")))
                     .when(
                             cryptoCreate(civilian),
                             balanceSnapshot(snapshot800, STAKING_REWARD),
@@ -112,89 +112,59 @@ public class TargetNetworkPrep extends HapiSuite {
                                     .signedBy(civilian)
                                     .exposingFeesTo(feeObs)
                                     .logged(),
-                            sourcing(
-                                    () ->
-                                            getAccountBalance(STAKING_REWARD)
-                                                    .hasTinyBars(
-                                                            changeFromSnapshot(
-                                                                    snapshot800,
-                                                                    (long)
-                                                                            (ONE_HBAR
-                                                                                    + ((feeObs.get()
-                                                                                                            .getNetworkFee()
-                                                                                                    + feeObs.get()
-                                                                                                            .getServiceFee())
-                                                                                            * 0.1))))),
+                            sourcing(() -> getAccountBalance(STAKING_REWARD)
+                                    .hasTinyBars(changeFromSnapshot(snapshot800, (long) (ONE_HBAR
+                                            + ((feeObs.get().getNetworkFee()
+                                                            + feeObs.get().getServiceFee())
+                                                    * 0.1))))),
                             balanceSnapshot(snapshot801, NODE_REWARD),
                             cryptoTransfer(tinyBarsFromTo(civilian, NODE_REWARD, ONE_HBAR))
                                     .payingWith(civilian)
                                     .signedBy(civilian)
                                     .logged(),
-                            sourcing(
-                                    () ->
-                                            getAccountBalance(NODE_REWARD)
-                                                    .hasTinyBars(
-                                                            changeFromSnapshot(
-                                                                    snapshot801,
-                                                                    (long)
-                                                                            (ONE_HBAR
-                                                                                    + ((feeObs.get()
-                                                                                                            .getNetworkFee()
-                                                                                                    + feeObs.get()
-                                                                                                            .getServiceFee())
-                                                                                            * 0.1))))))
+                            sourcing(() -> getAccountBalance(NODE_REWARD)
+                                    .hasTinyBars(changeFromSnapshot(snapshot801, (long) (ONE_HBAR
+                                            + ((feeObs.get().getNetworkFee()
+                                                            + feeObs.get().getServiceFee())
+                                                    * 0.1))))))
                     .then(
                             // TODO: this statement is intentionally wrong so a test will fail!
                             // 🔥🔥🔥
                             getAccountDetails(STAKING_REWARD).hasExpectedLedgerId("-1"),
                             getAccountDetails(STAKING_REWARD)
                                     .payingWith(GENESIS)
-                                    .has(
-                                            accountDetailsWith()
-                                                    .expiry(33197904000L, 0)
-                                                    .key(emptyKey)
-                                                    .memo("")
-                                                    .noAlias()
-                                                    .noAllowances()),
+                                    .has(accountDetailsWith()
+                                            .expiry(33197904000L, 0)
+                                            .key(emptyKey)
+                                            .memo("")
+                                            .noAlias()
+                                            .noAllowances()),
                             getAccountDetails(NODE_REWARD)
                                     .payingWith(GENESIS)
-                                    .has(
-                                            accountDetailsWith()
-                                                    .expiry(33197904000L, 0)
-                                                    .key(emptyKey)
-                                                    .memo("")
-                                                    .noAlias()
-                                                    .noAllowances()),
-                            withOpContext(
-                                    (spec, opLog) -> {
-                                        final var genesisInfo = getAccountInfo("0.0.2");
-                                        allRunFor(spec, genesisInfo);
-                                        final var key =
-                                                genesisInfo
-                                                        .getResponse()
-                                                        .getCryptoGetInfo()
-                                                        .getAccountInfo()
-                                                        .getKey();
-                                        final var cloneConfirmations =
-                                                inParallel(
-                                                        IntStream.rangeClosed(200, 750)
-                                                                .filter(i -> i < 350 || i >= 400)
-                                                                .mapToObj(
-                                                                        i ->
-                                                                                getAccountInfo(
-                                                                                                "0.0."
-                                                                                                        + i)
-                                                                                        .noLogging()
-                                                                                        .payingWith(
-                                                                                                GENESIS)
-                                                                                        .has(
-                                                                                                AccountInfoAsserts
-                                                                                                        .accountWith()
-                                                                                                        .key(
-                                                                                                                key)))
-                                                                .toArray(HapiSpecOperation[]::new));
-                                        allRunFor(spec, cloneConfirmations);
-                                    }));
+                                    .has(accountDetailsWith()
+                                            .expiry(33197904000L, 0)
+                                            .key(emptyKey)
+                                            .memo("")
+                                            .noAlias()
+                                            .noAllowances()),
+                            withOpContext((spec, opLog) -> {
+                                final var genesisInfo = getAccountInfo("0.0.2");
+                                allRunFor(spec, genesisInfo);
+                                final var key = genesisInfo
+                                        .getResponse()
+                                        .getCryptoGetInfo()
+                                        .getAccountInfo()
+                                        .getKey();
+                                final var cloneConfirmations = inParallel(IntStream.rangeClosed(200, 750)
+                                        .filter(i -> i < 350 || i >= 400)
+                                        .mapToObj(i -> getAccountInfo("0.0." + i)
+                                                .noLogging()
+                                                .payingWith(GENESIS)
+                                                .has(AccountInfoAsserts.accountWith()
+                                                        .key(key)))
+                                        .toArray(HapiSpecOperation[]::new));
+                                allRunFor(spec, cloneConfirmations);
+                            }));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
