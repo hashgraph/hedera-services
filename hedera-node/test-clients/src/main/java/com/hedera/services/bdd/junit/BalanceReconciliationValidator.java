@@ -64,11 +64,13 @@ public class BalanceReconciliationValidator implements RecordStreamValidator {
                     final var accountNum = aa.getAccountID().getAccountNum();
                     final var amount = aa.getAmount();
                     expectedBalances.merge(accountNum, amount, Long::sum);
-                    if (expectedBalances.get(accountNum) < 0) {
-                        throw new IllegalStateException(
-                                "Negative balance of " + amount + " for account 0.0. " + accountNum);
-                    }
                 });
+            }
+
+            for(final var entry : expectedBalances.entrySet()) {
+                if(entry.getValue() < 0) {
+                    throw new IllegalStateException("Negative balance for account " + entry.getKey() + " with value " + entry.getValue());
+                }
             }
         }
     }
