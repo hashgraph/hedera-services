@@ -55,6 +55,16 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
         return Response.newBuilder().setConsensusGetTopicInfo(response).build();
     }
 
+    @Override
+    public boolean requiresNodePayment(@NonNull ResponseType responseType) {
+        return responseType == ANSWER_ONLY || responseType == ANSWER_STATE_PROOF;
+    }
+
+    @Override
+    public boolean needsAnswerOnlyCost(@NonNull ResponseType responseType) {
+        return COST_ANSWER == responseType;
+    }
+
     /**
      * This method is called during the query workflow. It validates the query, but does not
      * determine the response yet.
@@ -113,16 +123,6 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
         }
 
         return Response.newBuilder().setConsensusGetTopicInfo(response).build();
-    }
-
-    @Override
-    public boolean requiresNodePayment(@NonNull ResponseType responseType) {
-        return responseType == ANSWER_ONLY || responseType == ANSWER_STATE_PROOF;
-    }
-
-    @Override
-    public boolean needsAnswerOnlyCost(@NonNull ResponseType responseType) {
-        return COST_ANSWER == responseType;
     }
 
     private Optional<ConsensusTopicInfo> infoForTopic(

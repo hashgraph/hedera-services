@@ -39,7 +39,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class ConsensusHandlerTestBase {
     protected static final String TOPICS = "TOPICS";
     protected final Key key = A_COMPLEX_KEY;
-    protected final AccountID payer = asAccount("0.0.3");
+    protected final String payerId = "0.0.3";
+    protected final AccountID payer = asAccount(payerId);
     protected final Timestamp consensusTimestamp =
             Timestamp.newBuilder().setSeconds(1_234_567L).build();
     protected final HederaKey payerKey = asHederaKey(A_COMPLEX_KEY).get();

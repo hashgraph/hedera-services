@@ -104,7 +104,6 @@ public class QueryDispatcher {
      * @param storeFactory the {@link StoreFactory} that keeps all stores which are eventually
      *                     needed
      * @param query        the {@link Query} of the request
-     * @param queryContext
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public ResponseCodeEnum validate(@NonNull final StoreFactory storeFactory, @NonNull final Query query)
