@@ -21,10 +21,12 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.mockito.BDDMockito.given;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.meta.QueryContext;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -52,6 +54,8 @@ public class ConsensusHandlerTestBase {
     protected final TopicID topicId = TopicID.newBuilder().setTopicNum(topicNum).build();
     protected final String beneficiaryIdStr = "0.0.3";
     protected final long paymentAmount = 1_234L;
+    protected final ByteString ledgerId = ByteString.copyFromUtf8("0x03");
+    protected final String memo = "test memo";
 
     @Mock
     protected ReadableKVState<Long, MerkleTopic> topics;
@@ -66,7 +70,7 @@ public class ConsensusHandlerTestBase {
     protected ReadableStates states;
 
     @Mock
-    protected ReadableTopicStore.TopicMetadata topicMetadata;
+    protected QueryContext queryContext;
 
     protected ReadableTopicStore store;
 

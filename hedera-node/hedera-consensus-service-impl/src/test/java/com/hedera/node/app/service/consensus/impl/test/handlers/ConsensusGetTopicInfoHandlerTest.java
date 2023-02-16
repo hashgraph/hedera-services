@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -23,6 +24,7 @@ import static com.hederahashgraph.api.proto.java.ResponseType.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -108,10 +110,53 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
         assertEquals(INVALID_TOPIC_ID, response);
     }
 
+    @Test
+    void getsResponseIfFailedResponse() throws Throwable {
+        final var responseHeader = ResponseHeader.newBuilder()
+                .setNodeTransactionPrecheckCode(FAIL_FEE)
+                .build();
+
+        final var query = createGetTopicInfoQuery(topicNum.intValue());
+        final var response = subject.findResponse(query, responseHeader, store, queryContext);
+        assertEquals(FAIL_FEE, response.getConsensusGetTopicInfo().getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(
+                ConsensusTopicInfo.newBuilder().build(),
+                response.getConsensusGetTopicInfo().getTopicInfo());
+    }
+
+    @Test
+    void getsResponseIfOkResponse() throws Throwable {
+        givenValidTopic();
+        given(queryContext.getLedgerId()).willReturn(ledgerId);
+        final var responseHeader =
+                ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(OK).build();
+        final var expectedInfo = getExpectedInfo();
+
+        final var query = createGetTopicInfoQuery(topicNum.intValue());
+        final var response = subject.findResponse(query, responseHeader, store, queryContext);
+        assertEquals(OK, response.getConsensusGetTopicInfo().getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(expectedInfo, response.getConsensusGetTopicInfo().getTopicInfo());
+    }
+
+    private ConsensusTopicInfo getExpectedInfo() {
+        return ConsensusTopicInfo.newBuilder()
+                .setMemo(memo)
+                .setAdminKey(asKeyUnchecked((JKey) adminKey))
+                .setRunningHash(ByteString.copyFrom(new byte[48]))
+                .setSequenceNumber(1L)
+                .setExpirationTime(RichInstant.MISSING_INSTANT.toGrpc())
+                .setSubmitKey(asKeyUnchecked((JKey) adminKey))
+                .setAutoRenewAccount(autoRenewId)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(100L).build())
+                .setLedgerId(ledgerId)
+                .build();
+    }
+
     private void givenValidTopic() {
         given(topics.get(topicNum)).willReturn(topic);
-        given(topic.getMemo()).willReturn("topic memo");
+        given(topic.getMemo()).willReturn(memo);
         given(topic.getAdminKey()).willReturn((JKey) adminKey);
+        given(topic.getSubmitKey()).willReturn((JKey) adminKey);
         given(topic.getAutoRenewDurationSeconds()).willReturn(100L);
         given(topic.getAutoRenewAccountId()).willReturn(EntityId.fromGrpcAccountId(autoRenewId));
         given(topic.getExpirationTimestamp()).willReturn(RichInstant.MISSING_INSTANT);
