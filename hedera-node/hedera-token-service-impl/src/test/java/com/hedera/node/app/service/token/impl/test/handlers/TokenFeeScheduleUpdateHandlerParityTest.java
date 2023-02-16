@@ -51,7 +51,7 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenFeeScheduleUpdateNonExistingToken() {
         final var txn = txnFrom(UPDATE_TOKEN_FEE_SCHEDULE_BUT_TOKEN_DOESNT_EXIST);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertTrue(context.failed());
@@ -63,7 +63,7 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenFeeScheduleUpdateTokenWithoutFeeScheduleKey() {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_NO_FEE_SCHEDULE_KEY);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         // may look odd, but is intentional --- we fail in the handle(), not in preHandle()
@@ -76,7 +76,7 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenFeeScheduleUpdateWithFeeScheduleKeySigReqFeeCollector() {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_SIG_REQ);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
@@ -91,7 +91,7 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenFeeScheduleUpdateWithFeeScheduleKeySigNotReqFeeCollector() {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_NO_SIG_REQ);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
@@ -104,7 +104,7 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenFeeScheduleUpdateWithFeeScheduleKeyAndOneSigReqFeeCollectorAndAnotherSigNonReqFeeCollector() {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
@@ -119,7 +119,7 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorAsPayerAndSigReq() {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
@@ -132,7 +132,7 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorAsPayer() {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_NO_SIG_REQ_AND_AS_PAYER);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
@@ -145,7 +145,7 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenFeeScheduleUpdateWithFeeScheduleKeyAndInvalidFeeCollector() {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_MISSING_FEE_COLLECTOR);
-        final var context = new PreHandleContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertTrue(context.failed());

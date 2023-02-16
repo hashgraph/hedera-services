@@ -618,7 +618,7 @@ class TransactionDispatcherTest {
                                 .setTokenUpdate(TokenUpdateTransactionBody.getDefaultInstance())
                                 .build(),
                         (BiConsumer<TransactionHandlers, PreHandleContext>) (handlers, meta) ->
-                                verify(handlers.tokenUpdateHandler()).preHandle(meta)),
+                                verify(handlers.tokenUpdateHandler()).preHandle(eq(meta), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenMint(TokenMintTransactionBody.getDefaultInstance())
@@ -636,7 +636,7 @@ class TransactionDispatcherTest {
                                 .setTokenDeletion(TokenDeleteTransactionBody.getDefaultInstance())
                                 .build(),
                         (BiConsumer<TransactionHandlers, PreHandleContext>) (handlers, meta) ->
-                                verify(handlers.tokenDeleteHandler()).preHandle(meta)),
+                                verify(handlers.tokenDeleteHandler()).preHandle(eq(meta), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenWipe(TokenWipeAccountTransactionBody.getDefaultInstance())
@@ -648,7 +648,7 @@ class TransactionDispatcherTest {
                                 .setTokenFreeze(TokenFreezeAccountTransactionBody.getDefaultInstance())
                                 .build(),
                         (BiConsumer<TransactionHandlers, PreHandleContext>) (handlers, meta) ->
-                                verify(handlers.tokenFreezeAccountHandler()).preHandle(meta)),
+                                verify(handlers.tokenFreezeAccountHandler()).preHandle(eq(meta), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenUnfreeze(TokenUnfreezeAccountTransactionBody.getDefaultInstance())
@@ -660,7 +660,7 @@ class TransactionDispatcherTest {
                                 .setTokenGrantKyc(TokenGrantKycTransactionBody.getDefaultInstance())
                                 .build(),
                         (BiConsumer<TransactionHandlers, PreHandleContext>) (handlers, meta) ->
-                                verify(handlers.tokenGrantKycToAccountHandler()).preHandle(meta)),
+                                verify(handlers.tokenGrantKycToAccountHandler()).preHandle(eq(meta), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenRevokeKyc(TokenRevokeKycTransactionBody.getDefaultInstance())

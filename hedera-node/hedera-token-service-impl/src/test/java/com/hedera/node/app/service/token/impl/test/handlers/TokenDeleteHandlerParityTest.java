@@ -16,30 +16,31 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.test.factories.scenarios.TokenMintScenarios.MINT_FOR_TOKEN_WITHOUT_SUPPLY;
-import static com.hedera.test.factories.scenarios.TokenMintScenarios.MINT_WITH_MISSING_TOKEN;
-import static com.hedera.test.factories.scenarios.TokenMintScenarios.MINT_WITH_SUPPLY_KEYED_TOKEN;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_SUPPLY_KT;
+import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_KNOWN_TOKEN;
+import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_MISSING_TOKEN;
+import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_MISSING_TOKEN_ADMIN_KEY;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenDeleteHandler;
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import org.junit.jupiter.api.Test;
 
-class TokenMintHandlerParityTest extends ParityTestBase {
-    private final TokenMintHandler subject = new TokenMintHandler();
+class TokenDeleteHandlerParityTest extends ParityTestBase {
+
+    private final TokenDeleteHandler subject = new TokenDeleteHandler();
 
     @Test
-    void tokenMintWithSupplyKeyedTokenScenario() {
-        final var theTxn = txnFrom(MINT_WITH_SUPPLY_KEYED_TOKEN);
+    void tokenDeletionWithValidTokenScenario() {
+        final var theTxn = txnFrom(DELETE_WITH_KNOWN_TOKEN);
 
         final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
@@ -48,12 +49,12 @@ class TokenMintHandlerParityTest extends ParityTestBase {
         assertEquals(OK, context.getStatus());
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_SUPPLY_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_ADMIN_KT.asKey()));
     }
 
     @Test
-    void tokenMintWithMissingTokenScenario() {
-        final var theTxn = txnFrom(MINT_WITH_MISSING_TOKEN);
+    void tokenDeletionWithMissingTokenScenario() {
+        final var theTxn = txnFrom(DELETE_WITH_MISSING_TOKEN);
 
         final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
@@ -65,8 +66,8 @@ class TokenMintHandlerParityTest extends ParityTestBase {
     }
 
     @Test
-    void tokenMintWithoutSupplyScenario() {
-        final var theTxn = txnFrom(MINT_FOR_TOKEN_WITHOUT_SUPPLY);
+    void tokenDeletionWithTokenWithoutAnAdminKeyScenario() {
+        final var theTxn = txnFrom(DELETE_WITH_MISSING_TOKEN_ADMIN_KEY);
 
         final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
