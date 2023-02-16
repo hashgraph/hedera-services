@@ -34,15 +34,15 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ShardID;
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 
 public class HapiSpecSetup {
-    private final Random r = new Random();
+    private final SecureRandom r = new SecureRandom();
 
     private static final HapiPropertySource defaultNodeProps;
 
