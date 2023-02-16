@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.crypto.validators;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
@@ -84,8 +85,7 @@ public class CryptoCreateChecks {
             return memoValidity;
         }
 
-        var kayAliasAndEvmAddressCombinationsValidity =
-                validateKeyAliasAndEvmAddressCombinations(op);
+        var kayAliasAndEvmAddressCombinationsValidity = validateKeyAliasAndEvmAddressCombinations(op);
         if (kayAliasAndEvmAddressCombinationsValidity != OK) {
             return kayAliasAndEvmAddressCombinationsValidity;
         }
@@ -108,8 +108,7 @@ public class CryptoCreateChecks {
         if (tooManyAutoAssociations(op.getMaxAutomaticTokenAssociations())) {
             return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
         }
-        if (op.hasProxyAccountID()
-                && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
+        if (op.hasProxyAccountID() && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
             return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
         }
         final var stakedIdCase = op.getStakedIdCase().name();
@@ -119,11 +118,7 @@ public class CryptoCreateChecks {
         }
         if (electsStakingId
                 && !validator.isValidStakedId(
-                        stakedIdCase,
-                        op.getStakedAccountId(),
-                        op.getStakedNodeId(),
-                        accounts.get(),
-                        nodeInfo)) {
+                        stakedIdCase, op.getStakedAccountId(), op.getStakedNodeId(), accounts.get(), nodeInfo)) {
             return INVALID_STAKING_ID;
         }
         return OK;
@@ -164,8 +159,7 @@ public class CryptoCreateChecks {
 
     private boolean tooManyAutoAssociations(final int n) {
         return n > MAX_CHARGEABLE_AUTO_ASSOCIATIONS
-                || (dynamicProperties.areTokenAssociationsLimited()
-                        && n > dynamicProperties.maxTokensPerAccount());
+                || (dynamicProperties.areTokenAssociationsLimited() && n > dynamicProperties.maxTokensPerAccount());
     }
 
     private ResponseCodeEnum isUsedAsAliasCheck(final ByteString alias) {
@@ -175,8 +169,7 @@ public class CryptoCreateChecks {
         return OK;
     }
 
-    private ResponseCodeEnum validateKeyAliasAndEvmAddressCombinations(
-            final CryptoCreateTransactionBody op) {
+    private ResponseCodeEnum validateKeyAliasAndEvmAddressCombinations(final CryptoCreateTransactionBody op) {
         if (onlyKeyProvided(op)) {
             return validateKey(op);
         } else if (onlyAliasProvided(op)) {
@@ -221,7 +214,8 @@ public class CryptoCreateChecks {
                 return isEvmAddressUsedCheck;
             }
 
-            return validateEcdsaKey(op.getKey().getECDSASecp256K1(), op.getAlias().toByteArray());
+            return validateEcdsaKey(
+                    op.getKey().getECDSASecp256K1(), op.getAlias().toByteArray());
         }
 
         if (!dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
@@ -238,8 +232,7 @@ public class CryptoCreateChecks {
 
         var keyFromAlias = asPrimitiveKeyUnchecked(op.getAlias());
         var key = op.getKey();
-        if ((!key.getEd25519().isEmpty() || !key.getECDSASecp256K1().isEmpty())
-                && !key.equals(keyFromAlias)) {
+        if ((!key.getEd25519().isEmpty() || !key.getECDSASecp256K1().isEmpty()) && !key.equals(keyFromAlias)) {
             return INVALID_ALIAS_KEY;
         }
 
@@ -267,11 +260,7 @@ public class CryptoCreateChecks {
                 return NOT_SUPPORTED;
             }
 
-            if (HederaEvmContractAliases.isMirror(op.getAlias().toByteArray())) {
-                return INVALID_ALIAS_KEY;
-            }
-
-            return isUsedAsAliasCheck(op.getAlias());
+            return INVALID_ALIAS_KEY;
         }
         if (!dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
             return NOT_SUPPORTED;
