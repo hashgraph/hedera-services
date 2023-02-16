@@ -138,7 +138,7 @@ public class TransactionDispatcher {
             case TOKENUNFREEZE -> handlers.tokenUnfreezeAccountHandler()
                     .preHandle(handlerContext, storeFactory.getTokenStore());
             case TOKENGRANTKYC -> handlers.tokenGrantKycToAccountHandler()
-                    .preHandle(handlerContext);
+                    .preHandle(handlerContext, storeFactory.getTokenStore());
             case TOKENREVOKEKYC -> handlers.tokenRevokeKycFromAccountHandler()
                     .preHandle(handlerContext, storeFactory.getTokenStore());
             case TOKENASSOCIATE -> handlers.tokenAssociateToAccountHandler()
