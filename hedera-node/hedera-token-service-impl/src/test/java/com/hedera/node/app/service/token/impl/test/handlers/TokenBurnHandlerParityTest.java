@@ -39,7 +39,7 @@ public class TokenBurnHandlerParityTest extends ParityTestBase {
     void getsTokenBurnWithValidId() {
         final var theTxn = txnFrom(BURN_WITH_SUPPLY_KEYED_TOKEN);
 
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
@@ -53,7 +53,7 @@ public class TokenBurnHandlerParityTest extends ParityTestBase {
     void getsTokenBurnWithMissingToken() {
         final var theTxn = txnFrom(BURN_WITH_MISSING_TOKEN);
 
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
 
         assertTrue(context.failed());
@@ -66,7 +66,7 @@ public class TokenBurnHandlerParityTest extends ParityTestBase {
     void getsTokenBurnWithoutSupplyKey() {
         final var theTxn = txnFrom(BURN_FOR_TOKEN_WITHOUT_SUPPLY);
 
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
