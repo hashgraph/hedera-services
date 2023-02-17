@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
@@ -154,74 +155,52 @@ public class ContractHTSSuite extends HapiSuite {
                         mintToken(tokenWithHbarFee, List.of(copyFromUtf8("First!"))),
                         mintToken(tokenWithHbarFee, List.of(copyFromUtf8("Second!"))),
                         uploadInitCode(theContract),
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(
-                                                        theContract,
-                                                        HapiParserUtil.asHeadlongAddress(
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        tokenWithHbarFee)))))),
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                contractCreate(
+                                        theContract,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(tokenWithHbarFee)))))),
                         tokenAssociate(alice, tokenWithHbarFee),
                         tokenAssociate(bob, tokenWithHbarFee),
                         tokenAssociate(theContract, tokenWithHbarFee),
-                        cryptoTransfer(
-                                        movingUnique(tokenWithHbarFee, 1L)
-                                                .between(treasuryForToken, alice))
+                        cryptoTransfer(movingUnique(tokenWithHbarFee, 1L).between(treasuryForToken, alice))
                                 .payingWith(GENESIS),
-                        cryptoTransfer(
-                                        movingUnique(tokenWithHbarFee, 2L)
-                                                .between(treasuryForToken, alice))
+                        cryptoTransfer(movingUnique(tokenWithHbarFee, 2L).between(treasuryForToken, alice))
                                 .payingWith(GENESIS),
                         getAccountInfo(feeCollector)
                                 .has(AccountInfoAsserts.accountWith().balance(0L)))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                theContract,
-                                                                "transferToAddress",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                alice))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                bob))),
-                                                                1L,
-                                                                2L)
-                                                        .payingWith(bob)
-                                                        .alsoSigningWithFullPrefix(alice)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .via("contractCallTxn")
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        theContract,
+                                        "transferToAddress",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(alice))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(bob))),
+                                        1L,
+                                        2L)
+                                .payingWith(bob)
+                                .alsoSigningWithFullPrefix(alice)
+                                .gas(GAS_TO_OFFER)
+                                .via("contractCallTxn")
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
                         childRecordsCheck(
                                 "contractCallTxn",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(REVERTED_SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS))),
                                 recordWith()
                                         .status(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(
+                                                                INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)))),
                         getAccountInfo(feeCollector)
                                 .has(AccountInfoAsserts.accountWith().balance(0L)));
     }
@@ -239,23 +218,16 @@ public class ContractHTSSuite extends HapiSuite {
                                 .initialSupply(TOTAL_SUPPLY)
                                 .treasury(TOKEN_TREASURY),
                         uploadInitCode(theContract),
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(
-                                                                theContract,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                A_TOKEN))))
-                                                        .via("creationTx"))),
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                contractCreate(
+                                                theContract,
+                                                HapiParserUtil.asHeadlongAddress(asAddress(
+                                                        spec.registry().getTokenID(A_TOKEN))))
+                                        .via("creationTx"))),
                         tokenAssociate(DEFAULT_CONTRACT_SENDER, List.of(A_TOKEN)),
                         tokenAssociate(theContract, List.of(A_TOKEN)),
-                        cryptoTransfer(
-                                moving(200, A_TOKEN)
-                                        .between(TOKEN_TREASURY, DEFAULT_CONTRACT_SENDER)))
+                        cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, DEFAULT_CONTRACT_SENDER)))
                 .when(
                         // If we are using Ethereum transactions, the DEFAULT_CONTRACT_SENDER
                         // signature will have to
@@ -282,39 +254,28 @@ public class ContractHTSSuite extends HapiSuite {
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))
-                                        .tokenTransfers(
-                                                changingFungibleBalances()
-                                                        .including(
-                                                                A_TOKEN,
-                                                                DEFAULT_CONTRACT_SENDER,
-                                                                -50L)
-                                                        .including(A_TOKEN, theContract, 50L))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))
+                                        .tokenTransfers(changingFungibleBalances()
+                                                .including(A_TOKEN, DEFAULT_CONTRACT_SENDER, -50L)
+                                                .including(A_TOKEN, theContract, 50L))),
                         childRecordsCheck(
                                 "receiverTx",
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS))),
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))
-                                        .tokenTransfers(
-                                                changingFungibleBalances()
-                                                        .including(A_TOKEN, theContract, -25L)
-                                                        .including(A_TOKEN, RECEIVER, 25L))));
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))
+                                        .tokenTransfers(changingFungibleBalances()
+                                                .including(A_TOKEN, theContract, -25L)
+                                                .including(A_TOKEN, RECEIVER, 25L))));
     }
 
     private HapiSpec distributeMultipleTokens() {
@@ -333,80 +294,58 @@ public class ContractHTSSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY),
                         uploadInitCode(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
                         contractCreate(FEE_DISTRIBUTOR),
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(
-                                                        VERSATILE_TRANSFERS,
-                                                        asHeadlongAddress(
-                                                                getNestedContractAddress(
-                                                                        FEE_DISTRIBUTOR, spec))))),
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                contractCreate(
+                                        VERSATILE_TRANSFERS,
+                                        asHeadlongAddress(getNestedContractAddress(FEE_DISTRIBUTOR, spec))))),
                         tokenAssociate(ACCOUNT, List.of(A_TOKEN)),
                         tokenAssociate(VERSATILE_TRANSFERS, List.of(A_TOKEN)),
                         tokenAssociate(RECEIVER, List.of(A_TOKEN)),
                         tokenAssociate(theSecondReceiver, List.of(A_TOKEN)),
                         cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, ACCOUNT)))
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var sender =
-                                            asAddress(spec.registry().getAccountID(ACCOUNT));
-                                    final var receiver1 =
-                                            asAddress(spec.registry().getAccountID(RECEIVER));
-                                    final var receiver2 =
-                                            asAddress(
-                                                    spec.registry()
-                                                            .getAccountID(theSecondReceiver));
-                                    final var accounts =
-                                            new Address[] {
-                                                HapiParserUtil.asHeadlongAddress(sender),
-                                                HapiParserUtil.asHeadlongAddress(receiver1),
-                                                HapiParserUtil.asHeadlongAddress(receiver2)
-                                            };
-                                    final var amounts = new long[] {-10L, 5L, 5L};
+                .when(withOpContext((spec, opLog) -> {
+                    final var sender = asAddress(spec.registry().getAccountID(ACCOUNT));
+                    final var receiver1 = asAddress(spec.registry().getAccountID(RECEIVER));
+                    final var receiver2 = asAddress(spec.registry().getAccountID(theSecondReceiver));
+                    final var accounts = new Address[] {
+                        HapiParserUtil.asHeadlongAddress(sender),
+                        HapiParserUtil.asHeadlongAddress(receiver1),
+                        HapiParserUtil.asHeadlongAddress(receiver2)
+                    };
+                    final var amounts = new long[] {-10L, 5L, 5L};
 
-                                    allRunFor(
-                                            spec,
-                                            contractCall(
-                                                            VERSATILE_TRANSFERS,
-                                                            "distributeTokens",
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getTokenID(
-                                                                                            A_TOKEN))),
-                                                            accounts,
-                                                            amounts)
-                                                    .alsoSigningWithFullPrefix(ACCOUNT)
-                                                    .gas(GAS_TO_OFFER)
-                                                    .via("distributeTx"));
-                                }))
-                .then(
-                        childRecordsCheck(
-                                "distributeTx",
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
+                    allRunFor(
+                            spec,
+                            contractCall(
+                                            VERSATILE_TRANSFERS,
+                                            "distributeTokens",
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(A_TOKEN))),
+                                            accounts,
+                                            amounts)
+                                    .alsoSigningWithFullPrefix(ACCOUNT)
+                                    .gas(GAS_TO_OFFER)
+                                    .via("distributeTx"));
+                }))
+                .then(childRecordsCheck(
+                        "distributeTx",
+                        SUCCESS,
+                        recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(resultWith()
                                         .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))
-                                        .tokenTransfers(
-                                                changingFungibleBalances()
-                                                        .including(A_TOKEN, ACCOUNT, -10L)
-                                                        .including(A_TOKEN, RECEIVER, 5L)
-                                                        .including(
-                                                                A_TOKEN, theSecondReceiver, 5L))));
+                                                htsPrecompileResult().withStatus(SUCCESS)))
+                                .tokenTransfers(changingFungibleBalances()
+                                        .including(A_TOKEN, ACCOUNT, -10L)
+                                        .including(A_TOKEN, RECEIVER, 5L)
+                                        .including(A_TOKEN, theSecondReceiver, 5L))));
     }
 
     private HapiSpec tokenTransferFromFeeCollector() {
         return defaultHapiSpec("TokenTransferFromFeeCollector")
                 .given(
-                        cryptoCreate(ACCOUNT)
-                                .balance(10 * ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
+                        cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(FEE_COLLECTOR),
                         cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(10),
                         cryptoCreate(SECOND_RECEIVER),
@@ -424,187 +363,130 @@ public class ContractHTSSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, A_TOKEN),
                         tokenAssociate(RECEIVER, A_TOKEN),
                         tokenAssociate(SECOND_RECEIVER, A_TOKEN),
-                        cryptoTransfer(
-                                moving(TOTAL_SUPPLY, FEE_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
-                        cryptoTransfer(
-                                moving(TOTAL_SUPPLY, A_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
+                        cryptoTransfer(moving(TOTAL_SUPPLY, FEE_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
+                        cryptoTransfer(moving(TOTAL_SUPPLY, A_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
                         uploadInitCode(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
                         contractCreate(FEE_DISTRIBUTOR),
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(
-                                                        VERSATILE_TRANSFERS,
-                                                        asHeadlongAddress(
-                                                                getNestedContractAddress(
-                                                                        FEE_DISTRIBUTOR, spec))))))
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var sender =
-                                            asAddress(spec.registry().getAccountID(ACCOUNT));
-                                    final var receiver1 =
-                                            asAddress(spec.registry().getAccountID(RECEIVER));
-                                    final var receiver2 =
-                                            asAddress(
-                                                    spec.registry().getAccountID(SECOND_RECEIVER));
-                                    final var accounts =
-                                            new Address[] {
-                                                HapiParserUtil.asHeadlongAddress(sender),
-                                                HapiParserUtil.asHeadlongAddress(receiver1),
-                                                HapiParserUtil.asHeadlongAddress(receiver2)
-                                            };
-                                    final var amounts = new long[] {-10L, 5L, 5L};
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                contractCreate(
+                                        VERSATILE_TRANSFERS,
+                                        asHeadlongAddress(getNestedContractAddress(FEE_DISTRIBUTOR, spec))))))
+                .when(withOpContext((spec, opLog) -> {
+                    final var sender = asAddress(spec.registry().getAccountID(ACCOUNT));
+                    final var receiver1 = asAddress(spec.registry().getAccountID(RECEIVER));
+                    final var receiver2 = asAddress(spec.registry().getAccountID(SECOND_RECEIVER));
+                    final var accounts = new Address[] {
+                        HapiParserUtil.asHeadlongAddress(sender),
+                        HapiParserUtil.asHeadlongAddress(receiver1),
+                        HapiParserUtil.asHeadlongAddress(receiver2)
+                    };
+                    final var amounts = new long[] {-10L, 5L, 5L};
 
-                                    /* --- HSCS-PREC-009 --- */
-                                    allRunFor(
-                                            spec,
-                                            contractCall(
-                                                            VERSATILE_TRANSFERS,
-                                                            "feeDistributionAfterTransfer",
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getTokenID(
-                                                                                            A_TOKEN))),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getTokenID(
-                                                                                            FEE_TOKEN))),
-                                                            accounts,
-                                                            amounts,
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getAccountID(
-                                                                                            FEE_COLLECTOR))))
-                                                    .gas(GAS_TO_OFFER)
-                                                    .via("distributeTx")
-                                                    .alsoSigningWithFullPrefix(
-                                                            ACCOUNT, FEE_COLLECTOR)
-                                                    .hasKnownStatus(SUCCESS));
+                    /* --- HSCS-PREC-009 --- */
+                    allRunFor(
+                            spec,
+                            contractCall(
+                                            VERSATILE_TRANSFERS,
+                                            "feeDistributionAfterTransfer",
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(A_TOKEN))),
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(FEE_TOKEN))),
+                                            accounts,
+                                            amounts,
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getAccountID(FEE_COLLECTOR))))
+                                    .gas(GAS_TO_OFFER)
+                                    .via("distributeTx")
+                                    .alsoSigningWithFullPrefix(ACCOUNT, FEE_COLLECTOR)
+                                    .hasKnownStatus(SUCCESS));
 
-                                    /* --- HSCS-PREC-018 --- */
-                                    allRunFor(
-                                            spec,
-                                            contractCall(
-                                                            VERSATILE_TRANSFERS,
-                                                            "feeDistributionAfterTransfer",
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getTokenID(
-                                                                                            A_TOKEN))),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getTokenID(
-                                                                                            FEE_TOKEN))),
-                                                            accounts,
-                                                            amounts,
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getAccountID(
-                                                                                            FEE_COLLECTOR))))
-                                                    .alsoSigningWithFullPrefix(ACCOUNT)
-                                                    .gas(GAS_TO_OFFER)
-                                                    .via("missingSignatureTx")
-                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+                    /* --- HSCS-PREC-018 --- */
+                    allRunFor(
+                            spec,
+                            contractCall(
+                                            VERSATILE_TRANSFERS,
+                                            "feeDistributionAfterTransfer",
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(A_TOKEN))),
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(FEE_TOKEN))),
+                                            accounts,
+                                            amounts,
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getAccountID(FEE_COLLECTOR))))
+                                    .alsoSigningWithFullPrefix(ACCOUNT)
+                                    .gas(GAS_TO_OFFER)
+                                    .via("missingSignatureTx")
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
 
-                                    /* --- HSCS-PREC-023 --- */
-                                    allRunFor(
-                                            spec,
-                                            contractCall(
-                                                            VERSATILE_TRANSFERS,
-                                                            "feeDistributionAfterTransfer",
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getTokenID(
-                                                                                            A_TOKEN))),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getTokenID(
-                                                                                            FEE_TOKEN))),
-                                                            accounts,
-                                                            amounts,
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getAccountID(
-                                                                                            RECEIVER))))
-                                                    .alsoSigningWithFullPrefix(ACCOUNT, RECEIVER)
-                                                    .gas(GAS_TO_OFFER)
-                                                    .via("failingChildFrameTx")
-                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
-                                }))
+                    /* --- HSCS-PREC-023 --- */
+                    allRunFor(
+                            spec,
+                            contractCall(
+                                            VERSATILE_TRANSFERS,
+                                            "feeDistributionAfterTransfer",
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(A_TOKEN))),
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(FEE_TOKEN))),
+                                            accounts,
+                                            amounts,
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getAccountID(RECEIVER))))
+                                    .alsoSigningWithFullPrefix(ACCOUNT, RECEIVER)
+                                    .gas(GAS_TO_OFFER)
+                                    .via("failingChildFrameTx")
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+                }))
                 .then(
                         childRecordsCheck(
                                 "distributeTx",
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))
-                                        .tokenTransfers(
-                                                changingFungibleBalances()
-                                                        .including(A_TOKEN, ACCOUNT, -10L)
-                                                        .including(A_TOKEN, RECEIVER, 5L)
-                                                        .including(A_TOKEN, SECOND_RECEIVER, 5L)),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))
+                                        .tokenTransfers(changingFungibleBalances()
+                                                .including(A_TOKEN, ACCOUNT, -10L)
+                                                .including(A_TOKEN, RECEIVER, 5L)
+                                                .including(A_TOKEN, SECOND_RECEIVER, 5L)),
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))
-                                        .tokenTransfers(
-                                                changingFungibleBalances()
-                                                        .including(FEE_TOKEN, FEE_COLLECTOR, -100L)
-                                                        .including(FEE_TOKEN, ACCOUNT, 100L))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))
+                                        .tokenTransfers(changingFungibleBalances()
+                                                .including(FEE_TOKEN, FEE_COLLECTOR, -100L)
+                                                .including(FEE_TOKEN, ACCOUNT, 100L))),
                         childRecordsCheck(
                                 "missingSignatureTx",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(REVERTED_SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS))),
                                 recordWith()
                                         .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
                         childRecordsCheck(
                                 "failingChildFrameTx",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(REVERTED_SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS))),
                                 recordWith()
                                         .status(INSUFFICIENT_TOKEN_BALANCE)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INSUFFICIENT_TOKEN_BALANCE)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(INSUFFICIENT_TOKEN_BALANCE)))),
                         getAccountBalance(ACCOUNT).hasTokenBalance(FEE_TOKEN, 1000),
                         getAccountBalance(FEE_COLLECTOR).hasTokenBalance(FEE_TOKEN, 0));
     }
@@ -612,9 +494,7 @@ public class ContractHTSSuite extends HapiSuite {
     private HapiSpec tokenTransferFromFeeCollectorStaticNestedCall() {
         return defaultHapiSpec("TokenTransferFromFeeCollectorStaticNestedCall")
                 .given(
-                        cryptoCreate(ACCOUNT)
-                                .balance(10 * ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
+                        cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(FEE_COLLECTOR),
                         cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(10),
                         cryptoCreate(SECOND_RECEIVER),
@@ -632,187 +512,130 @@ public class ContractHTSSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, A_TOKEN),
                         tokenAssociate(RECEIVER, A_TOKEN),
                         tokenAssociate(SECOND_RECEIVER, A_TOKEN),
-                        cryptoTransfer(
-                                moving(TOTAL_SUPPLY, FEE_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
-                        cryptoTransfer(
-                                moving(TOTAL_SUPPLY, A_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
+                        cryptoTransfer(moving(TOTAL_SUPPLY, FEE_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
+                        cryptoTransfer(moving(TOTAL_SUPPLY, A_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
                         uploadInitCode(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
                         contractCreate(FEE_DISTRIBUTOR),
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(
-                                                        VERSATILE_TRANSFERS,
-                                                        asHeadlongAddress(
-                                                                getNestedContractAddress(
-                                                                        FEE_DISTRIBUTOR, spec))))))
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var sender =
-                                            asAddress(spec.registry().getAccountID(ACCOUNT));
-                                    final var receiver1 =
-                                            asAddress(spec.registry().getAccountID(RECEIVER));
-                                    final var receiver2 =
-                                            asAddress(
-                                                    spec.registry().getAccountID(SECOND_RECEIVER));
-                                    final var accounts =
-                                            new Address[] {
-                                                HapiParserUtil.asHeadlongAddress(sender),
-                                                HapiParserUtil.asHeadlongAddress(receiver1),
-                                                HapiParserUtil.asHeadlongAddress(receiver2)
-                                            };
-                                    final var amounts = new long[] {-10L, 5L, 5L};
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                contractCreate(
+                                        VERSATILE_TRANSFERS,
+                                        asHeadlongAddress(getNestedContractAddress(FEE_DISTRIBUTOR, spec))))))
+                .when(withOpContext((spec, opLog) -> {
+                    final var sender = asAddress(spec.registry().getAccountID(ACCOUNT));
+                    final var receiver1 = asAddress(spec.registry().getAccountID(RECEIVER));
+                    final var receiver2 = asAddress(spec.registry().getAccountID(SECOND_RECEIVER));
+                    final var accounts = new Address[] {
+                        HapiParserUtil.asHeadlongAddress(sender),
+                        HapiParserUtil.asHeadlongAddress(receiver1),
+                        HapiParserUtil.asHeadlongAddress(receiver2)
+                    };
+                    final var amounts = new long[] {-10L, 5L, 5L};
 
-                                    /* --- HSCS-PREC-009 --- */
-                                    allRunFor(
-                                            spec,
-                                            contractCall(
-                                                            VERSATILE_TRANSFERS,
-                                                            "feeDistributionAfterTransferStaticNestedCall",
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getTokenID(
-                                                                                            A_TOKEN))),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getTokenID(
-                                                                                            FEE_TOKEN))),
-                                                            accounts,
-                                                            amounts,
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getAccountID(
-                                                                                            FEE_COLLECTOR))))
-                                                    .alsoSigningWithFullPrefix(
-                                                            ACCOUNT, FEE_COLLECTOR)
-                                                    .gas(GAS_TO_OFFER)
-                                                    .via("distributeTx")
-                                                    .hasKnownStatus(SUCCESS));
+                    /* --- HSCS-PREC-009 --- */
+                    allRunFor(
+                            spec,
+                            contractCall(
+                                            VERSATILE_TRANSFERS,
+                                            "feeDistributionAfterTransferStaticNestedCall",
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(A_TOKEN))),
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(FEE_TOKEN))),
+                                            accounts,
+                                            amounts,
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getAccountID(FEE_COLLECTOR))))
+                                    .alsoSigningWithFullPrefix(ACCOUNT, FEE_COLLECTOR)
+                                    .gas(GAS_TO_OFFER)
+                                    .via("distributeTx")
+                                    .hasKnownStatus(SUCCESS));
 
-                                    /* --- HSCS-PREC-018 --- */
-                                    allRunFor(
-                                            spec,
-                                            contractCall(
-                                                            VERSATILE_TRANSFERS,
-                                                            "feeDistributionAfterTransferStaticNestedCall",
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getTokenID(
-                                                                                            A_TOKEN))),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getTokenID(
-                                                                                            FEE_TOKEN))),
-                                                            accounts,
-                                                            amounts,
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getAccountID(
-                                                                                            FEE_COLLECTOR))))
-                                                    .alsoSigningWithFullPrefix(ACCOUNT)
-                                                    .gas(GAS_TO_OFFER)
-                                                    .via("missingSignatureTx")
-                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+                    /* --- HSCS-PREC-018 --- */
+                    allRunFor(
+                            spec,
+                            contractCall(
+                                            VERSATILE_TRANSFERS,
+                                            "feeDistributionAfterTransferStaticNestedCall",
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(A_TOKEN))),
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(FEE_TOKEN))),
+                                            accounts,
+                                            amounts,
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getAccountID(FEE_COLLECTOR))))
+                                    .alsoSigningWithFullPrefix(ACCOUNT)
+                                    .gas(GAS_TO_OFFER)
+                                    .via("missingSignatureTx")
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
 
-                                    /* --- HSCS-PREC-023 --- */
-                                    allRunFor(
-                                            spec,
-                                            contractCall(
-                                                            VERSATILE_TRANSFERS,
-                                                            "feeDistributionAfterTransferStaticNestedCall",
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getTokenID(
-                                                                                            A_TOKEN))),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getTokenID(
-                                                                                            FEE_TOKEN))),
-                                                            accounts,
-                                                            amounts,
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getAccountID(
-                                                                                            RECEIVER))))
-                                                    .alsoSigningWithFullPrefix(ACCOUNT, RECEIVER)
-                                                    .gas(GAS_TO_OFFER)
-                                                    .via("failingChildFrameTx")
-                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
-                                }))
+                    /* --- HSCS-PREC-023 --- */
+                    allRunFor(
+                            spec,
+                            contractCall(
+                                            VERSATILE_TRANSFERS,
+                                            "feeDistributionAfterTransferStaticNestedCall",
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(A_TOKEN))),
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(FEE_TOKEN))),
+                                            accounts,
+                                            amounts,
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getAccountID(RECEIVER))))
+                                    .alsoSigningWithFullPrefix(ACCOUNT, RECEIVER)
+                                    .gas(GAS_TO_OFFER)
+                                    .via("failingChildFrameTx")
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+                }))
                 .then(
                         childRecordsCheck(
                                 "distributeTx",
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))
-                                        .tokenTransfers(
-                                                changingFungibleBalances()
-                                                        .including(A_TOKEN, ACCOUNT, -10L)
-                                                        .including(A_TOKEN, RECEIVER, 5L)
-                                                        .including(A_TOKEN, SECOND_RECEIVER, 5L)),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))
+                                        .tokenTransfers(changingFungibleBalances()
+                                                .including(A_TOKEN, ACCOUNT, -10L)
+                                                .including(A_TOKEN, RECEIVER, 5L)
+                                                .including(A_TOKEN, SECOND_RECEIVER, 5L)),
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))
-                                        .tokenTransfers(
-                                                changingFungibleBalances()
-                                                        .including(FEE_TOKEN, FEE_COLLECTOR, -100L)
-                                                        .including(FEE_TOKEN, ACCOUNT, 100L))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))
+                                        .tokenTransfers(changingFungibleBalances()
+                                                .including(FEE_TOKEN, FEE_COLLECTOR, -100L)
+                                                .including(FEE_TOKEN, ACCOUNT, 100L))),
                         childRecordsCheck(
                                 "missingSignatureTx",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(REVERTED_SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS))),
                                 recordWith()
                                         .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
                         childRecordsCheck(
                                 "failingChildFrameTx",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(REVERTED_SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS))),
                                 recordWith()
                                         .status(INSUFFICIENT_TOKEN_BALANCE)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INSUFFICIENT_TOKEN_BALANCE)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(INSUFFICIENT_TOKEN_BALANCE)))),
                         getAccountBalance(ACCOUNT).hasTokenBalance(FEE_TOKEN, 1000),
                         getAccountBalance(FEE_COLLECTOR).hasTokenBalance(FEE_TOKEN, 0));
     }
@@ -846,89 +669,53 @@ public class ContractHTSSuite extends HapiSuite {
                         cryptoCreate(TOKEN_TREASURY),
                         uploadInitCode(outerContract, innerContract),
                         contractCreate(innerContract),
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(
-                                                        outerContract,
-                                                        asHeadlongAddress(
-                                                                getNestedContractAddress(
-                                                                        innerContract, spec))))))
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    allRunFor(
-                                            spec,
-                                            tokenCreate(A_TOKEN)
-                                                    .tokenType(TokenType.FUNGIBLE_COMMON)
-                                                    .initialSupply(TOTAL_SUPPLY)
-                                                    .treasury(TOKEN_TREASURY)
-                                                    .exposingCreatedIdTo(
-                                                            id -> tokenID.set(asToken(id)))
-                                                    .withCustom(
-                                                            fixedHbarFee(
-                                                                    CUSTOM_HBAR_FEE_AMOUNT,
-                                                                    outerContract)),
-                                            cryptoTransfer(
-                                                    moving(TOTAL_SUPPLY, A_TOKEN)
-                                                            .between(TOKEN_TREASURY, ACCOUNT)));
-                                    allRunFor(
-                                            spec,
-                                            contractCall(
-                                                            outerContract,
-                                                            "feeDistributionAfterTransfer",
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(tokenID.get())),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            senderAccountID.get())),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            tokenReceiverAccountID
-                                                                                    .get())),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            hbarReceiverAccountID
-                                                                                    .get())),
-                                                            AMOUNT_TO_SEND,
-                                                            BigInteger.valueOf(
-                                                                    CUSTOM_HBAR_FEE_AMOUNT))
-                                                    .alsoSigningWithFullPrefix(ACCOUNT)
-                                                    .gas(GAS_TO_OFFER)
-                                                    .via("distributeTx"));
-                                }))
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                contractCreate(
+                                        outerContract,
+                                        asHeadlongAddress(getNestedContractAddress(innerContract, spec))))))
+                .when(withOpContext((spec, opLog) -> {
+                    allRunFor(
+                            spec,
+                            tokenCreate(A_TOKEN)
+                                    .tokenType(TokenType.FUNGIBLE_COMMON)
+                                    .initialSupply(TOTAL_SUPPLY)
+                                    .treasury(TOKEN_TREASURY)
+                                    .exposingCreatedIdTo(id -> tokenID.set(asToken(id)))
+                                    .withCustom(fixedHbarFee(CUSTOM_HBAR_FEE_AMOUNT, outerContract)),
+                            cryptoTransfer(moving(TOTAL_SUPPLY, A_TOKEN).between(TOKEN_TREASURY, ACCOUNT)));
+                    allRunFor(
+                            spec,
+                            contractCall(
+                                            outerContract,
+                                            "feeDistributionAfterTransfer",
+                                            HapiParserUtil.asHeadlongAddress(asAddress(tokenID.get())),
+                                            HapiParserUtil.asHeadlongAddress(asAddress(senderAccountID.get())),
+                                            HapiParserUtil.asHeadlongAddress(asAddress(tokenReceiverAccountID.get())),
+                                            HapiParserUtil.asHeadlongAddress(asAddress(hbarReceiverAccountID.get())),
+                                            AMOUNT_TO_SEND,
+                                            BigInteger.valueOf(CUSTOM_HBAR_FEE_AMOUNT))
+                                    .alsoSigningWithFullPrefix(ACCOUNT)
+                                    .gas(GAS_TO_OFFER)
+                                    .via("distributeTx"));
+                }))
                 .then(
                         getTxnRecord("distributeTx")
                                 .andAllChildRecords()
                                 .logged()
-                                .hasPriority(
-                                        recordWith()
-                                                .transfers(
-                                                        including(
-                                                                tinyBarsFromTo(
-                                                                        outerContract,
-                                                                        SECOND_RECEIVER,
-                                                                        CUSTOM_HBAR_FEE_AMOUNT)))),
+                                .hasPriority(recordWith()
+                                        .transfers(including(tinyBarsFromTo(
+                                                outerContract, SECOND_RECEIVER, CUSTOM_HBAR_FEE_AMOUNT)))),
                         childRecordsCheck(
                                 "distributeTx",
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .transfers(
-                                                including(
-                                                        tinyBarsFromTo(
-                                                                ACCOUNT,
-                                                                outerContract,
-                                                                CUSTOM_HBAR_FEE_AMOUNT)))
-                                        .tokenTransfers(
-                                                changingFungibleBalances()
-                                                        .including(
-                                                                A_TOKEN, ACCOUNT, -AMOUNT_TO_SEND)
-                                                        .including(
-                                                                A_TOKEN,
-                                                                RECEIVER,
-                                                                AMOUNT_TO_SEND))),
+                                        .transfers(including(
+                                                tinyBarsFromTo(ACCOUNT, outerContract, CUSTOM_HBAR_FEE_AMOUNT)))
+                                        .tokenTransfers(changingFungibleBalances()
+                                                .including(A_TOKEN, ACCOUNT, -AMOUNT_TO_SEND)
+                                                .including(A_TOKEN, RECEIVER, AMOUNT_TO_SEND))),
                         getAccountBalance(SECOND_RECEIVER).hasTinyBars(CUSTOM_HBAR_FEE_AMOUNT));
     }
 
@@ -952,47 +739,33 @@ public class ContractHTSSuite extends HapiSuite {
                         getContractInfo(FEE_DISTRIBUTOR)
                                 .has(ContractInfoAsserts.contractWith().maxAutoAssociations(2))
                                 .logged(),
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(
-                                                        VERSATILE_TRANSFERS,
-                                                        asHeadlongAddress(
-                                                                getNestedContractAddress(
-                                                                        FEE_DISTRIBUTOR, spec))))),
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                contractCreate(
+                                        VERSATILE_TRANSFERS,
+                                        asHeadlongAddress(getNestedContractAddress(FEE_DISTRIBUTOR, spec))))),
                         tokenAssociate(VERSATILE_TRANSFERS, List.of(NFT)),
                         tokenAssociate(RECEIVER, List.of(NFT)),
-                        cryptoTransfer(
-                                        TokenMovement.movingUnique(NFT, 1)
-                                                .between(TOKEN_TREASURY, ACCOUNT))
+                        cryptoTransfer(TokenMovement.movingUnique(NFT, 1).between(TOKEN_TREASURY, ACCOUNT))
                                 .logged())
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var tokenAddress =
-                                            asAddress(spec.registry().getTokenID(NFT));
-                                    final var sender =
-                                            asAddress(spec.registry().getAccountID(ACCOUNT));
-                                    final var receiver =
-                                            asAddress(spec.registry().getAccountID(RECEIVER));
+                .when(withOpContext((spec, opLog) -> {
+                    final var tokenAddress = asAddress(spec.registry().getTokenID(NFT));
+                    final var sender = asAddress(spec.registry().getAccountID(ACCOUNT));
+                    final var receiver = asAddress(spec.registry().getAccountID(RECEIVER));
 
-                                    allRunFor(
-                                            spec,
-                                            contractCall(
-                                                            VERSATILE_TRANSFERS,
-                                                            "transferNft",
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    tokenAddress),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    sender),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    receiver),
-                                                            1L)
-                                                    .alsoSigningWithFullPrefix(ACCOUNT)
-                                                    .gas(GAS_TO_OFFER)
-                                                    .via("distributeTx"));
-                                }))
+                    allRunFor(
+                            spec,
+                            contractCall(
+                                            VERSATILE_TRANSFERS,
+                                            "transferNft",
+                                            HapiParserUtil.asHeadlongAddress(tokenAddress),
+                                            HapiParserUtil.asHeadlongAddress(sender),
+                                            HapiParserUtil.asHeadlongAddress(receiver),
+                                            1L)
+                                    .alsoSigningWithFullPrefix(ACCOUNT)
+                                    .gas(GAS_TO_OFFER)
+                                    .via("distributeTx"));
+                }))
                 .then(
                         getTokenInfo(NFT).hasTotalSupply(2),
                         getAccountInfo(RECEIVER).hasOwnedNfts(1),
@@ -1004,14 +777,11 @@ public class ContractHTSSuite extends HapiSuite {
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))
-                                        .tokenTransfers(
-                                                NonFungibleTransfers.changingNFTBalances()
-                                                        .including(NFT, ACCOUNT, RECEIVER, 1L))));
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))
+                                        .tokenTransfers(NonFungibleTransfers.changingNFTBalances()
+                                                .including(NFT, ACCOUNT, RECEIVER, 1L))));
     }
 
     private HapiSpec transferMultipleNfts() {
@@ -1031,70 +801,51 @@ public class ContractHTSSuite extends HapiSuite {
                         mintToken(NFT, List.of(metadata("firstMemo"), metadata("secondMemo"))),
                         uploadInitCode(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
                         contractCreate(FEE_DISTRIBUTOR),
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(
-                                                        VERSATILE_TRANSFERS,
-                                                        asHeadlongAddress(
-                                                                getNestedContractAddress(
-                                                                        FEE_DISTRIBUTOR, spec))))),
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                contractCreate(
+                                        VERSATILE_TRANSFERS,
+                                        asHeadlongAddress(getNestedContractAddress(FEE_DISTRIBUTOR, spec))))),
                         tokenAssociate(VERSATILE_TRANSFERS, List.of(NFT)),
                         tokenAssociate(RECEIVER, List.of(NFT)),
-                        cryptoTransfer(
-                                TokenMovement.movingUnique(NFT, 1, 2)
-                                        .between(TOKEN_TREASURY, ACCOUNT)))
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var tokenAddress =
-                                            asAddress(spec.registry().getTokenID(NFT));
-                                    final var sender =
-                                            asAddress(spec.registry().getAccountID(ACCOUNT));
-                                    final var receiver =
-                                            asAddress(spec.registry().getAccountID(RECEIVER));
-                                    final var theSenders =
-                                            new Address[] {
-                                                HapiParserUtil.asHeadlongAddress(sender),
-                                                HapiParserUtil.asHeadlongAddress(sender)
-                                            };
-                                    final var theReceivers =
-                                            new Address[] {
-                                                HapiParserUtil.asHeadlongAddress(receiver),
-                                                HapiParserUtil.asHeadlongAddress(receiver)
-                                            };
-                                    final var theSerialNumbers = new long[] {1L, 2L};
+                        cryptoTransfer(TokenMovement.movingUnique(NFT, 1, 2).between(TOKEN_TREASURY, ACCOUNT)))
+                .when(withOpContext((spec, opLog) -> {
+                    final var tokenAddress = asAddress(spec.registry().getTokenID(NFT));
+                    final var sender = asAddress(spec.registry().getAccountID(ACCOUNT));
+                    final var receiver = asAddress(spec.registry().getAccountID(RECEIVER));
+                    final var theSenders = new Address[] {
+                        HapiParserUtil.asHeadlongAddress(sender), HapiParserUtil.asHeadlongAddress(sender)
+                    };
+                    final var theReceivers = new Address[] {
+                        HapiParserUtil.asHeadlongAddress(receiver), HapiParserUtil.asHeadlongAddress(receiver)
+                    };
+                    final var theSerialNumbers = new long[] {1L, 2L};
 
-                                    allRunFor(
-                                            spec,
-                                            contractCall(
-                                                            VERSATILE_TRANSFERS,
-                                                            "transferNfts",
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    tokenAddress),
-                                                            theSenders,
-                                                            theReceivers,
-                                                            theSerialNumbers)
-                                                    .alsoSigningWithFullPrefix(ACCOUNT)
-                                                    .gas(GAS_TO_OFFER)
-                                                    .via("distributeTx"));
-                                }))
+                    allRunFor(
+                            spec,
+                            contractCall(
+                                            VERSATILE_TRANSFERS,
+                                            "transferNfts",
+                                            HapiParserUtil.asHeadlongAddress(tokenAddress),
+                                            theSenders,
+                                            theReceivers,
+                                            theSerialNumbers)
+                                    .alsoSigningWithFullPrefix(ACCOUNT)
+                                    .gas(GAS_TO_OFFER)
+                                    .via("distributeTx"));
+                }))
                 .then(
                         childRecordsCheck(
                                 "distributeTx",
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))
-                                        .tokenTransfers(
-                                                NonFungibleTransfers.changingNFTBalances()
-                                                        .including(NFT, ACCOUNT, RECEIVER, 1L)
-                                                        .including(NFT, ACCOUNT, RECEIVER, 2L))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))
+                                        .tokenTransfers(NonFungibleTransfers.changingNFTBalances()
+                                                .including(NFT, ACCOUNT, RECEIVER, 1L)
+                                                .including(NFT, ACCOUNT, RECEIVER, 2L))),
                         getTokenInfo(NFT).hasTotalSupply(2),
                         getAccountInfo(RECEIVER).hasOwnedNfts(2),
                         getAccountBalance(RECEIVER).hasTokenBalance(NFT, 2),
@@ -1117,66 +868,47 @@ public class ContractHTSSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY),
                         uploadInitCode(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
                         contractCreate(FEE_DISTRIBUTOR),
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(
-                                                        VERSATILE_TRANSFERS,
-                                                        asHeadlongAddress(
-                                                                getNestedContractAddress(
-                                                                        FEE_DISTRIBUTOR, spec))))),
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                contractCreate(
+                                        VERSATILE_TRANSFERS,
+                                        asHeadlongAddress(getNestedContractAddress(FEE_DISTRIBUTOR, spec))))),
                         tokenAssociate(ACCOUNT, List.of(A_TOKEN)),
                         tokenAssociate(VERSATILE_TRANSFERS, List.of(A_TOKEN)),
                         tokenAssociate(RECEIVER, List.of(A_TOKEN)),
                         tokenAssociate(theSecondReceiver, List.of(A_TOKEN)),
                         cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, ACCOUNT)))
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var receiver1 =
-                                            asAddress(spec.registry().getAccountID(RECEIVER));
-                                    final var receiver2 =
-                                            asAddress(
-                                                    spec.registry()
-                                                            .getAccountID(theSecondReceiver));
+                .when(withOpContext((spec, opLog) -> {
+                    final var receiver1 = asAddress(spec.registry().getAccountID(RECEIVER));
+                    final var receiver2 = asAddress(spec.registry().getAccountID(theSecondReceiver));
 
-                                    final var accounts =
-                                            new Address[] {
-                                                HapiParserUtil.asHeadlongAddress(receiver1),
-                                                HapiParserUtil.asHeadlongAddress(receiver2)
-                                            };
-                                    final var amounts = new long[] {5L, 5L};
+                    final var accounts = new Address[] {
+                        HapiParserUtil.asHeadlongAddress(receiver1), HapiParserUtil.asHeadlongAddress(receiver2)
+                    };
+                    final var amounts = new long[] {5L, 5L};
 
-                                    allRunFor(
-                                            spec,
-                                            contractCall(
-                                                            VERSATILE_TRANSFERS,
-                                                            "distributeTokens",
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getTokenID(
-                                                                                            A_TOKEN))),
-                                                            accounts,
-                                                            amounts)
-                                                    .alsoSigningWithFullPrefix(ACCOUNT)
-                                                    .gas(GAS_TO_OFFER)
-                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                    .via("distributeTx"));
-                                }))
-                .then(
-                        childRecordsCheck(
-                                "distributeTx",
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith()
-                                        .status(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN)
+                    allRunFor(
+                            spec,
+                            contractCall(
+                                            VERSATILE_TRANSFERS,
+                                            "distributeTokens",
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(A_TOKEN))),
+                                            accounts,
+                                            amounts)
+                                    .alsoSigningWithFullPrefix(ACCOUNT)
+                                    .gas(GAS_TO_OFFER)
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                    .via("distributeTx"));
+                }))
+                .then(childRecordsCheck(
+                        "distributeTx",
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith()
+                                .status(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN)
+                                .contractCallResult(resultWith()
                                         .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN)))));
+                                                htsPrecompileResult().withStatus(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN)))));
     }
 
     private String getNestedContractAddress(final String contract, final HapiSpec spec) {

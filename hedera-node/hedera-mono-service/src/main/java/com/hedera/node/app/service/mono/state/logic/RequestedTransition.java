@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -48,8 +49,7 @@ public class RequestedTransition {
     }
 
     void finishFor(TxnAccessor accessor) {
-        final var permissionStatus =
-                hapiOpPermissions.permissibilityOf(accessor.getFunction(), accessor.getPayer());
+        final var permissionStatus = hapiOpPermissions.permissibilityOf(accessor.getFunction(), accessor.getPayer());
         if (permissionStatus != OK) {
             txnCtx.setStatus(permissionStatus);
             return;

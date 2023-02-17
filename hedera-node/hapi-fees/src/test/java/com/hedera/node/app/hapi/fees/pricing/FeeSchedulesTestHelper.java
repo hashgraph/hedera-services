@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.pricing;
 
 import static com.hedera.node.app.hapi.fees.pricing.FeeSchedules.FEE_SCHEDULE_MULTIPLIER;
@@ -37,23 +38,19 @@ class FeeSchedulesTestHelper {
     protected static AssetsLoader assetsLoader = new AssetsLoader();
     protected static BaseOperationUsage baseOperationUsage = new BaseOperationUsage();
 
-    protected static Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalTotalPricesInUsd =
-            null;
+    protected static Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalTotalPricesInUsd = null;
 
     @BeforeAll
     static void setup() throws IOException {
         canonicalTotalPricesInUsd = assetsLoader.loadCanonicalPrices();
     }
 
-    protected void testCanonicalPriceFor(final HederaFunctionality function, final SubType subType)
-            throws IOException {
+    protected void testCanonicalPriceFor(final HederaFunctionality function, final SubType subType) throws IOException {
         testCanonicalPriceFor(function, subType, DEFAULT_ALLOWED_DEVIATION);
     }
 
     protected void testCanonicalPriceFor(
-            final HederaFunctionality function,
-            final SubType subType,
-            final double allowedDeviation)
+            final HederaFunctionality function, final SubType subType, final double allowedDeviation)
             throws IOException {
         final var expectedBasePrice = canonicalTotalPricesInUsd.get(function).get(subType);
         final var canonicalUsage = baseOperationUsage.baseUsageFor(function, subType);
@@ -73,13 +70,11 @@ class FeeSchedulesTestHelper {
         final var actualBasePrice = feeInUsd(computedResourcePrices, usage);
 
         // then:
-        assertEquals(
-                expectedBasePrice.doubleValue(), actualBasePrice.doubleValue(), allowedDeviation);
+        assertEquals(expectedBasePrice.doubleValue(), actualBasePrice.doubleValue(), allowedDeviation);
     }
 
     private BigDecimal feeInUsd(
-            final Map<ResourceProvider, Map<UsableResource, Long>> prices,
-            final UsageAccumulator usage) {
+            final Map<ResourceProvider, Map<UsableResource, Long>> prices, final UsageAccumulator usage) {
         var sum = BigDecimal.ZERO;
         for (final var provider : ResourceProvider.class.getEnumConstants()) {
             final var providerPrices = prices.get(provider);
@@ -89,7 +84,6 @@ class FeeSchedulesTestHelper {
                 sum = sum.add(bdPrice.multiply(bdUsage));
             }
         }
-        return sum.divide(FEE_SCHEDULE_MULTIPLIER, DECIMAL128)
-                .divide(USD_TO_TINYCENTS, new MathContext(5, HALF_EVEN));
+        return sum.divide(FEE_SCHEDULE_MULTIPLIER, DECIMAL128).divide(USD_TO_TINYCENTS, new MathContext(5, HALF_EVEN));
     }
 }

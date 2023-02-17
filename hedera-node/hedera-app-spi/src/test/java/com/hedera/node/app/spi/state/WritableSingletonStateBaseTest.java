@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,8 +27,7 @@ class WritableSingletonStateBaseTest extends SingletonStateTestBase {
 
     @Override
     protected WritableSingletonStateBase<String> createState() {
-        return new WritableSingletonStateBase<>(
-                COUNTRY_STATE_KEY, backingStore::get, backingStore::set);
+        return new WritableSingletonStateBase<>(COUNTRY_STATE_KEY, backingStore::get, backingStore::set);
     }
 
     @Nested
@@ -37,10 +37,7 @@ class WritableSingletonStateBaseTest extends SingletonStateTestBase {
         @DisplayName("Constructor throws NPE if stateKey is null")
         void nullStateKey() {
             //noinspection DataFlowIssue
-            assertThatThrownBy(
-                            () ->
-                                    new WritableSingletonStateBase<>(
-                                            null, () -> AUSTRALIA, val -> {}))
+            assertThatThrownBy(() -> new WritableSingletonStateBase<>(null, () -> AUSTRALIA, val -> {}))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -48,8 +45,7 @@ class WritableSingletonStateBaseTest extends SingletonStateTestBase {
         @Test
         @DisplayName("The state key must match what was provided in the constructor")
         void testStateKey() {
-            final var state =
-                    new WritableSingletonStateBase<>(COUNTRY_STATE_KEY, () -> AUSTRALIA, val -> {});
+            final var state = new WritableSingletonStateBase<>(COUNTRY_STATE_KEY, () -> AUSTRALIA, val -> {});
             assertThat(state.getStateKey()).isEqualTo(COUNTRY_STATE_KEY);
         }
 
@@ -57,10 +53,7 @@ class WritableSingletonStateBaseTest extends SingletonStateTestBase {
         @DisplayName("Constructor throws NPE if backingStoreAccessor is null")
         void nullAccessor() {
             //noinspection DataFlowIssue
-            assertThatThrownBy(
-                            () ->
-                                    new WritableSingletonStateBase<>(
-                                            COUNTRY_STATE_KEY, null, val -> {}))
+            assertThatThrownBy(() -> new WritableSingletonStateBase<>(COUNTRY_STATE_KEY, null, val -> {}))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -68,10 +61,7 @@ class WritableSingletonStateBaseTest extends SingletonStateTestBase {
         @DisplayName("Constructor throws NPE if backingStoreMutator is null")
         void nullMutator() {
             //noinspection DataFlowIssue
-            assertThatThrownBy(
-                            () ->
-                                    new WritableSingletonStateBase<>(
-                                            COUNTRY_STATE_KEY, () -> AUSTRALIA, null))
+            assertThatThrownBy(() -> new WritableSingletonStateBase<>(COUNTRY_STATE_KEY, () -> AUSTRALIA, null))
                     .isInstanceOf(NullPointerException.class);
         }
     }

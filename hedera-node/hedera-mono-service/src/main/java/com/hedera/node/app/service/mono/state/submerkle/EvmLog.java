@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.mono.state.serdes.IoUtils.readNullableSerializable;
@@ -55,11 +56,7 @@ public class EvmLog implements SelfSerializable {
         // RuntimeConstructable
     }
 
-    public EvmLog(
-            final EntityId contractId,
-            final byte[] bloom,
-            final List<byte[]> topics,
-            final byte[] data) {
+    public EvmLog(final EntityId contractId, final byte[] bloom, final List<byte[]> topics, final byte[] data) {
         this.contractId = contractId;
         this.bloom = bloom;
         this.topics = topics;
@@ -100,8 +97,7 @@ public class EvmLog implements SelfSerializable {
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         data = in.readByteArray(MAX_DATA_BYTES);
         bloom = in.readByteArray(MAX_BLOOM_BYTES);
         contractId = readNullableSerializable(in);

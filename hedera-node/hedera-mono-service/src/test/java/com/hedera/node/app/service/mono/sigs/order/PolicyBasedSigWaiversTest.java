@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.order;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -167,43 +168,35 @@ class PolicyBasedSigWaiversTest {
     void allMethodsRequireExpectedTxnType() {
         final var txn = TransactionBody.getDefaultInstance();
         // expect:
-        assertThrows(
-                IllegalArgumentException.class, () -> subject.isAppendFileWaclWaived(txn, null));
-        assertThrows(
-                IllegalArgumentException.class, () -> subject.isTargetAccountKeyWaived(txn, null));
-        assertThrows(
-                IllegalArgumentException.class, () -> subject.isNewAccountKeyWaived(txn, null));
-        assertThrows(
-                IllegalArgumentException.class, () -> subject.isTargetFileWaclWaived(txn, null));
+        assertThrows(IllegalArgumentException.class, () -> subject.isAppendFileWaclWaived(txn, null));
+        assertThrows(IllegalArgumentException.class, () -> subject.isTargetAccountKeyWaived(txn, null));
+        assertThrows(IllegalArgumentException.class, () -> subject.isNewAccountKeyWaived(txn, null));
+        assertThrows(IllegalArgumentException.class, () -> subject.isTargetFileWaclWaived(txn, null));
         assertThrows(IllegalArgumentException.class, () -> subject.isNewFileWaclWaived(txn, null));
     }
 
     private final AccountID treasury = IdUtils.asAccount("0.0.2");
     private final AccountID addressBookAdmin = IdUtils.asAccount("0.0.55");
     private final AccountID civilian = IdUtils.asAccount("0.0.1234");
-    private static final Key NEW_KEY =
-            Key.newBuilder()
-                    .setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
-                    .build();
+    private static final Key NEW_KEY = Key.newBuilder()
+            .setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+            .build();
 
     private TransactionBody cryptoUpdateTxn(long targetNum) {
-        final var op =
-                CryptoUpdateTransactionBody.newBuilder()
-                        .setAccountIDToUpdate(AccountID.newBuilder().setAccountNum(targetNum));
+        final var op = CryptoUpdateTransactionBody.newBuilder()
+                .setAccountIDToUpdate(AccountID.newBuilder().setAccountNum(targetNum));
         return TransactionBody.newBuilder().setCryptoUpdateAccount(op).build();
     }
 
     private TransactionBody fileAppendTxn(long targetNum) {
-        final var op =
-                FileAppendTransactionBody.newBuilder()
-                        .setFileID(FileID.newBuilder().setFileNum(targetNum));
+        final var op = FileAppendTransactionBody.newBuilder()
+                .setFileID(FileID.newBuilder().setFileNum(targetNum));
         return TransactionBody.newBuilder().setFileAppend(op).build();
     }
 
     private TransactionBody fileUpdateTxn(long targetNum) {
-        final var op =
-                FileUpdateTransactionBody.newBuilder()
-                        .setFileID(FileID.newBuilder().setFileNum(targetNum));
+        final var op = FileUpdateTransactionBody.newBuilder()
+                .setFileID(FileID.newBuilder().setFileNum(targetNum));
         return TransactionBody.newBuilder().setFileUpdate(op).build();
     }
 }

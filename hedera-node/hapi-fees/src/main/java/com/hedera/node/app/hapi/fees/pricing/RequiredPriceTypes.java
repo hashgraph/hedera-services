@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.pricing;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -46,19 +47,14 @@ public class RequiredPriceTypes {
     }
 
     private static final EnumSet<SubType> ONLY_DEFAULT = EnumSet.of(DEFAULT);
-    private static final Map<HederaFunctionality, EnumSet<SubType>>
-            FUNCTIONS_WITH_REQUIRED_SUBTYPES;
+    private static final Map<HederaFunctionality, EnumSet<SubType>> FUNCTIONS_WITH_REQUIRED_SUBTYPES;
 
     static {
         FUNCTIONS_WITH_REQUIRED_SUBTYPES = new EnumMap<>(HederaFunctionality.class);
         /* The functions with non-DEFAULT prices in hapi-fees/src/main/resources/canonical-prices.json */
         List.of(TokenMint, TokenBurn, TokenAccountWipe)
-                .forEach(
-                        function ->
-                                FUNCTIONS_WITH_REQUIRED_SUBTYPES.put(
-                                        function,
-                                        EnumSet.of(
-                                                TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE)));
+                .forEach(function -> FUNCTIONS_WITH_REQUIRED_SUBTYPES.put(
+                        function, EnumSet.of(TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE)));
         FUNCTIONS_WITH_REQUIRED_SUBTYPES.put(
                 TokenCreate,
                 EnumSet.of(
@@ -72,8 +68,7 @@ public class RequiredPriceTypes {
                         TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
                         TOKEN_NON_FUNGIBLE_UNIQUE,
                         TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES));
-        FUNCTIONS_WITH_REQUIRED_SUBTYPES.put(
-                ScheduleCreate, EnumSet.of(DEFAULT, SCHEDULE_CREATE_CONTRACT_CALL));
+        FUNCTIONS_WITH_REQUIRED_SUBTYPES.put(ScheduleCreate, EnumSet.of(DEFAULT, SCHEDULE_CREATE_CONTRACT_CALL));
     }
 
     /**

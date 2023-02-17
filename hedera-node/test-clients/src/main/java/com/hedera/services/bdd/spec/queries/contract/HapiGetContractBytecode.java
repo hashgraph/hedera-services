@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.queries.contract;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
@@ -82,24 +83,16 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
     protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
         if (hasExpectations) {
             Assertions.assertFalse(
-                    response.getContractGetBytecodeResponse().getBytecode().isEmpty(),
-                    "Empty " + "bytecode!");
+                    response.getContractGetBytecodeResponse().getBytecode().isEmpty(), "Empty " + "bytecode!");
         }
-        expected.ifPresent(
-                bytes ->
-                        Assertions.assertArrayEquals(
-                                bytes,
-                                response.getContractGetBytecodeResponse()
-                                        .getBytecode()
-                                        .toByteArray(),
-                                "Wrong bytecode!"));
+        expected.ifPresent(bytes -> Assertions.assertArrayEquals(
+                bytes, response.getContractGetBytecodeResponse().getBytecode().toByteArray(), "Wrong bytecode!"));
     }
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getContractBytecodeQuery(spec, payment, false);
-        response =
-                spec.clients().getScSvcStub(targetNodeFor(spec), useTls).contractGetBytecode(query);
+        response = spec.clients().getScSvcStub(targetNodeFor(spec), useTls).contractGetBytecode(query);
 
         final var code = response.getContractGetBytecodeResponse().getBytecode();
         saveResultToEntry.ifPresent(s -> spec.registry().saveBytes(s, code));
@@ -117,27 +110,22 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
     private Query getContractBytecodeQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         final ContractID resolvedTarget;
         if (contract.length() == HEXED_EVM_ADDRESS_LEN) {
-            resolvedTarget =
-                    ContractID.newBuilder()
-                            .setEvmAddress(ByteString.copyFrom(unhex(contract)))
-                            .build();
+            resolvedTarget = ContractID.newBuilder()
+                    .setEvmAddress(ByteString.copyFrom(unhex(contract)))
+                    .build();
         } else {
             resolvedTarget = TxnUtils.asContractId(contract, spec);
         }
-        ContractGetBytecodeQuery query =
-                ContractGetBytecodeQuery.newBuilder()
-                        .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
-                        .setContractID(resolvedTarget)
-                        .build();
+        ContractGetBytecodeQuery query = ContractGetBytecodeQuery.newBuilder()
+                .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
+                .setContractID(resolvedTarget)
+                .build();
         return Query.newBuilder().setContractGetBytecode(query).build();
     }
 
     @Override
     protected long costOnlyNodePayment(HapiSpec spec) {
-        return spec.fees()
-                .forOp(
-                        HederaFunctionality.ContractGetBytecode,
-                        FeeBuilder.getCostForQueryByIDOnly());
+        return spec.fees().forOp(HederaFunctionality.ContractGetBytecode, FeeBuilder.getCostForQueryByIDOnly());
     }
 
     @Override

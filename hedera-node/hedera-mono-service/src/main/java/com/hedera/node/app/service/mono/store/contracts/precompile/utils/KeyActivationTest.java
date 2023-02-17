@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.utils;
 
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
@@ -42,9 +43,5 @@ public interface KeyActivationTest {
      * @param worldLedgers the worldLedgers representing current state
      * @return whether the implicit key has an active signature in this context
      */
-    boolean apply(
-            boolean isDelegateCall,
-            Address target,
-            Address activeContract,
-            WorldLedgers worldLedgers);
+    boolean apply(boolean isDelegateCall, Address target, Address activeContract, WorldLedgers worldLedgers);
 }

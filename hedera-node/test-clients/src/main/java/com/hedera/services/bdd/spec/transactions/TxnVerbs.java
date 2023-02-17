@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions;
 
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate.WELL_KNOWN_INITIAL_SUPPLY;
@@ -112,8 +113,7 @@ public class TxnVerbs {
     }
 
     @SafeVarargs
-    public static HapiCryptoTransfer sortedCryptoTransfer(
-            Function<HapiSpec, TransferList>... providers) {
+    public static HapiCryptoTransfer sortedCryptoTransfer(Function<HapiSpec, TransferList>... providers) {
         return new HapiCryptoTransfer(true, providers);
     }
 
@@ -122,8 +122,7 @@ public class TxnVerbs {
         return new HapiCryptoTransfer(providers);
     }
 
-    public static HapiCryptoTransfer cryptoTransfer(
-            BiConsumer<HapiSpec, CryptoTransferTransactionBody.Builder> def) {
+    public static HapiCryptoTransfer cryptoTransfer(BiConsumer<HapiSpec, CryptoTransferTransactionBody.Builder> def) {
         return new HapiCryptoTransfer(def);
     }
 
@@ -215,49 +214,39 @@ public class TxnVerbs {
     }
 
     public static HapiSpecOperation createWellKnownNonFungibleToken(
-            final String token,
-            final int initialMint,
-            final Consumer<HapiTokenCreate> tokenCustomizer) {
+            final String token, final int initialMint, final Consumer<HapiTokenCreate> tokenCustomizer) {
         if (initialMint > 10) {
             throw new IllegalArgumentException("Cannot mint more than 10 NFTs at a time");
         }
         return blockingOrder(
-                sourcing(
-                        () -> {
-                            final var creation =
-                                    new HapiTokenCreate(token)
-                                            .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                            .initialSupply(0L)
-                                            .treasury(TOKEN_TREASURY)
-                                            .supplyKey(WELL_KNOWN_NFT_SUPPLY_KEY)
-                                            .name(token);
-                            tokenCustomizer.accept(creation);
-                            return creation;
-                        }),
+                sourcing(() -> {
+                    final var creation = new HapiTokenCreate(token)
+                            .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                            .initialSupply(0L)
+                            .treasury(TOKEN_TREASURY)
+                            .supplyKey(WELL_KNOWN_NFT_SUPPLY_KEY)
+                            .name(token);
+                    tokenCustomizer.accept(creation);
+                    return creation;
+                }),
                 mintToken(
                         token,
                         IntStream.range(0, initialMint)
-                                .mapToObj(
-                                        i ->
-                                                ByteString.copyFromUtf8(
-                                                        TxnUtils.randomUppercase(i + 1)))
+                                .mapToObj(i -> ByteString.copyFromUtf8(TxnUtils.randomUppercase(i + 1)))
                                 .toList()));
     }
 
     public static HapiSpecOperation createWellKnownFungibleToken(
             final String token, final Consumer<HapiTokenCreate> tokenCustomizer) {
-        return blockingOrder(
-                sourcing(
-                        () -> {
-                            final var creation =
-                                    new HapiTokenCreate(token)
-                                            .tokenType(TokenType.FUNGIBLE_COMMON)
-                                            .initialSupply(WELL_KNOWN_INITIAL_SUPPLY)
-                                            .treasury(TOKEN_TREASURY)
-                                            .name(token);
-                            tokenCustomizer.accept(creation);
-                            return creation;
-                        }));
+        return blockingOrder(sourcing(() -> {
+            final var creation = new HapiTokenCreate(token)
+                    .tokenType(TokenType.FUNGIBLE_COMMON)
+                    .initialSupply(WELL_KNOWN_INITIAL_SUPPLY)
+                    .treasury(TOKEN_TREASURY)
+                    .name(token);
+            tokenCustomizer.accept(creation);
+            return creation;
+        }));
     }
 
     public static HapiTokenUpdate tokenUpdate(String token) {
@@ -300,8 +289,7 @@ public class TxnVerbs {
         return new HapiTokenWipe(token, account, amount);
     }
 
-    public static HapiTokenWipe wipeTokenAccount(
-            String token, String account, List<Long> serialNumbers) {
+    public static HapiTokenWipe wipeTokenAccount(String token, String account, List<Long> serialNumbers) {
         return new HapiTokenWipe(token, account, serialNumbers);
     }
 
@@ -317,8 +305,7 @@ public class TxnVerbs {
         return new HapiTokenMint(token, metadata);
     }
 
-    public static HapiTokenMint invalidMintToken(
-            String token, List<ByteString> metadata, long amount) {
+    public static HapiTokenMint invalidMintToken(String token, List<ByteString> metadata, long amount) {
         return new HapiTokenMint(token, metadata, amount);
     }
 
@@ -330,14 +317,12 @@ public class TxnVerbs {
         return new HapiTokenBurn(token, serialNumbers);
     }
 
-    public static HapiTokenBurn invalidBurnToken(
-            String token, List<Long> serialNumbers, long amount) {
+    public static HapiTokenBurn invalidBurnToken(String token, List<Long> serialNumbers, long amount) {
         return new HapiTokenBurn(token, serialNumbers, amount);
     }
 
     /* SCHEDULE */
-    public static <T extends HapiTxnOp<T>> HapiScheduleCreate<T> scheduleCreate(
-            String scheduled, HapiTxnOp<T> txn) {
+    public static <T extends HapiTxnOp<T>> HapiScheduleCreate<T> scheduleCreate(String scheduled, HapiTxnOp<T> txn) {
         return new HapiScheduleCreate<>(scheduled, txn);
     }
 
@@ -345,8 +330,7 @@ public class TxnVerbs {
         return new HapiScheduleSign(schedule);
     }
 
-    public static HapiScheduleCreate<HapiCryptoCreate> scheduleCreateFunctionless(
-            String scheduled) {
+    public static HapiScheduleCreate<HapiCryptoCreate> scheduleCreateFunctionless(String scheduled) {
         return new HapiScheduleCreate<>(scheduled, cryptoCreate("doomed")).functionless();
     }
 
@@ -372,8 +356,7 @@ public class TxnVerbs {
     }
 
     /* NETWORK */
-    public static <T extends HapiTxnOp<T>> HapiUncheckedSubmit<T> uncheckedSubmit(
-            HapiTxnOp<T> subOp) {
+    public static <T extends HapiTxnOp<T>> HapiUncheckedSubmit<T> uncheckedSubmit(HapiTxnOp<T> subOp) {
         return new HapiUncheckedSubmit<>(subOp);
     }
 
@@ -394,8 +377,7 @@ public class TxnVerbs {
      * @param functionName the name of the function
      * @param params the arguments (if any) passed to the contract's function
      */
-    public static HapiContractCall contractCall(
-            String contract, String functionName, Object... params) {
+    public static HapiContractCall contractCall(String contract, String functionName, Object... params) {
         final var abi = getABIFor(FUNCTION, functionName, contract);
         return new HapiContractCall(abi, contract, params);
     }
@@ -408,8 +390,7 @@ public class TxnVerbs {
      * @param functionName the name of the function
      * @param params the arguments (if any) passed to the contract's function
      */
-    public static HapiEthereumCall ethereumCall(
-            String contract, String functionName, Object... params) {
+    public static HapiEthereumCall ethereumCall(String contract, String functionName, Object... params) {
         final var abi = getABIFor(FUNCTION, functionName, contract);
         return new HapiEthereumCall(abi, contract, params);
     }
@@ -443,23 +424,19 @@ public class TxnVerbs {
      * @param abi the contract's function ABI
      * @param params the arguments (if any) passed to the contract's function
      */
-    public static HapiContractCall contractCallWithFunctionAbi(
-            String contract, String abi, Object... params) {
+    public static HapiContractCall contractCallWithFunctionAbi(String contract, String abi, Object... params) {
         return new HapiContractCall(abi, contract, params);
     }
 
-    public static HapiContractCall contractCall(
-            String contract, String abi, Function<HapiSpec, Object[]> fn) {
+    public static HapiContractCall contractCall(String contract, String abi, Function<HapiSpec, Object[]> fn) {
         return new HapiContractCall(abi, contract, fn);
     }
 
-    public static HapiContractCall contractCallWithTuple(
-            String contract, String abi, Function<HapiSpec, Tuple> fn) {
+    public static HapiContractCall contractCallWithTuple(String contract, String abi, Function<HapiSpec, Tuple> fn) {
         return new HapiContractCall(abi, fn, contract);
     }
 
-    public static HapiContractCall explicitContractCall(
-            String contract, String abi, Object... params) {
+    public static HapiContractCall explicitContractCall(String contract, String abi, Object... params) {
         return new HapiContractCall(abi, contract, params);
     }
 
@@ -467,12 +444,10 @@ public class TxnVerbs {
         return new HapiEthereumContractCreate(contractName).bytecode(contractName);
     }
 
-    public static HapiContractCreate contractCreate(
-            final String contractName, final Object... constructorParams) {
+    public static HapiContractCreate contractCreate(final String contractName, final Object... constructorParams) {
         if (constructorParams.length > 0) {
             final var constructorABI = getABIFor(CONSTRUCTOR, EMPTY, contractName);
-            return new HapiContractCreate(contractName, constructorABI, constructorParams)
-                    .bytecode(contractName);
+            return new HapiContractCreate(contractName, constructorABI, constructorParams).bytecode(contractName);
         } else {
             return new HapiContractCreate(contractName).bytecode(contractName);
         }
@@ -531,60 +506,47 @@ public class TxnVerbs {
         return uploadInitCode(Optional.empty(), contractsNames);
     }
 
-    public static HapiSpecOperation uploadInitCode(
-            final Optional<String> payer, final String... contractsNames) {
-        return withOpContext(
-                (spec, ctxLog) -> {
-                    List<HapiSpecOperation> ops = new ArrayList<>();
-                    for (String contractName : contractsNames) {
-                        final var path = getResourcePath(contractName, ".bin");
-                        final var file = new HapiFileCreate(contractName);
-                        final var updatedFile =
-                                updateLargeFile(
-                                        payer.orElse(GENESIS), contractName, extractByteCode(path));
-                        ops.add(file);
-                        ops.add(updatedFile);
-                    }
-                    allRunFor(spec, ops);
-                });
+    public static HapiSpecOperation uploadInitCode(final Optional<String> payer, final String... contractsNames) {
+        return withOpContext((spec, ctxLog) -> {
+            List<HapiSpecOperation> ops = new ArrayList<>();
+            for (String contractName : contractsNames) {
+                final var path = getResourcePath(contractName, ".bin");
+                final var file = new HapiFileCreate(contractName);
+                final var updatedFile = updateLargeFile(payer.orElse(GENESIS), contractName, extractByteCode(path));
+                ops.add(file);
+                ops.add(updatedFile);
+            }
+            allRunFor(spec, ops);
+        });
     }
 
     public static HapiSpecOperation uploadSingleInitCode(
-            final String contractName,
-            final long expiry,
-            final String payingWith,
-            final LongConsumer exposingTo) {
-        return withOpContext(
-                (spec, ctxLog) -> {
-                    List<HapiSpecOperation> ops = new ArrayList<>();
-                    final var path = getResourcePath(contractName, ".bin");
-                    final var file =
-                            new HapiFileCreate(contractName)
-                                    .payingWith(payingWith)
-                                    .exposingNumTo(exposingTo)
-                                    .expiry(expiry);
-                    final var updatedFile =
-                            updateLargeFile(GENESIS, contractName, extractByteCode(path));
-                    ops.add(file);
-                    ops.add(updatedFile);
-                    allRunFor(spec, ops);
-                });
+            final String contractName, final long expiry, final String payingWith, final LongConsumer exposingTo) {
+        return withOpContext((spec, ctxLog) -> {
+            List<HapiSpecOperation> ops = new ArrayList<>();
+            final var path = getResourcePath(contractName, ".bin");
+            final var file = new HapiFileCreate(contractName)
+                    .payingWith(payingWith)
+                    .exposingNumTo(exposingTo)
+                    .expiry(expiry);
+            final var updatedFile = updateLargeFile(GENESIS, contractName, extractByteCode(path));
+            ops.add(file);
+            ops.add(updatedFile);
+            allRunFor(spec, ops);
+        });
     }
 
     public static HapiSpecOperation uploadSingleInitCode(
             final String contractName, final ResponseCodeEnum... statuses) {
-        return withOpContext(
-                (spec, ctxLog) -> {
-                    List<HapiSpecOperation> ops = new ArrayList<>();
-                    final var path = getResourcePath(contractName, ".bin");
-                    final var file =
-                            new HapiFileCreate(contractName).hasRetryPrecheckFrom(statuses);
-                    final var updatedFile =
-                            updateLargeFile(GENESIS, contractName, extractByteCode(path));
-                    ops.add(file);
-                    ops.add(updatedFile);
-                    allRunFor(spec, ops);
-                });
+        return withOpContext((spec, ctxLog) -> {
+            List<HapiSpecOperation> ops = new ArrayList<>();
+            final var path = getResourcePath(contractName, ".bin");
+            final var file = new HapiFileCreate(contractName).hasRetryPrecheckFrom(statuses);
+            final var updatedFile = updateLargeFile(GENESIS, contractName, extractByteCode(path));
+            ops.add(file);
+            ops.add(updatedFile);
+            allRunFor(spec, ops);
+        });
     }
 
     /**
@@ -597,30 +559,25 @@ public class TxnVerbs {
      */
     public static HapiSpecOperation uploadInitCodeWithConstructorArguments(
             final String contractName, final String abi, final Object... args) {
-        return withOpContext(
-                (spec, ctxLog) -> {
-                    List<HapiSpecOperation> ops = new ArrayList<>();
+        return withOpContext((spec, ctxLog) -> {
+            List<HapiSpecOperation> ops = new ArrayList<>();
 
-                    final var path = getResourcePath(contractName, ".bin");
-                    final var file = new HapiFileCreate(contractName);
-                    final var fileByteCode = extractByteCode(path);
-                    final byte[] params =
-                            args.length == 0
-                                    ? new byte[] {}
-                                    : com.esaulpaugh.headlong.abi.Function.fromJson(abi)
-                                            .encodeCall(Tuple.of(args))
-                                            .array();
-                    final var updatedFile =
-                            updateLargeFile(
-                                    GENESIS,
-                                    contractName,
-                                    params.length == 0
-                                            ? fileByteCode
-                                            : fileByteCode.concat(ByteString.copyFrom(params)));
-                    ops.add(file);
-                    ops.add(updatedFile);
-                    allRunFor(spec, ops);
-                });
+            final var path = getResourcePath(contractName, ".bin");
+            final var file = new HapiFileCreate(contractName);
+            final var fileByteCode = extractByteCode(path);
+            final byte[] params = args.length == 0
+                    ? new byte[] {}
+                    : com.esaulpaugh.headlong.abi.Function.fromJson(abi)
+                            .encodeCall(Tuple.of(args))
+                            .array();
+            final var updatedFile = updateLargeFile(
+                    GENESIS,
+                    contractName,
+                    params.length == 0 ? fileByteCode : fileByteCode.concat(ByteString.copyFrom(params)));
+            ops.add(file);
+            ops.add(updatedFile);
+            allRunFor(spec, ops);
+        });
     }
 
     /* SYSTEM */

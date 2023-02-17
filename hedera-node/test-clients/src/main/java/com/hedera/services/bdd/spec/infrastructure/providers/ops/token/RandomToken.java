@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.token;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUppercase;
@@ -36,13 +37,12 @@ import java.util.function.BiConsumer;
 
 public class RandomToken implements OpProvider {
     private static final int FREEZE_KEY_INDEX = 4;
-    private static final List<BiConsumer<HapiTokenCreate, String>> KEY_SETTERS =
-            List.of(
-                    HapiTokenCreate::kycKey,
-                    HapiTokenCreate::wipeKey,
-                    HapiTokenCreate::adminKey,
-                    HapiTokenCreate::supplyKey,
-                    HapiTokenCreate::freezeKey);
+    private static final List<BiConsumer<HapiTokenCreate, String>> KEY_SETTERS = List.of(
+            HapiTokenCreate::kycKey,
+            HapiTokenCreate::wipeKey,
+            HapiTokenCreate::adminKey,
+            HapiTokenCreate::supplyKey,
+            HapiTokenCreate::freezeKey);
 
     public static final int DEFAULT_CEILING_NUM = 100;
     public static final int DEFAULT_MAX_STRING_LEN = 100;
@@ -61,12 +61,11 @@ public class RandomToken implements OpProvider {
     private final RegistrySourcedNameProvider<TokenID> tokens;
     private final RegistrySourcedNameProvider<AccountID> accounts;
 
-    private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(
-                    /* Auto-renew account might be deleted by the time our TokenCreate reaches consensus */
-                    INVALID_AUTORENEW_ACCOUNT,
-                    /* Treasury account might be deleted by the time our TokenCreate reaches consensus */
-                    INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+    private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
+            /* Auto-renew account might be deleted by the time our TokenCreate reaches consensus */
+            INVALID_AUTORENEW_ACCOUNT,
+            /* Treasury account might be deleted by the time our TokenCreate reaches consensus */
+            INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
     public RandomToken ceiling(int n) {
         ceilingNum = n;
@@ -89,11 +88,10 @@ public class RandomToken implements OpProvider {
         }
 
         int id = opNo.getAndIncrement();
-        HapiTokenCreate op =
-                tokenCreate(my("token" + id))
-                        .advertisingCreation()
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                        .hasKnownStatusFrom(permissibleOutcomes);
+        HapiTokenCreate op = tokenCreate(my("token" + id))
+                .advertisingCreation()
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                .hasKnownStatusFrom(permissibleOutcomes);
 
         var prefix = randomlyConfigureKeys(op);
         op.setTokenPrefix(prefix);
@@ -149,8 +147,7 @@ public class RandomToken implements OpProvider {
     }
 
     private String randomlyConfigureKeys(HapiTokenCreate op) {
-        double[] probs =
-                new double[] {kycKeyProb, wipeKeyProb, adminKeyProb, supplyKeyProb, freezeKeyProb};
+        double[] probs = new double[] {kycKeyProb, wipeKeyProb, adminKeyProb, supplyKeyProb, freezeKeyProb};
 
         var sb = new StringBuilder("[");
         for (int i = 0; i < probs.length; i++) {

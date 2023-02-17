@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.schedule;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -65,36 +66,26 @@ public class ReadyToRunScheduledXfersLoad extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    runReadyToRunXfers(),
-                });
+        return List.of(new HapiSpec[] {
+            runReadyToRunXfers(),
+        });
     }
 
     private HapiSpec runReadyToRunXfers() {
         return defaultHapiSpec("RunReadyToRunXfers")
                 .given(stdMgmtOf(duration, unit, maxOpsPerSec))
-                .when(
-                        runWithProvider(readyToRunXfersFactory())
-                                .lasting(duration::get, unit::get)
-                                .maxOpsPerSec(maxOpsPerSec::get))
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    if (numInertReceivers.get() > 0) {
-                                        var op =
-                                                inParallel(
-                                                        IntStream.range(0, numInertReceivers.get())
-                                                                .mapToObj(
-                                                                        i ->
-                                                                                getAccountBalance(
-                                                                                                inertReceiver(
-                                                                                                        i))
-                                                                                        .logged())
-                                                                .toArray(HapiSpecOperation[]::new));
-                                        CustomSpecAssert.allRunFor(spec, op);
-                                    }
-                                }));
+                .when(runWithProvider(readyToRunXfersFactory())
+                        .lasting(duration::get, unit::get)
+                        .maxOpsPerSec(maxOpsPerSec::get))
+                .then(withOpContext((spec, opLog) -> {
+                    if (numInertReceivers.get() > 0) {
+                        var op = inParallel(IntStream.range(0, numInertReceivers.get())
+                                .mapToObj(
+                                        i -> getAccountBalance(inertReceiver(i)).logged())
+                                .toArray(HapiSpecOperation[]::new));
+                        CustomSpecAssert.allRunFor(spec, op);
+                    }
+                }));
     }
 
     static String payingSender(int id) {
@@ -124,42 +115,38 @@ public class ReadyToRunScheduledXfersLoad extends HapiSuite {
     }
 
     private Function<HapiSpec, OpProvider> readyToRunXfersFactory() {
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        var ciProps = spec.setup().ciPropertiesMap();
-                        numNonDefaultSenders.set(ciProps.getInteger("numNonDefaultSenders"));
-                        numInertReceivers.set(ciProps.getInteger("numInertReceivers"));
-                        return initializersGiven(
-                                numNonDefaultSenders.get(), numInertReceivers.get());
-                    }
+        return spec -> new OpProvider() {
+            @Override
+            public List<HapiSpecOperation> suggestedInitializers() {
+                var ciProps = spec.setup().ciPropertiesMap();
+                numNonDefaultSenders.set(ciProps.getInteger("numNonDefaultSenders"));
+                numInertReceivers.set(ciProps.getInteger("numInertReceivers"));
+                return initializersGiven(numNonDefaultSenders.get(), numInertReceivers.get());
+            }
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        var sendingPayer = DEFAULT_PAYER;
-                        if (numNonDefaultSenders.get() > 0) {
-                            sendingPayer = payingSender(r.nextInt(numNonDefaultSenders.get()));
-                        }
-                        var receiver = FUNDING;
-                        if (numInertReceivers.get() > 0) {
-                            receiver = inertReceiver(r.nextInt(numInertReceivers.get()));
-                        }
-                        var innerOp =
-                                cryptoTransfer(tinyBarsFromTo(sendingPayer, receiver, 1L))
-                                        .payingWith(sendingPayer)
-                                        .noLogging();
-                        var op =
-                                scheduleCreate("wrapper", innerOp)
-                                        .rememberingNothing()
-                                        .alsoSigningWith(sendingPayer)
-                                        .hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
-                                        .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
-                                        .noLogging()
-                                        .deferStatusResolution();
-                        return Optional.of(op);
-                    }
-                };
+            @Override
+            public Optional<HapiSpecOperation> get() {
+                var sendingPayer = DEFAULT_PAYER;
+                if (numNonDefaultSenders.get() > 0) {
+                    sendingPayer = payingSender(r.nextInt(numNonDefaultSenders.get()));
+                }
+                var receiver = FUNDING;
+                if (numInertReceivers.get() > 0) {
+                    receiver = inertReceiver(r.nextInt(numInertReceivers.get()));
+                }
+                var innerOp = cryptoTransfer(tinyBarsFromTo(sendingPayer, receiver, 1L))
+                        .payingWith(sendingPayer)
+                        .noLogging();
+                var op = scheduleCreate("wrapper", innerOp)
+                        .rememberingNothing()
+                        .alsoSigningWith(sendingPayer)
+                        .hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
+                        .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
+                        .noLogging()
+                        .deferStatusResolution();
+                return Optional.of(op);
+            }
+        };
     }
 
     @Override

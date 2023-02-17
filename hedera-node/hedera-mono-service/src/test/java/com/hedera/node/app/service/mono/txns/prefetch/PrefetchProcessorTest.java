@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.prefetch;
 
 import static com.hedera.node.app.service.mono.txns.prefetch.PrefetchProcessor.MINIMUM_QUEUE_CAPACITY;
@@ -51,10 +52,17 @@ import org.mockito.quality.Strictness;
 @ExtendWith({MockitoExtension.class})
 @MockitoSettings(strictness = Strictness.LENIENT)
 class PrefetchProcessorTest {
-    @Mock NodeLocalProperties properties;
-    @Mock TransitionLogicLookup lookup;
-    @Mock PlatformTxnAccessor accessor;
-    @Mock PreFetchableTransition logic;
+    @Mock
+    NodeLocalProperties properties;
+
+    @Mock
+    TransitionLogicLookup lookup;
+
+    @Mock
+    PlatformTxnAccessor accessor;
+
+    @Mock
+    PreFetchableTransition logic;
 
     PrefetchProcessor processor;
     List<Runnable> executed = new ArrayList<>();
@@ -70,18 +78,15 @@ class PrefetchProcessorTest {
         given(properties.prefetchQueueCapacity()).willReturn(MINIMUM_QUEUE_CAPACITY + 1);
         given(properties.prefetchThreadPoolSize()).willReturn(MINIMUM_THREAD_POOL_SIZE + 1);
 
-        processor =
-                new PrefetchProcessor(properties, lookup) {
-                    @Override
-                    ExecutorService createExecutorService(
-                            int threadPoolSize, BlockingQueue<Runnable> queue) {
-                        assertEquals(MINIMUM_QUEUE_CAPACITY + 1, queue.remainingCapacity());
-                        assertEquals(MINIMUM_THREAD_POOL_SIZE + 1, threadPoolSize);
+        processor = new PrefetchProcessor(properties, lookup) {
+            @Override
+            ExecutorService createExecutorService(int threadPoolSize, BlockingQueue<Runnable> queue) {
+                assertEquals(MINIMUM_QUEUE_CAPACITY + 1, queue.remainingCapacity());
+                assertEquals(MINIMUM_THREAD_POOL_SIZE + 1, threadPoolSize);
 
-                        return new ThreadPoolExecutor(
-                                threadPoolSize, threadPoolSize, 0L, TimeUnit.MILLISECONDS, queue);
-                    }
-                };
+                return new ThreadPoolExecutor(threadPoolSize, threadPoolSize, 0L, TimeUnit.MILLISECONDS, queue);
+            }
+        };
     }
 
     @Test
@@ -89,18 +94,15 @@ class PrefetchProcessorTest {
         given(properties.prefetchQueueCapacity()).willReturn(2);
         given(properties.prefetchThreadPoolSize()).willReturn(1);
 
-        processor =
-                new PrefetchProcessor(properties, lookup) {
-                    @Override
-                    ExecutorService createExecutorService(
-                            int threadPoolSize, BlockingQueue<Runnable> queue) {
-                        assertEquals(MINIMUM_QUEUE_CAPACITY, queue.remainingCapacity());
-                        assertEquals(MINIMUM_THREAD_POOL_SIZE, threadPoolSize);
+        processor = new PrefetchProcessor(properties, lookup) {
+            @Override
+            ExecutorService createExecutorService(int threadPoolSize, BlockingQueue<Runnable> queue) {
+                assertEquals(MINIMUM_QUEUE_CAPACITY, queue.remainingCapacity());
+                assertEquals(MINIMUM_THREAD_POOL_SIZE, threadPoolSize);
 
-                        return new ThreadPoolExecutor(
-                                threadPoolSize, threadPoolSize, 0L, TimeUnit.MILLISECONDS, queue);
-                    }
-                };
+                return new ThreadPoolExecutor(threadPoolSize, threadPoolSize, 0L, TimeUnit.MILLISECONDS, queue);
+            }
+        };
     }
 
     BlockingQueue<Runnable> setupSubmit() {
@@ -108,41 +110,32 @@ class PrefetchProcessorTest {
         given(properties.prefetchThreadPoolSize()).willReturn(1);
 
         final AtomicReference<BlockingQueue<Runnable>> queueRef = new AtomicReference<>();
-        processor =
-                new PrefetchProcessor(properties, lookup) {
-                    @Override
-                    ExecutorService createExecutorService(
-                            int threadPoolSize, BlockingQueue<Runnable> queue) {
-                        queue = new ArrayBlockingQueue<>(2);
-                        ThreadPoolExecutor execService =
-                                new ThreadPoolExecutor(
-                                        threadPoolSize,
-                                        threadPoolSize,
-                                        0L,
-                                        TimeUnit.MILLISECONDS,
-                                        queue) {
-                                    @Override
-                                    @java.lang.SuppressWarnings("java:S2925")
-                                    protected void beforeExecute(Thread t, Runnable r) {
-                                        try {
-                                            executed.add(r);
-                                            Thread.sleep(
-                                                    10); // need to wait to allow assertions to work
-                                        } catch (InterruptedException e) {
-                                            // noop
-                                        }
-                                    }
-                                };
-                        execService.setRejectedExecutionHandler(
-                                (runnable, exec) -> {
-                                    rejected.add(runnable);
-                                });
+        processor = new PrefetchProcessor(properties, lookup) {
+            @Override
+            ExecutorService createExecutorService(int threadPoolSize, BlockingQueue<Runnable> queue) {
+                queue = new ArrayBlockingQueue<>(2);
+                ThreadPoolExecutor execService =
+                        new ThreadPoolExecutor(threadPoolSize, threadPoolSize, 0L, TimeUnit.MILLISECONDS, queue) {
+                            @Override
+                            @java.lang.SuppressWarnings("java:S2925")
+                            protected void beforeExecute(Thread t, Runnable r) {
+                                try {
+                                    executed.add(r);
+                                    Thread.sleep(10); // need to wait to allow assertions to work
+                                } catch (InterruptedException e) {
+                                    // noop
+                                }
+                            }
+                        };
+                execService.setRejectedExecutionHandler((runnable, exec) -> {
+                    rejected.add(runnable);
+                });
 
-                        this.queue = queue;
-                        queueRef.set(queue);
-                        return execService;
-                    }
-                };
+                this.queue = queue;
+                queueRef.set(queue);
+                return execService;
+            }
+        };
 
         return queueRef.get();
     }
@@ -167,8 +160,7 @@ class PrefetchProcessorTest {
         final var queue = setupSubmit();
         processor.submit(accessor);
 
-        await().atMost(200, TimeUnit.MILLISECONDS)
-                .until(() -> executed.size() == 0 && rejected.size() == 0);
+        await().atMost(200, TimeUnit.MILLISECONDS).until(() -> executed.size() == 0 && rejected.size() == 0);
     }
 
     @Test

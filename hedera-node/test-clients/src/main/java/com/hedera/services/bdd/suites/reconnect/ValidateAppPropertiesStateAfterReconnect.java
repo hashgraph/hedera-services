@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.reconnect;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -35,8 +36,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ValidateAppPropertiesStateAfterReconnect extends HapiSuite {
-    private static final Logger log =
-            LogManager.getLogger(ValidateAppPropertiesStateAfterReconnect.class);
+    private static final Logger log = LogManager.getLogger(ValidateAppPropertiesStateAfterReconnect.class);
 
     final String PATH_TO_VALID_BYTECODE = HapiSpecSetup.getDefaultInstance().defaultContractPath();
 

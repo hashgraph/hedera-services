@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.validation;
 
 import com.hedera.node.app.service.mono.context.NodeInfo;
@@ -95,18 +96,15 @@ public interface OptionValidator {
         return queryableAccountStatus(EntityNum.fromAccountId(id), accounts);
     }
 
-    default ResponseCodeEnum queryableAccountStatus(
-            EntityNum entityNum, AccountStorageAdapter accounts) {
+    default ResponseCodeEnum queryableAccountStatus(EntityNum entityNum, AccountStorageAdapter accounts) {
         return PureValidation.queryableAccountStatus(entityNum, accounts);
     }
 
-    default ResponseCodeEnum queryableContractStatus(
-            ContractID cid, AccountStorageAdapter contracts) {
+    default ResponseCodeEnum queryableContractStatus(ContractID cid, AccountStorageAdapter contracts) {
         return PureValidation.queryableContractStatus(cid, contracts);
     }
 
-    default ResponseCodeEnum queryableContractStatus(
-            EntityNum cid, AccountStorageAdapter contracts) {
+    default ResponseCodeEnum queryableContractStatus(EntityNum cid, AccountStorageAdapter contracts) {
         return PureValidation.queryableContractStatus(cid, contracts);
     }
 
@@ -133,8 +131,7 @@ public interface OptionValidator {
                 accessor.getTxn().getTransactionValidDuration().getSeconds());
     }
 
-    default ResponseCodeEnum chronologyStatusForTxn(
-            Instant validAfter, long forSecs, Instant estimatedConsensusTime) {
+    default ResponseCodeEnum chronologyStatusForTxn(Instant validAfter, long forSecs, Instant estimatedConsensusTime) {
         return PureValidation.chronologyStatus(estimatedConsensusTime, validAfter, forSecs);
     }
 
@@ -155,7 +152,6 @@ public interface OptionValidator {
             final long stakedNodeId,
             final AccountStorageAdapter accounts,
             final NodeInfo nodeInfo) {
-        return PureValidation.isValidStakedId(
-                idCase, stakedAccountId, stakedNodeId, accounts, nodeInfo);
+        return PureValidation.isValidStakedId(idCase, stakedAccountId, stakedNodeId, accounts, nodeInfo);
     }
 }

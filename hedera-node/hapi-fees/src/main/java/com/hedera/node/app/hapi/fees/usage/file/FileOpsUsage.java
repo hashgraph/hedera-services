@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.file;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -55,8 +56,7 @@ public class FileOpsUsage {
     private static final int NUM_LONG_FIELDS_IN_BASE_FILE_REPR = 1;
 
     static int bytesInBaseRepr() {
-        return NUM_FLAGS_IN_BASE_FILE_REPR * BOOL_SIZE
-                + NUM_LONG_FIELDS_IN_BASE_FILE_REPR * LONG_SIZE;
+        return NUM_FLAGS_IN_BASE_FILE_REPR * BOOL_SIZE + NUM_LONG_FIELDS_IN_BASE_FILE_REPR * LONG_SIZE;
     }
 
     @Inject
@@ -82,12 +82,10 @@ public class FileOpsUsage {
         long customBytes = 0;
         customBytes += op.getContents().size();
         customBytes += op.getMemoBytes().size();
-        customBytes +=
-                keySizeIfPresent(
-                        op, FileCreateTransactionBody::hasKeys, body -> asKey(body.getKeys()));
+        customBytes += keySizeIfPresent(op, FileCreateTransactionBody::hasKeys, body -> asKey(body.getKeys()));
 
-        final var lifetime =
-                ESTIMATOR_UTILS.relativeLifetime(fileCreation, op.getExpirationTime().getSeconds());
+        final var lifetime = ESTIMATOR_UTILS.relativeLifetime(
+                fileCreation, op.getExpirationTime().getSeconds());
 
         final var estimate = txnEstimateFactory.get(sigUsage, fileCreation, ESTIMATOR_UTILS);
         /* Variable bytes plus a long for expiration time */
@@ -112,36 +110,31 @@ public class FileOpsUsage {
     }
 
     public FeeData fileUpdateUsage(
-            final TransactionBody fileUpdate,
-            final SigUsage sigUsage,
-            final ExtantFileContext ctx) {
+            final TransactionBody fileUpdate, final SigUsage sigUsage, final ExtantFileContext ctx) {
         final var op = fileUpdate.getFileUpdate();
 
         final long keyBytesUsed = op.hasKeys() ? getAccountKeyStorageSize(asKey(op.getKeys())) : 0;
-        final long msgBytesUsed =
-                BASIC_ENTITY_ID_SIZE
-                        + op.getContents().size()
-                        + op.getMemo().getValueBytes().size()
-                        + keyBytesUsed
-                        + (op.hasExpirationTime() ? LONG_SIZE : 0);
+        final long msgBytesUsed = BASIC_ENTITY_ID_SIZE
+                + op.getContents().size()
+                + op.getMemo().getValueBytes().size()
+                + keyBytesUsed
+                + (op.hasExpirationTime() ? LONG_SIZE : 0);
         final var estimate = txnEstimateFactory.get(sigUsage, fileUpdate, ESTIMATOR_UTILS);
         estimate.addBpt(msgBytesUsed);
 
         long newCustomBytes = 0;
-        newCustomBytes += op.getContents().isEmpty() ? ctx.currentSize() : op.getContents().size();
-        newCustomBytes +=
-                !op.hasMemo()
-                        ? ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length
-                        : op.getMemo().getValueBytes().size();
-        newCustomBytes +=
-                !op.hasKeys() ? getAccountKeyStorageSize(asKey(ctx.currentWacl())) : keyBytesUsed;
+        newCustomBytes += op.getContents().isEmpty()
+                ? ctx.currentSize()
+                : op.getContents().size();
+        newCustomBytes += !op.hasMemo()
+                ? ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length
+                : op.getMemo().getValueBytes().size();
+        newCustomBytes += !op.hasKeys() ? getAccountKeyStorageSize(asKey(ctx.currentWacl())) : keyBytesUsed;
         final long oldCustomBytes = ctx.currentNonBaseSb();
         final long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(fileUpdate, ctx.currentExpiry());
-        final long newLifetime =
-                ESTIMATOR_UTILS.relativeLifetime(fileUpdate, op.getExpirationTime().getSeconds());
-        final long sbsDelta =
-                ESTIMATOR_UTILS.changeInBsUsage(
-                        oldCustomBytes, oldLifetime, newCustomBytes, newLifetime);
+        final long newLifetime = ESTIMATOR_UTILS.relativeLifetime(
+                fileUpdate, op.getExpirationTime().getSeconds());
+        final long sbsDelta = ESTIMATOR_UTILS.changeInBsUsage(oldCustomBytes, oldLifetime, newCustomBytes, newLifetime);
         if (sbsDelta > 0) {
             estimate.addSbs(sbsDelta);
         }

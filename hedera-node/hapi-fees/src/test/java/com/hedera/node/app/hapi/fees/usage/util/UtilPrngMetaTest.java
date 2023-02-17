@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,19 +46,17 @@ class UtilPrngMetaTest {
 
     @Test
     void calculatesSizesAsExpected() {
-        var canonicalTxn =
-                TransactionBody.newBuilder()
-                        .setUtilPrng(UtilPrngTransactionBody.newBuilder().setRange(10))
-                        .build();
+        var canonicalTxn = TransactionBody.newBuilder()
+                .setUtilPrng(UtilPrngTransactionBody.newBuilder().setRange(10))
+                .build();
 
         var subject = new UtilPrngMeta(canonicalTxn.getUtilPrng());
         assertEquals(4, subject.getMsgBytesUsed());
 
         // without range
-        canonicalTxn =
-                TransactionBody.newBuilder()
-                        .setUtilPrng(UtilPrngTransactionBody.newBuilder())
-                        .build();
+        canonicalTxn = TransactionBody.newBuilder()
+                .setUtilPrng(UtilPrngTransactionBody.newBuilder())
+                .build();
 
         subject = new UtilPrngMeta(canonicalTxn.getUtilPrng());
         assertEquals(0, subject.getMsgBytesUsed());

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
@@ -115,127 +116,91 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                         tokenAssociate(SECOND_ACCOUNT, VANILLA_TOKEN),
                         cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                WIPE_CONTRACT,
-                                                                WIPE_FUNGIBLE_TOKEN,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())),
-                                                                10L)
-                                                        .payingWith(ADMIN_ACCOUNT)
-                                                        .via("accountDoesNotOwnWipeKeyTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                cryptoUpdate(ADMIN_ACCOUNT).key(WIPE_KEY),
-                                                contractCall(
-                                                                WIPE_CONTRACT,
-                                                                WIPE_FUNGIBLE_TOKEN,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())),
-                                                                1_000L)
-                                                        .payingWith(ADMIN_ACCOUNT)
-                                                        .via("amountLargerThanBalanceTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                contractCall(
-                                                                WIPE_CONTRACT,
-                                                                WIPE_FUNGIBLE_TOKEN,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                secondAccountID
-                                                                                        .get())),
-                                                                10L)
-                                                        .payingWith(ADMIN_ACCOUNT)
-                                                        .via("accountDoesNotOwnTokensTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                contractCall(
-                                                                WIPE_CONTRACT,
-                                                                WIPE_FUNGIBLE_TOKEN,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())),
-                                                                10L)
-                                                        .payingWith(ADMIN_ACCOUNT)
-                                                        .via("wipeFungibleTxn")
-                                                        .gas(GAS_TO_OFFER),
-                                                contractCall(
-                                                                WIPE_CONTRACT,
-                                                                WIPE_FUNGIBLE_TOKEN,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())),
-                                                                0L)
-                                                        .payingWith(ADMIN_ACCOUNT)
-                                                        .via("wipeFungibleTxnWithZeroAmount")
-                                                        .gas(GAS_TO_OFFER))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        WIPE_CONTRACT,
+                                        WIPE_FUNGIBLE_TOKEN,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        10L)
+                                .payingWith(ADMIN_ACCOUNT)
+                                .via("accountDoesNotOwnWipeKeyTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        cryptoUpdate(ADMIN_ACCOUNT).key(WIPE_KEY),
+                        contractCall(
+                                        WIPE_CONTRACT,
+                                        WIPE_FUNGIBLE_TOKEN,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        1_000L)
+                                .payingWith(ADMIN_ACCOUNT)
+                                .via("amountLargerThanBalanceTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        contractCall(
+                                        WIPE_CONTRACT,
+                                        WIPE_FUNGIBLE_TOKEN,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(secondAccountID.get())),
+                                        10L)
+                                .payingWith(ADMIN_ACCOUNT)
+                                .via("accountDoesNotOwnTokensTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        contractCall(
+                                        WIPE_CONTRACT,
+                                        WIPE_FUNGIBLE_TOKEN,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        10L)
+                                .payingWith(ADMIN_ACCOUNT)
+                                .via("wipeFungibleTxn")
+                                .gas(GAS_TO_OFFER),
+                        contractCall(
+                                        WIPE_CONTRACT,
+                                        WIPE_FUNGIBLE_TOKEN,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        0L)
+                                .payingWith(ADMIN_ACCOUNT)
+                                .via("wipeFungibleTxnWithZeroAmount")
+                                .gas(GAS_TO_OFFER))))
                 .then(
                         childRecordsCheck(
                                 "accountDoesNotOwnWipeKeyTxn",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INVALID_SIGNATURE)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INVALID_SIGNATURE)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(INVALID_SIGNATURE)))),
                         childRecordsCheck(
                                 "amountLargerThanBalanceTxn",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INVALID_WIPING_AMOUNT)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INVALID_WIPING_AMOUNT)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(INVALID_WIPING_AMOUNT)))),
                         childRecordsCheck(
                                 "accountDoesNotOwnTokensTxn",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INVALID_WIPING_AMOUNT)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INVALID_WIPING_AMOUNT)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(INVALID_WIPING_AMOUNT)))),
                         childRecordsCheck(
                                 "wipeFungibleTxnWithZeroAmount",
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS))
-                                                        .gasUsed(14085L))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS))
+                                                .gasUsed(14085L))),
                         getTokenInfo(VANILLA_TOKEN).hasTotalSupply(990),
                         getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 490));
     }
@@ -250,9 +215,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                         newKeyNamed(WIPE_KEY),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ADMIN_ACCOUNT).exposingCreatedIdTo(adminAccountID::set),
-                        cryptoCreate(ACCOUNT)
-                                .balance(INITIAL_BALANCE)
-                                .exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(ACCOUNT).balance(INITIAL_BALANCE).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
@@ -266,138 +229,104 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
                         uploadInitCode(WIPE_CONTRACT),
                         contractCreate(WIPE_CONTRACT),
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
-                        cryptoTransfer(
-                                movingUnique(VANILLA_TOKEN, 1L).between(TOKEN_TREASURY, ACCOUNT)))
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var serialNumbers = new long[] {1L};
-                                    allRunFor(
-                                            spec,
-                                            contractCall(
-                                                            WIPE_CONTRACT,
-                                                            WIPE_NON_FUNGIBLE_TOKEN,
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            vanillaTokenID.get())),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(accountID.get())),
-                                                            serialNumbers)
-                                                    .payingWith(ADMIN_ACCOUNT)
-                                                    .via(
-                                                            "wipeNonFungibleAccountDoesNotOwnWipeKeyTxn")
-                                                    .gas(GAS_TO_OFFER)
-                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                            cryptoUpdate(ADMIN_ACCOUNT).key(WIPE_KEY),
-                                            contractCall(
-                                                            WIPE_CONTRACT,
-                                                            WIPE_NON_FUNGIBLE_TOKEN,
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            vanillaTokenID.get())),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(accountID.get())),
-                                                            new long[] {2L})
-                                                    .payingWith(ADMIN_ACCOUNT)
-                                                    .via(
-                                                            "wipeNonFungibleAccountDoesNotOwnTheSerialTxn")
-                                                    .gas(GAS_TO_OFFER)
-                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                            contractCall(
-                                                            WIPE_CONTRACT,
-                                                            WIPE_NON_FUNGIBLE_TOKEN,
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            vanillaTokenID.get())),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(accountID.get())),
-                                                            new long[] {-2L})
-                                                    .payingWith(ADMIN_ACCOUNT)
-                                                    .via("wipeNonFungibleNegativeSerialTxn")
-                                                    .gas(GAS_TO_OFFER)
-                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                            contractCall(
-                                                            WIPE_CONTRACT,
-                                                            WIPE_NON_FUNGIBLE_TOKEN,
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            vanillaTokenID.get())),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(accountID.get())),
-                                                            new long[] {3L})
-                                                    .payingWith(ADMIN_ACCOUNT)
-                                                    .via("wipeNonFungibleSerialDoesNotExistsTxn")
-                                                    .gas(GAS_TO_OFFER)
-                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                            contractCall(
-                                                            WIPE_CONTRACT,
-                                                            WIPE_NON_FUNGIBLE_TOKEN,
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            vanillaTokenID.get())),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(accountID.get())),
-                                                            serialNumbers)
-                                                    .payingWith(ADMIN_ACCOUNT)
-                                                    .via("wipeNonFungibleTxn")
-                                                    .gas(GAS_TO_OFFER));
-                                }))
+                        cryptoTransfer(movingUnique(VANILLA_TOKEN, 1L).between(TOKEN_TREASURY, ACCOUNT)))
+                .when(withOpContext((spec, opLog) -> {
+                    final var serialNumbers = new long[] {1L};
+                    allRunFor(
+                            spec,
+                            contractCall(
+                                            WIPE_CONTRACT,
+                                            WIPE_NON_FUNGIBLE_TOKEN,
+                                            HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                            HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                            serialNumbers)
+                                    .payingWith(ADMIN_ACCOUNT)
+                                    .via("wipeNonFungibleAccountDoesNotOwnWipeKeyTxn")
+                                    .gas(GAS_TO_OFFER)
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                            cryptoUpdate(ADMIN_ACCOUNT).key(WIPE_KEY),
+                            contractCall(
+                                            WIPE_CONTRACT,
+                                            WIPE_NON_FUNGIBLE_TOKEN,
+                                            HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                            HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                            new long[] {2L})
+                                    .payingWith(ADMIN_ACCOUNT)
+                                    .via("wipeNonFungibleAccountDoesNotOwnTheSerialTxn")
+                                    .gas(GAS_TO_OFFER)
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                            contractCall(
+                                            WIPE_CONTRACT,
+                                            WIPE_NON_FUNGIBLE_TOKEN,
+                                            HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                            HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                            new long[] {-2L})
+                                    .payingWith(ADMIN_ACCOUNT)
+                                    .via("wipeNonFungibleNegativeSerialTxn")
+                                    .gas(GAS_TO_OFFER)
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                            contractCall(
+                                            WIPE_CONTRACT,
+                                            WIPE_NON_FUNGIBLE_TOKEN,
+                                            HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                            HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                            new long[] {3L})
+                                    .payingWith(ADMIN_ACCOUNT)
+                                    .via("wipeNonFungibleSerialDoesNotExistsTxn")
+                                    .gas(GAS_TO_OFFER)
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                            contractCall(
+                                            WIPE_CONTRACT,
+                                            WIPE_NON_FUNGIBLE_TOKEN,
+                                            HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                            HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                            serialNumbers)
+                                    .payingWith(ADMIN_ACCOUNT)
+                                    .via("wipeNonFungibleTxn")
+                                    .gas(GAS_TO_OFFER));
+                }))
                 .then(
                         childRecordsCheck(
                                 "wipeNonFungibleAccountDoesNotOwnWipeKeyTxn",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INVALID_SIGNATURE)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INVALID_SIGNATURE)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(INVALID_SIGNATURE)))),
                         childRecordsCheck(
                                 "wipeNonFungibleAccountDoesNotOwnTheSerialTxn",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(ACCOUNT_DOES_NOT_OWN_WIPED_NFT)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                ACCOUNT_DOES_NOT_OWN_WIPED_NFT)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(ACCOUNT_DOES_NOT_OWN_WIPED_NFT)))),
                         childRecordsCheck(
                                 "wipeNonFungibleNegativeSerialTxn",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INVALID_NFT_ID)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INVALID_NFT_ID)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(INVALID_NFT_ID)))),
                         childRecordsCheck(
                                 "wipeNonFungibleSerialDoesNotExistsTxn",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INVALID_NFT_ID)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INVALID_NFT_ID)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(INVALID_NFT_ID)))),
                         childRecordsCheck(
                                 "wipeNonFungibleTxn",
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS))
-                                                        .gasUsed(14085L))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS))
+                                                .gasUsed(14085L))),
                         getTokenInfo(VANILLA_TOKEN).hasTotalSupply(1),
                         getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 0));
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -25,8 +26,7 @@ import java.util.function.Supplier;
  *
  * @param <T> The type
  */
-public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
-        implements WritableSingletonState<T> {
+public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T> implements WritableSingletonState<T> {
     private final Consumer<T> backingStoreMutator;
     private boolean modified;
     private T value;

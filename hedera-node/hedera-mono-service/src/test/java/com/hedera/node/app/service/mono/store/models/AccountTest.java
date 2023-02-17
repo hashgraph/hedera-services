@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.models;
 
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
@@ -127,10 +128,8 @@ class AccountTest {
     @Test
     void canonicalAddressIsEVMAddressIfCorrectAlias() {
         // default truffle address #0
-        subject.setAlias(
-                ByteString.copyFrom(
-                        Hex.decode(
-                                "3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d")));
+        subject.setAlias(ByteString.copyFrom(
+                Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d")));
         assertEquals(
                 Address.wrap(Bytes.fromHexString("627306090abaB3A6e1400e9345bC60c78a8BEf57")),
                 subject.canonicalAddress());
@@ -138,25 +137,20 @@ class AccountTest {
 
     @Test
     void invalidCanonicalAddresses() {
-        Address untranslatedAddress =
-                Address.wrap(Bytes.fromHexString("0000000000000000000000000000000000003039"));
+        Address untranslatedAddress = Address.wrap(Bytes.fromHexString("0000000000000000000000000000000000003039"));
 
         // bogus alias
         subject.setAlias(ByteString.copyFromUtf8("This alias is invalid"));
         assertEquals(untranslatedAddress, subject.canonicalAddress());
 
         // incorrect starting bytes for ECDSA
-        subject.setAlias(
-                ByteString.copyFrom(
-                        Hex.decode(
-                                "ffff03af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d")));
+        subject.setAlias(ByteString.copyFrom(
+                Hex.decode("ffff03af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d")));
         assertEquals(untranslatedAddress, subject.canonicalAddress());
 
         // incorrect ECDSA key
-        subject.setAlias(
-                ByteString.copyFrom(
-                        Hex.decode(
-                                "3a21ffaf80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d")));
+        subject.setAlias(ByteString.copyFrom(
+                Hex.decode("3a21ffaf80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d")));
         assertEquals(untranslatedAddress, subject.canonicalAddress());
     }
 
@@ -200,12 +194,11 @@ class AccountTest {
 
     @Test
     void toStringAsExpected() {
-        final var desired =
-                "Account{id=0.0.12345, expiry=0, balance=0, deleted=false, ownedNfts=5,"
-                        + " alreadyUsedAutoAssociations=123, maxAutoAssociations=1234, alias=,"
-                        + " cryptoAllowances=null, fungibleTokenAllowances=null,"
-                        + " approveForAllNfts=null, numAssociations=3, numPositiveBalances=2, "
-                        + "ethereumNonce=0}";
+        final var desired = "Account{id=0.0.12345, expiry=0, balance=0, deleted=false, ownedNfts=5,"
+                + " alreadyUsedAutoAssociations=123, maxAutoAssociations=1234, alias=,"
+                + " cryptoAllowances=null, fungibleTokenAllowances=null,"
+                + " approveForAllNfts=null, numAssociations=3, numPositiveBalances=2, "
+                + "ethereumNonce=0}";
 
         // expect:
         assertEquals(desired, subject.toString());
@@ -234,8 +227,7 @@ class AccountTest {
         verify(dissociationRel).updateModelRelsSubjectTo(validator);
         assertEquals(numPositiveBalances - 1, subject.getNumPositiveBalances());
         assertEquals(numAssociations - 1, subject.getNumAssociations());
-        assertEquals(
-                alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
+        assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
     }
 
     @Test
@@ -262,8 +254,7 @@ class AccountTest {
         verify(dissociationRel).updateModelRelsSubjectTo(validator);
         assertEquals(numAssociations - 1, subject.getNumAssociations());
         assertEquals(numPositiveBalances, subject.getNumPositiveBalances());
-        assertEquals(
-                alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
+        assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
     }
 
     @Test
@@ -291,8 +282,7 @@ class AccountTest {
         verify(dissociationRel).updateModelRelsSubjectTo(validator);
         assertEquals(numAssociations - 1, subject.getNumAssociations());
         assertEquals(numPositiveBalances, subject.getNumPositiveBalances());
-        assertEquals(
-                alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
+        assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
     }
 
     @Test
@@ -321,8 +311,7 @@ class AccountTest {
         verify(dissociationRel).updateModelRelsSubjectTo(validator);
         assertEquals(numAssociations - 1, subject.getNumAssociations());
         assertEquals(numPositiveBalances, subject.getNumPositiveBalances());
-        assertEquals(
-                alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
+        assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
     }
 
     @Test
@@ -345,8 +334,7 @@ class AccountTest {
 
         // then:
         verify(dissociationRel).updateModelRelsSubjectTo(validator);
-        assertEquals(
-                alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
+        assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
     }
 
     @Test
@@ -358,8 +346,7 @@ class AccountTest {
         given(dissociationRel.dissociatingAccountId()).willReturn(notOurId);
 
         // expect:
-        assertFailsWith(
-                () -> subject.dissociateUsing(List.of(dissociationRel), validator), FAIL_INVALID);
+        assertFailsWith(() -> subject.dissociateUsing(List.of(dissociationRel), validator), FAIL_INVALID);
     }
 
     @Test
@@ -370,13 +357,7 @@ class AccountTest {
 
         // expect:
         assertFailsWith(
-                () ->
-                        subject.associateWith(
-                                List.of(alreadyAssocToken),
-                                tokenStore,
-                                false,
-                                false,
-                                dynamicProperties),
+                () -> subject.associateWith(List.of(alreadyAssocToken), tokenStore, false, false, dynamicProperties),
                 TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
     }
 
@@ -390,13 +371,7 @@ class AccountTest {
 
         // expect:
         assertFailsWith(
-                () ->
-                        subject.associateWith(
-                                List.of(alreadyAssocToken),
-                                tokenStore,
-                                false,
-                                false,
-                                dynamicProperties),
+                () -> subject.associateWith(List.of(alreadyAssocToken), tokenStore, false, false, dynamicProperties),
                 TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
     }
 
@@ -410,8 +385,7 @@ class AccountTest {
         given(dynamicProperties.maxTokensPerAccount()).willReturn(numAssociations + 2);
 
         // when:
-        subject.associateWith(
-                List.of(firstNewToken, secondNewToken), tokenStore, true, true, dynamicProperties);
+        subject.associateWith(List.of(firstNewToken, secondNewToken), tokenStore, true, true, dynamicProperties);
 
         // expect:
         assertEquals(numAssociations + 2, subject.getNumAssociations());
@@ -447,9 +421,7 @@ class AccountTest {
         assertEquals(account.getId(), subject.getId());
         // and:
         assertEquals(account.getMaxAutomaticAssociations(), subject.getMaxAutomaticAssociations());
-        assertEquals(
-                account.getAlreadyUsedAutomaticAssociations(),
-                subject.getAlreadyUsedAutomaticAssociations());
+        assertEquals(account.getAlreadyUsedAutomaticAssociations(), subject.getAlreadyUsedAutomaticAssociations());
         assertEquals(subject.isSmartContract(), account.isSmartContract());
         assertTrue(actualResult);
     }
@@ -479,9 +451,7 @@ class AccountTest {
         subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations);
 
         assertFailsWith(
-                () ->
-                        subject.associateWith(
-                                List.of(firstNewToken), tokenStore, true, true, dynamicProperties),
+                () -> subject.associateWith(List.of(firstNewToken), tokenStore, true, true, dynamicProperties),
                 NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
     }
 
@@ -504,15 +474,11 @@ class AccountTest {
 
         subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations);
 
-        assertFailsWith(
-                () -> subject.incrementUsedAutomaticAssociations(),
-                NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
+        assertFailsWith(() -> subject.incrementUsedAutomaticAssociations(), NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 
         subject.setAlreadyUsedAutomaticAssociations(0);
 
-        assertFailsWith(
-                () -> subject.decrementUsedAutomaticAssociations(),
-                NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
+        assertFailsWith(() -> subject.decrementUsedAutomaticAssociations(), NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
     }
 
     private void assertFailsWith(Runnable something, ResponseCodeEnum status) {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -49,9 +50,7 @@ public class ImpliedTransfers {
     private final List<AssessedCustomFeeWrapper> assessedCustomFeesWrapper;
 
     private ImpliedTransfers(
-            ImpliedTransfersMeta meta,
-            List<BalanceChange> changes,
-            List<AssessedCustomFeeWrapper> assessedCustomFees) {
+            ImpliedTransfersMeta meta, List<BalanceChange> changes, List<AssessedCustomFeeWrapper> assessedCustomFees) {
         this.meta = meta;
         this.changes = changes;
         this.assessedCustomFeesWrapper = assessedCustomFees;
@@ -83,22 +82,14 @@ public class ImpliedTransfers {
             final Map<ByteString, EntityNum> aliases,
             final int numAutoCreations,
             final int numLazyCreations) {
-        final var meta =
-                new ImpliedTransfersMeta(
-                        validationProps,
-                        OK,
-                        customFeeMeta,
-                        aliases,
-                        numAutoCreations,
-                        numLazyCreations);
+        final var meta = new ImpliedTransfersMeta(
+                validationProps, OK, customFeeMeta, aliases, numAutoCreations, numLazyCreations);
         return new ImpliedTransfers(meta, changes, assessedCustomFees);
     }
 
     public static ImpliedTransfers invalid(
-            final ImpliedTransfersMeta.ValidationProps validationProps,
-            final ResponseCodeEnum code) {
-        final var meta =
-                new ImpliedTransfersMeta(validationProps, code, NO_CUSTOM_FEE_META, NO_ALIASES);
+            final ImpliedTransfersMeta.ValidationProps validationProps, final ResponseCodeEnum code) {
+        final var meta = new ImpliedTransfersMeta(validationProps, code, NO_CUSTOM_FEE_META, NO_ALIASES);
         return new ImpliedTransfers(meta, Collections.emptyList(), Collections.emptyList());
     }
 
@@ -106,8 +97,7 @@ public class ImpliedTransfers {
             final ImpliedTransfersMeta.ValidationProps validationProps,
             final Map<ByteString, EntityNum> suspectAliases,
             final ResponseCodeEnum code) {
-        final var meta =
-                new ImpliedTransfersMeta(validationProps, code, NO_CUSTOM_FEE_META, suspectAliases);
+        final var meta = new ImpliedTransfersMeta(validationProps, code, NO_CUSTOM_FEE_META, suspectAliases);
         return new ImpliedTransfers(meta, Collections.emptyList(), Collections.emptyList());
     }
 
@@ -115,9 +105,7 @@ public class ImpliedTransfers {
             ImpliedTransfersMeta.ValidationProps validationProps,
             List<CustomFeeMeta> customFeeMetaTilFailure,
             ResponseCodeEnum code) {
-        final var meta =
-                new ImpliedTransfersMeta(
-                        validationProps, code, customFeeMetaTilFailure, NO_ALIASES);
+        final var meta = new ImpliedTransfersMeta(validationProps, code, customFeeMetaTilFailure, NO_ALIASES);
         return new ImpliedTransfers(meta, Collections.emptyList(), Collections.emptyList());
     }
 
@@ -137,8 +125,7 @@ public class ImpliedTransfers {
                 aliasToId.put(aliasToNewId.getKey(), aliasToNewId.getValue());
             }
         }
-        final List<FcAssessedCustomFee> fcAssessedCustomFeeList =
-                new ArrayList<>(assessedCustomFeesWrapper.size());
+        final List<FcAssessedCustomFee> fcAssessedCustomFeeList = new ArrayList<>(assessedCustomFeesWrapper.size());
         for (final var assessedFee : assessedCustomFeesWrapper) {
             fcAssessedCustomFeeList.add(assessedFee.toFcAssessedCustomFee(aliasToId));
         }
@@ -150,9 +137,7 @@ public class ImpliedTransfers {
     }
 
     public List<AssessedCustomFeeWrapper> getAssessedCustomFeeWrappers() {
-        return assessedCustomFeesWrapper == null
-                ? Collections.emptyList()
-                : assessedCustomFeesWrapper;
+        return assessedCustomFeesWrapper == null ? Collections.emptyList() : assessedCustomFeesWrapper;
     }
 
     @Override

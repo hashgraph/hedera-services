@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops.streams;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
@@ -60,56 +61,38 @@ public class RecordStreamVerification extends UtilOp {
         var addressBook = downloadBook(spec);
         NodeSignatureVerifier verifier = new NodeSignatureVerifier(addressBook);
         Set<String> uniqRecordFiles = allRecordFilesFor(verifier.nodes());
-        Map<String, List<File>> sigFilesAvail =
-                uniqRecordFiles.stream()
-                        .flatMap(
-                                rcd ->
-                                        verifier.nodes().stream()
-                                                .map(
-                                                        account ->
-                                                                Path.of(
-                                                                        recordsDirFor(account),
-                                                                        rcd)))
-                        .collect(
-                                groupingBy(
-                                        this::basename,
-                                        mapping(
-                                                (Path p) ->
-                                                        Path.of(
-                                                                        p.toFile().getAbsolutePath()
-                                                                                + "_sig")
-                                                                .toFile(),
-                                                filtering(File::exists, toList()))));
+        Map<String, List<File>> sigFilesAvail = uniqRecordFiles.stream()
+                .flatMap(rcd -> verifier.nodes().stream().map(account -> Path.of(recordsDirFor(account), rcd)))
+                .collect(groupingBy(
+                        this::basename,
+                        mapping(
+                                (Path p) -> Path.of(p.toFile().getAbsolutePath() + "_sig")
+                                        .toFile(),
+                                filtering(File::exists, toList()))));
         checkOverallValidity(sigFilesAvail, verifier);
-        Assertions.assertTrue(
-                allGood, "Not everything seemed good with the record streams, see logs above!");
+        Assertions.assertTrue(allGood, "Not everything seemed good with the record streams, see logs above!");
         return false;
     }
 
-    private void checkOverallValidity(
-            Map<String, List<File>> sigFilesAvail, NodeSignatureVerifier verifier) {
+    private void checkOverallValidity(Map<String, List<File>> sigFilesAvail, NodeSignatureVerifier verifier) {
         sigFilesAvail.entrySet().stream()
                 .filter(entry -> entry.getValue().size() > 0)
                 .forEach(entry -> checkSigValidity(entry.getKey(), entry.getValue(), verifier));
 
-        List<String> orderedRcdNames =
-                sigFilesAvail.keySet().stream()
-                        .map(s -> Instant.parse(s.substring(0, s.length() - 4).replace("_", ":")))
-                        .sorted()
-                        .map(Object::toString)
-                        .map(s -> s.replace(":", "_") + ".rcd")
-                        .collect(toList());
-        log.info(
-                "Record file running hashes will be checked in chronological order: {}",
-                orderedRcdNames);
+        List<String> orderedRcdNames = sigFilesAvail.keySet().stream()
+                .map(s -> Instant.parse(s.substring(0, s.length() - 4).replace("_", ":")))
+                .sorted()
+                .map(Object::toString)
+                .map(s -> s.replace(":", "_") + ".rcd")
+                .collect(toList());
+        log.info("Record file running hashes will be checked in chronological order: {}", orderedRcdNames);
 
         for (String account : verifier.nodes()) {
             String recordsDir = recordsDirFor(account);
-            List<RecordFileParser.RecordFile> recordFiles =
-                    orderedRcdNames.stream()
-                            .map(name -> Path.of(recordsDir, name).toFile())
-                            .map(RecordFileParser::parseFrom)
-                            .collect(toList());
+            List<RecordFileParser.RecordFile> recordFiles = orderedRcdNames.stream()
+                    .map(name -> Path.of(recordsDir, name).toFile())
+                    .map(RecordFileParser::parseFrom)
+                    .collect(toList());
             log.info("**** Running Hash Validation for {} Record Files ****", account);
             for (int i = 1; i < recordFiles.size(); i++) {
                 byte[] actualPrevHash = recordFiles.get(i - 1).getThisHash();
@@ -132,8 +115,7 @@ public class RecordStreamVerification extends UtilOp {
                     }
                 } else {
                     log.info(
-                            "Record file '{}' DID contain the running hash computed from the"
-                                    + " preceding '{}'",
+                            "Record file '{}' DID contain the running hash computed from the" + " preceding '{}'",
                             orderedRcdNames.get(i),
                             orderedRcdNames.get(i - 1));
                 }
@@ -145,25 +127,16 @@ public class RecordStreamVerification extends UtilOp {
         int numAccounts = verifier.nodes().size();
 
         if (sigs.size() != numAccounts) {
-            setUnGood(
-                    "Record file {} had {} sigs ({}), not {} as expected!",
-                    record,
-                    sigs.size(),
-                    sigs,
-                    numAccounts);
+            setUnGood("Record file {} had {} sigs ({}), not {} as expected!", record, sigs.size(), sigs, numAccounts);
         }
 
         List<String> majority = verifier.verifySignatureFiles(sigs);
         if (majority == null) {
-            setUnGood(
-                    "The nodes did not find majority agreement on the hash of record file '{}'!",
-                    record);
+            setUnGood("The nodes did not find majority agreement on the hash of record file '{}'!", record);
         } else if (majority.size() < numAccounts) {
             setUnGood("Only {} agreed on the hash of record file '{}'!", majority, record);
         } else {
-            log.info(
-                    "All nodes had VALID signatures on the SAME hash for record file '{}'.",
-                    record);
+            log.info("All nodes had VALID signatures on the SAME hash for record file '{}'.", record);
         }
     }
 
@@ -201,8 +174,11 @@ public class RecordStreamVerification extends UtilOp {
         String addressBook = spec.setup().nodeDetailsName();
         HapiGetFileContents op = getFileContents(addressBook);
         allRunFor(spec, op);
-        byte[] serializedBook =
-                op.getResponse().getFileGetContents().getFileContents().getContents().toByteArray();
+        byte[] serializedBook = op.getResponse()
+                .getFileGetContents()
+                .getFileContents()
+                .getContents()
+                .toByteArray();
         return NodeAddressBook.parseFrom(serializedBook);
     }
 }

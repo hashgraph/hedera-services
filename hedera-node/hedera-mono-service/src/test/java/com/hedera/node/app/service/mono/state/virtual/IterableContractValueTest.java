@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.hedera.node.app.service.mono.state.virtual.IterableContractValue.ITERABLE_VERSION;
@@ -47,29 +48,23 @@ import org.junit.jupiter.api.Test;
 
 class IterableContractValueTest {
     private static final UInt256 prevUint256Key =
-            UInt256.fromHexString(
-                    "0x00304ed432ce31138ecf09aa3e8a410dd4a1e204ef84efed1ee16dfea1e22060");
+            UInt256.fromHexString("0x00304ed432ce31138ecf09aa3e8a410dd4a1e204ef84efed1ee16dfea1e22060");
     private static final byte numNonZeroBytesInPrev = 31;
     private static final int[] explicitPrevKey = ContractKey.asPackedInts(prevUint256Key);
     private static final UInt256 nextUint256Key =
-            UInt256.fromHexString(
-                    "0x0000fe0432ce31138ecf09aa3e8a410004a1e204ef84efe01ee160fea1e22060");
+            UInt256.fromHexString("0x0000fe0432ce31138ecf09aa3e8a410004a1e204ef84efe01ee160fea1e22060");
     private static final byte numNonZeroBytesInNext = 30;
     private static final int[] explicitNextKey = ContractKey.asPackedInts(nextUint256Key);
     private static final UInt256 otherUint256Key =
-            UInt256.fromHexString(
-                    "0x1111fe0432ce31138ecf09aa3e8a410004bbe204ef84efe01ee160febbe22060");
+            UInt256.fromHexString("0x1111fe0432ce31138ecf09aa3e8a410004bbe204ef84efe01ee160febbe22060");
     private static final int[] explicitOtherKey = ContractKey.asPackedInts(otherUint256Key);
     private static final UInt256 uint256Value =
-            UInt256.fromHexString(
-                    "0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060");
+            UInt256.fromHexString("0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060");
     private static final long scopedContractId = 1_234L;
     private static final byte[] bytesValue = uint256Value.toArray();
     private static final byte[] defaultEmpty = new byte[NON_ITERABLE_SERIALIZED_SIZE];
-    private static final ContractKey prevKey =
-            new ContractKey(scopedContractId, prevUint256Key.toArray());
-    private static final ContractKey nextKey =
-            new ContractKey(scopedContractId, nextUint256Key.toArray());
+    private static final ContractKey prevKey = new ContractKey(scopedContractId, prevUint256Key.toArray());
+    private static final ContractKey nextKey = new ContractKey(scopedContractId, nextUint256Key.toArray());
 
     private IterableContractValue subject;
 
@@ -108,8 +103,7 @@ class IterableContractValueTest {
 
     @Test
     void objectContractMet() {
-        final var sameButDifferent =
-                new IterableContractValue(bytesValue, explicitPrevKey, explicitNextKey);
+        final var sameButDifferent = new IterableContractValue(bytesValue, explicitPrevKey, explicitNextKey);
         assertEquals(subject, sameButDifferent);
         assertEquals(subject.hashCode(), sameButDifferent.hashCode());
 
@@ -130,13 +124,12 @@ class IterableContractValueTest {
 
     @Test
     void toStringAsExpected() {
-        final var desired =
-                "ContractValue"
-                    + "{41754673891915775801010071770256094221237405171466406054945132944954670325856(5C"
-                    + " 50 4E D4 32 CB 51 13 8B CF 09 AA 5E 8A 41 0D D4 A1 E2 04 EF 84 BF ED 1B E1"
-                    + " 6D FB A1 B2 20 60 ),"
-                    + " prevKey=304ed432ce31138ecf09aa3e8a410dd4a1e204ef84efed1ee16dfea1e22060, "
-                    + "nextKey=fe0432ce31138ecf09aa3e8a41004a1e204ef84efe01ee160fea1e22060}";
+        final var desired = "ContractValue"
+                + "{41754673891915775801010071770256094221237405171466406054945132944954670325856(5C"
+                + " 50 4E D4 32 CB 51 13 8B CF 09 AA 5E 8A 41 0D D4 A1 E2 04 EF 84 BF ED 1B E1"
+                + " 6D FB A1 B2 20 60 ),"
+                + " prevKey=304ed432ce31138ecf09aa3e8a410dd4a1e204ef84efed1ee16dfea1e22060, "
+                + "nextKey=fe0432ce31138ecf09aa3e8a41004a1e204ef84efe01ee160fea1e22060}";
 
         assertEquals(desired, subject.toString());
     }
@@ -192,8 +185,7 @@ class IterableContractValueTest {
         final var actual = subject.getValue();
         var actualLen = 31;
         for (int i = len - 1; i >= len - 32; i--) {
-            assertEquals(
-                    bigIntegerBytes[i], actual[actualLen--], "byte at index " + i + " dont match");
+            assertEquals(bigIntegerBytes[i], actual[actualLen--], "byte at index " + i + " dont match");
         }
 
         assertEquals(BigInteger.valueOf(value), new BigInteger(subject.getValue()));
@@ -273,11 +265,10 @@ class IterableContractValueTest {
     void deserializeWorksForV1() throws IOException {
         subject = new IterableContractValue();
         final var in = mock(SerializableDataInputStream.class);
-        doAnswer(
-                        invocation -> {
-                            subject.setValue(bytesValue);
-                            return NON_ITERABLE_SERIALIZED_SIZE;
-                        })
+        doAnswer(invocation -> {
+                    subject.setValue(bytesValue);
+                    return NON_ITERABLE_SERIALIZED_SIZE;
+                })
                 .when(in)
                 .read(subject.getValue());
 
@@ -368,11 +359,10 @@ class IterableContractValueTest {
     void deserializeWithByteBufferWorks() throws IOException {
         subject = new IterableContractValue();
         final var byteBuffer = mock(ByteBuffer.class);
-        doAnswer(
-                        invocation -> {
-                            subject.setValue(bytesValue);
-                            return null;
-                        })
+        doAnswer(invocation -> {
+                    subject.setValue(bytesValue);
+                    return null;
+                })
                 .when(byteBuffer)
                 .get(subject.getValue());
 
@@ -400,11 +390,10 @@ class IterableContractValueTest {
         final var readOnly = subject.asReadOnly();
 
         final var in = mock(SerializableDataInputStream.class);
-        doAnswer(
-                        invocation -> {
-                            subject.setValue(bytesValue);
-                            return NON_ITERABLE_SERIALIZED_SIZE;
-                        })
+        doAnswer(invocation -> {
+                    subject.setValue(bytesValue);
+                    return NON_ITERABLE_SERIALIZED_SIZE;
+                })
                 .when(in)
                 .read(subject.getValue());
 
@@ -412,16 +401,13 @@ class IterableContractValueTest {
 
         // and when
         final var byteBuffer = mock(ByteBuffer.class);
-        doAnswer(
-                        invocation -> {
-                            subject.setValue(bytesValue);
-                            return null;
-                        })
+        doAnswer(invocation -> {
+                    subject.setValue(bytesValue);
+                    return null;
+                })
                 .when(byteBuffer)
                 .get(subject.getValue());
 
-        assertThrows(
-                IllegalStateException.class,
-                () -> readOnly.deserialize(byteBuffer, ITERABLE_VERSION));
+        assertThrows(IllegalStateException.class, () -> readOnly.deserialize(byteBuffer, ITERABLE_VERSION));
     }
 }

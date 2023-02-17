@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.consensus;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -95,16 +96,10 @@ public class TopicUpdateSuite extends HapiSuite {
                 .when()
                 .then(
                         updateTopic("testTopic").adminKey(NONSENSE_KEY).hasPrecheck(BAD_ENCODING),
-                        updateTopic("testTopic")
-                                .submitKey(NONSENSE_KEY)
-                                .hasKnownStatus(BAD_ENCODING),
+                        updateTopic("testTopic").submitKey(NONSENSE_KEY).hasKnownStatus(BAD_ENCODING),
                         updateTopic("testTopic").topicMemo(longMemo).hasKnownStatus(MEMO_TOO_LONG),
-                        updateTopic("testTopic")
-                                .topicMemo(ZERO_BYTE_MEMO)
-                                .hasKnownStatus(INVALID_ZERO_BYTE_IN_STRING),
-                        updateTopic("testTopic")
-                                .autoRenewPeriod(0)
-                                .hasKnownStatus(AUTORENEW_DURATION_NOT_IN_RANGE),
+                        updateTopic("testTopic").topicMemo(ZERO_BYTE_MEMO).hasKnownStatus(INVALID_ZERO_BYTE_IN_STRING),
+                        updateTopic("testTopic").autoRenewPeriod(0).hasKnownStatus(AUTORENEW_DURATION_NOT_IN_RANGE),
                         updateTopic("testTopic")
                                 .autoRenewPeriod(Long.MAX_VALUE)
                                 .hasKnownStatus(AUTORENEW_DURATION_NOT_IN_RANGE));
@@ -112,14 +107,13 @@ public class TopicUpdateSuite extends HapiSuite {
 
     private HapiSpec topicUpdateSigReqsEnforcedAtConsensus() {
         long PAYER_BALANCE = 199_999_999_999L;
-        Function<String[], HapiTopicUpdate> updateTopicSignedBy =
-                (signers) -> {
-                    return updateTopic("testTopic")
-                            .payingWith("payer")
-                            .adminKey("newAdminKey")
-                            .autoRenewAccountId("newAutoRenewAccount")
-                            .signedBy(signers);
-                };
+        Function<String[], HapiTopicUpdate> updateTopicSignedBy = (signers) -> {
+            return updateTopic("testTopic")
+                    .payingWith("payer")
+                    .adminKey("newAdminKey")
+                    .autoRenewAccountId("newAutoRenewAccount")
+                    .signedBy(signers);
+        };
         return defaultHapiSpec("topicUpdateSigReqsEnforcedAtConsensus")
                 .given(
                         newKeyNamed("oldAdminKey"),
@@ -127,9 +121,7 @@ public class TopicUpdateSuite extends HapiSuite {
                         newKeyNamed("newAdminKey"),
                         cryptoCreate("newAutoRenewAccount"),
                         cryptoCreate("payer").balance(PAYER_BALANCE),
-                        createTopic("testTopic")
-                                .adminKeyName("oldAdminKey")
-                                .autoRenewAccountId("oldAutoRenewAccount"))
+                        createTopic("testTopic").adminKeyName("oldAdminKey").autoRenewAccountId("oldAutoRenewAccount"))
                 .when(
                         updateTopicSignedBy
                                 .apply(new String[] {"payer", "oldAdminKey"})
@@ -144,19 +136,12 @@ public class TopicUpdateSuite extends HapiSuite {
                                 .apply(new String[] {"payer", "newAdminKey", "newAutoRenewAccount"})
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         updateTopicSignedBy
-                                .apply(
-                                        new String[] {
-                                            "payer",
-                                            "oldAdminKey",
-                                            "newAdminKey",
-                                            "newAutoRenewAccount"
-                                        })
+                                .apply(new String[] {"payer", "oldAdminKey", "newAdminKey", "newAutoRenewAccount"})
                                 .hasKnownStatus(SUCCESS))
-                .then(
-                        getTopicInfo("testTopic")
-                                .logged()
-                                .hasAdminKey("newAdminKey")
-                                .hasAutoRenewAccount("newAutoRenewAccount"));
+                .then(getTopicInfo("testTopic")
+                        .logged()
+                        .hasAdminKey("newAdminKey")
+                        .hasAutoRenewAccount("newAutoRenewAccount"));
     }
 
     private HapiSpec updateSubmitKeyToDiffKey() {
@@ -166,11 +151,10 @@ public class TopicUpdateSuite extends HapiSuite {
                         newKeyNamed("submitKey"),
                         createTopic("testTopic").adminKeyName("adminKey"))
                 .when(updateTopic("testTopic").submitKey("submitKey"))
-                .then(
-                        getTopicInfo("testTopic")
-                                .hasSubmitKey("submitKey")
-                                .hasAdminKey("adminKey")
-                                .logged());
+                .then(getTopicInfo("testTopic")
+                        .hasSubmitKey("submitKey")
+                        .hasAdminKey("adminKey")
+                        .logged());
     }
 
     private HapiSpec updateAdminKeyToDiffKey() {
@@ -192,8 +176,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     private HapiSpec updateMultipleFields() {
-        long expirationTimestamp =
-                Instant.now().getEpochSecond() + 10000000; // more than default.autorenew
+        long expirationTimestamp = Instant.now().getEpochSecond() + 10000000; // more than default.autorenew
         // .secs=7000000
         return defaultHapiSpec("updateMultipleFields")
                 .given(
@@ -207,24 +190,22 @@ public class TopicUpdateSuite extends HapiSuite {
                                 .adminKeyName("adminKey")
                                 .autoRenewPeriod(validAutoRenewPeriod)
                                 .autoRenewAccountId("autoRenewAccount"))
-                .when(
-                        updateTopic("testTopic")
-                                .topicMemo("updatedmemo")
-                                .submitKey("submitKey")
-                                .adminKey("adminKey2")
-                                .expiry(expirationTimestamp)
-                                .autoRenewPeriod(validAutoRenewPeriod + 5_000L)
-                                .autoRenewAccountId("nextAutoRenewAccount")
-                                .hasKnownStatus(SUCCESS))
-                .then(
-                        getTopicInfo("testTopic")
-                                .hasMemo("updatedmemo")
-                                .hasSubmitKey("submitKey")
-                                .hasAdminKey("adminKey2")
-                                .hasExpiry(expirationTimestamp)
-                                .hasAutoRenewPeriod(validAutoRenewPeriod + 5_000L)
-                                .hasAutoRenewAccount("nextAutoRenewAccount")
-                                .logged());
+                .when(updateTopic("testTopic")
+                        .topicMemo("updatedmemo")
+                        .submitKey("submitKey")
+                        .adminKey("adminKey2")
+                        .expiry(expirationTimestamp)
+                        .autoRenewPeriod(validAutoRenewPeriod + 5_000L)
+                        .autoRenewAccountId("nextAutoRenewAccount")
+                        .hasKnownStatus(SUCCESS))
+                .then(getTopicInfo("testTopic")
+                        .hasMemo("updatedmemo")
+                        .hasSubmitKey("submitKey")
+                        .hasAdminKey("adminKey2")
+                        .hasExpiry(expirationTimestamp)
+                        .hasAutoRenewPeriod(validAutoRenewPeriod + 5_000L)
+                        .hasAutoRenewAccount("nextAutoRenewAccount")
+                        .logged());
     }
 
     private HapiSpec expirationTimestampIsValidated() {
@@ -248,9 +229,7 @@ public class TopicUpdateSuite extends HapiSuite {
         return defaultHapiSpec("updateExpiryOnTopicWithNoAdminKey")
                 .given(createTopic("testTopic"))
                 .when(
-                        updateTopic("testTopic")
-                                .expiry(overlyDistantNewExpiry)
-                                .hasKnownStatus(INVALID_EXPIRATION_TIME),
+                        updateTopic("testTopic").expiry(overlyDistantNewExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME),
                         updateTopic("testTopic").expiry(reasonableNewExpiry))
                 .then(getTopicInfo("testTopic").hasExpiry(reasonableNewExpiry));
     }
@@ -260,13 +239,9 @@ public class TopicUpdateSuite extends HapiSuite {
                 .given(
                         newKeyNamed("adminKey"),
                         cryptoCreate("autoRenewAccount"),
-                        createTopic("testTopic")
-                                .adminKeyName("adminKey")
-                                .autoRenewAccountId("autoRenewAccount"))
+                        createTopic("testTopic").adminKeyName("adminKey").autoRenewAccountId("autoRenewAccount"))
                 .when(
-                        updateTopic("testTopic")
-                                .adminKey(EMPTY_KEY)
-                                .hasKnownStatus(AUTORENEW_ACCOUNT_NOT_ALLOWED),
+                        updateTopic("testTopic").adminKey(EMPTY_KEY).hasKnownStatus(AUTORENEW_ACCOUNT_NOT_ALLOWED),
                         updateTopic("testTopic").adminKey(EMPTY_KEY).autoRenewAccountId("0.0.0"))
                 .then(getTopicInfo("testTopic").hasNoAdminKey());
     }
@@ -287,11 +262,10 @@ public class TopicUpdateSuite extends HapiSuite {
                                 .autoRenewAccountId("autoRenewAccount")
                                 .autoRenewPeriod(THREE_MONTHS_IN_SECONDS - 1)
                                 .adminKeyName("payer"))
-                .when(
-                        updateTopic("testTopic")
-                                .payingWith("payer")
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .via("updateTopic"))
+                .when(updateTopic("testTopic")
+                        .payingWith("payer")
+                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                        .via("updateTopic"))
                 .then(validateChargedUsdWithin("updateTopic", 0.00022, 3.0));
     }
 

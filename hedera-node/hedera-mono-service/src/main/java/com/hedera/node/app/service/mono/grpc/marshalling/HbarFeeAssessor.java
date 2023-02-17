@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static com.hedera.node.app.service.mono.grpc.marshalling.AdjustmentUtils.adjustForAssessedHbar;
@@ -43,8 +44,7 @@ public class HbarFeeAssessor {
         final var amount = fixedSpec.getUnitsToCollect();
         adjustForAssessedHbar(payer, collector, amount, changeManager);
         final var effPayerAccountNums = new AccountID[] {payer.asGrpcAccount()};
-        final var assessed =
-                new AssessedCustomFeeWrapper(collector.asEntityId(), amount, effPayerAccountNums);
+        final var assessed = new AssessedCustomFeeWrapper(collector.asEntityId(), amount, effPayerAccountNums);
         accumulator.add(assessed);
         return OK;
     }

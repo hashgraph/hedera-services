@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.file;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -58,31 +59,18 @@ public class FileUpdateLoadTest extends HapiSuite {
         final AtomicInteger submittedSoFar = new AtomicInteger(0);
         final byte[] NEW_CONTENTS = TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K);
 
-        Supplier<HapiSpecOperation[]> fileUpdateBurst =
-                () ->
-                        new HapiSpecOperation[] {
-                            inParallel(
-                                    IntStream.range(0, settings.getBurstSize())
-                                            .mapToObj(
-                                                    i ->
-                                                            TxnVerbs.fileUpdate("target")
-                                                                    .fee(Integer.MAX_VALUE)
-                                                                    .contents(NEW_CONTENTS)
-                                                                    .noLogging()
-                                                                    .hasPrecheckFrom(
-                                                                            OK,
-                                                                            BUSY,
-                                                                            DUPLICATE_TRANSACTION,
-                                                                            PLATFORM_TRANSACTION_NOT_CREATED)
-                                                                    .deferStatusResolution())
-                                            .toArray(n -> new HapiSpecOperation[n])),
-                            logIt(
-                                    ignore ->
-                                            String.format(
-                                                    "Now a total of %d file updates submitted.",
-                                                    submittedSoFar.addAndGet(
-                                                            settings.getBurstSize()))),
-                        };
+        Supplier<HapiSpecOperation[]> fileUpdateBurst = () -> new HapiSpecOperation[] {
+            inParallel(IntStream.range(0, settings.getBurstSize())
+                    .mapToObj(i -> TxnVerbs.fileUpdate("target")
+                            .fee(Integer.MAX_VALUE)
+                            .contents(NEW_CONTENTS)
+                            .noLogging()
+                            .hasPrecheckFrom(OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+                            .deferStatusResolution())
+                    .toArray(n -> new HapiSpecOperation[n])),
+            logIt(ignore -> String.format(
+                    "Now a total of %d file updates submitted.", submittedSoFar.addAndGet(settings.getBurstSize()))),
+        };
 
         return defaultHapiSpec("RunFileUpdates")
                 .given(
@@ -90,12 +78,11 @@ public class FileUpdateLoadTest extends HapiSuite {
                                 (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
                         logIt(ignore -> settings.toString()))
                 .when(fileCreate("target").contents("The initial contents!"))
-                .then(
-                        runLoadTest(fileUpdateBurst)
-                                .tps(settings::getTps)
-                                .tolerance(settings::getTolerancePercentage)
-                                .allowedSecsBelow(settings::getAllowedSecsBelow)
-                                .lasting(settings::getMins, () -> MINUTES));
+                .then(runLoadTest(fileUpdateBurst)
+                        .tps(settings::getTps)
+                        .tolerance(settings::getTolerancePercentage)
+                        .allowedSecsBelow(settings::getAllowedSecsBelow)
+                        .lasting(settings::getMins, () -> MINUTES));
     }
 
     @Override

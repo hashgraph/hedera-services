@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.crypto;
 
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
@@ -237,11 +238,8 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
-            throws Throwable {
-        return spec.fees()
-                .forActivityBasedOp(
-                        HederaFunctionality.CryptoCreate, this::usageEstimate, txn, numPayerKeys);
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+        return spec.fees().forActivityBasedOp(HederaFunctionality.CryptoCreate, this::usageEstimate, txn, numPayerKeys);
     }
 
     private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
@@ -254,60 +252,45 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
-        key =
-                key != null
-                        ? key
-                        : netOf(
-                                spec,
-                                keyName,
-                                keyShape,
-                                keyType,
-                                Optional.of(this::effectiveKeyGen));
+        key = key != null ? key : netOf(spec, keyName, keyShape, keyType, Optional.of(this::effectiveKeyGen));
         final long amount = balanceFn.map(fn -> fn.apply(spec)).orElse(initialBalance.orElse(-1L));
         initialBalance = (amount >= 0) ? Optional.of(amount) : Optional.empty();
-        final CryptoCreateTransactionBody opBody =
-                spec.txns()
-                        .<CryptoCreateTransactionBody, CryptoCreateTransactionBody.Builder>body(
-                                CryptoCreateTransactionBody.class,
-                                b -> {
-                                    if (fuzzingIdentifiers && key.hasECDSASecp256K1()) {
-                                        InitialAccountIdentifiers.fuzzedFrom(key).customize(b);
-                                    } else {
-                                        if (alias.isPresent() || evmAddress.isPresent()) {
-                                            keyName.ifPresent(
-                                                    s -> b.setKey(spec.registry().getKey(s)));
-                                            alias.ifPresent(b::setAlias);
-                                            evmAddress.ifPresent(b::setAlias);
-                                        } else {
-                                            b.setKey(key);
-                                        }
-                                    }
-                                    if (unknownFieldLocation == UnknownFieldLocation.OP_BODY) {
-                                        b.setUnknownFields(nonEmptyUnknownFields());
-                                    }
+        final CryptoCreateTransactionBody opBody = spec.txns()
+                .<CryptoCreateTransactionBody, CryptoCreateTransactionBody.Builder>body(
+                        CryptoCreateTransactionBody.class, b -> {
+                            if (fuzzingIdentifiers && key.hasECDSASecp256K1()) {
+                                InitialAccountIdentifiers.fuzzedFrom(key).customize(b);
+                            } else {
+                                if (alias.isPresent() || evmAddress.isPresent()) {
+                                    keyName.ifPresent(
+                                            s -> b.setKey(spec.registry().getKey(s)));
+                                    alias.ifPresent(b::setAlias);
+                                    evmAddress.ifPresent(b::setAlias);
+                                } else {
+                                    b.setKey(key);
+                                }
+                            }
+                            if (unknownFieldLocation == UnknownFieldLocation.OP_BODY) {
+                                b.setUnknownFields(nonEmptyUnknownFields());
+                            }
 
-                                    proxy.ifPresent(b::setProxyAccountID);
-                                    entityMemo.ifPresent(b::setMemo);
-                                    sendThresh.ifPresent(b::setSendRecordThreshold);
-                                    receiveThresh.ifPresent(b::setReceiveRecordThreshold);
-                                    initialBalance.ifPresent(b::setInitialBalance);
-                                    receiverSigRequired.ifPresent(b::setReceiverSigRequired);
-                                    autoRenewDurationSecs.ifPresent(
-                                            s ->
-                                                    b.setAutoRenewPeriod(
-                                                            Duration.newBuilder()
-                                                                    .setSeconds(s)
-                                                                    .build()));
-                                    maxAutomaticTokenAssociations.ifPresent(
-                                            b::setMaxAutomaticTokenAssociations);
+                            proxy.ifPresent(b::setProxyAccountID);
+                            entityMemo.ifPresent(b::setMemo);
+                            sendThresh.ifPresent(b::setSendRecordThreshold);
+                            receiveThresh.ifPresent(b::setReceiveRecordThreshold);
+                            initialBalance.ifPresent(b::setInitialBalance);
+                            receiverSigRequired.ifPresent(b::setReceiverSigRequired);
+                            autoRenewDurationSecs.ifPresent(s -> b.setAutoRenewPeriod(
+                                    Duration.newBuilder().setSeconds(s).build()));
+                            maxAutomaticTokenAssociations.ifPresent(b::setMaxAutomaticTokenAssociations);
 
-                                    if (stakedAccountId.isPresent()) {
-                                        b.setStakedAccountId(asId(stakedAccountId.get(), spec));
-                                    } else if (stakedNodeId.isPresent()) {
-                                        b.setStakedNodeId(stakedNodeId.get());
-                                    }
-                                    b.setDeclineReward(isDeclinedReward);
-                                });
+                            if (stakedAccountId.isPresent()) {
+                                b.setStakedAccountId(asId(stakedAccountId.get(), spec));
+                            } else if (stakedNodeId.isPresent()) {
+                                b.setStakedNodeId(stakedNodeId.get());
+                            }
+                            b.setDeclineReward(isDeclinedReward);
+                        });
         return b -> b.setCryptoCreateAccount(opBody);
     }
 
@@ -341,25 +324,15 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         newTokenIdObserver.ifPresent(obs -> obs.accept(createdTokenId));
         receiverSigRequired.ifPresent(r -> spec.registry().saveSigRequirement(account, r));
         Optional.ofNullable(addressObserver)
-                .ifPresent(
-                        obs ->
-                                evmAddress.ifPresentOrElse(
-                                        address ->
-                                                obs.accept(
-                                                        HapiParserUtil.asHeadlongAddress(
-                                                                address.toByteArray())),
-                                        () ->
-                                                obs.accept(
-                                                        HapiParserUtil.evmAddressFromSecp256k1Key(
-                                                                key))));
+                .ifPresent(obs -> evmAddress.ifPresentOrElse(
+                        address -> obs.accept(HapiParserUtil.asHeadlongAddress(address.toByteArray())),
+                        () -> obs.accept(HapiParserUtil.evmAddressFromSecp256k1Key(key))));
 
         if (advertiseCreation) {
-            final String banner =
-                    "\n\n"
-                            + bannerWith(
-                                    String.format(
-                                            "Created account '%s' with id '0.0.%d'.",
-                                            account, lastReceipt.getAccountID().getAccountNum()));
+            final String banner = "\n\n"
+                    + bannerWith(String.format(
+                            "Created account '%s' with id '0.0.%d'.",
+                            account, lastReceipt.getAccountID().getAccountNum()));
             log.info(banner);
         }
     }
@@ -369,13 +342,11 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         final MoreObjects.ToStringHelper helper = super.toStringHelper().add("account", account);
         keyType.ifPresent(kt -> helper.add("keyType", kt));
         initialBalance.ifPresent(b -> helper.add("balance", b));
-        Optional.ofNullable(lastReceipt)
-                .ifPresent(
-                        receipt -> {
-                            if (receipt.getAccountID().getAccountNum() != 0) {
-                                helper.add("created", receipt.getAccountID().getAccountNum());
-                            }
-                        });
+        Optional.ofNullable(lastReceipt).ifPresent(receipt -> {
+            if (receipt.getAccountID().getAccountNum() != 0) {
+                helper.add("created", receipt.getAccountID().getAccountNum());
+            }
+        });
         return helper;
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.records;
 
 import static com.hedera.node.app.service.mono.records.ConsensusTimeTracker.DEFAULT_NANOS_PER_INCORPORATE_CALL;
@@ -45,9 +46,11 @@ class ConsensusTimeTrackerTest {
     @Mock(lenient = true)
     private MerkleNetworkContext merkleNetworkContext;
 
-    @LoggingTarget private LogCaptor logCaptor;
+    @LoggingTarget
+    private LogCaptor logCaptor;
 
-    @LoggingSubject private ConsensusTimeTracker subject;
+    @LoggingSubject
+    private ConsensusTimeTracker subject;
 
     @BeforeEach
     void setUp() {
@@ -103,8 +106,7 @@ class ConsensusTimeTrackerTest {
                 final var time = txnTime.minusNanos(x);
                 final var msg = "x = " + x + " isStandalone = " + isStandalone;
 
-                assertEquals(
-                        subject.isAllowablePrecedingOffset(x), x > 0 && (x <= maxPreceding), msg);
+                assertEquals(subject.isAllowablePrecedingOffset(x), x > 0 && (x <= maxPreceding), msg);
 
                 if (subject.isAllowablePrecedingOffset(x)) {
                     ++availableCount;
@@ -122,8 +124,7 @@ class ConsensusTimeTrackerTest {
                 final var time = txnTime.plusNanos(x);
                 final var msg = "x = " + x + " isStandalone = " + isStandalone;
 
-                assertEquals(
-                        subject.isAllowableFollowingOffset(x), x > 0 && x <= maxFollowing, msg);
+                assertEquals(subject.isAllowableFollowingOffset(x), x > 0 && x <= maxFollowing, msg);
 
                 if (subject.isAllowableFollowingOffset(x)) {
                     ++availableCount;
@@ -409,11 +410,7 @@ class ConsensusTimeTrackerTest {
         assertEquals(
                 0,
                 logCaptor.warnLogs().stream()
-                        .filter(
-                                s ->
-                                        s.contains(
-                                                "Used more record slots than allowed per"
-                                                        + " transaction"))
+                        .filter(s -> s.contains("Used more record slots than allowed per" + " transaction"))
                         .count());
 
         subject.setActualFollowingRecordsCount(subject.getMaxFollowingRecords() + 1);
@@ -429,11 +426,7 @@ class ConsensusTimeTrackerTest {
         assertEquals(
                 6,
                 logCaptor.warnLogs().stream()
-                        .filter(
-                                s ->
-                                        s.contains(
-                                                "Used more record slots than allowed per"
-                                                        + " transaction"))
+                        .filter(s -> s.contains("Used more record slots than allowed per" + " transaction"))
                         .count());
     }
 
@@ -453,8 +446,7 @@ class ConsensusTimeTrackerTest {
         assertThrows(IllegalStateException.class, () -> subject.nextTransactionTime(true));
         assertThrows(IllegalStateException.class, () -> subject.nextStandaloneRecordTime());
 
-        subject.setActualFollowingRecordsCount(
-                DEFAULT_NANOS_PER_INCORPORATE_CALL - subject.getMaxPrecedingRecords());
+        subject.setActualFollowingRecordsCount(DEFAULT_NANOS_PER_INCORPORATE_CALL - subject.getMaxPrecedingRecords());
 
         assertThrows(IllegalStateException.class, () -> subject.hasMoreTransactionTime(false));
         assertThrows(IllegalStateException.class, () -> subject.hasMoreTransactionTime(true));
@@ -473,8 +465,7 @@ class ConsensusTimeTrackerTest {
 
     @Test
     void errorOnSetActualFollowingRecordsCountLessThanZero() {
-        assertThrows(
-                IllegalArgumentException.class, () -> subject.setActualFollowingRecordsCount(-1));
+        assertThrows(IllegalArgumentException.class, () -> subject.setActualFollowingRecordsCount(-1));
     }
 
     private void checkBounds(final ConsensusTimeTracker previous, final boolean isStandalone) {
@@ -501,8 +492,7 @@ class ConsensusTimeTrackerTest {
         if (isStandalone) {
             assertEquals(subject.getCurrentTxnMinTime(), subject.getCurrentTxnTime());
             assertEquals(subject.getCurrentTxnMinTime(), subject.getCurrentTxnMaxTime());
-            assertTrue(
-                    subject.getCurrentTxnMinTime().compareTo(subject.getMaxConsensusTime()) <= 0);
+            assertTrue(subject.getCurrentTxnMinTime().compareTo(subject.getMaxConsensusTime()) <= 0);
         } else {
             assertTrue(subject.getCurrentTxnMinTime().isBefore(subject.getCurrentTxnTime()));
             assertTrue(subject.getCurrentTxnMinTime().isBefore(subject.getCurrentTxnMaxTime()));
@@ -511,12 +501,10 @@ class ConsensusTimeTrackerTest {
 
         if (isStandalone) {
             assertEquals(subject.getCurrentTxnMaxTime(), subject.getCurrentTxnTime());
-            assertTrue(
-                    subject.getCurrentTxnMaxTime().compareTo(subject.getMaxConsensusTime()) <= 0);
+            assertTrue(subject.getCurrentTxnMaxTime().compareTo(subject.getMaxConsensusTime()) <= 0);
         } else {
             assertTrue(subject.getCurrentTxnMaxTime().isAfter(subject.getCurrentTxnTime()));
-            assertTrue(
-                    subject.getCurrentTxnMaxTime().compareTo(subject.getMaxConsensusTime()) <= 0);
+            assertTrue(subject.getCurrentTxnMaxTime().compareTo(subject.getMaxConsensusTime()) <= 0);
         }
 
         if (previous != null) {
@@ -525,11 +513,8 @@ class ConsensusTimeTrackerTest {
             assertEquals(prev.getMinConsensusTime(), subject.getMinConsensusTime());
             assertEquals(prev.getMaxConsensusTime(), subject.getMaxConsensusTime());
 
-            assertTrue(
-                    subject.getCurrentTxnMinTime()
-                            .isAfter(
-                                    prev.getCurrentTxnTime()
-                                            .plusNanos(prev.getFollowingRecordsCount())));
+            assertTrue(subject.getCurrentTxnMinTime()
+                    .isAfter(prev.getCurrentTxnTime().plusNanos(prev.getFollowingRecordsCount())));
         }
     }
     ;

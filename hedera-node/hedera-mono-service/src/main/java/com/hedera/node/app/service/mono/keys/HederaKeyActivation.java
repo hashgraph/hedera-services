@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.keys;
 
 import static com.hedera.node.app.service.mono.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
@@ -63,13 +64,11 @@ public final class HederaKeyActivation {
      * @return whether the payer's Hedera key is active
      */
     public static boolean payerSigIsActive(
-            final SwirldsTxnAccessor accessor,
-            final BiPredicate<JKey, TransactionSignature> validity) {
+            final SwirldsTxnAccessor accessor, final BiPredicate<JKey, TransactionSignature> validity) {
         final var sigMeta = accessor.getSigMeta();
 
         if (sigMeta == null) {
-            throw new IllegalArgumentException(
-                    "Cannot test payer sig activation without rationalized sig meta");
+            throw new IllegalArgumentException("Cannot test payer sig activation without rationalized sig meta");
         }
         if (!sigMeta.couldRationalizePayer()) {
             return false;
@@ -103,14 +102,12 @@ public final class HederaKeyActivation {
             final BiPredicate<JKey, TransactionSignature> validity,
             final KeyActivationCharacteristics characteristics) {
         if (key.hasKeyList() || key.hasThresholdKey()) {
-            final var children =
-                    key.hasKeyList()
-                            ? key.getKeyList().getKeysList()
-                            : key.getThresholdKey().getKeys().getKeysList();
-            final var m =
-                    key.hasKeyList()
-                            ? characteristics.sigsNeededForList((JKeyList) key)
-                            : characteristics.sigsNeededForThreshold((JThresholdKey) key);
+            final var children = key.hasKeyList()
+                    ? key.getKeyList().getKeysList()
+                    : key.getThresholdKey().getKeys().getKeysList();
+            final var m = key.hasKeyList()
+                    ? characteristics.sigsNeededForList((JKeyList) key)
+                    : characteristics.sigsNeededForThreshold((JThresholdKey) key);
             var n = 0;
             for (final var child : children) {
                 if (isActive(child, sigsFn, validity)) {
@@ -133,8 +130,7 @@ public final class HederaKeyActivation {
      * @param sigs the backing list of platform sigs
      * @return a supplier that produces the backing list sigs by public key
      */
-    public static Function<byte[], TransactionSignature> pkToSigMapFrom(
-            final List<TransactionSignature> sigs) {
+    public static Function<byte[], TransactionSignature> pkToSigMapFrom(final List<TransactionSignature> sigs) {
         return pk -> {
             for (final var sig : sigs) {
                 if (keysMatch(pk, sig.getExpandedPublicKeyDirect())) {
@@ -149,14 +145,8 @@ public final class HederaKeyActivation {
         if (sourceKey.length == ED25519_PUBLIC_KEY_LEN) {
             return Arrays.equals(sourceKey, sigKey);
         } else if (sourceKey.length == COMPRESSED_SECP256K1_PUBLIC_KEY_LEN) {
-            final var xCoordsMatch =
-                    Arrays.equals(
-                            sourceKey,
-                            1,
-                            COMPRESSED_SECP256K1_PUBLIC_KEY_LEN,
-                            sigKey,
-                            0,
-                            SECP256K1_COORDINATE_LEN);
+            final var xCoordsMatch = Arrays.equals(
+                    sourceKey, 1, COMPRESSED_SECP256K1_PUBLIC_KEY_LEN, sigKey, 0, SECP256K1_COORDINATE_LEN);
             if (!xCoordsMatch) {
                 return false;
             } else {

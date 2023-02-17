@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.misc;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -36,10 +37,9 @@ public class PersistenceDevSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    testEntityLoading(),
-                });
+        return List.of(new HapiSpec[] {
+            testEntityLoading(),
+        });
     }
 
     private HapiSpec testEntityLoading() {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stats;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -36,17 +37,35 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ThrottleGaugesTest {
-    @Mock private Platform platform;
-    @Mock private DeterministicThrottle aThrottle;
-    @Mock private DeterministicThrottle bThrottle;
-    @Mock private GasLimitDeterministicThrottle hapiGasThrottle;
-    @Mock private GasLimitDeterministicThrottle consGasThrottle;
-    @Mock private FunctionalityThrottling hapiThrottling;
-    @Mock private FunctionalityThrottling handleThrottling;
-    @Mock private NodeLocalProperties nodeProperties;
-    @Mock private DoubleGauge pretendGauge;
+    @Mock
+    private Platform platform;
 
-    @Mock private Metrics metrics;
+    @Mock
+    private DeterministicThrottle aThrottle;
+
+    @Mock
+    private DeterministicThrottle bThrottle;
+
+    @Mock
+    private GasLimitDeterministicThrottle hapiGasThrottle;
+
+    @Mock
+    private GasLimitDeterministicThrottle consGasThrottle;
+
+    @Mock
+    private FunctionalityThrottling hapiThrottling;
+
+    @Mock
+    private FunctionalityThrottling handleThrottling;
+
+    @Mock
+    private NodeLocalProperties nodeProperties;
+
+    @Mock
+    private DoubleGauge pretendGauge;
+
+    @Mock
+    private Metrics metrics;
 
     private ThrottleGauges subject;
 

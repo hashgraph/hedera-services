@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.token.meta;
 
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
@@ -24,9 +25,8 @@ import org.junit.jupiter.api.Test;
 class TokenBurnMetaTest {
     @Test
     void allGettersAndToStringWork() {
-        final var expected =
-                "TokenBurnMeta{bpt=1000, transferRecordDb=12345,"
-                        + " subType=TOKEN_NON_FUNGIBLE_UNIQUE, serialNumsCount=2}";
+        final var expected = "TokenBurnMeta{bpt=1000, transferRecordDb=12345,"
+                + " subType=TOKEN_NON_FUNGIBLE_UNIQUE, serialNumsCount=2}";
 
         final var subject = new TokenBurnMeta(1000, TOKEN_NON_FUNGIBLE_UNIQUE, 12345L, 2);
         assertEquals(1000, subject.getBpt());

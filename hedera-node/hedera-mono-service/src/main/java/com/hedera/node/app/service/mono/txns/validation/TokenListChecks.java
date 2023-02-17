@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.validation;
 
 import static com.hedera.node.app.service.mono.txns.validation.PureValidation.checkKey;
@@ -51,8 +52,7 @@ public final class TokenListChecks {
         return new HashSet<>(tokens).size() < tokens.size();
     }
 
-    public static ResponseCodeEnum typeCheck(
-            final TokenType type, final long initialSupply, final int decimals) {
+    public static ResponseCodeEnum typeCheck(final TokenType type, final long initialSupply, final int decimals) {
         switch (type) {
             case FUNGIBLE_COMMON:
                 return fungibleCommonTypeCheck(initialSupply, decimals);
@@ -63,8 +63,7 @@ public final class TokenListChecks {
         }
     }
 
-    public static ResponseCodeEnum nonFungibleUniqueCheck(
-            final long initialSupply, final int decimals) {
+    public static ResponseCodeEnum nonFungibleUniqueCheck(final long initialSupply, final int decimals) {
         if (initialSupply != 0) {
             return INVALID_TOKEN_INITIAL_SUPPLY;
         }
@@ -72,8 +71,7 @@ public final class TokenListChecks {
         return decimals != 0 ? INVALID_TOKEN_DECIMALS : OK;
     }
 
-    public static ResponseCodeEnum fungibleCommonTypeCheck(
-            final long initialSupply, final int decimals) {
+    public static ResponseCodeEnum fungibleCommonTypeCheck(final long initialSupply, final int decimals) {
         if (initialSupply < 0) {
             return INVALID_TOKEN_INITIAL_SUPPLY;
         }
@@ -89,8 +87,7 @@ public final class TokenListChecks {
         return OK;
     }
 
-    public static ResponseCodeEnum supplyTypeCheck(
-            final TokenSupplyType supplyType, final long maxSupply) {
+    public static ResponseCodeEnum supplyTypeCheck(final TokenSupplyType supplyType, final long maxSupply) {
         switch (supplyType) {
             case INFINITE:
                 return maxSupply != 0 ? INVALID_TOKEN_MAX_SUPPLY : OK;
@@ -141,8 +138,7 @@ public final class TokenListChecks {
             return validity;
         }
 
-        validity =
-                checkKeyOfType(hasFeeScheduleKey, feeScheduleKey, INVALID_CUSTOM_FEE_SCHEDULE_KEY);
+        validity = checkKeyOfType(hasFeeScheduleKey, feeScheduleKey, INVALID_CUSTOM_FEE_SCHEDULE_KEY);
         if (validity != OK) {
             return validity;
         }
@@ -158,16 +154,14 @@ public final class TokenListChecks {
         return OK;
     }
 
-    private static ResponseCodeEnum checkKeyOfType(
-            final boolean hasKey, final Key key, final ResponseCodeEnum code) {
+    private static ResponseCodeEnum checkKeyOfType(final boolean hasKey, final Key key, final ResponseCodeEnum code) {
         if (hasKey) {
             return checkKey(key, code);
         }
         return OK;
     }
 
-    public static ResponseCodeEnum nftSupplyKeyCheck(
-            final TokenType tokenType, final boolean supplyKey) {
+    public static ResponseCodeEnum nftSupplyKeyCheck(final TokenType tokenType, final boolean supplyKey) {
         if (tokenType == TokenType.NON_FUNGIBLE_UNIQUE && !supplyKey) {
             return TOKEN_HAS_NO_SUPPLY_KEY;
         }

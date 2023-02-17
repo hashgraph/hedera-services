@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.autorenew;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
@@ -29,13 +30,10 @@ public class AutoRenewConfigChoices {
 
     static final String defaultMinAutoRenewPeriod =
             HapiSpecSetup.getDefaultNodeProps().get("ledger.autoRenewPeriod.minDuration");
-    static final String defaultGracePeriod =
-            HapiSpecSetup.getDefaultNodeProps().get("autorenew.gracePeriod");
-    static final String defaultNumToScan =
-            HapiSpecSetup.getDefaultNodeProps().get("autorenew.numberOfEntitiesToScan");
+    static final String defaultGracePeriod = HapiSpecSetup.getDefaultNodeProps().get("autorenew.gracePeriod");
+    static final String defaultNumToScan = HapiSpecSetup.getDefaultNodeProps().get("autorenew.numberOfEntitiesToScan");
 
-    public static HapiSpecOperation enableContractAutoRenewWith(
-            final long minAutoRenewPeriod, final long gracePeriod) {
+    public static HapiSpecOperation enableContractAutoRenewWith(final long minAutoRenewPeriod, final long gracePeriod) {
         return enableContractAutoRenewWith(
                 minAutoRenewPeriod, gracePeriod,
                 HIGH_SCAN_CYCLE_COUNT, DEFAULT_HIGH_TOUCH_COUNT);
@@ -48,13 +46,8 @@ public class AutoRenewConfigChoices {
             final int maxTouchedPerCycle) {
         return fileUpdate(APP_PROPERTIES)
                 .payingWith(GENESIS)
-                .overridingProps(
-                        propsForAutoRenewOnWith(
-                                minAutoRenewPeriod,
-                                gracePeriod,
-                                maxScannedPerCycle,
-                                maxTouchedPerCycle,
-                                "CONTRACT"));
+                .overridingProps(propsForAutoRenewOnWith(
+                        minAutoRenewPeriod, gracePeriod, maxScannedPerCycle, maxTouchedPerCycle, "CONTRACT"));
     }
 
     public static Map<String, String> propsForAccountAutoRenewOnWith(
@@ -64,10 +57,7 @@ public class AutoRenewConfigChoices {
     }
 
     public static Map<String, String> propsForAccountAutoRenewOnWith(
-            final long minAutoRenew,
-            final long gracePeriod,
-            final int maxScan,
-            final int maxTouch) {
+            final long minAutoRenew, final long gracePeriod, final int maxScan, final int maxTouch) {
         return propsForAutoRenewOnWith(minAutoRenew, gracePeriod, maxScan, maxTouch, "ACCOUNT");
     }
 

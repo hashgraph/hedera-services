@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BYTES32;
@@ -46,10 +47,8 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class UnpausePrecompile extends AbstractWritePrecompile {
-    private static final Function UNPAUSE_TOKEN_FUNCTION =
-            new Function("unpauseToken(address)", INT);
-    private static final Bytes UNPAUSE_TOKEN_SELECTOR =
-            Bytes.wrap(UNPAUSE_TOKEN_FUNCTION.selector());
+    private static final Function UNPAUSE_TOKEN_FUNCTION = new Function("unpauseToken(address)", INT);
+    private static final Bytes UNPAUSE_TOKEN_SELECTOR = Bytes.wrap(UNPAUSE_TOKEN_FUNCTION.selector());
     private static final ABIType<Tuple> UNPAUSE_TOKEN_DECODER = TypeFactory.create(BYTES32);
     private UnpauseWrapper unpauseOp;
     private final ContractAliases aliases;
@@ -77,8 +76,7 @@ public class UnpausePrecompile extends AbstractWritePrecompile {
 
     @Override
     public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-        Objects.requireNonNull(
-                unpauseOp, "`body` method should be called before `getMinimumFeeInTinybars`");
+        Objects.requireNonNull(unpauseOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         return pricingUtils.getMinimumPriceInTinybars(UNPAUSE, consensusTime);
     }
 
@@ -88,24 +86,14 @@ public class UnpausePrecompile extends AbstractWritePrecompile {
 
         /* --- Check required signatures --- */
         final var tokenId = Id.fromGrpcToken(Objects.requireNonNull(unpauseOp).token());
-        final var hasRequiredSigs =
-                KeyActivationUtils.validateKey(
-                        frame,
-                        tokenId.asEvmAddress(),
-                        sigsVerifier::hasActivePauseKey,
-                        ledgers,
-                        aliases);
+        final var hasRequiredSigs = KeyActivationUtils.validateKey(
+                frame, tokenId.asEvmAddress(), sigsVerifier::hasActivePauseKey, ledgers, aliases);
         validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
         /* --- Build the necessary infrastructure to execute the transaction --- */
         final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
-        final var tokenStore =
-                infrastructureFactory.newTokenStore(
-                        accountStore,
-                        sideEffects,
-                        ledgers.tokens(),
-                        ledgers.nfts(),
-                        ledgers.tokenRels());
+        final var tokenStore = infrastructureFactory.newTokenStore(
+                accountStore, sideEffects, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels());
         final var unpauseLogic = infrastructureFactory.newUnpauseLogic(tokenStore);
         final var validity = unpauseLogic.validateSyntax(transactionBody.build());
         validateTrue(validity == OK, validity);
@@ -115,8 +103,7 @@ public class UnpausePrecompile extends AbstractWritePrecompile {
     }
 
     public static UnpauseWrapper decodeUnpause(final Bytes input) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, UNPAUSE_TOKEN_SELECTOR, UNPAUSE_TOKEN_DECODER);
+        final Tuple decodedArguments = decodeFunctionCall(input, UNPAUSE_TOKEN_SELECTOR, UNPAUSE_TOKEN_DECODER);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.initialization;
 
 import static com.hedera.node.app.service.mono.config.HederaNumbers.FIRST_POST_SYSTEM_FILE_ENTITY;
@@ -64,17 +65,16 @@ public class TreasuryCloner {
                 // In ^0.28.6, all accounts will either exist (restart) or not exist (genesis)
                 continue;
             }
-            final var nextClone =
-                    new HederaAccountCustomizer()
-                            .isReceiverSigRequired(treasury.isReceiverSigRequired())
-                            .isDeclinedReward(treasury.isDeclinedReward())
-                            .isDeleted(false)
-                            .expiry(treasury.getExpiry())
-                            .memo(treasury.getMemo())
-                            .isSmartContract(false)
-                            .key(treasury.getAccountKey())
-                            .autoRenewPeriod(treasury.getAutoRenewSecs())
-                            .customizing(accountSupplier.get());
+            final var nextClone = new HederaAccountCustomizer()
+                    .isReceiverSigRequired(treasury.isReceiverSigRequired())
+                    .isDeclinedReward(treasury.isDeclinedReward())
+                    .isDeleted(false)
+                    .expiry(treasury.getExpiry())
+                    .memo(treasury.getMemo())
+                    .isSmartContract(false)
+                    .key(treasury.getAccountKey())
+                    .autoRenewPeriod(treasury.getAutoRenewSecs())
+                    .customizing(accountSupplier.get());
             accounts.put(nextCloneId, nextClone);
             clonesCreated.add(nextClone);
         }
@@ -95,10 +95,7 @@ public class TreasuryCloner {
 
     private long[] nonContractSystemNums() {
         return LongStream.rangeClosed(FIRST_POST_SYSTEM_FILE_ENTITY, NUM_RESERVED_SYSTEM_ENTITIES)
-                .filter(
-                        i ->
-                                i < FIRST_RESERVED_SYSTEM_CONTRACT
-                                        || i > LAST_RESERVED_SYSTEM_CONTRACT)
+                .filter(i -> i < FIRST_RESERVED_SYSTEM_CONTRACT || i > LAST_RESERVED_SYSTEM_CONTRACT)
                 .toArray();
     }
 }

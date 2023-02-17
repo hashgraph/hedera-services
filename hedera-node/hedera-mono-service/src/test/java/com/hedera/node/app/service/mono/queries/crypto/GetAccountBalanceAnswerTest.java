@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.crypto;
 
 import static com.hedera.node.app.service.mono.utils.EntityNumPair.fromAccountTokenRel;
@@ -71,10 +72,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class GetAccountBalanceAnswerTest {
-    @Mock private AccountStorageAdapter accounts;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private OptionValidator optionValidator;
-    @Mock private AliasManager aliasManager;
+    @Mock
+    private AccountStorageAdapter accounts;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private OptionValidator optionValidator;
+
+    @Mock
+    private AliasManager aliasManager;
 
     private GetAccountBalanceAnswer subject;
 
@@ -86,18 +94,14 @@ class GetAccountBalanceAnswerTest {
     @Test
     void requiresNothing() {
         // setup:
-        final CryptoGetAccountBalanceQuery costAnswerOp =
-                CryptoGetAccountBalanceQuery.newBuilder()
-                        .setHeader(
-                                QueryHeader.newBuilder().setResponseType(ResponseType.COST_ANSWER))
-                        .build();
+        final CryptoGetAccountBalanceQuery costAnswerOp = CryptoGetAccountBalanceQuery.newBuilder()
+                .setHeader(QueryHeader.newBuilder().setResponseType(ResponseType.COST_ANSWER))
+                .build();
         final Query costAnswerQuery =
                 Query.newBuilder().setCryptogetAccountBalance(costAnswerOp).build();
-        final CryptoGetAccountBalanceQuery answerOnlyOp =
-                CryptoGetAccountBalanceQuery.newBuilder()
-                        .setHeader(
-                                QueryHeader.newBuilder().setResponseType(ResponseType.ANSWER_ONLY))
-                        .build();
+        final CryptoGetAccountBalanceQuery answerOnlyOp = CryptoGetAccountBalanceQuery.newBuilder()
+                .setHeader(QueryHeader.newBuilder().setResponseType(ResponseType.ANSWER_ONLY))
+                .build();
         final Query answerOnlyQuery =
                 Query.newBuilder().setCryptogetAccountBalance(answerOnlyOp).build();
 
@@ -117,7 +121,8 @@ class GetAccountBalanceAnswerTest {
     @Test
     void syntaxCheckRequiresId() {
         // given:
-        final CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder().build();
+        final CryptoGetAccountBalanceQuery op =
+                CryptoGetAccountBalanceQuery.newBuilder().build();
         final Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
 
         // when:
@@ -155,14 +160,10 @@ class GetAccountBalanceAnswerTest {
     @Test
     void getsValidity() {
         // given:
-        final Response response =
-                Response.newBuilder()
-                        .setCryptogetAccountBalance(
-                                CryptoGetAccountBalanceResponse.newBuilder()
-                                        .setHeader(
-                                                subject.answerOnlyHeader(
-                                                        RESULT_SIZE_LIMIT_EXCEEDED)))
-                        .build();
+        final Response response = Response.newBuilder()
+                .setCryptogetAccountBalance(CryptoGetAccountBalanceResponse.newBuilder()
+                        .setHeader(subject.answerOnlyHeader(RESULT_SIZE_LIMIT_EXCEEDED)))
+                .build();
 
         // expect:
         assertEquals(RESULT_SIZE_LIMIT_EXCEEDED, subject.extractValidityFrom(response));
@@ -179,8 +180,7 @@ class GetAccountBalanceAnswerTest {
         final Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
 
         // when:
-        final Response response =
-                subject.responseGiven(query, wellKnownView(), PLATFORM_NOT_ACTIVE);
+        final Response response = subject.responseGiven(query, wellKnownView(), PLATFORM_NOT_ACTIVE);
         final ResponseCodeEnum status =
                 response.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode();
 
@@ -210,7 +210,8 @@ class GetAccountBalanceAnswerTest {
 
     @Test
     void resolvesContractAliasIfExtant() {
-        final var aliasedContractId = ContractID.newBuilder().setEvmAddress(evmAddress).build();
+        final var aliasedContractId =
+                ContractID.newBuilder().setEvmAddress(evmAddress).build();
         final var wellKnownId = EntityNum.fromLong(12345L);
         given(aliasManager.lookupIdBy(aliasedContractId.getEvmAddress())).willReturn(wellKnownId);
         given(accounts.get(wellKnownId)).willReturn(accountV);
@@ -316,7 +317,8 @@ class GetAccountBalanceAnswerTest {
                 response.getCryptogetAccountBalance().getTokenBalancesList());
         assertEquals(OK, status);
         assertEquals(balance, answer);
-        assertEquals(asAccount(accountIdLit), response.getCryptogetAccountBalance().getAccountID());
+        assertEquals(
+                asAccount(accountIdLit), response.getCryptogetAccountBalance().getAccountID());
     }
 
     private Query contractQueryWith(final ContractID id) {
@@ -346,8 +348,7 @@ class GetAccountBalanceAnswerTest {
     }
 
     private StateView wellKnownView() {
-        final TokenRelStorageAdapter tokenRels =
-                TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
+        final TokenRelStorageAdapter tokenRels = TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
         tokenRels.put(aKey, aRel);
         aRel.setNext(bToken.getTokenNum());
         tokenRels.put(bKey, bRel);
@@ -394,18 +395,14 @@ class GetAccountBalanceAnswerTest {
     private final MerkleToken alsoNotDeleted = new MerkleToken();
     private final MerkleToken deleted = new MerkleToken();
     private final MerkleToken andAlsoNotDeleted = new MerkleToken();
-    private final MerkleAccount accountV =
-            MerkleAccountFactory.newAccount()
-                    .balance(balance)
-                    .tokens(aToken, bToken, cToken, dToken)
-                    .get();
+    private final MerkleAccount accountV = MerkleAccountFactory.newAccount()
+            .balance(balance)
+            .tokens(aToken, bToken, cToken, dToken)
+            .get();
     private final MerkleTokenRelStatus aRel = new MerkleTokenRelStatus(aBalance, true, true, true);
-    private final MerkleTokenRelStatus bRel =
-            new MerkleTokenRelStatus(bBalance, false, false, false);
-    private final MerkleTokenRelStatus cRel =
-            new MerkleTokenRelStatus(cBalance, false, false, true);
-    private final MerkleTokenRelStatus dRel =
-            new MerkleTokenRelStatus(dBalance, false, false, true);
+    private final MerkleTokenRelStatus bRel = new MerkleTokenRelStatus(bBalance, false, false, false);
+    private final MerkleTokenRelStatus cRel = new MerkleTokenRelStatus(cBalance, false, false, true);
+    private final MerkleTokenRelStatus dRel = new MerkleTokenRelStatus(dBalance, false, false, true);
 
     {
         deleted.setDeleted(true);

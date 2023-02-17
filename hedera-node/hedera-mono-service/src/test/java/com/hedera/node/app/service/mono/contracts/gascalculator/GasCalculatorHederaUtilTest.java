@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.gascalculator;
 
 /*
@@ -62,9 +63,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class GasCalculatorHederaUtilTest {
-    @Mock private HbarCentExchange hbarCentExchange;
-    @Mock private UsagePricesProvider usagePricesProvider;
-    @Mock private MerkleNetworkContext merkleNetworkContext;
+    @Mock
+    private HbarCentExchange hbarCentExchange;
+
+    @Mock
+    private UsagePricesProvider usagePricesProvider;
+
+    @Mock
+    private MerkleNetworkContext merkleNetworkContext;
 
     @Test
     void assertRamByteHoursTinyBarsGiven() {
@@ -86,10 +92,7 @@ class GasCalculatorHederaUtilTest {
         assertEquals(
                 expectedRamResult,
                 GasCalculatorHederaUtil.ramByteHoursTinyBarsGiven(
-                        usagePricesProvider,
-                        hbarCentExchange,
-                        consensusTime,
-                        HederaFunctionality.ContractCall));
+                        usagePricesProvider, hbarCentExchange, consensusTime, HederaFunctionality.ContractCall));
         verify(hbarCentExchange).rate(timestamp);
         verify(usagePricesProvider).defaultPricesGiven(HederaFunctionality.ContractCall, timestamp);
     }
@@ -130,14 +133,16 @@ class GasCalculatorHederaUtilTest {
         final var blockNo = 123L;
 
         given(messageFrame.getGasPrice()).willReturn(Wei.of(2000L));
-        given(messageFrame.getBlockValues())
-                .willReturn(new HederaBlockValues(10L, blockNo, blockConsTime));
+        given(messageFrame.getBlockValues()).willReturn(new HederaBlockValues(10L, blockNo, blockConsTime));
         given(messageFrame.getContextVariable("HederaFunctionality")).willReturn(functionality);
         given(messageFrame.getMessageFrameStack()).willReturn(returningDeque);
 
         given(usagePricesProvider.defaultPricesGiven(functionality, timestamp)).willReturn(feeData);
         given(hbarCentExchange.rate(timestamp))
-                .willReturn(ExchangeRate.newBuilder().setHbarEquiv(2000).setCentEquiv(200).build());
+                .willReturn(ExchangeRate.newBuilder()
+                        .setHbarEquiv(2000)
+                        .setCentEquiv(200)
+                        .build());
 
         assertEquals(
                 28L,

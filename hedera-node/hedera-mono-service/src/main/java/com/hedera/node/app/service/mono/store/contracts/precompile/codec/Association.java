@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.codec;
 
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -24,8 +25,7 @@ public record Association(AccountID accountId, List<TokenID> tokenIds) {
         return new Association(accountId, List.of(tokenId));
     }
 
-    public static Association multiAssociation(
-            final AccountID accountId, final List<TokenID> tokenIds) {
+    public static Association multiAssociation(final AccountID accountId, final List<TokenID> tokenIds) {
         return new Association(accountId, tokenIds);
     }
 }

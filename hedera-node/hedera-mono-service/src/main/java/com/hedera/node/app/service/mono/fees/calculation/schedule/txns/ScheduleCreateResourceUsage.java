@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.schedule.txns;
 
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
@@ -34,8 +35,7 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
 
     @Inject
     public ScheduleCreateResourceUsage(
-            final ScheduleOpsUsage scheduleOpsUsage,
-            final GlobalDynamicProperties dynamicProperties) {
+            final ScheduleOpsUsage scheduleOpsUsage, final GlobalDynamicProperties dynamicProperties) {
         this.scheduleOpsUsage = scheduleOpsUsage;
         this.dynamicProperties = dynamicProperties;
     }
@@ -46,24 +46,18 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
     }
 
     @Override
-    public FeeData usageGiven(
-            final TransactionBody txn, final SigValueObj svo, final StateView view)
+    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final StateView view)
             throws InvalidTxBodyException {
         final var op = txn.getScheduleCreate();
-        final var sigUsage =
-                new SigUsage(
-                        svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+        final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
 
         final long lifetimeSecs;
 
         if (op.hasExpirationTime() && dynamicProperties.schedulingLongTermEnabled()) {
-            lifetimeSecs =
-                    Math.max(
-                            0L,
-                            op.getExpirationTime().getSeconds()
-                                    - txn.getTransactionID()
-                                            .getTransactionValidStart()
-                                            .getSeconds());
+            lifetimeSecs = Math.max(
+                    0L,
+                    op.getExpirationTime().getSeconds()
+                            - txn.getTransactionID().getTransactionValidStart().getSeconds());
         } else {
             lifetimeSecs = dynamicProperties.scheduledTxExpiryTimeSecs();
         }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.models;
 
 import com.google.common.base.MoreObjects;
@@ -47,8 +48,7 @@ public class UniqueToken {
         this.nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNumber);
     }
 
-    public UniqueToken(
-            Id tokenId, long serialNumber, RichInstant creationTime, Id owner, byte[] metadata) {
+    public UniqueToken(Id tokenId, long serialNumber, RichInstant creationTime, Id owner, byte[] metadata) {
         this.tokenId = tokenId;
         this.serialNumber = serialNumber;
         this.creationTime = creationTime;

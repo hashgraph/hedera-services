@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.accounts;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
@@ -58,8 +59,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ContractCustomizerTest {
-    @Mock private HederaAccountCustomizer accountCustomizer;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger;
+    @Mock
+    private HederaAccountCustomizer accountCustomizer;
+
+    @Mock
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger;
 
     private ContractCustomizer subject;
 
@@ -128,33 +132,29 @@ class ContractCustomizerTest {
 
     @Test
     void worksWithParsedStandinKeyAndExplicityProxy() {
-        final var op =
-                ContractCreateTransactionBody.newBuilder()
-                        .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
-                        .setProxyAccountID(proxy.toGrpcAccountId())
-                        .setMaxAutomaticTokenAssociations(10)
-                        .setMemo(memo)
-                        .build();
+        final var op = ContractCreateTransactionBody.newBuilder()
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
+                .setProxyAccountID(proxy.toGrpcAccountId())
+                .setMaxAutomaticTokenAssociations(10)
+                .setMemo(memo)
+                .build();
 
-        final var subject =
-                ContractCustomizer.fromHapiCreation(STANDIN_CONTRACT_ID_KEY, consensusNow, op);
+        final var subject = ContractCustomizer.fromHapiCreation(STANDIN_CONTRACT_ID_KEY, consensusNow, op);
 
         assertCustomizesWithImmutableKey(subject);
     }
 
     @Test
     void worksForStakedId() {
-        final var op =
-                ContractCreateTransactionBody.newBuilder()
-                        .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
-                        .setProxyAccountID(proxy.toGrpcAccountId())
-                        .setMemo(memo)
-                        .setStakedAccountId(asAccount("0.0." + stakedId))
-                        .setDeclineReward(true)
-                        .build();
+        final var op = ContractCreateTransactionBody.newBuilder()
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
+                .setProxyAccountID(proxy.toGrpcAccountId())
+                .setMemo(memo)
+                .setStakedAccountId(asAccount("0.0." + stakedId))
+                .setDeclineReward(true)
+                .build();
 
-        final var subject =
-                ContractCustomizer.fromHapiCreation(STANDIN_CONTRACT_ID_KEY, consensusNow, op);
+        final var subject = ContractCustomizer.fromHapiCreation(STANDIN_CONTRACT_ID_KEY, consensusNow, op);
 
         final var captor = ArgumentCaptor.forClass(JKey.class);
 
@@ -173,37 +173,25 @@ class ContractCustomizerTest {
 
     @Test
     void getStakedIdReturnsLatestSet() {
-        var op =
-                ContractCreateTransactionBody.newBuilder()
-                        .setStakedAccountId(asAccount("0.0." + stakedId))
-                        .setDeclineReward(true)
-                        .build();
+        var op = ContractCreateTransactionBody.newBuilder()
+                .setStakedAccountId(asAccount("0.0." + stakedId))
+                .setDeclineReward(true)
+                .build();
 
-        assertEquals(
-                stakedId,
-                getStakedId(
-                        op.getStakedIdCase().name(),
-                        op.getStakedAccountId(),
-                        op.getStakedNodeId()));
+        assertEquals(stakedId, getStakedId(op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId()));
 
         op = ContractCreateTransactionBody.newBuilder().setDeclineReward(true).build();
 
-        assertEquals(
-                -1,
-                getStakedId(
-                        op.getStakedIdCase().name(),
-                        op.getStakedAccountId(),
-                        op.getStakedNodeId()));
+        assertEquals(-1, getStakedId(op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId()));
     }
 
     @Test
     void worksWithCryptoKeyAndNoExplicitProxy() {
-        final var op =
-                ContractCreateTransactionBody.newBuilder()
-                        .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
-                        .setMaxAutomaticTokenAssociations(10)
-                        .setMemo(memo)
-                        .build();
+        final var op = ContractCreateTransactionBody.newBuilder()
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
+                .setMaxAutomaticTokenAssociations(10)
+                .setMemo(memo)
+                .build();
 
         final var subject = ContractCustomizer.fromHapiCreation(cryptoAdminKey, consensusNow, op);
 
@@ -212,13 +200,12 @@ class ContractCustomizerTest {
 
     @Test
     void worksWithAutoRenewAccount() {
-        final var op =
-                ContractCreateTransactionBody.newBuilder()
-                        .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
-                        .setAutoRenewAccountId(autoRenewAccount.toGrpcAccountId())
-                        .setMaxAutomaticTokenAssociations(10)
-                        .setMemo(memo)
-                        .build();
+        final var op = ContractCreateTransactionBody.newBuilder()
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
+                .setAutoRenewAccountId(autoRenewAccount.toGrpcAccountId())
+                .setMaxAutomaticTokenAssociations(10)
+                .setMemo(memo)
+                .build();
 
         final var subject = ContractCustomizer.fromHapiCreation(cryptoAdminKey, consensusNow, op);
 
@@ -228,12 +215,11 @@ class ContractCustomizerTest {
 
     @Test
     void worksWithAutoAssociationSlots() {
-        final var op =
-                ContractCreateTransactionBody.newBuilder()
-                        .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
-                        .setMaxAutomaticTokenAssociations(10)
-                        .setMemo(memo)
-                        .build();
+        final var op = ContractCreateTransactionBody.newBuilder()
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
+                .setMaxAutomaticTokenAssociations(10)
+                .setMemo(memo)
+                .build();
 
         final var subject = ContractCustomizer.fromHapiCreation(cryptoAdminKey, consensusNow, op);
 
@@ -297,8 +283,7 @@ class ContractCustomizerTest {
         assertCustomizesWithCryptoKey(subject, false);
     }
 
-    private void assertCustomizesWithCryptoKey(
-            final ContractCustomizer subject, final boolean hasStakedId) {
+    private void assertCustomizesWithCryptoKey(final ContractCustomizer subject, final boolean hasStakedId) {
         final var captor = ArgumentCaptor.forClass(JKey.class);
 
         subject.customize(newContractId, ledger);
@@ -333,8 +318,7 @@ class ContractCustomizerTest {
         assertTrue(JKey.equalUpToDecodability(immutableKey, keyUsed));
     }
 
-    private static final JKey cryptoAdminKey =
-            new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
+    private static final JKey cryptoAdminKey = new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
     private static final AccountID sponsorId = asAccount("0.0.666");
     private static final AccountID newContractId = asAccount("0.0.1234");
     private static final JKey immutableKey = new JContractIDKey(0, 0, 1234);

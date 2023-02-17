@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
@@ -88,8 +89,7 @@ class JKeyTest {
     @Test
     void canGetPrimitiveKeyForEd25519OrSecp256k1() {
         final var mockEd25519 = new JEd25519Key("01234578901234578901234578901".getBytes());
-        final var mockSecp256k1 =
-                new JECDSASecp256k1Key("012345789012345789012345789012".getBytes());
+        final var mockSecp256k1 = new JECDSASecp256k1Key("012345789012345789012345789012".getBytes());
 
         assertSame(mockEd25519.getEd25519(), mockEd25519.primitiveKeyIfPresent());
         assertSame(mockSecp256k1.getECDSASecp256k1Key(), mockSecp256k1.primitiveKeyIfPresent());
@@ -126,27 +126,25 @@ class JKeyTest {
         // expect:
         assertThrows(
                 DecoderException.class,
-                () ->
-                        JKey.convertJKeyBasic(
-                                new JKey() {
-                                    @Override
-                                    public boolean isEmpty() {
-                                        return false;
-                                    }
+                () -> JKey.convertJKeyBasic(new JKey() {
+                    @Override
+                    public boolean isEmpty() {
+                        return false;
+                    }
 
-                                    @Override
-                                    public boolean isValid() {
-                                        return false;
-                                    }
+                    @Override
+                    public boolean isValid() {
+                        return false;
+                    }
 
-                                    @Override
-                                    public void setForScheduledTxn(boolean flag) {}
+                    @Override
+                    public void setForScheduledTxn(boolean flag) {}
 
-                                    @Override
-                                    public boolean isForScheduledTxn() {
-                                        return false;
-                                    }
-                                }));
+                    @Override
+                    public boolean isForScheduledTxn() {
+                        return false;
+                    }
+                }));
     }
 
     @Test
@@ -164,32 +162,21 @@ class JKeyTest {
 
     @Test
     void convertsECDSAsecp256k1Key() {
-        ByteString edcsaSecp256K1Bytes =
-                ByteString.copyFrom(new byte[] {0x02})
-                        .concat(
-                                TxnUtils.randomUtf8ByteString(
-                                        JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH
-                                                - 1));
+        ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[] {0x02})
+                .concat(TxnUtils.randomUtf8ByteString(JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH - 1));
         final Key aKey = Key.newBuilder().setECDSASecp256K1(edcsaSecp256K1Bytes).build();
 
         var validEDCSAsecp256K1Key = assertDoesNotThrow(() -> JKey.convertKey(aKey, 1));
         assertTrue(validEDCSAsecp256K1Key instanceof JECDSASecp256k1Key);
         assertEquals(33, validEDCSAsecp256K1Key.getECDSASecp256k1Key().length);
         assertTrue(validEDCSAsecp256K1Key.isValid());
-        assertTrue(
-                Arrays.equals(
-                        edcsaSecp256K1Bytes.toByteArray(),
-                        validEDCSAsecp256K1Key.getECDSASecp256k1Key()));
+        assertTrue(Arrays.equals(edcsaSecp256K1Bytes.toByteArray(), validEDCSAsecp256K1Key.getECDSASecp256k1Key()));
     }
 
     @Test
     void convertsECDSAsecp256k1BasicKey() {
-        ByteString edcsaSecp256K1Bytes =
-                ByteString.copyFrom(new byte[] {0x02})
-                        .concat(
-                                TxnUtils.randomUtf8ByteString(
-                                        JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH
-                                                - 1));
+        ByteString edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[] {0x02})
+                .concat(TxnUtils.randomUtf8ByteString(JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH - 1));
         JKey jkey = new JECDSASecp256k1Key(edcsaSecp256K1Bytes.toByteArray());
         assertNull(jkey.getHollowKey());
         var key = assertDoesNotThrow(() -> JKey.convertJKeyBasic(jkey));

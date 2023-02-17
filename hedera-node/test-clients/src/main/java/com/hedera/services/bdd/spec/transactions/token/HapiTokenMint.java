@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
@@ -75,8 +76,7 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
         this.subType = figureSubType();
     }
 
-    public HapiTokenMint(
-            final String token, final List<ByteString> metadata, final String txNamePrefix) {
+    public HapiTokenMint(final String token, final List<ByteString> metadata, final String txNamePrefix) {
         this.token = token;
         this.metadata = metadata;
         this.amount = 0;
@@ -100,20 +100,14 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
-            throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         try {
             info = lookupInfo(spec, token, log, loggingOff);
         } catch (final Throwable ignore) {
 
         }
         return spec.fees()
-                .forActivityBasedOp(
-                        HederaFunctionality.TokenMint,
-                        subType,
-                        this::usageEstimate,
-                        txn,
-                        numPayerKeys);
+                .forActivityBasedOp(HederaFunctionality.TokenMint, subType, this::usageEstimate, txn, numPayerKeys);
     }
 
     private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
@@ -121,12 +115,12 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 
         long lifetime = 0L;
         if (subType == SubType.TOKEN_NON_FUNGIBLE_UNIQUE) {
-            lifetime =
-                    info.getExpiry().getSeconds()
-                            - txn.getTransactionID().getTransactionValidStart().getSeconds();
+            lifetime = info.getExpiry().getSeconds()
+                    - txn.getTransactionID().getTransactionValidStart().getSeconds();
         }
         final var tokenMintMeta = TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(txn, subType, lifetime);
-        final var baseTransactionMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
+        final var baseTransactionMeta =
+                new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
         final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
         tokenOpsUsage.tokenMintUsage(suFrom(svo), baseTransactionMeta, tokenMintMeta, accumulator);
         return AdapterUtils.feeDataFrom(accumulator);
@@ -143,23 +137,19 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final var tId = TxnUtils.asTokenId(token, spec);
-        final TokenMintTransactionBody opBody =
-                spec.txns()
-                        .<TokenMintTransactionBody, TokenMintTransactionBody.Builder>body(
-                                TokenMintTransactionBody.class,
-                                b -> {
-                                    b.setToken(tId);
-                                    b.setAmount(amount);
-                                    b.addAllMetadata(metadata);
-                                });
+        final TokenMintTransactionBody opBody = spec.txns()
+                .<TokenMintTransactionBody, TokenMintTransactionBody.Builder>body(TokenMintTransactionBody.class, b -> {
+                    b.setToken(tId);
+                    b.setAmount(amount);
+                    b.addAllMetadata(metadata);
+                });
         return b -> b.setTokenMint(opBody);
     }
 
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
-        return List.of(
-                spec -> spec.registry().getKey(effectivePayer(spec)),
-                spec -> spec.registry().getSupplyKey(token));
+        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
+                .getSupplyKey(token));
     }
 
     @Override
@@ -179,10 +169,7 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
         final MoreObjects.ToStringHelper helper =
-                super.toStringHelper()
-                        .add("token", token)
-                        .add("amount", amount)
-                        .add("metadata", metadata);
+                super.toStringHelper().add("token", token).add("amount", amount).add("metadata", metadata);
         return helper;
     }
 }

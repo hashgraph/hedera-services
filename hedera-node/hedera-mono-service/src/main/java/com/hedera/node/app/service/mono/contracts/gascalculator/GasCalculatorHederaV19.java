@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.gascalculator;
 
 /*
@@ -77,21 +78,10 @@ public class GasCalculatorHederaV19 extends LondonGasCalculator {
 
     @Override
     public long logOperationGasCost(
-            final MessageFrame frame,
-            final long dataOffset,
-            final long dataLength,
-            final int numTopics) {
-        final var gasCost =
-                GasCalculatorHederaUtil.logOperationGasCost(
-                        usagePrices,
-                        exchange,
-                        frame,
-                        getLogStorageDuration(),
-                        dataOffset,
-                        dataLength,
-                        numTopics);
-        return Math.max(
-                super.logOperationGasCost(frame, dataOffset, dataLength, numTopics), gasCost);
+            final MessageFrame frame, final long dataOffset, final long dataLength, final int numTopics) {
+        final var gasCost = GasCalculatorHederaUtil.logOperationGasCost(
+                usagePrices, exchange, frame, getLogStorageDuration(), dataOffset, dataLength, numTopics);
+        return Math.max(super.logOperationGasCost(frame, dataOffset, dataLength, numTopics), gasCost);
     }
 
     long getLogStorageDuration() {

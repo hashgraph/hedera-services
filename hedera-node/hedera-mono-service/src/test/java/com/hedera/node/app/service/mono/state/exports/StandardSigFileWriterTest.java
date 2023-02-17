@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.exports;
 
 import static com.hedera.node.app.hapi.utils.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
@@ -39,10 +40,11 @@ import org.junit.jupiter.api.io.TempDir;
 class StandardSigFileWriterTest {
     private static final byte[] pretendSig = "not-really-a-sig-at-all".getBytes();
     private final String toSign = "src/test/resources/bootstrap/standard.properties";
-    private final String cannotSign =
-            "src/test/resources/oops/bootstrap/not-so-standard.properties";
+    private final String cannotSign = "src/test/resources/oops/bootstrap/not-so-standard.properties";
     private final FileHashReader hashReader = new Sha384HashReader();
-    @TempDir private File tempDir;
+
+    @TempDir
+    private File tempDir;
 
     private final SigFileWriter subject = new StandardSigFileWriter();
 
@@ -50,8 +52,7 @@ class StandardSigFileWriterTest {
     void rethrowsIaeOnIoFailure() {
         // expect:
         Assertions.assertThrows(
-                UncheckedIOException.class,
-                () -> subject.writeSigFile(cannotSign, new byte[0], new byte[0]));
+                UncheckedIOException.class, () -> subject.writeSigFile(cannotSign, new byte[0], new byte[0]));
     }
 
     @Test
@@ -62,14 +63,12 @@ class StandardSigFileWriterTest {
 
         // when:
         var actualWritten =
-                subject.writeSigFile(
-                        TestFileUtils.toPath(tempDir, "standard.properties"), pretendSig, hash);
+                subject.writeSigFile(TestFileUtils.toPath(tempDir, "standard.properties"), pretendSig, hash);
 
         // then
         try (final var inputStream = new FileInputStream(actualWritten)) {
             final int typeHash = inputStream.read();
-            final var actualHashInSigFile =
-                    inputStream.readNBytes(Cryptography.DEFAULT_DIGEST_TYPE.digestLength());
+            final var actualHashInSigFile = inputStream.readNBytes(Cryptography.DEFAULT_DIGEST_TYPE.digestLength());
             final int typeSignature = inputStream.read();
             final int length = Ints.fromByteArray(inputStream.readNBytes(4));
             final var actualSignatureInSigFile = inputStream.readNBytes(length);
@@ -91,21 +90,16 @@ class StandardSigFileWriterTest {
         var hash = hashReader.readHash(toSign);
 
         // when:
-        var actualWritten =
-                subject.writeSigFile(
-                        TestFileUtils.toPath(
-                                tempDir.getPath(),
-                                "standard.properties" + COMPRESSION_ALGORITHM_EXTENSION),
-                        pretendSig,
-                        hash);
+        var actualWritten = subject.writeSigFile(
+                TestFileUtils.toPath(tempDir.getPath(), "standard.properties" + COMPRESSION_ALGORITHM_EXTENSION),
+                pretendSig,
+                hash);
 
         // then
-        final var uncompressedStreamFileBytes =
-                FileCompressionUtils.readUncompressedFileBytes(actualWritten);
+        final var uncompressedStreamFileBytes = FileCompressionUtils.readUncompressedFileBytes(actualWritten);
         try (final var inputStream = new ByteArrayInputStream(uncompressedStreamFileBytes)) {
             final int typeHash = inputStream.read();
-            final var actualHashInSigFile =
-                    inputStream.readNBytes(Cryptography.DEFAULT_DIGEST_TYPE.digestLength());
+            final var actualHashInSigFile = inputStream.readNBytes(Cryptography.DEFAULT_DIGEST_TYPE.digestLength());
             final int typeSignature = inputStream.read();
             final int length = Ints.fromByteArray(inputStream.readNBytes(4));
             final var actualSignatureInSigFile = inputStream.readNBytes(length);
@@ -117,9 +111,6 @@ class StandardSigFileWriterTest {
         } catch (IOException e) {
             fail("IOException while reading signature file.");
         }
-        assertTrue(
-                actualWritten.endsWith(
-                        StandardSigFileWriter.SIG_FILE_EXTENSION
-                                + COMPRESSION_ALGORITHM_EXTENSION));
+        assertTrue(actualWritten.endsWith(StandardSigFileWriter.SIG_FILE_EXTENSION + COMPRESSION_ALGORITHM_EXTENSION));
     }
 }

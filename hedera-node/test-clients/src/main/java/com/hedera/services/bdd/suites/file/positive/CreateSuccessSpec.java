@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.file.positive;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -44,10 +45,9 @@ public class CreateSuccessSpec extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    targetsAppear(),
-                });
+        return List.of(new HapiSpec[] {
+            targetsAppear(),
+        });
     }
 
     private HapiSpec targetsAppear() {
@@ -59,13 +59,12 @@ public class CreateSuccessSpec extends HapiSuite {
 
         return defaultHapiSpec("targetsAppear")
                 .given(UtilVerbs.newKeyNamed("newWacl").shape(newWacl))
-                .when(
-                        fileCreate("file")
-                                .contents(contents)
-                                .key("newWacl")
-                                .lifetime(lifetime)
-                                .signedBy(GENESIS, "newWacl")
-                                .sigControl(ControlForKey.forKey("newWacl", newWaclSigs)))
+                .when(fileCreate("file")
+                        .contents(contents)
+                        .key("newWacl")
+                        .lifetime(lifetime)
+                        .signedBy(GENESIS, "newWacl")
+                        .sigControl(ControlForKey.forKey("newWacl", newWaclSigs)))
                 .then(
                         QueryVerbs.getFileInfo("file")
                                 .hasDeleted(false)

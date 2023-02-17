@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -44,13 +45,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class RedirectPrecompileTest {
 
-    @Mock Precompile wrappedPrecompile;
+    @Mock
+    Precompile wrappedPrecompile;
 
-    @Mock WorldLedgers worldLedgers;
+    @Mock
+    WorldLedgers worldLedgers;
 
-    @Mock TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
+    @Mock
+    TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
 
-    @Mock MessageFrame messageFrame;
+    @Mock
+    MessageFrame messageFrame;
 
     TokenID tokenID = TokenID.newBuilder().setTokenNum(31415L).build();
 

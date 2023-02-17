@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.issues;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -55,20 +56,16 @@ public class Issue305Spec extends HapiSuite {
                 .given(
                         newKeyNamed("tbdKey").type(KeyFactory.KeyType.LIST),
                         fileCreate("marker").via("markerTxn"))
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    var lookup = getTxnRecord("markerTxn");
-                                    allRunFor(spec, lookup);
-                                    var markerFid =
-                                            lookup.getResponseRecord().getReceipt().getFileID();
-                                    var nextFid =
-                                            markerFid.toBuilder()
-                                                    .setFileNum(markerFid.getFileNum() + 1)
-                                                    .build();
-                                    nextFileId.set(HapiPropertySource.asFileString(nextFid));
-                                    opLog.info("Next file will be " + nextFileId.get());
-                                }))
+                .when(withOpContext((spec, opLog) -> {
+                    var lookup = getTxnRecord("markerTxn");
+                    allRunFor(spec, lookup);
+                    var markerFid = lookup.getResponseRecord().getReceipt().getFileID();
+                    var nextFid = markerFid.toBuilder()
+                            .setFileNum(markerFid.getFileNum() + 1)
+                            .build();
+                    nextFileId.set(HapiPropertySource.asFileString(nextFid));
+                    opLog.info("Next file will be " + nextFileId.get());
+                }))
                 .then(
                         fileCreate("tbd").key("tbdKey").deferStatusResolution(),
                         fileDelete(nextFileId::get).signedBy(GENESIS, "tbdKey").logged(),

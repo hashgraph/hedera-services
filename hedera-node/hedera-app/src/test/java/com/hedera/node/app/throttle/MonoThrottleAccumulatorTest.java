@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.throttle;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -31,7 +32,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class MonoThrottleAccumulatorTest {
-    @Mock private FunctionalityThrottling hapiThrottling;
+    @Mock
+    private FunctionalityThrottling hapiThrottling;
 
     private MonoThrottleAccumulator subject;
 
@@ -42,8 +44,7 @@ class MonoThrottleAccumulatorTest {
 
     @Test
     void transactionThrottlingNotYetSupported() {
-        assertThrows(
-                UnsupportedOperationException.class, () -> subject.shouldThrottle(CryptoTransfer));
+        assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottle(CryptoTransfer));
     }
 
     @Test

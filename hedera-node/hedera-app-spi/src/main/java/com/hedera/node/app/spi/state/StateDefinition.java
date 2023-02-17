@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -48,13 +49,11 @@ public record StateDefinition<K extends Comparable<K>, V>(
         }
 
         if (onDisk && maxKeysHint <= 0) {
-            throw new IllegalArgumentException(
-                    "You must specify the maxKeysHint when onDisk. Please see docs.");
+            throw new IllegalArgumentException("You must specify the maxKeysHint when onDisk. Please see docs.");
         }
 
         if (!singleton && keySerdes == null) {
-            throw new NullPointerException(
-                    "keySerdes must be specified when not using singleton types");
+            throw new NullPointerException("keySerdes must be specified when not using singleton types");
         }
     }
 
@@ -69,9 +68,7 @@ public record StateDefinition<K extends Comparable<K>, V>(
      * @param <V> The value type
      */
     public static <K extends Comparable<K>, V> StateDefinition<K, V> inMemory(
-            @NonNull final String stateKey,
-            @NonNull final Serdes<K> keySerdes,
-            @NonNull final Serdes<V> valueSerdes) {
+            @NonNull final String stateKey, @NonNull final Serdes<K> keySerdes, @NonNull final Serdes<V> valueSerdes) {
         return new StateDefinition<>(stateKey, keySerdes, valueSerdes, NO_MAX, false, false);
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry.classification;
 
 import static com.hedera.node.app.service.mono.state.expiry.classification.ClassificationResult.*;
@@ -78,9 +79,7 @@ public class ClassificationWork {
 
             final var isContract = lastClassified.isSmartContract();
             if (lastClassified.isDeleted()) {
-                return isContract
-                        ? DETACHED_CONTRACT_GRACE_PERIOD_OVER
-                        : DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
+                return isContract ? DETACHED_CONTRACT_GRACE_PERIOD_OVER : DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
             }
             if (isContract) {
                 if (!expiryThrottle.allow(CLASSIFICATION_WORK)) {
@@ -93,9 +92,7 @@ public class ClassificationWork {
             }
 
             if (payer.getBalance() > 0) {
-                return isContract
-                        ? EXPIRED_CONTRACT_READY_TO_RENEW
-                        : EXPIRED_ACCOUNT_READY_TO_RENEW;
+                return isContract ? EXPIRED_CONTRACT_READY_TO_RENEW : EXPIRED_ACCOUNT_READY_TO_RENEW;
             }
 
             // The effective payer for the expired crypto account has zero balance
@@ -106,9 +103,7 @@ public class ClassificationWork {
             if (lastClassified.isTokenTreasury()) {
                 return DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
             }
-            return isContract
-                    ? DETACHED_CONTRACT_GRACE_PERIOD_OVER
-                    : DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
+            return isContract ? DETACHED_CONTRACT_GRACE_PERIOD_OVER : DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
         }
     }
 
@@ -130,7 +125,8 @@ public class ClassificationWork {
 
     private void resolveClassifiedContractPayer() {
         if (lastClassified.hasAutoRenewAccount()) {
-            payerNum = Objects.requireNonNull(lastClassified.getAutoRenewAccount()).asNum();
+            payerNum =
+                    Objects.requireNonNull(lastClassified.getAutoRenewAccount()).asNum();
             payer = lookup.getImmutableAccount(payerNum);
             if (isValid(payer)) {
                 return;

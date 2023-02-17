@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.file;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
@@ -88,7 +89,8 @@ class FileUpdateTransitionLogicTest {
     long now = Instant.now().getEpochSecond();
     long oldExpiry = now + lifetime;
     long newExpiry = oldExpiry + 2_345_678L;
-    Duration expectedDuration = Duration.newBuilder().setSeconds(newExpiry - now).build();
+    Duration expectedDuration =
+            Duration.newBuilder().setSeconds(newExpiry - now).build();
     FileID nonSysFileTarget = IdUtils.asFile("0.1.2222");
     FileID sysFileTarget = IdUtils.asFile("0.1.121");
     Key newWacl = TxnHandlingScenario.MISC_FILE_WACL_KT.asKey();
@@ -140,9 +142,7 @@ class FileUpdateTransitionLogicTest {
 
         sigImpactHistorian = mock(SigImpactHistorian.class);
 
-        subject =
-                new FileUpdateTransitionLogic(
-                        hfs, number, validator, sigImpactHistorian, txnCtx, () -> networkCtx);
+        subject = new FileUpdateTransitionLogic(hfs, number, validator, sigImpactHistorian, txnCtx, () -> networkCtx);
     }
 
     @Test
@@ -195,10 +195,7 @@ class FileUpdateTransitionLogicTest {
         subject.doStateTransition();
 
         // then:
-        verify(hfs)
-                .overwrite(
-                        argThat(sysFileTarget::equals),
-                        argThat(bytes -> Arrays.equals(newContents, bytes)));
+        verify(hfs).overwrite(argThat(sysFileTarget::equals), argThat(bytes -> Arrays.equals(newContents, bytes)));
         verify(txnCtx).setStatus(SUCCESS);
     }
 
@@ -218,9 +215,7 @@ class FileUpdateTransitionLogicTest {
 
         // then:
         verify(hfs, never())
-                .overwrite(
-                        argThat(nonSysFileTarget::equals),
-                        argThat(bytes -> Arrays.equals(newContents, bytes)));
+                .overwrite(argThat(nonSysFileTarget::equals), argThat(bytes -> Arrays.equals(newContents, bytes)));
         verify(txnCtx).setStatus(UNAUTHORIZED);
     }
 
@@ -273,12 +268,10 @@ class FileUpdateTransitionLogicTest {
     @Test
     void doesntUpdateExpiryIfRetraction() {
         givenTxnCtxUpdating(EnumSet.of(UpdateTarget.EXPIRY, UpdateTarget.KEY));
-        fileUpdateTxn =
-                fileUpdateTxn.toBuilder()
-                        .setFileUpdate(
-                                fileUpdateTxn.getFileUpdate().toBuilder()
-                                        .setExpirationTime(Timestamp.newBuilder().setSeconds(now)))
-                        .build();
+        fileUpdateTxn = fileUpdateTxn.toBuilder()
+                .setFileUpdate(fileUpdateTxn.getFileUpdate().toBuilder()
+                        .setExpirationTime(Timestamp.newBuilder().setSeconds(now)))
+                .build();
         given(accessor.getTxn()).willReturn(fileUpdateTxn);
         // and:
         given(hfs.getattr(nonSysFileTarget)).willReturn(oldAttr);
@@ -295,8 +288,7 @@ class FileUpdateTransitionLogicTest {
         givenTxnCtxUpdating(EnumSet.allOf(UpdateTarget.class));
         // and:
         given(hfs.getattr(nonSysFileTarget)).willReturn(oldAttr);
-        given(hfs.overwrite(any(), any()))
-                .willReturn(new SimpleUpdateResult(false, false, AUTHORIZATION_FAILED));
+        given(hfs.overwrite(any(), any())).willReturn(new SimpleUpdateResult(false, false, AUTHORIZATION_FAILED));
 
         // when:
         subject.doStateTransition();
@@ -322,13 +314,9 @@ class FileUpdateTransitionLogicTest {
 
         // then:
         inOrder.verify(hfs)
-                .overwrite(
-                        argThat(nonSysFileTarget::equals),
-                        argThat(bytes -> Arrays.equals(newContents, bytes)));
-        inOrder.verify(hfs)
-                .setattr(
-                        argThat(nonSysFileTarget::equals),
-                        argThat(attr -> newAttr.toString().equals(attr.toString())));
+                .overwrite(argThat(nonSysFileTarget::equals), argThat(bytes -> Arrays.equals(newContents, bytes)));
+        inOrder.verify(hfs).setattr(argThat(nonSysFileTarget::equals), argThat(attr -> newAttr.toString()
+                .equals(attr.toString())));
         inOrder.verify(txnCtx).setStatus(SUCCESS);
         inOrder.verify(sigImpactHistorian).markEntityChanged(nonSysFileTarget.getFileNum());
     }
@@ -422,10 +410,7 @@ class FileUpdateTransitionLogicTest {
     void transitionCatchesInvalidExpiryIfPresent() {
         givenTxnCtxUpdating(EnumSet.of(UpdateTarget.EXPIRY));
         // and:
-        willThrow(
-                        new IllegalArgumentException(
-                                TieredHederaFs.IllegalArgumentType.FILE_WOULD_BE_EXPIRED
-                                        .toString()))
+        willThrow(new IllegalArgumentException(TieredHederaFs.IllegalArgumentType.FILE_WOULD_BE_EXPIRED.toString()))
                 .given(hfs)
                 .setattr(argThat(nonSysFileTarget::equals), any());
 
@@ -455,9 +440,7 @@ class FileUpdateTransitionLogicTest {
     void transitionCatchesOversizeIfThrown() {
         givenTxnCtxUpdating(EnumSet.of(UpdateTarget.CONTENTS));
         // and:
-        willThrow(
-                        new IllegalArgumentException(
-                                TieredHederaFs.IllegalArgumentType.OVERSIZE_CONTENTS.toString()))
+        willThrow(new IllegalArgumentException(TieredHederaFs.IllegalArgumentType.OVERSIZE_CONTENTS.toString()))
                 .given(hfs)
                 .overwrite(argThat(nonSysFileTarget::equals), any());
 
@@ -525,17 +508,14 @@ class FileUpdateTransitionLogicTest {
             op.setMemo(StringValue.newBuilder().setValue(newMemo).build());
         }
 
-        txnId =
-                TransactionID.newBuilder()
-                        .setTransactionValidStart(MiscUtils.asTimestamp(Instant.ofEpochSecond(now)))
-                        .build();
-        fileUpdateTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(txnId)
-                        .setTransactionValidDuration(
-                                Duration.newBuilder().setSeconds(txnValidDuration))
-                        .setFileUpdate(op)
-                        .build();
+        txnId = TransactionID.newBuilder()
+                .setTransactionValidStart(MiscUtils.asTimestamp(Instant.ofEpochSecond(now)))
+                .build();
+        fileUpdateTxn = TransactionBody.newBuilder()
+                .setTransactionID(txnId)
+                .setTransactionValidDuration(Duration.newBuilder().setSeconds(txnValidDuration))
+                .setFileUpdate(op)
+                .build();
         given(accessor.getTxn()).willReturn(fileUpdateTxn);
         given(txnCtx.accessor()).willReturn(accessor);
     }

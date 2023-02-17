@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.token;
 
 import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
@@ -20,13 +21,11 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public class TokenRevokeKycUsage extends TokenTxnUsage<TokenRevokeKycUsage> {
-    private TokenRevokeKycUsage(
-            TransactionBody tokenRevokeKycOp, TxnUsageEstimator usageEstimator) {
+    private TokenRevokeKycUsage(TransactionBody tokenRevokeKycOp, TxnUsageEstimator usageEstimator) {
         super(tokenRevokeKycOp, usageEstimator);
     }
 
-    public static TokenRevokeKycUsage newEstimate(
-            TransactionBody tokenRevokeKycOp, TxnUsageEstimator usageEstimator) {
+    public static TokenRevokeKycUsage newEstimate(TransactionBody tokenRevokeKycOp, TxnUsageEstimator usageEstimator) {
         return new TokenRevokeKycUsage(tokenRevokeKycOp, usageEstimator);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.store;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,19 +35,15 @@ class BytesStoreAdapterTest {
     private final Pattern DIGITS_PATTERN = Pattern.compile("\\d+");
     private final String TPL = "%s-%d";
     private final String PREFIX = "Testing123";
-    private final Function<byte[], StringBuilder> toSb =
-            bytes ->
-                    new StringBuilder()
-                            .append(new String(Optional.ofNullable(bytes).orElse(new byte[0])));
+    private final Function<byte[], StringBuilder> toSb = bytes ->
+            new StringBuilder().append(new String(Optional.ofNullable(bytes).orElse(new byte[0])));
     private final Function<StringBuilder, byte[]> fromSb = sb -> sb.toString().getBytes();
     private final Function<Integer, String> fromInteger = i -> String.format(TPL, PREFIX, i);
-    private final Function<String, Integer> toInteger =
-            s -> Integer.parseInt(s.substring(PREFIX.length() + 1));
-    private final Predicate<String> IS_VALID_KEY =
-            key -> {
-                return key.length() >= (PREFIX.length() + 2)
-                        && DIGITS_PATTERN.matcher(key.substring(PREFIX.length() + 1)).matches();
-            };
+    private final Function<String, Integer> toInteger = s -> Integer.parseInt(s.substring(PREFIX.length() + 1));
+    private final Predicate<String> IS_VALID_KEY = key -> {
+        return key.length() >= (PREFIX.length() + 2)
+                && DIGITS_PATTERN.matcher(key.substring(PREFIX.length() + 1)).matches();
+    };
 
     Map<String, byte[]> delegate;
     BytesStoreAdapter<Integer, StringBuilder> subject;
@@ -55,9 +52,7 @@ class BytesStoreAdapterTest {
     void setup() {
         delegate = new HashMap<>();
         delegate.put(fromInteger.apply(0), bytes("ALREADY HERE"));
-        subject =
-                new BytesStoreAdapter<>(
-                        Integer.class, toSb, fromSb, toInteger, fromInteger, delegate);
+        subject = new BytesStoreAdapter<>(Integer.class, toSb, fromSb, toInteger, fromInteger, delegate);
     }
 
     @Test
@@ -74,11 +69,7 @@ class BytesStoreAdapterTest {
                 "0->ALREADY HERE, 1->First byte, 3->Third byte",
                 subject.entrySet().stream()
                         .sorted(Comparator.comparing(Map.Entry::getKey))
-                        .map(
-                                entry ->
-                                        String.format(
-                                                "%d->%s",
-                                                entry.getKey(), new String(entry.getValue())))
+                        .map(entry -> String.format("%d->%s", entry.getKey(), new String(entry.getValue())))
                         .collect(Collectors.joining(", ")));
 
         assertTrue(subject.containsKey(1));
@@ -118,11 +109,7 @@ class BytesStoreAdapterTest {
                 "0->ALREADY HERE, 1->First byte",
                 subject.entrySet().stream()
                         .sorted(Comparator.comparing(Map.Entry::getKey))
-                        .map(
-                                entry ->
-                                        String.format(
-                                                "%d->%s",
-                                                entry.getKey(), new String(entry.getValue())))
+                        .map(entry -> String.format("%d->%s", entry.getKey(), new String(entry.getValue())))
                         .collect(Collectors.joining(", ")));
     }
 

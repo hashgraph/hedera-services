@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.ingest;
 
 import com.hedera.node.app.SessionContext;
@@ -39,7 +40,5 @@ public interface IngestWorkflow {
      * @param responseBuffer The raw protobuf response bytes.
      */
     void submitTransaction(
-            @NonNull SessionContext session,
-            @NonNull ByteBuffer requestBuffer,
-            @NonNull ByteBuffer responseBuffer);
+            @NonNull SessionContext session, @NonNull ByteBuffer requestBuffer, @NonNull ByteBuffer responseBuffer);
 }

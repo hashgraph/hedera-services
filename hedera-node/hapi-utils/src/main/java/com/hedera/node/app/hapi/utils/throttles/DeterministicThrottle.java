@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.throttles;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.productWouldOverflow;
@@ -47,52 +48,40 @@ public class DeterministicThrottle implements CongestibleThrottle {
         return new DeterministicThrottle(BucketThrottle.withMtps(mtps), name);
     }
 
-    public static DeterministicThrottle withTpsAndBurstPeriod(
-            final int tps, final int burstPeriod) {
-        return new DeterministicThrottle(
-                BucketThrottle.withTpsAndBurstPeriod(tps, burstPeriod), NO_NAME);
+    public static DeterministicThrottle withTpsAndBurstPeriod(final int tps, final int burstPeriod) {
+        return new DeterministicThrottle(BucketThrottle.withTpsAndBurstPeriod(tps, burstPeriod), NO_NAME);
     }
 
     public static DeterministicThrottle withTpsAndBurstPeriodNamed(
             final int tps, final int burstPeriod, final String name) {
-        return new DeterministicThrottle(
-                BucketThrottle.withTpsAndBurstPeriod(tps, burstPeriod), name);
+        return new DeterministicThrottle(BucketThrottle.withTpsAndBurstPeriod(tps, burstPeriod), name);
     }
 
-    public static DeterministicThrottle withMtpsAndBurstPeriod(
-            final long mtps, final int burstPeriod) {
-        return new DeterministicThrottle(
-                BucketThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod), NO_NAME);
+    public static DeterministicThrottle withMtpsAndBurstPeriod(final long mtps, final int burstPeriod) {
+        return new DeterministicThrottle(BucketThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod), NO_NAME);
     }
 
     public static DeterministicThrottle withMtpsAndBurstPeriodNamed(
             final long mtps, final int burstPeriod, final String name) {
-        return new DeterministicThrottle(
-                BucketThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod), name);
+        return new DeterministicThrottle(BucketThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod), name);
     }
 
-    public static DeterministicThrottle withTpsAndBurstPeriodMs(
-            final int tps, final long burstPeriodMs) {
-        return new DeterministicThrottle(
-                BucketThrottle.withTpsAndBurstPeriodMs(tps, burstPeriodMs), NO_NAME);
+    public static DeterministicThrottle withTpsAndBurstPeriodMs(final int tps, final long burstPeriodMs) {
+        return new DeterministicThrottle(BucketThrottle.withTpsAndBurstPeriodMs(tps, burstPeriodMs), NO_NAME);
     }
 
     public static DeterministicThrottle withTpsAndBurstPeriodMsNamed(
             final int tps, final long burstPeriodMs, final String name) {
-        return new DeterministicThrottle(
-                BucketThrottle.withTpsAndBurstPeriodMs(tps, burstPeriodMs), name);
+        return new DeterministicThrottle(BucketThrottle.withTpsAndBurstPeriodMs(tps, burstPeriodMs), name);
     }
 
-    public static DeterministicThrottle withMtpsAndBurstPeriodMs(
-            final long mtps, final long burstPeriodMs) {
-        return new DeterministicThrottle(
-                BucketThrottle.withMtpsAndBurstPeriodMs(mtps, burstPeriodMs), NO_NAME);
+    public static DeterministicThrottle withMtpsAndBurstPeriodMs(final long mtps, final long burstPeriodMs) {
+        return new DeterministicThrottle(BucketThrottle.withMtpsAndBurstPeriodMs(mtps, burstPeriodMs), NO_NAME);
     }
 
     public static DeterministicThrottle withMtpsAndBurstPeriodMsNamed(
             final long mtps, final long burstPeriodMs, final String name) {
-        return new DeterministicThrottle(
-                BucketThrottle.withMtpsAndBurstPeriodMs(mtps, burstPeriodMs), name);
+        return new DeterministicThrottle(BucketThrottle.withMtpsAndBurstPeriodMs(mtps, burstPeriodMs), name);
     }
 
     private DeterministicThrottle(final BucketThrottle delegate, final String name) {
@@ -178,7 +167,8 @@ public class DeterministicThrottle implements CongestibleThrottle {
         if (lastDecisionTime == null) {
             return 0.0;
         }
-        final var elapsedNanos = Math.max(0, Duration.between(lastDecisionTime, now).toNanos());
+        final var elapsedNanos =
+                Math.max(0, Duration.between(lastDecisionTime, now).toNanos());
         return delegate.percentUsed(elapsedNanos);
     }
 
@@ -212,8 +202,7 @@ public class DeterministicThrottle implements CongestibleThrottle {
 
     @Override
     public int hashCode() {
-        return Objects.hash(
-                delegate.bucket().totalCapacity(), delegate.mtps(), name, lastDecisionTime);
+        return Objects.hash(delegate.bucket().totalCapacity(), delegate.mtps(), name, lastDecisionTime);
     }
 
     @Override
@@ -256,18 +245,13 @@ public class DeterministicThrottle implements CongestibleThrottle {
         return lastDecisionTime;
     }
 
-    public static long elapsedNanosBetween(
-            @Nullable final Instant lastDecisionTime, final Instant now) {
+    public static long elapsedNanosBetween(@Nullable final Instant lastDecisionTime, final Instant now) {
         long elapsedNanos = 0L;
         if (lastDecisionTime != NEVER) {
             elapsedNanos = Duration.between(lastDecisionTime, now).toNanos();
             if (elapsedNanos < 0L) {
                 throw new IllegalArgumentException(
-                        "Throttle timeline must advance, but "
-                                + now
-                                + " is not after "
-                                + lastDecisionTime
-                                + "!");
+                        "Throttle timeline must advance, but " + now + " is not after " + lastDecisionTime + "!");
             }
         }
         return elapsedNanos;

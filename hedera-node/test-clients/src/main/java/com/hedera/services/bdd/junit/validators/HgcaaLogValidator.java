@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.junit.validators;
 
 import java.io.IOException;
@@ -42,28 +43,23 @@ public class HgcaaLogValidator {
         }
         if (!problemLines.isEmpty()) {
             Assertions.fail(
-                    "Found problems in log file '"
-                            + logFileLocation
-                            + "':\n"
-                            + String.join("\n", problemLines));
+                    "Found problems in log file '" + logFileLocation + "':\n" + String.join("\n", problemLines));
         }
     }
 
     private static class ProblemTracker {
         private static final int LINES_AFTER_NON_CATASTROPHIC_PROBLEM_TO_REPORT = 10;
         private static final int LINES_AFTER_CATASTROPHIC_PROBLEM_TO_REPORT = 30;
-        private static final String PROBLEM_DELIMITER =
-                "\n========================================\n";
+        private static final String PROBLEM_DELIMITER = "\n========================================\n";
 
-        private static final List<List<String>> PROBLEM_PATTERNS_TO_IGNORE =
-                List.of(
-                        List.of("active throttles, but", "Not performing a reset!"),
-                        List.of("Specified TLS cert 'hedera.crt' doesn't exist!"),
-                        List.of("Could not start Netty with TLS support on port 50212"),
-                        List.of("CryptoTransfer throughput congestion has no throttle buckets"),
-                        // (UNDESIRABLE) Remove when precompiles all return null on invalid input
-                        List.of("Internal precompile failure"),
-                        List.of("payerReqSig not expected to be null"));
+        private static final List<List<String>> PROBLEM_PATTERNS_TO_IGNORE = List.of(
+                List.of("active throttles, but", "Not performing a reset!"),
+                List.of("Specified TLS cert 'hedera.crt' doesn't exist!"),
+                List.of("Could not start Netty with TLS support on port 50212"),
+                List.of("CryptoTransfer throughput congestion has no throttle buckets"),
+                // (UNDESIRABLE) Remove when precompiles all return null on invalid input
+                List.of("Internal precompile failure"),
+                List.of("payerReqSig not expected to be null"));
 
         private int linesSinceInitialProblem = -1;
         private int linesToReportAfterInitialProblem = -1;
@@ -85,10 +81,9 @@ public class HgcaaLogValidator {
                     }
                 }
                 linesSinceInitialProblem = 0;
-                linesToReportAfterInitialProblem =
-                        isPossiblyCatastrophicProblem(line)
-                                ? LINES_AFTER_CATASTROPHIC_PROBLEM_TO_REPORT
-                                : LINES_AFTER_NON_CATASTROPHIC_PROBLEM_TO_REPORT;
+                linesToReportAfterInitialProblem = isPossiblyCatastrophicProblem(line)
+                        ? LINES_AFTER_CATASTROPHIC_PROBLEM_TO_REPORT
+                        : LINES_AFTER_NON_CATASTROPHIC_PROBLEM_TO_REPORT;
                 return true;
             } else {
                 return false;

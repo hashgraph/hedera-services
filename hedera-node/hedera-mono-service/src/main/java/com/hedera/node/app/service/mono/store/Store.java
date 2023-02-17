@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store;
 
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
@@ -33,8 +34,7 @@ public interface Store<T, K> {
 
     void setHederaLedger(HederaLedger ledger);
 
-    void setAccountsLedger(
-            TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger);
+    void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger);
 
     void commitCreation();
 

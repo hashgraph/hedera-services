@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.schedule.impl.test;
 
 import com.hedera.node.app.service.schedule.ScheduleService;
@@ -32,8 +33,7 @@ class ScheduleServiceImplTest {
         Assertions.assertEquals(
                 ScheduleServiceImpl.class,
                 service.getClass(),
-                "We must always receive an instance of type "
-                        + ScheduleServiceImpl.class.getName());
+                "We must always receive an instance of type " + ScheduleServiceImpl.class.getName());
         Assertions.assertEquals("ScheduleService", service.getServiceName());
     }
 }

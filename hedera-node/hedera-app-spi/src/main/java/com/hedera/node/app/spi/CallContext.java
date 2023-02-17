@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi;
 
 import com.hedera.node.app.spi.meta.TransactionMetadata;
@@ -32,6 +33,5 @@ public interface CallContext {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @NonNull
-    TransactionMetadata preHandle(
-            @NonNull TransactionBody transactionBody, @NonNull AccountID payer);
+    TransactionMetadata preHandle(@NonNull TransactionBody transactionBody, @NonNull AccountID payer);
 }

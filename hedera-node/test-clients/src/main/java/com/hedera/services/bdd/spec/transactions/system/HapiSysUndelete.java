@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.system;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asContractId;
@@ -61,14 +62,12 @@ public class HapiSysUndelete extends HapiTxnOp<HapiSysUndelete> {
         if (file.isPresent() && contract.isPresent()) {
             Assertions.fail("Ambiguous SystemUndelete---both file and contract present!");
         }
-        SystemUndeleteTransactionBody opBody =
-                spec.txns()
-                        .<SystemUndeleteTransactionBody, SystemUndeleteTransactionBody.Builder>body(
-                                SystemUndeleteTransactionBody.class,
-                                b -> {
-                                    file.ifPresent(n -> b.setFileID(asFileId(n, spec)));
-                                    contract.ifPresent(n -> b.setContractID(asContractId(n, spec)));
-                                });
+        SystemUndeleteTransactionBody opBody = spec.txns()
+                .<SystemUndeleteTransactionBody, SystemUndeleteTransactionBody.Builder>body(
+                        SystemUndeleteTransactionBody.class, b -> {
+                            file.ifPresent(n -> b.setFileID(asFileId(n, spec)));
+                            contract.ifPresent(n -> b.setContractID(asContractId(n, spec)));
+                        });
         return b -> b.setSystemUndelete(opBody);
     }
 

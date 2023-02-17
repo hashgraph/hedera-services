@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -116,18 +117,16 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
             }
         }
         final var randomNum = result.getLeft().getOutput();
-        final var childRecord =
-                result.getRight() == null
-                        ? createSuccessfulChildRecord(randomNum, frame, input)
-                        : createUnsuccessfulChildRecord(result.getRight(), frame);
+        final var childRecord = result.getRight() == null
+                ? createSuccessfulChildRecord(randomNum, frame, input)
+                : createUnsuccessfulChildRecord(result.getRight(), frame);
 
         final var parentUpdater = updater.parentUpdater();
         if (parentUpdater.isPresent()) {
             final var parent = (AbstractLedgerWorldUpdater) parentUpdater.get();
             parent.manageInProgressRecord(recordsHistorian, childRecord, synthBody());
         } else {
-            throw new InvalidTransactionException(
-                    "PRNG precompile frame had no parent updater", FAIL_INVALID);
+            throw new InvalidTransactionException("PRNG precompile frame had no parent updater", FAIL_INVALID);
         }
 
         return result.getLeft();
@@ -177,14 +176,12 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
     @VisibleForTesting
     long calculateGas(final Instant now) {
         final var feesInTinyCents = pricingUtils.getCanonicalPriceInTinyCents(PRNG);
-        final var currentGasPriceInTinyCents =
-                livePricesSource.currentGasPriceInTinycents(now, ContractCall);
+        final var currentGasPriceInTinyCents = livePricesSource.currentGasPriceInTinycents(now, ContractCall);
         return feesInTinyCents / currentGasPriceInTinyCents;
     }
 
     @VisibleForTesting
-    ExpirableTxnRecord.Builder createUnsuccessfulChildRecord(
-            final ResponseCodeEnum status, final MessageFrame frame) {
+    ExpirableTxnRecord.Builder createUnsuccessfulChildRecord(final ResponseCodeEnum status, final MessageFrame frame) {
         final var childRecord = creator.createUnsuccessfulSyntheticRecord(status);
         addContractCallResultToRecord(childRecord, null, Optional.of(status), frame);
         return childRecord;
@@ -196,14 +193,12 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
         final var effectsTracker = new SideEffectsTracker();
         trackPrngOutput(effectsTracker, input, randomNum);
         final var childRecord =
-                creator.createSuccessfulSyntheticRecord(
-                        Collections.emptyList(), effectsTracker, EMPTY_MEMO);
+                creator.createSuccessfulSyntheticRecord(Collections.emptyList(), effectsTracker, EMPTY_MEMO);
         addContractCallResultToRecord(childRecord, randomNum, Optional.empty(), frame);
         return childRecord;
     }
 
-    private void trackPrngOutput(
-            final SideEffectsTracker effectsTracker, final Bytes input, final Bytes randomNum) {
+    private void trackPrngOutput(final SideEffectsTracker effectsTracker, final Bytes input, final Bytes randomNum) {
         final var selector = input.getInt(0);
         if (randomNum == null) {
             return;

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -67,13 +68,12 @@ public class RandomOps extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    //						freezeDemo(),
-                    //						retryLimitDemo()
-                    //						execTimesDemo(),
-                    getAccountDetailsDemo()
-                });
+        return List.of(new HapiSpec[] {
+            //						freezeDemo(),
+            //						retryLimitDemo()
+            //						execTimesDemo(),
+            getAccountDetailsDemo()
+        });
     }
 
     private HapiSpec getAccountDetailsDemo() {
@@ -84,9 +84,7 @@ public class RandomOps extends HapiSuite {
         return defaultHapiSpec("getAccountDetailsDemo")
                 .given(
                         newKeyNamed("supplyKey"),
-                        cryptoCreate(owner)
-                                .balance(ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
+                        cryptoCreate(owner).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY)
                                 .balance(100 * ONE_HUNDRED_HBARS)
@@ -115,18 +113,16 @@ public class RandomOps extends HapiSuite {
                                                 ByteString.copyFromUtf8("c")))
                                 .via("nftTokenMint"),
                         mintToken(token, 500L).via("tokenMint"),
-                        cryptoTransfer(
-                                movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, owner)))
-                .when(
-                        cryptoApproveAllowance()
-                                .payingWith(owner)
-                                .addCryptoAllowance(owner, spender, 100L)
-                                .addTokenAllowance(owner, token, spender, 100L)
-                                .addNftAllowance(owner, nft, spender, true, List.of(1L))
-                                .via("approveTxn")
-                                .fee(ONE_HBAR)
-                                .blankMemo()
-                                .logged())
+                        cryptoTransfer(movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, owner)))
+                .when(cryptoApproveAllowance()
+                        .payingWith(owner)
+                        .addCryptoAllowance(owner, spender, 100L)
+                        .addTokenAllowance(owner, token, spender, 100L)
+                        .addNftAllowance(owner, nft, spender, true, List.of(1L))
+                        .via("approveTxn")
+                        .fee(ONE_HBAR)
+                        .blankMemo()
+                        .logged())
                 .then(
                         /* NetworkGetExecutionTime requires superuser payer */
                         getAccountDetails(owner)
@@ -135,22 +131,20 @@ public class RandomOps extends HapiSuite {
                                 .hasAnswerOnlyPrecheck(NOT_SUPPORTED),
                         getAccountDetails(owner)
                                 .payingWith(GENESIS)
-                                .has(
-                                        accountDetailsWith()
-                                                .cryptoAllowancesCount(1)
-                                                .nftApprovedForAllAllowancesCount(1)
-                                                .tokenAllowancesCount(1)
-                                                .cryptoAllowancesContaining(spender, 100L)
-                                                .tokenAllowancesContaining(token, spender, 100L)),
+                                .has(accountDetailsWith()
+                                        .cryptoAllowancesCount(1)
+                                        .nftApprovedForAllAllowancesCount(1)
+                                        .tokenAllowancesCount(1)
+                                        .cryptoAllowancesContaining(spender, 100L)
+                                        .tokenAllowancesContaining(token, spender, 100L)),
                         getAccountDetailsNoPayment(owner)
                                 .payingWith(GENESIS)
-                                .has(
-                                        accountDetailsWith()
-                                                .cryptoAllowancesCount(2)
-                                                .nftApprovedForAllAllowancesCount(1)
-                                                .tokenAllowancesCount(2)
-                                                .cryptoAllowancesContaining(spender, 100L)
-                                                .tokenAllowancesContaining(token, spender, 100L))
+                                .has(accountDetailsWith()
+                                        .cryptoAllowancesCount(2)
+                                        .nftApprovedForAllAllowancesCount(1)
+                                        .tokenAllowancesCount(2)
+                                        .cryptoAllowancesContaining(spender, 100L)
+                                        .tokenAllowancesContaining(token, spender, 100L))
                                 .hasCostAnswerPrecheck(NOT_SUPPORTED));
     }
 
@@ -165,16 +159,11 @@ public class RandomOps extends HapiSuite {
 
         return defaultHapiSpec("execTimesDemo")
                 .given(
-                        inParallel(
-                                IntStream.range(0, 1000)
-                                        .mapToObj(
-                                                i ->
-                                                        cryptoTransfer(
-                                                                        tinyBarsFromTo(
-                                                                                GENESIS, NODE, 1L))
-                                                                .deferStatusResolution()
-                                                                .noLogging())
-                                        .toArray(HapiSpecOperation[]::new)),
+                        inParallel(IntStream.range(0, 1000)
+                                .mapToObj(i -> cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
+                                        .deferStatusResolution()
+                                        .noLogging())
+                                .toArray(HapiSpecOperation[]::new)),
                         sleepFor(5_000),
                         cryptoCreate(humbleUser).balance(ONE_HUNDRED_HBARS),
                         createTopic(topic),
@@ -220,10 +209,7 @@ public class RandomOps extends HapiSuite {
 
     private HapiSpec freezeDemo() {
         return customHapiSpec("FreezeDemo")
-                .withProperties(
-                        Map.of(
-                                "nodes",
-                                "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"))
+                .withProperties(Map.of("nodes", "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"))
                 .given()
                 .when()
                 .then(freezeOnly().startingIn(60).seconds());

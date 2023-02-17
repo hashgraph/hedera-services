@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -147,15 +148,12 @@ public class TokenCreateSpecs extends HapiSuite {
                         cryptoCreate(fractionalCollector),
                         cryptoCreate(selfDenominatedFixedCollector),
                         cryptoCreate(otherSelfDenominatedFixedCollector),
-                        cryptoCreate(treasury)
-                                .maxAutomaticTokenAssociations(10)
-                                .balance(ONE_HUNDRED_HBARS))
+                        cryptoCreate(treasury).maxAutomaticTokenAssociations(10).balance(ONE_HUNDRED_HBARS))
                 .when(
                         getAccountInfo(treasury).savingSnapshot(treasury),
                         getAccountInfo(hbarCollector).savingSnapshot(hbarCollector),
                         getAccountInfo(fractionalCollector).savingSnapshot(fractionalCollector),
-                        getAccountInfo(selfDenominatedFixedCollector)
-                                .savingSnapshot(selfDenominatedFixedCollector),
+                        getAccountInfo(selfDenominatedFixedCollector).savingSnapshot(selfDenominatedFixedCollector),
                         getAccountInfo(otherSelfDenominatedFixedCollector)
                                 .savingSnapshot(otherSelfDenominatedFixedCollector),
                         tokenCreate(aToken)
@@ -163,21 +161,9 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .initialSupply(Long.MAX_VALUE)
                                 .treasury(treasury)
                                 .withCustom(fixedHbarFee(20L, hbarCollector))
-                                .withCustom(
-                                        fractionalFee(
-                                                1L,
-                                                100L,
-                                                1L,
-                                                OptionalLong.of(5L),
-                                                fractionalCollector))
-                                .withCustom(
-                                        fixedHtsFee(
-                                                2L, SENTINEL_VALUE, selfDenominatedFixedCollector))
-                                .withCustom(
-                                        fixedHtsFee(
-                                                3L,
-                                                SENTINEL_VALUE,
-                                                otherSelfDenominatedFixedCollector))
+                                .withCustom(fractionalFee(1L, 100L, 1L, OptionalLong.of(5L), fractionalCollector))
+                                .withCustom(fixedHtsFee(2L, SENTINEL_VALUE, selfDenominatedFixedCollector))
+                                .withCustom(fixedHtsFee(3L, SENTINEL_VALUE, otherSelfDenominatedFixedCollector))
                                 .signedBy(
                                         DEFAULT_PAYER,
                                         treasury,
@@ -192,64 +178,44 @@ public class TokenCreateSpecs extends HapiSuite {
                 .then(
                         /* Validate records */
                         getTxnRecord(creationTxn)
-                                .hasPriority(
-                                        recordWith()
-                                                .autoAssociated(
-                                                        accountTokenPairs(
-                                                                List.of(
-                                                                        Pair.of(treasury, aToken),
-                                                                        Pair.of(
-                                                                                fractionalCollector,
-                                                                                aToken),
-                                                                        Pair.of(
-                                                                                selfDenominatedFixedCollector,
-                                                                                aToken),
-                                                                        Pair.of(
-                                                                                otherSelfDenominatedFixedCollector,
-                                                                                aToken))))),
+                                .hasPriority(recordWith()
+                                        .autoAssociated(accountTokenPairs(List.of(
+                                                Pair.of(treasury, aToken),
+                                                Pair.of(fractionalCollector, aToken),
+                                                Pair.of(selfDenominatedFixedCollector, aToken),
+                                                Pair.of(otherSelfDenominatedFixedCollector, aToken))))),
                         getTxnRecord(failedCreationTxn)
-                                .hasPriority(
-                                        recordWith().autoAssociated(accountTokenPairs(List.of()))),
+                                .hasPriority(recordWith().autoAssociated(accountTokenPairs(List.of()))),
                         /* Validate state */
-                        getAccountInfo(hbarCollector)
-                                .has(accountWith().noChangesFromSnapshot(hbarCollector)),
+                        getAccountInfo(hbarCollector).has(accountWith().noChangesFromSnapshot(hbarCollector)),
                         getAccountInfo(treasury)
                                 .hasMaxAutomaticAssociations(10)
                                 /* TokenCreate auto-associations aren't part of the HIP-23 paradigm */
                                 .hasAlreadyUsedAutomaticAssociations(0)
-                                .has(
-                                        accountWith()
-                                                .newAssociationsFromSnapshot(
-                                                        treasury,
-                                                        List.of(relationshipWith(aToken)))),
+                                .has(accountWith()
+                                        .newAssociationsFromSnapshot(treasury, List.of(relationshipWith(aToken)))),
                         getAccountInfo(fractionalCollector)
-                                .has(
-                                        accountWith()
-                                                .newAssociationsFromSnapshot(
-                                                        fractionalCollector,
-                                                        List.of(relationshipWith(aToken)))),
+                                .has(accountWith()
+                                        .newAssociationsFromSnapshot(
+                                                fractionalCollector, List.of(relationshipWith(aToken)))),
                         getAccountInfo(selfDenominatedFixedCollector)
-                                .has(
-                                        accountWith()
-                                                .newAssociationsFromSnapshot(
-                                                        selfDenominatedFixedCollector,
-                                                        List.of(relationshipWith(aToken)))),
+                                .has(accountWith()
+                                        .newAssociationsFromSnapshot(
+                                                selfDenominatedFixedCollector, List.of(relationshipWith(aToken)))),
                         getAccountInfo(otherSelfDenominatedFixedCollector)
-                                .has(
-                                        accountWith()
-                                                .newAssociationsFromSnapshot(
-                                                        otherSelfDenominatedFixedCollector,
-                                                        List.of(relationshipWith(aToken)))));
+                                .has(accountWith()
+                                        .newAssociationsFromSnapshot(
+                                                otherSelfDenominatedFixedCollector,
+                                                List.of(relationshipWith(aToken)))));
     }
 
     private HapiSpec createsFungibleInfiniteByDefault() {
         return defaultHapiSpec("CreatesFungibleInfiniteByDefault")
                 .given()
                 .when(tokenCreate("DefaultFungible"))
-                .then(
-                        getTokenInfo("DefaultFungible")
-                                .hasTokenType(TokenType.FUNGIBLE_COMMON)
-                                .hasSupplyType(TokenSupplyType.INFINITE));
+                .then(getTokenInfo("DefaultFungible")
+                        .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                        .hasSupplyType(TokenSupplyType.INFINITE));
     }
 
     private HapiSpec worksAsExpectedWithDefaultTokenId() {
@@ -262,15 +228,12 @@ public class TokenCreateSpecs extends HapiSuite {
     public HapiSpec cannotCreateWithExcessiveLifetime() {
         final var smallBuffer = 12_345L;
         final var okExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() - smallBuffer;
-        final var excessiveExpiry =
-                defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
+        final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
         return defaultHapiSpec("CannotCreateWithExcessiveLifetime")
                 .given()
                 .when()
                 .then(
-                        tokenCreate("neverToBe")
-                                .expiry(excessiveExpiry)
-                                .hasKnownStatus(INVALID_EXPIRATION_TIME),
+                        tokenCreate("neverToBe").expiry(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME),
                         tokenCreate("neverToBe").expiry(okExpiry));
     }
 
@@ -304,13 +267,12 @@ public class TokenCreateSpecs extends HapiSuite {
     public HapiSpec creationYieldsExpectedToken() {
         return defaultHapiSpec("CreationYieldsExpectedToken")
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L), newKeyNamed("freeze"))
-                .when(
-                        tokenCreate("primary")
-                                .initialSupply(123)
-                                .decimals(4)
-                                .freezeDefault(true)
-                                .freezeKey("freeze")
-                                .treasury(TOKEN_TREASURY))
+                .when(tokenCreate("primary")
+                        .initialSupply(123)
+                        .decimals(4)
+                        .freezeDefault(true)
+                        .freezeKey("freeze")
+                        .treasury(TOKEN_TREASURY))
                 .then(getTokenInfo("primary").logged().hasRegisteredId("primary"));
     }
 
@@ -319,11 +281,10 @@ public class TokenCreateSpecs extends HapiSuite {
         return defaultHapiSpec("CreationSetsExpectedName")
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(tokenCreate("primary").name(saltedName).treasury(TOKEN_TREASURY))
-                .then(
-                        getTokenInfo("primary")
-                                .logged()
-                                .hasRegisteredId("primary")
-                                .hasName(saltedName));
+                .then(getTokenInfo("primary")
+                        .logged()
+                        .hasRegisteredId("primary")
+                        .hasName(saltedName));
     }
 
     public HapiSpec creationWithoutKYCSetsCorrectStatus() {
@@ -331,11 +292,8 @@ public class TokenCreateSpecs extends HapiSuite {
         return defaultHapiSpec("CreationWithoutKYCSetsCorrectStatus")
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(tokenCreate("primary").name(saltedName).treasury(TOKEN_TREASURY))
-                .then(
-                        getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(
-                                        relationshipWith("primary")
-                                                .kyc(TokenKycStatus.KycNotApplicable)));
+                .then(getAccountInfo(TOKEN_TREASURY)
+                        .hasToken(relationshipWith("primary").kyc(TokenKycStatus.KycNotApplicable)));
     }
 
     public HapiSpec baseCreationsHaveExpectedPrices() {
@@ -416,16 +374,10 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .feeScheduleKey(customFeeKey)
                                 .via(txnFor(uniqueWithFees)))
                 .then(
-                        validateChargedUsdWithin(
-                                txnFor(commonNoFees), expectedCommonNoCustomFeesPriceUsd, 0.01),
-                        validateChargedUsdWithin(
-                                txnFor(commonWithFees), expectedCommonWithCustomFeesPriceUsd, 0.01),
-                        validateChargedUsdWithin(
-                                txnFor(uniqueNoFees), expectedUniqueNoCustomFeesPriceUsd, 0.01),
-                        validateChargedUsdWithin(
-                                txnFor(uniqueWithFees),
-                                expectedUniqueWithCustomFeesPriceUsd,
-                                0.01));
+                        validateChargedUsdWithin(txnFor(commonNoFees), expectedCommonNoCustomFeesPriceUsd, 0.01),
+                        validateChargedUsdWithin(txnFor(commonWithFees), expectedCommonWithCustomFeesPriceUsd, 0.01),
+                        validateChargedUsdWithin(txnFor(uniqueNoFees), expectedUniqueNoCustomFeesPriceUsd, 0.01),
+                        validateChargedUsdWithin(txnFor(uniqueWithFees), expectedUniqueWithCustomFeesPriceUsd, 0.01));
     }
 
     private String txnFor(String tokenSubType) {
@@ -478,28 +430,19 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .via(secondCreation),
                         getTxnRecord(secondCreation)
                                 .logged()
-                                .hasPriority(
-                                        recordWith()
-                                                .autoAssociated(
-                                                        accountTokenPairsInAnyOrder(
-                                                                List.of(
-                                                                        Pair.of(
-                                                                                TOKEN_TREASURY,
-                                                                                "non-fungible-unique-finite"))))))
+                                .hasPriority(recordWith()
+                                        .autoAssociated(accountTokenPairsInAnyOrder(
+                                                List.of(Pair.of(TOKEN_TREASURY, "non-fungible-unique-finite"))))))
                 .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    var createTxn = getTxnRecord("createTxn");
-                                    allRunFor(spec, createTxn);
-                                    var timestamp =
-                                            createTxn
-                                                    .getResponseRecord()
-                                                    .getConsensusTimestamp()
-                                                    .getSeconds();
-                                    spec.registry()
-                                            .saveExpiry(
-                                                    "primary", timestamp + THREE_MONTHS_IN_SECONDS);
-                                }),
+                        withOpContext((spec, opLog) -> {
+                            var createTxn = getTxnRecord("createTxn");
+                            allRunFor(spec, createTxn);
+                            var timestamp = createTxn
+                                    .getResponseRecord()
+                                    .getConsensusTimestamp()
+                                    .getSeconds();
+                            spec.registry().saveExpiry("primary", timestamp + THREE_MONTHS_IN_SECONDS);
+                        }),
                         getTokenInfo("primary")
                                 .logged()
                                 .hasRegisteredId("primary")
@@ -532,16 +475,14 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .hasTotalSupply(0)
                                 .hasMaxSupply(100),
                         getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(
-                                        relationshipWith("primary")
-                                                .balance(500)
-                                                .kyc(TokenKycStatus.Granted)
-                                                .freeze(TokenFreezeStatus.Unfrozen))
-                                .hasToken(
-                                        relationshipWith("non-fungible-unique-finite")
-                                                .balance(0)
-                                                .kyc(TokenKycStatus.KycNotApplicable)
-                                                .freeze(TokenFreezeStatus.FreezeNotApplicable)));
+                                .hasToken(relationshipWith("primary")
+                                        .balance(500)
+                                        .kyc(TokenKycStatus.Granted)
+                                        .freeze(TokenFreezeStatus.Unfrozen))
+                                .hasToken(relationshipWith("non-fungible-unique-finite")
+                                        .balance(0)
+                                        .kyc(TokenKycStatus.KycNotApplicable)
+                                        .freeze(TokenFreezeStatus.FreezeNotApplicable)));
     }
 
     public HapiSpec creationSetsCorrectExpiry() {
@@ -549,26 +490,21 @@ public class TokenCreateSpecs extends HapiSuite {
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate("autoRenew").balance(0L))
-                .when(
-                        tokenCreate("primary")
-                                .autoRenewAccount("autoRenew")
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .treasury(TOKEN_TREASURY)
-                                .via("createTxn"))
+                .when(tokenCreate("primary")
+                        .autoRenewAccount("autoRenew")
+                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                        .treasury(TOKEN_TREASURY)
+                        .via("createTxn"))
                 .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    var createTxn = getTxnRecord("createTxn");
-                                    allRunFor(spec, createTxn);
-                                    var timestamp =
-                                            createTxn
-                                                    .getResponseRecord()
-                                                    .getConsensusTimestamp()
-                                                    .getSeconds();
-                                    spec.registry()
-                                            .saveExpiry(
-                                                    "primary", timestamp + THREE_MONTHS_IN_SECONDS);
-                                }),
+                        withOpContext((spec, opLog) -> {
+                            var createTxn = getTxnRecord("createTxn");
+                            allRunFor(spec, createTxn);
+                            var timestamp = createTxn
+                                    .getResponseRecord()
+                                    .getConsensusTimestamp()
+                                    .getSeconds();
+                            spec.registry().saveExpiry("primary", timestamp + THREE_MONTHS_IN_SECONDS);
+                        }),
                         getTokenInfo("primary")
                                 .logged()
                                 .hasRegisteredId("primary")
@@ -586,20 +522,14 @@ public class TokenCreateSpecs extends HapiSuite {
         return defaultHapiSpec("CreationValidatesFreezeDefaultWithNoFreezeKey")
                 .given()
                 .when()
-                .then(
-                        tokenCreate("primary")
-                                .freezeDefault(true)
-                                .hasPrecheck(TOKEN_HAS_NO_FREEZE_KEY));
+                .then(tokenCreate("primary").freezeDefault(true).hasPrecheck(TOKEN_HAS_NO_FREEZE_KEY));
     }
 
     public HapiSpec creationValidatesMemo() {
         return defaultHapiSpec("CreationValidatesMemo")
                 .given()
                 .when()
-                .then(
-                        tokenCreate("primary")
-                                .entityMemo("N\u0000!!!")
-                                .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
+                .then(tokenCreate("primary").entityMemo("N\u0000!!!").hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
     }
 
     public HapiSpec creationValidatesNonFungiblePrechecks() {
@@ -657,13 +587,12 @@ public class TokenCreateSpecs extends HapiSuite {
                 .when(
                         tokenCreate(token)
                                 .treasury(tokenCollector)
-                                .withCustom(
-                                        fractionalFee(
-                                                numerator,
-                                                0,
-                                                minimumToCollect,
-                                                OptionalLong.of(maximumToCollect),
-                                                tokenCollector))
+                                .withCustom(fractionalFee(
+                                        numerator,
+                                        0,
+                                        minimumToCollect,
+                                        OptionalLong.of(maximumToCollect),
+                                        tokenCollector))
                                 .hasKnownStatus(FRACTION_DIVIDES_BY_ZERO),
                         tokenCreate(token)
                                 .treasury(tokenCollector)
@@ -688,69 +617,62 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
                         tokenCreate(token)
                                 .treasury(tokenCollector)
-                                .withCustom(
-                                        fractionalFee(
-                                                numerator,
-                                                -denominator,
-                                                minimumToCollect,
-                                                OptionalLong.of(maximumToCollect),
-                                                tokenCollector))
+                                .withCustom(fractionalFee(
+                                        numerator,
+                                        -denominator,
+                                        minimumToCollect,
+                                        OptionalLong.of(maximumToCollect),
+                                        tokenCollector))
                                 .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
                         tokenCreate(token)
                                 .treasury(tokenCollector)
-                                .withCustom(
-                                        fractionalFee(
-                                                numerator,
-                                                denominator,
-                                                -minimumToCollect,
-                                                OptionalLong.of(maximumToCollect),
-                                                tokenCollector))
+                                .withCustom(fractionalFee(
+                                        numerator,
+                                        denominator,
+                                        -minimumToCollect,
+                                        OptionalLong.of(maximumToCollect),
+                                        tokenCollector))
                                 .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
                         tokenCreate(token)
                                 .treasury(tokenCollector)
-                                .withCustom(
-                                        fractionalFee(
-                                                numerator,
-                                                denominator,
-                                                minimumToCollect,
-                                                OptionalLong.of(-maximumToCollect),
-                                                tokenCollector))
+                                .withCustom(fractionalFee(
+                                        numerator,
+                                        denominator,
+                                        minimumToCollect,
+                                        OptionalLong.of(-maximumToCollect),
+                                        tokenCollector))
                                 .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
                         tokenCreate(token)
                                 .treasury(tokenCollector)
-                                .withCustom(
-                                        fractionalFee(
-                                                -numerator,
-                                                -denominator,
-                                                minimumToCollect,
-                                                OptionalLong.of(maximumToCollect),
-                                                tokenCollector))
+                                .withCustom(fractionalFee(
+                                        -numerator,
+                                        -denominator,
+                                        minimumToCollect,
+                                        OptionalLong.of(maximumToCollect),
+                                        tokenCollector))
                                 .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
                         tokenCreate(token)
                                 .treasury(tokenCollector)
-                                .withCustom(
-                                        fractionalFee(
-                                                numerator,
-                                                denominator,
-                                                minimumToCollect,
-                                                OptionalLong.of(minimumToCollect - 1),
-                                                tokenCollector))
+                                .withCustom(fractionalFee(
+                                        numerator,
+                                        denominator,
+                                        minimumToCollect,
+                                        OptionalLong.of(minimumToCollect - 1),
+                                        tokenCollector))
                                 .hasKnownStatus(FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT),
                         tokenCreate(token)
                                 .treasury(tokenCollector)
-                                .withCustom(
-                                        fractionalFee(
-                                                numerator,
-                                                denominator,
-                                                minimumToCollect,
-                                                OptionalLong.of(minimumToCollect),
-                                                tokenCollector))
+                                .withCustom(fractionalFee(
+                                        numerator,
+                                        denominator,
+                                        minimumToCollect,
+                                        OptionalLong.of(minimumToCollect),
+                                        tokenCollector))
                                 .hasKnownStatus(SUCCESS),
                         tokenCreate(token)
                                 .treasury(tokenCollector)
                                 .withCustom(royaltyFeeNoFallback(1, 2, tokenCollector))
-                                .hasKnownStatus(
-                                        CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE),
+                                .hasKnownStatus(CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE),
                         tokenCreate(token)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .supplyKey(GENESIS)
@@ -784,63 +706,47 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .supplyKey(GENESIS)
                                 .initialSupply(0L)
                                 .treasury(tokenCollector)
-                                .withCustom(
-                                        royaltyFeeWithFallback(
-                                                1,
-                                                2,
-                                                fixedHbarFeeInheritingRoyaltyCollector(-100),
-                                                tokenCollector))
+                                .withCustom(royaltyFeeWithFallback(
+                                        1, 2, fixedHbarFeeInheritingRoyaltyCollector(-100), tokenCollector))
                                 .hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
                         tokenCreate(token)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .supplyKey(GENESIS)
                                 .initialSupply(0L)
                                 .treasury(tokenCollector)
-                                .withCustom(
-                                        royaltyFeeWithFallback(
-                                                1,
-                                                2,
-                                                fixedHtsFeeInheritingRoyaltyCollector(100, "1.2.3"),
-                                                tokenCollector))
+                                .withCustom(royaltyFeeWithFallback(
+                                        1, 2, fixedHtsFeeInheritingRoyaltyCollector(100, "1.2.3"), tokenCollector))
                                 .hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES),
                         tokenCreate(token)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .supplyKey(GENESIS)
                                 .initialSupply(0L)
                                 .treasury(htsCollector)
-                                .withCustom(
-                                        royaltyFeeWithFallback(
-                                                1,
-                                                2,
-                                                fixedHtsFeeInheritingRoyaltyCollector(
-                                                        100, feeDenom),
-                                                htsCollector)),
+                                .withCustom(royaltyFeeWithFallback(
+                                        1, 2, fixedHtsFeeInheritingRoyaltyCollector(100, feeDenom), htsCollector)),
                         tokenCreate(token)
                                 .treasury(tokenCollector)
                                 .withCustom(fixedHbarFee(hbarAmount, hbarCollector))
                                 .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
                                 .withCustom(fixedHtsFee(htsAmount, SENTINEL_VALUE, htsCollector))
-                                .withCustom(
-                                        fractionalFee(
-                                                numerator,
-                                                denominator,
-                                                minimumToCollect,
-                                                OptionalLong.of(maximumToCollect),
-                                                tokenCollector))
+                                .withCustom(fractionalFee(
+                                        numerator,
+                                        denominator,
+                                        minimumToCollect,
+                                        OptionalLong.of(maximumToCollect),
+                                        tokenCollector))
                                 .signedBy(DEFAULT_PAYER, tokenCollector, htsCollector))
-                .then(
-                        getTokenInfo(token)
-                                .hasCustom(fixedHbarFeeInSchedule(hbarAmount, hbarCollector))
-                                .hasCustom(fixedHtsFeeInSchedule(htsAmount, feeDenom, htsCollector))
-                                .hasCustom(fixedHtsFeeInSchedule(htsAmount, token, htsCollector))
-                                .hasCustom(
-                                        fractionalFeeInSchedule(
-                                                numerator,
-                                                denominator,
-                                                minimumToCollect,
-                                                OptionalLong.of(maximumToCollect),
-                                                false,
-                                                tokenCollector)));
+                .then(getTokenInfo(token)
+                        .hasCustom(fixedHbarFeeInSchedule(hbarAmount, hbarCollector))
+                        .hasCustom(fixedHtsFeeInSchedule(htsAmount, feeDenom, htsCollector))
+                        .hasCustom(fixedHtsFeeInSchedule(htsAmount, token, htsCollector))
+                        .hasCustom(fractionalFeeInSchedule(
+                                numerator,
+                                denominator,
+                                minimumToCollect,
+                                OptionalLong.of(maximumToCollect),
+                                false,
+                                tokenCollector)));
     }
 
     private HapiSpec feeCollectorSigningReqsWorkForTokenCreate() {
@@ -855,13 +761,12 @@ public class TokenCreateSpecs extends HapiSuite {
                 .when(
                         tokenCreate(token)
                                 .treasury(TOKEN_TREASURY)
-                                .withCustom(
-                                        fractionalFee(
-                                                numerator,
-                                                0,
-                                                minimumToCollect,
-                                                OptionalLong.of(maximumToCollect),
-                                                tokenCollector))
+                                .withCustom(fractionalFee(
+                                        numerator,
+                                        0,
+                                        minimumToCollect,
+                                        OptionalLong.of(maximumToCollect),
+                                        tokenCollector))
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         tokenCreate(token)
                                 .treasury(TOKEN_TREASURY)
@@ -869,42 +774,35 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         tokenCreate(token)
                                 .treasury(TOKEN_TREASURY)
-                                .withCustom(
-                                        fractionalFee(
-                                                numerator,
-                                                -denominator,
-                                                minimumToCollect,
-                                                OptionalLong.of(maximumToCollect),
-                                                tokenCollector))
+                                .withCustom(fractionalFee(
+                                        numerator,
+                                        -denominator,
+                                        minimumToCollect,
+                                        OptionalLong.of(maximumToCollect),
+                                        tokenCollector))
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         tokenCreate(token)
                                 .treasury(TOKEN_TREASURY)
                                 .withCustom(fixedHbarFee(hbarAmount, hbarCollector))
                                 .withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
-                                .withCustom(
-                                        fractionalFee(
-                                                numerator,
-                                                denominator,
-                                                minimumToCollect,
-                                                OptionalLong.of(maximumToCollect),
-                                                tokenCollector))
-                                .signedBy(
-                                        DEFAULT_PAYER,
-                                        TOKEN_TREASURY,
-                                        htsCollector,
+                                .withCustom(fractionalFee(
+                                        numerator,
+                                        denominator,
+                                        minimumToCollect,
+                                        OptionalLong.of(maximumToCollect),
                                         tokenCollector))
+                                .signedBy(DEFAULT_PAYER, TOKEN_TREASURY, htsCollector, tokenCollector))
                 .then(
                         getTokenInfo(token)
                                 .hasCustom(fixedHbarFeeInSchedule(hbarAmount, hbarCollector))
                                 .hasCustom(fixedHtsFeeInSchedule(htsAmount, feeDenom, htsCollector))
-                                .hasCustom(
-                                        fractionalFeeInSchedule(
-                                                numerator,
-                                                denominator,
-                                                minimumToCollect,
-                                                OptionalLong.of(maximumToCollect),
-                                                false,
-                                                tokenCollector)),
+                                .hasCustom(fractionalFeeInSchedule(
+                                        numerator,
+                                        denominator,
+                                        minimumToCollect,
+                                        OptionalLong.of(maximumToCollect),
+                                        false,
+                                        tokenCollector)),
                         getAccountInfo(tokenCollector).hasToken(relationshipWith(token)),
                         getAccountInfo(hbarCollector).hasNoTokenRelationship(token),
                         getAccountInfo(htsCollector).hasNoTokenRelationship(token));
@@ -916,27 +814,17 @@ public class TokenCreateSpecs extends HapiSuite {
         return defaultHapiSpec("CreationValidatesName")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        recordSystemProperty(
-                                "tokens.maxTokenNameUtf8Bytes",
-                                Integer::parseInt,
-                                maxUtf8Bytes::set))
+                        recordSystemProperty("tokens.maxTokenNameUtf8Bytes", Integer::parseInt, maxUtf8Bytes::set))
                 .when()
                 .then(
                         tokenCreate("primary").name("").logged().hasPrecheck(MISSING_TOKEN_NAME),
-                        tokenCreate("primary")
-                                .name("T\u0000ken")
-                                .logged()
-                                .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
-                        sourcing(
-                                () ->
-                                        tokenCreate("tooLong")
-                                                .name(TxnUtils.nAscii(maxUtf8Bytes.get() + 1))
-                                                .hasPrecheck(TOKEN_NAME_TOO_LONG)),
-                        sourcing(
-                                () ->
-                                        tokenCreate("tooLongAgain")
-                                                .name(nCurrencySymbols(maxUtf8Bytes.get() / 3 + 1))
-                                                .hasPrecheck(TOKEN_NAME_TOO_LONG)));
+                        tokenCreate("primary").name("T\u0000ken").logged().hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+                        sourcing(() -> tokenCreate("tooLong")
+                                .name(TxnUtils.nAscii(maxUtf8Bytes.get() + 1))
+                                .hasPrecheck(TOKEN_NAME_TOO_LONG)),
+                        sourcing(() -> tokenCreate("tooLongAgain")
+                                .name(nCurrencySymbols(maxUtf8Bytes.get() / 3 + 1))
+                                .hasPrecheck(TOKEN_NAME_TOO_LONG)));
     }
 
     public HapiSpec creationValidatesSymbol() {
@@ -945,27 +833,17 @@ public class TokenCreateSpecs extends HapiSuite {
         return defaultHapiSpec("CreationValidatesSymbol")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        recordSystemProperty(
-                                "tokens.maxSymbolUtf8Bytes", Integer::parseInt, maxUtf8Bytes::set))
+                        recordSystemProperty("tokens.maxSymbolUtf8Bytes", Integer::parseInt, maxUtf8Bytes::set))
                 .when()
                 .then(
                         tokenCreate("missingSymbol").symbol("").hasPrecheck(MISSING_TOKEN_SYMBOL),
-                        tokenCreate("primary")
-                                .name("T\u0000ken")
-                                .logged()
-                                .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
-                        sourcing(
-                                () ->
-                                        tokenCreate("tooLong")
-                                                .symbol(TxnUtils.nAscii(maxUtf8Bytes.get() + 1))
-                                                .hasPrecheck(TOKEN_SYMBOL_TOO_LONG)),
-                        sourcing(
-                                () ->
-                                        tokenCreate("tooLongAgain")
-                                                .symbol(
-                                                        nCurrencySymbols(
-                                                                maxUtf8Bytes.get() / 3 + 1))
-                                                .hasPrecheck(TOKEN_SYMBOL_TOO_LONG)));
+                        tokenCreate("primary").name("T\u0000ken").logged().hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+                        sourcing(() -> tokenCreate("tooLong")
+                                .symbol(TxnUtils.nAscii(maxUtf8Bytes.get() + 1))
+                                .hasPrecheck(TOKEN_SYMBOL_TOO_LONG)),
+                        sourcing(() -> tokenCreate("tooLongAgain")
+                                .symbol(nCurrencySymbols(maxUtf8Bytes.get() / 3 + 1))
+                                .hasPrecheck(TOKEN_SYMBOL_TOO_LONG)));
     }
 
     private String nCurrencySymbols(int n) {
@@ -997,28 +875,23 @@ public class TokenCreateSpecs extends HapiSuite {
 
     public HapiSpec creationRequiresAppropriateSigsHappyPath() {
         return defaultHapiSpec("CreationRequiresAppropriateSigsHappyPath")
-                .given(
-                        cryptoCreate("payer"),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        newKeyNamed("adminKey"))
+                .given(cryptoCreate("payer"), cryptoCreate(TOKEN_TREASURY).balance(0L), newKeyNamed("adminKey"))
                 .when()
-                .then(
-                        tokenCreate("shouldWork")
-                                .treasury(TOKEN_TREASURY)
-                                .payingWith("payer")
-                                .adminKey("adminKey")
-                                .signedBy(TOKEN_TREASURY, "payer", "adminKey")
-                                .hasKnownStatus(SUCCESS));
+                .then(tokenCreate("shouldWork")
+                        .treasury(TOKEN_TREASURY)
+                        .payingWith("payer")
+                        .adminKey("adminKey")
+                        .signedBy(TOKEN_TREASURY, "payer", "adminKey")
+                        .hasKnownStatus(SUCCESS));
     }
 
     public HapiSpec creationValidatesTreasuryAccount() {
         return defaultHapiSpec("CreationValidatesTreasuryAccount")
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(cryptoDelete(TOKEN_TREASURY))
-                .then(
-                        tokenCreate("shouldntWork")
-                                .treasury(TOKEN_TREASURY)
-                                .hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN));
+                .then(tokenCreate("shouldntWork")
+                        .treasury(TOKEN_TREASURY)
+                        .hasKnownStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN));
     }
 
     public HapiSpec initialSupplyMustBeSane() {
@@ -1026,15 +899,9 @@ public class TokenCreateSpecs extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        tokenCreate("sinking")
-                                .initialSupply(-1L)
-                                .hasPrecheck(INVALID_TOKEN_INITIAL_SUPPLY),
-                        tokenCreate("bad decimals")
-                                .decimals(-1)
-                                .hasPrecheck(INVALID_TOKEN_DECIMALS),
-                        tokenCreate("bad decimals")
-                                .decimals(1 << 31)
-                                .hasPrecheck(INVALID_TOKEN_DECIMALS),
+                        tokenCreate("sinking").initialSupply(-1L).hasPrecheck(INVALID_TOKEN_INITIAL_SUPPLY),
+                        tokenCreate("bad decimals").decimals(-1).hasPrecheck(INVALID_TOKEN_DECIMALS),
+                        tokenCreate("bad decimals").decimals(1 << 31).hasPrecheck(INVALID_TOKEN_DECIMALS),
                         tokenCreate("bad initial supply")
                                 .initialSupply(1L << 63)
                                 .hasPrecheck(INVALID_TOKEN_INITIAL_SUPPLY));
@@ -1048,15 +915,11 @@ public class TokenCreateSpecs extends HapiSuite {
 
         return defaultHapiSpec("TreasuryHasCorrectBalance")
                 .given(cryptoCreate(TOKEN_TREASURY).balance(1L))
-                .when(
-                        tokenCreate(token)
-                                .treasury(TOKEN_TREASURY)
-                                .decimals(decimals)
-                                .initialSupply(initialSupply))
-                .then(
-                        getAccountBalance(TOKEN_TREASURY)
-                                .hasTinyBars(1L)
-                                .hasTokenBalance(token, initialSupply));
+                .when(tokenCreate(token)
+                        .treasury(TOKEN_TREASURY)
+                        .decimals(decimals)
+                        .initialSupply(initialSupply))
+                .then(getAccountBalance(TOKEN_TREASURY).hasTinyBars(1L).hasTokenBalance(token, initialSupply));
     }
 
     private HapiSpec prechecksWork() {
@@ -1102,8 +965,7 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .hasPrecheck(OK),
                         cryptoTransfer(moving(10, A_TOKEN).from(TOKEN_TREASURY))
                                 .hasPrecheck(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN),
-                        cryptoTransfer(moving(10, A_TOKEN).empty())
-                                .hasPrecheck(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS));
+                        cryptoTransfer(moving(10, A_TOKEN).empty()).hasPrecheck(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS));
     }
 
     @Override

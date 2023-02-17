@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.hedera.node.app.service.mono.utils.subjects.UniqueTokenValueSubject.assertThatTokenValue;
@@ -46,21 +47,13 @@ class UniqueTokenValueTest {
 
     @BeforeEach
     void setUp() {
-        example1 =
-                new UniqueTokenValue(
-                        1234L,
-                        5678L,
-                        "hello world".getBytes(),
-                        RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)));
+        example1 = new UniqueTokenValue(
+                1234L, 5678L, "hello world".getBytes(), RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)));
         example1.setPrev(NftNumPair.fromLongs(111L, 333L));
         example1.setNext(NftNumPair.fromLongs(222L, 444L));
 
         example2 =
-                new UniqueTokenValue(
-                        1234L,
-                        5678L,
-                        new byte[0],
-                        RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)));
+                new UniqueTokenValue(1234L, 5678L, new byte[0], RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)));
     }
 
     private void assertSameAsExample1(final UniqueTokenValue actual) {
@@ -110,8 +103,7 @@ class UniqueTokenValueTest {
 
         final ByteArrayInputStream stream2 = new ByteArrayInputStream(stream1.toByteArray());
         final UniqueTokenValue value = new UniqueTokenValue();
-        value.deserialize(
-                new SerializableDataInputStream(stream2), UniqueTokenValue.CURRENT_VERSION);
+        value.deserialize(new SerializableDataInputStream(stream2), UniqueTokenValue.CURRENT_VERSION);
         assertSameAsExample1(value);
     }
 
@@ -122,8 +114,7 @@ class UniqueTokenValueTest {
 
         final ByteArrayInputStream stream2 = new ByteArrayInputStream(stream1.toByteArray());
         final UniqueTokenValue value = new UniqueTokenValue();
-        value.deserialize(
-                new SerializableDataInputStream(stream2), UniqueTokenValue.CURRENT_VERSION);
+        value.deserialize(new SerializableDataInputStream(stream2), UniqueTokenValue.CURRENT_VERSION);
         assertSameAsExample2(value);
     }
 
@@ -139,18 +130,10 @@ class UniqueTokenValueTest {
                         .getBytes();
 
         final UniqueTokenValue value1 =
-                new UniqueTokenValue(
-                        1234L,
-                        5678L,
-                        data1,
-                        RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)));
+                new UniqueTokenValue(1234L, 5678L, data1, RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)));
 
         final UniqueTokenValue value2 =
-                new UniqueTokenValue(
-                        1234L,
-                        5678L,
-                        data2,
-                        RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)));
+                new UniqueTokenValue(1234L, 5678L, data2, RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)));
 
         final byte[] sdata1 = new byte[1024];
         final byte[] sdata2 = new byte[1024];
@@ -173,18 +156,10 @@ class UniqueTokenValueTest {
                         .getBytes();
 
         final UniqueTokenValue value1 =
-                new UniqueTokenValue(
-                        1234L,
-                        5678L,
-                        data1,
-                        RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)));
+                new UniqueTokenValue(1234L, 5678L, data1, RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)));
 
         final UniqueTokenValue value2 =
-                new UniqueTokenValue(
-                        1234L,
-                        5678L,
-                        data2,
-                        RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)));
+                new UniqueTokenValue(1234L, 5678L, data2, RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)));
 
         final ByteArrayOutputStream stream1 = new ByteArrayOutputStream();
         final ByteArrayOutputStream stream2 = new ByteArrayOutputStream();
@@ -199,18 +174,17 @@ class UniqueTokenValueTest {
     @Test
     void deserialize_withMetadataExceedingMaxBytes_cappedAtMaximum() throws IOException {
         // Manually crafted bad data (uses version 1). Need to update if encoding changes.
-        final byte[] data1 =
-                Bytes.concat(
-                        Longs.toByteArray(1234L),
-                        Longs.toByteArray(5678L),
-                        Longs.toByteArray(7890L),
-                        new byte[] {103},
-                        "1111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000zzz"
-                                .getBytes(),
-                        Longs.toByteArray(111L),
-                        Longs.toByteArray(222L),
-                        Longs.toByteArray(333L),
-                        Longs.toByteArray(444L));
+        final byte[] data1 = Bytes.concat(
+                Longs.toByteArray(1234L),
+                Longs.toByteArray(5678L),
+                Longs.toByteArray(7890L),
+                new byte[] {103},
+                "1111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000zzz"
+                        .getBytes(),
+                Longs.toByteArray(111L),
+                Longs.toByteArray(222L),
+                Longs.toByteArray(333L),
+                Longs.toByteArray(444L));
 
         final UniqueTokenValue value1 = new UniqueTokenValue();
         final UniqueTokenValue value2 = new UniqueTokenValue();
@@ -234,23 +208,20 @@ class UniqueTokenValueTest {
         new UniqueTokenValue().serialize(encodedEmpty);
 
         final UniqueTokenValue src =
-                new UniqueTokenValue(
-                        1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
+                new UniqueTokenValue(1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
         final UniqueTokenValue copy = (UniqueTokenValue) src.copy();
 
         // Make sure parent is immutable and not modified.
         assertThat(src.isImmutable()).isTrue();
         assertThat(src.getOwnerAccountNum()).isEqualTo(1234L);
         assertThat(src.getSpender().num()).isEqualTo(5678L);
-        assertThat(src.getCreationTime())
-                .isEqualTo(RichInstant.fromJava(Instant.ofEpochSecond(456, 789)));
+        assertThat(src.getCreationTime()).isEqualTo(RichInstant.fromJava(Instant.ofEpochSecond(456, 789)));
         assertThat(src.getMetadata()).isEqualTo("hello world".getBytes());
         src.release();
 
         assertThat(copy.getOwnerAccountNum()).isEqualTo(1234L);
         assertThat(copy.getSpender().num()).isEqualTo(5678L);
-        assertThat(copy.getCreationTime())
-                .isEqualTo(RichInstant.fromJava(Instant.ofEpochSecond(456, 789)));
+        assertThat(copy.getCreationTime()).isEqualTo(RichInstant.fromJava(Instant.ofEpochSecond(456, 789)));
         assertThat(copy.getMetadata()).isEqualTo("hello world".getBytes());
     }
 
@@ -260,8 +231,7 @@ class UniqueTokenValueTest {
         new UniqueTokenValue().serialize(encodedEmpty);
 
         final UniqueTokenValue src =
-                new UniqueTokenValue(
-                        1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
+                new UniqueTokenValue(1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
 
         final UniqueTokenValue readOnlyCopy = (UniqueTokenValue) src.asReadOnly();
 
@@ -274,18 +244,17 @@ class UniqueTokenValueTest {
         assertThat(readOnlyCopy.isImmutable()).isTrue();
         assertThat(readOnlyCopy.getOwnerAccountNum()).isEqualTo(1234L);
         assertThat(readOnlyCopy.getSpender().num()).isEqualTo(5678L);
-        assertThat(readOnlyCopy.getCreationTime())
-                .isEqualTo(RichInstant.fromJava(Instant.ofEpochSecond(456, 789)));
+        assertThat(readOnlyCopy.getCreationTime()).isEqualTo(RichInstant.fromJava(Instant.ofEpochSecond(456, 789)));
         assertThat(readOnlyCopy.getMetadata()).isEqualTo("hello world".getBytes());
     }
 
     @Test
     void asReadOnly_immutableObject_shouldStayImmutable() {
         final UniqueTokenValue src =
-                new UniqueTokenValue(
-                        1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
+                new UniqueTokenValue(1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
 
-        final UniqueTokenValue readOnlyCopy = (UniqueTokenValue) src.asReadOnly().asReadOnly();
+        final UniqueTokenValue readOnlyCopy =
+                (UniqueTokenValue) src.asReadOnly().asReadOnly();
         assertThat(readOnlyCopy.isImmutable()).isTrue();
     }
 
@@ -295,8 +264,7 @@ class UniqueTokenValueTest {
         new UniqueTokenValue().serialize(encodedEmpty);
 
         final UniqueTokenValue src =
-                new UniqueTokenValue(
-                        1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
+                new UniqueTokenValue(1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
 
         final UniqueTokenValue readOnlyCopy = (UniqueTokenValue) src.asReadOnly();
         assertThrows(
@@ -307,8 +275,7 @@ class UniqueTokenValueTest {
     @Test
     void toString_containsContents() {
         final UniqueTokenValue value =
-                new UniqueTokenValue(
-                        1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
+                new UniqueTokenValue(1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
         value.setPrev(NftNumPair.fromLongs(1111L, 2222L));
         value.setNext(NftNumPair.fromLongs(333L, 444L));
         assertThat(value.toString()).contains("1234");
@@ -323,38 +290,32 @@ class UniqueTokenValueTest {
     @Test
     void hashCode_mostlyUnique() {
         final UniqueTokenValue value1 =
-                new UniqueTokenValue(
-                        1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
+                new UniqueTokenValue(1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
 
         final UniqueTokenValue value2 =
-                new UniqueTokenValue(
-                        1233L, 5678L, "hello world".getBytes(), new RichInstant(455, 789));
+                new UniqueTokenValue(1233L, 5678L, "hello world".getBytes(), new RichInstant(455, 789));
 
         final UniqueTokenValue value3 =
-                new UniqueTokenValue(
-                        1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 788));
+                new UniqueTokenValue(1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 788));
 
         final UniqueTokenValue value4 =
-                new UniqueTokenValue(
-                        1234L, 5678L, "hell0 world".getBytes(), new RichInstant(456, 788));
+                new UniqueTokenValue(1234L, 5678L, "hell0 world".getBytes(), new RichInstant(456, 788));
 
         final UniqueTokenValue value5 =
-                new UniqueTokenValue(
-                        1234L, 5677L, "hello world".getBytes(), new RichInstant(456, 789));
+                new UniqueTokenValue(1234L, 5677L, "hello world".getBytes(), new RichInstant(456, 789));
 
         // Small mutations should lead to different hash codes.
-        assertThat(new HashSet<>(List.of(value1, value2, value3, value4, value5))).hasSize(5);
+        assertThat(new HashSet<>(List.of(value1, value2, value3, value4, value5)))
+                .hasSize(5);
     }
 
     @Test
     void hashCode_forCopies_areTheSame() {
         final UniqueTokenValue value1 =
-                new UniqueTokenValue(
-                        1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
+                new UniqueTokenValue(1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
 
         final UniqueTokenValue value2 =
-                new UniqueTokenValue(
-                        1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
+                new UniqueTokenValue(1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
 
         // Hashcodes are deterministic
         assertThat(value1.hashCode()).isEqualTo(value1.hashCode());
@@ -370,14 +331,12 @@ class UniqueTokenValueTest {
     @Test
     void equals_whenSameDataOrCopies_matches() {
         final UniqueTokenValue value1 =
-                new UniqueTokenValue(
-                        1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
+                new UniqueTokenValue(1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
         value1.setPrev(NftNumPair.fromLongs(1, 2));
         value1.setNext(NftNumPair.fromLongs(3, 4));
 
         final UniqueTokenValue value2 =
-                new UniqueTokenValue(
-                        1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
+                new UniqueTokenValue(1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
         value2.setPrev(NftNumPair.fromLongs(1, 2));
         value2.setNext(NftNumPair.fromLongs(3, 4));
 
@@ -393,47 +352,37 @@ class UniqueTokenValueTest {
     @Test
     void equals_whenDifferentData_doesNotMatch() {
         final UniqueTokenValue value1 =
-                new UniqueTokenValue(
-                        1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
+                new UniqueTokenValue(1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
 
         final UniqueTokenValue value2 =
-                new UniqueTokenValue(
-                        1233L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
+                new UniqueTokenValue(1233L, 5678L, "hello world".getBytes(), new RichInstant(456, 789));
 
         final UniqueTokenValue value3 =
-                new UniqueTokenValue(
-                        1234L, 5678L, "hello world".getBytes(), new RichInstant(457, 789));
+                new UniqueTokenValue(1234L, 5678L, "hello world".getBytes(), new RichInstant(457, 789));
 
         final UniqueTokenValue value4 =
-                new UniqueTokenValue(
-                        1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 780));
+                new UniqueTokenValue(1234L, 5678L, "hello world".getBytes(), new RichInstant(456, 780));
 
         final UniqueTokenValue value5 =
-                new UniqueTokenValue(
-                        1234L, 5678L, "hello w0rld".getBytes(), new RichInstant(456, 789));
+                new UniqueTokenValue(1234L, 5678L, "hello w0rld".getBytes(), new RichInstant(456, 789));
 
         final UniqueTokenValue value6 =
-                new UniqueTokenValue(
-                        1234L, 5677L, "hello world".getBytes(), new RichInstant(456, 789));
+                new UniqueTokenValue(1234L, 5677L, "hello world".getBytes(), new RichInstant(456, 789));
 
         final UniqueTokenValue value7 =
-                new UniqueTokenValue(
-                        1234L, 5677L, "hello world".getBytes(), new RichInstant(456, 789));
+                new UniqueTokenValue(1234L, 5677L, "hello world".getBytes(), new RichInstant(456, 789));
         value7.setPrev(NftNumPair.fromLongs(1, 2));
 
         final UniqueTokenValue value8 =
-                new UniqueTokenValue(
-                        1234L, 5677L, "hello world".getBytes(), new RichInstant(456, 789));
+                new UniqueTokenValue(1234L, 5677L, "hello world".getBytes(), new RichInstant(456, 789));
         value8.setPrev(NftNumPair.fromLongs(3, 4));
 
         final UniqueTokenValue value9 =
-                new UniqueTokenValue(
-                        1234L, 5677L, "hello world".getBytes(), new RichInstant(456, 789));
+                new UniqueTokenValue(1234L, 5677L, "hello world".getBytes(), new RichInstant(456, 789));
         value9.setNext(NftNumPair.fromLongs(1, 2));
 
         final UniqueTokenValue value10 =
-                new UniqueTokenValue(
-                        1234L, 5677L, "hello world".getBytes(), new RichInstant(456, 789));
+                new UniqueTokenValue(1234L, 5677L, "hello world".getBytes(), new RichInstant(456, 789));
         value10.setNext(NftNumPair.fromLongs(3, 4));
 
         assertThat(value1.equals(value2)).isFalse();

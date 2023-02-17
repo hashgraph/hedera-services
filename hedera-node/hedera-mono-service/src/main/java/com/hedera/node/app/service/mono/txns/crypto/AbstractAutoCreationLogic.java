@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
@@ -160,8 +161,7 @@ public abstract class AbstractAutoCreationLogic {
 
         final var alias = change.getNonEmptyAliasIfPresent();
         if (alias == null) {
-            throw new IllegalStateException(
-                    "Cannot auto-create an account from unaliased change " + change);
+            throw new IllegalStateException("Cannot auto-create an account from unaliased change " + change);
         }
 
         TransactionBody.Builder syntheticCreation;
@@ -183,8 +183,7 @@ public abstract class AbstractAutoCreationLogic {
             final var key = asPrimitiveKeyUnchecked(alias);
             JKey jKey = asFcKeyUnchecked(key);
 
-            syntheticCreation =
-                    syntheticTxnFactory.createAccount(alias, key, 0L, maxAutoAssociations);
+            syntheticCreation = syntheticTxnFactory.createAccount(alias, key, 0L, maxAutoAssociations);
             customizer.key(jKey);
             memo = AUTO_MEMO;
         }
@@ -211,13 +210,11 @@ public abstract class AbstractAutoCreationLogic {
         final var sideEffects = new SideEffectsTracker();
         sideEffects.trackAutoCreation(newId);
 
-        final var childRecord =
-                creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, memo);
+        final var childRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, memo);
         childRecord.setFee(fee);
 
         final var inProgress =
-                new InProgressChildRecord(
-                        DEFAULT_SOURCE_ID, syntheticCreation, childRecord, Collections.emptyList());
+                new InProgressChildRecord(DEFAULT_SOURCE_ID, syntheticCreation, childRecord, Collections.emptyList());
         pendingCreations.add(inProgress);
 
         trackAlias(alias, newId);
@@ -227,8 +224,7 @@ public abstract class AbstractAutoCreationLogic {
 
     protected abstract void trackAlias(final ByteString alias, final AccountID newId);
 
-    private void replaceAliasAndSetBalanceOnChange(
-            final BalanceChange change, final AccountID newAccountId) {
+    private void replaceAliasAndSetBalanceOnChange(final BalanceChange change, final AccountID newAccountId) {
         if (change.isForHbar()) {
             change.setNewBalance(change.getAggregatedUnits());
         }
@@ -240,27 +236,21 @@ public abstract class AbstractAutoCreationLogic {
         // fee estimator, so we just need to pass a stub ECDSA key
         // in the synthetic crypto update body
         final var updateTxnBody =
-                CryptoUpdateTransactionBody.newBuilder()
-                        .setKey(Key.newBuilder().setECDSASecp256K1(ByteString.EMPTY));
-        return autoCreationFeeFor(
-                TransactionBody.newBuilder().setCryptoUpdateAccount(updateTxnBody));
+                CryptoUpdateTransactionBody.newBuilder().setKey(Key.newBuilder().setECDSASecp256K1(ByteString.EMPTY));
+        return autoCreationFeeFor(TransactionBody.newBuilder().setCryptoUpdateAccount(updateTxnBody));
     }
 
     private long autoCreationFeeFor(final TransactionBody.Builder cryptoCreateTxn) {
-        final var signedTxn =
-                SignedTransaction.newBuilder()
-                        .setBodyBytes(cryptoCreateTxn.build().toByteString())
-                        .setSigMap(SignatureMap.getDefaultInstance())
-                        .build();
-        final var txn =
-                Transaction.newBuilder()
-                        .setSignedTransactionBytes(signedTxn.toByteString())
-                        .build();
+        final var signedTxn = SignedTransaction.newBuilder()
+                .setBodyBytes(cryptoCreateTxn.build().toByteString())
+                .setSigMap(SignatureMap.getDefaultInstance())
+                .build();
+        final var txn = Transaction.newBuilder()
+                .setSignedTransactionBytes(signedTxn.toByteString())
+                .build();
 
         final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
-        final var fees =
-                feeCalculator.computeFee(
-                        accessor, EMPTY_KEY, currentView.get(), txnCtx.consensusTime());
+        final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, currentView.get(), txnCtx.consensusTime());
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
     }
 

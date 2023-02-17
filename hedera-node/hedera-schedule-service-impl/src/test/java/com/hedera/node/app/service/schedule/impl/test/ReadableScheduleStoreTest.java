@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.schedule.impl.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,10 +37,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ReadableScheduleStoreTest {
-    @Mock ReadableStates states;
-    @Mock ReadableKVState state;
-    @Mock ScheduleVirtualValue schedule;
-    @Mock JKey adminKey;
+    @Mock
+    ReadableStates states;
+
+    @Mock
+    ReadableKVState state;
+
+    @Mock
+    ScheduleVirtualValue schedule;
+
+    @Mock
+    JKey adminKey;
+
     private ReadableScheduleStore subject;
 
     @BeforeEach
@@ -58,14 +67,14 @@ class ReadableScheduleStoreTest {
         given(state.get(1L)).willReturn(null);
 
         assertEquals(
-                Optional.empty(), subject.get(ScheduleID.newBuilder().setScheduleNum(1L).build()));
+                Optional.empty(),
+                subject.get(ScheduleID.newBuilder().setScheduleNum(1L).build()));
     }
 
     @Test
     void getsScheduleMetaFromFetchedSchedule() {
         given(state.get(1L)).willReturn(schedule);
-        given(schedule.ordinaryViewOfScheduledTxn())
-                .willReturn(TransactionBody.getDefaultInstance());
+        given(schedule.ordinaryViewOfScheduledTxn()).willReturn(TransactionBody.getDefaultInstance());
         given(schedule.adminKey()).willReturn(Optional.of(adminKey));
         given(schedule.hasExplicitPayer()).willReturn(true);
         given(schedule.payer()).willReturn(EntityId.fromNum(2L));
@@ -81,8 +90,7 @@ class ReadableScheduleStoreTest {
     @Test
     void getsScheduleMetaFromFetchedScheduleNoExplicitPayer() {
         given(state.get(1L)).willReturn(schedule);
-        given(schedule.ordinaryViewOfScheduledTxn())
-                .willReturn(TransactionBody.getDefaultInstance());
+        given(schedule.ordinaryViewOfScheduledTxn()).willReturn(TransactionBody.getDefaultInstance());
         given(schedule.adminKey()).willReturn(Optional.of(adminKey));
         given(schedule.hasExplicitPayer()).willReturn(false);
 

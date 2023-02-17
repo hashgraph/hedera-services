@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.utils;
 
 import java.io.File;
@@ -94,8 +95,7 @@ public class ZipUtil {
                 }
 
                 try (FileInputStream fis = new FileInputStream(file)) {
-                    String name =
-                            file.getAbsolutePath().replace(rootDirectory.getAbsolutePath(), "");
+                    String name = file.getAbsolutePath().replace(rootDirectory.getAbsolutePath(), "");
                     log.info("Adding file:" + name);
                     zos.putNextEntry(new ZipEntry(name));
                     int length;

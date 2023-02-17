@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -58,21 +59,16 @@ public class CallCodeOperationSuite extends HapiSuite {
                 .then(
                         contractCall(contract, "callCode", asHeadlongAddress(INVALID_ADDRESS))
                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var id = spec.registry().getAccountID(DEFAULT_PAYER);
-                                    final var solidityAddress =
-                                            HapiPropertySource.asHexedSolidityAddress(id);
+                        withOpContext((spec, opLog) -> {
+                            final var id = spec.registry().getAccountID(DEFAULT_PAYER);
+                            final var solidityAddress = HapiPropertySource.asHexedSolidityAddress(id);
 
-                                    final var contractCall =
-                                            contractCall(
-                                                            contract,
-                                                            "callCode",
-                                                            asHeadlongAddress(solidityAddress))
-                                                    .hasKnownStatus(SUCCESS);
+                            final var contractCall = contractCall(
+                                            contract, "callCode", asHeadlongAddress(solidityAddress))
+                                    .hasKnownStatus(SUCCESS);
 
-                                    allRunFor(spec, contractCall);
-                                }));
+                            allRunFor(spec, contractCall);
+                        }));
     }
 
     @Override

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.query;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetAccountDetails;
@@ -133,9 +134,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             LOGGER.debug("Received query: {}", query);
         }
 
-        final var functionality =
-                MiscUtils.functionalityOfQuery(query)
-                        .orElseThrow(() -> new StatusRuntimeException(Status.INVALID_ARGUMENT));
+        final var functionality = MiscUtils.functionalityOfQuery(query)
+                .orElseThrow(() -> new StatusRuntimeException(Status.INVALID_ARGUMENT));
         opCounters.countReceived(functionality);
 
         final var handler = dispatcher.getHandler(query);
@@ -196,8 +196,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
             // 5. Submit payment to platform
             if (paymentRequired) {
-                submissionManager.submit(
-                        txBody, allegedPayment.toByteArray(), session.txBodyParser());
+                submissionManager.submit(txBody, allegedPayment.toByteArray(), session.txBodyParser());
             }
 
             if (handler.needsAnswerOnlyCost(responseType)) {
@@ -215,8 +214,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             opCounters.countAnswered(functionality);
 
         } catch (InsufficientBalanceException e) {
-            final var header =
-                    createResponseHeader(responseType, e.responseCode(), e.getEstimatedFee());
+            final var header = createResponseHeader(responseType, e.responseCode(), e.getEstimatedFee());
             response = handler.createEmptyResponse(header);
         } catch (PreCheckException e) {
             final var header = createResponseHeader(responseType, e.responseCode(), fee);
@@ -227,9 +225,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     }
 
     private static ResponseHeader createResponseHeader(
-            @NonNull final ResponseType type,
-            @NonNull final ResponseCodeEnum responseCode,
-            final long fee) {
+            @NonNull final ResponseType type, @NonNull final ResponseCodeEnum responseCode, final long fee) {
         return ResponseHeader.newBuilder()
                 .setResponseType(type)
                 .setNodeTransactionPrecheckCode(responseCode)

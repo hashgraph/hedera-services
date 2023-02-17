@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stats;
 
 import static com.hedera.node.app.service.mono.utils.SleepingPause.SLEEPING_PAUSE;
@@ -39,14 +40,11 @@ public class ServicesStatsManager {
     public static final String SPEEDOMETER_FORMAT = "%,13.2f";
     public static final String RUNNING_AVG_FORMAT = "%,13.6f";
     static Pause pause = SLEEPING_PAUSE;
-    static Function<Runnable, Thread> loopFactory =
-            loop ->
-                    new Thread(
-                            () -> {
-                                while (true) {
-                                    loop.run();
-                                }
-                            });
+    static Function<Runnable, Thread> loopFactory = loop -> new Thread(() -> {
+        while (true) {
+            loop.run();
+        }
+    });
 
     static final String STATS_UPDATE_THREAD_NAME_TPL = "StatsUpdateThread%d";
 
@@ -97,41 +95,29 @@ public class ServicesStatsManager {
         bytecode.get().registerMetrics(platform.getMetrics());
 
         final var hapiOpsUpdateIntervalMs =
-                Math.max(
-                        MIN_STAT_INTERVAL_UPDATE_MS,
-                        localProperties.hapiOpsStatsUpdateIntervalMs());
+                Math.max(MIN_STAT_INTERVAL_UPDATE_MS, localProperties.hapiOpsStatsUpdateIntervalMs());
         final var entityUtilUpdateIntervalMs =
-                Math.max(
-                        MIN_STAT_INTERVAL_UPDATE_MS,
-                        localProperties.entityUtilStatsUpdateIntervalMs());
+                Math.max(MIN_STAT_INTERVAL_UPDATE_MS, localProperties.entityUtilStatsUpdateIntervalMs());
         final var throttleUtilUpdateIntervalMs =
-                Math.max(
-                        MIN_STAT_INTERVAL_UPDATE_MS,
-                        localProperties.throttleUtilStatsUpdateIntervalMs());
-        final var pauseTimeMs =
-                gcd(
-                        hapiOpsUpdateIntervalMs,
-                        entityUtilUpdateIntervalMs,
-                        throttleUtilUpdateIntervalMs);
+                Math.max(MIN_STAT_INTERVAL_UPDATE_MS, localProperties.throttleUtilStatsUpdateIntervalMs());
+        final var pauseTimeMs = gcd(hapiOpsUpdateIntervalMs, entityUtilUpdateIntervalMs, throttleUtilUpdateIntervalMs);
         final var pausesBetweenHapiOpsUpdate = hapiOpsUpdateIntervalMs / pauseTimeMs;
         final var pausesBetweenEntityUtilUpdate = entityUtilUpdateIntervalMs / pauseTimeMs;
         final var pausesBetweenThrottleUtilUpdate = throttleUtilUpdateIntervalMs / pauseTimeMs;
         final var numPauses = new AtomicLong(0);
-        final var updateThread =
-                loopFactory.apply(
-                        () -> {
-                            pause.forMs(pauseTimeMs);
-                            final var n = numPauses.incrementAndGet();
-                            if (n % pausesBetweenHapiOpsUpdate == 0) {
-                                opSpeedometers.updateAll();
-                            }
-                            if (n % pausesBetweenThrottleUtilUpdate == 0) {
-                                throttleGauges.updateAll();
-                            }
-                            if (n % pausesBetweenEntityUtilUpdate == 0) {
-                                entityUtilGauges.updateAll();
-                            }
-                        });
+        final var updateThread = loopFactory.apply(() -> {
+            pause.forMs(pauseTimeMs);
+            final var n = numPauses.incrementAndGet();
+            if (n % pausesBetweenHapiOpsUpdate == 0) {
+                opSpeedometers.updateAll();
+            }
+            if (n % pausesBetweenThrottleUtilUpdate == 0) {
+                throttleGauges.updateAll();
+            }
+            if (n % pausesBetweenEntityUtilUpdate == 0) {
+                entityUtilGauges.updateAll();
+            }
+        });
 
         updateThread.setName(
                 String.format(STATS_UPDATE_THREAD_NAME_TPL, platform.getSelfId().getId()));

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.assertions;
 
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -34,8 +35,7 @@ public class NoNftTransfers implements ErroringAssertsProvider<List<TokenTransfe
                 try {
                     final var ownershipChanges = tokenTransfer.getNftTransfersList();
                     Assertions.assertTrue(
-                            ownershipChanges.isEmpty(),
-                            () -> "Expected no NFT transfers, were: " + ownershipChanges);
+                            ownershipChanges.isEmpty(), () -> "Expected no NFT transfers, were: " + ownershipChanges);
                 } catch (Throwable t) {
                     unexpectedOwnershipChanges.add(t);
                 }

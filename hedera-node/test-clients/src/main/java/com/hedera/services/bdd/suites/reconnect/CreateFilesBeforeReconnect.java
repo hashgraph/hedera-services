@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.reconnect;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -67,14 +68,10 @@ public class CreateFilesBeforeReconnect extends HapiSuite {
     }
 
     private HapiSpec runCreateFiles() {
-        PerfTestLoadSettings settings =
-                new PerfTestLoadSettings(
-                        FILE_CREATION_RECONNECT_TPS,
-                        DEFAULT_MINS_FOR_RECONNECT_TESTS,
-                        DEFAULT_THREADS_FOR_RECONNECT_TESTS);
+        PerfTestLoadSettings settings = new PerfTestLoadSettings(
+                FILE_CREATION_RECONNECT_TPS, DEFAULT_MINS_FOR_RECONNECT_TESTS, DEFAULT_THREADS_FOR_RECONNECT_TESTS);
 
-        Supplier<HapiSpecOperation[]> createBurst =
-                () -> new HapiSpecOperation[] {generateFileCreateOperation()};
+        Supplier<HapiSpecOperation[]> createBurst = () -> new HapiSpecOperation[] {generateFileCreateOperation()};
 
         return defaultHapiSpec("RunCreateFiles")
                 .given(logIt(ignore -> settings.toString()))

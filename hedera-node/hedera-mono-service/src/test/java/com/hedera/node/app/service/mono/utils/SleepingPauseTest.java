@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -35,15 +36,13 @@ class SleepingPauseTest {
         // setup:
         AtomicBoolean retValue = new AtomicBoolean(true);
         Thread sleepingThread = new Thread(() -> retValue.set(subject.forMs(5_000L)));
-        Thread wakingThread =
-                new Thread(
-                        () -> {
-                            try {
-                                Thread.sleep(100L);
-                            } catch (InterruptedException ignore) {
-                            }
-                            sleepingThread.interrupt();
-                        });
+        Thread wakingThread = new Thread(() -> {
+            try {
+                Thread.sleep(100L);
+            } catch (InterruptedException ignore) {
+            }
+            sleepingThread.interrupt();
+        });
 
         // when:
         sleepingThread.start();

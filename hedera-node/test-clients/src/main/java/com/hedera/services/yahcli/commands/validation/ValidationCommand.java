@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.commands.validation;
 
 import static com.hedera.services.bdd.spec.persistence.EntityManager.accountLoc;
@@ -54,7 +55,8 @@ public class ValidationCommand implements Callable<Integer> {
     public static final String MUTABLE_SCHEDULE = "yahcliMutablePendingXfer";
     public static final String IMMUTABLE_SCHEDULE = "yahcliImmutablePendingXfer";
 
-    @ParentCommand private Yahcli yahcli;
+    @ParentCommand
+    private Yahcli yahcli;
 
     /* Should support { crypto, file, contract, consensus, token, scheduling } */
     @CommandLine.Parameters(
@@ -147,8 +149,7 @@ public class ValidationCommand implements Callable<Integer> {
 
     private String[] alwaysResetScheduleEntities(String persistenceDir) {
         return new String[] {
-            scheduleLoc(persistenceDir, yaml(MUTABLE_SCHEDULE)),
-            scheduleLoc(persistenceDir, yaml(IMMUTABLE_SCHEDULE))
+            scheduleLoc(persistenceDir, yaml(MUTABLE_SCHEDULE)), scheduleLoc(persistenceDir, yaml(IMMUTABLE_SCHEDULE))
         };
     }
 
@@ -172,12 +173,7 @@ public class ValidationCommand implements Callable<Integer> {
                 var dir = new File(entityLoc.substring(0, entityLoc.lastIndexOf(File.separator)));
                 dir.mkdirs();
                 var tplResource = "yahcli" + entityLoc.substring(entityLoc.indexOf(File.separator));
-                System.out.println(
-                        ". Creating "
-                                + entityLoc
-                                + " from resource template '"
-                                + tplResource
-                                + "'...");
+                System.out.println(". Creating " + entityLoc + " from resource template '" + tplResource + "'...");
                 try (var fout = Files.newOutputStream(Paths.get(entityLoc))) {
                     ValidationCommand.class
                             .getClassLoader()

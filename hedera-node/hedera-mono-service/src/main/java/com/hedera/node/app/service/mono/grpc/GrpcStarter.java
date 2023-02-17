@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc;
 
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
@@ -69,12 +70,8 @@ public class GrpcStarter {
                 } else {
                     final var staticBook = addressBook.get();
                     final var nodeAddress = staticBook.getAddress(nodeId.getId());
-                    int portOffset =
-                            thisNodeIsDefaultListener()
-                                    ? 0
-                                    : nodeAddress.getPortExternalIpv4() % PORT_MODULUS;
-                    grpc.start(
-                            port + portOffset, tlsPort + portOffset, this::logInfoWithConsoleEcho);
+                    int portOffset = thisNodeIsDefaultListener() ? 0 : nodeAddress.getPortExternalIpv4() % PORT_MODULUS;
+                    grpc.start(port + portOffset, tlsPort + portOffset, this::logInfoWithConsoleEcho);
                 }
                 break;
             case TEST:

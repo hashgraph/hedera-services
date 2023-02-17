@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.file;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -71,13 +72,12 @@ public class FileAppendSuite extends HapiSuite {
                                 .key(magicWacl)
                                 .lifetime(THREE_MONTHS_IN_SECONDS)
                                 .contents("Nothing much!"))
-                .when(
-                        fileAppend(targetFile)
-                                .signedBy(magicKey)
-                                .blankMemo()
-                                .content(contentBuilder.toString())
-                                .payingWith(civilian)
-                                .via(baseAppend))
+                .when(fileAppend(targetFile)
+                        .signedBy(magicKey)
+                        .blankMemo()
+                        .content(contentBuilder.toString())
+                        .payingWith(civilian)
+                        .via(baseAppend))
                 .then(validateChargedUsdWithin(baseAppend, expectedAppendFeesPriceUsd, 0.01));
     }
 
