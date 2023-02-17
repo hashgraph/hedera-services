@@ -13,18 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.config;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_ADDRESS_BOOK_ADMIN;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_EXCHANGE_RATES_ADMIN;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_FEE_SCHEDULE_ADMIN;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_FREEZE_ADMIN;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_NODE_REWARD_ACCOUNT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_SYSTEM_ADMIN;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_SYSTEM_DELETE_ADMIN;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_SYSTEM_UNDELETE_ADMIN;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_TREASURY;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_ADDRESS_BOOK_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_EXCHANGE_RATES_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_FEE_SCHEDULE_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_FREEZE_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_NODE_REWARD_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_SYSTEM_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_SYSTEM_DELETE_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_SYSTEM_UNDELETE_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_TREASURY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,6 +37,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class AccountNumbersTest {
+
     PropertySource properties;
     AccountNumbers subject;
 

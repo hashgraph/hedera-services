@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.migration;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder.buildStakingInfoMap;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -33,8 +34,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StakingInfoMapBuilderTest {
-    @Mock AddressBook addressBook;
-    @Mock BootstrapProperties bootstrapProperties;
+
+    @Mock
+    AddressBook addressBook;
+
+    @Mock
+    BootstrapProperties bootstrapProperties;
 
     @Test
     void buildsStakingInfoMapAsExpected() {
@@ -58,23 +63,26 @@ class StakingInfoMapBuilderTest {
         given(address4.getId()).willReturn(3L);
         given(addressBook.getAddress(4)).willReturn(address5);
         given(address5.getId()).willReturn(4L);
-        given(bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT))
-                .willReturn(totalHbar);
+        given(bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(totalHbar);
 
-        var stakingInfoMap = buildStakingInfoMap(addressBook, bootstrapProperties);
+        final var stakingInfoMap = buildStakingInfoMap(addressBook, bootstrapProperties);
 
         assertEquals(5, stakingInfoMap.size());
         assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(0)));
         assertEquals(
-                expectedMaxStakePerNode, stakingInfoMap.get(EntityNum.fromInt(0)).getMaxStake());
+                expectedMaxStakePerNode,
+                stakingInfoMap.get(EntityNum.fromInt(0)).getMaxStake());
         assertEquals(
-                expectedMinStakePerNode, stakingInfoMap.get(EntityNum.fromInt(0)).getMinStake());
+                expectedMinStakePerNode,
+                stakingInfoMap.get(EntityNum.fromInt(0)).getMinStake());
         assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(1)));
         assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(2)));
         assertEquals(
-                expectedMaxStakePerNode, stakingInfoMap.get(EntityNum.fromInt(2)).getMaxStake());
+                expectedMaxStakePerNode,
+                stakingInfoMap.get(EntityNum.fromInt(2)).getMaxStake());
         assertEquals(
-                expectedMinStakePerNode, stakingInfoMap.get(EntityNum.fromInt(2)).getMinStake());
+                expectedMinStakePerNode,
+                stakingInfoMap.get(EntityNum.fromInt(2)).getMinStake());
         assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(3)));
         assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(4)));
     }

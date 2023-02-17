@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.context.properties;
 
-/** Convenience type giving the scope of a property. */
-public enum Profile {
-    DEV,
-    TEST,
-    PROD
-}
+package com.hedera.node.app.spi.config;
+
+import static com.hedera.node.app.spi.config.PropertyNames.WORKFLOWS_ENABLED;
+
+import com.swirlds.config.api.ConfigProperty;
+
+/**
+ * This class contains the properties that are part of the {@code GlobalStaticProperties} class in
+ * the mono-service module.
+ */
+// @ConfigData //FUTURE: Once we use the real config we can add the annotation
+public record GlobalConfig(@ConfigProperty(WORKFLOWS_ENABLED) boolean workflowsEnabled) {}

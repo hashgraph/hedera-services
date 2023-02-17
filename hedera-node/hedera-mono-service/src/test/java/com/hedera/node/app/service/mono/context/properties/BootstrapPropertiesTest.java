@@ -13,13 +13,219 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.*;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOPICS_MAX_NUM;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
-import static com.hedera.node.app.service.mono.throttling.MapAccessType.*;
+import static com.hedera.node.app.service.mono.throttling.MapAccessType.ACCOUNTS_GET;
+import static com.hedera.node.app.service.mono.throttling.MapAccessType.ACCOUNTS_GET_FOR_MODIFY;
+import static com.hedera.node.app.service.mono.throttling.MapAccessType.STORAGE_GET;
+import static com.hedera.node.app.service.mono.throttling.MapAccessType.STORAGE_PUT;
+import static com.hedera.node.app.service.mono.throttling.MapAccessType.STORAGE_REMOVE;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_ADDRESS_BOOK_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_EXCHANGE_RATES_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_FEE_SCHEDULE_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_FREEZE_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_LAST_THROTTLE_EXEMPT;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_MAX_NUM;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_NODE_REWARD_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_STORE_ON_DISK;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_SYSTEM_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_SYSTEM_DELETE_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_SYSTEM_UNDELETE_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_TREASURY;
+import static com.hedera.node.app.spi.config.PropertyNames.AUTO_CREATION_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_GRACE_PERIOD;
+import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_GRANT_FREE_RENEWALS;
+import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE;
+import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN;
+import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_TARGET_TYPES;
+import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_COMPRESS_ON_CREATION;
+import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_DIR_PATH;
+import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_PERIOD_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_TOKEN_BALANCES;
+import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_HAPI_PERMISSIONS_PATH;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_NETWORK_PROPERTIES_PATH;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_CURRENT_CENT_EQUIV;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_CURRENT_EXPIRY;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_NEXT_CENT_EQUIV;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_NEXT_EXPIRY;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_NEXT_HBAR_EQUIV;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
+import static com.hedera.node.app.spi.config.PropertyNames.CACHE_RECORDS_TTL;
+import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_AUTO_ASSOCIATIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_CREATE2;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_CHAIN_ID;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ENFORCE_CREATION_THROTTLE;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_EVM_VERSION;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_FREE_STORAGE_TIER_LIMIT;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ITEMIZE_STORAGE_FEES;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_KEYS_LEGACY_ACTIVATIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_KNOWN_BLOCK_HASH;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_LOCAL_CALL_EST_RET_BYTES;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_GAS_PER_SEC;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIRS_AGGREGATE;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_NUM;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REDIRECT_TOKEN_CALLS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REFERENCE_SLOT_LIFETIME;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECARS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
+import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
+import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_LIMIT_TOKEN_ASSOCIATIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_MAX_LIFETIME;
+import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_SYSTEM_DELETABLE;
+import static com.hedera.node.app.spi.config.PropertyNames.EXPIRY_MIN_CYCLE_ENTRY_CAPACITY;
+import static com.hedera.node.app.spi.config.PropertyNames.EXPIRY_THROTTLE_RESOURCE;
+import static com.hedera.node.app.spi.config.PropertyNames.FEES_MIN_CONGESTION_PERIOD;
+import static com.hedera.node.app.spi.config.PropertyNames.FEES_PERCENT_CONGESTION_MULTIPLIERS;
+import static com.hedera.node.app.spi.config.PropertyNames.FEES_PERCENT_UTILIZATION_SCALE_FACTORS;
+import static com.hedera.node.app.spi.config.PropertyNames.FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_ADDRESS_BOOK;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_EXCHANGE_RATES;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_FEE_SCHEDULES;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_HAPI_PERMISSIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_MAX_NUM;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_MAX_SIZE_KB;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_NETWORK_PROPERTIES;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_NODE_DETAILS;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_SOFTWARE_UPDATE_RANGE;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_THROTTLE_DEFINITIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_TLS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ACCOUNTS_EXPORT_PATH;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ALLOWANCES_IS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ALLOWANCES_MAX_TXN_LIMIT;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_EXPORT_ACCOUNTS_ON_STARTUP;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_FIRST_USER_ENTITY;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PREFETCH_CODE_CACHE_TTL_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PREFETCH_QUEUE_CAPACITY;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PREFETCH_THREAD_POOL_SIZE;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PROFILES_ACTIVE;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_REALM;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_IS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_PERIOD;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_QUEUE_CAPACITY;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_RECORD_FILE_VERSION;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_SIDE_CAR_DIR;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_SIG_FILE_VERSION;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_SHARD;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_TXN_MAX_MEMO_UTF8_BYTES;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_TXN_MAX_VALID_DURATION;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_TXN_MIN_VALID_DURATION;
+import static com.hedera.node.app.spi.config.PropertyNames.ISS_RESET_PERIOD;
+import static com.hedera.node.app.spi.config.PropertyNames.ISS_ROUNDS_TO_LOG;
+import static com.hedera.node.app.spi.config.PropertyNames.LAZY_CREATION_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_CHANGE_HIST_MEM_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_FUNDING_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_ID;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NFT_TRANSFERS_MAX_LEN;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NUM_SYSTEM_ACCOUNTS;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOKEN_TRANSFERS_MAX_LEN;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TRANSFERS_MAX_LEN;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_XFER_BAL_CHANGES_MAX_LEN;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_MODE;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_FLOW_CONTROL_WINDOW;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_KEEP_ALIVE_TIME;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_KEEP_ALIVE_TIMEOUT;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONCURRENT_CALLS;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE_GRACE;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONNECTION_IDLE;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_START_RETRIES;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_START_RETRY_INTERVAL_MS;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_TLS_CERT_PATH;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_TLS_KEY_PATH;
+import static com.hedera.node.app.spi.config.PropertyNames.QUERIES_BLOB_LOOK_UP_RETRIES;
+import static com.hedera.node.app.spi.config.PropertyNames.RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT;
+import static com.hedera.node.app.spi.config.PropertyNames.RATES_MIDNIGHT_CHECK_INTERVAL;
+import static com.hedera.node.app.spi.config.PropertyNames.SCHEDULING_LONG_TERM_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.SCHEDULING_MAX_EXPIRATION_FUTURE_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.SCHEDULING_MAX_NUM;
+import static com.hedera.node.app.spi.config.PropertyNames.SCHEDULING_MAX_TXN_PER_SEC;
+import static com.hedera.node.app.spi.config.PropertyNames.SCHEDULING_WHITE_LIST;
+import static com.hedera.node.app.spi.config.PropertyNames.SIGS_EXPAND_FROM_IMMUTABLE_STATE;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_FEES_NODE_REWARD_PERCENT;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_FEES_STAKING_REWARD_PERCENT;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_IS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REQUIRE_MIN_STAKE_TO_REWARD;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_RATE;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_START_THRESH;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_CONS_THROTTLES_TO_SAMPLE;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_EXECUTION_TIMES_TO_TRACK;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_HAPI_THROTTLES_TO_SAMPLE;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_RUNNING_AVG_HALF_LIFE_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_SPEEDOMETER_HALF_LIFE_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_AUTO_CREATIONS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_AGGREGATE_RELS;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_CUSTOM_FEES_ALLOWED;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_CUSTOM_FEE_DEPTH;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_NUM;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_PER_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_RELS_PER_INFO_QUERY;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_SYMBOL_UTF8_BYTES;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_TOKEN_NAME_UTF8_BYTES;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_ARE_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_ALLOWED_MINTS;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_BATCH_SIZE_BURN;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_BATCH_SIZE_MINT;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_BATCH_SIZE_WIPE;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_METADATA_BYTES;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_QUERY_RANGE;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILD_CARDS;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_STORE_RELS_ON_DISK;
+import static com.hedera.node.app.spi.config.PropertyNames.TOPICS_MAX_NUM;
+import static com.hedera.node.app.spi.config.PropertyNames.TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC;
+import static com.hedera.node.app.spi.config.PropertyNames.TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO;
+import static com.hedera.node.app.spi.config.PropertyNames.UPGRADE_ARTIFACTS_PATH;
+import static com.hedera.node.app.spi.config.PropertyNames.UTIL_PRNG_IS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB;
+import static com.hedera.node.app.spi.config.PropertyNames.WORKFLOWS_ENABLED;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_ACTION;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_BYTECODE;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_STATE_CHANGE;
@@ -40,6 +246,7 @@ import com.hedera.node.app.service.mono.fees.calculation.CongestionMultipliers;
 import com.hedera.node.app.service.mono.fees.calculation.EntityScaleFactors;
 import com.hedera.node.app.service.mono.keys.LegacyContractIdActivations;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper;
+import com.hedera.node.app.spi.config.Profile;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -58,259 +265,235 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith({LogCaptureExtension.class})
 class BootstrapPropertiesTest {
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private BootstrapProperties subject = new BootstrapProperties();
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private final BootstrapProperties subject = new BootstrapProperties();
 
     private static final String STD_PROPS_RESOURCE = "bootstrap/standard.properties";
     private static final String INVALID_PROPS_RESOURCE = "bootstrap/not.properties";
     private static final String UNREADABLE_PROPS_RESOURCE = "bootstrap/unreadable.properties";
     private static final String INCOMPLETE_STD_PROPS_RESOURCE = "bootstrap/incomplete.properties";
 
-    private static final String OVERRIDE_PROPS_LOC =
-            "src/test/resources/bootstrap/override.properties";
-    private static final String EMPTY_OVERRIDE_PROPS_LOC =
-            "src/test/resources/bootstrap/empty-override.properties";
+    private static final String OVERRIDE_PROPS_LOC = "src/test/resources/bootstrap/override.properties";
+    private static final String EMPTY_OVERRIDE_PROPS_LOC = "src/test/resources/bootstrap/empty-override.properties";
 
-    private static final Map<String, Object> expectedProps =
-            Map.ofEntries(
-                    entry(BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE, "feeSchedules.json"),
-                    entry(
-                            BOOTSTRAP_GENESIS_PUBLIC_KEY,
-                            "0aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"),
-                    entry(BOOTSTRAP_HAPI_PERMISSIONS_PATH, "data/config/api-permission.properties"),
-                    entry(BOOTSTRAP_NETWORK_PROPERTIES_PATH, "data/config/application.properties"),
-                    entry(BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV, 1),
-                    entry(BOOTSTRAP_RATES_CURRENT_CENT_EQUIV, 12),
-                    entry(BOOTSTRAP_RATES_CURRENT_EXPIRY, 4102444800L),
-                    entry(BOOTSTRAP_RATES_NEXT_HBAR_EQUIV, 1),
-                    entry(BOOTSTRAP_RATES_NEXT_CENT_EQUIV, 15),
-                    entry(BOOTSTRAP_RATES_NEXT_EXPIRY, 4102444800L),
-                    entry(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY, 1812637686L),
-                    entry(BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE, "throttles.json"),
-                    entry(ACCOUNTS_ADDRESS_BOOK_ADMIN, 55L),
-                    entry(BALANCES_EXPORT_DIR_PATH, "/opt/hgcapp/accountBalances/"),
-                    entry(BALANCES_EXPORT_ENABLED, true),
-                    entry(BALANCES_EXPORT_PERIOD_SECS, 900),
-                    entry(BALANCES_EXPORT_TOKEN_BALANCES, true),
-                    entry(BALANCES_NODE_BALANCE_WARN_THRESHOLD, 0L),
-                    entry(BALANCES_COMPRESS_ON_CREATION, true),
-                    entry(ACCOUNTS_EXCHANGE_RATES_ADMIN, 57L),
-                    entry(ACCOUNTS_FEE_SCHEDULE_ADMIN, 56L),
-                    entry(ACCOUNTS_NODE_REWARD_ACCOUNT, 801L),
-                    entry(ACCOUNTS_STAKING_REWARD_ACCOUNT, 800L),
-                    entry(ACCOUNTS_FREEZE_ADMIN, 58L),
-                    entry(ACCOUNTS_LAST_THROTTLE_EXEMPT, 100L),
-                    entry(ACCOUNTS_SYSTEM_ADMIN, 50L),
-                    entry(ACCOUNTS_SYSTEM_DELETE_ADMIN, 59L),
-                    entry(ACCOUNTS_SYSTEM_UNDELETE_ADMIN, 60L),
-                    entry(ACCOUNTS_STORE_ON_DISK, false),
-                    entry(ACCOUNTS_TREASURY, 2L),
-                    entry(AUTO_RENEW_GRANT_FREE_RENEWALS, false),
-                    entry(CONTRACTS_ALLOW_CREATE2, true),
-                    entry(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, false),
-                    entry(CONTRACTS_DEFAULT_LIFETIME, 7890000L),
-                    entry(CONTRACTS_DYNAMIC_EVM_VERSION, false),
-                    entry(CONTRACTS_ENFORCE_CREATION_THROTTLE, false),
-                    entry(CONTRACTS_EVM_VERSION, EVM_VERSION_0_30),
-                    entry(CONTRACTS_LOCAL_CALL_EST_RET_BYTES, 32),
-                    entry(CONTRACTS_MAX_GAS_PER_SEC, 15000000L),
-                    entry(CONTRACTS_MAX_KV_PAIRS_AGGREGATE, 500_000_000L),
-                    entry(CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL, 163_840),
-                    entry(CONTRACTS_CHAIN_ID, 295),
-                    entry(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, true),
-                    entry(
-                            CONTRACTS_KEYS_LEGACY_ACTIVATIONS,
-                            LegacyContractIdActivations.from("1058134by[1062784]")),
-                    entry(CONTRACTS_KNOWN_BLOCK_HASH, MISSING_BLOCK_VALUES),
-                    entry(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, 20),
-                    entry(CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT, 5000000L),
-                    entry(CONTRACTS_REDIRECT_TOKEN_CALLS, true),
-                    entry(CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST, 100L),
-                    entry(CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST, 10000L),
-                    entry(CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS, true),
-                    entry(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE, true),
-                    entry(DEV_ONLY_DEFAULT_NODE_LISTENS, true),
-                    entry(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED, true),
-                    entry(DEV_DEFAULT_LISTENING_NODE_ACCOUNT, "0.0.3"),
-                    entry(ENTITIES_MAX_LIFETIME, 3153600000L),
-                    entry(ENTITIES_SYSTEM_DELETABLE, EnumSet.of(EntityType.FILE)),
-                    entry(EXPIRY_THROTTLE_RESOURCE, "expiry-throttle.json"),
-                    entry(
-                            EXPIRY_MIN_CYCLE_ENTRY_CAPACITY,
-                            List.of(
-                                    ACCOUNTS_GET,
-                                    ACCOUNTS_GET_FOR_MODIFY,
-                                    STORAGE_GET,
-                                    STORAGE_GET,
-                                    STORAGE_REMOVE,
-                                    STORAGE_PUT)),
-                    entry(
-                            FEES_PERCENT_CONGESTION_MULTIPLIERS,
-                            CongestionMultipliers.from("90,10x,95,25x,99,100x")),
-                    entry(
-                            FEES_PERCENT_UTILIZATION_SCALE_FACTORS,
-                            EntityScaleFactors.from("DEFAULT(90,10:1,95,25:1,99,100:1)")),
-                    entry(FEES_MIN_CONGESTION_PERIOD, 60),
-                    entry(FILES_ADDRESS_BOOK, 101L),
-                    entry(FILES_NETWORK_PROPERTIES, 121L),
-                    entry(FILES_EXCHANGE_RATES, 112L),
-                    entry(FILES_FEE_SCHEDULES, 111L),
-                    entry(FILES_HAPI_PERMISSIONS, 122L),
-                    entry(FILES_THROTTLE_DEFINITIONS, 123L),
-                    entry(FILES_NODE_DETAILS, 102L),
-                    entry(FILES_SOFTWARE_UPDATE_RANGE, Pair.of(150L, 159L)),
-                    entry(GRPC_PORT, 50211),
-                    entry(GRPC_TLS_PORT, 50212),
-                    entry(HEDERA_ACCOUNTS_EXPORT_PATH, "data/onboard/exportedAccount.txt"),
-                    entry(HEDERA_EXPORT_ACCOUNTS_ON_STARTUP, false),
-                    entry(HEDERA_FIRST_USER_ENTITY, 1001L),
-                    entry(HEDERA_PREFETCH_QUEUE_CAPACITY, 10000),
-                    entry(HEDERA_PREFETCH_THREAD_POOL_SIZE, 2),
-                    entry(HEDERA_PREFETCH_CODE_CACHE_TTL_SECS, 120),
-                    entry(HEDERA_PROFILES_ACTIVE, Profile.PROD),
-                    entry(HEDERA_REALM, 0L),
-                    entry(HEDERA_RECORD_STREAM_LOG_DIR, "/opt/hgcapp/recordStreams"),
-                    entry(HEDERA_RECORD_STREAM_SIDE_CAR_DIR, "sidecar"),
-                    entry(HEDERA_RECORD_STREAM_LOG_PERIOD, 2L),
-                    entry(HEDERA_RECORD_STREAM_IS_ENABLED, true),
-                    entry(HEDERA_RECORD_STREAM_QUEUE_CAPACITY, 5000),
-                    entry(HEDERA_SHARD, 0L),
-                    entry(HEDERA_TXN_MAX_MEMO_UTF8_BYTES, 100),
-                    entry(HEDERA_TXN_MIN_VALID_DURATION, 15L),
-                    entry(HEDERA_TXN_MAX_VALID_DURATION, 180L),
-                    entry(HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS, 10),
-                    entry(LEDGER_ID, "0x03"),
-                    entry(LEDGER_CHANGE_HIST_MEM_SECS, 20),
-                    entry(LEDGER_FUNDING_ACCOUNT, 98L),
-                    entry(LEDGER_NUM_SYSTEM_ACCOUNTS, 100),
-                    entry(LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT, 180),
-                    entry(LEDGER_TRANSFERS_MAX_LEN, 10),
-                    entry(LEDGER_TOKEN_TRANSFERS_MAX_LEN, 10),
-                    entry(LEDGER_TOTAL_TINY_BAR_FLOAT, 5000000000000000000L),
-                    entry(AUTO_CREATION_ENABLED, true),
-                    entry(LAZY_CREATION_ENABLED, true),
-                    entry(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, false),
-                    entry(AUTO_RENEW_TARGET_TYPES, EnumSet.of(EntityType.CONTRACT)),
-                    entry(AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN, 100),
-                    entry(AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE, 2),
-                    entry(AUTO_RENEW_GRACE_PERIOD, 604800L),
-                    entry(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION, 8000001L),
-                    entry(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, 2592000L),
-                    entry(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, 1800),
-                    entry(ISS_RESET_PERIOD, 60),
-                    entry(ISS_ROUNDS_TO_LOG, 5000),
-                    entry(NETTY_MODE, Profile.PROD),
-                    entry(NETTY_PROD_FLOW_CONTROL_WINDOW, 10240),
-                    entry(NETTY_PROD_MAX_CONCURRENT_CALLS, 10),
-                    entry(NETTY_PROD_MAX_CONNECTION_AGE, 15L),
-                    entry(NETTY_PROD_MAX_CONNECTION_AGE_GRACE, 5L),
-                    entry(NETTY_PROD_MAX_CONNECTION_IDLE, 10L),
-                    entry(NETTY_PROD_KEEP_ALIVE_TIME, 10L),
-                    entry(NETTY_PROD_KEEP_ALIVE_TIMEOUT, 3L),
-                    entry(NETTY_START_RETRIES, 90),
-                    entry(NETTY_START_RETRY_INTERVAL_MS, 1_000L),
-                    entry(NETTY_TLS_CERT_PATH, "hedera.crt"),
-                    entry(NETTY_TLS_KEY_PATH, "hedera.key"),
-                    entry(QUERIES_BLOB_LOOK_UP_RETRIES, 3),
-                    entry(TOKENS_MAX_RELS_PER_INFO_QUERY, 1_000),
-                    entry(TOKENS_MAX_PER_ACCOUNT, 1_000),
-                    entry(TOKENS_STORE_RELS_ON_DISK, true),
-                    entry(TOKENS_MAX_SYMBOL_UTF8_BYTES, 100),
-                    entry(TOKENS_MAX_TOKEN_NAME_UTF8_BYTES, 100),
-                    entry(TOKENS_MAX_CUSTOM_FEES_ALLOWED, 10),
-                    entry(TOKENS_MAX_CUSTOM_FEE_DEPTH, 2),
-                    entry(FILES_MAX_SIZE_KB, 1024),
-                    entry(FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER, 380),
-                    entry(CACHE_RECORDS_TTL, 180),
-                    entry(RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT, 25),
-                    entry(RATES_MIDNIGHT_CHECK_INTERVAL, 1L),
-                    entry(SCHEDULING_LONG_TERM_ENABLED, false),
-                    entry(SCHEDULING_MAX_TXN_PER_SEC, 100L),
-                    entry(SCHEDULING_MAX_EXPIRATION_FUTURE_SECS, 5356800L),
-                    entry(
-                            SCHEDULING_WHITE_LIST,
-                            Set.of(CryptoTransfer, TokenMint, TokenBurn, ConsensusSubmitMessage)),
-                    entry(SIGS_EXPAND_FROM_IMMUTABLE_STATE, true),
-                    entry(
-                            STATS_CONS_THROTTLES_TO_SAMPLE,
-                            List.of("<GAS>", "ThroughputLimits", "CreationLimits")),
-                    entry(
-                            STATS_HAPI_THROTTLES_TO_SAMPLE,
-                            List.of(
-                                    "<GAS>",
-                                    "ThroughputLimits",
-                                    "OffHeapQueryLimits",
-                                    "CreationLimits",
-                                    "FreeQueryLimits")),
-                    entry(STATS_RUNNING_AVG_HALF_LIFE_SECS, 10.0),
-                    entry(STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS, 3_000L),
-                    entry(STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS, 3_000L),
-                    entry(STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS, 1_000L),
-                    entry(STATS_SPEEDOMETER_HALF_LIFE_SECS, 10.0),
-                    entry(STATS_EXECUTION_TIMES_TO_TRACK, 0),
-                    entry(STAKING_IS_ENABLED, true),
-                    entry(STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS, Map.of()),
-                    entry(STAKING_PERIOD_MINS, 1440L),
-                    entry(STAKING_REQUIRE_MIN_STAKE_TO_REWARD, false),
-                    entry(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS, 365),
-                    entry(
-                            STAKING_STARTUP_HELPER_RECOMPUTE,
-                            EnumSet.allOf(StakeStartupHelper.RecomputeType.class)),
-                    entry(STAKING_REWARD_RATE, 0L),
-                    entry(STAKING_START_THRESH, 25000000000000000L),
-                    entry(STAKING_FEES_NODE_REWARD_PERCENT, 0),
-                    entry(STAKING_FEES_STAKING_REWARD_PERCENT, 100),
-                    entry(STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR, 17808L),
-                    entry(CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED, 1024),
-                    entry(CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS, 3L),
-                    entry(CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS, 50L),
-                    entry(LEDGER_NFT_TRANSFERS_MAX_LEN, 10),
-                    entry(LEDGER_XFER_BAL_CHANGES_MAX_LEN, 20),
-                    entry(TOKENS_NFTS_ARE_ENABLED, true),
-                    entry(TOKENS_NFTS_USE_TREASURY_WILD_CARDS, true),
-                    entry(TOKENS_NFTS_MAX_QUERY_RANGE, 100L),
-                    entry(TOKENS_NFTS_MAX_BATCH_SIZE_WIPE, 10),
-                    entry(TOKENS_NFTS_MAX_BATCH_SIZE_MINT, 10),
-                    entry(TOKENS_NFTS_MAX_BATCH_SIZE_BURN, 10),
-                    entry(TOKENS_NFTS_MAX_METADATA_BYTES, 100),
-                    entry(TOKENS_NFTS_MAX_ALLOWED_MINTS, 5000000L),
-                    entry(TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR, ScaleFactor.from("5:2")),
-                    entry(TOKENS_NFTS_USE_VIRTUAL_MERKLE, false),
-                    entry(
-                            UPGRADE_ARTIFACTS_PATH,
-                            "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade/current"),
-                    entry(HEDERA_ALLOWANCES_MAX_TXN_LIMIT, 20),
-                    entry(HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT, 100),
-                    entry(HEDERA_ALLOWANCES_IS_ENABLED, true),
-                    entry(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS, false),
-                    entry(HEDERA_RECORD_STREAM_RECORD_FILE_VERSION, 6),
-                    entry(HEDERA_RECORD_STREAM_SIG_FILE_VERSION, 6),
-                    entry(ACCOUNTS_MAX_NUM, 5_000_000L),
-                    entry(CONTRACTS_MAX_NUM, 5_000_000L),
-                    entry(CONTRACTS_STORAGE_SLOT_PRICE_TIERS, "0til100M,2000til450M"),
-                    entry(CONTRACTS_REFERENCE_SLOT_LIFETIME, 31536000L),
-                    entry(CONTRACTS_ITEMIZE_STORAGE_FEES, true),
-                    entry(CONTRACTS_FREE_STORAGE_TIER_LIMIT, 100),
-                    entry(FILES_MAX_NUM, 1_000_000L),
-                    entry(SCHEDULING_MAX_NUM, 10_000_000L),
-                    entry(TOKENS_MAX_NUM, 1_000_000L),
-                    entry(TOPICS_MAX_NUM, 1_000_000L),
-                    entry(TOKENS_MAX_AGGREGATE_RELS, 10_000_000L),
-                    entry(UTIL_PRNG_IS_ENABLED, true),
-                    entry(
-                            CONTRACTS_SIDECARS,
-                            EnumSet.of(
-                                    SidecarType.CONTRACT_STATE_CHANGE,
-                                    SidecarType.CONTRACT_BYTECODE)),
-                    entry(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB, 256),
-                    entry(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, true),
-                    entry(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO, 9L),
-                    entry(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC, 10L),
-                    entry(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION, false),
-                    entry(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION, true),
-                    entry(TOKENS_AUTO_CREATIONS_ENABLED, true),
-                    entry(WORKFLOWS_ENABLED, false),
-                    entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, false));
+    private static final Map<String, Object> expectedProps = Map.ofEntries(
+            entry(BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE, "feeSchedules.json"),
+            entry(BOOTSTRAP_GENESIS_PUBLIC_KEY, "0aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"),
+            entry(BOOTSTRAP_HAPI_PERMISSIONS_PATH, "data/config/api-permission.properties"),
+            entry(BOOTSTRAP_NETWORK_PROPERTIES_PATH, "data/config/application.properties"),
+            entry(BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV, 1),
+            entry(BOOTSTRAP_RATES_CURRENT_CENT_EQUIV, 12),
+            entry(BOOTSTRAP_RATES_CURRENT_EXPIRY, 4102444800L),
+            entry(BOOTSTRAP_RATES_NEXT_HBAR_EQUIV, 1),
+            entry(BOOTSTRAP_RATES_NEXT_CENT_EQUIV, 15),
+            entry(BOOTSTRAP_RATES_NEXT_EXPIRY, 4102444800L),
+            entry(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY, 1812637686L),
+            entry(BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE, "throttles.json"),
+            entry(ACCOUNTS_ADDRESS_BOOK_ADMIN, 55L),
+            entry(BALANCES_EXPORT_DIR_PATH, "/opt/hgcapp/accountBalances/"),
+            entry(BALANCES_EXPORT_ENABLED, true),
+            entry(BALANCES_EXPORT_PERIOD_SECS, 900),
+            entry(BALANCES_EXPORT_TOKEN_BALANCES, true),
+            entry(BALANCES_NODE_BALANCE_WARN_THRESHOLD, 0L),
+            entry(BALANCES_COMPRESS_ON_CREATION, true),
+            entry(ACCOUNTS_EXCHANGE_RATES_ADMIN, 57L),
+            entry(ACCOUNTS_FEE_SCHEDULE_ADMIN, 56L),
+            entry(ACCOUNTS_NODE_REWARD_ACCOUNT, 801L),
+            entry(ACCOUNTS_STAKING_REWARD_ACCOUNT, 800L),
+            entry(ACCOUNTS_FREEZE_ADMIN, 58L),
+            entry(ACCOUNTS_LAST_THROTTLE_EXEMPT, 100L),
+            entry(ACCOUNTS_SYSTEM_ADMIN, 50L),
+            entry(ACCOUNTS_SYSTEM_DELETE_ADMIN, 59L),
+            entry(ACCOUNTS_SYSTEM_UNDELETE_ADMIN, 60L),
+            entry(ACCOUNTS_STORE_ON_DISK, false),
+            entry(ACCOUNTS_TREASURY, 2L),
+            entry(AUTO_RENEW_GRANT_FREE_RENEWALS, false),
+            entry(CONTRACTS_ALLOW_CREATE2, true),
+            entry(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, false),
+            entry(CONTRACTS_DEFAULT_LIFETIME, 7890000L),
+            entry(CONTRACTS_DYNAMIC_EVM_VERSION, false),
+            entry(CONTRACTS_ENFORCE_CREATION_THROTTLE, false),
+            entry(CONTRACTS_EVM_VERSION, EVM_VERSION_0_30),
+            entry(CONTRACTS_LOCAL_CALL_EST_RET_BYTES, 32),
+            entry(CONTRACTS_MAX_GAS_PER_SEC, 15000000L),
+            entry(CONTRACTS_MAX_KV_PAIRS_AGGREGATE, 500_000_000L),
+            entry(CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL, 163_840),
+            entry(CONTRACTS_CHAIN_ID, 295),
+            entry(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, true),
+            entry(CONTRACTS_KEYS_LEGACY_ACTIVATIONS, LegacyContractIdActivations.from("1058134by[1062784]")),
+            entry(CONTRACTS_KNOWN_BLOCK_HASH, MISSING_BLOCK_VALUES),
+            entry(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, 20),
+            entry(CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT, 5000000L),
+            entry(CONTRACTS_REDIRECT_TOKEN_CALLS, true),
+            entry(CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST, 100L),
+            entry(CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST, 10000L),
+            entry(CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS, true),
+            entry(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE, true),
+            entry(DEV_ONLY_DEFAULT_NODE_LISTENS, true),
+            entry(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED, true),
+            entry(DEV_DEFAULT_LISTENING_NODE_ACCOUNT, "0.0.3"),
+            entry(ENTITIES_MAX_LIFETIME, 3153600000L),
+            entry(ENTITIES_SYSTEM_DELETABLE, EnumSet.of(EntityType.FILE)),
+            entry(EXPIRY_THROTTLE_RESOURCE, "expiry-throttle.json"),
+            entry(
+                    EXPIRY_MIN_CYCLE_ENTRY_CAPACITY,
+                    List.of(
+                            ACCOUNTS_GET,
+                            ACCOUNTS_GET_FOR_MODIFY,
+                            STORAGE_GET,
+                            STORAGE_GET,
+                            STORAGE_REMOVE,
+                            STORAGE_PUT)),
+            entry(FEES_PERCENT_CONGESTION_MULTIPLIERS, CongestionMultipliers.from("90,10x,95,25x,99,100x")),
+            entry(FEES_PERCENT_UTILIZATION_SCALE_FACTORS, EntityScaleFactors.from("DEFAULT(90,10:1,95,25:1,99,100:1)")),
+            entry(FEES_MIN_CONGESTION_PERIOD, 60),
+            entry(FILES_ADDRESS_BOOK, 101L),
+            entry(FILES_NETWORK_PROPERTIES, 121L),
+            entry(FILES_EXCHANGE_RATES, 112L),
+            entry(FILES_FEE_SCHEDULES, 111L),
+            entry(FILES_HAPI_PERMISSIONS, 122L),
+            entry(FILES_THROTTLE_DEFINITIONS, 123L),
+            entry(FILES_NODE_DETAILS, 102L),
+            entry(FILES_SOFTWARE_UPDATE_RANGE, Pair.of(150L, 159L)),
+            entry(GRPC_PORT, 50211),
+            entry(GRPC_TLS_PORT, 50212),
+            entry(HEDERA_ACCOUNTS_EXPORT_PATH, "data/onboard/exportedAccount.txt"),
+            entry(HEDERA_EXPORT_ACCOUNTS_ON_STARTUP, false),
+            entry(HEDERA_FIRST_USER_ENTITY, 1001L),
+            entry(HEDERA_PREFETCH_QUEUE_CAPACITY, 10000),
+            entry(HEDERA_PREFETCH_THREAD_POOL_SIZE, 2),
+            entry(HEDERA_PREFETCH_CODE_CACHE_TTL_SECS, 120),
+            entry(HEDERA_PROFILES_ACTIVE, Profile.PROD),
+            entry(HEDERA_REALM, 0L),
+            entry(HEDERA_RECORD_STREAM_LOG_DIR, "/opt/hgcapp/recordStreams"),
+            entry(HEDERA_RECORD_STREAM_SIDE_CAR_DIR, "sidecar"),
+            entry(HEDERA_RECORD_STREAM_LOG_PERIOD, 2L),
+            entry(HEDERA_RECORD_STREAM_IS_ENABLED, true),
+            entry(HEDERA_RECORD_STREAM_QUEUE_CAPACITY, 5000),
+            entry(HEDERA_SHARD, 0L),
+            entry(HEDERA_TXN_MAX_MEMO_UTF8_BYTES, 100),
+            entry(HEDERA_TXN_MIN_VALID_DURATION, 15L),
+            entry(HEDERA_TXN_MAX_VALID_DURATION, 180L),
+            entry(HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS, 10),
+            entry(LEDGER_ID, "0x03"),
+            entry(LEDGER_CHANGE_HIST_MEM_SECS, 20),
+            entry(LEDGER_FUNDING_ACCOUNT, 98L),
+            entry(LEDGER_NUM_SYSTEM_ACCOUNTS, 100),
+            entry(LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT, 180),
+            entry(LEDGER_TRANSFERS_MAX_LEN, 10),
+            entry(LEDGER_TOKEN_TRANSFERS_MAX_LEN, 10),
+            entry(LEDGER_TOTAL_TINY_BAR_FLOAT, 5000000000000000000L),
+            entry(AUTO_CREATION_ENABLED, true),
+            entry(LAZY_CREATION_ENABLED, true),
+            entry(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, false),
+            entry(AUTO_RENEW_TARGET_TYPES, EnumSet.of(EntityType.CONTRACT)),
+            entry(AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN, 100),
+            entry(AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE, 2),
+            entry(AUTO_RENEW_GRACE_PERIOD, 604800L),
+            entry(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION, 8000001L),
+            entry(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, 2592000L),
+            entry(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, 1800),
+            entry(ISS_RESET_PERIOD, 60),
+            entry(ISS_ROUNDS_TO_LOG, 5000),
+            entry(NETTY_MODE, Profile.PROD),
+            entry(NETTY_PROD_FLOW_CONTROL_WINDOW, 10240),
+            entry(NETTY_PROD_MAX_CONCURRENT_CALLS, 10),
+            entry(NETTY_PROD_MAX_CONNECTION_AGE, 15L),
+            entry(NETTY_PROD_MAX_CONNECTION_AGE_GRACE, 5L),
+            entry(NETTY_PROD_MAX_CONNECTION_IDLE, 10L),
+            entry(NETTY_PROD_KEEP_ALIVE_TIME, 10L),
+            entry(NETTY_PROD_KEEP_ALIVE_TIMEOUT, 3L),
+            entry(NETTY_START_RETRIES, 90),
+            entry(NETTY_START_RETRY_INTERVAL_MS, 1_000L),
+            entry(NETTY_TLS_CERT_PATH, "hedera.crt"),
+            entry(NETTY_TLS_KEY_PATH, "hedera.key"),
+            entry(QUERIES_BLOB_LOOK_UP_RETRIES, 3),
+            entry(TOKENS_MAX_RELS_PER_INFO_QUERY, 1_000),
+            entry(TOKENS_MAX_PER_ACCOUNT, 1_000),
+            entry(TOKENS_STORE_RELS_ON_DISK, true),
+            entry(TOKENS_MAX_SYMBOL_UTF8_BYTES, 100),
+            entry(TOKENS_MAX_TOKEN_NAME_UTF8_BYTES, 100),
+            entry(TOKENS_MAX_CUSTOM_FEES_ALLOWED, 10),
+            entry(TOKENS_MAX_CUSTOM_FEE_DEPTH, 2),
+            entry(FILES_MAX_SIZE_KB, 1024),
+            entry(FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER, 380),
+            entry(CACHE_RECORDS_TTL, 180),
+            entry(RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT, 25),
+            entry(RATES_MIDNIGHT_CHECK_INTERVAL, 1L),
+            entry(SCHEDULING_LONG_TERM_ENABLED, false),
+            entry(SCHEDULING_MAX_TXN_PER_SEC, 100L),
+            entry(SCHEDULING_MAX_EXPIRATION_FUTURE_SECS, 5356800L),
+            entry(SCHEDULING_WHITE_LIST, Set.of(CryptoTransfer, TokenMint, TokenBurn, ConsensusSubmitMessage)),
+            entry(SIGS_EXPAND_FROM_IMMUTABLE_STATE, true),
+            entry(STATS_CONS_THROTTLES_TO_SAMPLE, List.of("<GAS>", "ThroughputLimits", "CreationLimits")),
+            entry(
+                    STATS_HAPI_THROTTLES_TO_SAMPLE,
+                    List.of("<GAS>", "ThroughputLimits", "OffHeapQueryLimits", "CreationLimits", "FreeQueryLimits")),
+            entry(STATS_RUNNING_AVG_HALF_LIFE_SECS, 10.0),
+            entry(STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS, 3_000L),
+            entry(STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS, 3_000L),
+            entry(STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS, 1_000L),
+            entry(STATS_SPEEDOMETER_HALF_LIFE_SECS, 10.0),
+            entry(STATS_EXECUTION_TIMES_TO_TRACK, 0),
+            entry(STAKING_IS_ENABLED, true),
+            entry(STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS, Map.of()),
+            entry(STAKING_PERIOD_MINS, 1440L),
+            entry(STAKING_REQUIRE_MIN_STAKE_TO_REWARD, false),
+            entry(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS, 365),
+            entry(STAKING_STARTUP_HELPER_RECOMPUTE, EnumSet.allOf(StakeStartupHelper.RecomputeType.class)),
+            entry(STAKING_REWARD_RATE, 0L),
+            entry(STAKING_START_THRESH, 25000000000000000L),
+            entry(STAKING_FEES_NODE_REWARD_PERCENT, 0),
+            entry(STAKING_FEES_STAKING_REWARD_PERCENT, 100),
+            entry(STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR, 17808L),
+            entry(CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED, 1024),
+            entry(CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS, 3L),
+            entry(CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS, 50L),
+            entry(LEDGER_NFT_TRANSFERS_MAX_LEN, 10),
+            entry(LEDGER_XFER_BAL_CHANGES_MAX_LEN, 20),
+            entry(TOKENS_NFTS_ARE_ENABLED, true),
+            entry(TOKENS_NFTS_USE_TREASURY_WILD_CARDS, true),
+            entry(TOKENS_NFTS_MAX_QUERY_RANGE, 100L),
+            entry(TOKENS_NFTS_MAX_BATCH_SIZE_WIPE, 10),
+            entry(TOKENS_NFTS_MAX_BATCH_SIZE_MINT, 10),
+            entry(TOKENS_NFTS_MAX_BATCH_SIZE_BURN, 10),
+            entry(TOKENS_NFTS_MAX_METADATA_BYTES, 100),
+            entry(TOKENS_NFTS_MAX_ALLOWED_MINTS, 5000000L),
+            entry(TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR, ScaleFactor.from("5:2")),
+            entry(TOKENS_NFTS_USE_VIRTUAL_MERKLE, false),
+            entry(UPGRADE_ARTIFACTS_PATH, "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade/current"),
+            entry(HEDERA_ALLOWANCES_MAX_TXN_LIMIT, 20),
+            entry(HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT, 100),
+            entry(HEDERA_ALLOWANCES_IS_ENABLED, true),
+            entry(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS, false),
+            entry(HEDERA_RECORD_STREAM_RECORD_FILE_VERSION, 6),
+            entry(HEDERA_RECORD_STREAM_SIG_FILE_VERSION, 6),
+            entry(ACCOUNTS_MAX_NUM, 5_000_000L),
+            entry(CONTRACTS_MAX_NUM, 5_000_000L),
+            entry(CONTRACTS_STORAGE_SLOT_PRICE_TIERS, "0til100M,2000til450M"),
+            entry(CONTRACTS_REFERENCE_SLOT_LIFETIME, 31536000L),
+            entry(CONTRACTS_ITEMIZE_STORAGE_FEES, true),
+            entry(CONTRACTS_FREE_STORAGE_TIER_LIMIT, 100),
+            entry(FILES_MAX_NUM, 1_000_000L),
+            entry(SCHEDULING_MAX_NUM, 10_000_000L),
+            entry(TOKENS_MAX_NUM, 1_000_000L),
+            entry(TOPICS_MAX_NUM, 1_000_000L),
+            entry(TOKENS_MAX_AGGREGATE_RELS, 10_000_000L),
+            entry(UTIL_PRNG_IS_ENABLED, true),
+            entry(CONTRACTS_SIDECARS, EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE, SidecarType.CONTRACT_BYTECODE)),
+            entry(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB, 256),
+            entry(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, true),
+            entry(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO, 9L),
+            entry(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC, 10L),
+            entry(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION, false),
+            entry(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION, true),
+            entry(TOKENS_AUTO_CREATIONS_ENABLED, true),
+            entry(WORKFLOWS_ENABLED, false),
+            entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, false));
 
     @Test
     void containsProperty() {
@@ -327,8 +510,7 @@ class BootstrapPropertiesTest {
         subject.bootstrapPropsResource = UNREADABLE_PROPS_RESOURCE;
 
         final var ise = assertThrows(IllegalStateException.class, subject::ensureProps);
-        final var msg =
-                String.format("'%s' contains unrecognized properties:", UNREADABLE_PROPS_RESOURCE);
+        final var msg = String.format("'%s' contains unrecognized properties:", UNREADABLE_PROPS_RESOURCE);
         assertTrue(ise.getMessage().startsWith(msg));
     }
 
@@ -336,10 +518,9 @@ class BootstrapPropertiesTest {
     void throwsIseIfIoExceptionOccurs() {
         final var bkup = BootstrapProperties.resourceStreamProvider;
         subject.bootstrapPropsResource = STD_PROPS_RESOURCE;
-        BootstrapProperties.resourceStreamProvider =
-                ignore -> {
-                    throw new IOException("Oops!");
-                };
+        BootstrapProperties.resourceStreamProvider = ignore -> {
+            throw new IOException("Oops!");
+        };
 
         final var ise = assertThrows(IllegalStateException.class, subject::ensureProps);
         final var msg = String.format("'%s' could not be loaded!", STD_PROPS_RESOURCE);
@@ -353,8 +534,7 @@ class BootstrapPropertiesTest {
         subject.bootstrapPropsResource = INVALID_PROPS_RESOURCE;
 
         final var ise = assertThrows(IllegalStateException.class, subject::ensureProps);
-        final var msg =
-                String.format("'%s' contains unrecognized properties:", INVALID_PROPS_RESOURCE);
+        final var msg = String.format("'%s' contains unrecognized properties:", INVALID_PROPS_RESOURCE);
         assertTrue(ise.getMessage().startsWith(msg));
     }
 
@@ -364,11 +544,8 @@ class BootstrapPropertiesTest {
 
         subject.ensureProps();
 
-        for (String name : BootstrapProperties.BOOTSTRAP_PROP_NAMES) {
-            assertEquals(
-                    expectedProps.get(name),
-                    subject.getProperty(name),
-                    name + " has the wrong value!");
+        for (final String name : BootstrapProperties.BOOTSTRAP_PROP_NAMES) {
+            assertEquals(expectedProps.get(name), subject.getProperty(name), name + " has the wrong value!");
         }
         for (final var key : expectedProps.keySet()) {
             if (!BootstrapProperties.BOOTSTRAP_PROP_NAMES.contains(key)) {
@@ -406,10 +583,7 @@ class BootstrapPropertiesTest {
 
         subject.ensureProps();
 
-        final var ise =
-                assertThrows(
-                        IllegalArgumentException.class,
-                        () -> subject.getProperty("not-a-real-prop"));
+        final var ise = assertThrows(IllegalArgumentException.class, () -> subject.getProperty("not-a-real-prop"));
         assertEquals("Argument 'name=not-a-real-prop' is invalid!", ise.getMessage());
     }
 
@@ -427,8 +601,6 @@ class BootstrapPropertiesTest {
         subject.bootstrapPropsResource = STD_PROPS_RESOURCE;
         subject.getProperty(BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE);
 
-        assertThat(
-                logCaptor.infoLogs(),
-                contains(Matchers.startsWith(("Resolved bootstrap properties:"))));
+        assertThat(logCaptor.infoLogs(), contains(Matchers.startsWith(("Resolved bootstrap properties:"))));
     }
 }

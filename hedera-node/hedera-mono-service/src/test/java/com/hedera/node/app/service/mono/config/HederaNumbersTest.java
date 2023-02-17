@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.config;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_REALM;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_SHARD;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_REALM;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_SHARD;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class HederaNumbersTest {
+
     PropertySource properties;
     HederaNumbers subject;
 

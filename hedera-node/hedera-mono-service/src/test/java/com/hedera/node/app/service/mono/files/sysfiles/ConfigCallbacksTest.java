@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.sysfiles;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.EXPIRY_MIN_CYCLE_ENTRY_CAPACITY;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.EXPIRY_THROTTLE_RESOURCE;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.ACCOUNTS_GET;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.STORAGE_PUT;
+import static com.hedera.node.app.spi.config.PropertyNames.EXPIRY_MIN_CYCLE_ENTRY_CAPACITY;
+import static com.hedera.node.app.spi.config.PropertyNames.EXPIRY_THROTTLE_RESOURCE;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.times;
@@ -60,37 +61,55 @@ class ConfigCallbacksTest {
     private static final List<MapAccessType> minReqUnitOfWork = List.of(ACCOUNTS_GET, STORAGE_PUT);
     private static final KnownBlockValues blockValues = KnownBlockValues.from(literalBlockValues);
 
-    @Mock private ExpiryThrottle expiryThrottle;
-    @Mock private AddressBook addressBook;
-    @Mock private GlobalDynamicProperties dynamicProps;
-    @Mock private PropertySources propertySources;
-    @Mock private HapiOpPermissions hapiOpPermissions;
-    @Mock private FunctionalityThrottling functionalityThrottling;
-    @Mock private MerkleNetworkContext networkCtx;
-    @Mock private PropertySource properties;
-    @Mock private SigImpactHistorian sigImpactHistorian;
-    @Mock private FileNumbers fileNumbers;
+    @Mock
+    private ExpiryThrottle expiryThrottle;
+
+    @Mock
+    private AddressBook addressBook;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProps;
+
+    @Mock
+    private PropertySources propertySources;
+
+    @Mock
+    private HapiOpPermissions hapiOpPermissions;
+
+    @Mock
+    private FunctionalityThrottling functionalityThrottling;
+
+    @Mock
+    private MerkleNetworkContext networkCtx;
+
+    @Mock
+    private PropertySource properties;
+
+    @Mock
+    private SigImpactHistorian sigImpactHistorian;
+
+    @Mock
+    private FileNumbers fileNumbers;
 
     private final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos = new MerkleMap<>();
     private ConfigCallbacks subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new ConfigCallbacks(
-                        hapiOpPermissions,
-                        dynamicProps,
-                        propertySources,
-                        expiryThrottle,
-                        functionalityThrottling,
-                        functionalityThrottling,
-                        functionalityThrottling,
-                        () -> addressBook,
-                        properties,
-                        () -> networkCtx,
-                        () -> stakingInfos,
-                        sigImpactHistorian,
-                        fileNumbers);
+        subject = new ConfigCallbacks(
+                hapiOpPermissions,
+                dynamicProps,
+                propertySources,
+                expiryThrottle,
+                functionalityThrottling,
+                functionalityThrottling,
+                functionalityThrottling,
+                () -> addressBook,
+                properties,
+                () -> networkCtx,
+                () -> stakingInfos,
+                sigImpactHistorian,
+                fileNumbers);
     }
 
     @Test
@@ -101,8 +120,7 @@ class ConfigCallbacksTest {
         givenWellKnownStakingInfos();
         given(properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(hbarFloat);
         given(properties.getStringProperty(EXPIRY_THROTTLE_RESOURCE)).willReturn(expiryResourceLoc);
-        given(properties.getAccessListProperty(EXPIRY_MIN_CYCLE_ENTRY_CAPACITY))
-                .willReturn(minReqUnitOfWork);
+        given(properties.getAccessListProperty(EXPIRY_MIN_CYCLE_ENTRY_CAPACITY)).willReturn(minReqUnitOfWork);
         given(addressBook.getSize()).willReturn(numNodes);
         given(dynamicProps.knownBlockValues()).willReturn(blockValues);
         given(dynamicProps.nodeMaxMinStakeRatios()).willReturn(Map.of(0L, 2L, 1L, 8L));
@@ -138,8 +156,7 @@ class ConfigCallbacksTest {
         verify(hapiOpPermissions).reloadFrom(config);
     }
 
-    private void assertStakes(
-            final MerkleStakingInfo info, final long minStake, final long maxStake) {
+    private void assertStakes(final MerkleStakingInfo info, final long minStake, final long maxStake) {
         Assertions.assertEquals(minStake, info.getMinStake());
         Assertions.assertEquals(maxStake, info.getMaxStake());
     }
