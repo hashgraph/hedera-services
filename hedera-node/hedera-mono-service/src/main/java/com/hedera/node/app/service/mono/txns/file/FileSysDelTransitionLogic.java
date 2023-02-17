@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.file;
 
 import static com.hedera.node.app.service.mono.context.properties.EntityType.FILE;
@@ -50,8 +51,7 @@ public class FileSysDelTransitionLogic implements TransitionLogic {
 
     private static final Logger log = LogManager.getLogger(FileSysDelTransitionLogic.class);
 
-    private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP =
-            ignore -> OK;
+    private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP = ignore -> OK;
 
     private final boolean supported;
     private final HederaFs hfs;
@@ -105,10 +105,7 @@ public class FileSysDelTransitionLogic implements TransitionLogic {
             txnCtx.setStatus(SUCCESS);
             sigImpactHistorian.markEntityChanged(tbd.getFileNum());
         } catch (final Exception unknown) {
-            log.warn(
-                    "Unrecognized failure handling {}!",
-                    txnCtx.accessor().getSignedTxnWrapper(),
-                    unknown);
+            log.warn("Unrecognized failure handling {}!", txnCtx.accessor().getSignedTxnWrapper(), unknown);
             txnCtx.setStatus(FAIL_INVALID);
         }
     }

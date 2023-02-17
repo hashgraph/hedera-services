@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hedera.node.app.service.mono.context.domain.trackers.IssEventStatus.ONGOING_ISS;
@@ -132,8 +133,7 @@ public class NetworkCtxManager {
         final var networkCtxNow = networkCtx.get();
         final var lastConsensusTime = networkCtxNow.consensusTimeOfLastHandledTxn();
 
-        if (lastConsensusTime == null
-                || consensusTime.getEpochSecond() > lastConsensusTime.getEpochSecond()) {
+        if (lastConsensusTime == null || consensusTime.getEpochSecond() > lastConsensusTime.getEpochSecond()) {
             consensusSecondJustChanged = true;
             // We're in a new second, so check if it's the first of a UTC calendar day; there are
             // some special actions that trigger on the first transaction after midnight

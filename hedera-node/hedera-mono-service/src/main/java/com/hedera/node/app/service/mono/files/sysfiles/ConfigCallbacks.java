@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.sysfiles;
 
 import static com.hedera.node.app.spi.config.PropertyNames.EXPIRY_MIN_CYCLE_ENTRY_CAPACITY;
@@ -117,24 +118,19 @@ public class ConfigCallbacks {
             final long hbarFloat, final int numNodes, final Map<Long, Long> maxToMinStakeRatios) {
         final var maxStake = hbarFloat / numNodes;
         final var curStakingInfos = stakingInfos.get();
-        curStakingInfos
-                .keySet()
-                .forEach(
-                        num -> {
-                            final var mutableInfo = curStakingInfos.getForModify(num);
-                            mutableInfo.setMaxStake(maxStake);
-                            final var maxToMinRatio =
-                                    maxToMinStakeRatios.getOrDefault(
-                                            num.longValue(), DEFAULT_MAX_TO_MIN_STAKE_RATIO);
-                            final var minStake = maxStake / maxToMinRatio;
-                            mutableInfo.setMinStake(minStake);
-                            log.info(
-                                    "Set node{} max/min stake to {}/{} ~ {}:1 ratio",
-                                    num::longValue,
-                                    mutableInfo::getMaxStake,
-                                    mutableInfo::getMinStake,
-                                    () -> maxToMinRatio);
-                        });
+        curStakingInfos.keySet().forEach(num -> {
+            final var mutableInfo = curStakingInfos.getForModify(num);
+            mutableInfo.setMaxStake(maxStake);
+            final var maxToMinRatio = maxToMinStakeRatios.getOrDefault(num.longValue(), DEFAULT_MAX_TO_MIN_STAKE_RATIO);
+            final var minStake = maxStake / maxToMinRatio;
+            mutableInfo.setMinStake(minStake);
+            log.info(
+                    "Set node{} max/min stake to {}/{} ~ {}:1 ratio",
+                    num::longValue,
+                    mutableInfo::getMaxStake,
+                    mutableInfo::getMinStake,
+                    () -> maxToMinRatio);
+        });
     }
 
     public Consumer<ServicesConfigurationList> permissionsCb() {

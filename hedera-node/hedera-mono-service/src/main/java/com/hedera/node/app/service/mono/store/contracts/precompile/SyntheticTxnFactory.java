@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
@@ -133,10 +134,9 @@ public class SyntheticTxnFactory {
         for (int i = 0; i < nums.length; i++) {
             opBuilder
                     .getTransfersBuilder()
-                    .addAccountAmounts(
-                            AccountAmount.newBuilder()
-                                    .setAccountID(AccountID.newBuilder().setAccountNum(nums[i]))
-                                    .setAmount(changes[i]));
+                    .addAccountAmounts(AccountAmount.newBuilder()
+                            .setAccountID(AccountID.newBuilder().setAccountNum(nums[i]))
+                            .setAmount(changes[i]));
         }
         return TransactionBody.newBuilder().setCryptoTransfer(opBuilder);
     }
@@ -147,9 +147,8 @@ public class SyntheticTxnFactory {
         final var fungibleReturns = cryptoGcOutcome.fungibleTreasuryReturns();
         for (int i = 0, n = fungibleReturns.numReturns(); i < n; i++) {
             final var unitReturn = fungibleReturns.transfers().get(i);
-            final var listBuilder =
-                    TokenTransferList.newBuilder()
-                            .setToken(fungibleReturns.tokenTypes().get(i).toGrpcTokenId());
+            final var listBuilder = TokenTransferList.newBuilder()
+                    .setToken(fungibleReturns.tokenTypes().get(i).toGrpcTokenId());
             // This list can have just one entry if the token treasury was missing or deleted,
             // in which case we just externalize the burning of the expired account's balance
             for (int j = 0, m = unitReturn.getHbars().length; j < m; j++) {
@@ -161,9 +160,8 @@ public class SyntheticTxnFactory {
 
         final var nonFungibleReturns = cryptoGcOutcome.nonFungibleTreasuryReturns();
         for (int i = 0, n = nonFungibleReturns.numReturns(); i < n; i++) {
-            final var listBuilder =
-                    TokenTransferList.newBuilder()
-                            .setToken(nonFungibleReturns.tokenTypes().get(i).toGrpcTokenId());
+            final var listBuilder = TokenTransferList.newBuilder()
+                    .setToken(nonFungibleReturns.tokenTypes().get(i).toGrpcTokenId());
             nonFungibleReturns.exchanges().get(i).addToGrpc(listBuilder);
             opBuilder.addTokenTransfers(listBuilder);
         }
@@ -213,10 +211,9 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder synthContractAutoRemove(final EntityNum contractNum) {
-        final var op =
-                ContractDeleteTransactionBody.newBuilder()
-                        .setPermanentRemoval(true)
-                        .setContractID(contractNum.toGrpcContractID());
+        final var op = ContractDeleteTransactionBody.newBuilder()
+                .setPermanentRemoval(true)
+                .setContractID(contractNum.toGrpcContractID());
         return TransactionBody.newBuilder().setContractDeleteInstance(op);
     }
 
@@ -226,32 +223,24 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setCryptoDelete(op);
     }
 
-    public TransactionBody.Builder synthContractAutoRenew(
-            final EntityNum contractNum, final long newExpiry) {
-        final var op =
-                baseSynthContractUpdate(contractNum)
-                        .setExpirationTime(MiscUtils.asSecondsTimestamp(newExpiry));
+    public TransactionBody.Builder synthContractAutoRenew(final EntityNum contractNum, final long newExpiry) {
+        final var op = baseSynthContractUpdate(contractNum).setExpirationTime(MiscUtils.asSecondsTimestamp(newExpiry));
         return TransactionBody.newBuilder().setContractUpdateInstance(op);
     }
 
     public TransactionBody.Builder synthNoopContractUpdate(final EntityNum contractNum) {
-        return TransactionBody.newBuilder()
-                .setContractUpdateInstance(baseSynthContractUpdate(contractNum));
+        return TransactionBody.newBuilder().setContractUpdateInstance(baseSynthContractUpdate(contractNum));
     }
 
-    private ContractUpdateTransactionBody.Builder baseSynthContractUpdate(
-            final EntityNum contractNum) {
-        return ContractUpdateTransactionBody.newBuilder()
-                .setContractID(contractNum.toGrpcContractID());
+    private ContractUpdateTransactionBody.Builder baseSynthContractUpdate(final EntityNum contractNum) {
+        return ContractUpdateTransactionBody.newBuilder().setContractID(contractNum.toGrpcContractID());
     }
 
-    public TransactionBody.Builder synthAccountAutoRenew(
-            final EntityNum accountNum, final long newExpiry) {
+    public TransactionBody.Builder synthAccountAutoRenew(final EntityNum accountNum, final long newExpiry) {
         final var grpcId = accountNum.toGrpcAccountId();
-        final var op =
-                CryptoUpdateTransactionBody.newBuilder()
-                        .setAccountIDToUpdate(grpcId)
-                        .setExpirationTime(MiscUtils.asSecondsTimestamp(newExpiry));
+        final var op = CryptoUpdateTransactionBody.newBuilder()
+                .setAccountIDToUpdate(grpcId)
+                .setExpirationTime(MiscUtils.asSecondsTimestamp(newExpiry));
         return TransactionBody.newBuilder()
                 .setTransactionID(TransactionID.newBuilder().setAccountID(grpcId))
                 .setCryptoUpdateAccount(op);
@@ -265,8 +254,7 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setContractCreateInstance(builder);
     }
 
-    public TransactionBody.Builder createTransactionCall(
-            final long gas, final Bytes functionParameters) {
+    public TransactionBody.Builder createTransactionCall(final long gas, final Bytes functionParameters) {
         final var builder = ContractCallTransactionBody.newBuilder();
 
         builder.setContractID(HTS_PRECOMPILE_MIRROR_ID);
@@ -318,18 +306,16 @@ public class SyntheticTxnFactory {
             @Nullable final EntityId operatorId) {
         final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
         if (approveWrapper.isFungible()) {
-            builder.addTokenAllowances(
-                    TokenAllowance.newBuilder()
-                            .setTokenId(approveWrapper.tokenId())
-                            .setSpender(approveWrapper.spender())
-                            .setAmount(approveWrapper.amount().longValueExact())
-                            .build());
+            builder.addTokenAllowances(TokenAllowance.newBuilder()
+                    .setTokenId(approveWrapper.tokenId())
+                    .setSpender(approveWrapper.spender())
+                    .setAmount(approveWrapper.amount().longValueExact())
+                    .build());
         } else {
-            final var op =
-                    NftAllowance.newBuilder()
-                            .setTokenId(approveWrapper.tokenId())
-                            .setSpender(approveWrapper.spender())
-                            .addSerialNumbers(approveWrapper.serialNumber().longValueExact());
+            final var op = NftAllowance.newBuilder()
+                    .setTokenId(approveWrapper.tokenId())
+                    .setSpender(approveWrapper.spender())
+                    .addSerialNumbers(approveWrapper.serialNumber().longValueExact());
             if (ownerId != null) {
                 op.setOwner(ownerId.toGrpcAccountId());
                 if (!ownerId.equals(operatorId)) {
@@ -341,20 +327,14 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setCryptoApproveAllowance(builder);
     }
 
-    public TransactionBody.Builder createDeleteAllowance(
-            final ApproveWrapper approveWrapper, final EntityId owner) {
+    public TransactionBody.Builder createDeleteAllowance(final ApproveWrapper approveWrapper, final EntityId owner) {
         final var builder = CryptoDeleteAllowanceTransactionBody.newBuilder();
-        builder.addAllNftAllowances(
-                        List.of(
-                                NftRemoveAllowance.newBuilder()
-                                        .setOwner(owner.toGrpcAccountId())
-                                        .setTokenId(approveWrapper.tokenId())
-                                        .addAllSerialNumbers(
-                                                List.of(
-                                                        approveWrapper
-                                                                .serialNumber()
-                                                                .longValueExact()))
-                                        .build()))
+        builder.addAllNftAllowances(List.of(NftRemoveAllowance.newBuilder()
+                        .setOwner(owner.toGrpcAccountId())
+                        .setTokenId(approveWrapper.tokenId())
+                        .addAllSerialNumbers(
+                                List.of(approveWrapper.serialNumber().longValueExact()))
+                        .build()))
                 .build();
         return TransactionBody.newBuilder().setCryptoDeleteAllowance(builder);
     }
@@ -364,12 +344,11 @@ public class SyntheticTxnFactory {
 
         final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
 
-        builder.addNftAllowances(
-                NftAllowance.newBuilder()
-                        .setApprovedForAll(BoolValue.of(setApprovalForAllWrapper.approved()))
-                        .setTokenId(setApprovalForAllWrapper.tokenId())
-                        .setSpender(setApprovalForAllWrapper.to())
-                        .build());
+        builder.addNftAllowances(NftAllowance.newBuilder()
+                .setApprovedForAll(BoolValue.of(setApprovalForAllWrapper.approved()))
+                .setTokenId(setApprovalForAllWrapper.tokenId())
+                .setSpender(setApprovalForAllWrapper.to())
+                .build());
 
         return TransactionBody.newBuilder().setCryptoApproveAllowance(builder);
     }
@@ -396,10 +375,7 @@ public class SyntheticTxnFactory {
             for (final TokenTransferWrapper wrapper : wrappers) {
                 final var builder = wrapper.asGrpcBuilder();
                 final var merged =
-                        listBuilders.merge(
-                                builder.getToken(),
-                                builder,
-                                SyntheticTxnFactory::mergeTokenTransfers);
+                        listBuilders.merge(builder.getToken(), builder, SyntheticTxnFactory::mergeTokenTransfers);
                 /* If merge() returns a builder other than the one we just created, it is already in the list */
                 if (merged == builder) {
                     builders.add(builder);
@@ -450,12 +426,9 @@ public class SyntheticTxnFactory {
         txnBodyBuilder.setName(tokenCreateWrapper.getName());
         txnBodyBuilder.setSymbol(tokenCreateWrapper.getSymbol());
         txnBodyBuilder.setDecimals(tokenCreateWrapper.getDecimals().intValue());
-        txnBodyBuilder.setTokenType(
-                tokenCreateWrapper.isFungible() ? TokenType.FUNGIBLE_COMMON : NON_FUNGIBLE_UNIQUE);
+        txnBodyBuilder.setTokenType(tokenCreateWrapper.isFungible() ? TokenType.FUNGIBLE_COMMON : NON_FUNGIBLE_UNIQUE);
         txnBodyBuilder.setSupplyType(
-                tokenCreateWrapper.isSupplyTypeFinite()
-                        ? TokenSupplyType.FINITE
-                        : TokenSupplyType.INFINITE);
+                tokenCreateWrapper.isSupplyTypeFinite() ? TokenSupplyType.FINITE : TokenSupplyType.INFINITE);
         txnBodyBuilder.setMaxSupply(tokenCreateWrapper.getMaxSupply());
         txnBodyBuilder.setInitialSupply(tokenCreateWrapper.getInitSupply().longValueExact());
         if (tokenCreateWrapper.getTreasury() != null) {
@@ -464,66 +437,55 @@ public class SyntheticTxnFactory {
         txnBodyBuilder.setFreezeDefault(tokenCreateWrapper.isFreezeDefault());
         txnBodyBuilder.setMemo(tokenCreateWrapper.getMemo());
         if (tokenCreateWrapper.getExpiry().second() != 0) {
-            txnBodyBuilder.setExpiry(
-                    Timestamp.newBuilder()
-                            .setSeconds(tokenCreateWrapper.getExpiry().second())
-                            .build());
+            txnBodyBuilder.setExpiry(Timestamp.newBuilder()
+                    .setSeconds(tokenCreateWrapper.getExpiry().second())
+                    .build());
         }
         if (tokenCreateWrapper.getExpiry().autoRenewAccount() != null) {
             txnBodyBuilder.setAutoRenewAccount(tokenCreateWrapper.getExpiry().autoRenewAccount());
         }
         if (tokenCreateWrapper.getExpiry().autoRenewPeriod() != 0) {
-            txnBodyBuilder.setAutoRenewPeriod(
-                    Duration.newBuilder()
-                            .setSeconds(tokenCreateWrapper.getExpiry().autoRenewPeriod()));
+            txnBodyBuilder.setAutoRenewPeriod(Duration.newBuilder()
+                    .setSeconds(tokenCreateWrapper.getExpiry().autoRenewPeriod()));
         }
-        tokenCreateWrapper
-                .getTokenKeys()
-                .forEach(
-                        tokenKeyWrapper -> {
-                            final var key = tokenKeyWrapper.key().asGrpc();
-                            if (tokenKeyWrapper.isUsedForAdminKey()) {
-                                txnBodyBuilder.setAdminKey(key);
-                            }
-                            if (tokenKeyWrapper.isUsedForKycKey()) {
-                                txnBodyBuilder.setKycKey(key);
-                            }
-                            if (tokenKeyWrapper.isUsedForFreezeKey()) {
-                                txnBodyBuilder.setFreezeKey(key);
-                            }
-                            if (tokenKeyWrapper.isUsedForWipeKey()) {
-                                txnBodyBuilder.setWipeKey(key);
-                            }
-                            if (tokenKeyWrapper.isUsedForSupplyKey()) {
-                                txnBodyBuilder.setSupplyKey(key);
-                            }
-                            if (tokenKeyWrapper.isUsedForFeeScheduleKey()) {
-                                txnBodyBuilder.setFeeScheduleKey(key);
-                            }
-                            if (tokenKeyWrapper.isUsedForPauseKey()) {
-                                txnBodyBuilder.setPauseKey(key);
-                            }
-                        });
-        txnBodyBuilder.addAllCustomFees(
-                tokenCreateWrapper.getFixedFees().stream()
-                        .map(TokenCreateWrapper.FixedFeeWrapper::asGrpc)
-                        .toList());
-        txnBodyBuilder.addAllCustomFees(
-                tokenCreateWrapper.getFractionalFees().stream()
-                        .map(TokenCreateWrapper.FractionalFeeWrapper::asGrpc)
-                        .toList());
-        txnBodyBuilder.addAllCustomFees(
-                tokenCreateWrapper.getRoyaltyFees().stream()
-                        .map(TokenCreateWrapper.RoyaltyFeeWrapper::asGrpc)
-                        .toList());
+        tokenCreateWrapper.getTokenKeys().forEach(tokenKeyWrapper -> {
+            final var key = tokenKeyWrapper.key().asGrpc();
+            if (tokenKeyWrapper.isUsedForAdminKey()) {
+                txnBodyBuilder.setAdminKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForKycKey()) {
+                txnBodyBuilder.setKycKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForFreezeKey()) {
+                txnBodyBuilder.setFreezeKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForWipeKey()) {
+                txnBodyBuilder.setWipeKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForSupplyKey()) {
+                txnBodyBuilder.setSupplyKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForFeeScheduleKey()) {
+                txnBodyBuilder.setFeeScheduleKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForPauseKey()) {
+                txnBodyBuilder.setPauseKey(key);
+            }
+        });
+        txnBodyBuilder.addAllCustomFees(tokenCreateWrapper.getFixedFees().stream()
+                .map(TokenCreateWrapper.FixedFeeWrapper::asGrpc)
+                .toList());
+        txnBodyBuilder.addAllCustomFees(tokenCreateWrapper.getFractionalFees().stream()
+                .map(TokenCreateWrapper.FractionalFeeWrapper::asGrpc)
+                .toList());
+        txnBodyBuilder.addAllCustomFees(tokenCreateWrapper.getRoyaltyFees().stream()
+                .map(TokenCreateWrapper.RoyaltyFeeWrapper::asGrpc)
+                .toList());
         return TransactionBody.newBuilder().setTokenCreation(txnBodyBuilder);
     }
 
     public TransactionBody.Builder createAccount(
-            final ByteString alias,
-            final Key key,
-            final long balance,
-            final int maxAutoAssociations) {
+            final ByteString alias, final Key key, final long balance, final int maxAutoAssociations) {
         final var baseBuilder = createAccountBase(balance);
         baseBuilder.setKey(key).setAlias(alias).setMemo(AUTO_MEMO);
 
@@ -542,8 +504,9 @@ public class SyntheticTxnFactory {
 
     public TransactionBody.Builder updateHollowAccount(final EntityNum accountNum, final Key key) {
         final var grpcId = accountNum.toGrpcAccountId();
-        final var op =
-                CryptoUpdateTransactionBody.newBuilder().setAccountIDToUpdate(grpcId).setKey(key);
+        final var op = CryptoUpdateTransactionBody.newBuilder()
+                .setAccountIDToUpdate(grpcId)
+                .setKey(key);
         return TransactionBody.newBuilder()
                 .setTransactionID(TransactionID.newBuilder().setAccountID(grpcId))
                 .setCryptoUpdateAccount(op);
@@ -556,40 +519,34 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder nodeStakeUpdate(
-            final Timestamp stakingPeriodEnd,
-            final List<NodeStake> nodeStakes,
-            final PropertySource properties) {
+            final Timestamp stakingPeriodEnd, final List<NodeStake> nodeStakes, final PropertySource properties) {
         final var stakingRewardRate = dynamicProperties.getStakingRewardRate();
         final var threshold = dynamicProperties.getStakingStartThreshold();
         final var stakingPeriod = properties.getLongProperty(STAKING_PERIOD_MINS);
-        final var stakingPeriodsStored =
-                properties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS);
+        final var stakingPeriodsStored = properties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS);
         final var maxStakingRewardRateThPerH =
                 properties.getLongProperty(STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR);
 
-        final var nodeRewardFeeFraction =
-                Fraction.newBuilder()
-                        .setNumerator(dynamicProperties.getNodeRewardPercent())
-                        .setDenominator(100L)
-                        .build();
-        final var stakingRewardFeeFraction =
-                Fraction.newBuilder()
-                        .setNumerator(dynamicProperties.getStakingRewardPercent())
-                        .setDenominator(100L)
-                        .build();
+        final var nodeRewardFeeFraction = Fraction.newBuilder()
+                .setNumerator(dynamicProperties.getNodeRewardPercent())
+                .setDenominator(100L)
+                .build();
+        final var stakingRewardFeeFraction = Fraction.newBuilder()
+                .setNumerator(dynamicProperties.getStakingRewardPercent())
+                .setDenominator(100L)
+                .build();
 
-        final var txnBody =
-                NodeStakeUpdateTransactionBody.newBuilder()
-                        .setEndOfStakingPeriod(stakingPeriodEnd)
-                        .addAllNodeStake(nodeStakes)
-                        .setMaxStakingRewardRatePerHbar(maxStakingRewardRateThPerH)
-                        .setNodeRewardFeeFraction(nodeRewardFeeFraction)
-                        .setStakingPeriodsStored(stakingPeriodsStored)
-                        .setStakingPeriod(stakingPeriod)
-                        .setStakingRewardFeeFraction(stakingRewardFeeFraction)
-                        .setStakingStartThreshold(threshold)
-                        .setStakingRewardRate(stakingRewardRate)
-                        .build();
+        final var txnBody = NodeStakeUpdateTransactionBody.newBuilder()
+                .setEndOfStakingPeriod(stakingPeriodEnd)
+                .addAllNodeStake(nodeStakes)
+                .setMaxStakingRewardRatePerHbar(maxStakingRewardRateThPerH)
+                .setNodeRewardFeeFraction(nodeRewardFeeFraction)
+                .setStakingPeriodsStored(stakingPeriodsStored)
+                .setStakingPeriod(stakingPeriod)
+                .setStakingRewardFeeFraction(stakingRewardFeeFraction)
+                .setStakingStartThreshold(threshold)
+                .setStakingRewardRate(stakingRewardRate)
+                .build();
 
         return TransactionBody.newBuilder().setNodeStakeUpdate(txnBody);
     }
@@ -640,8 +597,7 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setTokenWipe(builder);
     }
 
-    public TransactionBody.Builder createFreeze(
-            final TokenFreezeUnfreezeWrapper<TokenID, AccountID> freezeWrapper) {
+    public TransactionBody.Builder createFreeze(final TokenFreezeUnfreezeWrapper<TokenID, AccountID> freezeWrapper) {
         final var builder = TokenFreezeAccountTransactionBody.newBuilder();
         builder.setToken(freezeWrapper.token());
         builder.setAccount(freezeWrapper.account());
@@ -674,8 +630,9 @@ public class SyntheticTxnFactory {
         }
 
         if (updateWrapper.expiry().second() != 0) {
-            builder.setExpiry(
-                    Timestamp.newBuilder().setSeconds(updateWrapper.expiry().second()).build());
+            builder.setExpiry(Timestamp.newBuilder()
+                    .setSeconds(updateWrapper.expiry().second())
+                    .build());
         }
         if (updateWrapper.expiry().autoRenewAccount() != null) {
             builder.setAutoRenewAccount(updateWrapper.expiry().autoRenewAccount());
@@ -688,8 +645,7 @@ public class SyntheticTxnFactory {
         return checkTokenKeysTypeAndBuild(updateWrapper.tokenKeys(), builder);
     }
 
-    public TransactionBody.Builder createTokenUpdateKeys(
-            final TokenUpdateKeysWrapper updateWrapper) {
+    public TransactionBody.Builder createTokenUpdateKeys(final TokenUpdateKeysWrapper updateWrapper) {
         final var builder = constructUpdateTokenBuilder(updateWrapper.tokenID());
         return checkTokenKeysTypeAndBuild(updateWrapper.tokenKeys(), builder);
     }
@@ -701,45 +657,43 @@ public class SyntheticTxnFactory {
     }
 
     private TransactionBody.Builder checkTokenKeysTypeAndBuild(
-            final List<TokenKeyWrapper> tokenKeys,
-            final TokenUpdateTransactionBody.Builder builder) {
-        tokenKeys.forEach(
-                tokenKeyWrapper -> {
-                    final var key = tokenKeyWrapper.key().asGrpc();
-                    if (tokenKeyWrapper.isUsedForAdminKey()) {
-                        builder.setAdminKey(key);
-                    }
-                    if (tokenKeyWrapper.isUsedForKycKey()) {
-                        builder.setKycKey(key);
-                    }
-                    if (tokenKeyWrapper.isUsedForFreezeKey()) {
-                        builder.setFreezeKey(key);
-                    }
-                    if (tokenKeyWrapper.isUsedForWipeKey()) {
-                        builder.setWipeKey(key);
-                    }
-                    if (tokenKeyWrapper.isUsedForSupplyKey()) {
-                        builder.setSupplyKey(key);
-                    }
-                    if (tokenKeyWrapper.isUsedForFeeScheduleKey()) {
-                        builder.setFeeScheduleKey(key);
-                    }
-                    if (tokenKeyWrapper.isUsedForPauseKey()) {
-                        builder.setPauseKey(key);
-                    }
-                });
+            final List<TokenKeyWrapper> tokenKeys, final TokenUpdateTransactionBody.Builder builder) {
+        tokenKeys.forEach(tokenKeyWrapper -> {
+            final var key = tokenKeyWrapper.key().asGrpc();
+            if (tokenKeyWrapper.isUsedForAdminKey()) {
+                builder.setAdminKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForKycKey()) {
+                builder.setKycKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForFreezeKey()) {
+                builder.setFreezeKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForWipeKey()) {
+                builder.setWipeKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForSupplyKey()) {
+                builder.setSupplyKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForFeeScheduleKey()) {
+                builder.setFeeScheduleKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForPauseKey()) {
+                builder.setPauseKey(key);
+            }
+        });
 
         return TransactionBody.newBuilder().setTokenUpdate(builder);
     }
 
-    public TransactionBody.Builder createTokenUpdateExpiryInfo(
-            final TokenUpdateExpiryInfoWrapper expiryInfoWrapper) {
+    public TransactionBody.Builder createTokenUpdateExpiryInfo(final TokenUpdateExpiryInfoWrapper expiryInfoWrapper) {
         final var builder = TokenUpdateTransactionBody.newBuilder();
         builder.setToken(expiryInfoWrapper.tokenID());
 
         if (expiryInfoWrapper.expiry().second() != 0) {
-            builder.setExpiry(
-                    Timestamp.newBuilder().setSeconds(expiryInfoWrapper.expiry().second()).build());
+            builder.setExpiry(Timestamp.newBuilder()
+                    .setSeconds(expiryInfoWrapper.expiry().second())
+                    .build());
         }
         if (expiryInfoWrapper.expiry().autoRenewAccount() != null) {
             builder.setAutoRenewAccount(expiryInfoWrapper.expiry().autoRenewAccount());
@@ -760,10 +714,7 @@ public class SyntheticTxnFactory {
         protected final boolean isApproval;
 
         public HbarTransfer(
-                final long amount,
-                final boolean isApproval,
-                final AccountID sender,
-                final AccountID receiver) {
+                final long amount, final boolean isApproval, final AccountID sender, final AccountID receiver) {
             this.amount = amount;
             this.isApproval = isApproval;
             this.sender = sender;
@@ -832,18 +783,12 @@ public class SyntheticTxnFactory {
         private final boolean isApproval;
 
         public NftExchange(
-                final long serialNo,
-                final TokenID tokenType,
-                final AccountID sender,
-                final AccountID receiver) {
+                final long serialNo, final TokenID tokenType, final AccountID sender, final AccountID receiver) {
             this(serialNo, tokenType, sender, receiver, false);
         }
 
         public static NftExchange fromApproval(
-                final long serialNo,
-                final TokenID tokenType,
-                final AccountID sender,
-                final AccountID receiver) {
+                final long serialNo, final TokenID tokenType, final AccountID sender, final AccountID receiver) {
             return new NftExchange(serialNo, tokenType, sender, receiver, true);
         }
 
@@ -902,8 +847,7 @@ public class SyntheticTxnFactory {
         return to;
     }
 
-    private static void mergeFungible(
-            final TokenTransferList.Builder from, final TokenTransferList.Builder to) {
+    private static void mergeFungible(final TokenTransferList.Builder from, final TokenTransferList.Builder to) {
         for (int i = 0, n = from.getTransfersCount(); i < n; i++) {
             final var transfer = from.getTransfers(i);
             final var targetId = transfer.getAccountID();
@@ -923,8 +867,7 @@ public class SyntheticTxnFactory {
         }
     }
 
-    private static void mergeNonFungible(
-            final TokenTransferList.Builder from, final TokenTransferList.Builder to) {
+    private static void mergeNonFungible(final TokenTransferList.Builder from, final TokenTransferList.Builder to) {
         for (int i = 0, n = from.getNftTransfersCount(); i < n; i++) {
             final var fromExchange = from.getNftTransfersBuilder(i);
             var alreadyPresent = false;
@@ -948,26 +891,22 @@ public class SyntheticTxnFactory {
     }
 
     private TransactionBody.Builder synthCreateOpFromEth(final EthTxData ethTxData) {
-        final var op =
-                ContractCreateTransactionBody.newBuilder()
-                        .setGas(ethTxData.gasLimit())
-                        .setInitialBalance(
-                                ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact())
-                        .setAutoRenewPeriod(dynamicProperties.typedMinAutoRenewDuration())
-                        .setInitcode(ByteStringUtils.wrapUnsafely(ethTxData.callData()));
+        final var op = ContractCreateTransactionBody.newBuilder()
+                .setGas(ethTxData.gasLimit())
+                .setInitialBalance(ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact())
+                .setAutoRenewPeriod(dynamicProperties.typedMinAutoRenewDuration())
+                .setInitcode(ByteStringUtils.wrapUnsafely(ethTxData.callData()));
         return TransactionBody.newBuilder().setContractCreateInstance(op);
     }
 
     private TransactionBody.Builder synthCallOpFromEth(final EthTxData ethTxData) {
-        final var targetId =
-                ContractID.newBuilder()
-                        .setEvmAddress(ByteStringUtils.wrapUnsafely(ethTxData.to()))
-                        .build();
-        final var op =
-                ContractCallTransactionBody.newBuilder()
-                        .setGas(ethTxData.gasLimit())
-                        .setAmount(ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact())
-                        .setContractID(targetId);
+        final var targetId = ContractID.newBuilder()
+                .setEvmAddress(ByteStringUtils.wrapUnsafely(ethTxData.to()))
+                .build();
+        final var op = ContractCallTransactionBody.newBuilder()
+                .setGas(ethTxData.gasLimit())
+                .setAmount(ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact())
+                .setContractID(targetId);
         if (ethTxData.hasCallData()) {
             op.setFunctionParameters(ByteStringUtils.wrapUnsafely(ethTxData.callData()));
         }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc;
 
 import static com.hedera.node.app.spi.config.Profile.DEV;
@@ -40,11 +41,8 @@ public class ConfigDrivenNettyFactory implements NettyBuilderFactory {
 
     private static final Logger log = LogManager.getLogger(ConfigDrivenNettyFactory.class);
 
-    private static final List<String> SUPPORTED_CIPHERS =
-            List.of(
-                    "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
-                    "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-                    "TLS_AES_256_GCM_SHA384");
+    private static final List<String> SUPPORTED_CIPHERS = List.of(
+            "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384", "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384", "TLS_AES_256_GCM_SHA384");
     private static final List<String> SUPPORTED_PROTOCOLS = List.of("TLSv1.2", "TLSv1.3");
 
     private final NodeLocalProperties nodeProperties;
@@ -82,8 +80,7 @@ public class ConfigDrivenNettyFactory implements NettyBuilderFactory {
                 .permitKeepAliveTime(nodeProperties.nettyProdKeepAliveTime(), TimeUnit.SECONDS)
                 .keepAliveTimeout(nodeProperties.nettyProdKeepAliveTimeout(), TimeUnit.SECONDS)
                 .maxConnectionAge(nodeProperties.nettyMaxConnectionAge(), TimeUnit.SECONDS)
-                .maxConnectionAgeGrace(
-                        nodeProperties.nettyMaxConnectionAgeGrace(), TimeUnit.SECONDS)
+                .maxConnectionAgeGrace(nodeProperties.nettyMaxConnectionAgeGrace(), TimeUnit.SECONDS)
                 .maxConnectionIdle(nodeProperties.nettyMaxConnectionIdle(), TimeUnit.SECONDS)
                 .maxConcurrentCallsPerConnection(nodeProperties.nettyMaxConcurrentCalls())
                 .flowControlWindow(nodeProperties.nettyFlowControlWindow())
@@ -93,8 +90,7 @@ public class ConfigDrivenNettyFactory implements NettyBuilderFactory {
                 .workerEventLoopGroup(new EpollEventLoopGroup());
     }
 
-    private void configureTls(final NettyServerBuilder builder)
-            throws SSLException, FileNotFoundException {
+    private void configureTls(final NettyServerBuilder builder) throws SSLException, FileNotFoundException {
         final var crt = new File(nodeProperties.nettyTlsCrtPath());
         if (!crt.exists()) {
             log.warn("Specified TLS cert '{}' doesn't exist!", nodeProperties.nettyTlsCrtPath());
@@ -105,11 +101,10 @@ public class ConfigDrivenNettyFactory implements NettyBuilderFactory {
             log.warn("Specified TLS key '{}' doesn't exist!", nodeProperties.nettyTlsKeyPath());
             throw new FileNotFoundException(nodeProperties.nettyTlsKeyPath());
         }
-        final var sslContext =
-                GrpcSslContexts.configure(SslContextBuilder.forServer(crt, key))
-                        .protocols(SUPPORTED_PROTOCOLS)
-                        .ciphers(SUPPORTED_CIPHERS, INSTANCE)
-                        .build();
+        final var sslContext = GrpcSslContexts.configure(SslContextBuilder.forServer(crt, key))
+                .protocols(SUPPORTED_PROTOCOLS)
+                .ciphers(SUPPORTED_CIPHERS, INSTANCE)
+                .build();
         builder.sslContext(sslContext);
     }
 }

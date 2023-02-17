@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -48,24 +49,31 @@ class GrpcStarterTest {
     private final int tlsPort = 50212;
     private final NodeId nodeId = new NodeId(false, 123L);
 
-    @Mock private Address nodeAddress;
-    @Mock private AddressBook addressBook;
-    @Mock private GrpcServerManager grpcServerManager;
-    @Mock private NodeLocalProperties nodeLocalProperties;
-    @Mock private PrintStream console;
+    @Mock
+    private Address nodeAddress;
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private GrpcStarter subject;
+    @Mock
+    private AddressBook addressBook;
+
+    @Mock
+    private GrpcServerManager grpcServerManager;
+
+    @Mock
+    private NodeLocalProperties nodeLocalProperties;
+
+    @Mock
+    private PrintStream console;
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private GrpcStarter subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new GrpcStarter(
-                        nodeId,
-                        grpcServerManager,
-                        nodeLocalProperties,
-                        () -> addressBook,
-                        Optional.of(console));
+        subject = new GrpcStarter(
+                nodeId, grpcServerManager, nodeLocalProperties, () -> addressBook, Optional.of(console));
     }
 
     @Test
@@ -82,9 +90,7 @@ class GrpcStarterTest {
         // and:
         assertThat(
                 logCaptor.infoLogs(),
-                contains(
-                        equalTo("TLS is turned on by default on node 123"),
-                        equalTo("Active profile: PROD")));
+                contains(equalTo("TLS is turned on by default on node 123"), equalTo("Active profile: PROD")));
     }
 
     @Test
@@ -99,9 +105,7 @@ class GrpcStarterTest {
         // then:
         verifyNoInteractions(grpcServerManager);
         // and:
-        assertThat(
-                logCaptor.warnLogs(),
-                contains(equalTo("No Netty config for profile TEST, skipping gRPC startup")));
+        assertThat(logCaptor.warnLogs(), contains(equalTo("No Netty config for profile TEST, skipping gRPC startup")));
     }
 
     @Test
@@ -168,8 +172,7 @@ class GrpcStarterTest {
         subject.startIfAppropriate();
 
         // then:
-        verify(grpcServerManager)
-                .start(intThat(i -> i == port + 666), intThat(j -> j == tlsPort + 666), any());
+        verify(grpcServerManager).start(intThat(i -> i == port + 666), intThat(j -> j == tlsPort + 666), any());
     }
 
     @Test

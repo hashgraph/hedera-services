@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
@@ -172,10 +173,8 @@ class GlobalDynamicPropertiesTest {
     private PropertySource properties;
 
     private HederaNumbers numbers;
-    private final CongestionMultipliers oddCongestion =
-            CongestionMultipliers.from("90,11x,95,27x,99,103x");
-    private final CongestionMultipliers evenCongestion =
-            CongestionMultipliers.from("90,10x,95,25x,99,100x");
+    private final CongestionMultipliers oddCongestion = CongestionMultipliers.from("90,11x,95,27x,99,103x");
+    private final CongestionMultipliers evenCongestion = CongestionMultipliers.from("90,10x,95,25x,99,100x");
     private final ScaleFactor oddFactor = ScaleFactor.from("5:2");
     private final ScaleFactor evenFactor = ScaleFactor.from("7:2");
     private final LegacyContractIdActivations contractIdActivations =
@@ -340,9 +339,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(upgradeArtifactLocs[1], subject.upgradeArtifactsLoc());
         assertEquals(Set.of(SidecarType.CONTRACT_STATE_CHANGE), subject.enabledSidecars());
         assertEquals(Map.of(0L, 4L, 1L, 8L), subject.nodeMaxMinStakeRatios());
-        assertEquals(
-                ContractStoragePriceTiers.from("0til100M,2000til450M", 88, 53L, 87L),
-                subject.storagePriceTiers());
+        assertEquals(ContractStoragePriceTiers.from("0til100M,2000til450M", 88, 53L, 87L), subject.storagePriceTiers());
         assertEquals(evmVersions[1], subject.evmVersion());
         assertEquals(contractIdActivations, subject.legacyContractIdActivations());
         assertEquals(entityScaleFactors, subject.entityScaleFactors());
@@ -508,10 +505,8 @@ class GlobalDynamicPropertiesTest {
         given(properties.getIntProperty(BALANCES_EXPORT_PERIOD_SECS)).willReturn(i + 10);
         given(properties.getBooleanProperty(BALANCES_EXPORT_ENABLED)).willReturn((i + 11) % 2 == 0);
         given(properties.getLongProperty(BALANCES_NODE_BALANCE_WARN_THRESHOLD)).willReturn(i + 12L);
-        given(properties.getStringProperty(BALANCES_EXPORT_DIR_PATH))
-                .willReturn(balanceExportPaths[i % 2]);
-        given(properties.getBooleanProperty(BALANCES_EXPORT_TOKEN_BALANCES))
-                .willReturn((i + 13) % 2 == 0);
+        given(properties.getStringProperty(BALANCES_EXPORT_DIR_PATH)).willReturn(balanceExportPaths[i % 2]);
+        given(properties.getBooleanProperty(BALANCES_EXPORT_TOKEN_BALANCES)).willReturn((i + 13) % 2 == 0);
         given(properties.getIntProperty(LEDGER_TRANSFERS_MAX_LEN)).willReturn(i + 14);
         given(properties.getIntProperty(LEDGER_TOKEN_TRANSFERS_MAX_LEN)).willReturn(i + 15);
         given(properties.getIntProperty(HEDERA_TXN_MAX_MEMO_UTF8_BYTES)).willReturn(i + 16);
@@ -522,10 +517,8 @@ class GlobalDynamicPropertiesTest {
         given(properties.getIntProperty(CONTRACTS_CHAIN_ID)).willReturn(i + 21);
         given(properties.getLongProperty(CONTRACTS_DEFAULT_LIFETIME)).willReturn(i + 22L);
         given(properties.getIntProperty(FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER)).willReturn(i + 23);
-        given(properties.getLongProperty(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION))
-                .willReturn(i + 24L);
-        given(properties.getLongProperty(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION))
-                .willReturn(i + 25L);
+        given(properties.getLongProperty(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION)).willReturn(i + 24L);
+        given(properties.getLongProperty(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION)).willReturn(i + 25L);
         given(properties.getIntProperty(CONTRACTS_LOCAL_CALL_EST_RET_BYTES)).willReturn(i + 26);
         given(properties.getIntProperty(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS)).willReturn(i + 27);
         given(properties.getIntProperty(CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED)).willReturn(i + 28);
@@ -557,18 +550,15 @@ class GlobalDynamicPropertiesTest {
         given(properties.getIntProperty(TOKENS_MAX_CUSTOM_FEE_DEPTH)).willReturn(i + 46);
         given(properties.getThrottleScaleFactor(TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR))
                 .willReturn(i % 2 == 0 ? evenFactor : oddFactor);
-        given(properties.getStringProperty(UPGRADE_ARTIFACTS_PATH))
-                .willReturn(upgradeArtifactLocs[i % 2]);
-        given(properties.getBooleanProperty(CONTRACTS_THROTTLE_THROTTLE_BY_GAS))
-                .willReturn((i + 47) % 2 == 0);
+        given(properties.getStringProperty(UPGRADE_ARTIFACTS_PATH)).willReturn(upgradeArtifactLocs[i % 2]);
+        given(properties.getBooleanProperty(CONTRACTS_THROTTLE_THROTTLE_BY_GAS)).willReturn((i + 47) % 2 == 0);
         given(properties.getIntProperty(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT))
                 .willReturn(i + 47);
         given(properties.getIntProperty(LEDGER_CHANGE_HIST_MEM_SECS)).willReturn(i + 51);
         given(properties.getLongProperty(CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST))
                 .willReturn(i + 52L);
         given(properties.getBooleanProperty(AUTO_CREATION_ENABLED)).willReturn(i % 2 == 0);
-        given(properties.getBooleanProperty(SIGS_EXPAND_FROM_IMMUTABLE_STATE))
-                .willReturn(i % 2 == 0);
+        given(properties.getBooleanProperty(SIGS_EXPAND_FROM_IMMUTABLE_STATE)).willReturn(i % 2 == 0);
         given(properties.getLongProperty(CONTRACTS_MAX_KV_PAIRS_AGGREGATE)).willReturn(i + 52L);
         given(properties.getIntProperty(CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL)).willReturn(i + 53);
         given(properties.getIntProperty(LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT))
@@ -578,24 +568,19 @@ class GlobalDynamicPropertiesTest {
         given(properties.getBooleanProperty(CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS))
                 .willReturn((i + 57) % 2 == 0);
         given(properties.getBooleanProperty(CONTRACTS_ALLOW_CREATE2)).willReturn((i + 58) % 2 == 0);
-        given(properties.getBooleanProperty(CONTRACTS_REDIRECT_TOKEN_CALLS))
-                .willReturn((i + 59) % 2 == 0);
-        given(properties.getBooleanProperty(HEDERA_ALLOWANCES_IS_ENABLED))
-                .willReturn((i + 60) % 2 == 0);
+        given(properties.getBooleanProperty(CONTRACTS_REDIRECT_TOKEN_CALLS)).willReturn((i + 59) % 2 == 0);
+        given(properties.getBooleanProperty(HEDERA_ALLOWANCES_IS_ENABLED)).willReturn((i + 60) % 2 == 0);
         given(properties.getTypesProperty(AUTO_RENEW_TARGET_TYPES)).willReturn(typesFor(i));
-        given(properties.getBooleanProperty(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS))
-                .willReturn((i + 60) % 2 == 0);
+        given(properties.getBooleanProperty(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS)).willReturn((i + 60) % 2 == 0);
         given(properties.getBooleanProperty(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE))
                 .willReturn((i + 61) % 2 == 0);
-        given(properties.getBlockValuesProperty(CONTRACTS_KNOWN_BLOCK_HASH))
-                .willReturn(blockValues);
+        given(properties.getBlockValuesProperty(CONTRACTS_KNOWN_BLOCK_HASH)).willReturn(blockValues);
         given(properties.getLongProperty(CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST))
                 .willReturn(i + 64L);
         given(properties.getLongProperty(SCHEDULING_MAX_TXN_PER_SEC)).willReturn(i + 65L);
         given(properties.getLongProperty(CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT))
                 .willReturn(i + 66L);
-        given(properties.getLongProperty(SCHEDULING_MAX_EXPIRATION_FUTURE_SECS))
-                .willReturn(i + 67L);
+        given(properties.getLongProperty(SCHEDULING_MAX_EXPIRATION_FUTURE_SECS)).willReturn(i + 67L);
         given(properties.getLongProperty(CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS))
                 .willReturn(i + 68L);
         given(properties.getLongProperty(CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS))
@@ -604,15 +589,13 @@ class GlobalDynamicPropertiesTest {
         given(properties.getIntProperty(STAKING_FEES_NODE_REWARD_PERCENT)).willReturn(i + 71);
         given(properties.getIntProperty(STAKING_FEES_STAKING_REWARD_PERCENT)).willReturn(i + 72);
         given(properties.getLongProperty(STAKING_REWARD_RATE)).willReturn(i + 74L);
-        given(properties.getBooleanProperty(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS))
-                .willReturn((i + 65) % 2 == 0);
+        given(properties.getBooleanProperty(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS)).willReturn((i + 65) % 2 == 0);
         given(properties.getLongProperty(STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR))
                 .willReturn(i + 75L);
         given(properties.getBooleanProperty(STAKING_IS_ENABLED)).willReturn((i + 73) % 2 == 0);
         given(properties.getIntProperty(HEDERA_RECORD_STREAM_RECORD_FILE_VERSION))
                 .willReturn((i + 77));
-        given(properties.getIntProperty(HEDERA_RECORD_STREAM_SIG_FILE_VERSION))
-                .willReturn((i + 78));
+        given(properties.getIntProperty(HEDERA_RECORD_STREAM_SIG_FILE_VERSION)).willReturn((i + 78));
         given(properties.getLongProperty(ACCOUNTS_MAX_NUM)).willReturn(i + 79L);
         given(properties.getLongProperty(CONTRACTS_MAX_NUM)).willReturn(i + 80L);
         given(properties.getLongProperty(FILES_MAX_NUM)).willReturn(i + 81L);
@@ -634,26 +617,21 @@ class GlobalDynamicPropertiesTest {
                 .willReturn((i + 88));
         given(properties.getBooleanProperty(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION))
                 .willReturn((i + 81) % 2 == 0);
-        given(properties.getBooleanProperty(CONTRACTS_ITEMIZE_STORAGE_FEES))
-                .willReturn((i + 79) % 2 == 1);
+        given(properties.getBooleanProperty(CONTRACTS_ITEMIZE_STORAGE_FEES)).willReturn((i + 79) % 2 == 1);
         given(properties.getLongProperty(CONTRACTS_REFERENCE_SLOT_LIFETIME)).willReturn(i + 86L);
         given(properties.getIntProperty(CONTRACTS_FREE_STORAGE_TIER_LIMIT)).willReturn(i + 87);
-        given(properties.getStringProperty(CONTRACTS_STORAGE_SLOT_PRICE_TIERS))
-                .willReturn("0til100M,2000til450M");
+        given(properties.getStringProperty(CONTRACTS_STORAGE_SLOT_PRICE_TIERS)).willReturn("0til100M,2000til450M");
         given(properties.getBooleanProperty(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION))
                 .willReturn((i + 82) % 2 == 0);
-        given(properties.getBooleanProperty(TOKENS_AUTO_CREATIONS_ENABLED))
-                .willReturn((i + 83) % 2 == 0);
+        given(properties.getBooleanProperty(TOKENS_AUTO_CREATIONS_ENABLED)).willReturn((i + 83) % 2 == 0);
         given(properties.getBooleanProperty(CONTRACTS_DYNAMIC_EVM_VERSION)).willReturn(i % 2 == 0);
         given(properties.getStringProperty(CONTRACTS_EVM_VERSION)).willReturn(evmVersions[i % 2]);
-        given(properties.getBooleanProperty(BALANCES_COMPRESS_ON_CREATION))
-                .willReturn((i + 84) % 2 == 0);
+        given(properties.getBooleanProperty(BALANCES_COMPRESS_ON_CREATION)).willReturn((i + 84) % 2 == 0);
         given(properties.getBooleanProperty(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION))
                 .willReturn((i + 85) % 2 == 0);
         given(properties.getLongProperty(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO))
                 .willReturn(i + 87L);
-        given(properties.getLongProperty(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC))
-                .willReturn(i + 88L);
+        given(properties.getLongProperty(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC)).willReturn(i + 88L);
         given(properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS))
                 .willReturn(contractIdActivations);
         given(properties.getBooleanProperty(LAZY_CREATION_ENABLED)).willReturn((i + 89) % 2 == 0);

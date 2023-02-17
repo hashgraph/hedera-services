@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.init;
 
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_LAST_THROTTLE_EXEMPT;
@@ -45,29 +46,45 @@ class StateInitializationFlowTest {
 
     private final HederaNumbers defaultNumbers = new MockHederaNumbers();
 
-    @Mock private Hash hash;
-    @Mock private HederaFs hfs;
-    @Mock private RunningHash runningHash;
-    @Mock private ServicesState activeState;
-    @Mock private BootstrapProperties bootstrapProperties;
-    @Mock private RecordsRunningHashLeaf runningHashLeaf;
-    @Mock private MutableStateChildren workingState;
-    @Mock private RecordStreamManager recordStreamManager;
-    @Mock private FileUpdateInterceptor aFileInterceptor;
-    @Mock private FileUpdateInterceptor bFileInterceptor;
-    @Mock private StateInitializationFlow.NumberConfigurer numberConfigurer;
+    @Mock
+    private Hash hash;
+
+    @Mock
+    private HederaFs hfs;
+
+    @Mock
+    private RunningHash runningHash;
+
+    @Mock
+    private ServicesState activeState;
+
+    @Mock
+    private BootstrapProperties bootstrapProperties;
+
+    @Mock
+    private RecordsRunningHashLeaf runningHashLeaf;
+
+    @Mock
+    private MutableStateChildren workingState;
+
+    @Mock
+    private RecordStreamManager recordStreamManager;
+
+    @Mock
+    private FileUpdateInterceptor aFileInterceptor;
+
+    @Mock
+    private FileUpdateInterceptor bFileInterceptor;
+
+    @Mock
+    private StateInitializationFlow.NumberConfigurer numberConfigurer;
 
     private StateInitializationFlow subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new StateInitializationFlow(
-                        hfs,
-                        defaultNumbers,
-                        recordStreamManager,
-                        workingState,
-                        Set.of(aFileInterceptor, bFileInterceptor));
+        subject = new StateInitializationFlow(
+                hfs, defaultNumbers, recordStreamManager, workingState, Set.of(aFileInterceptor, bFileInterceptor));
     }
 
     @Test
@@ -77,7 +94,8 @@ class StateInitializationFlowTest {
         given(runningHash.getHash()).willReturn(hash);
         given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
         given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
-        given(bootstrapProperties.getLongProperty(ACCOUNTS_LAST_THROTTLE_EXEMPT)).willReturn(100L);
+        given(bootstrapProperties.getLongProperty(ACCOUNTS_LAST_THROTTLE_EXEMPT))
+                .willReturn(100L);
 
         // when:
         subject.runWith(activeState, bootstrapProperties);
@@ -100,7 +118,8 @@ class StateInitializationFlowTest {
         given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
         given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
         given(hfs.numRegisteredInterceptors()).willReturn(5);
-        given(bootstrapProperties.getLongProperty(ACCOUNTS_LAST_THROTTLE_EXEMPT)).willReturn(100L);
+        given(bootstrapProperties.getLongProperty(ACCOUNTS_LAST_THROTTLE_EXEMPT))
+                .willReturn(100L);
 
         // when:
         subject.runWith(activeState, bootstrapProperties);

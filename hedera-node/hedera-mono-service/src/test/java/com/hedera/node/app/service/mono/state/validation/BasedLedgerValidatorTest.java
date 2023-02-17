@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.validation;
 
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -110,16 +111,14 @@ class BasedLedgerValidatorTest {
     }
 
     private MerkleAccount expectedWith(final long balance) throws NegativeAccountBalanceException {
-        final MerkleAccount hAccount =
-                (MerkleAccount)
-                        new HederaAccountCustomizer()
-                                .isReceiverSigRequired(false)
-                                .proxy(MISSING_ENTITY_ID)
-                                .isDeleted(false)
-                                .expiry(1_234_567L)
-                                .memo("")
-                                .isSmartContract(false)
-                                .customizing(new MerkleAccount());
+        final MerkleAccount hAccount = (MerkleAccount) new HederaAccountCustomizer()
+                .isReceiverSigRequired(false)
+                .proxy(MISSING_ENTITY_ID)
+                .isDeleted(false)
+                .expiry(1_234_567L)
+                .memo("")
+                .isSmartContract(false)
+                .customizing(new MerkleAccount());
         hAccount.setBalance(balance);
         return hAccount;
     }

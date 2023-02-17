@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext.ethHashFrom;
@@ -47,9 +48,14 @@ class BlockManagerTest {
 
     private static final long blockPeriodSecs = 2L;
 
-    @Mock private BootstrapProperties bootstrapProperties;
-    @Mock private MerkleNetworkContext networkContext;
-    @Mock private RecordsRunningHashLeaf runningHashLeaf;
+    @Mock
+    private BootstrapProperties bootstrapProperties;
+
+    @Mock
+    private MerkleNetworkContext networkContext;
+
+    @Mock
+    private RecordsRunningHashLeaf runningHashLeaf;
 
     private BlockManager subject;
 
@@ -57,8 +63,7 @@ class BlockManagerTest {
     void setUp() {
         given(bootstrapProperties.getLongProperty(HEDERA_RECORD_STREAM_LOG_PERIOD))
                 .willReturn(blockPeriodSecs);
-        subject =
-                new BlockManager(bootstrapProperties, () -> networkContext, () -> runningHashLeaf);
+        subject = new BlockManager(bootstrapProperties, () -> networkContext, () -> runningHashLeaf);
     }
 
     @Test
@@ -78,7 +83,8 @@ class BlockManagerTest {
         given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
         given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
 
-        final var newBlockNo = subject.updateAndGetAlignmentBlockNumber(someTime).blockNo();
+        final var newBlockNo =
+                subject.updateAndGetAlignmentBlockNumber(someTime).blockNo();
 
         assertEquals(someBlockNo, newBlockNo);
         verify(networkContext, never()).setFirstConsTimeOfCurrentBlock(any());
@@ -102,7 +108,8 @@ class BlockManagerTest {
                 .willReturn(someBlockNo);
         given(runningHashLeaf.currentRunningHash()).willReturn(aFullBlockHash);
 
-        final var newBlockNo = subject.updateAndGetAlignmentBlockNumber(anotherTime).blockNo();
+        final var newBlockNo =
+                subject.updateAndGetAlignmentBlockNumber(anotherTime).blockNo();
 
         assertEquals(someBlockNo, newBlockNo);
     }
@@ -127,7 +134,8 @@ class BlockManagerTest {
         given(runningHashLeaf.currentRunningHash()).willThrow(InterruptedException.class);
         given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
 
-        final var newBlockNo = subject.updateAndGetAlignmentBlockNumber(anotherTime).blockNo();
+        final var newBlockNo =
+                subject.updateAndGetAlignmentBlockNumber(anotherTime).blockNo();
 
         assertEquals(someBlockNo, newBlockNo);
     }
@@ -215,6 +223,5 @@ class BlockManagerTest {
     private static final Instant someTime = Instant.ofEpochSecond(1_234_567L, 890_000);
     private static final Instant anotherTime = Instant.ofEpochSecond(1_234_568L, 890);
     private static final Hash aFullBlockHash = new Hash(TxnUtils.randomUtf8Bytes(48));
-    private static final org.hyperledger.besu.datatypes.Hash aSuffixHash =
-            ethHashFrom(aFullBlockHash);
+    private static final org.hyperledger.besu.datatypes.Hash aSuffixHash = ethHashFrom(aFullBlockHash);
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
@@ -51,8 +52,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(LogCaptureExtension.class)
 class MerkleStakingInfoTest {
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private MerkleStakingInfo subject;
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private MerkleStakingInfo subject;
 
     private final int number = 34;
     private final long minStake = 100L;
@@ -67,16 +71,15 @@ class MerkleStakingInfoTest {
 
     @BeforeEach
     void setUp() {
-        subject =
-                new MerkleStakingInfo(
-                        minStake,
-                        maxStake,
-                        stakeToReward,
-                        stakeToNotReward,
-                        stakeRewardStart,
-                        unclaimedStakeRewardStart,
-                        stake,
-                        rewardSumHistory);
+        subject = new MerkleStakingInfo(
+                minStake,
+                maxStake,
+                stakeToReward,
+                stakeToNotReward,
+                stakeRewardStart,
+                unclaimedStakeRewardStart,
+                stake,
+                rewardSumHistory);
         subject.setKey(key);
     }
 
@@ -107,114 +110,104 @@ class MerkleStakingInfoTest {
         final long otherUnclaimedStakeRewardStart = otherStakeRewardStart / 10 - 1;
         final long otherStake = 501L;
         final long[] otherRewardSumHistory = new long[] {3L, 2L};
-        final var subject2 =
-                new MerkleStakingInfo(
-                        otherMinStake,
-                        maxStake,
-                        stakeToReward,
-                        stakeToNotReward,
-                        stakeRewardStart,
-                        unclaimedStakeRewardStart,
-                        stake,
-                        rewardSumHistory);
+        final var subject2 = new MerkleStakingInfo(
+                otherMinStake,
+                maxStake,
+                stakeToReward,
+                stakeToNotReward,
+                stakeRewardStart,
+                unclaimedStakeRewardStart,
+                stake,
+                rewardSumHistory);
         subject2.setKey(key);
-        final var subject3 =
-                new MerkleStakingInfo(
-                        minStake,
-                        otherMaxStake,
-                        stakeToReward,
-                        stakeToNotReward,
-                        stakeRewardStart,
-                        unclaimedStakeRewardStart,
-                        stake,
-                        rewardSumHistory);
+        final var subject3 = new MerkleStakingInfo(
+                minStake,
+                otherMaxStake,
+                stakeToReward,
+                stakeToNotReward,
+                stakeRewardStart,
+                unclaimedStakeRewardStart,
+                stake,
+                rewardSumHistory);
         subject3.setKey(key);
-        final var subject4 =
-                new MerkleStakingInfo(
-                        minStake,
-                        maxStake,
-                        otherStakeToReward,
-                        stakeToNotReward,
-                        stakeRewardStart,
-                        unclaimedStakeRewardStart,
-                        stake,
-                        rewardSumHistory);
+        final var subject4 = new MerkleStakingInfo(
+                minStake,
+                maxStake,
+                otherStakeToReward,
+                stakeToNotReward,
+                stakeRewardStart,
+                unclaimedStakeRewardStart,
+                stake,
+                rewardSumHistory);
         subject4.setKey(key);
-        final var subject5 =
-                new MerkleStakingInfo(
-                        minStake,
-                        maxStake,
-                        stakeToReward,
-                        otherStakeToNotReward,
-                        stakeRewardStart,
-                        unclaimedStakeRewardStart,
-                        stake,
-                        rewardSumHistory);
+        final var subject5 = new MerkleStakingInfo(
+                minStake,
+                maxStake,
+                stakeToReward,
+                otherStakeToNotReward,
+                stakeRewardStart,
+                unclaimedStakeRewardStart,
+                stake,
+                rewardSumHistory);
         subject5.setKey(key);
-        final var subject6 =
-                new MerkleStakingInfo(
-                        minStake,
-                        maxStake,
-                        stakeToReward,
-                        stakeToNotReward,
-                        otherStakeRewardStart,
-                        unclaimedStakeRewardStart,
-                        stake,
-                        rewardSumHistory);
+        final var subject6 = new MerkleStakingInfo(
+                minStake,
+                maxStake,
+                stakeToReward,
+                stakeToNotReward,
+                otherStakeRewardStart,
+                unclaimedStakeRewardStart,
+                stake,
+                rewardSumHistory);
         subject6.setKey(key);
-        final var subject7 =
-                new MerkleStakingInfo(
-                        minStake,
-                        maxStake,
-                        stakeToReward,
-                        stakeToNotReward,
-                        stakeRewardStart,
-                        unclaimedStakeRewardStart,
-                        otherStake,
-                        rewardSumHistory);
+        final var subject7 = new MerkleStakingInfo(
+                minStake,
+                maxStake,
+                stakeToReward,
+                stakeToNotReward,
+                stakeRewardStart,
+                unclaimedStakeRewardStart,
+                otherStake,
+                rewardSumHistory);
         subject7.setKey(key);
-        final var subject8 =
-                new MerkleStakingInfo(
-                        minStake,
-                        maxStake,
-                        stakeToReward,
-                        stakeToNotReward,
-                        stakeRewardStart,
-                        unclaimedStakeRewardStart,
-                        stake,
-                        otherRewardSumHistory);
+        final var subject8 = new MerkleStakingInfo(
+                minStake,
+                maxStake,
+                stakeToReward,
+                stakeToNotReward,
+                stakeRewardStart,
+                unclaimedStakeRewardStart,
+                stake,
+                otherRewardSumHistory);
         subject8.setKey(key);
-        final var subject10 =
-                new MerkleStakingInfo(
-                        minStake,
-                        maxStake,
-                        stakeToReward,
-                        stakeToNotReward,
-                        stakeRewardStart,
-                        otherUnclaimedStakeRewardStart,
-                        stake,
-                        rewardSumHistory);
+        final var subject10 = new MerkleStakingInfo(
+                minStake,
+                maxStake,
+                stakeToReward,
+                stakeToNotReward,
+                stakeRewardStart,
+                otherUnclaimedStakeRewardStart,
+                stake,
+                rewardSumHistory);
         subject10.setKey(key);
-        final var subject9 =
-                new MerkleStakingInfo(
-                        minStake,
-                        maxStake,
-                        stakeToReward,
-                        stakeToNotReward,
-                        stakeRewardStart,
-                        unclaimedStakeRewardStart,
-                        stake,
-                        rewardSumHistory);
-        final var identical =
-                new MerkleStakingInfo(
-                        minStake,
-                        maxStake,
-                        stakeToReward,
-                        stakeToNotReward,
-                        stakeRewardStart,
-                        unclaimedStakeRewardStart,
-                        stake,
-                        rewardSumHistory);
+        final var subject9 = new MerkleStakingInfo(
+                minStake,
+                maxStake,
+                stakeToReward,
+                stakeToNotReward,
+                stakeRewardStart,
+                unclaimedStakeRewardStart,
+                stake,
+                rewardSumHistory);
+        final var identical = new MerkleStakingInfo(
+                minStake,
+                maxStake,
+                stakeToReward,
+                stakeToNotReward,
+                stakeRewardStart,
+                unclaimedStakeRewardStart,
+                stake,
+                rewardSumHistory);
         identical.setKey(key);
 
         assertNotEquals(subject, new Object());
@@ -237,10 +230,9 @@ class MerkleStakingInfoTest {
 
     @Test
     void toStringWorks() {
-        final var expected =
-                "MerkleStakingInfo{id=34, minStake=100, maxStake=10000, "
-                        + "stakeToReward=345, stakeToNotReward=155, stakeRewardStart=1234, "
-                        + "unclaimedStakeRewardStart=123, stake=500, rewardSumHistory=[2, 1, 0]}";
+        final var expected = "MerkleStakingInfo{id=34, minStake=100, maxStake=10000, "
+                + "stakeToReward=345, stakeToNotReward=155, stakeRewardStart=1234, "
+                + "unclaimedStakeRewardStart=123, stake=500, rewardSumHistory=[2, 1, 0]}";
 
         assertEquals(expected, subject.toString());
     }
@@ -287,8 +279,7 @@ class MerkleStakingInfoTest {
         final var rewardRate = 1_000_000;
         final var maxRewardRate = rewardRate / 2;
 
-        final var pendingRewardRate =
-                subject.updateRewardSumHistory(rewardRate, maxRewardRate, true);
+        final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, maxRewardRate, true);
 
         assertArrayEquals(new long[] {maxRewardRate + 2L, 2L, 1L}, subject.getRewardSumHistory());
         assertEquals(maxRewardRate, pendingRewardRate);
@@ -298,8 +289,7 @@ class MerkleStakingInfoTest {
     void updatesRewardsSumHistoryAsExpectedForNodeWithGreaterThanMinStakeAndNoMoreThanMaxStake() {
         final var rewardRate = 1_000_000;
 
-        final var pendingRewardRate =
-                subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE, true);
+        final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE, true);
 
         assertArrayEquals(new long[] {1_000_002L, 2L, 1L}, subject.getRewardSumHistory());
         assertEquals(1_000_000L, pendingRewardRate);
@@ -310,8 +300,7 @@ class MerkleStakingInfoTest {
         final var rewardRate = 1_000_000;
 
         subject.setStakeRewardStart(2 * subject.getMaxStake());
-        final var pendingRewardRate =
-                subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE, true);
+        final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE, true);
 
         assertArrayEquals(new long[] {500_002L, 2L, 1L}, subject.getRewardSumHistory());
         assertEquals(500_000L, pendingRewardRate);
@@ -321,18 +310,15 @@ class MerkleStakingInfoTest {
     void usesBiArithmeticForRewardRateDownScaling() {
         final var excessStake = 2 * subject.getMaxStake();
         final var rewardRate = Long.MAX_VALUE / (maxStake - 1);
-        final var expectedScaledRate =
-                BigInteger.valueOf(rewardRate)
-                        .multiply(BigInteger.valueOf(maxStake))
-                        .divide(BigInteger.valueOf(excessStake))
-                        .longValueExact();
+        final var expectedScaledRate = BigInteger.valueOf(rewardRate)
+                .multiply(BigInteger.valueOf(maxStake))
+                .divide(BigInteger.valueOf(excessStake))
+                .longValueExact();
 
         subject.setStakeRewardStart(excessStake);
-        final var pendingRewardRate =
-                subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE, true);
+        final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE, true);
 
-        assertArrayEquals(
-                new long[] {expectedScaledRate + 2L, 2L, 1L}, subject.getRewardSumHistory());
+        assertArrayEquals(new long[] {expectedScaledRate + 2L, 2L, 1L}, subject.getRewardSumHistory());
         assertEquals(expectedScaledRate, pendingRewardRate);
     }
 
@@ -341,8 +327,7 @@ class MerkleStakingInfoTest {
         final var rewardRate = 1_000_000_000;
 
         subject.setStake(0);
-        final var pendingRewardRate =
-                subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE, true);
+        final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE, true);
 
         assertArrayEquals(new long[] {2L, 2L, 1L}, subject.getRewardSumHistory());
         assertEquals(0L, pendingRewardRate);
@@ -354,8 +339,7 @@ class MerkleStakingInfoTest {
 
         subject.setStake(0);
         subject.setStakeRewardStart(subject.getMinStake() - 1);
-        final var pendingRewardRate =
-                subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE, false);
+        final var pendingRewardRate = subject.updateRewardSumHistory(rewardRate, Long.MAX_VALUE, false);
 
         assertArrayEquals(new long[] {1000000002L, 2L, 1L}, subject.getRewardSumHistory());
         assertEquals(rewardRate, pendingRewardRate);
@@ -365,9 +349,7 @@ class MerkleStakingInfoTest {
     @SuppressWarnings("unchecked")
     void logsAtErrorIfSomehowHashComputationFails() {
         final var mockedStatic = mockStatic(ByteUtils.class);
-        mockedStatic
-                .when(() -> ByteUtils.getHashBytes(rewardSumHistory))
-                .thenThrow(UncheckedIOException.class);
+        mockedStatic.when(() -> ByteUtils.getHashBytes(rewardSumHistory)).thenThrow(UncheckedIOException.class);
 
         final var hash = subject.getHash();
         assertSame(EMPTY_HASH, hash);
@@ -404,8 +386,7 @@ class MerkleStakingInfoTest {
         subject.increaseUnclaimedStakeRewardStart(stakeRewardStart - unclaimedStakeRewardStart + 1);
         assertEquals(stakeRewardStart, subject.getUnclaimedStakeRewardStart());
         assertEquals(
-                "Asked to release 1112 more rewards for node34 (now 1235), but only 1234 was"
-                        + " staked",
+                "Asked to release 1112 more rewards for node34 (now 1235), but only 1234 was" + " staked",
                 logCaptor.warnLogs().get(0));
     }
 

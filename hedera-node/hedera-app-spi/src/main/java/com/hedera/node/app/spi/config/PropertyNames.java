@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.config;
 
 public class PropertyNames {
@@ -22,23 +23,18 @@ public class PropertyNames {
     }
 
     /* ---- Bootstrap properties ---- */
-    public static final String BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE =
-            "bootstrap.feeSchedulesJson.resource";
+    public static final String BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE = "bootstrap.feeSchedulesJson.resource";
     public static final String BOOTSTRAP_GENESIS_PUBLIC_KEY = "bootstrap.genesisPublicKey";
     public static final String BOOTSTRAP_HAPI_PERMISSIONS_PATH = "bootstrap.hapiPermissions.path";
-    public static final String BOOTSTRAP_NETWORK_PROPERTIES_PATH =
-            "bootstrap.networkProperties.path";
-    public static final String BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV =
-            "bootstrap.rates.currentHbarEquiv";
-    public static final String BOOTSTRAP_RATES_CURRENT_CENT_EQUIV =
-            "bootstrap.rates.currentCentEquiv";
+    public static final String BOOTSTRAP_NETWORK_PROPERTIES_PATH = "bootstrap.networkProperties.path";
+    public static final String BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV = "bootstrap.rates.currentHbarEquiv";
+    public static final String BOOTSTRAP_RATES_CURRENT_CENT_EQUIV = "bootstrap.rates.currentCentEquiv";
     public static final String BOOTSTRAP_RATES_CURRENT_EXPIRY = "bootstrap.rates.currentExpiry";
     public static final String BOOTSTRAP_RATES_NEXT_HBAR_EQUIV = "bootstrap.rates.nextHbarEquiv";
     public static final String BOOTSTRAP_RATES_NEXT_CENT_EQUIV = "bootstrap.rates.nextCentEquiv";
     public static final String BOOTSTRAP_RATES_NEXT_EXPIRY = "bootstrap.rates.nextExpiry";
     public static final String BOOTSTRAP_SYSTEM_ENTITY_EXPIRY = "bootstrap.system.entityExpiry";
-    public static final String BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE =
-            "bootstrap.throttleDefsJson.resource";
+    public static final String BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE = "bootstrap.throttleDefsJson.resource";
 
     /* ---- Global Static properties ---- */
     public static final String ACCOUNTS_ADDRESS_BOOK_ADMIN = "accounts.addressBookAdmin";
@@ -70,8 +66,7 @@ public class PropertyNames {
     public static final String LEDGER_TOTAL_TINY_BAR_FLOAT = "ledger.totalTinyBarFloat";
     public static final String LEDGER_ID = "ledger.id";
     public static final String STAKING_PERIOD_MINS = "staking.periodMins";
-    public static final String STAKING_REWARD_HISTORY_NUM_STORED_PERIODS =
-            "staking.rewardHistory.numStoredPeriods";
+    public static final String STAKING_REWARD_HISTORY_NUM_STORED_PERIODS = "staking.rewardHistory.numStoredPeriods";
     public static final String STAKING_STARTUP_HELPER_RECOMPUTE = "staking.startupHelper.recompute";
 
     /* ---- Global dynamic properties ---- */
@@ -84,48 +79,34 @@ public class PropertyNames {
     public static final String BALANCES_EXPORT_ENABLED = "balances.exportEnabled";
     public static final String BALANCES_EXPORT_PERIOD_SECS = "balances.exportPeriodSecs";
     public static final String BALANCES_EXPORT_TOKEN_BALANCES = "balances.exportTokenBalances";
-    public static final String BALANCES_NODE_BALANCE_WARN_THRESHOLD =
-            "balances.nodeBalanceWarningThreshold";
+    public static final String BALANCES_NODE_BALANCE_WARN_THRESHOLD = "balances.nodeBalanceWarningThreshold";
     public static final String BALANCES_COMPRESS_ON_CREATION = "balances.compressOnCreation";
     public static final String CACHE_RECORDS_TTL = "cache.records.ttl";
     public static final String CONTRACTS_ITEMIZE_STORAGE_FEES = "contracts.itemizeStorageFees";
-    public static final String CONTRACTS_REFERENCE_SLOT_LIFETIME =
-            "contracts.referenceSlotLifetime";
+    public static final String CONTRACTS_REFERENCE_SLOT_LIFETIME = "contracts.referenceSlotLifetime";
     public static final String CONTRACTS_FREE_STORAGE_TIER_LIMIT = "contracts.freeStorageTierLimit";
-    public static final String CONTRACTS_STORAGE_SLOT_PRICE_TIERS =
-            "contract.storageSlotPriceTiers";
+    public static final String CONTRACTS_STORAGE_SLOT_PRICE_TIERS = "contract.storageSlotPriceTiers";
     public static final String CONTRACTS_DEFAULT_LIFETIME = "contracts.defaultLifetime";
     public static final String CONTRACTS_KNOWN_BLOCK_HASH = "contracts.knownBlockHash";
 
-    public static final String CONTRACTS_KEYS_LEGACY_ACTIVATIONS =
-            "contracts.keys.legacyActivations";
-    public static final String CONTRACTS_LOCAL_CALL_EST_RET_BYTES =
-            "contracts.localCall.estRetBytes";
+    public static final String CONTRACTS_KEYS_LEGACY_ACTIVATIONS = "contracts.keys.legacyActivations";
+    public static final String CONTRACTS_LOCAL_CALL_EST_RET_BYTES = "contracts.localCall.estRetBytes";
     public static final String CONTRACTS_ALLOW_CREATE2 = "contracts.allowCreate2";
-    public static final String CONTRACTS_ALLOW_AUTO_ASSOCIATIONS =
-            "contracts.allowAutoAssociations";
-    public static final String CONTRACTS_ENFORCE_CREATION_THROTTLE =
-            "contracts.enforceCreationThrottle";
+    public static final String CONTRACTS_ALLOW_AUTO_ASSOCIATIONS = "contracts.allowAutoAssociations";
+    public static final String CONTRACTS_ENFORCE_CREATION_THROTTLE = "contracts.enforceCreationThrottle";
     public static final String CONTRACTS_MAX_GAS_PER_SEC = "contracts.maxGasPerSec";
     public static final String CONTRACTS_MAX_KV_PAIRS_AGGREGATE = "contracts.maxKvPairs.aggregate";
-    public static final String CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL =
-            "contracts.maxKvPairs.individual";
+    public static final String CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL = "contracts.maxKvPairs.individual";
     public static final String CONTRACTS_MAX_NUM = "contracts.maxNumber";
     public static final String CONTRACTS_CHAIN_ID = "contracts.chainId";
     public static final String CONTRACTS_SIDECARS = "contracts.sidecars";
-    public static final String CONTRACTS_THROTTLE_THROTTLE_BY_GAS =
-            "contracts.throttle.throttleByGas";
-    public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT =
-            "contracts.maxRefundPercentOfGasLimit";
-    public static final String CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT =
-            "contracts.scheduleThrottleMaxGasLimit";
+    public static final String CONTRACTS_THROTTLE_THROTTLE_BY_GAS = "contracts.throttle.throttleByGas";
+    public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT = "contracts.maxRefundPercentOfGasLimit";
+    public static final String CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT = "contracts.scheduleThrottleMaxGasLimit";
     public static final String CONTRACTS_REDIRECT_TOKEN_CALLS = "contracts.redirectTokenCalls";
-    public static final String CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST =
-            "contracts.precompile.exchangeRateGasCost";
-    public static final String CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST =
-            "contracts.precompile.htsDefaultGasCost";
-    public static final String CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS =
-            "contracts.precompile.exportRecordResults";
+    public static final String CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST = "contracts.precompile.exchangeRateGasCost";
+    public static final String CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST = "contracts.precompile.htsDefaultGasCost";
+    public static final String CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS = "contracts.precompile.exportRecordResults";
     public static final String CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE =
             "contracts.precompile.htsEnableTokenCreate";
     public static final String CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED =
@@ -134,30 +115,19 @@ public class PropertyNames {
     public static final String CONTRACTS_EVM_VERSION = "contracts.evm.version";
     public static final String FILES_MAX_NUM = "files.maxNumber";
     public static final String FILES_MAX_SIZE_KB = "files.maxSizeKb";
-    public static final String HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB =
-            "hedera.recordStream.sidecarMaxSizeMb";
+    public static final String HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB = "hedera.recordStream.sidecarMaxSizeMb";
     public static final String FEES_MIN_CONGESTION_PERIOD = "fees.minCongestionPeriod";
-    public static final String FEES_PERCENT_CONGESTION_MULTIPLIERS =
-            "fees.percentCongestionMultipliers";
-    public static final String FEES_PERCENT_UTILIZATION_SCALE_FACTORS =
-            "fees.percentUtilizationScaleFactors";
-    public static final String FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER =
-            "fees.tokenTransferUsageMultiplier";
-    public static final String HEDERA_TXN_MAX_MEMO_UTF8_BYTES =
-            "hedera.transaction.maxMemoUtf8Bytes";
-    public static final String HEDERA_TXN_MAX_VALID_DURATION =
-            "hedera.transaction.maxValidDuration";
-    public static final String HEDERA_TXN_MIN_VALID_DURATION =
-            "hedera.transaction.minValidDuration";
-    public static final String HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS =
-            "hedera.transaction.minValidityBufferSecs";
-    public static final String HEDERA_RECORD_STREAM_RECORD_FILE_VERSION =
-            "hedera.recordStream.recordFileVersion";
-    public static final String HEDERA_RECORD_STREAM_SIG_FILE_VERSION =
-            "hedera.recordStream.signatureFileVersion";
+    public static final String FEES_PERCENT_CONGESTION_MULTIPLIERS = "fees.percentCongestionMultipliers";
+    public static final String FEES_PERCENT_UTILIZATION_SCALE_FACTORS = "fees.percentUtilizationScaleFactors";
+    public static final String FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER = "fees.tokenTransferUsageMultiplier";
+    public static final String HEDERA_TXN_MAX_MEMO_UTF8_BYTES = "hedera.transaction.maxMemoUtf8Bytes";
+    public static final String HEDERA_TXN_MAX_VALID_DURATION = "hedera.transaction.maxValidDuration";
+    public static final String HEDERA_TXN_MIN_VALID_DURATION = "hedera.transaction.minValidDuration";
+    public static final String HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS = "hedera.transaction.minValidityBufferSecs";
+    public static final String HEDERA_RECORD_STREAM_RECORD_FILE_VERSION = "hedera.recordStream.recordFileVersion";
+    public static final String HEDERA_RECORD_STREAM_SIG_FILE_VERSION = "hedera.recordStream.signatureFileVersion";
     public static final String AUTO_RENEW_TARGET_TYPES = "autoRenew.targetTypes";
-    public static final String AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN =
-            "autorenew.numberOfEntitiesToScan";
+    public static final String AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN = "autorenew.numberOfEntitiesToScan";
     public static final String AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE =
             "autorenew.maxNumberOfEntitiesToRenewOrDelete";
     public static final String EXPIRY_THROTTLE_RESOURCE = "expiry.throttleResource";
@@ -165,40 +135,29 @@ public class PropertyNames {
     public static final String AUTO_RENEW_GRACE_PERIOD = "autorenew.gracePeriod";
     public static final String AUTO_RENEW_GRANT_FREE_RENEWALS = "autorenew.grantFreeRenewals";
     public static final String LEDGER_CHANGE_HIST_MEM_SECS = "ledger.changeHistorian.memorySecs";
-    public static final String LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION =
-            "ledger.autoRenewPeriod.maxDuration";
-    public static final String LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION =
-            "ledger.autoRenewPeriod.minDuration";
+    public static final String LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION = "ledger.autoRenewPeriod.maxDuration";
+    public static final String LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION = "ledger.autoRenewPeriod.minDuration";
     public static final String LEDGER_XFER_BAL_CHANGES_MAX_LEN = "ledger.xferBalanceChanges.maxLen";
     public static final String LEDGER_FUNDING_ACCOUNT = "ledger.fundingAccount";
     public static final String LEDGER_TRANSFERS_MAX_LEN = "ledger.transfers.maxLen";
     public static final String LEDGER_TOKEN_TRANSFERS_MAX_LEN = "ledger.tokenTransfers.maxLen";
     public static final String LEDGER_NFT_TRANSFERS_MAX_LEN = "ledger.nftTransfers.maxLen";
-    public static final String LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT =
-            "ledger.records.maxQueryableByAccount";
-    public static final String LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS =
-            "ledger.schedule.txExpiryTimeSecs";
-    public static final String RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT =
-            "rates.intradayChangeLimitPercent";
+    public static final String LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT = "ledger.records.maxQueryableByAccount";
+    public static final String LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS = "ledger.schedule.txExpiryTimeSecs";
+    public static final String RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT = "rates.intradayChangeLimitPercent";
     public static final String RATES_MIDNIGHT_CHECK_INTERVAL = "rates.midnightCheckInterval";
     public static final String SCHEDULING_LONG_TERM_ENABLED = "scheduling.longTermEnabled";
     public static final String SCHEDULING_MAX_TXN_PER_SEC = "scheduling.maxTxnPerSecond";
     public static final String SCHEDULING_MAX_NUM = "scheduling.maxNumber";
-    public static final String SCHEDULING_MAX_EXPIRATION_FUTURE_SECS =
-            "scheduling.maxExpirationFutureSeconds";
+    public static final String SCHEDULING_MAX_EXPIRATION_FUTURE_SECS = "scheduling.maxExpirationFutureSeconds";
     public static final String SCHEDULING_WHITE_LIST = "scheduling.whitelist";
     public static final String SIGS_EXPAND_FROM_IMMUTABLE_STATE = "sigs.expandFromImmutableState";
-    public static final String STAKING_FEES_NODE_REWARD_PERCENT =
-            "staking.fees.nodeRewardPercentage";
-    public static final String STAKING_FEES_STAKING_REWARD_PERCENT =
-            "staking.fees.stakingRewardPercentage";
-    public static final String STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS =
-            "staking.nodeMaxToMinStakeRatios";
+    public static final String STAKING_FEES_NODE_REWARD_PERCENT = "staking.fees.nodeRewardPercentage";
+    public static final String STAKING_FEES_STAKING_REWARD_PERCENT = "staking.fees.stakingRewardPercentage";
+    public static final String STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS = "staking.nodeMaxToMinStakeRatios";
     public static final String STAKING_IS_ENABLED = "staking.isEnabled";
-    public static final String STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR =
-            "staking.maxDailyStakeRewardThPerH";
-    public static final String STAKING_REQUIRE_MIN_STAKE_TO_REWARD =
-            "staking.requireMinStakeToReward";
+    public static final String STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR = "staking.maxDailyStakeRewardThPerH";
+    public static final String STAKING_REQUIRE_MIN_STAKE_TO_REWARD = "staking.requireMinStakeToReward";
     public static final String STAKING_REWARD_RATE = "staking.rewardRate";
     public static final String STAKING_START_THRESH = "staking.startThreshold";
     public static final String TOKENS_MAX_AGGREGATE_RELS = "tokens.maxAggregateRels";
@@ -217,33 +176,23 @@ public class PropertyNames {
     public static final String TOKENS_NFTS_MAX_BATCH_SIZE_MINT = "tokens.nfts.maxBatchSizeMint";
     public static final String TOKENS_NFTS_MAX_ALLOWED_MINTS = "tokens.nfts.maxAllowedMints";
     public static final String TOKENS_NFTS_MAX_QUERY_RANGE = "tokens.nfts.maxQueryRange";
-    public static final String TOKENS_NFTS_USE_TREASURY_WILDCARDS =
-            "tokens.nfts.useTreasuryWildcards";
-    public static final String TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR =
-            "tokens.nfts.mintThrottleScaleFactor";
+    public static final String TOKENS_NFTS_USE_TREASURY_WILDCARDS = "tokens.nfts.useTreasuryWildcards";
+    public static final String TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR = "tokens.nfts.mintThrottleScaleFactor";
     public static final String TOKENS_NFTS_USE_VIRTUAL_MERKLE = "tokens.nfts.useVirtualMerkle";
     public static final String TOPICS_MAX_NUM = "topics.maxNumber";
-    public static final String TOKENS_NFTS_USE_TREASURY_WILD_CARDS =
-            "tokens.nfts.useTreasuryWildcards";
-    public static final String CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED =
-            "consensus.message.maxBytesAllowed";
-    public static final String CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS =
-            "consensus.handle.maxPrecedingRecords";
-    public static final String CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS =
-            "consensus.handle.maxFollowingRecords";
+    public static final String TOKENS_NFTS_USE_TREASURY_WILD_CARDS = "tokens.nfts.useTreasuryWildcards";
+    public static final String CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED = "consensus.message.maxBytesAllowed";
+    public static final String CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS = "consensus.handle.maxPrecedingRecords";
+    public static final String CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS = "consensus.handle.maxFollowingRecords";
     public static final String UPGRADE_ARTIFACTS_PATH = "upgrade.artifacts.path";
-    public static final String HEDERA_ALLOWANCES_MAX_TXN_LIMIT =
-            "hedera.allowances.maxTransactionLimit";
-    public static final String HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT =
-            "hedera.allowances.maxAccountLimit";
+    public static final String HEDERA_ALLOWANCES_MAX_TXN_LIMIT = "hedera.allowances.maxTransactionLimit";
+    public static final String HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT = "hedera.allowances.maxAccountLimit";
     public static final String HEDERA_ALLOWANCES_IS_ENABLED = "hedera.allowances.isEnabled";
-    public static final String ENTITIES_LIMIT_TOKEN_ASSOCIATIONS =
-            "entities.limitTokenAssociations";
+    public static final String ENTITIES_LIMIT_TOKEN_ASSOCIATIONS = "entities.limitTokenAssociations";
     public static final String UTIL_PRNG_IS_ENABLED = "utilPrng.isEnabled";
     public static final String HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION =
             "hedera.recordStream.enableTraceabilityMigration";
-    public static final String TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC =
-            "traceability.maxExportsPerConsSec";
+    public static final String TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC = "traceability.maxExportsPerConsSec";
     public static final String TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO =
             "traceability.minFreeToUsedGasThrottleRatio";
     public static final String HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION =
@@ -253,33 +202,28 @@ public class PropertyNames {
 
     /* ---- Node properties ----- */
     public static final String DEV_ONLY_DEFAULT_NODE_LISTENS = "dev.onlyDefaultNodeListens";
-    public static final String DEV_DEFAULT_LISTENING_NODE_ACCOUNT =
-            "dev.defaultListeningNodeAccount";
+    public static final String DEV_DEFAULT_LISTENING_NODE_ACCOUNT = "dev.defaultListeningNodeAccount";
     public static final String GRPC_PORT = "grpc.port";
     public static final String GRPC_TLS_PORT = "grpc.tlsPort";
     public static final String HEDERA_ACCOUNTS_EXPORT_PATH = "hedera.accountsExportPath";
     public static final String HEDERA_EXPORT_ACCOUNTS_ON_STARTUP = "hedera.exportAccountsOnStartup";
     public static final String HEDERA_PREFETCH_QUEUE_CAPACITY = "hedera.prefetch.queueCapacity";
     public static final String HEDERA_PREFETCH_THREAD_POOL_SIZE = "hedera.prefetch.threadPoolSize";
-    public static final String HEDERA_PREFETCH_CODE_CACHE_TTL_SECS =
-            "hedera.prefetch.codeCacheTtlSecs";
+    public static final String HEDERA_PREFETCH_CODE_CACHE_TTL_SECS = "hedera.prefetch.codeCacheTtlSecs";
     public static final String HEDERA_PROFILES_ACTIVE = "hedera.profiles.active";
     public static final String HEDERA_RECORD_STREAM_IS_ENABLED = "hedera.recordStream.isEnabled";
     public static final String HEDERA_RECORD_STREAM_LOG_DIR = "hedera.recordStream.logDir";
     public static final String HEDERA_RECORD_STREAM_SIDE_CAR_DIR = "hedera.recordStream.sidecarDir";
     public static final String HEDERA_RECORD_STREAM_LOG_PERIOD = "hedera.recordStream.logPeriod";
-    public static final String HEDERA_RECORD_STREAM_QUEUE_CAPACITY =
-            "hedera.recordStream.queueCapacity";
-    public static final String HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION =
-            "hedera.recordStream.logEveryTransaction";
+    public static final String HEDERA_RECORD_STREAM_QUEUE_CAPACITY = "hedera.recordStream.queueCapacity";
+    public static final String HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION = "hedera.recordStream.logEveryTransaction";
     public static final String ISS_RESET_PERIOD = "iss.resetPeriod";
     public static final String ISS_ROUNDS_TO_LOG = "iss.roundsToLog";
     public static final String NETTY_MODE = "netty.mode";
     public static final String NETTY_PROD_FLOW_CONTROL_WINDOW = "netty.prod.flowControlWindow";
     public static final String NETTY_PROD_MAX_CONCURRENT_CALLS = "netty.prod.maxConcurrentCalls";
     public static final String NETTY_PROD_MAX_CONNECTION_AGE = "netty.prod.maxConnectionAge";
-    public static final String NETTY_PROD_MAX_CONNECTION_AGE_GRACE =
-            "netty.prod.maxConnectionAgeGrace";
+    public static final String NETTY_PROD_MAX_CONNECTION_AGE_GRACE = "netty.prod.maxConnectionAgeGrace";
     public static final String NETTY_PROD_MAX_CONNECTION_IDLE = "netty.prod.maxConnectionIdle";
     public static final String NETTY_PROD_KEEP_ALIVE_TIME = "netty.prod.keepAliveTime";
     public static final String NETTY_PROD_KEEP_ALIVE_TIMEOUT = "netty.prod.keepAliveTimeout";
@@ -291,8 +235,7 @@ public class PropertyNames {
     public static final String STATS_CONS_THROTTLES_TO_SAMPLE = "stats.consThrottlesToSample";
     public static final String STATS_HAPI_THROTTLES_TO_SAMPLE = "stats.hapiThrottlesToSample";
     public static final String STATS_EXECUTION_TIMES_TO_TRACK = "stats.executionTimesToTrack";
-    public static final String STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS =
-            "stats.entityUtils.gaugeUpdateIntervalMs";
+    public static final String STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS = "stats.entityUtils.gaugeUpdateIntervalMs";
     public static final String STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS =
             "stats.hapiOps.speedometerUpdateIntervalMs";
     public static final String STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS =
@@ -300,6 +243,5 @@ public class PropertyNames {
     public static final String STATS_RUNNING_AVG_HALF_LIFE_SECS = "stats.runningAvgHalfLifeSecs";
     public static final String STATS_SPEEDOMETER_HALF_LIFE_SECS = "stats.speedometerHalfLifeSecs";
     public static final String WORKFLOWS_ENABLED = "hedera.workflows.enabled";
-    public static final String VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB =
-            "virtualdatasource.jasperdbToMerkledb";
+    public static final String VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB = "virtualdatasource.jasperdbToMerkledb";
 }

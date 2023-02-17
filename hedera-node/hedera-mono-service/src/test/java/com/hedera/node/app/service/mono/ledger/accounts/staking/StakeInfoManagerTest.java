@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
 import static com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder.buildStakingInfoMap;
@@ -43,10 +44,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class StakeInfoManagerTest {
 
     private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
-    @Mock private AddressBook addressBook;
-    @Mock private Address address1;
-    @Mock private Address address2;
-    @Mock private BootstrapProperties bootstrapProperties;
+
+    @Mock
+    private AddressBook addressBook;
+
+    @Mock
+    private Address address1;
+
+    @Mock
+    private Address address2;
+
+    @Mock
+    private BootstrapProperties bootstrapProperties;
 
     private StakeInfoManager subject;
 
@@ -141,8 +150,7 @@ class StakeInfoManagerTest {
     }
 
     public MerkleMap<EntityNum, MerkleStakingInfo> buildsStakingInfoMap() {
-        given(bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT))
-                .willReturn(2_000_000_000L);
+        given(bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(2_000_000_000L);
         given(bootstrapProperties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS))
                 .willReturn(2);
         given(addressBook.getSize()).willReturn(2);
@@ -152,13 +160,12 @@ class StakeInfoManagerTest {
         given(address2.getId()).willReturn(1L);
 
         final var info = buildStakingInfoMap(addressBook, bootstrapProperties);
-        info.forEach(
-                (a, b) -> {
-                    b.setStakeToReward(300L);
-                    b.setStake(1000L);
-                    b.setStakeToNotReward(400L);
-                    b.setStakeRewardStart(666L);
-                });
+        info.forEach((a, b) -> {
+            b.setStakeToReward(300L);
+            b.setStake(1000L);
+            b.setStakeToNotReward(400L);
+            b.setStakeRewardStart(666L);
+        });
         return info;
     }
 }

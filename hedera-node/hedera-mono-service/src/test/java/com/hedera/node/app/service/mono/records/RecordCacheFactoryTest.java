@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.records;
 
 import static com.hedera.node.app.service.mono.utils.SleepingPause.SLEEPING_PAUSE;
@@ -43,9 +44,11 @@ class RecordCacheFactoryTest {
     private static final TransactionID txnIdB =
             TransactionID.newBuilder().setAccountID(asAccount("2.2.0")).build();
 
-    @LoggingTarget private LogCaptor logCaptor;
+    @LoggingTarget
+    private LogCaptor logCaptor;
 
-    @LoggingSubject private RecordCacheFactory subject;
+    @LoggingSubject
+    private RecordCacheFactory subject;
 
     private PropertySource properties;
 
@@ -68,8 +71,6 @@ class RecordCacheFactoryTest {
         assertEquals(RecordCache.MARKER, cache.getIfPresent(txnIdA));
         SLEEPING_PAUSE.forMs(1000L);
         assertNull(cache.getIfPresent(txnIdA));
-        assertThat(
-                logCaptor.infoLogs(),
-                contains("Constructing the node-local txn id cache with ttl=1s"));
+        assertThat(logCaptor.infoLogs(), contains("Constructing the node-local txn id cache with ttl=1s"));
     }
 }

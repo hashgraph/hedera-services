@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.file;
 
 import static com.hedera.node.app.service.mono.context.properties.EntityType.FILE;
@@ -43,8 +44,7 @@ import javax.inject.Singleton;
 @Singleton
 public class FileSysUndelTransitionLogic implements TransitionLogic {
 
-    private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP =
-            ignore -> OK;
+    private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP = ignore -> OK;
 
     private final boolean supported;
     private final HederaFs hfs;
@@ -98,8 +98,7 @@ public class FileSysUndelTransitionLogic implements TransitionLogic {
         sigImpactHistorian.markEntityChanged(tbu.getFileNum());
     }
 
-    private ResponseCodeEnum tryLookup(
-            final FileID tbu, final EntityId entity, final AtomicReference<HFileMeta> attr) {
+    private ResponseCodeEnum tryLookup(final FileID tbu, final EntityId entity, final AtomicReference<HFileMeta> attr) {
         if (!expiries.containsKey(entity) || !hfs.exists(tbu)) {
             return INVALID_FILE_ID;
         }

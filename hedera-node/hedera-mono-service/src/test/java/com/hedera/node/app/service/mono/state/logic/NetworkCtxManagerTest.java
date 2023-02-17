@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_PERIOD_MINS;
@@ -67,21 +68,50 @@ class NetworkCtxManagerTest {
     private final Instant sometimeNextDay = sometime.plusSeconds(86_400L);
     private final MockGlobalDynamicProps mockDynamicProps = new MockGlobalDynamicProps();
 
-    @Mock private IssEventInfo issInfo;
-    @Mock private NodeLocalProperties nodeLocalProperties;
-    @Mock private HapiOpCounters opCounters;
-    @Mock private HbarCentExchange exchange;
-    @Mock private MultiplierSources multiplierSources;
-    @Mock private SystemFilesManager systemFilesManager;
-    @Mock private MerkleNetworkContext networkCtx;
-    @Mock private FunctionalityThrottling handleThrottling;
-    @Mock private BiPredicate<Instant, Instant> shouldUpdateMidnightRates;
-    @Mock private TransactionContext txnCtx;
-    @Mock private SignedTxnAccessor txnAccessor;
-    @Mock private MiscRunningAvgs runningAvgs;
-    @Mock private EndOfStakingPeriodCalculator endOfStakingPeriodCalculator;
-    @Mock private PropertySource propertySource;
-    @Mock private ExpiryThrottle expiryThrottle;
+    @Mock
+    private IssEventInfo issInfo;
+
+    @Mock
+    private NodeLocalProperties nodeLocalProperties;
+
+    @Mock
+    private HapiOpCounters opCounters;
+
+    @Mock
+    private HbarCentExchange exchange;
+
+    @Mock
+    private MultiplierSources multiplierSources;
+
+    @Mock
+    private SystemFilesManager systemFilesManager;
+
+    @Mock
+    private MerkleNetworkContext networkCtx;
+
+    @Mock
+    private FunctionalityThrottling handleThrottling;
+
+    @Mock
+    private BiPredicate<Instant, Instant> shouldUpdateMidnightRates;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private SignedTxnAccessor txnAccessor;
+
+    @Mock
+    private MiscRunningAvgs runningAvgs;
+
+    @Mock
+    private EndOfStakingPeriodCalculator endOfStakingPeriodCalculator;
+
+    @Mock
+    private PropertySource propertySource;
+
+    @Mock
+    private ExpiryThrottle expiryThrottle;
 
     private NetworkCtxManager subject;
 
@@ -90,22 +120,21 @@ class NetworkCtxManagerTest {
         given(propertySource.getLongProperty(STAKING_PERIOD_MINS)).willReturn(1440L);
         given(nodeLocalProperties.issResetPeriod()).willReturn(issResetPeriod);
 
-        subject =
-                new NetworkCtxManager(
-                        issInfo,
-                        expiryThrottle,
-                        nodeLocalProperties,
-                        opCounters,
-                        exchange,
-                        systemFilesManager,
-                        multiplierSources,
-                        mockDynamicProps,
-                        handleThrottling,
-                        () -> networkCtx,
-                        txnCtx,
-                        runningAvgs,
-                        endOfStakingPeriodCalculator,
-                        propertySource);
+        subject = new NetworkCtxManager(
+                issInfo,
+                expiryThrottle,
+                nodeLocalProperties,
+                opCounters,
+                exchange,
+                systemFilesManager,
+                multiplierSources,
+                mockDynamicProps,
+                handleThrottling,
+                () -> networkCtx,
+                txnCtx,
+                runningAvgs,
+                endOfStakingPeriodCalculator,
+                propertySource);
     }
 
     @Test
@@ -139,8 +168,7 @@ class NetworkCtxManagerTest {
         // then:
         verify(systemFilesManager, never()).loadObservableSystemFiles();
         verify(networkCtx, never()).resetThrottlingFromSavedSnapshots(handleThrottling);
-        verify(networkCtx, never())
-                .resetMultiplierSourceFromSavedCongestionStarts(multiplierSources);
+        verify(networkCtx, never()).resetMultiplierSourceFromSavedCongestionStarts(multiplierSources);
         verify(multiplierSources, never()).resetExpectations();
     }
 
@@ -338,8 +366,7 @@ class NetworkCtxManagerTest {
     }
 
     @Test
-    void
-            advancesClockAsExpectedWhenPassingMidnightAfterBoundaryCheckIntervalElapsedFromLastCheck() {
+    void advancesClockAsExpectedWhenPassingMidnightAfterBoundaryCheckIntervalElapsedFromLastCheck() {
         // setup:
         final var oldMidnightRates = new ExchangeRates(1, 12, 1_234_567L, 1, 15, 2_345_678L);
         final var curRates = new ExchangeRates(1, 120, 1_234_567L, 1, 150, 2_345_678L);
@@ -483,22 +510,21 @@ class NetworkCtxManagerTest {
         given(propertySource.getLongProperty(STAKING_PERIOD_MINS)).willReturn(1L);
         given(nodeLocalProperties.issResetPeriod()).willReturn(issResetPeriod);
 
-        subject =
-                new NetworkCtxManager(
-                        issInfo,
-                        expiryThrottle,
-                        nodeLocalProperties,
-                        opCounters,
-                        exchange,
-                        systemFilesManager,
-                        multiplierSources,
-                        mockDynamicProps,
-                        handleThrottling,
-                        () -> networkCtx,
-                        txnCtx,
-                        runningAvgs,
-                        endOfStakingPeriodCalculator,
-                        propertySource);
+        subject = new NetworkCtxManager(
+                issInfo,
+                expiryThrottle,
+                nodeLocalProperties,
+                opCounters,
+                exchange,
+                systemFilesManager,
+                multiplierSources,
+                mockDynamicProps,
+                handleThrottling,
+                () -> networkCtx,
+                txnCtx,
+                runningAvgs,
+                endOfStakingPeriodCalculator,
+                propertySource);
 
         final BiPredicate<Instant, Instant> updateTest = subject::isNextPeriod;
 

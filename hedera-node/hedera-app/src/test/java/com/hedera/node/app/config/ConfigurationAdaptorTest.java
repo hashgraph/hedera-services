@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.config;
 
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
@@ -87,16 +88,11 @@ class ConfigurationAdaptorTest {
     @BeforeEach
     void configureMockForConfigData() {
         final Function<String, BDDMyOngoingStubbing<Object>> createMock =
-                name ->
-                        given(
-                                propertySource.getTypedProperty(
-                                        ArgumentMatchers.any(), ArgumentMatchers.eq(name)));
+                name -> given(propertySource.getTypedProperty(ArgumentMatchers.any(), ArgumentMatchers.eq(name)));
         final Consumer<String> integerMockRule = name -> createMock.apply(name).willReturn(1);
-        final Consumer<String> longMockRule =
-                name -> createMock.apply(name).willReturn(Long.MAX_VALUE);
+        final Consumer<String> longMockRule = name -> createMock.apply(name).willReturn(Long.MAX_VALUE);
         final Consumer<String> doubleMockRule = name -> createMock.apply(name).willReturn(1.2D);
-        final Consumer<String> profileMockRule =
-                name -> createMock.apply(name).willReturn(Profile.TEST);
+        final Consumer<String> profileMockRule = name -> createMock.apply(name).willReturn(Profile.TEST);
         final Consumer<String> stringMockRule = name -> createMock.apply(name).willReturn("test");
         final Consumer<String> booleanMockRule = name -> createMock.apply(name).willReturn(true);
         final Consumer<String> listMockRule = name -> createMock.apply(name).willReturn(List.of());
@@ -182,8 +178,7 @@ class ConfigurationAdaptorTest {
         final ConfigurationAdaptor configurationAdapter = new ConfigurationAdaptor(propertySource);
 
         // when
-        final Set<String> names =
-                configurationAdapter.getPropertyNames().collect(Collectors.toSet());
+        final Set<String> names = configurationAdapter.getPropertyNames().collect(Collectors.toSet());
 
         // then
         assertThat(names).hasSize(2);
@@ -255,8 +250,7 @@ class ConfigurationAdaptorTest {
     void testGetValues() {
         // given
         given(propertySource.containsProperty("test")).willReturn(true);
-        given(propertySource.getTypedProperty(List.class, "test"))
-                .willReturn(List.of("A", "B", "C"));
+        given(propertySource.getTypedProperty(List.class, "test")).willReturn(List.of("A", "B", "C"));
         final ConfigurationAdaptor configurationAdapter = new ConfigurationAdaptor(propertySource);
 
         // when
@@ -314,8 +308,7 @@ class ConfigurationAdaptorTest {
         final ConfigurationAdaptor configurationAdapter = new ConfigurationAdaptor(propertySource);
 
         // when
-        final List<Integer> values =
-                configurationAdapter.getValues("test", Integer.class, List.of(1, 2, 3));
+        final List<Integer> values = configurationAdapter.getValues("test", Integer.class, List.of(1, 2, 3));
 
         // then
         assertThat(values).hasSize(3);

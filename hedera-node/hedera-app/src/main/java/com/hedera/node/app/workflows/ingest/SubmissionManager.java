@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.ingest;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
@@ -94,9 +95,8 @@ public class SubmissionManager {
                 throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);
             }
             try {
-                payload =
-                        parser.parseFrom(txBody.getUncheckedSubmit().getTransactionBytes())
-                                .toByteArray();
+                payload = parser.parseFrom(txBody.getUncheckedSubmit().getTransactionBytes())
+                        .toByteArray();
             } catch (final InvalidProtocolBufferException e) {
                 LOG.warn("Transaction bytes from UncheckedSubmit not a valid gRPC transaction!", e);
                 throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);

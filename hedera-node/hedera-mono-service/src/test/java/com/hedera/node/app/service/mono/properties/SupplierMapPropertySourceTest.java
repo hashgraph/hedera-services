@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.properties;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -46,19 +47,17 @@ class SupplierMapPropertySourceTest {
     private final String BAD_ACCOUNT_PROP = "a.bad.account";
     private final String GOOD_ACCOUNT_PROP = "a.good.account";
     private final String ENTITY_TYPES_PROP = "some.types";
-    private final SupplierMapPropertySource subject =
-            new SupplierMapPropertySource(
-                    Map.of(
-                            INT_PROP, () -> 1,
-                            LONG_PROP, () -> 1L,
-                            DOUBLE_PROP, () -> 1.0d,
-                            STRING_PROP, () -> "cellar door",
-                            PROFILE_PROP, () -> Profile.DEV,
-                            BOOLEAN_PROP, () -> Boolean.TRUE,
-                            CS_STRINGS_PROP, () -> List.of("a", "b", "c"),
-                            BAD_ACCOUNT_PROP, () -> "asdf",
-                            GOOD_ACCOUNT_PROP, () -> "0.0.2",
-                            ENTITY_TYPES_PROP, () -> EnumSet.of(EntityType.FILE)));
+    private final SupplierMapPropertySource subject = new SupplierMapPropertySource(Map.of(
+            INT_PROP, () -> 1,
+            LONG_PROP, () -> 1L,
+            DOUBLE_PROP, () -> 1.0d,
+            STRING_PROP, () -> "cellar door",
+            PROFILE_PROP, () -> Profile.DEV,
+            BOOLEAN_PROP, () -> Boolean.TRUE,
+            CS_STRINGS_PROP, () -> List.of("a", "b", "c"),
+            BAD_ACCOUNT_PROP, () -> "asdf",
+            GOOD_ACCOUNT_PROP, () -> "0.0.2",
+            ENTITY_TYPES_PROP, () -> EnumSet.of(EntityType.FILE)));
 
     @Test
     void getsEntityTypes() {
@@ -75,26 +74,23 @@ class SupplierMapPropertySourceTest {
     @Test
     void getsParseableAccount() {
         // expect:
-        assertEquals(
-                AccountID.newBuilder().setAccountNum(2L).build(),
-                subject.getAccountProperty(GOOD_ACCOUNT_PROP));
+        assertEquals(AccountID.newBuilder().setAccountNum(2L).build(), subject.getAccountProperty(GOOD_ACCOUNT_PROP));
     }
 
     @Test
     void allPropertyNames() {
         assertNotNull(subject.allPropertyNames());
-        final var propSet =
-                Set.of(
-                        "a.double.prop",
-                        "a.string.prop",
-                        "a.profile.prop",
-                        "a.boolean.prop",
-                        "a.bad.account",
-                        "a.long.prop",
-                        "a.good.account",
-                        "a.int.prop",
-                        "some.types",
-                        "a.cs_strings.prop");
+        final var propSet = Set.of(
+                "a.double.prop",
+                "a.string.prop",
+                "a.profile.prop",
+                "a.boolean.prop",
+                "a.bad.account",
+                "a.long.prop",
+                "a.good.account",
+                "a.int.prop",
+                "some.types",
+                "a.cs_strings.prop");
         assertEquals(propSet, subject.allPropertyNames());
     }
 
@@ -111,8 +107,7 @@ class SupplierMapPropertySourceTest {
         }
 
         // then:
-        assertEquals(
-                UnparseablePropertyException.messageFor(BAD_ACCOUNT_PROP, "asdf"), e.getMessage());
+        assertEquals(UnparseablePropertyException.messageFor(BAD_ACCOUNT_PROP, "asdf"), e.getMessage());
     }
 
     @Test

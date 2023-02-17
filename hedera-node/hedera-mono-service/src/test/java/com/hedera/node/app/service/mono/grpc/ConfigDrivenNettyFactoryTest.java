@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -43,7 +44,8 @@ class ConfigDrivenNettyFactoryTest {
     int maxConcurrentCalls = 10;
     int flowControlWindow = 10240;
 
-    @Mock NodeLocalProperties nodeLocalProperties;
+    @Mock
+    NodeLocalProperties nodeLocalProperties;
 
     ConfigDrivenNettyFactory subject;
 
@@ -81,8 +83,7 @@ class ConfigDrivenNettyFactoryTest {
     }
 
     @Test
-    void interpretsDevProfileActiveAsDisablingProdNetty()
-            throws FileNotFoundException, SSLException {
+    void interpretsDevProfileActiveAsDisablingProdNetty() throws FileNotFoundException, SSLException {
         given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
 
         // when:
@@ -110,8 +111,7 @@ class ConfigDrivenNettyFactoryTest {
     @Test
     void failsFastWhenKeyIsMissing() {
         given(nodeLocalProperties.nettyMode()).willReturn(Profile.TEST);
-        given(nodeLocalProperties.nettyTlsCrtPath())
-                .willReturn("src/test/resources/test-hedera.crt");
+        given(nodeLocalProperties.nettyTlsCrtPath()).willReturn("src/test/resources/test-hedera.crt");
         given(nodeLocalProperties.nettyTlsKeyPath()).willReturn("not-a-real-key");
 
         // when:
@@ -121,10 +121,8 @@ class ConfigDrivenNettyFactoryTest {
     @Test
     void usesSslPropertiesWhenAppropros() throws FileNotFoundException, SSLException {
         given(nodeLocalProperties.nettyMode()).willReturn(Profile.TEST);
-        given(nodeLocalProperties.nettyTlsCrtPath())
-                .willReturn("src/test/resources/test-hedera.crt");
-        given(nodeLocalProperties.nettyTlsKeyPath())
-                .willReturn("src/test/resources/test-hedera.key");
+        given(nodeLocalProperties.nettyTlsCrtPath()).willReturn("src/test/resources/test-hedera.crt");
+        given(nodeLocalProperties.nettyTlsKeyPath()).willReturn("src/test/resources/test-hedera.key");
 
         // when:
         subject.builderFor(port, true).build();

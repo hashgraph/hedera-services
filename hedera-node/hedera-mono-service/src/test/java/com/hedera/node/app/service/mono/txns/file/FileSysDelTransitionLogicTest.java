@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.file;
 
 import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_SYSTEM_DELETABLE;
@@ -118,22 +119,16 @@ class FileSysDelTransitionLogicTest {
         given(hfs.exists(missing)).willReturn(false);
         given(hfs.getattr(tbd)).willReturn(attr);
         given(hfs.getattr(deleted)).willReturn(deletedAttr);
-        given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE))
-                .willReturn(EnumSet.allOf(EntityType.class));
+        given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE)).willReturn(EnumSet.allOf(EntityType.class));
 
-        subject =
-                new FileSysDelTransitionLogic(
-                        hfs, sigImpactHistorian, oldExpiries, txnCtx, properties);
+        subject = new FileSysDelTransitionLogic(hfs, sigImpactHistorian, oldExpiries, txnCtx, properties);
     }
 
     @Test
     void abortsIfNotSupported() {
-        given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE))
-                .willReturn(EnumSet.noneOf(EntityType.class));
+        given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE)).willReturn(EnumSet.noneOf(EntityType.class));
 
-        subject =
-                new FileSysDelTransitionLogic(
-                        hfs, sigImpactHistorian, oldExpiries, txnCtx, properties);
+        subject = new FileSysDelTransitionLogic(hfs, sigImpactHistorian, oldExpiries, txnCtx, properties);
 
         subject.doStateTransition();
         verify(txnCtx).setStatus(NOT_SUPPORTED);
@@ -232,9 +227,9 @@ class FileSysDelTransitionLogicTest {
     void hasCorrectApplicability() {
         // setup:
         final SystemDeleteTransactionBody.Builder op =
-                SystemDeleteTransactionBody.newBuilder()
-                        .setContractID(IdUtils.asContract("0.0.1001"));
-        final var contractSysdelTxn = TransactionBody.newBuilder().setSystemDelete(op).build();
+                SystemDeleteTransactionBody.newBuilder().setContractID(IdUtils.asContract("0.0.1001"));
+        final var contractSysdelTxn =
+                TransactionBody.newBuilder().setSystemDelete(op).build();
 
         givenTxnCtxSysDeleting(TargetType.VALID, NewExpiryType.FUTURE);
 
@@ -279,18 +274,15 @@ class FileSysDelTransitionLogicTest {
                 break;
         }
 
-        txnId =
-                TransactionID.newBuilder()
-                        .setTransactionValidStart(
-                                MiscUtils.asTimestamp(
-                                        Instant.ofEpochSecond(Instant.now().getEpochSecond())))
-                        .build();
-        fileSysDelTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(txnId)
-                        .setTransactionValidDuration(Duration.newBuilder().setSeconds(180))
-                        .setSystemDelete(op)
-                        .build();
+        txnId = TransactionID.newBuilder()
+                .setTransactionValidStart(MiscUtils.asTimestamp(
+                        Instant.ofEpochSecond(Instant.now().getEpochSecond())))
+                .build();
+        fileSysDelTxn = TransactionBody.newBuilder()
+                .setTransactionID(txnId)
+                .setTransactionValidDuration(Duration.newBuilder().setSeconds(180))
+                .setSystemDelete(op)
+                .build();
         given(accessor.getTxn()).willReturn(fileSysDelTxn);
         given(txnCtx.accessor()).willReturn(accessor);
         given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));

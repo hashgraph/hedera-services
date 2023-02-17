@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.config;
 
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
@@ -106,8 +107,7 @@ public class ConfigurationAdaptor implements Configuration {
         if (exists(name)) {
             return propertySource.getRawValue(name);
         }
-        throw new NoSuchElementException(
-                "Config property with name '" + name + "' does not exist!");
+        throw new NoSuchElementException("Config property with name '" + name + "' does not exist!");
     }
 
     @Override
@@ -124,8 +124,7 @@ public class ConfigurationAdaptor implements Configuration {
         if (exists(name)) {
             return propertySource.getTypedProperty(type, name);
         }
-        throw new NoSuchElementException(
-                "Config property with name '" + name + "' does not exist!");
+        throw new NoSuchElementException("Config property with name '" + name + "' does not exist!");
     }
 
     @Override
@@ -142,8 +141,7 @@ public class ConfigurationAdaptor implements Configuration {
         if (exists(name)) {
             return propertySource.getTypedProperty(List.class, name);
         }
-        throw new NoSuchElementException(
-                "Config property with name '" + name + "' does not exist!");
+        throw new NoSuchElementException("Config property with name '" + name + "' does not exist!");
     }
 
     @Override
@@ -160,13 +158,11 @@ public class ConfigurationAdaptor implements Configuration {
         if (exists(name)) {
             return propertySource.getTypedProperty(List.class, name);
         }
-        throw new NoSuchElementException(
-                "Config property with name '" + name + "' does not exist!");
+        throw new NoSuchElementException("Config property with name '" + name + "' does not exist!");
     }
 
     @Override
-    public <T> List<T> getValues(
-            final String name, final Class<T> type, final List<T> defaultValues)
+    public <T> List<T> getValues(final String name, final Class<T> type, final List<T> defaultValues)
             throws IllegalArgumentException {
         if (exists(name)) {
             return getValues(name, type);
@@ -210,12 +206,9 @@ public class ConfigurationAdaptor implements Configuration {
         return new NodeConfig(
                 propertySource.getTypedProperty(Integer.class, GRPC_PORT),
                 propertySource.getTypedProperty(Integer.class, GRPC_TLS_PORT),
-                propertySource.getTypedProperty(
-                        Long.class, STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS),
-                propertySource.getTypedProperty(
-                        Long.class, STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS),
-                propertySource.getTypedProperty(
-                        Long.class, STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS),
+                propertySource.getTypedProperty(Long.class, STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS),
+                propertySource.getTypedProperty(Long.class, STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS),
+                propertySource.getTypedProperty(Long.class, STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS),
                 propertySource.getTypedProperty(Profile.class, HEDERA_PROFILES_ACTIVE),
                 propertySource.getTypedProperty(Double.class, STATS_SPEEDOMETER_HALF_LIFE_SECS),
                 propertySource.getTypedProperty(Double.class, STATS_RUNNING_AVG_HALF_LIFE_SECS),

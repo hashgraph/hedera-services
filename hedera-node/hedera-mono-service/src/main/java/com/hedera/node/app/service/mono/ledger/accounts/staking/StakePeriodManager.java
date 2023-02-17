@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
 import static com.hedera.node.app.service.mono.utils.Units.MINUTES_TO_MILLISECONDS;
@@ -55,8 +56,7 @@ public class StakePeriodManager {
             final @CompositeProps PropertySource properties) {
         this.txnCtx = txnCtx;
         this.networkCtx = networkCtx;
-        this.numStoredPeriods =
-                properties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS);
+        this.numStoredPeriods = properties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS);
         this.stakingPeriodMins = properties.getLongProperty(STAKING_PERIOD_MINS);
     }
 
@@ -104,9 +104,7 @@ public class StakePeriodManager {
     }
 
     public long estimatedFirstNonRewardableStakePeriod() {
-        return networkCtx.get().areRewardsActivated()
-                ? estimatedCurrentStakePeriod() - 1
-                : Long.MIN_VALUE;
+        return networkCtx.get().areRewardsActivated() ? estimatedCurrentStakePeriod() - 1 : Long.MIN_VALUE;
     }
 
     public boolean isEstimatedRewardable(final long stakePeriodStart) {
@@ -136,10 +134,7 @@ public class StakePeriodManager {
      * @return either NA for no new stakePeriodStart, or the new value
      */
     public long startUpdateFor(
-            final long curStakedId,
-            final long newStakedId,
-            final boolean rewarded,
-            final boolean stakeMetaChanged) {
+            final long curStakedId, final long newStakedId, final boolean rewarded, final boolean stakeMetaChanged) {
         // Only worthwhile to update stakedPeriodStart for an account staking to a node
         if (newStakedId < 0) {
             if (curStakedId >= 0 || stakeMetaChanged) {

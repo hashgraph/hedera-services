@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.initialization;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
@@ -99,8 +100,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
         }
 
         final var stakingRewardAccountNum = accountNums.stakingRewardAccount();
-        final var stakingRewardAccountId =
-                STATIC_PROPERTIES.scopedAccountWith(stakingRewardAccountNum);
+        final var stakingRewardAccountId = STATIC_PROPERTIES.scopedAccountWith(stakingRewardAccountNum);
         final var nodeRewardAccountNum = accountNums.nodeRewardAccount();
         final var nodeRewardAccountId = STATIC_PROPERTIES.scopedAccountWith(nodeRewardAccountNum);
         final var stakingFundAccounts = List.of(stakingRewardAccountId, nodeRewardAccountId);
@@ -139,16 +139,15 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
     }
 
     private HederaAccount accountWith(final long balance, final long expiry) {
-        final var account =
-                new HederaAccountCustomizer()
-                        .isReceiverSigRequired(false)
-                        .isDeleted(false)
-                        .expiry(expiry)
-                        .memo("")
-                        .isSmartContract(false)
-                        .key(getGenesisKey())
-                        .autoRenewPeriod(expiry)
-                        .customizing(accountSupplier.get());
+        final var account = new HederaAccountCustomizer()
+                .isReceiverSigRequired(false)
+                .isDeleted(false)
+                .expiry(expiry)
+                .memo("")
+                .isSmartContract(false)
+                .key(getGenesisKey())
+                .autoRenewPeriod(expiry)
+                .customizing(accountSupplier.get());
         try {
             account.setBalance(balance);
         } catch (final NegativeAccountBalanceException e) {
@@ -161,14 +160,9 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
         if (genesisKey == null) {
             // Traditionally the genesis key has been a key list, keep that way to avoid breaking
             // any clients
-            genesisKey =
-                    asFcKeyUnchecked(
-                            Key.newBuilder()
-                                    .setKeyList(
-                                            KeyList.newBuilder()
-                                                    .addKeys(
-                                                            asKeyUnchecked(genesisKeySource.get())))
-                                    .build());
+            genesisKey = asFcKeyUnchecked(Key.newBuilder()
+                    .setKeyList(KeyList.newBuilder().addKeys(asKeyUnchecked(genesisKeySource.get())))
+                    .build());
         }
         return genesisKey;
     }

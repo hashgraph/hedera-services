@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.service.mono.context.properties.ScreenedSysFileProps.DEPRECATED_PROP_TPL;
@@ -51,9 +52,11 @@ import org.junit.jupiter.params.provider.CsvSource;
 @ExtendWith(LogCaptureExtension.class)
 class ScreenedSysFilePropsTest {
 
-    @LoggingTarget private LogCaptor logCaptor;
+    @LoggingTarget
+    private LogCaptor logCaptor;
 
-    @LoggingSubject private ScreenedSysFileProps subject;
+    @LoggingSubject
+    private ScreenedSysFileProps subject;
 
     @BeforeEach
     void setup() {
@@ -75,21 +78,17 @@ class ScreenedSysFilePropsTest {
         subject.screenNew(withJust("notGlobalDynamic", "42"));
 
         assertTrue(subject.from121.isEmpty());
-        assertThat(
-                logCaptor.warnLogs(),
-                contains(String.format(MISPLACED_PROP_TPL, "notGlobalDynamic")));
+        assertThat(logCaptor.warnLogs(), contains(String.format(MISPLACED_PROP_TPL, "notGlobalDynamic")));
     }
 
     @Test
     void incorporatesStandardGlobalDynamic() {
         final var oldMap = subject.from121;
 
-        subject.screenNew(
-                withAllOf(
-                        Map.of(
-                                TOKENS_MAX_RELS_PER_INFO_QUERY, "42",
-                                LEDGER_TRANSFERS_MAX_LEN, "42",
-                                CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "42")));
+        subject.screenNew(withAllOf(Map.of(
+                TOKENS_MAX_RELS_PER_INFO_QUERY, "42",
+                LEDGER_TRANSFERS_MAX_LEN, "42",
+                CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "42")));
 
         assertEquals(42, subject.from121.get(TOKENS_MAX_RELS_PER_INFO_QUERY));
         assertEquals(42, subject.from121.get(LEDGER_TRANSFERS_MAX_LEN));
@@ -105,8 +104,7 @@ class ScreenedSysFilePropsTest {
         assertEquals(98L, subject.from121.get(LEDGER_FUNDING_ACCOUNT));
 
         assertThat(
-                String.format(
-                        DEPRECATED_PROP_TPL, "defaultFeeCollectionAccount", LEDGER_FUNDING_ACCOUNT),
+                String.format(DEPRECATED_PROP_TPL, "defaultFeeCollectionAccount", LEDGER_FUNDING_ACCOUNT),
                 is(in(logCaptor.warnLogs())));
     }
 
@@ -115,8 +113,7 @@ class ScreenedSysFilePropsTest {
         "ABC, tokens.maxRelsPerInfoQuery, false, NumberFormatException",
         "CryptoCreate;CryptoTransfer;Oops, scheduling.whitelist, false, IllegalArgumentException",
         "CryptoCreate;CryptoTransfer;CryptoGetAccountBalance, scheduling.whitelist, true,",
-        (MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES + 1)
-                + ", tokens.maxTokenNameUtf8Bytes, true,",
+        (MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES + 1) + ", tokens.maxTokenNameUtf8Bytes, true,",
         "1, ledger.transfers.maxLen, true,",
         "1, ledger.tokenTransfers.maxLen, true,",
         (MerkleToken.UPPER_BOUND_SYMBOL_UTF8_BYTES + 1) + ", tokens.maxSymbolUtf8Bytes, true,",
@@ -125,15 +122,11 @@ class ScreenedSysFilePropsTest {
         "101, contracts.maxRefundPercentOfGasLimit, true,",
     })
     void warnsOfUnusableOrUnparseable(
-            String unsupported,
-            final String prop,
-            final boolean isUnusable,
-            final String exception) {
+            String unsupported, final String prop, final boolean isUnusable, final String exception) {
         unsupported = unsupported.replaceAll(";", ",");
-        final var expectedLog =
-                isUnusable
-                        ? String.format(UNUSABLE_PROP_TPL, unsupported, prop)
-                        : String.format(UNPARSEABLE_PROP_TPL, unsupported, prop, exception);
+        final var expectedLog = isUnusable
+                ? String.format(UNUSABLE_PROP_TPL, unsupported, prop)
+                : String.format(UNPARSEABLE_PROP_TPL, unsupported, prop, exception);
 
         subject.screenNew(withJust(prop, unsupported));
 
@@ -153,19 +146,17 @@ class ScreenedSysFilePropsTest {
                 is(in(logCaptor.warnLogs())));
         assertThat(
                 String.format(
-                        UNTRANSFORMABLE_PROP_TPL,
-                        "abc",
-                        "defaultFeeCollectionAccount",
-                        "IllegalArgumentException"),
+                        UNTRANSFORMABLE_PROP_TPL, "abc", "defaultFeeCollectionAccount", "IllegalArgumentException"),
                 is(in(logCaptor.warnLogs())));
         assertThat(
-                "Property 'defaultFeeCollectionAccount' is not global/dynamic, please find"
-                        + " it a proper home!",
+                "Property 'defaultFeeCollectionAccount' is not global/dynamic, please find" + " it a proper home!",
                 is(in(logCaptor.warnLogs())));
     }
 
     private static ServicesConfigurationList withJust(final String name, final String value) {
-        return ServicesConfigurationList.newBuilder().addNameValue(from(name, value)).build();
+        return ServicesConfigurationList.newBuilder()
+                .addNameValue(from(name, value))
+                .build();
     }
 
     private static ServicesConfigurationList withAllOf(final Map<String, String> settings) {

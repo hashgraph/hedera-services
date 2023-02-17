@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_PORT;
@@ -37,18 +38,12 @@ class ScreenedNodeFilePropsTest {
     ScreenedNodeFileProps subject;
 
     private final String STD_NODE_PROPS_LOC = "src/test/resources/bootstrap/node.properties";
-    private final String EMPTY_NODE_PROPS_LOC =
-            "src/test/resources/bootstrap/empty-override.properties";
-    private final String BROKEN_NODE_PROPS_LOC =
-            "src/test/resources/bootstrap/broken-node.properties";
-    private final String LEGACY_NODE_PROPS_LOC =
-            "src/test/resources/bootstrap/legacy-node.properties";
+    private final String EMPTY_NODE_PROPS_LOC = "src/test/resources/bootstrap/empty-override.properties";
+    private final String BROKEN_NODE_PROPS_LOC = "src/test/resources/bootstrap/broken-node.properties";
+    private final String LEGACY_NODE_PROPS_LOC = "src/test/resources/bootstrap/legacy-node.properties";
 
-    private static final Map<String, Object> expectedProps =
-            Map.ofEntries(
-                    entry(GRPC_PORT, 60211),
-                    entry(GRPC_TLS_PORT, 40212),
-                    entry(HEDERA_PROFILES_ACTIVE, Profile.TEST));
+    private static final Map<String, Object> expectedProps = Map.ofEntries(
+            entry(GRPC_PORT, 60211), entry(GRPC_TLS_PORT, 40212), entry(HEDERA_PROFILES_ACTIVE, Profile.TEST));
 
     @BeforeEach
     void setup() {
@@ -71,12 +66,11 @@ class ScreenedNodeFilePropsTest {
 
         // expect:
         verify(log)
-                .warn(
-                        String.format(
-                                ScreenedNodeFileProps.UNTRANSFORMABLE_PROP_TPL,
-                                "asdf",
-                                "environment",
-                                "NumberFormatException"));
+                .warn(String.format(
+                        ScreenedNodeFileProps.UNTRANSFORMABLE_PROP_TPL,
+                        "asdf",
+                        "environment",
+                        "NumberFormatException"));
         // and:
         assertTrue(subject.getFromFile().isEmpty());
     }
@@ -85,20 +79,12 @@ class ScreenedNodeFilePropsTest {
     void warnsOfUnparseableAndDeprecated() {
         // expect:
         verify(log)
-                .warn(
-                        String.format(
-                                ScreenedNodeFileProps.DEPRECATED_PROP_TPL,
-                                "tlsPort",
-                                "grpc.tlsPort",
-                                STD_NODE_PROPS_LOC));
+                .warn(String.format(
+                        ScreenedNodeFileProps.DEPRECATED_PROP_TPL, "tlsPort", "grpc.tlsPort", STD_NODE_PROPS_LOC));
         // and:
         verify(log)
-                .warn(
-                        String.format(
-                                ScreenedNodeFileProps.UNPARSEABLE_PROP_TPL,
-                                "ABCDEF",
-                                "grpc.tlsPort",
-                                "NumberFormatException"));
+                .warn(String.format(
+                        ScreenedNodeFileProps.UNPARSEABLE_PROP_TPL, "ABCDEF", "grpc.tlsPort", "NumberFormatException"));
     }
 
     @Test

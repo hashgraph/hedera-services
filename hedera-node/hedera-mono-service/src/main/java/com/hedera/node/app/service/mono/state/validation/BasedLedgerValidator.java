@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.validation;
 
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
@@ -38,24 +39,20 @@ public class BasedLedgerValidator implements LedgerValidator {
     @Override
     public void validate(final AccountStorageAdapter accounts) {
         final var totalFloat = new AtomicReference<>(BigInteger.ZERO);
-        accounts.forEach(
-                (id, account) -> {
-                    final var num = id.longValue();
-                    if (num < 1) {
-                        throw new IllegalStateException(
-                                String.format("Invalid num in account %s", id.toIdString()));
-                    }
-                    totalFloat.set(totalFloat.get().add(BigInteger.valueOf(account.getBalance())));
-                });
+        accounts.forEach((id, account) -> {
+            final var num = id.longValue();
+            if (num < 1) {
+                throw new IllegalStateException(String.format("Invalid num in account %s", id.toIdString()));
+            }
+            totalFloat.set(totalFloat.get().add(BigInteger.valueOf(account.getBalance())));
+        });
         try {
             final var actualFloat = totalFloat.get().longValueExact();
             if (actualFloat != expectedFloat) {
-                throw new IllegalStateException(
-                        "Wrong ℏ float, expected " + expectedFloat + " but was " + actualFloat);
+                throw new IllegalStateException("Wrong ℏ float, expected " + expectedFloat + " but was " + actualFloat);
             }
         } catch (final ArithmeticException ae) {
-            throw new IllegalStateException(
-                    "Wrong ℏ float, expected " + expectedFloat + " but overflowed instead");
+            throw new IllegalStateException("Wrong ℏ float, expected " + expectedFloat + " but overflowed instead");
         }
     }
 }

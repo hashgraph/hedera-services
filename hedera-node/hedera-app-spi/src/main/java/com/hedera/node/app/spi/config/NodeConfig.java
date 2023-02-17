@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.config;
 
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
@@ -65,12 +66,9 @@ import java.util.List;
 public record NodeConfig(
         @ConfigProperty(GRPC_PORT) int port,
         @ConfigProperty(GRPC_TLS_PORT) int tlsPort,
-        @ConfigProperty(STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS)
-                long hapiOpStatsUpdateIntervalMs,
-        @ConfigProperty(STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS)
-                long entityUtilStatsUpdateIntervalMs,
-        @ConfigProperty(STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS)
-                long throttleUtilStatsUpdateIntervalMs,
+        @ConfigProperty(STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS) long hapiOpStatsUpdateIntervalMs,
+        @ConfigProperty(STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS) long entityUtilStatsUpdateIntervalMs,
+        @ConfigProperty(STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS) long throttleUtilStatsUpdateIntervalMs,
         @ConfigProperty(HEDERA_PROFILES_ACTIVE) Profile activeProfile,
         @ConfigProperty(STATS_SPEEDOMETER_HALF_LIFE_SECS) double statsSpeedometerHalfLifeSecs,
         @ConfigProperty(STATS_RUNNING_AVG_HALF_LIFE_SECS) double statsRunningAvgHalfLifeSecs,

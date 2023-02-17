@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.service.mono.context.properties.BootstrapProperties.NODE_PROPS;
@@ -58,38 +59,31 @@ public class ScreenedNodeFileProps implements PropertySource {
 
     private static final Profile[] LEGACY_ENV_ORDER = {Profile.DEV, Profile.PROD, Profile.TEST};
 
-    private static final Map<String, String> STANDARDIZED_NAMES =
-            Map.ofEntries(
-                    entry("nettyFlowControlWindow", NETTY_PROD_FLOW_CONTROL_WINDOW),
-                    entry("nettyMaxConnectionAge", NETTY_PROD_MAX_CONNECTION_AGE),
-                    entry("nettyMaxConnectionAgeGrace", NETTY_PROD_MAX_CONNECTION_AGE_GRACE),
-                    entry("nettyMaxConnectionIdle", NETTY_PROD_MAX_CONNECTION_IDLE),
-                    entry("nettyMaxConcurrentCalls", NETTY_PROD_MAX_CONCURRENT_CALLS),
-                    entry("nettyKeepAliveTime", NETTY_PROD_KEEP_ALIVE_TIME),
-                    entry("nettyKeepAliveTimeOut", NETTY_PROD_KEEP_ALIVE_TIMEOUT),
-                    entry("port", GRPC_PORT),
-                    entry("recordStreamQueueCapacity", HEDERA_RECORD_STREAM_QUEUE_CAPACITY),
-                    entry("enableRecordStreaming", HEDERA_RECORD_STREAM_IS_ENABLED),
-                    entry("recordLogDir", HEDERA_RECORD_STREAM_LOG_DIR),
-                    entry("recordLogPeriod", HEDERA_RECORD_STREAM_LOG_PERIOD),
-                    entry("tlsPort", GRPC_TLS_PORT),
-                    entry("environment", HEDERA_PROFILES_ACTIVE),
-                    entry("defaultListeningNodeAccount", DEV_DEFAULT_LISTENING_NODE_ACCOUNT),
-                    entry("uniqueListeningPortFlag", DEV_ONLY_DEFAULT_NODE_LISTENS));
+    private static final Map<String, String> STANDARDIZED_NAMES = Map.ofEntries(
+            entry("nettyFlowControlWindow", NETTY_PROD_FLOW_CONTROL_WINDOW),
+            entry("nettyMaxConnectionAge", NETTY_PROD_MAX_CONNECTION_AGE),
+            entry("nettyMaxConnectionAgeGrace", NETTY_PROD_MAX_CONNECTION_AGE_GRACE),
+            entry("nettyMaxConnectionIdle", NETTY_PROD_MAX_CONNECTION_IDLE),
+            entry("nettyMaxConcurrentCalls", NETTY_PROD_MAX_CONCURRENT_CALLS),
+            entry("nettyKeepAliveTime", NETTY_PROD_KEEP_ALIVE_TIME),
+            entry("nettyKeepAliveTimeOut", NETTY_PROD_KEEP_ALIVE_TIMEOUT),
+            entry("port", GRPC_PORT),
+            entry("recordStreamQueueCapacity", HEDERA_RECORD_STREAM_QUEUE_CAPACITY),
+            entry("enableRecordStreaming", HEDERA_RECORD_STREAM_IS_ENABLED),
+            entry("recordLogDir", HEDERA_RECORD_STREAM_LOG_DIR),
+            entry("recordLogPeriod", HEDERA_RECORD_STREAM_LOG_PERIOD),
+            entry("tlsPort", GRPC_TLS_PORT),
+            entry("environment", HEDERA_PROFILES_ACTIVE),
+            entry("defaultListeningNodeAccount", DEV_DEFAULT_LISTENING_NODE_ACCOUNT),
+            entry("uniqueListeningPortFlag", DEV_ONLY_DEFAULT_NODE_LISTENS));
     private static final Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS =
-            Map.ofEntries(
-                    entry(
-                            "environment",
-                            legacy -> LEGACY_ENV_ORDER[Integer.parseInt(legacy)].toString()));
+            Map.ofEntries(entry("environment", legacy -> LEGACY_ENV_ORDER[Integer.parseInt(legacy)].toString()));
 
     static String nodePropsLoc = "data/config/node.properties";
     static String legacyNodePropsLoc = "data/config/application.properties";
-    static final String MISPLACED_PROP_TPL =
-            "Property '%s' is not node-local, please find it a proper home!";
-    static final String DEPRECATED_PROP_TPL =
-            "Property name '%s' is deprecated, please use '%s' in '%s' instead!";
-    static final String UNPARSEABLE_PROP_TPL =
-            "Value '%s' is unparseable for '%s' (%s), being ignored!";
+    static final String MISPLACED_PROP_TPL = "Property '%s' is not node-local, please find it a proper home!";
+    static final String DEPRECATED_PROP_TPL = "Property name '%s' is deprecated, please use '%s' in '%s' instead!";
+    static final String UNPARSEABLE_PROP_TPL = "Value '%s' is unparseable for '%s' (%s), being ignored!";
     static final String UNTRANSFORMABLE_PROP_TPL =
             "Value '%s' is untransformable for deprecated '%s' (%s), being " + "ignored!";
 
@@ -103,13 +97,12 @@ public class ScreenedNodeFileProps implements PropertySource {
     public ScreenedNodeFileProps() {
         loadFrom(legacyNodePropsLoc, false);
         loadFrom(nodePropsLoc, true);
-        final var msg =
-                "Node-local properties overridden on disk are:\n  "
-                        + NODE_PROPS.stream()
-                                .filter(fromFile::containsKey)
-                                .sorted()
-                                .map(name -> String.format("%s=%s", name, fromFile.get(name)))
-                                .collect(Collectors.joining("\n  "));
+        final var msg = "Node-local properties overridden on disk are:\n  "
+                + NODE_PROPS.stream()
+                        .filter(fromFile::containsKey)
+                        .sorted()
+                        .map(name -> String.format("%s=%s", name, fromFile.get(name)))
+                        .collect(Collectors.joining("\n  "));
         log.info(msg);
     }
 
@@ -128,12 +121,11 @@ public class ScreenedNodeFileProps implements PropertySource {
                 try {
                     value = STANDARDIZED_FORMATS.get(name).apply(value);
                 } catch (final Exception reason) {
-                    log.warn(
-                            String.format(
-                                    UNTRANSFORMABLE_PROP_TPL,
-                                    value,
-                                    name,
-                                    reason.getClass().getSimpleName()));
+                    log.warn(String.format(
+                            UNTRANSFORMABLE_PROP_TPL,
+                            value,
+                            name,
+                            reason.getClass().getSimpleName()));
                 }
             }
             log.warn(String.format(DEPRECATED_PROP_TPL, name, standardName, nodePropsLoc));
@@ -149,9 +141,8 @@ public class ScreenedNodeFileProps implements PropertySource {
             rawProperties.put(name, value);
             fromFile.put(name, transformFor(name).apply(value));
         } catch (final Exception reason) {
-            log.warn(
-                    String.format(
-                            UNPARSEABLE_PROP_TPL, value, name, reason.getClass().getSimpleName()));
+            log.warn(String.format(
+                    UNPARSEABLE_PROP_TPL, value, name, reason.getClass().getSimpleName()));
         }
     }
 
