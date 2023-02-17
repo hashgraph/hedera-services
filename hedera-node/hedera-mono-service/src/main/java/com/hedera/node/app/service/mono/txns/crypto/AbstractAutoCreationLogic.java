@@ -16,14 +16,17 @@
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.node.app.service.mono.ledger.accounts.AliasManager.tryAddressRecovery;
 import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asPrimitiveKeyUnchecked;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.isRecoveredEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -66,6 +69,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
 
 public abstract class AbstractAutoCreationLogic {
 
@@ -213,6 +217,25 @@ public abstract class AbstractAutoCreationLogic {
 
         final var childRecord =
                 creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, memo);
+
+        if (!isAliasEVMAddress) {
+            final var key = asPrimitiveKeyUnchecked(alias);
+
+            if (key.hasECDSASecp256K1()) {
+                final JKey jKey = asFcKeyUnchecked(key);
+                final var evmBytes =
+                        tryAddressRecovery(jKey, EthSigsUtils::recoverAddressFromPubKey);
+                byte[] evmAddress = null;
+
+                if (isRecoveredEvmAddress(evmBytes)) {
+                    evmAddress = Bytes.wrap(evmBytes).toArray();
+                }
+
+                assert evmAddress != null;
+                childRecord.setEvmAddress(evmAddress);
+            }
+        }
+
         childRecord.setFee(fee);
 
         final var inProgress =
