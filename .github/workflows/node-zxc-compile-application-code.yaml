@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "ZComponent: Compile"
+name: "Z-Node XC: Compile"
 on:
   workflow_call:
     inputs:

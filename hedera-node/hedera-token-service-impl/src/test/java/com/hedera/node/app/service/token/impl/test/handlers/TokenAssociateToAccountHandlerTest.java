@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.test.factories.scenarios.TokenAssociateScenarios.TOKEN_ASSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET;
@@ -41,22 +42,20 @@ class TokenAssociateToAccountHandlerTest extends ParityTestBase {
     void tokenAssociateWithKnownTargetScenario() {
         final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_KNOWN_TARGET);
 
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context);
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                Matchers.contains(MISC_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), Matchers.contains(MISC_ACCOUNT_KT.asKey()));
     }
 
     @Test
     void tokenAssociateWithSelfPaidKnownTargetScenario() {
         final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_SELF_PAID_KNOWN_TARGET);
 
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context);
 
         assertFalse(context.failed());
@@ -68,22 +67,21 @@ class TokenAssociateToAccountHandlerTest extends ParityTestBase {
     void tokenAssociateWithCustomPaidKnownTargetScenario() {
         final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET);
 
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context);
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
         assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                Matchers.contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+                sanityRestored(context.getRequiredNonPayerKeys()), Matchers.contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
     }
 
     @Test
     void tokenAssociateWithImmutableTargetScenario() {
         final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_IMMUTABLE_TARGET);
 
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context);
 
         assertTrue(context.failed());
@@ -95,7 +93,7 @@ class TokenAssociateToAccountHandlerTest extends ParityTestBase {
     void tokenAssociateWithMissingTargetScenario() {
         final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_MISSING_TARGET);
 
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context);
 
         assertTrue(context.failed());

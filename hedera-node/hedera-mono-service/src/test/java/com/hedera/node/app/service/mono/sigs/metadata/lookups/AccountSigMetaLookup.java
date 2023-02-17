@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.metadata.lookups;
 
 import com.hedera.node.app.service.mono.sigs.metadata.AccountSigningMetadata;
 import com.hedera.node.app.service.mono.sigs.metadata.SafeLookupResult;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 
 /**
@@ -27,4 +29,13 @@ public interface AccountSigMetaLookup {
     SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id);
 
     SafeLookupResult<AccountSigningMetadata> aliasableSafeLookup(AccountID idOrAlias);
+
+    /**
+     * Gets the unaliased form of an account. If the account is not an alias, returns the account.
+     * Otherwise, returns the account to which the alias points.
+     *
+     * @param idOrAlias id of the account or alias
+     * @return the unaliased account
+     */
+    EntityNum unaliasedAccount(AccountID idOrAlias);
 }
