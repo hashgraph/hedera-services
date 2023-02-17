@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.migration;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,10 +36,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TokenRelStorageAdapterTest {
-    @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> inMemoryRels;
-    @Mock private VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> onDiskRels;
-    @Mock private MerkleTokenRelStatus inMemoryRel;
-    @Mock private OnDiskTokenRel onDiskRel;
+    @Mock
+    private MerkleMap<EntityNumPair, MerkleTokenRelStatus> inMemoryRels;
+
+    @Mock
+    private VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> onDiskRels;
+
+    @Mock
+    private MerkleTokenRelStatus inMemoryRel;
+
+    @Mock
+    private OnDiskTokenRel onDiskRel;
 
     private static final Hash SOME_HASH = new Hash();
     private static final EntityNumPair SOME_PAIR = new EntityNumPair(666_666L);
@@ -52,7 +60,6 @@ class TokenRelStorageAdapterTest {
         given(onDiskRels.getHash()).willReturn(SOME_HASH);
         assertSame(SOME_HASH, subject.getHash());
         assertTrue(subject.areOnDisk());
-        assertSame(onDiskRels, subject.getOnDiskRels());
     }
 
     @Test

@@ -13,16 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package utils;
 
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.system.NodeId;
 import java.util.Random;
 import java.util.concurrent.Executors;
 
 public class TestUtils {
     private static final Random RANDOM = new Random(9239992);
+    private static final long DEFAULT_NODE_ID = 3;
 
     /**
      * Generates some random bytes
@@ -40,6 +44,9 @@ public class TestUtils {
 
     public static Metrics metrics() {
         return new DefaultMetrics(
-                Executors.newSingleThreadScheduledExecutor(), new DefaultMetricsFactory());
+                NodeId.createMain(DEFAULT_NODE_ID),
+                new MetricKeyRegistry(),
+                Executors.newSingleThreadScheduledExecutor(),
+                new DefaultMetricsFactory());
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context;
 
 import com.google.protobuf.ByteString;
@@ -56,8 +57,7 @@ public class ImmutableStateChildren implements StateChildren {
     private final NonAtomicReference<RecordsStorageAdapter> payerRecords;
     private final NonAtomicReference<MerkleScheduledTransactions> schedules;
     private final NonAtomicReference<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> storage;
-    private final NonAtomicReference<VirtualMapLike<ContractKey, IterableContractValue>>
-            contractStorage;
+    private final NonAtomicReference<VirtualMapLike<ContractKey, IterableContractValue>> contractStorage;
     private final NonAtomicReference<TokenRelStorageAdapter> tokenAssociations;
     private final NonAtomicReference<MerkleNetworkContext> networkCtx;
     private final NonAtomicReference<AddressBook> addressBook;

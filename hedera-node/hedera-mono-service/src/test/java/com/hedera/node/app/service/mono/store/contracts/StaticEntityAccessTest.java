@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts;
 
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -95,20 +96,47 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StaticEntityAccessTest {
-    @Mock private OptionValidator validator;
-    @Mock private StateView stateView;
-    @Mock private ContractAliases aliases;
-    @Mock private HederaAccountCustomizer customizer;
-    @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
-    @Mock private AccountStorageAdapter accounts;
-    @Mock private VirtualMap<ContractKey, IterableContractValue> storage;
-    @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> blobs;
-    @Mock private TokenRelStorageAdapter tokenAssociations;
-    @Mock private MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
-    @Mock private TokenInfo tokenInfo;
-    @Mock private EvmTokenInfo evmTokenInfo;
-    @Mock private TokenNftInfo tokenNftInfo;
-    @Mock private List<CustomFee> customFees;
+    @Mock
+    private OptionValidator validator;
+
+    @Mock
+    private StateView stateView;
+
+    @Mock
+    private ContractAliases aliases;
+
+    @Mock
+    private HederaAccountCustomizer customizer;
+
+    @Mock
+    private MerkleMap<EntityNum, MerkleToken> tokens;
+
+    @Mock
+    private AccountStorageAdapter accounts;
+
+    @Mock
+    private VirtualMap<ContractKey, IterableContractValue> storage;
+
+    @Mock
+    private VirtualMap<VirtualBlobKey, VirtualBlobValue> blobs;
+
+    @Mock
+    private TokenRelStorageAdapter tokenAssociations;
+
+    @Mock
+    private MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
+
+    @Mock
+    private TokenInfo tokenInfo;
+
+    @Mock
+    private EvmTokenInfo evmTokenInfo;
+
+    @Mock
+    private TokenNftInfo tokenNftInfo;
+
+    @Mock
+    private List<CustomFee> customFees;
 
     private StaticEntityAccess subject;
 
@@ -118,40 +146,34 @@ class StaticEntityAccessTest {
     private final AccountID nonExtantId = IdUtils.asAccount("0.0.1235");
     private final UInt256 uint256Key = UInt256.ONE;
     private final Bytes bytesKey = uint256Key.toBytes();
-    private final ContractKey contractKey =
-            new ContractKey(id.getAccountNum(), uint256Key.toArray());
-    private final VirtualBlobKey blobKey =
-            new VirtualBlobKey(CONTRACT_BYTECODE, (int) id.getAccountNum());
+    private final ContractKey contractKey = new ContractKey(id.getAccountNum(), uint256Key.toArray());
+    private final VirtualBlobKey blobKey = new VirtualBlobKey(CONTRACT_BYTECODE, (int) id.getAccountNum());
     private final IterableContractValue contractVal = new IterableContractValue(BigInteger.ONE);
     private final VirtualBlobValue blobVal = new VirtualBlobValue("data".getBytes());
     private static final ByteString pretendAlias =
             ByteString.copyFrom(unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb"));
 
-    private final MerkleAccount someNonContractAccount =
-            (MerkleAccount)
-                    new HederaAccountCustomizer()
-                            .isReceiverSigRequired(false)
-                            .key(key)
-                            .proxy(MISSING_ENTITY_ID)
-                            .isDeleted(false)
-                            .expiry(someExpiry)
-                            .memo("")
-                            .isSmartContract(false)
-                            .autoRenewPeriod(1234L)
-                            .customizing(new MerkleAccount());
-    private final MerkleAccount someContractAccount =
-            (MerkleAccount)
-                    new HederaAccountCustomizer()
-                            .isReceiverSigRequired(false)
-                            .alias(pretendAlias)
-                            .key(key)
-                            .proxy(MISSING_ENTITY_ID)
-                            .isDeleted(false)
-                            .expiry(someExpiry)
-                            .memo("")
-                            .isSmartContract(true)
-                            .autoRenewPeriod(1234L)
-                            .customizing(new MerkleAccount());
+    private final MerkleAccount someNonContractAccount = (MerkleAccount) new HederaAccountCustomizer()
+            .isReceiverSigRequired(false)
+            .key(key)
+            .proxy(MISSING_ENTITY_ID)
+            .isDeleted(false)
+            .expiry(someExpiry)
+            .memo("")
+            .isSmartContract(false)
+            .autoRenewPeriod(1234L)
+            .customizing(new MerkleAccount());
+    private final MerkleAccount someContractAccount = (MerkleAccount) new HederaAccountCustomizer()
+            .isReceiverSigRequired(false)
+            .alias(pretendAlias)
+            .key(key)
+            .proxy(MISSING_ENTITY_ID)
+            .isDeleted(false)
+            .expiry(someExpiry)
+            .memo("")
+            .isSmartContract(true)
+            .autoRenewPeriod(1234L)
+            .customizing(new MerkleAccount());
 
     @BeforeEach
     void setUp() {
@@ -183,11 +205,10 @@ class StaticEntityAccessTest {
 
     @Test
     void usableIfNonDeletedAndAttached() {
-        given(
-                        validator.expiryStatusGiven(
-                                someNonContractAccount.getBalance(),
-                                someNonContractAccount.isExpiredAndPendingRemoval(),
-                                someNonContractAccount.isSmartContract()))
+        given(validator.expiryStatusGiven(
+                        someNonContractAccount.getBalance(),
+                        someNonContractAccount.isExpiredAndPendingRemoval(),
+                        someNonContractAccount.isSmartContract()))
                 .willReturn(OK);
         given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
         assertTrue(subject.isUsable(asTypedEvmAddress(id)));
@@ -196,9 +217,7 @@ class StaticEntityAccessTest {
     @Test
     void mutatorsAndTransactionalSemanticsThrows() {
         assertThrows(UnsupportedOperationException.class, () -> subject.customize(id, customizer));
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> subject.putStorage(id, uint256Key, uint256Key));
+        assertThrows(UnsupportedOperationException.class, () -> subject.putStorage(id, uint256Key, uint256Key));
         assertThrows(UnsupportedOperationException.class, () -> subject.storeCode(id, bytesKey));
         assertThrows(UnsupportedOperationException.class, () -> subject.currentManagedChangeSet());
         assertThrows(UnsupportedOperationException.class, () -> subject.recordNewKvUsageTo(null));
@@ -223,11 +242,10 @@ class StaticEntityAccessTest {
 
     @Test
     void infoForNftToken() {
-        final var nftId =
-                NftID.newBuilder()
-                        .setTokenID(nft.tokenId())
-                        .setSerialNumber(nft.serialNo())
-                        .build();
+        final var nftId = NftID.newBuilder()
+                .setTokenID(nft.tokenId())
+                .setSerialNumber(nft.serialNo())
+                .build();
         given(nfts.get(EntityNumPair.fromNftId(nft))).willReturn(treasuryOwned);
         given(stateView.infoForNft(nftId)).willReturn(Optional.of(tokenNftInfo));
 
@@ -249,8 +267,7 @@ class StaticEntityAccessTest {
         given(accounts.get(EntityNum.fromAccountId(nonExtantId))).willReturn(null);
         given(stateView.tokenExists(HTSTestsUtil.fungible)).willReturn(true);
 
-        assertEquals(
-                someNonContractAccount.getBalance(), subject.getBalance(asTypedEvmAddress(id)));
+        assertEquals(someNonContractAccount.getBalance(), subject.getBalance(asTypedEvmAddress(id)));
         assertTrue(subject.isExtant(asTypedEvmAddress(id)));
         assertFalse(subject.isExtant(asTypedEvmAddress(nonExtantId)));
         assertTrue(subject.isTokenAccount(HTSTestsUtil.fungibleTokenAddr));
@@ -353,36 +370,22 @@ class StaticEntityAccessTest {
         token.setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asJKey());
         given(tokens.get(tokenNum)).willReturn(token);
 
-        assertEquals(
-                TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey(),
-                subject.keyOf(tokenId, TokenProperty.ADMIN_KEY));
-        assertEquals(
-                TxnHandlingScenario.TOKEN_KYC_KT.asJKey(),
-                subject.keyOf(tokenId, TokenProperty.KYC_KEY));
-        assertEquals(
-                TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey(),
-                subject.keyOf(tokenId, TokenProperty.FREEZE_KEY));
-        assertEquals(
-                TxnHandlingScenario.TOKEN_WIPE_KT.asJKey(),
-                subject.keyOf(tokenId, TokenProperty.WIPE_KEY));
-        assertEquals(
-                TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKey(),
-                subject.keyOf(tokenId, TokenProperty.SUPPLY_KEY));
+        assertEquals(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey(), subject.keyOf(tokenId, TokenProperty.ADMIN_KEY));
+        assertEquals(TxnHandlingScenario.TOKEN_KYC_KT.asJKey(), subject.keyOf(tokenId, TokenProperty.KYC_KEY));
+        assertEquals(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey(), subject.keyOf(tokenId, TokenProperty.FREEZE_KEY));
+        assertEquals(TxnHandlingScenario.TOKEN_WIPE_KT.asJKey(), subject.keyOf(tokenId, TokenProperty.WIPE_KEY));
+        assertEquals(TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKey(), subject.keyOf(tokenId, TokenProperty.SUPPLY_KEY));
         assertEquals(
                 TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT.asJKey(),
                 subject.keyOf(tokenId, TokenProperty.FEE_SCHEDULE_KEY));
-        assertEquals(
-                TxnHandlingScenario.TOKEN_PAUSE_KT.asJKey(),
-                subject.keyOf(tokenId, TokenProperty.PAUSE_KEY));
+        assertEquals(TxnHandlingScenario.TOKEN_PAUSE_KT.asJKey(), subject.keyOf(tokenId, TokenProperty.PAUSE_KEY));
     }
 
     @Test
     void getInvalidTypeOfKeyFails() {
         given(tokens.get(tokenNum)).willReturn(token);
 
-        assertThrows(
-                InvalidTransactionException.class,
-                () -> subject.keyOf(tokenId, TokenProperty.TOKEN_TYPE));
+        assertThrows(InvalidTransactionException.class, () -> subject.keyOf(tokenId, TokenProperty.TOKEN_TYPE));
     }
 
     @Test
@@ -417,8 +420,7 @@ class StaticEntityAccessTest {
 
     @Test
     void failsIfNftIdNotPresent() {
-        assertFailsRevertingWith(
-                () -> subject.approvedSpenderOf(nft), INVALID_TOKEN_NFT_SERIAL_NUMBER);
+        assertFailsRevertingWith(() -> subject.approvedSpenderOf(nft), INVALID_TOKEN_NFT_SERIAL_NUMBER);
     }
 
     @Test
@@ -485,9 +487,7 @@ class StaticEntityAccessTest {
 
     @Test
     void allowanceOfThrowsRevertingOnMissingOwner() {
-        assertFailsRevertingWith(
-                () -> subject.allowanceOf(accountId, spenderId, tokenId),
-                INVALID_ALLOWANCE_OWNER_ID);
+        assertFailsRevertingWith(() -> subject.allowanceOf(accountId, spenderId, tokenId), INVALID_ALLOWANCE_OWNER_ID);
     }
 
     @Test
@@ -511,11 +511,8 @@ class StaticEntityAccessTest {
     private static final NftId nft = new NftId(0, 0, 123, 456);
     private static final EntityNumPair nftKey = EntityNumPair.fromNftId(nft);
 
-    private static final MerkleUniqueToken treasuryOwned =
-            new MerkleUniqueToken(
-                    MISSING_ENTITY_ID,
-                    "There, the eyes are".getBytes(StandardCharsets.UTF_8),
-                    new RichInstant(1, 2));
+    private static final MerkleUniqueToken treasuryOwned = new MerkleUniqueToken(
+            MISSING_ENTITY_ID, "There, the eyes are".getBytes(StandardCharsets.UTF_8), new RichInstant(1, 2));
     private static final int decimals = 666666;
     private static final long someExpiry = 1_234_567L;
     private static final long totalSupply = 4242;
@@ -530,17 +527,13 @@ class StaticEntityAccessTest {
     private static final boolean isKyc = false;
     private static final boolean accountsFrozenByDefault = false;
     private static final boolean accountsKycGrantedByDefault = true;
-    private static final MerkleUniqueToken accountOwned =
-            new MerkleUniqueToken(
-                    accountNum.toEntityId(),
-                    "There, is a tree swinging".getBytes(StandardCharsets.UTF_8),
-                    new RichInstant(2, 3));
+    private static final MerkleUniqueToken accountOwned = new MerkleUniqueToken(
+            accountNum.toEntityId(),
+            "There, is a tree swinging".getBytes(StandardCharsets.UTF_8),
+            new RichInstant(2, 3));
 
-    private static final MerkleUniqueToken withApprovedSpender =
-            new MerkleUniqueToken(
-                    accountNum.toEntityId(),
-                    "And voices are".getBytes(StandardCharsets.UTF_8),
-                    new RichInstant(1, 2));
+    private static final MerkleUniqueToken withApprovedSpender = new MerkleUniqueToken(
+            accountNum.toEntityId(), "And voices are".getBytes(StandardCharsets.UTF_8), new RichInstant(1, 2));
 
     static {
         withApprovedSpender.setSpender(spenderNum.toEntityId());
@@ -551,15 +544,7 @@ class StaticEntityAccessTest {
     private static final AccountID accountId = accountNum.toGrpcAccountId();
     private static final AccountID spenderId = spenderNum.toGrpcAccountId();
     private static final MerkleToken token =
-            new MerkleToken(
-                    someExpiry,
-                    totalSupply,
-                    decimals,
-                    symbol,
-                    name,
-                    false,
-                    true,
-                    treasuryNum.toEntityId());
+            new MerkleToken(someExpiry, totalSupply, decimals, symbol, name, false, true, treasuryNum.toEntityId());
 
     {
         token.setTokenType(type);

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state.serdes;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -51,8 +52,7 @@ public class VirtualBlobKeySerializer implements KeySerializer<VirtualBlobKey> {
 
     @Override
     public boolean equals(ByteBuffer buffer, int version, VirtualBlobKey key) throws IOException {
-        return key.getType().ordinal() == (0xff & buffer.get())
-                && key.getEntityNumCode() == buffer.getInt();
+        return key.getType().ordinal() == (0xff & buffer.get()) && key.getEntityNumCode() == buffer.getInt();
     }
 
     @Override

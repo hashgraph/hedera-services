@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.txns;
 
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -46,7 +47,10 @@ public class TokenUnfreezeFactory extends SignedTxnFactory<TokenUnfreezeFactory>
 
     @Override
     protected void customizeTxn(TransactionBody.Builder txn) {
-        var op = TokenUnfreezeAccountTransactionBody.newBuilder().setToken(id);
+        var op = TokenUnfreezeAccountTransactionBody.newBuilder();
+        if (id != null) {
+            op.setToken(id);
+        }
         txn.setTokenUnfreeze(op);
     }
 }

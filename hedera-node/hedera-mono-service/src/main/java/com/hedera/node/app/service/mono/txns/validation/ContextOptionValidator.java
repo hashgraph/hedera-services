@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.validation;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_MAX_LIFETIME;
@@ -86,8 +87,7 @@ public class ContextOptionValidator implements OptionValidator {
 
     @Override
     public ResponseCodeEnum expiryStatusGiven(
-            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts,
-            final AccountID id) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts, final AccountID id) {
         if (!dynamicProperties.shouldAutoRenewSomeEntityType()) {
             return OK;
         }
@@ -104,8 +104,7 @@ public class ContextOptionValidator implements OptionValidator {
     }
 
     @Override
-    public ResponseCodeEnum expiryStatusGiven(
-            final long balance, final boolean isDetached, final boolean isContract) {
+    public ResponseCodeEnum expiryStatusGiven(final long balance, final boolean isDetached, final boolean isContract) {
         if (balance > 0 || !isDetached) {
             return OK;
         }
@@ -134,8 +133,7 @@ public class ContextOptionValidator implements OptionValidator {
 
     @Override
     public boolean isValidTxnDuration(long duration) {
-        return duration >= dynamicProperties.minTxnDuration()
-                && duration <= dynamicProperties.maxTxnDuration();
+        return duration >= dynamicProperties.minTxnDuration() && duration <= dynamicProperties.maxTxnDuration();
     }
 
     @Override
@@ -171,9 +169,7 @@ public class ContextOptionValidator implements OptionValidator {
     @Override
     public ResponseCodeEnum nftMetadataCheck(byte[] metadata) {
         return lengthCheck(
-                metadata.length,
-                dynamicProperties.maxNftMetadataBytes(),
-                ResponseCodeEnum.METADATA_TOO_LONG);
+                metadata.length, dynamicProperties.maxNftMetadataBytes(), ResponseCodeEnum.METADATA_TOO_LONG);
     }
 
     @Override
@@ -198,18 +194,14 @@ public class ContextOptionValidator implements OptionValidator {
 
     @Override
     public ResponseCodeEnum nftMaxQueryRangeCheck(long start, long end) {
-        return lengthCheck(
-                end - start,
-                dynamicProperties.maxNftQueryRange(),
-                ResponseCodeEnum.INVALID_QUERY_RANGE);
+        return lengthCheck(end - start, dynamicProperties.maxNftQueryRange(), ResponseCodeEnum.INVALID_QUERY_RANGE);
     }
 
     public static ResponseCodeEnum batchSizeCheck(int length, int limit) {
         return lengthCheck(length, limit, ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED);
     }
 
-    private static ResponseCodeEnum lengthCheck(
-            long length, long limit, ResponseCodeEnum onFailure) {
+    private static ResponseCodeEnum lengthCheck(long length, long limit, ResponseCodeEnum onFailure) {
         if (length > limit) {
             return onFailure;
         }
@@ -217,8 +209,7 @@ public class ContextOptionValidator implements OptionValidator {
     }
 
     @Override
-    public ResponseCodeEnum queryableTopicStatus(
-            TopicID id, MerkleMapLike<EntityNum, MerkleTopic> topics) {
+    public ResponseCodeEnum queryableTopicStatus(TopicID id, MerkleMapLike<EntityNum, MerkleTopic> topics) {
         MerkleTopic merkleTopic = topics.get(EntityNum.fromTopicId(id));
 
         return Optional.ofNullable(merkleTopic)
@@ -238,19 +229,13 @@ public class ContextOptionValidator implements OptionValidator {
     @Override
     public ResponseCodeEnum tokenSymbolCheck(String symbol) {
         return tokenStringCheck(
-                symbol,
-                dynamicProperties.maxTokenSymbolUtf8Bytes(),
-                MISSING_TOKEN_SYMBOL,
-                TOKEN_SYMBOL_TOO_LONG);
+                symbol, dynamicProperties.maxTokenSymbolUtf8Bytes(), MISSING_TOKEN_SYMBOL, TOKEN_SYMBOL_TOO_LONG);
     }
 
     @Override
     public ResponseCodeEnum tokenNameCheck(String name) {
         return tokenStringCheck(
-                name,
-                dynamicProperties.maxTokenNameUtf8Bytes(),
-                MISSING_TOKEN_NAME,
-                TOKEN_NAME_TOO_LONG);
+                name, dynamicProperties.maxTokenNameUtf8Bytes(), MISSING_TOKEN_NAME, TOKEN_NAME_TOO_LONG);
     }
 
     private ResponseCodeEnum tokenStringCheck(
@@ -297,10 +282,9 @@ public class ContextOptionValidator implements OptionValidator {
 
     /* Not applicable until auto-renew is implemented. */
     boolean isExpired(MerkleTopic merkleTopic) {
-        Instant expiry =
-                Instant.ofEpochSecond(
-                        merkleTopic.getExpirationTimestamp().getSeconds(),
-                        merkleTopic.getExpirationTimestamp().getNanos());
+        Instant expiry = Instant.ofEpochSecond(
+                merkleTopic.getExpirationTimestamp().getSeconds(),
+                merkleTopic.getExpirationTimestamp().getNanos());
         return txnCtx.consensusTime().isAfter(expiry);
     }
 
@@ -308,9 +292,7 @@ public class ContextOptionValidator implements OptionValidator {
         if (isExpiryDisabled(isContract)) {
             return OK;
         }
-        return isContract
-                ? CONTRACT_EXPIRED_AND_PENDING_REMOVAL
-                : ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+        return isContract ? CONTRACT_EXPIRED_AND_PENDING_REMOVAL : ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
     }
 
     private AccountID nodeAccount() {

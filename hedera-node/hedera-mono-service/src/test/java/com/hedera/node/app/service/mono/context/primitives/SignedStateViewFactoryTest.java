@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.primitives;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -52,8 +53,6 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.fchashmap.FCHashMap;
-import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,24 +65,59 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class SignedStateViewFactoryTest {
     private SignedStateViewFactory factory;
 
-    @Mock private Platform platform;
-    @Mock private ScheduleStore scheduleStore;
-    @Mock private NetworkInfo networkInfo;
-    @Mock private ServicesState state;
-    @Mock private ServicesState secondState;
-    @Mock private AccountStorageAdapter accounts;
-    @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
-    @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
-    @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
-    @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
-    @Mock private TokenRelStorageAdapter tokenAssociations;
-    @Mock private MerkleScheduledTransactions scheduleTxs;
-    @Mock private MerkleNetworkContext networkCtx;
-    @Mock private AddressBook addressBook;
-    @Mock private MerkleSpecialFiles specialFiles;
-    @Mock private UniqueTokenMapAdapter uniqueTokens;
-    @Mock private RecordsRunningHashLeaf runningHashLeaf;
-    @Mock private FCHashMap<ByteString, EntityNum> aliases;
+    @Mock
+    private Platform platform;
+
+    @Mock
+    private ScheduleStore scheduleStore;
+
+    @Mock
+    private NetworkInfo networkInfo;
+
+    @Mock
+    private ServicesState state;
+
+    @Mock
+    private ServicesState secondState;
+
+    @Mock
+    private AccountStorageAdapter accounts;
+
+    @Mock
+    private VirtualMapLike<VirtualBlobKey, VirtualBlobValue> storage;
+
+    @Mock
+    private VirtualMapLike<ContractKey, IterableContractValue> contractStorage;
+
+    @Mock
+    private MerkleMapLike<EntityNum, MerkleTopic> topics;
+
+    @Mock
+    private MerkleMapLike<EntityNum, MerkleToken> tokens;
+
+    @Mock
+    private TokenRelStorageAdapter tokenAssociations;
+
+    @Mock
+    private MerkleScheduledTransactions scheduleTxs;
+
+    @Mock
+    private MerkleNetworkContext networkCtx;
+
+    @Mock
+    private AddressBook addressBook;
+
+    @Mock
+    private MerkleSpecialFiles specialFiles;
+
+    @Mock
+    private UniqueTokenMapAdapter uniqueTokens;
+
+    @Mock
+    private RecordsRunningHashLeaf runningHashLeaf;
+
+    @Mock
+    private FCHashMap<ByteString, EntityNum> aliases;
 
     @BeforeEach
     void setUp() {
@@ -114,8 +148,7 @@ class SignedStateViewFactoryTest {
 
     @Test
     void canUpdateSuccessfully() {
-        given(platform.getLatestImmutableState())
-                .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
+        given(platform.getLatestImmutableState()).willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         final var childrenToUpdate = new MutableStateChildren();
         givenStateWithMockChildren();
         given(state.getTimeOfLastHandledTxn()).willReturn(Instant.now());
@@ -128,8 +161,7 @@ class SignedStateViewFactoryTest {
 
     @Test
     void throwsIfUpdatedWithInvalidState() {
-        given(platform.getLatestImmutableState())
-                .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
+        given(platform.getLatestImmutableState()).willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         given(state.getTimeOfLastHandledTxn()).willReturn(null);
         assertFalse(factory.isUsable(state));
         assertThrows(
@@ -139,8 +171,7 @@ class SignedStateViewFactoryTest {
 
     @Test
     void returnsEmptyWhenGettingFromInvalidState() {
-        given(platform.getLatestImmutableState())
-                .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
+        given(platform.getLatestImmutableState()).willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         given(state.getTimeOfLastHandledTxn()).willReturn(null);
         assertFalse(factory.isUsable(state));
         final var children = factory.childrenOfLatestSignedState();
@@ -149,8 +180,7 @@ class SignedStateViewFactoryTest {
 
     @Test
     void getsLatestImmutableChildren() {
-        given(platform.getLatestImmutableState())
-                .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
+        given(platform.getLatestImmutableState()).willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         given(state.getTimeOfLastHandledTxn()).willReturn(Instant.ofEpochSecond(12345));
         given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
         given(state.isInitialized()).willReturn(true);
@@ -211,8 +241,7 @@ class SignedStateViewFactoryTest {
         given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
         given(state.isInitialized()).willReturn(true);
         assertTrue(factory.isUsable(state));
-        given(platform.getLatestImmutableState())
-                .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
+        given(platform.getLatestImmutableState()).willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         final var stateView = factory.latestSignedStateView();
         assertFalse(stateView.isEmpty());
     }
@@ -221,18 +250,17 @@ class SignedStateViewFactoryTest {
     void failsToConstructStateViewIfChildrenEmpty() {
         given(state.getTimeOfLastHandledTxn()).willReturn(null);
         assertFalse(factory.isUsable(state));
-        given(platform.getLatestImmutableState())
-                .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
+        given(platform.getLatestImmutableState()).willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         final var stateView = factory.latestSignedStateView();
         assertTrue(stateView.isEmpty());
     }
 
     private void givenStateWithMockChildren() {
         given(state.accounts()).willReturn(accounts);
-        given(state.storage()).willReturn(VirtualMapLike.from(storage));
-        given(state.contractStorage()).willReturn(VirtualMapLike.from(contractStorage));
-        given(state.topics()).willReturn(MerkleMapLike.from(topics));
-        given(state.tokens()).willReturn(MerkleMapLike.from(tokens));
+        given(state.storage()).willReturn(storage);
+        given(state.contractStorage()).willReturn(contractStorage);
+        given(state.topics()).willReturn(topics);
+        given(state.tokens()).willReturn(tokens);
         given(state.tokenAssociations()).willReturn(tokenAssociations);
         given(state.scheduleTxs()).willReturn(scheduleTxs);
         given(state.networkCtx()).willReturn(networkCtx);

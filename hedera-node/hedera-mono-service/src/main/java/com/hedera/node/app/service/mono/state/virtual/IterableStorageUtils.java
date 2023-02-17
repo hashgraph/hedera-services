@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.hedera.node.app.service.mono.utils.MapValueListUtils.removeFromMapValueList;
@@ -46,8 +47,7 @@ public class IterableStorageUtils {
         EntityNumPair nextKey = firstKey;
         while (!EntityNumPair.MISSING_NUM_PAIR.equals(nextKey)) {
             final var value =
-                    Objects.requireNonNull(
-                            nfts.get(nextKey), "Linked key " + nextKey + " had no mapped value");
+                    Objects.requireNonNull(nfts.get(nextKey), "Linked key " + nextKey + " had no mapped value");
             sb.append(isFirstValue ? "" : ", ")
                     .append("0.0.")
                     .append(value.getKey().getHiOrderAsLong())
@@ -60,8 +60,7 @@ public class IterableStorageUtils {
     }
 
     public static String joinedStorageMappings(
-            final ContractKey firstKey,
-            final VirtualMap<ContractKey, IterableContractValue> storage) {
+            final ContractKey firstKey, final VirtualMap<ContractKey, IterableContractValue> storage) {
         if (firstKey == null) {
             return NO_ITERABLE_STORAGE;
         }
@@ -153,8 +152,7 @@ public class IterableStorageUtils {
             @NonNull final ContractKey key,
             @NonNull final ContractKey root,
             @NonNull final VirtualMapLike<ContractKey, IterableContractValue> storage) {
-        return removeFromMapValueList(
-                key, root, new ContractStorageListMutation(key.getContractId(), storage));
+        return removeFromMapValueList(key, root, new ContractStorageListMutation(key.getContractId(), storage));
     }
 
     private static ContractKey internalUpsertMapping(
@@ -187,19 +185,14 @@ public class IterableStorageUtils {
                 if (rootValue != null) {
                     nextValue = rootValue;
                 } else {
-                    nextValue =
-                            useGetForModify
-                                    ? Objects.requireNonNull(
-                                            storage.getForModify(rootKey),
-                                            () -> "Missing root " + rootKey)
-                                    // Note it is ONLY safe to call copy() here---making the map's
-                                    // value
-                                    // immutable!---because we immediately put() the mutable value
-                                    // below
-                                    : Objects.requireNonNull(
-                                                    storage.get(rootKey),
-                                                    () -> "Missing root " + rootKey)
-                                            .copy();
+                    nextValue = useGetForModify
+                            ? Objects.requireNonNull(storage.getForModify(rootKey), () -> "Missing root " + rootKey)
+                            // Note it is ONLY safe to call copy() here---making the map's
+                            // value
+                            // immutable!---because we immediately put() the mutable value
+                            // below
+                            : Objects.requireNonNull(storage.get(rootKey), () -> "Missing root " + rootKey)
+                                    .copy();
                 }
                 nextValue.setPrevKey(key.getKey());
                 if (!useGetForModify && rootValue == null) {

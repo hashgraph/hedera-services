@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono;
 
 import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
@@ -74,9 +75,14 @@ class ServicesAppTest {
     private final String accountMemo = "0.0.3";
     private final NodeId selfNodeId = new NodeId(false, selfId);
 
-    @Mock private Platform platform;
-    @Mock private Cryptography cryptography;
-    @Mock private PropertySource overridingProps;
+    @Mock
+    private Platform platform;
+
+    @Mock
+    private Cryptography cryptography;
+
+    @Mock
+    private PropertySource overridingProps;
 
     private ServicesApp subject;
 
@@ -97,16 +103,15 @@ class ServicesAppTest {
             given(overridingProps.getProperty(logDirKey)).willReturn(logDirVal);
         }
 
-        subject =
-                DaggerServicesApp.builder()
-                        .staticAccountMemo(accountMemo)
-                        .bootstrapProps(props)
-                        .initialHash(EMPTY_HASH)
-                        .platform(platform)
-                        .consoleCreator((ignore, visible) -> null)
-                        .crypto(cryptography)
-                        .selfId(selfId)
-                        .build();
+        subject = DaggerServicesApp.builder()
+                .staticAccountMemo(accountMemo)
+                .bootstrapProps(props)
+                .initialHash(EMPTY_HASH)
+                .platform(platform)
+                .consoleCreator((ignore, visible) -> null)
+                .crypto(cryptography)
+                .selfId(selfId)
+                .build();
     }
 
     @Test
@@ -142,6 +147,7 @@ class ServicesAppTest {
         assertThat(subject.upgradeActions(), instanceOf(UpgradeActions.class));
         assertThat(subject.virtualMapFactory(), instanceOf(VirtualMapFactory.class));
         assertThat(subject.prefetchProcessor(), instanceOf(PrefetchProcessor.class));
+        assertThat(subject.bootstrapProps(), instanceOf(ChainedSources.class));
         assertSame(subject.nodeId(), selfNodeId);
         assertSame(SLEEPING_PAUSE, subject.pause());
         assertTrue(subject.consoleOut().isEmpty());

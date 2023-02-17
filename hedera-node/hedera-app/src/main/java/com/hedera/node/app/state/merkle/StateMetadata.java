@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle;
 
 import com.hedera.node.app.spi.state.Schema;
@@ -51,33 +52,23 @@ public final class StateMetadata<K extends Comparable<? super K>, V> {
      * @param stateDefinition The {@link StateDefinition}
      */
     public StateMetadata(
-            @NonNull String serviceName,
-            @NonNull Schema schema,
-            @NonNull StateDefinition<K, V> stateDefinition) {
+            @NonNull String serviceName, @NonNull Schema schema, @NonNull StateDefinition<K, V> stateDefinition) {
         this.serviceName = StateUtils.validateServiceName(serviceName);
         this.schema = schema;
         this.stateDefinition = stateDefinition;
 
         final var stateKey = stateDefinition.stateKey();
         final var version = schema.getVersion();
-        this.onDiskKeyClassId =
-                StateUtils.computeClassId(
-                        serviceName, stateKey, version, ON_DISK_KEY_CLASS_ID_SUFFIX);
+        this.onDiskKeyClassId = StateUtils.computeClassId(serviceName, stateKey, version, ON_DISK_KEY_CLASS_ID_SUFFIX);
         this.onDiskKeySerializerClassId =
-                StateUtils.computeClassId(
-                        serviceName, stateKey, version, ON_DISK_KEY_SERIALIZER_CLASS_ID_SUFFIX);
+                StateUtils.computeClassId(serviceName, stateKey, version, ON_DISK_KEY_SERIALIZER_CLASS_ID_SUFFIX);
         this.onDiskValueClassId =
-                StateUtils.computeClassId(
-                        serviceName, stateKey, version, ON_DISK_VALUE_CLASS_ID_SUFFIX);
+                StateUtils.computeClassId(serviceName, stateKey, version, ON_DISK_VALUE_CLASS_ID_SUFFIX);
         this.onDiskValueSerializerClassId =
-                StateUtils.computeClassId(
-                        serviceName, stateKey, version, ON_DISK_VALUE_SERIALIZER_CLASS_ID_SUFFIX);
+                StateUtils.computeClassId(serviceName, stateKey, version, ON_DISK_VALUE_SERIALIZER_CLASS_ID_SUFFIX);
         this.inMemoryValueClassId =
-                StateUtils.computeClassId(
-                        serviceName, stateKey, version, IN_MEMORY_VALUE_CLASS_ID_SUFFIX);
-        this.singletonClassId =
-                StateUtils.computeClassId(
-                        serviceName, stateKey, version, SINGLETON_CLASS_ID_SUFFIX);
+                StateUtils.computeClassId(serviceName, stateKey, version, IN_MEMORY_VALUE_CLASS_ID_SUFFIX);
+        this.singletonClassId = StateUtils.computeClassId(serviceName, stateKey, version, SINGLETON_CLASS_ID_SUFFIX);
     }
 
     public String serviceName() {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.order;
 
 import static com.hedera.node.app.service.mono.context.primitives.SignedStateViewFactory.isUsable;
@@ -106,10 +107,8 @@ public class SigReqsManager {
      * @param provider an immutable state appropriate for signature expansion
      * @param accessor a transaction that needs linked signatures expanded
      */
-    public void expandSigs(
-            final StateChildrenProvider provider, final SwirldsTxnAccessor accessor) {
-        if (dynamicProperties.expandSigsFromImmutableState()
-                && tryExpandFromImmutable(provider, accessor)) {
+    public void expandSigs(final StateChildrenProvider provider, final SwirldsTxnAccessor accessor) {
+        if (dynamicProperties.expandSigsFromImmutableState() && tryExpandFromImmutable(provider, accessor)) {
             return;
         }
         expandFromWorkingState(accessor);
@@ -132,8 +131,7 @@ public class SigReqsManager {
      * @param accessor the transaction to expand signatures for
      * @return whether the expansion attempt succeeded
      */
-    private boolean tryExpandFromImmutable(
-            final StateChildrenProvider provider, final SwirldsTxnAccessor accessor) {
+    private boolean tryExpandFromImmutable(final StateChildrenProvider provider, final SwirldsTxnAccessor accessor) {
         if (!isUsable(provider)) {
             return false;
         }
@@ -158,9 +156,7 @@ public class SigReqsManager {
 
     private void ensureWorkingStateSigReqsIsConstructed() {
         if (workingSigReqs == null) {
-            final var lookup =
-                    lookupsFactory.from(
-                            fileNumbers, workingState, TOKEN_META_TRANSFORM, dynamicProperties);
+            final var lookup = lookupsFactory.from(fileNumbers, workingState, TOKEN_META_TRANSFORM, dynamicProperties);
             workingSigReqs = sigReqsFactory.from(lookup, signatureWaivers);
         }
     }
@@ -168,11 +164,7 @@ public class SigReqsManager {
     private void ensureImmutableStateSigReqsIsConstructed() {
         if (immutableSigReqs == null) {
             final var lookup =
-                    lookupsFactory.from(
-                            fileNumbers,
-                            immutableChildren,
-                            TOKEN_META_TRANSFORM,
-                            dynamicProperties);
+                    lookupsFactory.from(fileNumbers, immutableChildren, TOKEN_META_TRANSFORM, dynamicProperties);
             immutableSigReqs = sigReqsFactory.from(lookup, signatureWaivers);
         }
     }

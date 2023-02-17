@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.network.impl.serdes;
 
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
@@ -38,8 +39,7 @@ public class MonoRunningHashesAdapterSerdes implements Serdes<RecordsRunningHash
     }
 
     @Override
-    public void write(final @NonNull RecordsRunningHashLeaf item, final @NonNull DataOutput output)
-            throws IOException {
+    public void write(final @NonNull RecordsRunningHashLeaf item, final @NonNull DataOutput output) throws IOException {
         if (output instanceof SerializableDataOutputStream out) {
             item.serialize(out);
         } else {

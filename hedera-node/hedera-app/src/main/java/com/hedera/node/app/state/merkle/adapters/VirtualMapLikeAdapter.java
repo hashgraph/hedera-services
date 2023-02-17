@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle.adapters;
 
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
@@ -31,10 +32,8 @@ import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class VirtualMapLikeAdapter {
-    public static <K extends VirtualKey<? super K>, V extends VirtualValue>
-            VirtualMapLike<K, V> unwrapping(
-                    final StateMetadata<K, V> md,
-                    final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> real) {
+    public static <K extends VirtualKey<? super K>, V extends VirtualValue> VirtualMapLike<K, V> unwrapping(
+            final StateMetadata<K, V> md, final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> real) {
         return new VirtualMapLike<>() {
             @Override
             public boolean release() {
@@ -57,19 +56,14 @@ public class VirtualMapLikeAdapter {
                     final InterruptableConsumer<Pair<K, V>> handler,
                     final int threadCount)
                     throws InterruptedException {
-                final var unwrappingHandler =
-                        new InterruptableConsumer<Pair<OnDiskKey<K>, OnDiskValue<V>>>() {
-                            @Override
-                            public void accept(final Pair<OnDiskKey<K>, OnDiskValue<V>> pair)
-                                    throws InterruptedException {
-                                handler.accept(
-                                        Pair.of(
-                                                pair.getKey().getKey(),
-                                                pair.getValue().getValue()));
-                            }
-                        };
-                VirtualMapMigration.extractVirtualMapData(
-                        threadManager, real, unwrappingHandler, threadCount);
+                final var unwrappingHandler = new InterruptableConsumer<Pair<OnDiskKey<K>, OnDiskValue<V>>>() {
+                    @Override
+                    public void accept(final Pair<OnDiskKey<K>, OnDiskValue<V>> pair) throws InterruptedException {
+                        handler.accept(
+                                Pair.of(pair.getKey().getKey(), pair.getValue().getValue()));
+                    }
+                };
+                VirtualMapMigration.extractVirtualMapData(threadManager, real, unwrappingHandler, threadCount);
             }
 
             @Override

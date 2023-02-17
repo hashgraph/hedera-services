@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.migration;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
@@ -34,7 +35,6 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import org.apache.commons.lang3.tuple.Pair;
@@ -53,11 +53,17 @@ class AccountStorageAdapterTest {
     private static final MerkleAccount IN_MEMORY_STAND_IN = new MerkleAccount();
     private final OnDiskAccount onDiskStandIn = new OnDiskAccount();
 
-    @Mock private MerkleMap<EntityNum, MerkleAccount> inMemoryAccounts;
-    @Mock private MerkleMap<EntityNum, MerklePayerRecords> payerRecords;
-    @Mock private VirtualMap<EntityNumVirtualKey, OnDiskAccount> onDiskAccounts;
-    @Mock private BiConsumer<EntityNum, HederaAccount> visitor;
-    @Mock private VirtualMapDataAccess virtualMapDataAccess;
+    @Mock
+    private MerkleMap<EntityNum, MerkleAccount> inMemoryAccounts;
+
+    @Mock
+    private MerkleMap<EntityNum, MerklePayerRecords> payerRecords;
+
+    @Mock
+    private VirtualMapLike<EntityNumVirtualKey, OnDiskAccount> onDiskAccounts;
+
+    @Mock
+    private BiConsumer<EntityNum, HederaAccount> visitor;
 
     private AccountStorageAdapter subject;
 
@@ -200,13 +206,11 @@ class AccountStorageAdapterTest {
     @Test
     @SuppressWarnings("unchecked")
     void onDiskForEachDelegates() throws InterruptedException {
-        final ArgumentCaptor<InterruptableConsumer<Pair<EntityNumVirtualKey, OnDiskAccount>>>
-                captor = ArgumentCaptor.forClass(InterruptableConsumer.class);
+        final ArgumentCaptor<InterruptableConsumer<Pair<EntityNumVirtualKey, OnDiskAccount>>> captor =
+                ArgumentCaptor.forClass(InterruptableConsumer.class);
         withOnDiskSubject();
         subject.forEach(visitor);
-        verify(virtualMapDataAccess)
-                .extractVirtualMapData(
-                        eq(getStaticThreadManager()), eq(onDiskAccounts), captor.capture(), eq(32));
+        verify(onDiskAccounts).extractVirtualMapData(eq(getStaticThreadManager()), captor.capture(), eq(32));
         captor.getValue().accept(Pair.of(SOME_KEY, onDiskStandIn));
         verify(visitor).accept(SOME_NUM, onDiskStandIn);
     }
@@ -216,12 +220,8 @@ class AccountStorageAdapterTest {
     void onDiskPropagatesInterruption() throws InterruptedException {
         withOnDiskSubject();
         willThrow(InterruptedException.class)
-                .given(virtualMapDataAccess)
-                .extractVirtualMapData(
-                        eq(getStaticThreadManager()),
-                        eq(onDiskAccounts),
-                        any(InterruptableConsumer.class),
-                        eq(32));
+                .given(onDiskAccounts)
+                .extractVirtualMapData(eq(getStaticThreadManager()), any(InterruptableConsumer.class), eq(32));
         assertThrows(IllegalStateException.class, () -> subject.forEach(visitor));
     }
 
@@ -230,9 +230,6 @@ class AccountStorageAdapterTest {
     }
 
     private void withOnDiskSubject() {
-        subject =
-                AccountStorageAdapter.fromOnDisk(
-                        MerkleMapLike.from(payerRecords),
-                        VirtualMapLike.fromLongKeyed(onDiskAccounts));
+        subject = AccountStorageAdapter.fromOnDisk(MerkleMapLike.from(payerRecords), onDiskAccounts);
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.file.impl;
 
 import com.hedera.node.app.service.file.FileService;
@@ -50,14 +51,10 @@ public final class FileServiceImpl implements FileService {
     }
 
     private static StateDefinition<VirtualBlobKey, VirtualBlobValue> blobsDef() {
-        final var keySerdes =
-                MonoMapSerdesAdapter.serdesForVirtualKey(
-                        VirtualBlobKey.CURRENT_VERSION,
-                        VirtualBlobKey::new,
-                        new VirtualBlobKeySerializer());
+        final var keySerdes = MonoMapSerdesAdapter.serdesForVirtualKey(
+                VirtualBlobKey.CURRENT_VERSION, VirtualBlobKey::new, new VirtualBlobKeySerializer());
         final var valueSerdes =
-                MonoMapSerdesAdapter.serdesForVirtualValue(
-                        VirtualBlobValue.CURRENT_VERSION, VirtualBlobValue::new);
+                MonoMapSerdesAdapter.serdesForVirtualValue(VirtualBlobValue.CURRENT_VERSION, VirtualBlobValue::new);
 
         return StateDefinition.onDisk(BLOBS_KEY, keySerdes, valueSerdes, MAX_BLOBS);
     }

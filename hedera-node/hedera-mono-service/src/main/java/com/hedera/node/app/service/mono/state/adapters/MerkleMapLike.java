@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.adapters;
 
 import com.swirlds.common.crypto.Hash;
@@ -47,19 +48,25 @@ public interface MerkleMapLike<K, V extends MerkleNode & Keyed<K>> {
 
     boolean isArchived();
 
+    boolean isEmpty();
+
     void forEachNode(BiConsumer<? super K, ? super V> action);
 
     static <K, V extends MerkleNode & Keyed<K>> MerkleMapLike<K, V> from(MerkleMap<K, V> real) {
         return new MerkleMapLike<>() {
             @Override
             public void forEachNode(final BiConsumer<? super K, ? super V> action) {
-                real.forEachNode(
-                        (final MerkleNode node) -> {
-                            if (node instanceof Keyed) {
-                                final V leaf = node.cast();
-                                action.accept(leaf.getKey(), leaf);
-                            }
-                        });
+                real.forEachNode((final MerkleNode node) -> {
+                    if (node instanceof Keyed) {
+                        final V leaf = node.cast();
+                        action.accept(leaf.getKey(), leaf);
+                    }
+                });
+            }
+
+            @Override
+            public boolean isEmpty() {
+                return real.isEmpty();
             }
 
             @Override

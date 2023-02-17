@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts;
 
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ALIAS;
@@ -89,10 +90,9 @@ import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
  * @param <W> the most specialized world updater to be used
  */
 public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends Account>
-        extends AbstractLedgerEvmWorldUpdater {
+        extends AbstractLedgerEvmWorldUpdater<W, A> {
     protected static final int UNKNOWN_RECORD_SOURCE_ID = -1;
 
-    private final W world;
     private final WorldLedgers trackingLedgers;
 
     // All the record source ids of our committed child updaters
@@ -104,20 +104,9 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
     protected Map<Address, UpdateTrackingLedgerAccount<A>> updatedAccounts = new HashMap<>();
 
     protected AbstractLedgerWorldUpdater(final W world, final WorldLedgers trackingLedgers) {
-        super(new AccountAccessorImpl(trackingLedgers));
-        this.world = world;
+        super(world, new AccountAccessorImpl(trackingLedgers));
         this.trackingLedgers = trackingLedgers;
     }
-
-    /**
-     * Given an address, returns an account that can be mutated <b>with the assurance</b> that these
-     * mutations will be tracked in the change-set represented by this {@link WorldUpdater}; and
-     * either committed or reverted atomically with all other mutations in the change-set.
-     *
-     * @param address the address of interest
-     * @return a tracked mutable account for the given address
-     */
-    protected abstract A getForMutation(Address address);
 
     /**
      * Returns the {@link ContractCustomizer} to use for the pending creation.
@@ -127,8 +116,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
     public abstract ContractCustomizer customizerForPendingCreation();
 
     @Override
-    public EvmAccount createAccount(
-            final Address addressOrAlias, final long nonce, final Wei balance) {
+    public EvmAccount createAccount(final Address addressOrAlias, final long nonce, final Wei balance) {
         final var curAliases = aliases();
         final var address = curAliases.resolveForEvm(addressOrAlias);
 
@@ -138,8 +126,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
             final var newAccountId = newMutable.getAccountId();
             curAccounts.create(newAccountId);
             if (curAliases.isInUse(addressOrAlias)) {
-                curAccounts.set(
-                        newAccountId, ALIAS, ByteString.copyFrom(addressOrAlias.toArrayUnsafe()));
+                curAccounts.set(newAccountId, ALIAS, ByteString.copyFrom(addressOrAlias.toArrayUnsafe()));
             }
             customizerForPendingCreation().customize(newAccountId, curAccounts);
         }
@@ -184,8 +171,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
             if (origin == null) {
                 return null;
             }
-            final var newMutable =
-                    new UpdateTrackingLedgerAccount<>(origin, trackingLedgers.accounts());
+            final var newMutable = new UpdateTrackingLedgerAccount<>(origin, trackingLedgers.accounts());
             return new WrappedEvmAccount(track(newMutable));
         }
     }
@@ -243,8 +229,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
             final RecordsHistorian recordsHistorian,
             final ExpirableTxnRecord.Builder recordSoFar,
             final TransactionBody.Builder syntheticBody) {
-        this.manageInProgressRecord(
-                recordsHistorian, recordSoFar, syntheticBody, Collections.emptyList());
+        this.manageInProgressRecord(recordsHistorian, recordSoFar, syntheticBody, Collections.emptyList());
     }
 
     public void manageInProgressRecord(
@@ -256,8 +241,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
         if (thisRecordSourceId == UNKNOWN_RECORD_SOURCE_ID) {
             thisRecordSourceId = recordsHistorian.nextChildRecordSourceId();
         }
-        recordsHistorian.trackFollowingChildRecord(
-                thisRecordSourceId, syntheticBody, recordSoFar, sidecarRecords);
+        recordsHistorian.trackFollowingChildRecord(thisRecordSourceId, syntheticBody, recordSoFar, sidecarRecords);
     }
 
     public void manageInProgressPrecedingRecord(
@@ -275,8 +259,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
         return withChangeObserver(trackingLedgers.wrapped(sideEffectsTracker));
     }
 
-    protected void addCommittedRecordSourceId(
-            final int recordSourceId, final RecordsHistorian recordsHistorian) {
+    protected void addCommittedRecordSourceId(final int recordSourceId, final RecordsHistorian recordsHistorian) {
         ensureFamiliarityWith(recordsHistorian);
         if (committedRecordSourceIds.isEmpty()) {
             committedRecordSourceIds = new ArrayList<>();
@@ -289,8 +272,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
             this.recordsHistorian = recordsHistorian;
         } else {
             if (this.recordsHistorian != recordsHistorian) {
-                throw new IllegalArgumentException(
-                        "Encountered multiple historians in the same transaction");
+                throw new IllegalArgumentException("Encountered multiple historians in the same transaction");
             }
         }
     }
@@ -303,17 +285,15 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
         return wrappedLedgers;
     }
 
-    private void onAccountPropertyChange(
-            final AccountID id, final AccountProperty property, final Object newValue) {
+    private void onAccountPropertyChange(final AccountID id, final AccountProperty property, final Object newValue) {
         final var address = EntityIdUtils.asTypedEvmAddress(id);
         /* Impossible with a well-behaved precompile, as our wrapped accounts should also show this as deleted */
         if (deletedAccounts.contains(address)) {
-            throw new IllegalArgumentException(
-                    "A wrapped tracking ledger tried to change the "
-                            + "balance of deleted account "
-                            + asLiteralString(id)
-                            + " to "
-                            + newValue);
+            throw new IllegalArgumentException("A wrapped tracking ledger tried to change the "
+                    + "balance of deleted account "
+                    + asLiteralString(id)
+                    + " to "
+                    + newValue);
         }
         var updatedAccount = updatedAccounts.get(address);
         if (updatedAccount == null) {
@@ -322,11 +302,9 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
                 // we are observing property change for a freshly
                 // created lazy account through the HTS precompiled contract,
                 // which can occur with any transfer precompile function
-                updatedAccount =
-                        new UpdateTrackingLedgerAccount<>(address, trackingLedgers.accounts());
+                updatedAccount = new UpdateTrackingLedgerAccount<>(address, trackingLedgers.accounts());
             } else {
-                updatedAccount =
-                        new UpdateTrackingLedgerAccount<>(origin, trackingLedgers.accounts());
+                updatedAccount = new UpdateTrackingLedgerAccount<>(origin, trackingLedgers.accounts());
             }
             track(updatedAccount);
         }
@@ -350,10 +328,6 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
     public void trackLazilyCreatedAccount(final Address address) {
         final var newMutable = new UpdateTrackingLedgerAccount<A>(address, trackingAccounts());
         track(newMutable);
-    }
-
-    protected W wrappedWorldView() {
-        return world;
     }
 
     protected Collection<Address> getDeletedAccounts() {

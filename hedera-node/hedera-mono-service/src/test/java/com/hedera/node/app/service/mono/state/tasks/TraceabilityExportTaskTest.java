@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.tasks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -66,30 +67,48 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TraceabilityExportTaskTest {
     private static final long ENTITY_NUM = 1234L;
     private static final Instant NOW = Instant.ofEpochSecond(1_234_567, 890);
-    private static final MerkleAccount AN_ACCOUNT = MerkleAccountFactory.newAccount().get();
+    private static final MerkleAccount AN_ACCOUNT =
+            MerkleAccountFactory.newAccount().get();
 
-    @Mock private TraceabilityRecordsHelper recordsHelper;
-    @Mock private AccountStorageAdapter accounts;
-    @Mock private EntityAccess entityAccess;
-    @Mock private ExpiryThrottle expiryThrottle;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private MerkleNetworkContext networkCtx;
-    @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
-    @Mock private FunctionalityThrottling throttling;
-    @Mock private GasLimitDeterministicThrottle gasThrottle;
+    @Mock
+    private TraceabilityRecordsHelper recordsHelper;
+
+    @Mock
+    private AccountStorageAdapter accounts;
+
+    @Mock
+    private EntityAccess entityAccess;
+
+    @Mock
+    private ExpiryThrottle expiryThrottle;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private MerkleNetworkContext networkCtx;
+
+    @Mock
+    private VirtualMap<ContractKey, IterableContractValue> contractStorage;
+
+    @Mock
+    private FunctionalityThrottling throttling;
+
+    @Mock
+    private GasLimitDeterministicThrottle gasThrottle;
+
     private TraceabilityExportTask subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new TraceabilityExportTask(
-                        entityAccess,
-                        expiryThrottle,
-                        dynamicProperties,
-                        recordsHelper,
-                        throttling,
-                        () -> accounts,
-                        () -> VirtualMapLike.from(contractStorage));
+        subject = new TraceabilityExportTask(
+                entityAccess,
+                expiryThrottle,
+                dynamicProperties,
+                recordsHelper,
+                throttling,
+                () -> accounts,
+                () -> VirtualMapLike.from(contractStorage));
     }
 
     @Test
@@ -125,9 +144,7 @@ class TraceabilityExportTaskTest {
 
     @Test
     void needsDifferentContextIfCannotExportRecords() {
-        assertEquals(
-                SystemTaskResult.NEEDS_DIFFERENT_CONTEXT,
-                subject.process(ENTITY_NUM, NOW, networkCtx));
+        assertEquals(SystemTaskResult.NEEDS_DIFFERENT_CONTEXT, subject.process(ENTITY_NUM, NOW, networkCtx));
 
         verifyNoInteractions(expiryThrottle);
     }
@@ -139,9 +156,7 @@ class TraceabilityExportTaskTest {
         given(throttling.gasLimitThrottle()).willReturn(gasThrottle);
         given(gasThrottle.freeToUsedRatio(NOW)).willReturn(4L);
 
-        assertEquals(
-                SystemTaskResult.NEEDS_DIFFERENT_CONTEXT,
-                subject.process(ENTITY_NUM, NOW, networkCtx));
+        assertEquals(SystemTaskResult.NEEDS_DIFFERENT_CONTEXT, subject.process(ENTITY_NUM, NOW, networkCtx));
     }
 
     @Test
@@ -153,9 +168,7 @@ class TraceabilityExportTaskTest {
         given(networkCtx.getEntitiesTouchedThisSecond()).willReturn(21L);
         given(dynamicProperties.traceabilityMaxExportsPerConsSec()).willReturn(20L);
 
-        assertEquals(
-                SystemTaskResult.NEEDS_DIFFERENT_CONTEXT,
-                subject.process(ENTITY_NUM, NOW, networkCtx));
+        assertEquals(SystemTaskResult.NEEDS_DIFFERENT_CONTEXT, subject.process(ENTITY_NUM, NOW, networkCtx));
     }
 
     @Test
@@ -222,8 +235,7 @@ class TraceabilityExportTaskTest {
         given(contractStorage.get(contract1Key4)).willReturn(contract1Value4);
         final var entityNum1 = EntityNum.fromLong(contract1Num);
         final var runtimeBytes = "runtime".getBytes();
-        given(entityAccess.fetchCodeIfPresent(entityNum1.toEvmAddress()))
-                .willReturn(Bytes.of(runtimeBytes));
+        given(entityAccess.fetchCodeIfPresent(entityNum1.toEvmAddress())).willReturn(Bytes.of(runtimeBytes));
         given(accounts.get(entityNum1)).willReturn(contract1);
         given(throttling.gasLimitThrottle()).willReturn(gasThrottle);
         subject.setExportsCompleted(999);
@@ -233,52 +245,41 @@ class TraceabilityExportTaskTest {
         assertEquals(SystemTaskResult.DONE, result);
 
         // then:
-        verify(recordsHelper)
-                .exportSidecarsViaSynthUpdate(eq(entityNum1.longValue()), captor.capture());
+        verify(recordsHelper).exportSidecarsViaSynthUpdate(eq(entityNum1.longValue()), captor.capture());
         final var sidecarRecords = captor.getValue();
         assertEquals(
-                SidecarUtils.createContractBytecodeSidecarFrom(
-                                entityNum1.toGrpcContractID(), runtimeBytes)
+                SidecarUtils.createContractBytecodeSidecarFrom(entityNum1.toGrpcContractID(), runtimeBytes)
                         .setMigration(true)
                         .build(),
                 sidecarRecords.get(0).build());
-        final var contract1StateChanges =
-                ContractStateChange.newBuilder()
-                        .setContractId(entityNum1.toGrpcContractID())
-                        .addStorageChanges(
-                                StorageChange.newBuilder()
-                                        .setSlot(
-                                                ByteStringUtils.wrapUnsafely(
-                                                        slot1.trimLeadingZeros().toArrayUnsafe()))
-                                        .setValueRead(ByteStringUtils.wrapUnsafely(value1))
-                                        .build())
-                        .addStorageChanges(
-                                // as per HIP-260 - a contract that only reads a zero value from
-                                // slot zero will have an empty message.
-                                StorageChange.newBuilder().build())
-                        .addStorageChanges(
-                                StorageChange.newBuilder()
-                                        .setSlot(
-                                                ByteStringUtils.wrapUnsafely(
-                                                        slot1555542
-                                                                .trimLeadingZeros()
-                                                                .toArrayUnsafe()))
-                                        .setValueRead(ByteStringUtils.wrapUnsafely(value3))
-                                        .build())
-                        .addStorageChanges(
-                                // as per HIP-260 - zero value read will not set the valueRead field
-                                // of a
-                                // storage change
-                                StorageChange.newBuilder()
-                                        .setSlot(
-                                                ByteStringUtils.wrapUnsafely(
-                                                        slot999.trimLeadingZeros().toArrayUnsafe()))
-                                        .build())
-                        .build();
-        final var expectedStateChangesContract1 =
-                ContractStateChanges.newBuilder()
-                        .addContractStateChanges(contract1StateChanges)
-                        .build();
+        final var contract1StateChanges = ContractStateChange.newBuilder()
+                .setContractId(entityNum1.toGrpcContractID())
+                .addStorageChanges(StorageChange.newBuilder()
+                        .setSlot(ByteStringUtils.wrapUnsafely(
+                                slot1.trimLeadingZeros().toArrayUnsafe()))
+                        .setValueRead(ByteStringUtils.wrapUnsafely(value1))
+                        .build())
+                .addStorageChanges(
+                        // as per HIP-260 - a contract that only reads a zero value from
+                        // slot zero will have an empty message.
+                        StorageChange.newBuilder().build())
+                .addStorageChanges(StorageChange.newBuilder()
+                        .setSlot(ByteStringUtils.wrapUnsafely(
+                                slot1555542.trimLeadingZeros().toArrayUnsafe()))
+                        .setValueRead(ByteStringUtils.wrapUnsafely(value3))
+                        .build())
+                .addStorageChanges(
+                        // as per HIP-260 - zero value read will not set the valueRead field
+                        // of a
+                        // storage change
+                        StorageChange.newBuilder()
+                                .setSlot(ByteStringUtils.wrapUnsafely(
+                                        slot999.trimLeadingZeros().toArrayUnsafe()))
+                                .build())
+                .build();
+        final var expectedStateChangesContract1 = ContractStateChanges.newBuilder()
+                .addContractStateChanges(contract1StateChanges)
+                .build();
         assertEquals(
                 TransactionSidecarRecord.newBuilder()
                         .setStateChanges(expectedStateChangesContract1)
@@ -310,8 +311,7 @@ class TraceabilityExportTaskTest {
         given(contractStorage.get(contract2Key1)).willReturn(contract2Value1);
         final var entityNum2 = EntityNum.fromLong(contract2Num);
         final var runtimeBytes2 = "runtime2".getBytes();
-        given(entityAccess.fetchCodeIfPresent(entityNum2.toEvmAddress()))
-                .willReturn(Bytes.of(runtimeBytes2));
+        given(entityAccess.fetchCodeIfPresent(entityNum2.toEvmAddress())).willReturn(Bytes.of(runtimeBytes2));
         given(accounts.get(entityNum2)).willReturn(contract2);
         given(throttling.gasLimitThrottle()).willReturn(gasThrottle);
 
@@ -320,34 +320,25 @@ class TraceabilityExportTaskTest {
         assertEquals(SystemTaskResult.DONE, result);
 
         // then:
-        verify(recordsHelper)
-                .exportSidecarsViaSynthUpdate(eq(entityNum2.longValue()), captor.capture());
+        verify(recordsHelper).exportSidecarsViaSynthUpdate(eq(entityNum2.longValue()), captor.capture());
         final var sidecarRecords = captor.getValue();
         assertEquals(
-                SidecarUtils.createContractBytecodeSidecarFrom(
-                                entityNum2.toGrpcContractID(), runtimeBytes2)
+                SidecarUtils.createContractBytecodeSidecarFrom(entityNum2.toGrpcContractID(), runtimeBytes2)
                         .setMigration(true)
                         .build(),
                 sidecarRecords.get(0).build());
-        final var contract2StateChange =
-                ContractStateChange.newBuilder()
-                        .setContractId(entityNum2.toGrpcContractID())
-                        .addStorageChanges(
-                                StorageChange.newBuilder()
-                                        .setSlot(
-                                                ByteStringUtils.wrapUnsafely(
-                                                        contract2Slot257
-                                                                .trimLeadingZeros()
-                                                                .toArrayUnsafe()))
-                                        .setValueRead(
-                                                ByteStringUtils.wrapUnsafely(
-                                                        value4.trimLeadingZeros().toArrayUnsafe()))
-                                        .build())
-                        .build();
-        final var expectedStateChangesContract2 =
-                ContractStateChanges.newBuilder()
-                        .addContractStateChanges(contract2StateChange)
-                        .build();
+        final var contract2StateChange = ContractStateChange.newBuilder()
+                .setContractId(entityNum2.toGrpcContractID())
+                .addStorageChanges(StorageChange.newBuilder()
+                        .setSlot(ByteStringUtils.wrapUnsafely(
+                                contract2Slot257.trimLeadingZeros().toArrayUnsafe()))
+                        .setValueRead(ByteStringUtils.wrapUnsafely(
+                                value4.trimLeadingZeros().toArrayUnsafe()))
+                        .build())
+                .build();
+        final var expectedStateChangesContract2 = ContractStateChanges.newBuilder()
+                .addContractStateChanges(contract2StateChange)
+                .build();
         assertEquals(
                 TransactionSidecarRecord.newBuilder()
                         .setStateChanges(expectedStateChangesContract2)
@@ -376,8 +367,7 @@ class TraceabilityExportTaskTest {
         given(contractStorage.get(contract1Key1)).willReturn(contract1Value1);
         final var entityNum1 = EntityNum.fromLong(contract1Num);
         final var runtimeBytes = "runtime".getBytes();
-        given(entityAccess.fetchCodeIfPresent(entityNum1.toEvmAddress()))
-                .willReturn(Bytes.of(runtimeBytes));
+        given(entityAccess.fetchCodeIfPresent(entityNum1.toEvmAddress())).willReturn(Bytes.of(runtimeBytes));
         given(accounts.get(entityNum1)).willReturn(contract1);
         given(throttling.gasLimitThrottle()).willReturn(gasThrottle);
 
@@ -386,32 +376,24 @@ class TraceabilityExportTaskTest {
         assertEquals(SystemTaskResult.DONE, result);
 
         // then:
-        verify(recordsHelper)
-                .exportSidecarsViaSynthUpdate(eq(entityNum1.longValue()), captor.capture());
+        verify(recordsHelper).exportSidecarsViaSynthUpdate(eq(entityNum1.longValue()), captor.capture());
         final var sidecarRecords = captor.getValue();
         assertEquals(
-                SidecarUtils.createContractBytecodeSidecarFrom(
-                                entityNum1.toGrpcContractID(), runtimeBytes)
+                SidecarUtils.createContractBytecodeSidecarFrom(entityNum1.toGrpcContractID(), runtimeBytes)
                         .setMigration(true)
                         .build(),
                 sidecarRecords.get(0).build());
-        final var contract2StateChange =
-                ContractStateChange.newBuilder()
-                        .setContractId(entityNum1.toGrpcContractID())
-                        .addStorageChanges(
-                                StorageChange.newBuilder()
-                                        .setSlot(
-                                                ByteStringUtils.wrapUnsafely(
-                                                        UInt256.valueOf(1L)
-                                                                .trimLeadingZeros()
-                                                                .toArrayUnsafe()))
-                                        .setValueRead(ByteStringUtils.wrapUnsafely(value))
-                                        .build())
-                        .build();
-        final var expectedStateChangesContract2 =
-                ContractStateChanges.newBuilder()
-                        .addContractStateChanges(contract2StateChange)
-                        .build();
+        final var contract2StateChange = ContractStateChange.newBuilder()
+                .setContractId(entityNum1.toGrpcContractID())
+                .addStorageChanges(StorageChange.newBuilder()
+                        .setSlot(ByteStringUtils.wrapUnsafely(
+                                UInt256.valueOf(1L).trimLeadingZeros().toArrayUnsafe()))
+                        .setValueRead(ByteStringUtils.wrapUnsafely(value))
+                        .build())
+                .build();
+        final var expectedStateChangesContract2 = ContractStateChanges.newBuilder()
+                .addContractStateChanges(contract2StateChange)
+                .build();
         assertEquals(
                 TransactionSidecarRecord.newBuilder()
                         .setStateChanges(expectedStateChangesContract2)
@@ -433,8 +415,7 @@ class TraceabilityExportTaskTest {
         given(throttling.gasLimitThrottle()).willReturn(gasThrottle);
         final var entityNum = EntityNum.fromLong(1L);
         final var runtimeBytes = "runtime".getBytes();
-        given(entityAccess.fetchCodeIfPresent(entityNum.toEvmAddress()))
-                .willReturn(Bytes.of(runtimeBytes));
+        given(entityAccess.fetchCodeIfPresent(entityNum.toEvmAddress())).willReturn(Bytes.of(runtimeBytes));
         given(accounts.get(entityNum)).willReturn(contract);
 
         // when:
@@ -442,12 +423,10 @@ class TraceabilityExportTaskTest {
         assertEquals(SystemTaskResult.DONE, result);
 
         // then:
-        verify(recordsHelper)
-                .exportSidecarsViaSynthUpdate(eq(entityNum.longValue()), captor.capture());
+        verify(recordsHelper).exportSidecarsViaSynthUpdate(eq(entityNum.longValue()), captor.capture());
         final var sidecarRecords = captor.getValue();
         assertEquals(
-                SidecarUtils.createContractBytecodeSidecarFrom(
-                                entityNum.toGrpcContractID(), runtimeBytes)
+                SidecarUtils.createContractBytecodeSidecarFrom(entityNum.toGrpcContractID(), runtimeBytes)
                         .setMigration(true)
                         .build(),
                 sidecarRecords.get(0).build());

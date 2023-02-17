@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl;
 
 import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
@@ -61,64 +62,46 @@ public class TokenServiceImpl implements TokenService {
             @Override
             public Set<StateDefinition> statesToCreate() {
                 return Set.of(
-                        tokensDef(),
-                        onDiskAccountsDef(),
-                        onDiskNftsDef(),
-                        onDiskTokenRelsDef(),
-                        payerRecordsDef());
+                        tokensDef(), onDiskAccountsDef(), onDiskNftsDef(), onDiskTokenRelsDef(), payerRecordsDef());
             }
         };
     }
 
     private StateDefinition<EntityNumVirtualKey, OnDiskAccount> onDiskAccountsDef() {
-        final var keySerdes =
-                MonoMapSerdesAdapter.serdesForVirtualKey(
-                        EntityNumVirtualKey.CURRENT_VERSION,
-                        EntityNumVirtualKey::new,
-                        new EntityNumVirtualKeySerializer());
+        final var keySerdes = MonoMapSerdesAdapter.serdesForVirtualKey(
+                EntityNumVirtualKey.CURRENT_VERSION, EntityNumVirtualKey::new, new EntityNumVirtualKeySerializer());
         final var valueSerdes =
-                MonoMapSerdesAdapter.serdesForVirtualValue(
-                        OnDiskAccount.CURRENT_VERSION, OnDiskAccount::new);
+                MonoMapSerdesAdapter.serdesForVirtualValue(OnDiskAccount.CURRENT_VERSION, OnDiskAccount::new);
         return StateDefinition.onDisk(ACCOUNTS_KEY, keySerdes, valueSerdes, MAX_ACCOUNTS);
     }
 
     private StateDefinition<EntityNum, MerklePayerRecords> payerRecordsDef() {
         final var keySerdes = new EntityNumSerdes();
-        final var valueSerdes =
-                MonoMapSerdesAdapter.serdesForSelfSerializable(
-                        MerklePayerRecords.CURRENT_VERSION, MerklePayerRecords::new);
+        final var valueSerdes = MonoMapSerdesAdapter.serdesForSelfSerializable(
+                MerklePayerRecords.CURRENT_VERSION, MerklePayerRecords::new);
         return StateDefinition.inMemory(PAYER_RECORDS_KEY, keySerdes, valueSerdes);
     }
 
     private StateDefinition<EntityNum, MerkleToken> tokensDef() {
         final var keySerdes = new EntityNumSerdes();
         final var valueSerdes =
-                MonoMapSerdesAdapter.serdesForSelfSerializable(
-                        MerkleToken.CURRENT_VERSION, MerkleToken::new);
+                MonoMapSerdesAdapter.serdesForSelfSerializable(MerkleToken.CURRENT_VERSION, MerkleToken::new);
         return StateDefinition.inMemory(TOKENS_KEY, keySerdes, valueSerdes);
     }
 
     private StateDefinition<EntityNumVirtualKey, OnDiskTokenRel> onDiskTokenRelsDef() {
-        final var keySerdes =
-                MonoMapSerdesAdapter.serdesForVirtualKey(
-                        EntityNumVirtualKey.CURRENT_VERSION,
-                        EntityNumVirtualKey::new,
-                        new EntityNumVirtualKeySerializer());
+        final var keySerdes = MonoMapSerdesAdapter.serdesForVirtualKey(
+                EntityNumVirtualKey.CURRENT_VERSION, EntityNumVirtualKey::new, new EntityNumVirtualKeySerializer());
         final var valueSerdes =
-                MonoMapSerdesAdapter.serdesForVirtualValue(
-                        OnDiskTokenRel.CURRENT_VERSION, OnDiskTokenRel::new);
+                MonoMapSerdesAdapter.serdesForVirtualValue(OnDiskTokenRel.CURRENT_VERSION, OnDiskTokenRel::new);
         return StateDefinition.onDisk(TOKEN_RELS_KEY, keySerdes, valueSerdes, MAX_TOKEN_RELS);
     }
 
     private StateDefinition<UniqueTokenKey, UniqueTokenValue> onDiskNftsDef() {
-        final var keySerdes =
-                MonoMapSerdesAdapter.serdesForVirtualKey(
-                        UniqueTokenKey.CURRENT_VERSION,
-                        UniqueTokenKey::new,
-                        new UniqueTokenKeySerializer());
+        final var keySerdes = MonoMapSerdesAdapter.serdesForVirtualKey(
+                UniqueTokenKey.CURRENT_VERSION, UniqueTokenKey::new, new UniqueTokenKeySerializer());
         final var valueSerdes =
-                MonoMapSerdesAdapter.serdesForVirtualValue(
-                        UniqueTokenValue.CURRENT_VERSION, UniqueTokenValue::new);
+                MonoMapSerdesAdapter.serdesForVirtualValue(UniqueTokenValue.CURRENT_VERSION, UniqueTokenValue::new);
         return StateDefinition.onDisk(NFTS_KEY, keySerdes, valueSerdes, MAX_MINTABLE_NFTS);
     }
 }

@@ -8,6 +8,8 @@ module com.hedera.node.app.service.contract.impl {
     requires com.hedera.node.app.service.evm;
     requires com.swirlds.virtualmap;
     requires com.swirlds.jasperdb;
+    requires dagger;
+    requires javax.inject;
 
     provides com.hedera.node.app.service.contract.ContractService with
             ContractServiceImpl;
@@ -16,4 +18,5 @@ module com.hedera.node.app.service.contract.impl {
             com.hedera.node.app,
             com.hedera.node.app.service.contract.impl.test;
     exports com.hedera.node.app.service.contract.impl.handlers;
+    exports com.hedera.node.app.service.contract.impl.components;
 }

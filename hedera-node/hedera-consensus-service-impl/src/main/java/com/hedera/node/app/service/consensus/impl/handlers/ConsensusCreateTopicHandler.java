@@ -13,19 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.consensus.impl.handlers;
 
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
  * com.hederahashgraph.api.proto.java.HederaFunctionality#ConsensusCreateTopic}.
  */
+@Singleton
 public class ConsensusCreateTopicHandler implements TransactionHandler {
+    @Inject
+    public ConsensusCreateTopicHandler() {}
 
     /**
      * This method is called during the pre-handle workflow.
@@ -37,15 +47,22 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param txBody the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
+     * @param context the {@link PreHandleContext} which collects all information that will be
+     *     passed to {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody, @NonNull final AccountID payer) {
-        throw new UnsupportedOperationException("Not implemented");
+    public void preHandle(@NonNull final PreHandleContext context) {
+        requireNonNull(context);
+        final var op = context.getTxn().getConsensusCreateTopic();
+        final var adminKey = asHederaKey(op.getAdminKey());
+        adminKey.ifPresent(context::addToReqNonPayerKeys);
+        final var submitKey = asHederaKey(op.getSubmitKey());
+        submitKey.ifPresent(context::addToReqNonPayerKeys);
+
+        if (op.hasAutoRenewAccount()) {
+            final var autoRenewAccount = op.getAutoRenewAccount();
+            context.addNonPayerKey(autoRenewAccount, ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+        }
     }
 
     /**
@@ -58,6 +75,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
+        requireNonNull(metadata);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

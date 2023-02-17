@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.schedule.impl.handlers;
 
 import static com.hedera.node.app.service.mono.utils.MiscUtils.functionOf;
@@ -22,7 +23,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_R
 
 import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.PreHandleDispatcher;
-import com.hedera.node.app.spi.meta.InvalidTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -34,26 +34,21 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
  */
 abstract class AbstractScheduleHandler {
     protected TransactionMetadata preHandleScheduledTxn(
-            final TransactionBody scheduledTxn,
-            final AccountID payerForNested,
-            final PreHandleDispatcher dispatcher) {
+            final TransactionBody scheduledTxn, final AccountID payerForNested, final PreHandleDispatcher dispatcher) {
         final HederaFunctionality scheduledFunction;
         try {
             scheduledFunction = functionOf(scheduledTxn);
         } catch (UnknownHederaFunctionality ex) {
-            return new InvalidTransactionMetadata(
-                    scheduledTxn, payerForNested, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+            return new TransactionMetadata(scheduledTxn, payerForNested, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
         }
 
         if (!isSchedulable(scheduledFunction)) {
-            return new InvalidTransactionMetadata(
-                    scheduledTxn, payerForNested, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+            return new TransactionMetadata(scheduledTxn, payerForNested, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
         }
 
         final var meta = dispatcher.dispatch(scheduledTxn, payerForNested);
         if (meta.failed()) {
-            return new InvalidTransactionMetadata(
-                    scheduledTxn, payerForNested, UNRESOLVABLE_REQUIRED_SIGNERS);
+            return new TransactionMetadata(scheduledTxn, payerForNested, UNRESOLVABLE_REQUIRED_SIGNERS);
         }
         return meta;
     }

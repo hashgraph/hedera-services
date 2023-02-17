@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.contract;
 
 import static com.hedera.node.app.service.mono.context.properties.EntityType.CONTRACT;
@@ -58,7 +59,8 @@ import org.junit.jupiter.api.Test;
 
 class ContractSysUndelTransitionLogicTest {
     private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
-    private final ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
+    private final ContractID target =
+            ContractID.newBuilder().setContractNum(9_999L).build();
 
     private Instant consensusTime;
     private OptionValidator validator;
@@ -84,33 +86,29 @@ class ContractSysUndelTransitionLogicTest {
         withRubberstampingValidator();
         sigImpactHistorian = mock(SigImpactHistorian.class);
         properties = mock(PropertySource.class);
-        given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE))
-                .willReturn(EnumSet.of(CONTRACT));
+        given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE)).willReturn(EnumSet.of(CONTRACT));
 
-        subject =
-                new ContractSysUndelTransitionLogic(
-                        validator,
-                        sigImpactHistorian,
-                        txnCtx,
-                        delegate,
-                        () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(contracts)),
-                        properties);
+        subject = new ContractSysUndelTransitionLogic(
+                validator,
+                sigImpactHistorian,
+                txnCtx,
+                delegate,
+                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(contracts)),
+                properties);
     }
 
     @Test
     void abortsIfNotSupported() {
         givenValidTxnCtx();
-        given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE))
-                .willReturn(EnumSet.of(EntityType.TOKEN));
+        given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE)).willReturn(EnumSet.of(EntityType.TOKEN));
 
-        subject =
-                new ContractSysUndelTransitionLogic(
-                        validator,
-                        sigImpactHistorian,
-                        txnCtx,
-                        delegate,
-                        () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(contracts)),
-                        properties);
+        subject = new ContractSysUndelTransitionLogic(
+                validator,
+                sigImpactHistorian,
+                txnCtx,
+                delegate,
+                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(contracts)),
+                properties);
 
         assertEquals(NOT_SUPPORTED, subject.validate(contractSysUndelTxn));
     }
@@ -127,13 +125,11 @@ class ContractSysUndelTransitionLogicTest {
     @Test
     void capturesBadUndelete() {
         // setup:
-        TransactionRecord sysUndelRec =
-                TransactionRecord.newBuilder()
-                        .setReceipt(
-                                TransactionReceipt.newBuilder()
-                                        .setStatus(INVALID_CONTRACT_ID)
-                                        .build())
-                        .build();
+        TransactionRecord sysUndelRec = TransactionRecord.newBuilder()
+                .setReceipt(TransactionReceipt.newBuilder()
+                        .setStatus(INVALID_CONTRACT_ID)
+                        .build())
+                .build();
 
         givenValidTxnCtx();
         // and:
@@ -149,10 +145,9 @@ class ContractSysUndelTransitionLogicTest {
     @Test
     void followsHappyPathWithOverrides() {
         // setup:
-        TransactionRecord sysUndelRec =
-                TransactionRecord.newBuilder()
-                        .setReceipt(TransactionReceipt.newBuilder().setStatus(SUCCESS).build())
-                        .build();
+        TransactionRecord sysUndelRec = TransactionRecord.newBuilder()
+                .setReceipt(TransactionReceipt.newBuilder().setStatus(SUCCESS).build())
+                .build();
 
         givenValidTxnCtx();
         // and:
@@ -208,11 +203,9 @@ class ContractSysUndelTransitionLogicTest {
     }
 
     private void givenValidTxnCtx() {
-        var op =
-                TransactionBody.newBuilder()
-                        .setTransactionID(ourTxnId())
-                        .setSystemUndelete(
-                                SystemUndeleteTransactionBody.newBuilder().setContractID(target));
+        var op = TransactionBody.newBuilder()
+                .setTransactionID(ourTxnId())
+                .setSystemUndelete(SystemUndeleteTransactionBody.newBuilder().setContractID(target));
         contractSysUndelTxn = op.build();
         given(accessor.getTxn()).willReturn(contractSysUndelTxn);
         given(txnCtx.accessor()).willReturn(accessor);
@@ -221,8 +214,7 @@ class ContractSysUndelTransitionLogicTest {
     private TransactionID ourTxnId() {
         return TransactionID.newBuilder()
                 .setAccountID(payer)
-                .setTransactionValidStart(
-                        Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
+                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
                 .build();
     }
 

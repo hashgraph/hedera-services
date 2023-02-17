@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.mocks;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
@@ -91,15 +92,13 @@ public enum TestContextValidator implements OptionValidator {
     }
 
     @Override
-    public ResponseCodeEnum expiryStatusGiven(
-            long balance, boolean isDetached, boolean isContract) {
+    public ResponseCodeEnum expiryStatusGiven(long balance, boolean isDetached, boolean isContract) {
         return OK;
     }
 
     @Override
     public ResponseCodeEnum expiryStatusGiven(
-            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts,
-            final AccountID id) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts, final AccountID id) {
         return id.getAccountNum() == 666_666L ? ACCOUNT_EXPIRED_AND_PENDING_REMOVAL : OK;
     }
 
@@ -134,8 +133,7 @@ public enum TestContextValidator implements OptionValidator {
     }
 
     @Override
-    public ResponseCodeEnum queryableTopicStatus(
-            TopicID id, MerkleMapLike<EntityNum, MerkleTopic> topics) {
+    public ResponseCodeEnum queryableTopicStatus(TopicID id, MerkleMapLike<EntityNum, MerkleTopic> topics) {
         throw new UnsupportedOperationException();
     }
 

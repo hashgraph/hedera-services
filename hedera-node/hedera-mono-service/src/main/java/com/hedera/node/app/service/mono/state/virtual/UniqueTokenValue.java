@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.hedera.node.app.service.mono.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
@@ -84,8 +85,7 @@ public class UniqueTokenValue implements VirtualValue {
             final RichInstant creationTime) {
         this.ownerAccountNum = ownerAccountNum;
         this.spenderAccountNum = spenderAccountNum;
-        this.packedCreationTime =
-                BitPackUtils.packedTime(creationTime.getSeconds(), creationTime.getNanos());
+        this.packedCreationTime = BitPackUtils.packedTime(creationTime.getSeconds(), creationTime.getNanos());
         this.metadata = metadata;
     }
 
@@ -134,6 +134,20 @@ public class UniqueTokenValue implements VirtualValue {
         return copy;
     }
 
+    // Keep it in sync with serializeTo()
+    int getSerializedSize() {
+        return Long.BYTES // owner account num
+                + Long.BYTES // spender account num
+                + Long.BYTES // packed creation time
+                + 1 // metadata length
+                + Math.min(metadata.length, MAX_METADATA_BYTES) // metadata bytes
+                + Long.BYTES // prev NFT token num
+                + Long.BYTES // prev NFT serial num
+                + Long.BYTES // next NFT token num
+                + Long.BYTES; // next NFT serial num
+    }
+
+    // Keep it in sync with getSerializedSize()
     /* package */ void serializeTo(
             final CheckedConsumer<Byte> writeByteFn,
             final CheckedConsumer<Long> writeLongFn,
@@ -147,24 +161,20 @@ public class UniqueTokenValue implements VirtualValue {
         writeNftNumPair(next, writeLongFn);
     }
 
-    private static NftNumPair readNftNumPair(final CheckedSupplier<Long> readLongFn)
-            throws IOException {
+    private static NftNumPair readNftNumPair(final CheckedSupplier<Long> readLongFn) throws IOException {
         final var tokenNum = readLongFn.get();
         final var tokenSerial = readLongFn.get();
         return new NftNumPair(tokenNum, tokenSerial);
     }
 
-    private static void writeNftNumPair(
-            final NftNumPair nftNumPair, final CheckedConsumer<Long> writeLongFn)
+    private static void writeNftNumPair(final NftNumPair nftNumPair, final CheckedConsumer<Long> writeLongFn)
             throws IOException {
         writeLongFn.accept(nftNumPair.tokenNum());
         writeLongFn.accept(nftNumPair.serialNum());
     }
 
     private static byte[] readBytes(
-            final CheckedSupplier<Byte> readByteFn,
-            final CheckedConsumer<byte[]> readBytesFn,
-            final int maxBytes)
+            final CheckedSupplier<Byte> readByteFn, final CheckedConsumer<byte[]> readBytesFn, final int maxBytes)
             throws IOException {
         // Guard against mal-formed data by capping the max length.
         final int len = min(readByteFn.get(), maxBytes);
@@ -207,8 +217,7 @@ public class UniqueTokenValue implements VirtualValue {
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream inputStream, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream inputStream, final int version) throws IOException {
         deserializeFrom(inputStream::readByte, inputStream::readLong, inputStream::readFully);
     }
 
@@ -219,14 +228,12 @@ public class UniqueTokenValue implements VirtualValue {
 
     @Override
     public void serialize(final SerializableDataOutputStream output) throws IOException {
-        serializeTo(
-                output::writeByte, output::writeLong, (data, len) -> output.write(data, 0, len));
+        serializeTo(output::writeByte, output::writeLong, (data, len) -> output.write(data, 0, len));
     }
 
     @Override
     public void serialize(final ByteBuffer byteBuffer) throws IOException {
-        serializeTo(
-                byteBuffer::put, byteBuffer::putLong, (data, len) -> byteBuffer.put(data, 0, len));
+        serializeTo(byteBuffer::put, byteBuffer::putLong, (data, len) -> byteBuffer.put(data, 0, len));
     }
 
     @Override
@@ -247,12 +254,7 @@ public class UniqueTokenValue implements VirtualValue {
     @Override
     public int hashCode() {
         return Objects.hash(
-                ownerAccountNum,
-                spenderAccountNum,
-                packedCreationTime,
-                Arrays.hashCode(metadata),
-                prev,
-                next);
+                ownerAccountNum, spenderAccountNum, packedCreationTime, Arrays.hashCode(metadata), prev, next);
     }
 
     @Override

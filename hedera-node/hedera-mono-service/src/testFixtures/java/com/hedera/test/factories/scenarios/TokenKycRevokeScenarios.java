@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.scenarios;
 
+import static com.hedera.test.factories.txns.TokenCreateFactory.newSignedTokenCreate;
 import static com.hedera.test.factories.txns.TokenRevokeKycFactory.newSignedTokenRevokeKyc;
 
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
@@ -23,31 +25,35 @@ public enum TokenKycRevokeScenarios implements TxnHandlingScenario {
     VALID_REVOKE_WITH_EXTANT_TOKEN {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedTokenRevokeKyc()
-                            .revoking(KNOWN_TOKEN_WITH_KYC, MISC_ACCOUNT)
-                            .nonPayerKts(TOKEN_KYC_KT)
-                            .get());
+            return PlatformTxnAccessor.from(newSignedTokenRevokeKyc()
+                    .revoking(KNOWN_TOKEN_WITH_KYC, MISC_ACCOUNT)
+                    .nonPayerKts(TOKEN_KYC_KT)
+                    .get());
         }
     },
     REVOKE_WITH_MISSING_TOKEN {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    newSignedTokenRevokeKyc()
-                            .revoking(MISSING_TOKEN, MISC_ACCOUNT)
-                            .nonPayerKts(TOKEN_KYC_KT)
-                            .get());
+                    newSignedTokenCreate().missingAdmin().get());
+        }
+    },
+    REVOKE_WITH_INVALID_TOKEN {
+        @Override
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(newSignedTokenRevokeKyc()
+                    .revoking(MISSING_TOKEN, MISC_ACCOUNT)
+                    .nonPayerKts(TOKEN_KYC_KT)
+                    .get());
         }
     },
     REVOKE_FOR_TOKEN_WITHOUT_KYC {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedTokenRevokeKyc()
-                            .revoking(KNOWN_TOKEN_WITH_FREEZE, MISC_ACCOUNT)
-                            .nonPayerKts(TOKEN_KYC_KT)
-                            .get());
+            return PlatformTxnAccessor.from(newSignedTokenRevokeKyc()
+                    .revoking(KNOWN_TOKEN_WITH_FREEZE, MISC_ACCOUNT)
+                    .nonPayerKts(TOKEN_KYC_KT)
+                    .get());
         }
     },
 }

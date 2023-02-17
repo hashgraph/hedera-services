@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.onset;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
@@ -31,6 +32,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_HA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.records.RecordCache;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
@@ -47,8 +49,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /** This class preprocess transactions by parsing them and checking for syntax errors. */
+@Singleton
 public class OnsetChecker {
 
     private final int maxSignedTxnSize;
@@ -65,8 +70,9 @@ public class OnsetChecker {
      * @param counters metrics related to workflows
      * @throws NullPointerException if one of the arguments is {@code null}
      */
+    @Inject
     public OnsetChecker(
-            final int maxSignedTxnSize,
+            @MaxSignedTxnSize final int maxSignedTxnSize,
             @NonNull final RecordCache recordCache,
             @NonNull final GlobalDynamicProperties dynamicProperties,
             @NonNull final HapiOpCounters counters) {
@@ -96,10 +102,7 @@ public class OnsetChecker {
         final var hasDeprecatedBody = tx.hasBody();
         final var hasDeprecatedSigs = tx.hasSigs();
 
-        if (hasDeprecatedBody
-                || hasDeprecatedSigs
-                || hasDeprecatedSigMap
-                || hasDeprecatedBodyBytes) {
+        if (hasDeprecatedBody || hasDeprecatedSigs || hasDeprecatedSigMap || hasDeprecatedBodyBytes) {
             counters.countDeprecatedTxnReceived();
         }
 
@@ -127,8 +130,7 @@ public class OnsetChecker {
      * @throws PreCheckException if validation fails
      * @throws NullPointerException if {@code tx} is {@code null}
      */
-    public void checkSignedTransaction(@NonNull final SignedTransaction tx)
-            throws PreCheckException {
+    public void checkSignedTransaction(@NonNull final SignedTransaction tx) throws PreCheckException {
         requireNonNull(tx);
 
         if (MiscUtils.hasUnknownFields(tx)) {
@@ -144,8 +146,7 @@ public class OnsetChecker {
      * @throws NullPointerException if any of the parameters is {@code null}
      */
     @NonNull
-    public ResponseCodeEnum checkTransactionBody(@NonNull final TransactionBody txBody)
-            throws PreCheckException {
+    public ResponseCodeEnum checkTransactionBody(@NonNull final TransactionBody txBody) throws PreCheckException {
         requireNonNull(txBody);
 
         if (MiscUtils.hasUnknownFields(txBody)) {
@@ -179,9 +180,7 @@ public class OnsetChecker {
     }
 
     private static boolean isPlausibleAccount(final AccountID accountID) {
-        return accountID.getAccountNum() > 0
-                && accountID.getRealmNum() >= 0
-                && accountID.getShardNum() >= 0;
+        return accountID.getAccountNum() > 0 && accountID.getRealmNum() >= 0 && accountID.getShardNum() >= 0;
     }
 
     private void checkMemo(final String memo) throws PreCheckException {
@@ -198,8 +197,7 @@ public class OnsetChecker {
 
     private ResponseCodeEnum checkTimebox(final Timestamp start, final Duration duration) {
         final var validForSecs = duration.getSeconds();
-        if (validForSecs < dynamicProperties.minTxnDuration()
-                || validForSecs > dynamicProperties.maxTxnDuration()) {
+        if (validForSecs < dynamicProperties.minTxnDuration() || validForSecs > dynamicProperties.maxTxnDuration()) {
             return INVALID_TRANSACTION_DURATION;
         }
 
@@ -225,12 +223,8 @@ public class OnsetChecker {
      */
     private static Instant safeguardedInstant(final Timestamp timestamp) {
         return Instant.ofEpochSecond(
-                Math.min(
-                        Math.max(Instant.MIN.getEpochSecond(), timestamp.getSeconds()),
-                        Instant.MAX.getEpochSecond()),
-                Math.min(
-                        Math.max(Instant.MIN.getNano(), timestamp.getNanos()),
-                        Instant.MAX.getNano()));
+                Math.min(Math.max(Instant.MIN.getEpochSecond(), timestamp.getSeconds()), Instant.MAX.getEpochSecond()),
+                Math.min(Math.max(Instant.MIN.getNano(), timestamp.getNanos()), Instant.MAX.getNano()));
     }
 
     /**

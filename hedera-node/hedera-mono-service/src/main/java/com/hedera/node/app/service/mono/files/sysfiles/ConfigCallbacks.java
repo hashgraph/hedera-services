@@ -13,15 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.sysfiles;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.*;
 
+import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
 import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.context.properties.PropertySources;
+import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
@@ -56,6 +59,8 @@ public class ConfigCallbacks {
     private final FunctionalityThrottling scheduleThrottling;
     private final Supplier<MerkleNetworkContext> networkCtx;
     private final Supplier<MerkleMapLike<EntityNum, MerkleStakingInfo>> stakingInfos;
+    private final SigImpactHistorian sigImpactHistorian;
+    private final FileNumbers fileNumbers;
 
     @Inject
     public ConfigCallbacks(
@@ -69,7 +74,9 @@ public class ConfigCallbacks {
             final Supplier<AddressBook> addressBook,
             final @CompositeProps PropertySource properties,
             final Supplier<MerkleNetworkContext> networkCtx,
-            final Supplier<MerkleMapLike<EntityNum, MerkleStakingInfo>> stakingInfos) {
+            final Supplier<MerkleMapLike<EntityNum, MerkleStakingInfo>> stakingInfos,
+            final SigImpactHistorian sigImpactHistorian,
+            final FileNumbers fileNumbers) {
         this.dynamicProps = dynamicProps;
         this.propertySources = propertySources;
         this.hapiOpPermissions = hapiOpPermissions;
@@ -81,11 +88,14 @@ public class ConfigCallbacks {
         this.stakingInfos = stakingInfos;
         this.addressBook = addressBook;
         this.properties = properties;
+        this.sigImpactHistorian = sigImpactHistorian;
+        this.fileNumbers = fileNumbers;
     }
 
     public Consumer<ServicesConfigurationList> propertiesCb() {
         return config -> {
             propertySources.reloadFrom(config);
+            sigImpactHistorian.markEntityChanged(fileNumbers.applicationProperties());
             dynamicProps.reload();
             hapiThrottling.applyGasConfig();
             handleThrottling.applyGasConfig();
@@ -105,24 +115,19 @@ public class ConfigCallbacks {
             final long hbarFloat, final int numNodes, final Map<Long, Long> maxToMinStakeRatios) {
         final var maxStake = hbarFloat / numNodes;
         final var curStakingInfos = stakingInfos.get();
-        curStakingInfos
-                .keySet()
-                .forEach(
-                        num -> {
-                            final var mutableInfo = curStakingInfos.getForModify(num);
-                            mutableInfo.setMaxStake(maxStake);
-                            final var maxToMinRatio =
-                                    maxToMinStakeRatios.getOrDefault(
-                                            num.longValue(), DEFAULT_MAX_TO_MIN_STAKE_RATIO);
-                            final var minStake = maxStake / maxToMinRatio;
-                            mutableInfo.setMinStake(minStake);
-                            log.info(
-                                    "Set node{} max/min stake to {}/{} ~ {}:1 ratio",
-                                    num::longValue,
-                                    mutableInfo::getMaxStake,
-                                    mutableInfo::getMinStake,
-                                    () -> maxToMinRatio);
-                        });
+        curStakingInfos.keySet().forEach(num -> {
+            final var mutableInfo = curStakingInfos.getForModify(num);
+            mutableInfo.setMaxStake(maxStake);
+            final var maxToMinRatio = maxToMinStakeRatios.getOrDefault(num.longValue(), DEFAULT_MAX_TO_MIN_STAKE_RATIO);
+            final var minStake = maxStake / maxToMinRatio;
+            mutableInfo.setMinStake(minStake);
+            log.info(
+                    "Set node{} max/min stake to {}/{} ~ {}:1 ratio",
+                    num::longValue,
+                    mutableInfo::getMaxStake,
+                    mutableInfo::getMinStake,
+                    () -> maxToMinRatio);
+        });
     }
 
     public Consumer<ServicesConfigurationList> permissionsCb() {

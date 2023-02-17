@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state.serdes;
 
 import com.hedera.node.app.spi.state.Serdes;
@@ -49,8 +50,7 @@ public class MonoMapSerdesAdapter {
             }
 
             @Override
-            public void write(final @NonNull T item, final @NonNull DataOutput output)
-                    throws IOException {
+            public void write(final @NonNull T item, final @NonNull DataOutput output) throws IOException {
                 if (output instanceof SerializableDataOutputStream out) {
                     item.serialize(out);
                 } else {
@@ -94,8 +94,7 @@ public class MonoMapSerdesAdapter {
             }
 
             @Override
-            public void write(final @NonNull T item, final @NonNull DataOutput output)
-                    throws IOException {
+            public void write(final @NonNull T item, final @NonNull DataOutput output) throws IOException {
                 if (output instanceof SerializableDataOutputStream out) {
                     item.serialize(out);
                 } else if (output instanceof ByteBufferDataOutput bb) {
@@ -142,8 +141,7 @@ public class MonoMapSerdesAdapter {
             }
 
             @Override
-            public void write(final @NonNull T item, final @NonNull DataOutput output)
-                    throws IOException {
+            public void write(final @NonNull T item, final @NonNull DataOutput output) throws IOException {
                 if (output instanceof SerializableDataOutputStream out) {
                     item.serialize(out);
                 } else if (output instanceof ByteBufferDataOutput bb) {

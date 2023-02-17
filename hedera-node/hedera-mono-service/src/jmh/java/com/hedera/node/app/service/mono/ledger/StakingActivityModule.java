@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
@@ -93,25 +94,17 @@ public interface StakingActivityModule {
     @Provides
     @Singleton
     @SuppressWarnings("unchecked")
-    static Supplier<AccountStorageAdapter> provideAccountsSupplier(
-            final InfrastructureBundle bundle) {
-        return () ->
-                AccountStorageAdapter.fromInMemory(
-                        MerkleMapLike.from(
-                                (MerkleMap<EntityNum, MerkleAccount>)
-                                        bundle.getterFor(InfrastructureType.ACCOUNTS_MM).get()));
+    static Supplier<AccountStorageAdapter> provideAccountsSupplier(final InfrastructureBundle bundle) {
+        return () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from((MerkleMap<EntityNum, MerkleAccount>)
+                bundle.getterFor(InfrastructureType.ACCOUNTS_MM).get()));
     }
 
     @Provides
     @Singleton
     @SuppressWarnings("unchecked")
-    static Supplier<RecordsStorageAdapter> providePayerRecordsSupplier(
-            final InfrastructureBundle bundle) {
-        return () ->
-                RecordsStorageAdapter.fromLegacy(
-                        MerkleMapLike.from(
-                                (MerkleMap<EntityNum, MerkleAccount>)
-                                        bundle.getterFor(InfrastructureType.ACCOUNTS_MM).get()));
+    static Supplier<RecordsStorageAdapter> providePayerRecordsSupplier(final InfrastructureBundle bundle) {
+        return () -> RecordsStorageAdapter.fromLegacy(MerkleMapLike.from((MerkleMap<EntityNum, MerkleAccount>)
+                bundle.getterFor(InfrastructureType.ACCOUNTS_MM).get()));
     }
 
     @Provides
@@ -166,28 +159,22 @@ public interface StakingActivityModule {
             final @MockProps HederaAccountNumbers accountNumbers,
             final TransactionContext txnCtx,
             final AccountUsageTracking usageTracking) {
-        final Supplier<HederaAccount> accountSupplier =
-                bootstrapProperties.getBooleanProperty(ACCOUNTS_STORE_ON_DISK)
-                        ? OnDiskAccount::new
-                        : MerkleAccount::new;
-        final var accountsLedger =
-                new TransactionalLedger<>(
-                        AccountProperty.class,
-                        accountSupplier,
-                        backingAccounts,
-                        new ChangeSummaryManager<>());
-        final var accountsCommitInterceptor =
-                new StakingAccountsCommitInterceptor(
-                        sideEffectsTracker,
-                        networkCtx,
-                        dynamicProperties,
-                        rewardCalculator,
-                        stakeChangeManager,
-                        stakePeriodManager,
-                        stakeInfoManager,
-                        accountNumbers,
-                        txnCtx,
-                        usageTracking);
+        final Supplier<HederaAccount> accountSupplier = bootstrapProperties.getBooleanProperty(ACCOUNTS_STORE_ON_DISK)
+                ? OnDiskAccount::new
+                : MerkleAccount::new;
+        final var accountsLedger = new TransactionalLedger<>(
+                AccountProperty.class, accountSupplier, backingAccounts, new ChangeSummaryManager<>());
+        final var accountsCommitInterceptor = new StakingAccountsCommitInterceptor(
+                sideEffectsTracker,
+                networkCtx,
+                dynamicProperties,
+                rewardCalculator,
+                stakeChangeManager,
+                stakePeriodManager,
+                stakeInfoManager,
+                accountNumbers,
+                txnCtx,
+                usageTracking);
         accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
         return accountsLedger;
     }

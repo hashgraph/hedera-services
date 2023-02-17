@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle.singleton;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
@@ -97,8 +98,7 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
 
     /** {@inheritDoc} */
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         final var valueSerdes = md.stateDefinition().valueSerdes();
         this.val = valueSerdes.parse(in);
     }

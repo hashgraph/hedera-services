@@ -13,23 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.metadata;
 
 import static com.hedera.node.app.service.mono.context.primitives.StateView.EMPTY_WACL;
-import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.IMMUTABLE_ACCOUNT;
-import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
-import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.INVALID_CONTRACT;
-import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
-import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
-import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_FILE;
-import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_SCHEDULE;
-import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
-import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
-import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
-import static com.hedera.node.app.service.mono.utils.EntityNum.fromTokenId;
-import static com.hedera.node.app.service.mono.utils.EntityNum.fromTopicId;
+import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.*;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.*;
+import static com.hedera.node.app.service.mono.utils.EntityNum.*;
 
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.config.FileNumbers;
@@ -45,14 +35,8 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.*;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Map;
@@ -161,26 +145,30 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
     }
 
     @Override
+    public EntityNum unaliasedAccount(AccountID idOrAlias, final @Nullable LinkedRefs linkedRefs) {
+        if (isAlias(idOrAlias)) {
+            return (linkedRefs == null)
+                    ? unaliased(idOrAlias, aliasManager)
+                    : unaliased(idOrAlias, aliasManager, linkedRefs::link);
+        }
+        return fromAccountId(idOrAlias);
+    }
+
+    @Override
     public SafeLookupResult<ScheduleSigningMetadata> scheduleSigningMetaFor(
             final ScheduleID id, final @Nullable LinkedRefs linkedRefs) {
         if (linkedRefs != null) {
             linkedRefs.link(id.getScheduleNum());
         }
         final var schedule =
-                stateChildren
-                        .schedules()
-                        .byId()
-                        .get(new EntityNumVirtualKey(EntityNum.fromScheduleId(id)));
+                stateChildren.schedules().byId().get(new EntityNumVirtualKey(EntityNum.fromScheduleId(id)));
         if (schedule == null) {
             return SafeLookupResult.failure(MISSING_SCHEDULE);
         } else {
-            final var scheduleMeta =
-                    new ScheduleSigningMetadata(
-                            schedule.adminKey(),
-                            schedule.ordinaryViewOfScheduledTxn(),
-                            schedule.hasExplicitPayer()
-                                    ? Optional.of(schedule.payer().toGrpcAccountId())
-                                    : Optional.empty());
+            final var scheduleMeta = new ScheduleSigningMetadata(
+                    schedule.adminKey(),
+                    schedule.ordinaryViewOfScheduledTxn(),
+                    schedule.hasExplicitPayer() ? Optional.of(schedule.payer().toGrpcAccountId()) : Optional.empty());
             return new SafeLookupResult<>(scheduleMeta);
         }
     }
@@ -188,10 +176,9 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
     @Override
     public SafeLookupResult<ContractSigningMetadata> aliasableContractSigningMetaFor(
             final ContractID idOrAlias, final @Nullable LinkedRefs linkedRefs) {
-        final var id =
-                (linkedRefs == null)
-                        ? EntityIdUtils.unaliased(idOrAlias, aliasManager)
-                        : EntityIdUtils.unaliased(idOrAlias, aliasManager, linkedRefs::link);
+        final var id = (linkedRefs == null)
+                ? unaliased(idOrAlias, aliasManager)
+                : unaliased(idOrAlias, aliasManager, linkedRefs::link);
         return (id == MISSING_NUM)
                 ? SafeLookupResult.failure(INVALID_CONTRACT)
                 : lookupContractByNumber(id, linkedRefs);
@@ -210,8 +197,7 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
             if ((key = contract.getAccountKey()) == null || key instanceof JContractIDKey) {
                 return SafeLookupResult.failure(IMMUTABLE_CONTRACT);
             } else {
-                return new SafeLookupResult<>(
-                        new ContractSigningMetadata(key, contract.isReceiverSigRequired()));
+                return new SafeLookupResult<>(new ContractSigningMetadata(key, contract.isReceiverSigRequired()));
             }
         }
     }
@@ -227,6 +213,10 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
         } else {
             final var key = account.getAccountKey();
             if (key.isEmpty()) {
+                if (linkedRefs != null) {
+                    linkedRefs.link(fileNumbers.applicationProperties());
+                }
+
                 if (!properties.isLazyCreationEnabled()) {
                     return SafeLookupResult.failure(IMMUTABLE_ACCOUNT);
                 }
@@ -235,21 +225,17 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
                 if (accountAlias.isEmpty()) {
                     return SafeLookupResult.failure(IMMUTABLE_ACCOUNT);
                 } else {
-                    return new SafeLookupResult<>(
-                            new AccountSigningMetadata(
-                                    new JHollowKey(
-                                            ByteStringUtils.unwrapUnsafelyIfPossible(accountAlias)),
-                                    account.isReceiverSigRequired()));
+                    return new SafeLookupResult<>(new AccountSigningMetadata(
+                            new JHollowKey(ByteStringUtils.unwrapUnsafelyIfPossible(accountAlias)),
+                            account.isReceiverSigRequired()));
                 }
             }
             return new SafeLookupResult<>(
-                    new AccountSigningMetadata(
-                            account.getAccountKey(), account.isReceiverSigRequired()));
+                    new AccountSigningMetadata(account.getAccountKey(), account.isReceiverSigRequired()));
         }
     }
 
-    private static final FileSigningMetadata SPECIAL_FILE_META =
-            new FileSigningMetadata(EMPTY_WACL);
+    private static final FileSigningMetadata SPECIAL_FILE_META = new FileSigningMetadata(EMPTY_WACL);
     private static final SafeLookupResult<FileSigningMetadata> SPECIAL_FILE_RESULT =
             new SafeLookupResult<>(SPECIAL_FILE_META);
 }

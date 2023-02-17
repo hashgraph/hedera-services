@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.span;
 
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.codeFromNum;
@@ -209,12 +210,7 @@ public class SpanMapManager {
         // (1) Try retrieve the call data (if it's in a file) and set in spanMap
         if (op.hasCallData() && !ethTxData.hasCallData()) {
             final var result =
-                    computeCallData(
-                            ethTxData,
-                            op.getCallData(),
-                            linkedRefs,
-                            spanMap,
-                            stateChildren.storage());
+                    computeCallData(ethTxData, op.getCallData(), linkedRefs, spanMap, stateChildren.storage());
             if (result.getKey() != OK) {
                 expansion = new EthTxExpansion(linkedRefs, result.getKey());
             } else {
@@ -239,9 +235,7 @@ public class SpanMapManager {
 
     @Nullable
     private EthTxExpansion expandSynthTxn(
-            final Map<String, Object> spanMap,
-            final EthTxData ethTxData,
-            @Nullable final LinkedRefs linkedRefs) {
+            final Map<String, Object> spanMap, final EthTxData ethTxData, @Nullable final LinkedRefs linkedRefs) {
         final var opBuilder = syntheticTxnFactory.synthContractOpFromEth(ethTxData);
         if (opBuilder.isEmpty()) {
             return new EthTxExpansion(linkedRefs, INVALID_ETHEREUM_TRANSACTION);
@@ -256,9 +250,7 @@ public class SpanMapManager {
 
     @Nullable
     private EthTxExpansion expandEthTxSigs(
-            final Map<String, Object> spanMap,
-            final EthTxData ethTxData,
-            @Nullable final LinkedRefs linkedRefs) {
+            final Map<String, Object> spanMap, final EthTxData ethTxData, @Nullable final LinkedRefs linkedRefs) {
         try {
             final var ethTxSigs = sigsFunction.apply(ethTxData);
             spanMapAccessor.setEthTxSigsMeta(spanMap, ethTxSigs);
@@ -271,8 +263,7 @@ public class SpanMapManager {
     private void assertIsEthTxn(final TxnAccessor accessor) {
         final var function = accessor.getFunction();
         if (function != EthereumTransaction) {
-            throw new IllegalArgumentException(
-                    "Cannot expand Ethereum span for a " + function + " accessor");
+            throw new IllegalArgumentException("Cannot expand Ethereum span for a " + function + " accessor");
         }
     }
 
@@ -289,13 +280,12 @@ public class SpanMapManager {
         if (fileMeta == null) {
             return Pair.of(INVALID_FILE_ID, ethTxData);
         } else {
-            final var callDataAttr =
-                    Objects.requireNonNull(MetadataMapFactory.toAttr(fileMeta.getData()));
+            final var callDataAttr = Objects.requireNonNull(MetadataMapFactory.toAttr(fileMeta.getData()));
             if (callDataAttr.isDeleted()) {
                 return Pair.of(FILE_DELETED, ethTxData);
             } else {
-                final var hexedCallData =
-                        Objects.requireNonNull(curBlobs.get(dataKeyFor(callDataId))).getData();
+                final var hexedCallData = Objects.requireNonNull(curBlobs.get(dataKeyFor(callDataId)))
+                        .getData();
                 final byte[] callData;
                 try {
                     callData = Hex.decode(hexedCallData);
@@ -318,32 +308,26 @@ public class SpanMapManager {
     }
 
     private VirtualBlobKey metadataKeyFor(final FileID fileId) {
-        return new VirtualBlobKey(
-                VirtualBlobKey.Type.FILE_METADATA, codeFromNum(fileId.getFileNum()));
+        return new VirtualBlobKey(VirtualBlobKey.Type.FILE_METADATA, codeFromNum(fileId.getFileNum()));
     }
 
     private void rationalizeImpliedTransfers(final TxnAccessor accessor) {
         final var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
-        if (!impliedTransfers
-                .getMeta()
-                .wasDerivedFrom(dynamicProperties, customFeeSchedules, aliasManager)) {
+        if (!impliedTransfers.getMeta().wasDerivedFrom(dynamicProperties, customFeeSchedules, aliasManager)) {
             expandImpliedTransfers(accessor);
         }
     }
 
     private void expandImpliedTransfers(final TxnAccessor accessor) {
         final var op = accessor.getTxn().getCryptoTransfer();
-        final var impliedTransfers =
-                impliedTransfersMarshal.unmarshalFromGrpc(op, accessor.getPayer());
+        final var impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op, accessor.getPayer());
         reCalculateXferMeta(accessor, impliedTransfers);
         spanMapAccessor.setImpliedTransfers(accessor, impliedTransfers);
-        accessor.setNumImplicitCreations(
-                impliedTransfers.getMeta().getNumAutoCreations()
-                        + impliedTransfers.getMeta().getNumLazyCreations());
+        accessor.setNumImplicitCreations(impliedTransfers.getMeta().getNumAutoCreations()
+                + impliedTransfers.getMeta().getNumLazyCreations());
     }
 
-    public static void reCalculateXferMeta(
-            final TxnAccessor accessor, final ImpliedTransfers impliedTransfers) {
+    public static void reCalculateXferMeta(final TxnAccessor accessor, final ImpliedTransfers impliedTransfers) {
         final var xferMeta = accessor.availXferUsageMeta();
 
         var customFeeTokenTransfers = 0;

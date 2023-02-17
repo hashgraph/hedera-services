@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
@@ -81,8 +82,7 @@ public class MerklePayerRecords extends PartialMerkleLeaf implements Keyed<Entit
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         throwIfImmutable();
         num = in.readInt();
         payerRecords = in.readSerializable(true, FCQueue::new);

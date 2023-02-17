@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.migration;
 
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
@@ -30,13 +31,11 @@ public class TokenRelStorageAdapter {
     private final @Nullable MerkleMap<EntityNumPair, MerkleTokenRelStatus> inMemoryRels;
     private final @Nullable VirtualMapLike<EntityNumVirtualKey, OnDiskTokenRel> onDiskRels;
 
-    public static TokenRelStorageAdapter fromInMemory(
-            final MerkleMap<EntityNumPair, MerkleTokenRelStatus> rels) {
+    public static TokenRelStorageAdapter fromInMemory(final MerkleMap<EntityNumPair, MerkleTokenRelStatus> rels) {
         return new TokenRelStorageAdapter(rels, null);
     }
 
-    public static TokenRelStorageAdapter fromOnDisk(
-            final VirtualMapLike<EntityNumVirtualKey, OnDiskTokenRel> rels) {
+    public static TokenRelStorageAdapter fromOnDisk(final VirtualMapLike<EntityNumVirtualKey, OnDiskTokenRel> rels) {
         return new TokenRelStorageAdapter(null, rels);
     }
 
@@ -55,15 +54,11 @@ public class TokenRelStorageAdapter {
     }
 
     public HederaTokenRel get(final EntityNumPair num) {
-        return relsOnDisk
-                ? onDiskRels.get(EntityNumVirtualKey.fromPair(num))
-                : inMemoryRels.get(num);
+        return relsOnDisk ? onDiskRels.get(EntityNumVirtualKey.fromPair(num)) : inMemoryRels.get(num);
     }
 
     public HederaTokenRel getForModify(final EntityNumPair num) {
-        return relsOnDisk
-                ? onDiskRels.getForModify(EntityNumVirtualKey.fromPair(num))
-                : inMemoryRels.getForModify(num);
+        return relsOnDisk ? onDiskRels.getForModify(EntityNumVirtualKey.fromPair(num)) : inMemoryRels.getForModify(num);
     }
 
     public void put(final EntityNumPair num, final HederaTokenRel wrapper) {
@@ -88,9 +83,7 @@ public class TokenRelStorageAdapter {
     }
 
     public boolean containsKey(final EntityNumPair num) {
-        return relsOnDisk
-                ? onDiskRels.containsKey(EntityNumVirtualKey.fromPair(num))
-                : inMemoryRels.containsKey(num);
+        return relsOnDisk ? onDiskRels.containsKey(EntityNumVirtualKey.fromPair(num)) : inMemoryRels.containsKey(num);
     }
 
     public void archive() {

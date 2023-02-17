@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hedera.node.app.service.mono.state.logic.RecordStreaming.PENDING_USER_TXN_BLOCK_NO;
@@ -49,20 +50,47 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RecordStreamingTest {
-    @Mock private RecordStreamObject topLevelRso;
-    @Mock private RecordStreamObject firstFollowingChildRso;
-    @Mock private RecordStreamObject secondFollowingChildRso;
-    @Mock private RecordStreamObject firstPrecedingChildRso;
-    @Mock private RecordStreamObject systemRso;
-    @Mock private BlockManager blockManager;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private NonBlockingHandoff nonBlockingHandoff;
-    @Mock private TransactionRecord transactionRecord;
-    @Mock private TransactionID transactionID;
-    @Mock private AccountID accountID;
-    @Mock private TransactionReceipt transactionReceipt;
-    @Mock private Transaction transaction;
-    @Mock private TransactionBody transactionBody;
+    @Mock
+    private RecordStreamObject topLevelRso;
+
+    @Mock
+    private RecordStreamObject firstFollowingChildRso;
+
+    @Mock
+    private RecordStreamObject secondFollowingChildRso;
+
+    @Mock
+    private RecordStreamObject firstPrecedingChildRso;
+
+    @Mock
+    private RecordStreamObject systemRso;
+
+    @Mock
+    private BlockManager blockManager;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private NonBlockingHandoff nonBlockingHandoff;
+
+    @Mock
+    private TransactionRecord transactionRecord;
+
+    @Mock
+    private TransactionID transactionID;
+
+    @Mock
+    private AccountID accountID;
+
+    @Mock
+    private TransactionReceipt transactionReceipt;
+
+    @Mock
+    private Transaction transaction;
+
+    @Mock
+    private TransactionBody transactionBody;
 
     private RecordStreaming subject;
     private static MockedStatic<CommonUtils> commonUtilsMockedStatic;
@@ -85,24 +113,13 @@ class RecordStreamingTest {
     @Test
     void streamsAllRecordsAtExpectedTimes() {
         givenCollabSetup();
-        givenAlignable(
-                firstPrecedingChildRso,
-                topLevelRso,
-                firstFollowingChildRso,
-                secondFollowingChildRso,
-                systemRso);
+        givenAlignable(firstPrecedingChildRso, topLevelRso, firstFollowingChildRso, secondFollowingChildRso, systemRso);
         givenForTxLogging(
-                false,
-                firstPrecedingChildRso,
-                topLevelRso,
-                firstFollowingChildRso,
-                secondFollowingChildRso,
-                systemRso);
+                false, firstPrecedingChildRso, topLevelRso, firstFollowingChildRso, secondFollowingChildRso, systemRso);
         given(systemRso.getRunningHash()).willReturn(mockSystemHash);
 
         given(recordsHistorian.hasPrecedingChildRecords()).willReturn(true);
-        given(recordsHistorian.getPrecedingChildRecords())
-                .willReturn(List.of(firstPrecedingChildRso));
+        given(recordsHistorian.getPrecedingChildRecords()).willReturn(List.of(firstPrecedingChildRso));
         given(recordsHistorian.hasFollowingChildRecords()).willReturn(true);
         given(recordsHistorian.getTopLevelRecord()).willReturn(topLevelRso);
         given(nonBlockingHandoff.offer(topLevelRso)).willReturn(true);
@@ -123,6 +140,59 @@ class RecordStreamingTest {
         verify(nonBlockingHandoff).offer(systemRso);
         verify(blockManager).updateCurrentBlockHash(mockUserHash);
         verify(blockManager).updateCurrentBlockHash(mockSystemHash);
+    }
+
+    @Test
+    void withNewBlockAndNumberGreaterThanOneSetsFirstChildRsoToCloseFile() {
+        givenCollabSetup(true);
+        givenAlignable(firstPrecedingChildRso, topLevelRso, firstFollowingChildRso, secondFollowingChildRso, systemRso);
+        givenForTxLogging(
+                false, firstPrecedingChildRso, topLevelRso, firstFollowingChildRso, secondFollowingChildRso, systemRso);
+        given(systemRso.getRunningHash()).willReturn(mockSystemHash);
+
+        given(recordsHistorian.hasPrecedingChildRecords()).willReturn(true);
+        given(recordsHistorian.getPrecedingChildRecords()).willReturn(List.of(firstPrecedingChildRso));
+        given(recordsHistorian.hasFollowingChildRecords()).willReturn(true);
+        given(recordsHistorian.getTopLevelRecord()).willReturn(topLevelRso);
+        given(nonBlockingHandoff.offer(topLevelRso)).willReturn(true);
+        given(recordsHistorian.getFollowingChildRecords())
+                .willReturn(List.of(firstFollowingChildRso, secondFollowingChildRso));
+        given(nonBlockingHandoff.offer(firstPrecedingChildRso)).willReturn(true);
+        given(nonBlockingHandoff.offer(firstFollowingChildRso)).willReturn(true);
+        given(nonBlockingHandoff.offer(secondFollowingChildRso)).willReturn(true);
+        given(nonBlockingHandoff.offer(systemRso)).willReturn(true);
+
+        subject.streamUserTxnRecords();
+        subject.streamSystemRecord(systemRso);
+
+        verify(firstPrecedingChildRso).setWriteNewFile();
+        verify(nonBlockingHandoff).offer(firstPrecedingChildRso);
+        verify(nonBlockingHandoff).offer(firstFollowingChildRso);
+        verify(nonBlockingHandoff).offer(topLevelRso);
+        verify(nonBlockingHandoff).offer(secondFollowingChildRso);
+        verify(nonBlockingHandoff).offer(systemRso);
+        verify(blockManager).updateCurrentBlockHash(mockUserHash);
+        verify(blockManager).updateCurrentBlockHash(mockSystemHash);
+    }
+
+    @Test
+    void withNewBlockAndNumberGreaterThanOneAndNoChildrenSetsTopLevelToClose() {
+        givenCollabSetup(true);
+        givenAlignable(topLevelRso);
+        givenForTxLogging(false, topLevelRso);
+
+        given(recordsHistorian.getTopLevelRecord()).willReturn(topLevelRso);
+        given(nonBlockingHandoff.offer(topLevelRso)).willReturn(false).willReturn(true);
+
+        subject.streamUserTxnRecords();
+
+        verify(nonBlockingHandoff, times(2)).offer(topLevelRso);
+        verify(blockManager).updateCurrentBlockHash(mockUserHash);
+        verify(topLevelRso).setWriteNewFile();
+
+        subject.resetBlockNo();
+
+        assertEquals(PENDING_USER_TXN_BLOCK_NO, subject.getBlockNo());
     }
 
     @Test
@@ -187,9 +257,18 @@ class RecordStreamingTest {
     }
 
     private void givenCollabSetup() {
+        givenCollabSetup(false);
+    }
+
+    private void givenCollabSetup(final boolean isFirstInBlock) {
+        givenCollabSetup(isFirstInBlock, someBlockNo);
+    }
+
+    private void givenCollabSetup(final boolean isFirstInBlock, final long blockNo) {
         given(recordsHistorian.getTopLevelRecord()).willReturn(topLevelRso);
         given(topLevelRso.getTimestamp()).willReturn(aTime);
-        given(blockManager.updateAndGetAlignmentBlockNumber(aTime)).willReturn(someBlockNo);
+        given(blockManager.updateAndGetAlignmentBlockNumber(aTime))
+                .willReturn(new BlockNumberMeta(blockNo, isFirstInBlock));
         given(recordsHistorian.lastRunningHash()).willReturn(mockUserHash);
     }
 
@@ -199,8 +278,7 @@ class RecordStreamingTest {
         }
     }
 
-    private void givenForTxLogging(
-            final boolean shouldThrow, final RecordStreamObject... mockRsos) {
+    private void givenForTxLogging(final boolean shouldThrow, final RecordStreamObject... mockRsos) {
         for (final var mockRso : mockRsos) {
             given(blockManager.shouldLogEveryTransaction()).willReturn(true);
             given(mockRso.getTransaction()).willReturn(transaction);
@@ -209,10 +287,8 @@ class RecordStreamingTest {
                     given(CommonUtils.extractTransactionBody(transaction))
                             .willThrow(InvalidProtocolBufferException.class);
                 } else {
-                    given(CommonUtils.extractTransactionBody(transaction))
-                            .willReturn(transactionBody);
-                    given(transactionBody.getDataCase())
-                            .willReturn(TransactionBody.DataCase.CONTRACTCALL);
+                    given(CommonUtils.extractTransactionBody(transaction)).willReturn(transactionBody);
+                    given(transactionBody.getDataCase()).willReturn(TransactionBody.DataCase.CONTRACTCALL);
                 }
             } catch (final InvalidProtocolBufferException e) {
                 throw new RuntimeException(e);

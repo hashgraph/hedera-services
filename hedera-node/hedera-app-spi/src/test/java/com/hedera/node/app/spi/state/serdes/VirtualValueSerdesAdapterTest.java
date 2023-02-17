@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state.serdes;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -27,9 +28,7 @@ public class VirtualValueSerdesAdapterTest extends AbstractVirtualSerdesTest<Vir
     private static final SplittableRandom RANDOM = new SplittableRandom();
 
     public VirtualValueSerdesAdapterTest() {
-        super(
-                MonoMapSerdesAdapter.serdesForVirtualValue(
-                        VirtualBlobValue.CURRENT_VERSION, VirtualBlobValue::new));
+        super(MonoMapSerdesAdapter.serdesForVirtualValue(VirtualBlobValue.CURRENT_VERSION, VirtualBlobValue::new));
     }
 
     @Test

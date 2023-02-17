@@ -1,6 +1,4 @@
 module com.hedera.node.app {
-    opens com.hedera.node.app;
-
     requires io.helidon.grpc.core;
     requires io.helidon.grpc.server;
     requires com.swirlds.common;
@@ -30,11 +28,25 @@ module com.hedera.node.app {
     requires com.hedera.node.app.service.schedule.impl;
     requires com.hedera.node.app.service.token.impl;
     requires com.hedera.node.app.service.util.impl;
+    requires com.hedera.node.app.hapi.utils;
+    requires dagger;
+    requires javax.inject;
     requires com.swirlds.platform;
     requires com.swirlds.fchashmap;
     requires org.apache.logging.log4j;
     requires org.apache.commons.lang3;
+    requires com.google.common;
 
-    uses com.hedera.node.app.service.consensus.ConsensusService;
-    uses com.hedera.node.app.service.schedule.ScheduleService;
+    exports com.hedera.node.app to
+            com.swirlds.platform;
+    exports com.hedera.node.app.state to
+            com.swirlds.common;
+    exports com.hedera.node.app.state.merkle to
+            com.swirlds.common;
+    exports com.hedera.node.app.state.merkle.disk to
+            com.swirlds.common;
+    exports com.hedera.node.app.state.merkle.memory to
+            com.swirlds.common;
+    exports com.hedera.node.app.state.merkle.singleton to
+            com.swirlds.common;
 }

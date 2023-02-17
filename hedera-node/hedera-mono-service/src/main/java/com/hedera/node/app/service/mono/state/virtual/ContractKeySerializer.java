@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.hedera.node.app.service.mono.state.virtual.ContractKey.deserializeContractID;
@@ -81,8 +82,7 @@ public class ContractKeySerializer implements KeySerializer<ContractKey> {
      * @return Deserialized data item
      */
     @Override
-    public ContractKey deserialize(final ByteBuffer buffer, final long dataVersion)
-            throws IOException {
+    public ContractKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
         Objects.requireNonNull(buffer);
         final ContractKey contractKey = new ContractKey();
         contractKey.deserialize(buffer, (int) dataVersion);
@@ -97,11 +97,10 @@ public class ContractKeySerializer implements KeySerializer<ContractKey> {
      * @param outputStream Output stream to write to
      */
     @Override
-    public int serialize(final ContractKey data, final SerializableDataOutputStream outputStream)
-            throws IOException {
+    public int serialize(final ContractKey data, final SerializableDataOutputStream outputStream) throws IOException {
         Objects.requireNonNull(data);
         Objects.requireNonNull(outputStream);
-        return data.serializeReturningByteWritten(outputStream);
+        return data.serializeReturningBytesWritten(outputStream);
     }
 
     /**
@@ -117,8 +116,7 @@ public class ContractKeySerializer implements KeySerializer<ContractKey> {
     }
 
     @Override
-    public boolean equals(final ByteBuffer buf, final int version, final ContractKey contractKey)
-            throws IOException {
+    public boolean equals(final ByteBuffer buf, final int version, final ContractKey contractKey) throws IOException {
         final byte packedSize = buf.get();
         final byte contractIdNonZeroBytes = getContractIdNonZeroBytesFromPacked(packedSize);
         if (contractIdNonZeroBytes != contractKey.getContractIdNonZeroBytes()) return false;
@@ -126,14 +124,12 @@ public class ContractKeySerializer implements KeySerializer<ContractKey> {
         if (uint256KeyNonZeroBytes != contractKey.getUint256KeyNonZeroBytes()) return false;
         final long contractId = deserializeContractID(contractIdNonZeroBytes, buf, ByteBuffer::get);
         if (contractId != contractKey.getContractId()) return false;
-        final int[] uint256Key =
-                deserializeUint256Key(uint256KeyNonZeroBytes, buf, ByteBuffer::get);
+        final int[] uint256Key = deserializeUint256Key(uint256KeyNonZeroBytes, buf, ByteBuffer::get);
         return Arrays.equals(uint256Key, contractKey.getKey());
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         /* No-op */
     }
 

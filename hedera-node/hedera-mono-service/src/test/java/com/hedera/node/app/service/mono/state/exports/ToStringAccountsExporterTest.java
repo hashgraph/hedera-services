@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.exports;
 
 import static com.hedera.node.app.service.mono.store.models.Id.MISSING_ID;
@@ -49,35 +50,35 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith({LogCaptureExtension.class, MockitoExtension.class})
 class ToStringAccountsExporterTest {
     private final String testExportLoc = "accounts.txt";
-    private final MerkleAccount account1 =
-            (MerkleAccount)
-                    new HederaAccountCustomizer()
-                            .isReceiverSigRequired(true)
-                            .proxy(EntityId.MISSING_ENTITY_ID)
-                            .isDeleted(false)
-                            .expiry(1_234_567L)
-                            .memo("This ecstasy doth unperplex")
-                            .isSmartContract(true)
-                            .key(new JEd25519Key("first-fake".getBytes()))
-                            .autoRenewPeriod(555_555L)
-                            .customizing(new MerkleAccount());
-    private final MerkleAccount account2 =
-            (MerkleAccount)
-                    new HederaAccountCustomizer()
-                            .isReceiverSigRequired(false)
-                            .proxy(EntityId.MISSING_ENTITY_ID)
-                            .isDeleted(true)
-                            .expiry(7_654_321L)
-                            .memo("We said, and show us what we love")
-                            .isSmartContract(false)
-                            .key(new JEd25519Key("second-fake".getBytes()))
-                            .autoRenewPeriod(444_444L)
-                            .customizing(new MerkleAccount());
+    private final MerkleAccount account1 = (MerkleAccount) new HederaAccountCustomizer()
+            .isReceiverSigRequired(true)
+            .proxy(EntityId.MISSING_ENTITY_ID)
+            .isDeleted(false)
+            .expiry(1_234_567L)
+            .memo("This ecstasy doth unperplex")
+            .isSmartContract(true)
+            .key(new JEd25519Key("first-fake".getBytes()))
+            .autoRenewPeriod(555_555L)
+            .customizing(new MerkleAccount());
+    private final MerkleAccount account2 = (MerkleAccount) new HederaAccountCustomizer()
+            .isReceiverSigRequired(false)
+            .proxy(EntityId.MISSING_ENTITY_ID)
+            .isDeleted(true)
+            .expiry(7_654_321L)
+            .memo("We said, and show us what we love")
+            .isSmartContract(false)
+            .key(new JEd25519Key("second-fake".getBytes()))
+            .autoRenewPeriod(444_444L)
+            .customizing(new MerkleAccount());
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private ToStringAccountsExporter subject;
+    @LoggingTarget
+    private LogCaptor logCaptor;
 
-    @Mock private NodeLocalProperties nodeLocalProperties;
+    @LoggingSubject
+    private ToStringAccountsExporter subject;
+
+    @Mock
+    private NodeLocalProperties nodeLocalProperties;
 
     @BeforeEach
     void setUp() {
@@ -100,14 +101,9 @@ class ToStringAccountsExporterTest {
 
         // expect:
         assertDoesNotThrow(
-                () ->
-                        subject.toFile(
-                                AccountStorageAdapter.fromInMemory(
-                                        MerkleMapLike.from(new MerkleMap<>()))));
+                () -> subject.toFile(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(new MerkleMap<>()))));
         // and:
-        assertThat(
-                logCaptor.warnLogs(),
-                contains(startsWith("Could not export accounts to '/this/is/not/a/path'")));
+        assertThat(logCaptor.warnLogs(), contains(startsWith("Could not export accounts to '/this/is/not/a/path'")));
     }
 
     @Test
@@ -129,41 +125,39 @@ class ToStringAccountsExporterTest {
         account2.setNumPositiveBalances(0);
         account2.setHeadTokenId(MISSING_ID.num());
         // and:
-        var desired =
-                "0.0.1\n"
-                    + "---\n"
-                    + "MerkleAccount{state=MerkleAccountState{number=1 <-> 0.0.1, key=ed25519:"
-                    + " \"first-fake\"\n"
-                    + ", expiry=1234567, balance=1, autoRenewSecs=555555, memo=This ecstasy doth"
-                    + " unperplex, deleted=false, smartContract=true, numContractKvPairs=0,"
-                    + " receiverSigRequired=true, proxy=EntityId{shard=0, realm=0, num=0},"
-                    + " nftsOwned=0, alreadyUsedAutoAssociations=7, maxAutoAssociations=10, alias=,"
-                    + " cryptoAllowances={EntityNum{value=1}=10}, fungibleTokenAllowances={},"
-                    + " approveForAllNfts=[], firstContractStorageKey=<N/A>, numAssociations=3,"
-                    + " numPositiveBalances=0, headTokenId=0, numTreasuryTitles=0, ethereumNonce=1,"
-                    + " autoRenewAccount=null, headNftId=0, headNftSerialNum=0, stakedToMe=0,"
-                    + " stakePeriodStart=-1, stakedNum=0, declineReward=false,"
-                    + " balanceAtStartOfLastRewardedPeriod=-1, expiredAndPendingRemoval=false}, #"
-                    + " records=0}\n"
-                    + "\n"
-                    + "0.0.2\n"
-                    + "---\n"
-                    + "MerkleAccount{state=MerkleAccountState{number=2 <-> 0.0.2, key=ed25519:"
-                    + " \"second-fake\"\n"
-                    + ", expiry=7654321, balance=2, autoRenewSecs=444444, memo=We said, and show us"
-                    + " what we love, deleted=true, smartContract=false, numContractKvPairs=0,"
-                    + " receiverSigRequired=false, proxy=EntityId{shard=0, realm=0, num=0},"
-                    + " nftsOwned=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0, alias=,"
-                    + " cryptoAllowances={}, fungibleTokenAllowances={}, approveForAllNfts=[],"
-                    + " firstContractStorageKey=<N/A>, numAssociations=1, numPositiveBalances=0,"
-                    + " headTokenId=0, numTreasuryTitles=0, ethereumNonce=2, autoRenewAccount=null,"
-                    + " headNftId=0, headNftSerialNum=0, stakedToMe=0, stakePeriodStart=-1,"
-                    + " stakedNum=0, declineReward=false, balanceAtStartOfLastRewardedPeriod=-1,"
-                    + " expiredAndPendingRemoval=false}, # records=0}\n";
+        var desired = "0.0.1\n"
+                + "---\n"
+                + "MerkleAccount{state=MerkleAccountState{number=1 <-> 0.0.1, key=ed25519:"
+                + " \"first-fake\"\n"
+                + ", expiry=1234567, balance=1, autoRenewSecs=555555, memo=This ecstasy doth"
+                + " unperplex, deleted=false, smartContract=true, numContractKvPairs=0,"
+                + " receiverSigRequired=true, proxy=EntityId{shard=0, realm=0, num=0},"
+                + " nftsOwned=0, alreadyUsedAutoAssociations=7, maxAutoAssociations=10, alias=,"
+                + " cryptoAllowances={EntityNum{value=1}=10}, fungibleTokenAllowances={},"
+                + " approveForAllNfts=[], firstContractStorageKey=<N/A>, numAssociations=3,"
+                + " numPositiveBalances=0, headTokenId=0, numTreasuryTitles=0, ethereumNonce=1,"
+                + " autoRenewAccount=null, headNftId=0, headNftSerialNum=0, stakedToMe=0,"
+                + " stakePeriodStart=-1, stakedNum=0, declineReward=false,"
+                + " balanceAtStartOfLastRewardedPeriod=-1, expiredAndPendingRemoval=false}, #"
+                + " records=0}\n"
+                + "\n"
+                + "0.0.2\n"
+                + "---\n"
+                + "MerkleAccount{state=MerkleAccountState{number=2 <-> 0.0.2, key=ed25519:"
+                + " \"second-fake\"\n"
+                + ", expiry=7654321, balance=2, autoRenewSecs=444444, memo=We said, and show us"
+                + " what we love, deleted=true, smartContract=false, numContractKvPairs=0,"
+                + " receiverSigRequired=false, proxy=EntityId{shard=0, realm=0, num=0},"
+                + " nftsOwned=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0, alias=,"
+                + " cryptoAllowances={}, fungibleTokenAllowances={}, approveForAllNfts=[],"
+                + " firstContractStorageKey=<N/A>, numAssociations=1, numPositiveBalances=0,"
+                + " headTokenId=0, numTreasuryTitles=0, ethereumNonce=2, autoRenewAccount=null,"
+                + " headNftId=0, headNftSerialNum=0, stakedToMe=0, stakePeriodStart=-1,"
+                + " stakedNum=0, declineReward=false, balanceAtStartOfLastRewardedPeriod=-1,"
+                + " expiredAndPendingRemoval=false}, # records=0}\n";
 
         // given:
-        AccountStorageAdapter accounts =
-                AccountStorageAdapter.fromInMemory(MerkleMapLike.from(new MerkleMap<>()));
+        AccountStorageAdapter accounts = AccountStorageAdapter.fromInMemory(MerkleMapLike.from(new MerkleMap<>()));
         // and:
         accounts.put(EntityNum.fromInt(2), account2);
         accounts.put(EntityNum.fromInt(1), account1);

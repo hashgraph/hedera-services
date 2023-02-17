@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.models;
 
 import static org.apache.tuweni.units.bigints.UInt256.MIN_VALUE;
@@ -35,16 +36,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class UpdatedHederaEvmAccountTest {
-    private final Address newAddress =
-            Address.fromHexString("0x000000000000000000000000000000000000066e");
+    private final Address newAddress = Address.fromHexString("0x000000000000000000000000000000000000066e");
 
     private static final long newBalance = 200_000L;
     private static final int newNonce = 2;
-    private final Address address =
-            Address.fromHexString("0x000000000000000000000000000000000000077e");
+    private final Address address = Address.fromHexString("0x000000000000000000000000000000000000077e");
     private UpdatedHederaEvmAccount subject;
 
-    @Mock private HederaEvmEntityAccess hederaEvmEntityAccess;
+    @Mock
+    private HederaEvmEntityAccess hederaEvmEntityAccess;
 
     @BeforeEach
     void setUp() {
@@ -107,7 +107,7 @@ class UpdatedHederaEvmAccountTest {
 
     @Test
     void getOriginalStorageValue() {
-        subject = new UpdatedHederaEvmAccount(address, 0, Wei.ZERO);
+        subject = new UpdatedHederaEvmAccount(address);
         assertEquals(ZERO, subject.getOriginalStorageValue(MIN_VALUE));
     }
 

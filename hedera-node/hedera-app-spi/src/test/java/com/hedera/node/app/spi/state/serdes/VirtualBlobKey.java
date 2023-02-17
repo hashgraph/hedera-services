@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state.serdes;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -64,8 +65,7 @@ public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         type = BLOB_TYPES[0xff & in.readByte()];
         entityNumCode = in.readInt();
     }

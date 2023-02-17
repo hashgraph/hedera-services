@@ -1,0 +1,113 @@
+##
+# Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+name: "Node: PR Checks"
+on:
+  workflow_dispatch:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - labeled
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: pr-checks-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Code
+    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
+    with:
+      enable-spotless-check: false
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+
+  spotless:
+    name: Spotless
+    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
+    with:
+      custom-job-label: "Check"
+      enable-javadoc: false
+      enable-unit-tests: false
+      enable-e2e-tests: false
+      enable-integration-tests: false
+      enable-sonar-analysis: false
+      enable-spotless-check: true
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+
+  unit-label-check:
+    name: "Label Check [CI:UnitTests]"
+    runs-on: [self-hosted, Linux, medium, ephemeral]
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'CI:UnitTests') || contains(github.event.pull_request.labels.*.name, 'CI:FinalChecks') }}
+    steps:
+      - name: Check Labels
+        if: github.event_name == 'pull_request'
+        run: echo PR labels that trigger the tests are [CI:UnitTests] and [CI:FinalChecks]
+
+  unit-tests:
+    name: Unit Tests
+    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
+    needs:
+      - unit-label-check
+    with:
+      custom-job-label: Standard
+      enable-javadoc: false
+      enable-unit-tests: true
+      enable-e2e-tests: false
+      enable-integration-tests: false
+      enable-sonar-analysis: true
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      sonar-token: ${{ secrets.SONAR_TOKEN }}
+
+  eet-tests:
+    name: E2E Tests
+    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
+    needs:
+      - unit-label-check
+    with:
+      custom-job-label: Standard
+      enable-javadoc: false
+      enable-unit-tests: false
+      enable-e2e-tests: true
+      enable-integration-tests: false
+      enable-sonar-analysis: false
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      sonar-token: ${{ secrets.SONAR_TOKEN }}
+
+  integration-tests:
+    name: Integration Tests
+    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
+    needs:
+      - unit-label-check
+    with:
+      custom-job-label: Standard
+      enable-javadoc: false
+      enable-unit-tests: false
+      enable-e2e-tests: false
+      enable-integration-tests: true
+      enable-sonar-analysis: false
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      sonar-token: ${{ secrets.SONAR_TOKEN }}

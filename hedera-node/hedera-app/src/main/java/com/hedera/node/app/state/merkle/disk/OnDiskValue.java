@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.spi.state.Serdes;
@@ -100,8 +101,7 @@ public class OnDiskValue<V> implements VirtualValue {
 
     /** {@inheritDoc} */
     @Override
-    public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream)
-            throws IOException {
+    public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream) throws IOException {
         serdes.write(value, serializableDataOutputStream);
     }
 
@@ -114,8 +114,7 @@ public class OnDiskValue<V> implements VirtualValue {
 
     /** {@inheritDoc} */
     @Override
-    public void deserialize(
-            @NonNull final SerializableDataInputStream serializableDataInputStream, int ignored)
+    public void deserialize(@NonNull final SerializableDataInputStream serializableDataInputStream, int ignored)
             throws IOException {
         value = serdes.parse(serializableDataInputStream);
     }

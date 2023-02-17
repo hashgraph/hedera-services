@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.utils;
 
 import com.hederahashgraph.api.proto.java.SemanticVersion;
@@ -22,8 +23,11 @@ public class SemVerUtils {
         throw new UnsupportedOperationException("Utility class");
     }
 
-    public static SemanticVersion standardSemverWith(
-            final int major, final int minor, final int patch) {
-        return SemanticVersion.newBuilder().setMajor(major).setMinor(minor).setPatch(patch).build();
+    public static SemanticVersion standardSemverWith(final int major, final int minor, final int patch) {
+        return SemanticVersion.newBuilder()
+                .setMajor(major)
+                .setMinor(minor)
+                .setPatch(patch)
+                .build();
     }
 }

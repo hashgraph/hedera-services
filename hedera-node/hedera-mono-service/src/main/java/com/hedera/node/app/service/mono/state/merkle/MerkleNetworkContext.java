@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
@@ -94,8 +95,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     public static final int CURRENT_VERSION = RELEASE_0320_VERSION;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
     static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
-    static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS =
-            new DeterministicThrottle.UsageSnapshot[0];
+    static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS = new DeterministicThrottle.UsageSnapshot[0];
 
     static Supplier<ExchangeRates> ratesSupplier = ExchangeRates::new;
     static Supplier<SequenceNumber> seqNoSupplier = SequenceNumber::new;
@@ -106,7 +106,10 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     private Instant[] congestionLevelStarts = NO_CONGESTION_STARTS;
     private Instant[] evmCongestionLevelStarts = NO_CONGESTION_STARTS;
     private ExchangeRates midnightRates;
-    @Nullable private Instant consensusTimeOfLastHandledTxn = null;
+
+    @Nullable
+    private Instant consensusTimeOfLastHandledTxn = null;
+
     private SequenceNumber seqNo;
     private int nextTaskTodo;
     private long lastScannedEntity;
@@ -118,9 +121,16 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     private byte preExistingEntityScanStatus;
     private byte[] preparedUpdateFileHash = NO_PREPARED_UPDATE_FILE_HASH;
     private boolean migrationRecordsStreamed;
-    @Nullable private MultiplierSources multiplierSources = null;
-    @Nullable private FunctionalityThrottling throttling = null;
-    @Nullable private ExpiryThrottle expiryThrottle = null;
+
+    @Nullable
+    private MultiplierSources multiplierSources = null;
+
+    @Nullable
+    private FunctionalityThrottling throttling = null;
+
+    @Nullable
+    private ExpiryThrottle expiryThrottle = null;
+
     private DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot = NO_GAS_THROTTLE_SNAPSHOT;
     private DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
     private DeterministicThrottle.UsageSnapshot expiryUsageSnapshot = NEVER_USED_SNAPSHOT;
@@ -178,8 +188,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     }
 
     // Helpers that reset the received argument based on the network context
-    public void resetMultiplierSourceFromSavedCongestionStarts(
-            final MultiplierSources multiplierSources) {
+    public void resetMultiplierSourceFromSavedCongestionStarts(final MultiplierSources multiplierSources) {
         if (congestionLevelStarts.length > 0) {
             multiplierSources.resetGenericCongestionLevelStarts(congestionLevelStarts);
         }
@@ -300,9 +309,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     }
 
     @SuppressWarnings("java:S2696")
-    public long finishBlock(
-            final org.hyperledger.besu.datatypes.Hash ethHash,
-            final Instant firstConsTimeOfNewBlock) {
+    public long finishBlock(final org.hyperledger.besu.datatypes.Hash ethHash, final Instant firstConsTimeOfNewBlock) {
         throwIfImmutable("Cannot finish a block in an immutable context");
         if (blocksToLog > 0) {
             log.info(
@@ -358,8 +365,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         final var lastHandleTime = readNullable(in, RichInstant::from);
         consensusTimeOfLastHandledTxn = (lastHandleTime == null) ? null : lastHandleTime.toJava();
 
@@ -380,8 +386,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         final var gasUsed = in.readLong();
         final var lastGasUsage = readNullable(in, RichInstant::from);
         gasThrottleUsageSnapshot =
-                new DeterministicThrottle.UsageSnapshot(
-                        gasUsed, (lastGasUsage == null) ? null : lastGasUsage.toJava());
+                new DeterministicThrottle.UsageSnapshot(gasUsed, (lastGasUsage == null) ? null : lastGasUsage.toJava());
         if (version >= RELEASE_0240_VERSION) {
             migrationRecordsStreamed = in.readBoolean();
         }
@@ -397,8 +402,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         }
     }
 
-    private void readPreBlockData(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    private void readPreBlockData(final SerializableDataInputStream in, final int version) throws IOException {
         stakingRewardsActivated = in.readBoolean();
         totalStakedRewardStart = in.readLong();
         totalStakedStart = in.readLong();
@@ -406,10 +410,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         if (version >= RELEASE_0300_VERSION) {
             final var expiryCapacityUsed = in.readLong();
             final var lastExpiryUsage = readNullable(in, RichInstant::from);
-            expiryUsageSnapshot =
-                    new DeterministicThrottle.UsageSnapshot(
-                            expiryCapacityUsed,
-                            (lastExpiryUsage == null) ? null : lastExpiryUsage.toJava());
+            expiryUsageSnapshot = new DeterministicThrottle.UsageSnapshot(
+                    expiryCapacityUsed, (lastExpiryUsage == null) ? null : lastExpiryUsage.toJava());
             if (version >= RELEASE_0310_VERSION) {
                 nextTaskTodo = in.readInt();
                 seqNoPostUpgrade = in.readLong();
@@ -419,8 +421,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         }
     }
 
-    private void readCongestionControlData(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    private void readCongestionControlData(final SerializableDataInputStream in, final int version) throws IOException {
         final int numUsageSnapshots = in.readInt();
         if (numUsageSnapshots > 0) {
             usageSnapshots = new DeterministicThrottle.UsageSnapshot[numUsageSnapshots];
@@ -428,19 +429,13 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
                 final var used = in.readLong();
                 final var lastUsed = readNullable(in, RichInstant::from);
                 usageSnapshots[i] =
-                        new DeterministicThrottle.UsageSnapshot(
-                                used, (lastUsed == null) ? null : lastUsed.toJava());
+                        new DeterministicThrottle.UsageSnapshot(used, (lastUsed == null) ? null : lastUsed.toJava());
             }
         }
-        readCongestionStarts(
-                this::resetCongestionLevelStarts,
-                (start, i) -> congestionLevelStarts[i] = start,
-                in);
+        readCongestionStarts(this::resetCongestionLevelStarts, (start, i) -> congestionLevelStarts[i] = start, in);
         if (version >= RELEASE_0320_VERSION) {
             readCongestionStarts(
-                    this::resetEvmCongestionLevelStarts,
-                    (start, i) -> evmCongestionLevelStarts[i] = start,
-                    in);
+                    this::resetEvmCongestionLevelStarts, (start, i) -> evmCongestionLevelStarts[i] = start, in);
         }
     }
 
@@ -467,16 +462,15 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         }
     }
 
-    private void whenVersionHigherOrEqualTo0140(final SerializableDataInputStream in)
-            throws IOException {
+    private void whenVersionHigherOrEqualTo0140(final SerializableDataInputStream in) throws IOException {
         lastScannedEntity = in.readLong();
         entitiesScannedThisSecond = in.readLong();
         entitiesTouchedThisSecond = in.readLong();
         stateVersion = in.readInt();
     }
 
-    private void whenVersionHigherOrEqualTo0150AndLessThan0270(
-            final SerializableDataInputStream in, final int version) throws IOException {
+    private void whenVersionHigherOrEqualTo0150AndLessThan0270(final SerializableDataInputStream in, final int version)
+            throws IOException {
         if (version < RELEASE_0270_VERSION) {
             readNullable(in, RichInstant::from);
         }
@@ -528,13 +522,11 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     }
 
     public String summarizedWith(final DualStateAccessor dualStateAccessor) {
-        final var isDualStateAvailable =
-                dualStateAccessor != null && dualStateAccessor.getDualState() != null;
+        final var isDualStateAvailable = dualStateAccessor != null && dualStateAccessor.getDualState() != null;
         final var freezeTime =
                 isDualStateAvailable ? dualStateAccessor.getDualState().getFreezeTime() : null;
         final var pendingUpdateDesc = currentPendingUpdateDesc();
-        final var pendingMaintenanceDesc =
-                freezeTimeDesc(freezeTime, isDualStateAvailable) + pendingUpdateDesc;
+        final var pendingMaintenanceDesc = freezeTimeDesc(freezeTime, isDualStateAvailable) + pendingUpdateDesc;
 
         return "The network context (state version "
                 + (stateVersion == UNRECORDED_STATE_VERSION ? NOT_AVAILABLE : stateVersion)
@@ -632,8 +624,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         }
     }
 
-    private void appendDesc(
-            final StringBuilder sb, final DeterministicThrottle.UsageSnapshot snapshot) {
+    private void appendDesc(final StringBuilder sb, final DeterministicThrottle.UsageSnapshot snapshot) {
         sb.append(LINE_WRAP)
                 .append(snapshot.used())
                 .append(" used (last decision time ")
@@ -673,8 +664,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
                 + CommonUtils.hex(preparedUpdateFileHash).substring(0, 8);
     }
 
-    private String freezeTimeDesc(
-            @Nullable final Instant freezeTime, final boolean isDualStateAvailable) {
+    private String freezeTimeDesc(@Nullable final Instant freezeTime, final boolean isDualStateAvailable) {
         final var nmtDescSkip = LINE_WRAP;
         if (freezeTime == null) {
             return (isDualStateAvailable ? NOT_EXTANT : NOT_AVAILABLE) + nmtDescSkip;
@@ -756,11 +746,9 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     void updateCongestionStartsFrom(final MultiplierSources multiplierSources) {
         throwIfImmutable("Cannot update congestion starts on an immutable context");
         final var genericCongestionStarts = multiplierSources.genericCongestionStarts();
-        congestionLevelStarts =
-                (genericCongestionStarts == null) ? NO_CONGESTION_STARTS : genericCongestionStarts;
+        congestionLevelStarts = (genericCongestionStarts == null) ? NO_CONGESTION_STARTS : genericCongestionStarts;
         final var gasCongestionStarts = multiplierSources.gasCongestionStarts();
-        evmCongestionLevelStarts =
-                (gasCongestionStarts == null) ? NO_CONGESTION_STARTS : gasCongestionStarts;
+        evmCongestionLevelStarts = (gasCongestionStarts == null) ? NO_CONGESTION_STARTS : gasCongestionStarts;
     }
 
     void serializeNonHashData(final SerializableDataOutputStream out) throws IOException {
@@ -782,8 +770,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         out.writeLong(preparedUpdateFileNum);
         out.writeByteArray(preparedUpdateFileHash);
         out.writeLong(gasThrottleUsageSnapshot.used());
-        writeNullable(
-                fromJava(gasThrottleUsageSnapshot.lastDecisionTime()), out, RichInstant::serialize);
+        writeNullable(fromJava(gasThrottleUsageSnapshot.lastDecisionTime()), out, RichInstant::serialize);
         out.writeBoolean(migrationRecordsStreamed);
         writeNullable(fromJava(firstConsTimeOfCurrentBlock), out, RichInstant::serialize);
         out.writeLong(blockNo);
@@ -792,16 +779,15 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         out.writeLong(totalStakedStart);
         out.writeLong(pendingRewards);
         out.writeLong(expiryUsageSnapshot.used());
-        writeNullable(
-                fromJava(expiryUsageSnapshot.lastDecisionTime()), out, RichInstant::serialize);
+        writeNullable(fromJava(expiryUsageSnapshot.lastDecisionTime()), out, RichInstant::serialize);
         out.writeInt(nextTaskTodo);
         out.writeLong(seqNoPostUpgrade);
         out.writeLong(lastScannedPostUpgrade);
         out.writeByte(preExistingEntityScanStatus);
     }
 
-    private void writeCongestionStarts(
-            final Instant[] starts, final SerializableDataOutputStream out) throws IOException {
+    private void writeCongestionStarts(final Instant[] starts, final SerializableDataOutputStream out)
+            throws IOException {
         final var n = starts.length;
         out.writeInt(n);
         for (final var congestionStart : starts) {
@@ -810,8 +796,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     }
 
     private void reset(
-            final List<DeterministicThrottle> throttles,
-            final GasLimitDeterministicThrottle gasLimitThrottle) {
+            final List<DeterministicThrottle> throttles, final GasLimitDeterministicThrottle gasLimitThrottle) {
         safeResetThrottles(throttles, usageSnapshots, "handle");
 
         final var currGasThrottleUsageSnapshot = gasLimitThrottle.usageSnapshot();
@@ -819,11 +804,10 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
             gasLimitThrottle.resetUsageTo(gasThrottleUsageSnapshot);
             log.info("Reset {} with saved gas throttle usage snapshot", gasThrottleUsageSnapshot);
         } catch (final IllegalArgumentException e) {
-            log.warn(
-                    String.format(
-                            "Saved gas throttle usage snapshot was not compatible with the"
-                                + " corresponding active throttle (%s); not performing a reset!",
-                            e.getMessage()));
+            log.warn(String.format(
+                    "Saved gas throttle usage snapshot was not compatible with the"
+                            + " corresponding active throttle (%s); not performing a reset!",
+                    e.getMessage()));
             gasLimitThrottle.resetUsageTo(currGasThrottleUsageSnapshot);
         }
     }
@@ -899,14 +883,13 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
 
     private void safeUpdatePendingRewards(final long amount, final long sigNum) {
         if (amount < 0) {
-            throw new IllegalArgumentException(
-                    "Cannot "
-                            + (sigNum < 0 ? "decrease " : "increase ")
-                            + "pendingRewards="
-                            + pendingRewards
-                            + " by negative amount ("
-                            + amount
-                            + ")");
+            throw new IllegalArgumentException("Cannot "
+                    + (sigNum < 0 ? "decrease " : "increase ")
+                    + "pendingRewards="
+                    + pendingRewards
+                    + " by negative amount ("
+                    + amount
+                    + ")");
         }
         final var delta = sigNum * amount;
         var newPendingRewards = pendingRewards + delta;
@@ -1038,8 +1021,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         this.stakingRewardsActivated = stakingRewardsActivated;
     }
 
-    public void setGasThrottleUsageSnapshot(
-            final DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot) {
+    public void setGasThrottleUsageSnapshot(final DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot) {
         this.gasThrottleUsageSnapshot = gasThrottleUsageSnapshot;
     }
 
@@ -1097,8 +1079,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     }
 
     @VisibleForTesting
-    public void setExpiryUsageSnapshot(
-            final DeterministicThrottle.UsageSnapshot expiryUsageSnapshot) {
+    public void setExpiryUsageSnapshot(final DeterministicThrottle.UsageSnapshot expiryUsageSnapshot) {
         this.expiryUsageSnapshot = expiryUsageSnapshot;
     }
 

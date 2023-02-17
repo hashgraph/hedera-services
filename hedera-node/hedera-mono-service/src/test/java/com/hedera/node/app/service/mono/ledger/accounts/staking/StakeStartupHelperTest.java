@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
@@ -69,11 +70,20 @@ class StakeStartupHelperTest {
     private static final int numStakingAccounts = 50;
     private static final long currentStakingPeriod = 1_234_567L;
 
-    @Mock private StakeInfoManager stakeInfoManager;
-    @Mock private PropertySource properties;
-    @Mock private MerkleNetworkContext networkContext;
-    @Mock private AddressBook addressBook;
-    @Mock private RewardCalculator rewardCalculator;
+    @Mock
+    private StakeInfoManager stakeInfoManager;
+
+    @Mock
+    private PropertySource properties;
+
+    @Mock
+    private MerkleNetworkContext networkContext;
+
+    @Mock
+    private AddressBook addressBook;
+
+    @Mock
+    private RewardCalculator rewardCalculator;
 
     private MerkleMap<EntityNum, MerkleAccount> accounts;
     private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos;
@@ -110,12 +120,10 @@ class StakeStartupHelperTest {
     void okToRequestNothingPostUpgrade() {
         givenPostUpgradeSubjectDoing();
 
-        assertDoesNotThrow(
-                () ->
-                        subject.doUpgradeHousekeeping(
-                                networkContext,
-                                AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
-                                MerkleMapLike.from(stakingInfos)));
+        assertDoesNotThrow(() -> subject.doUpgradeHousekeeping(
+                networkContext,
+                AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
+                MerkleMapLike.from(stakingInfos)));
     }
 
     @Test
@@ -135,30 +143,21 @@ class StakeStartupHelperTest {
             final var num = postUpgradeInfo.getKey();
 
             final var actualStakeToReward = stakingInfos.get(num).getStakeToReward();
-            final var expectedStakeToReward =
-                    Optional.ofNullable(expectedQuantities.nodeStakesToReward.get(num.longValue()))
-                            .orElse(0L);
-            assertEquals(
-                    expectedStakeToReward,
-                    actualStakeToReward,
-                    "Wrong stake to reward for node " + num);
+            final var expectedStakeToReward = Optional.ofNullable(
+                            expectedQuantities.nodeStakesToReward.get(num.longValue()))
+                    .orElse(0L);
+            assertEquals(expectedStakeToReward, actualStakeToReward, "Wrong stake to reward for node " + num);
 
             final var actualStakeToNotReward = stakingInfos.get(num).getStakeToNotReward();
-            final var expectedStakeToNotReward =
-                    Optional.ofNullable(
-                                    expectedQuantities.nodeStakesToNotReward.get(num.longValue()))
-                            .orElse(0L);
-            assertEquals(
-                    expectedStakeToNotReward,
-                    actualStakeToNotReward,
-                    "Wrong stake to not reward for node " + num);
+            final var expectedStakeToNotReward = Optional.ofNullable(
+                            expectedQuantities.nodeStakesToNotReward.get(num.longValue()))
+                    .orElse(0L);
+            assertEquals(expectedStakeToNotReward, actualStakeToNotReward, "Wrong stake to not reward for node " + num);
         }
     }
 
     private record ExpectedQuantities(
-            long pendingRewards,
-            Map<Long, Long> nodeStakesToReward,
-            Map<Long, Long> nodeStakesToNotReward) {}
+            long pendingRewards, Map<Long, Long> nodeStakesToReward, Map<Long, Long> nodeStakesToNotReward) {}
 
     private ExpectedQuantities givenStakingAccountsWithExpectedQuantities() {
         givenPostUpgradeNodeInfos();
@@ -188,12 +187,8 @@ class StakeStartupHelperTest {
                     continue;
                 }
                 final var pretendReward = r.nextInt(123) * 100_000_000L;
-                given(
-                                rewardCalculator.estimatePendingRewards(
-                                        account,
-                                        stakingInfos.get(
-                                                EntityNum.fromLong(
-                                                        account.getStakedNodeAddressBookId()))))
+                given(rewardCalculator.estimatePendingRewards(
+                                account, stakingInfos.get(EntityNum.fromLong(account.getStakedNodeAddressBookId()))))
                         .willReturn(pretendReward);
                 pendingRewards += pretendReward;
                 // Should this account decline rewards?
@@ -275,26 +270,18 @@ class StakeStartupHelperTest {
     private static void registerConstructables() {
         try {
             ConstructableRegistry.getInstance()
-                    .registerConstructable(
-                            new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
+                    .registerConstructable(new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
             ConstructableRegistry.getInstance()
                     .registerConstructable(
-                            new ClassConstructorPair(
-                                    MerkleBinaryTree.class, MerkleBinaryTree::new));
+                            new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
             ConstructableRegistry.getInstance()
-                    .registerConstructable(
-                            new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
+                    .registerConstructable(new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
             ConstructableRegistry.getInstance()
-                    .registerConstructable(
-                            new ClassConstructorPair(
-                                    MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
-            ConstructableRegistry.getInstance()
-                    .registerConstructable(
-                            new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
-            ConstructableRegistry.getInstance()
-                    .registerConstructable(
-                            new ClassConstructorPair(
-                                    MerkleAccountState.class, MerkleAccountState::new));
+                    .registerConstructable(new ClassConstructorPair(MerkleAccountState.class, MerkleAccountState::new));
             ConstructableRegistry.getInstance()
                     .registerConstructable(new ClassConstructorPair(FCQueue.class, FCQueue::new));
         } catch (ConstructableRegistryException e) {

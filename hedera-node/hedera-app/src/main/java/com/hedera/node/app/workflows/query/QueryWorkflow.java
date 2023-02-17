@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.query;
 
 import com.hedera.node.app.SessionContext;
@@ -21,8 +22,15 @@ import java.nio.ByteBuffer;
 
 /** A workflow for processing queries. */
 public interface QueryWorkflow {
+
+    /**
+     * Called to handle a single query.
+     *
+     * @param session The per-request {@link SessionContext}.
+     * @param requestBuffer The raw protobuf query bytes. Must be a {@link
+     *     com.hederahashgraph.api.proto.java.Query} object.
+     * @param responseBuffer The raw protobuf response bytes.
+     */
     void handleQuery(
-            @NonNull SessionContext session,
-            @NonNull ByteBuffer requestBuffer,
-            @NonNull ByteBuffer responseBuffer);
+            @NonNull SessionContext session, @NonNull ByteBuffer requestBuffer, @NonNull ByteBuffer responseBuffer);
 }

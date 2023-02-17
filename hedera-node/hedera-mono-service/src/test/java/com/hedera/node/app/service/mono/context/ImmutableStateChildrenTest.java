@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,8 +42,6 @@ import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.fchashmap.FCHashMap;
-import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,22 +51,53 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ImmutableStateChildrenTest {
-    @Mock private ServicesState state;
-    @Mock private AccountStorageAdapter accounts;
-    @Mock private RecordsStorageAdapter payerRecords;
-    @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
-    @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
-    @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
-    @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
-    @Mock private TokenRelStorageAdapter tokenAssociations;
-    @Mock private MerkleScheduledTransactions scheduleTxs;
-    @Mock private MerkleNetworkContext networkCtx;
-    @Mock private AddressBook addressBook;
-    @Mock private MerkleSpecialFiles specialFiles;
-    @Mock private UniqueTokenMapAdapter uniqueTokens;
-    @Mock private RecordsRunningHashLeaf runningHashLeaf;
-    @Mock private FCHashMap<ByteString, EntityNum> aliases;
-    @Mock private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
+    @Mock
+    private ServicesState state;
+
+    @Mock
+    private AccountStorageAdapter accounts;
+
+    @Mock
+    private RecordsStorageAdapter payerRecords;
+
+    @Mock
+    private VirtualMapLike<VirtualBlobKey, VirtualBlobValue> storage;
+
+    @Mock
+    private VirtualMapLike<ContractKey, IterableContractValue> contractStorage;
+
+    @Mock
+    private MerkleMapLike<EntityNum, MerkleTopic> topics;
+
+    @Mock
+    private MerkleMapLike<EntityNum, MerkleToken> tokens;
+
+    @Mock
+    private TokenRelStorageAdapter tokenAssociations;
+
+    @Mock
+    private MerkleScheduledTransactions scheduleTxs;
+
+    @Mock
+    private MerkleNetworkContext networkCtx;
+
+    @Mock
+    private AddressBook addressBook;
+
+    @Mock
+    private MerkleSpecialFiles specialFiles;
+
+    @Mock
+    private UniqueTokenMapAdapter uniqueTokens;
+
+    @Mock
+    private RecordsRunningHashLeaf runningHashLeaf;
+
+    @Mock
+    private FCHashMap<ByteString, EntityNum> aliases;
+
+    @Mock
+    private MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfo;
 
     private ImmutableStateChildren subject;
 
@@ -87,10 +117,10 @@ class ImmutableStateChildrenTest {
 
     private void givenStateWithMockChildren() {
         given(state.accounts()).willReturn(accounts);
-        given(state.storage()).willReturn(VirtualMapLike.from(storage));
-        given(state.contractStorage()).willReturn(VirtualMapLike.from(contractStorage));
-        given(state.topics()).willReturn(MerkleMapLike.from(topics));
-        given(state.tokens()).willReturn(MerkleMapLike.from(tokens));
+        given(state.storage()).willReturn(storage);
+        given(state.contractStorage()).willReturn(contractStorage);
+        given(state.topics()).willReturn(topics);
+        given(state.tokens()).willReturn(tokens);
         given(state.tokenAssociations()).willReturn(tokenAssociations);
         given(state.scheduleTxs()).willReturn(scheduleTxs);
         given(state.networkCtx()).willReturn(networkCtx);
@@ -99,7 +129,7 @@ class ImmutableStateChildrenTest {
         given(state.uniqueTokens()).willReturn(uniqueTokens);
         given(state.runningHashLeaf()).willReturn(runningHashLeaf);
         given(state.aliases()).willReturn(aliases);
-        given(state.stakingInfo()).willReturn(MerkleMapLike.from(stakingInfo));
+        given(state.stakingInfo()).willReturn(stakingInfo);
         given(state.payerRecords()).willReturn(payerRecords);
     }
 

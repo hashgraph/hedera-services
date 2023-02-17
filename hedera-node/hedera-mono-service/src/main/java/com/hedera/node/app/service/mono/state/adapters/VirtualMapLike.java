@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.adapters;
 
 import com.swirlds.common.crypto.Hash;
@@ -50,8 +51,7 @@ public interface VirtualMapLike<K extends VirtualKey<? super K>, V extends Virtu
 
     VirtualDataSource<?, ?> getDataSource();
 
-    void extractVirtualMapData(
-            ThreadManager threadManager, InterruptableConsumer<Pair<K, V>> handler, int threadCount)
+    void extractVirtualMapData(ThreadManager threadManager, InterruptableConsumer<Pair<K, V>> handler, int threadCount)
             throws InterruptedException;
 
     static <K extends VirtualLongKey, V extends VirtualValue> VirtualMapLike<K, V> fromLongKeyed(
@@ -68,8 +68,7 @@ public interface VirtualMapLike<K extends VirtualKey<? super K>, V extends Virtu
                     final InterruptableConsumer<Pair<K, V>> handler,
                     final int threadCount)
                     throws InterruptedException {
-                VirtualMapMigration.extractVirtualMapData(
-                        threadManager, real, handler, threadCount);
+                VirtualMapMigration.extractVirtualMapData(threadManager, real, handler, threadCount);
             }
 
             @Override
@@ -124,8 +123,7 @@ public interface VirtualMapLike<K extends VirtualKey<? super K>, V extends Virtu
         };
     }
 
-    static <K extends VirtualKey<K>, V extends VirtualValue> VirtualMapLike<K, V> from(
-            final VirtualMap<K, V> real) {
+    static <K extends VirtualKey<K>, V extends VirtualValue> VirtualMapLike<K, V> from(final VirtualMap<K, V> real) {
         return new VirtualMapLike<>() {
             @Override
             public VirtualDataSource<K, V> getDataSource() {
@@ -138,8 +136,7 @@ public interface VirtualMapLike<K extends VirtualKey<? super K>, V extends Virtu
                     final InterruptableConsumer<Pair<K, V>> handler,
                     final int threadCount)
                     throws InterruptedException {
-                VirtualMapMigration.extractVirtualMapData(
-                        threadManager, real, handler, threadCount);
+                VirtualMapMigration.extractVirtualMapData(threadManager, real, handler, threadCount);
             }
 
             @Override

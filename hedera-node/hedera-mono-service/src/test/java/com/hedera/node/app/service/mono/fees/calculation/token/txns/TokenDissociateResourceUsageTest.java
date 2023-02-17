@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.token.txns;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -74,18 +75,16 @@ class TokenDissociateResourceUsageTest {
         accounts = mock(MerkleMap.class);
         given(accounts.get(EntityNum.fromAccountId(target))).willReturn(account);
         view = mock(StateView.class);
-        given(view.accounts())
-                .willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
+        given(view.accounts()).willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
 
         tokenDissociateTxn = mock(TransactionBody.class);
         given(tokenDissociateTxn.hasTokenDissociate()).willReturn(true);
         given(tokenDissociateTxn.getTokenDissociate())
-                .willReturn(
-                        TokenDissociateTransactionBody.newBuilder()
-                                .setAccount(IdUtils.asAccount("1.2.3"))
-                                .addTokens(firstToken)
-                                .addTokens(secondToken)
-                                .build());
+                .willReturn(TokenDissociateTransactionBody.newBuilder()
+                        .setAccount(IdUtils.asAccount("1.2.3"))
+                        .addTokens(firstToken)
+                        .addTokens(secondToken)
+                        .build());
 
         nonTokenDissociateTxn = mock(TransactionBody.class);
         given(nonTokenDissociateTxn.hasTokenAssociate()).willReturn(false);
@@ -130,8 +129,7 @@ class TokenDissociateResourceUsageTest {
         given(accounts.get(EntityNum.fromAccountId(target))).willReturn(null);
 
         // expect:
-        assertEquals(
-                FeeData.getDefaultInstance(), subject.usageGiven(tokenDissociateTxn, obj, view));
+        assertEquals(FeeData.getDefaultInstance(), subject.usageGiven(tokenDissociateTxn, obj, view));
 
         mockStatic.close();
     }

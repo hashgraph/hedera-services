@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.store;
 
 import static java.lang.Long.parseLong;
@@ -33,8 +34,7 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 
     public static final int LEGACY_BLOB_CODE_INDEX = 3;
 
-    public FcBlobsBytesStore(
-            Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> blobSupplier) {
+    public FcBlobsBytesStore(Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> blobSupplier) {
         this.blobSupplier = blobSupplier;
     }
 

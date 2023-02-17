@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stats;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -48,19 +49,45 @@ class ServicesStatsManagerTest {
 
     private final long throttleGaugesUpdateIntervalMs = 2_000;
     private final long entityUtilGaugesUpdateIntervalMs = 3_000;
-    @Mock private Pause pause;
-    @Mock private Platform platform;
-    @Mock private Function<Runnable, Thread> threads;
-    @Mock private HapiOpCounters counters;
-    @Mock private MiscRunningAvgs runningAvgs;
-    @Mock private MiscSpeedometers miscSpeedometers;
-    @Mock private HapiOpSpeedometers speedometers;
-    @Mock private NodeLocalProperties properties;
-    @Mock private VirtualMap<ContractKey, IterableContractValue> storage;
-    @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
-    @Mock private ThrottleGauges throttleGauges;
-    @Mock private EntityUtilGauges entityUtilGauges;
-    @Mock private ExpiryStats expiryStats;
+
+    @Mock
+    private Pause pause;
+
+    @Mock
+    private Platform platform;
+
+    @Mock
+    private Function<Runnable, Thread> threads;
+
+    @Mock
+    private HapiOpCounters counters;
+
+    @Mock
+    private MiscRunningAvgs runningAvgs;
+
+    @Mock
+    private MiscSpeedometers miscSpeedometers;
+
+    @Mock
+    private HapiOpSpeedometers speedometers;
+
+    @Mock
+    private NodeLocalProperties properties;
+
+    @Mock
+    private VirtualMap<ContractKey, IterableContractValue> storage;
+
+    @Mock
+    private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
+
+    @Mock
+    private ThrottleGauges throttleGauges;
+
+    @Mock
+    private EntityUtilGauges entityUtilGauges;
+
+    @Mock
+    private ExpiryStats expiryStats;
 
     ServicesStatsManager subject;
 
@@ -71,36 +98,30 @@ class ServicesStatsManagerTest {
 
         given(platform.getSelfId()).willReturn(new NodeId(false, 123L));
         given(properties.hapiOpsStatsUpdateIntervalMs()).willReturn(opsUpdateIntervalMs);
-        given(properties.entityUtilStatsUpdateIntervalMs())
-                .willReturn(entityUtilGaugesUpdateIntervalMs);
-        given(properties.throttleUtilStatsUpdateIntervalMs())
-                .willReturn(throttleGaugesUpdateIntervalMs);
+        given(properties.entityUtilStatsUpdateIntervalMs()).willReturn(entityUtilGaugesUpdateIntervalMs);
+        given(properties.throttleUtilStatsUpdateIntervalMs()).willReturn(throttleGaugesUpdateIntervalMs);
 
-        subject =
-                new ServicesStatsManager(
-                        expiryStats,
-                        counters,
-                        throttleGauges,
-                        runningAvgs,
-                        entityUtilGauges,
-                        miscSpeedometers,
-                        speedometers,
-                        properties,
-                        () -> VirtualMapLike.from(storage),
-                        () -> VirtualMapLike.from(bytecode));
+        subject = new ServicesStatsManager(
+                expiryStats,
+                counters,
+                throttleGauges,
+                runningAvgs,
+                entityUtilGauges,
+                miscSpeedometers,
+                speedometers,
+                properties,
+                () -> VirtualMapLike.from(storage),
+                () -> VirtualMapLike.from(bytecode));
     }
 
     @AfterEach
     public void cleanup() throws Exception {
         ServicesStatsManager.pause = SleepingPause.SLEEPING_PAUSE;
-        ServicesStatsManager.loopFactory =
-                runnable ->
-                        new Thread(
-                                () -> {
-                                    while (true) {
-                                        runnable.run();
-                                    }
-                                });
+        ServicesStatsManager.loopFactory = runnable -> new Thread(() -> {
+            while (true) {
+                runnable.run();
+            }
+        });
     }
 
     @Test
@@ -127,8 +148,7 @@ class ServicesStatsManagerTest {
         verify(bytecode).registerMetrics(any());
         // and:
         verify(thread).start();
-        verify(thread)
-                .setName(String.format(ServicesStatsManager.STATS_UPDATE_THREAD_NAME_TPL, 123L));
+        verify(thread).setName(String.format(ServicesStatsManager.STATS_UPDATE_THREAD_NAME_TPL, 123L));
         // and when:
         for (int i = 0; i < 6; i++) {
             captor.getValue().run();

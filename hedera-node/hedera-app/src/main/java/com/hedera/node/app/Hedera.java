@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
@@ -31,12 +32,13 @@ import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.workflows.ingest.IngestWorkflowImpl;
-import com.hedera.node.app.workflows.query.QueryWorkflowImpl;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.system.NodeId;
 import io.helidon.grpc.server.GrpcRouting;
 import io.helidon.grpc.server.GrpcServer;
 import io.helidon.grpc.server.GrpcServerConfiguration;
@@ -47,31 +49,25 @@ import java.util.function.Consumer;
 
 /** Main class for the Hedera Consensus Node. */
 public final class Hedera {
+    private static final int MAX_SIGNED_TXN_SIZE = 6144;
     private final CountDownLatch shutdownLatch = new CountDownLatch(1);
 
     public Hedera() {}
 
     public void start(ServicesApp app, int port) {
-        final var metrics = createMetrics();
+        final var metrics = createMetrics(app.nodeId());
 
         // Create the Ingest workflow. While we are in transition, some required facilities come
         // from `hedera-app`, and some from `mono-service`. Eventually we'll transition all
         // facilities to be from the app module.
-        // TODO Real values will be added to make this usable with #4714
+        // TODO Real values will be added to make this usable with #4825
         final var ingestWorkflow =
-                new IngestWorkflowImpl(
-                        app.nodeInfo(),
-                        app.platformStatus(),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null);
+                new IngestWorkflowImpl(app.nodeInfo(), app.platformStatus(), null, null, null, null, null, null);
 
-        // Create the query workflow
-        final var queryWorkflow = new QueryWorkflowImpl();
+        // Create the query workflow; fully qualified import to appease javadoc Gradle task
+        final var queryWorkflow = com.hedera.node.app.components.DaggerQueryComponent.factory()
+                .create(app.bootstrapProps(), MAX_SIGNED_TXN_SIZE, app.platform())
+                .queryWorkflow();
 
         // Setup and start the grpc server.
         // At some point I'd like to somehow move the metadata for which transactions are supported
@@ -79,22 +75,17 @@ public final class Hedera {
         // yet what that API would look like, so for now we do it this way. Maybe we should have
         // a set of annotations that generate the metadata, or maybe we have some code. Whatever
         // we do should work also with workflows.
-        final var grpcServer =
-                GrpcServer.create(
-                        GrpcServerConfiguration.builder().port(port).build(),
-                        GrpcRouting.builder()
-                                .register(
-                                        new GrpcServiceBuilder(
-                                                        "proto.ConsensusService",
-                                                        ingestWorkflow,
-                                                        queryWorkflow)
-                                                .transaction("createTopic")
-                                                .transaction("updateTopic")
-                                                .transaction("deleteTopic")
-                                                .query("getTopicInfo")
-                                                .transaction("submitMessage")
-                                                .build(metrics))
-                                .build());
+        final var grpcServer = GrpcServer.create(
+                GrpcServerConfiguration.builder().port(port).build(),
+                GrpcRouting.builder()
+                        .register(new GrpcServiceBuilder("proto.ConsensusService", ingestWorkflow, queryWorkflow)
+                                .transaction("createTopic")
+                                .transaction("updateTopic")
+                                .transaction("deleteTopic")
+                                .query("getTopicInfo")
+                                .transaction("submitMessage")
+                                .build(metrics))
+                        .build());
         grpcServer.whenShutdown().thenAccept(server -> shutdownLatch.countDown());
         grpcServer.start();
 
@@ -115,8 +106,7 @@ public final class Hedera {
     private record ServiceRegistry(Service service, MerkleSchemaRegistry registry) {
         public static ServiceRegistry registryFor(final Service service) {
             final var registry =
-                    new MerkleSchemaRegistry(
-                            ConstructableRegistry.getInstance(), null, service.getServiceName());
+                    new MerkleSchemaRegistry(ConstructableRegistry.getInstance(), null, service.getServiceName());
             return new ServiceRegistry(service, registry);
         }
 
@@ -125,45 +115,35 @@ public final class Hedera {
         }
     }
 
-    static Consumer<MerkleHederaState> registerServiceSchemasForMigration(
-            final SemanticVersion currentVersion) {
-        final List<ServiceRegistry> serviceRegistries =
-                List.of(
-                        //            ServiceRegistry.registryFor(ConsensusService.getInstance()),
-                        ServiceRegistry.registryFor(new ConsensusServiceImpl()),
-                        //            ServiceRegistry.registryFor(ContractService.getInstance()),
-                        ServiceRegistry.registryFor(new ContractServiceImpl()),
-                        //            ServiceRegistry.registryFor(FileService.getInstance()),
-                        ServiceRegistry.registryFor(new FileServiceImpl()),
-                        //            ServiceRegistry.registryFor(FreezeService.getInstance()),
-                        ServiceRegistry.registryFor(new FreezeServiceImpl()),
-                        //            ServiceRegistry.registryFor(NetworkService.getInstance()),
-                        ServiceRegistry.registryFor(new NetworkServiceImpl()),
-                        //            ServiceRegistry.registryFor(ScheduleService.getInstance()),
-                        ServiceRegistry.registryFor(new ScheduleServiceImpl()),
-                        //            ServiceRegistry.registryFor(TokenService.getInstance()),
-                        ServiceRegistry.registryFor(new TokenServiceImpl()),
-                        //            ServiceRegistry.registryFor(UtilService.getInstance())
-                        ServiceRegistry.registryFor(new UtilServiceImpl()));
+    static Consumer<MerkleHederaState> registerServiceSchemasForMigration(final SemanticVersion currentVersion) {
+        final List<ServiceRegistry> serviceRegistries = List.of(
+                //            ServiceRegistry.registryFor(ConsensusService.getInstance()),
+                ServiceRegistry.registryFor(new ConsensusServiceImpl()),
+                //            ServiceRegistry.registryFor(ContractService.getInstance()),
+                ServiceRegistry.registryFor(new ContractServiceImpl()),
+                //            ServiceRegistry.registryFor(FileService.getInstance()),
+                ServiceRegistry.registryFor(new FileServiceImpl()),
+                //            ServiceRegistry.registryFor(FreezeService.getInstance()),
+                ServiceRegistry.registryFor(new FreezeServiceImpl()),
+                //            ServiceRegistry.registryFor(NetworkService.getInstance()),
+                ServiceRegistry.registryFor(new NetworkServiceImpl()),
+                //            ServiceRegistry.registryFor(ScheduleService.getInstance()),
+                ServiceRegistry.registryFor(new ScheduleServiceImpl()),
+                //            ServiceRegistry.registryFor(TokenService.getInstance()),
+                ServiceRegistry.registryFor(new TokenServiceImpl()),
+                //            ServiceRegistry.registryFor(UtilService.getInstance())
+                ServiceRegistry.registryFor(new UtilServiceImpl()));
 
         serviceRegistries.forEach(ServiceRegistry::registerSchemas);
 
-        return state ->
-                serviceRegistries.forEach(
-                        serviceRegistry ->
-                                serviceRegistry
-                                        .registry()
-                                        .migrate(
-                                                state,
-                                                state.deserializedVersion(),
-                                                currentVersion));
+        return state -> serviceRegistries.forEach(serviceRegistry ->
+                serviceRegistry.registry().migrate(state, state.deserializedVersion(), currentVersion));
     }
 
-    private static Metrics createMetrics() {
+    private static Metrics createMetrics(NodeId nodeId) {
         // This is a stub implementation, to be replaced by a real implementation in #4293
-        final var metricService =
-                Executors.newSingleThreadScheduledExecutor(
-                        getStaticThreadManager().createThreadFactory("metrics", "MetricsWriter"));
-        return new DefaultMetrics(metricService, new DefaultMetricsFactory());
+        final var metricService = Executors.newSingleThreadScheduledExecutor(
+                getStaticThreadManager().createThreadFactory("metrics", "MetricsWriter"));
+        return new DefaultMetrics(nodeId, new MetricKeyRegistry(), metricService, new DefaultMetricsFactory());
     }
 }

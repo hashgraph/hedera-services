@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.consensus.impl;
 
 import com.hedera.node.app.service.consensus.ConsensusService;
@@ -54,8 +55,7 @@ public final class ConsensusServiceImpl implements ConsensusService {
     private StateDefinition<EntityNum, MerkleTopic> topicsDef() {
         final var keySerdes = new EntityNumSerdes();
         final var valueSerdes =
-                MonoMapSerdesAdapter.serdesForSelfSerializable(
-                        MerkleTopic.CURRENT_VERSION, MerkleTopic::new);
+                MonoMapSerdesAdapter.serdesForSelfSerializable(MerkleTopic.CURRENT_VERSION, MerkleTopic::new);
         return StateDefinition.inMemory(TOPICS_KEY, keySerdes, valueSerdes);
     }
 }

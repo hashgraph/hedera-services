@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation;
 
 import static com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils.ZERO_EXPIRY;
@@ -60,9 +61,7 @@ public class FeeCalcUtilsTest {
     }
 
     private static String path(final String buildMarker, final FileID fid) {
-        return String.format(
-                "%s%s%d",
-                buildPath(LEDGER_PATH, "" + fid.getRealmNum()), buildMarker, fid.getFileNum());
+        return String.format("%s%s%d", buildPath(LEDGER_PATH, "" + fid.getRealmNum()), buildMarker, fid.getFileNum());
     }
 
     public static String buildPath(final String path, final Object... params) {
@@ -78,15 +77,14 @@ public class FeeCalcUtilsTest {
         // setup:
         final var account = mock(MerkleAccount.class);
         final MerkleMap<EntityNum, MerkleAccount> accounts = mock(MerkleMap.class);
-        final Timestamp expected = Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build();
+        final Timestamp expected =
+                Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build();
 
         given(account.getExpiry()).willReturn(Long.MAX_VALUE);
         given(accounts.get(key)).willReturn(account);
 
         assertEquals(
-                expected,
-                lookupAccountExpiry(
-                        key, AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))));
+                expected, lookupAccountExpiry(key, AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))));
     }
 
     @Test
@@ -107,11 +105,9 @@ public class FeeCalcUtilsTest {
     void returnsFileExpiryIfAvail() throws Exception {
         final var view = mock(StateView.class);
         final var fid = IdUtils.asFile("1.2.3");
-        final var wacl =
-                JKey.mapKey(
-                        Key.newBuilder()
-                                .setEd25519(ByteString.copyFrom("YUUP".getBytes()))
-                                .build());
+        final var wacl = JKey.mapKey(Key.newBuilder()
+                .setEd25519(ByteString.copyFrom("YUUP".getBytes()))
+                .build());
         final var jInfo = new HFileMeta(false, wacl, Long.MAX_VALUE);
         final var expected = Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build();
         given(view.attrOf(fid)).willReturn(Optional.of(jInfo));
@@ -122,12 +118,9 @@ public class FeeCalcUtilsTest {
     @Test
     void constructsExpectedPath() {
         final var fid = IdUtils.asFile("1.2.3");
-        final var expected =
-                String.format(
-                        "%s%s%d",
-                        buildPath(LEDGER_PATH, "" + fid.getRealmNum()),
-                        ARTIFACTS_PREFIX_FILE_CONTENT,
-                        fid.getFileNum());
+        final var expected = String.format(
+                "%s%s%d",
+                buildPath(LEDGER_PATH, "" + fid.getRealmNum()), ARTIFACTS_PREFIX_FILE_CONTENT, fid.getFileNum());
 
         assertEquals(expected, pathOf(fid));
     }
@@ -135,60 +128,51 @@ public class FeeCalcUtilsTest {
     @Test
     void constructsExpectedMetaPath() {
         final var fid = IdUtils.asFile("1.2.3");
-        final var expected =
-                String.format(
-                        "%s%s%d",
-                        buildPath(LEDGER_PATH, "" + fid.getRealmNum()),
-                        ARTIFACTS_PREFIX_FILE_INFO,
-                        fid.getFileNum());
+        final var expected = String.format(
+                "%s%s%d", buildPath(LEDGER_PATH, "" + fid.getRealmNum()), ARTIFACTS_PREFIX_FILE_INFO, fid.getFileNum());
 
         assertEquals(expected, pathOfMeta(fid));
     }
 
     @Test
     void sumsAsExpected() {
-        final var aComp =
-                FeeComponents.newBuilder()
-                        .setMin(2)
-                        .setMax(1_234_567)
-                        .setConstant(1)
-                        .setBpt(2)
-                        .setVpt(3)
-                        .setRbh(4)
-                        .setSbh(5)
-                        .setGas(6)
-                        .setTv(7)
-                        .setBpr(8)
-                        .setSbpr(9);
-        final var bComp =
-                FeeComponents.newBuilder()
-                        .setMin(1)
-                        .setMax(1_234_566)
-                        .setConstant(9)
-                        .setBpt(8)
-                        .setVpt(7)
-                        .setRbh(6)
-                        .setSbh(5)
-                        .setGas(4)
-                        .setTv(3)
-                        .setBpr(2)
-                        .setSbpr(1);
-        final var a =
-                FeeData.newBuilder()
-                        .setNetworkdata(aComp)
-                        .setNodedata(aComp)
-                        .setServicedata(aComp)
-                        .build();
-        final var b =
-                FeeData.newBuilder()
-                        .setNetworkdata(bComp)
-                        .setNodedata(bComp)
-                        .setServicedata(bComp)
-                        .build();
+        final var aComp = FeeComponents.newBuilder()
+                .setMin(2)
+                .setMax(1_234_567)
+                .setConstant(1)
+                .setBpt(2)
+                .setVpt(3)
+                .setRbh(4)
+                .setSbh(5)
+                .setGas(6)
+                .setTv(7)
+                .setBpr(8)
+                .setSbpr(9);
+        final var bComp = FeeComponents.newBuilder()
+                .setMin(1)
+                .setMax(1_234_566)
+                .setConstant(9)
+                .setBpt(8)
+                .setVpt(7)
+                .setRbh(6)
+                .setSbh(5)
+                .setGas(4)
+                .setTv(3)
+                .setBpr(2)
+                .setSbpr(1);
+        final var a = FeeData.newBuilder()
+                .setNetworkdata(aComp)
+                .setNodedata(aComp)
+                .setServicedata(aComp)
+                .build();
+        final var b = FeeData.newBuilder()
+                .setNetworkdata(bComp)
+                .setNodedata(bComp)
+                .setServicedata(bComp)
+                .build();
 
         final var c = sumOfUsages(a, b);
-        final var scopedUsages =
-                new FeeComponents[] {c.getNodedata(), c.getNetworkdata(), c.getServicedata()};
+        final var scopedUsages = new FeeComponents[] {c.getNodedata(), c.getNetworkdata(), c.getServicedata()};
 
         for (final FeeComponents scopedUsage : scopedUsages) {
             assertEquals(1, scopedUsage.getMin());

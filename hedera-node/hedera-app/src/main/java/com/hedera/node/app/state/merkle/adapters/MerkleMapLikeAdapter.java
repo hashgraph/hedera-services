@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle.adapters;
 
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
@@ -31,20 +32,22 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 public class MerkleMapLikeAdapter {
-    public static <K extends Comparable<K>, V extends MerkleNode & Keyed<K>>
-            MerkleMapLike<K, V> unwrapping(
-                    final StateMetadata<K, V> md,
-                    final MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> real) {
+    public static <K extends Comparable<K>, V extends MerkleNode & Keyed<K>> MerkleMapLike<K, V> unwrapping(
+            final StateMetadata<K, V> md, final MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> real) {
         return new MerkleMapLike<>() {
             @Override
             public void forEachNode(final BiConsumer<? super K, ? super V> action) {
-                real.forEachNode(
-                        (final MerkleNode node) -> {
-                            if (node instanceof Keyed) {
-                                final InMemoryValue<K, V> leaf = node.cast();
-                                action.accept(leaf.getKey().key(), leaf.getValue());
-                            }
-                        });
+                real.forEachNode((final MerkleNode node) -> {
+                    if (node instanceof Keyed) {
+                        final InMemoryValue<K, V> leaf = node.cast();
+                        action.accept(leaf.getKey().key(), leaf.getValue());
+                    }
+                });
+            }
+
+            @Override
+            public boolean isEmpty() {
+                return real.isEmpty();
             }
 
             @Override
@@ -84,8 +87,7 @@ public class MerkleMapLikeAdapter {
             @Override
             public V put(final K key, final V value) {
                 final var wrappedKey = new InMemoryKey<>((K) key);
-                final var replaced =
-                        real.put(wrappedKey, new InMemoryValue<>(md, wrappedKey, value));
+                final var replaced = real.put(wrappedKey, new InMemoryValue<>(md, wrappedKey, value));
                 return replaced != null ? replaced.getValue() : null;
             }
 
@@ -119,8 +121,7 @@ public class MerkleMapLikeAdapter {
             }
 
             @Nullable
-            private V withKeyIfPresent(
-                    final @NonNull K key, final @Nullable InMemoryValue<K, V> present) {
+            private V withKeyIfPresent(final @NonNull K key, final @Nullable InMemoryValue<K, V> present) {
                 if (present != null) {
                     final var answer = present.getValue();
                     Objects.requireNonNull(answer).setKey(key);

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts;
 
 import static com.hedera.node.app.service.mono.store.contracts.StaticEntityAccess.explicitCodeFetch;
@@ -68,13 +69,12 @@ public class MutableEntityAccess implements EntityAccess {
         this.tokensLedger = tokensLedger;
         this.sizeLimitedStorage = sizeLimitedStorage;
 
-        this.worldLedgers =
-                new WorldLedgers(
-                        aliasManager,
-                        ledger.getTokenRelsLedger(),
-                        ledger.getAccountsLedger(),
-                        ledger.getNftsLedger(),
-                        tokensLedger);
+        this.worldLedgers = new WorldLedgers(
+                aliasManager,
+                ledger.getTokenRelsLedger(),
+                ledger.getAccountsLedger(),
+                ledger.getNftsLedger(),
+                tokensLedger);
 
         ledger.setMutableEntityAccess(this);
     }
@@ -133,20 +133,17 @@ public class MutableEntityAccess implements EntityAccess {
 
     @Override
     public UInt256 getStorage(final Address address, final Bytes key) {
-        return sizeLimitedStorage.getStorage(
-                accountIdFromEvmAddress(address), UInt256.fromBytes(key));
+        return sizeLimitedStorage.getStorage(accountIdFromEvmAddress(address), UInt256.fromBytes(key));
     }
 
     @Override
-    public void flushStorage(
-            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
+    public void flushStorage(final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
         sizeLimitedStorage.validateAndCommit(accountsLedger);
     }
 
     @Override
     public void storeCode(final AccountID id, final Bytes code) {
-        final var key =
-                new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, (int) id.getAccountNum());
+        final var key = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, (int) id.getAccountNum());
         final var value = new VirtualBlobValue(code.toArray());
         bytecode.get().put(key, value);
     }
@@ -164,8 +161,6 @@ public class MutableEntityAccess implements EntityAccess {
 
     private boolean isActiveContractOp() {
         final var function = txnCtx.accessor().getFunction();
-        return function == ContractCreate
-                || function == ContractCall
-                || function == EthereumTransaction;
+        return function == ContractCreate || function == ContractCall || function == EthereumTransaction;
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.contract.impl;
 
 import com.hedera.node.app.service.contract.ContractService;
@@ -53,12 +54,10 @@ public final class ContractServiceImpl implements ContractService {
     }
 
     private static StateDefinition<ContractKey, IterableContractValue> storageDef() {
-        final var keySerdes =
-                MonoMapSerdesAdapter.serdesForVirtualKey(
-                        ContractKey.MERKLE_VERSION, ContractKey::new, new ContractKeySerializer());
-        final var valueSerdes =
-                MonoMapSerdesAdapter.serdesForVirtualValue(
-                        IterableContractValue.ITERABLE_VERSION, IterableContractValue::new);
+        final var keySerdes = MonoMapSerdesAdapter.serdesForVirtualKey(
+                ContractKey.MERKLE_VERSION, ContractKey::new, new ContractKeySerializer());
+        final var valueSerdes = MonoMapSerdesAdapter.serdesForVirtualValue(
+                IterableContractValue.ITERABLE_VERSION, IterableContractValue::new);
 
         return StateDefinition.onDisk(STORAGE_KEY, keySerdes, valueSerdes, MAX_STORAGE_ENTRIES);
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -101,8 +102,7 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
 
     /** {@inheritDoc} */
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         value = in.readLong();
     }
 
@@ -140,7 +140,7 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
      * @param version The version of the data inside the given {@code buffer}.
      * @return {@code true} if the content from the buffer has the same data as this instance.
      *     {@code false}, otherwise.
-     * @throws IOException
+     * @throws IOException If an I/O error occurred
      */
     public boolean equals(final ByteBuffer buffer, final int version) throws IOException {
         return buffer.getLong() == this.value;

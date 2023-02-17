@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.hedera.node.app.service.mono.state.virtual.IterableStorageUtils.inPlaceUpsertMapping;
@@ -44,14 +45,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class IterableStorageUtilsTest {
-    @Mock private VirtualMap<ContractKey, IterableContractValue> storage;
+    @Mock
+    private VirtualMap<ContractKey, IterableContractValue> storage;
 
-    private final IterableContractValue rootValue =
-            new IterableContractValue(rootEvmValue.toArray());
-    private final IterableContractValue nextValue =
-            new IterableContractValue(nextEvmValue.toArray());
-    private final IterableContractValue targetValue =
-            new IterableContractValue(targetEvmValue.toArray());
+    private final IterableContractValue rootValue = new IterableContractValue(rootEvmValue.toArray());
+    private final IterableContractValue nextValue = new IterableContractValue(nextEvmValue.toArray());
+    private final IterableContractValue targetValue = new IterableContractValue(targetEvmValue.toArray());
 
     @Test
     void canListOwnedNfts() {
@@ -88,17 +87,14 @@ class IterableStorageUtilsTest {
         targetValue.setNextKey(nextKey.getKey());
         given(storage.get(nextKey)).willReturn(nextValue);
 
-        final var expected =
-                "["
-                        + String.join(
-                                ", ",
-                                List.of(
-                                        rootKey + " -> " + CommonUtils.hex(rootValue.getValue()),
-                                        targetKey
-                                                + " -> "
-                                                + CommonUtils.hex(targetValue.getValue()),
-                                        nextKey + " -> " + CommonUtils.hex(nextValue.getValue())))
-                        + "]";
+        final var expected = "["
+                + String.join(
+                        ", ",
+                        List.of(
+                                rootKey + " -> " + CommonUtils.hex(rootValue.getValue()),
+                                targetKey + " -> " + CommonUtils.hex(targetValue.getValue()),
+                                nextKey + " -> " + CommonUtils.hex(nextValue.getValue())))
+                + "]";
 
         assertEquals(expected, IterableStorageUtils.joinedStorageMappings(rootKey, storage));
     }
@@ -121,9 +117,7 @@ class IterableStorageUtilsTest {
     void canUpdateExistingMappingInPlace() {
         given(storage.getForModify(targetKey)).willReturn(targetValue);
 
-        final var newRoot =
-                inPlaceUpsertMapping(
-                        targetKey, nextValue, rootKey, null, VirtualMapLike.from(storage));
+        final var newRoot = inPlaceUpsertMapping(targetKey, nextValue, rootKey, null, VirtualMapLike.from(storage));
 
         assertSame(rootKey, newRoot);
         assertArrayEquals(targetValue.getValue(), nextValue.getValue());
@@ -134,9 +128,7 @@ class IterableStorageUtilsTest {
         final var valueCaptor = ArgumentCaptor.forClass(IterableContractValue.class);
         given(storage.get(targetKey)).willReturn(targetValue);
 
-        final var newRoot =
-                overwritingUpsertMapping(
-                        targetKey, nextValue, rootKey, null, VirtualMapLike.from(storage));
+        final var newRoot = overwritingUpsertMapping(targetKey, nextValue, rootKey, null, VirtualMapLike.from(storage));
 
         assertSame(rootKey, newRoot);
         verify(storage).put(eq(targetKey), valueCaptor.capture());
@@ -146,9 +138,7 @@ class IterableStorageUtilsTest {
 
     @Test
     void canInsertToEmptyListInPlace() {
-        final var newRoot =
-                inPlaceUpsertMapping(
-                        targetKey, targetValue, null, null, VirtualMapLike.from(storage));
+        final var newRoot = inPlaceUpsertMapping(targetKey, targetValue, null, null, VirtualMapLike.from(storage));
 
         verify(storage).put(targetKey, targetValue);
 
@@ -157,9 +147,7 @@ class IterableStorageUtilsTest {
 
     @Test
     void canInsertToEmptyListOverwriting() {
-        final var newRoot =
-                overwritingUpsertMapping(
-                        targetKey, targetValue, null, null, VirtualMapLike.from(storage));
+        final var newRoot = overwritingUpsertMapping(targetKey, targetValue, null, null, VirtualMapLike.from(storage));
 
         verify(storage).put(targetKey, targetValue);
 
@@ -171,9 +159,7 @@ class IterableStorageUtilsTest {
         given(storage.getForModify(targetKey)).willReturn(null);
         given(storage.getForModify(rootKey)).willReturn(rootValue);
 
-        final var newRoot =
-                inPlaceUpsertMapping(
-                        targetKey, targetValue, rootKey, null, VirtualMapLike.from(storage));
+        final var newRoot = inPlaceUpsertMapping(targetKey, targetValue, rootKey, null, VirtualMapLike.from(storage));
 
         verify(storage).put(targetKey, targetValue);
 
@@ -190,8 +176,7 @@ class IterableStorageUtilsTest {
         given(storage.get(rootKey)).willReturn(rootValue);
 
         final var newRoot =
-                overwritingUpsertMapping(
-                        targetKey, targetValue, rootKey, null, VirtualMapLike.from(storage));
+                overwritingUpsertMapping(targetKey, targetValue, rootKey, null, VirtualMapLike.from(storage));
 
         verify(storage).put(targetKey, targetValue);
 
@@ -206,8 +191,7 @@ class IterableStorageUtilsTest {
     @Test
     void canInsertWithPrefetchedValueInPlace() {
         final var newRoot =
-                inPlaceUpsertMapping(
-                        targetKey, targetValue, rootKey, rootValue, VirtualMapLike.from(storage));
+                inPlaceUpsertMapping(targetKey, targetValue, rootKey, rootValue, VirtualMapLike.from(storage));
 
         assertSame(targetKey, newRoot);
         assertNull(targetValue.getPrevKeyScopedTo(contractNum));
@@ -221,8 +205,7 @@ class IterableStorageUtilsTest {
     @Test
     void canInsertWithPrefetchedValueOverwriting() {
         final var newRoot =
-                overwritingUpsertMapping(
-                        targetKey, targetValue, rootKey, rootValue, VirtualMapLike.from(storage));
+                overwritingUpsertMapping(targetKey, targetValue, rootKey, rootValue, VirtualMapLike.from(storage));
 
         assertSame(targetKey, newRoot);
         assertNull(targetValue.getPrevKeyScopedTo(contractNum));
@@ -243,12 +226,9 @@ class IterableStorageUtilsTest {
     private static final ContractKey targetKey = ContractKey.from(contractId, targetEvmKey);
     private static final ContractKey nextKey = ContractKey.from(contractId, nextEvmKey);
     private static final UInt256 rootEvmValue =
-            UInt256.fromHexString(
-                    "0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
+            UInt256.fromHexString("0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
     private static final UInt256 targetEvmValue =
-            UInt256.fromHexString(
-                    "0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060");
+            UInt256.fromHexString("0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060");
     private static final UInt256 nextEvmValue =
-            UInt256.fromHexString(
-                    "0x210aeca1542b62a2a60345a122326fc24ba6bc15424002f6362f13160ef3e563");
+            UInt256.fromHexString("0x210aeca1542b62a2a60345a122326fc24ba6bc15424002f6362f13160ef3e563");
 }

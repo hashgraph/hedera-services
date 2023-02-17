@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.*;
@@ -33,7 +34,6 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.store.models.NftId;
-import com.swirlds.jasperdb.JasperDbBuilder;
 import org.junit.jupiter.api.Test;
 
 class StoresModuleTest {
@@ -44,14 +44,12 @@ class StoresModuleTest {
         final var uniqueTokensLinkManager = mock(UniqueTokensLinkManager.class);
         given(bootstrapProperties.getBooleanProperty(TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .willReturn(true);
-        final var virtualMap =
-                new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedUniqueTokenStorage();
-        final var transactionalLedger =
-                StoresModule.provideNftsLedger(
-                        bootstrapProperties,
-                        usageLimits,
-                        uniqueTokensLinkManager,
-                        () -> UniqueTokenMapAdapter.wrap(VirtualMapLike.from(virtualMap)));
+        final var virtualMap = new VirtualMapFactory().newVirtualizedUniqueTokenStorage();
+        final var transactionalLedger = StoresModule.provideNftsLedger(
+                bootstrapProperties,
+                usageLimits,
+                uniqueTokensLinkManager,
+                () -> UniqueTokenMapAdapter.wrap(VirtualMapLike.from(virtualMap)));
         transactionalLedger.begin();
         final var nftId = NftId.withDefaultShardRealm(3, 4);
         final var token = UniqueTokenAdapter.newEmptyVirtualToken();

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.customfees;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,7 +36,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class FcmCustomFeeSchedulesTest {
     private FcmCustomFeeSchedules subject;
 
-    MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
+    MerkleMapLike<EntityNum, MerkleToken> tokens = MerkleMapLike.from(new MerkleMap<>());
     private final EntityId aTreasury = new EntityId(0, 0, 12);
     private final EntityId bTreasury = new EntityId(0, 0, 13);
     private final EntityId tokenA = new EntityId(0, 0, 1);
@@ -59,7 +60,7 @@ class FcmCustomFeeSchedulesTest {
 
         tokens.put(EntityNum.fromLong(tokenA.num()), aToken);
         tokens.put(EntityNum.fromLong(tokenB.num()), bToken);
-        subject = new FcmCustomFeeSchedules(() -> MerkleMapLike.from(tokens));
+        subject = new FcmCustomFeeSchedules(() -> tokens);
     }
 
     @Test
@@ -80,7 +81,7 @@ class FcmCustomFeeSchedulesTest {
 
     @Test
     void validateLookUpScheduleForUsingLedger() {
-        subject = new FcmCustomFeeSchedules(() -> MerkleMapLike.from(tokens));
+        subject = new FcmCustomFeeSchedules(() -> tokens);
         // then:
         final var tokenAFees = subject.lookupMetaFor(tokenA.asId());
         final var tokenBFees = subject.lookupMetaFor(tokenB.asId());
@@ -105,12 +106,12 @@ class FcmCustomFeeSchedulesTest {
         // given:
         MerkleMap<EntityNum, MerkleToken> secondMerkleMap = new MerkleMap<>();
         MerkleToken token = new MerkleToken();
-        final var missingFees =
-                List.of(FcCustomFee.fixedFee(50L, missingToken, feeCollector, false).asGrpc());
+        final var missingFees = List.of(
+                FcCustomFee.fixedFee(50L, missingToken, feeCollector, false).asGrpc());
 
         token.setFeeScheduleFrom(missingFees);
         secondMerkleMap.put(EntityNum.fromLong(missingToken.num()), new MerkleToken());
-        final var fees1 = new FcmCustomFeeSchedules(() -> MerkleMapLike.from(tokens));
+        final var fees1 = new FcmCustomFeeSchedules(() -> tokens);
         final var fees2 = new FcmCustomFeeSchedules(() -> MerkleMapLike.from(secondMerkleMap));
 
         // expect:

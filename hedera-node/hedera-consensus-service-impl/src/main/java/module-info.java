@@ -5,6 +5,8 @@ module com.hedera.node.app.service.consensus.impl {
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.hedera.node.app.service.mono;
     requires com.swirlds.common;
+    requires dagger;
+    requires javax.inject;
 
     provides com.hedera.node.app.service.consensus.ConsensusService with
             ConsensusServiceImpl;
@@ -13,4 +15,5 @@ module com.hedera.node.app.service.consensus.impl {
             com.hedera.node.app,
             com.hedera.node.app.service.consensus.impl.test;
     exports com.hedera.node.app.service.consensus.impl.handlers;
+    exports com.hedera.node.app.service.consensus.impl.components;
 }

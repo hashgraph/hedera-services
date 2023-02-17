@@ -11,6 +11,8 @@ module com.hedera.node.app.service.token.impl {
     requires com.hedera.node.app.spi;
     requires com.swirlds.virtualmap;
     requires com.swirlds.jasperdb;
+    requires dagger;
+    requires javax.inject;
 
     provides com.hedera.node.app.service.token.TokenService with
             com.hedera.node.app.service.token.impl.TokenServiceImpl;
@@ -30,4 +32,6 @@ module com.hedera.node.app.service.token.impl {
 
     opens com.hedera.node.app.service.token.impl.util to
             com.hedera.node.app.service.token.impl.test;
+
+    exports com.hedera.node.app.service.token.impl.components;
 }

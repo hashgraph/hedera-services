@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.contract.txns;
 
 import static com.hedera.test.utils.IdUtils.asContract;
@@ -70,8 +71,7 @@ class ContractUpdateResourceUsageTest {
         accounts = mock(MerkleMap.class);
         given(accounts.get(accountKey)).willReturn(account);
         view = mock(StateView.class);
-        given(view.accounts())
-                .willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
+        given(view.accounts()).willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
 
         sigUsage = mock(SigValueObj.class);
         usageEstimator = mock(SmartContractFeeBuilder.class);

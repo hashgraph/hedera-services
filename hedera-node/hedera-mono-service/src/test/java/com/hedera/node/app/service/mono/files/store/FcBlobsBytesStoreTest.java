@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.store;
 
 import static com.hedera.node.app.service.mono.files.store.FcBlobsBytesStore.getEntityNumFromPath;
@@ -141,9 +142,7 @@ class FcBlobsBytesStoreTest {
         assertEquals(new VirtualBlobKey(Type.FILE_DATA, 112), subject.at(dataPath));
         assertEquals(new VirtualBlobKey(Type.FILE_METADATA, 3), subject.at(metadataPath));
         assertEquals(new VirtualBlobKey(Type.CONTRACT_BYTECODE, 4), subject.at(bytecodePath));
-        assertEquals(
-                new VirtualBlobKey(Type.SYSTEM_DELETED_ENTITY_EXPIRY, 5),
-                subject.at(expiryTimePath));
+        assertEquals(new VirtualBlobKey(Type.SYSTEM_DELETED_ENTITY_EXPIRY, 5), subject.at(expiryTimePath));
     }
 
     @Test

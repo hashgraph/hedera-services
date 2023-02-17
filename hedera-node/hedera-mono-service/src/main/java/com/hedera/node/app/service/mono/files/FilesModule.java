@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_HAPI_PERMISSIONS;
@@ -59,8 +60,7 @@ public interface FilesModule {
 
     @Provides
     @Singleton
-    static Map<String, byte[]> provideBlobStore(
-            Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> storage) {
+    static Map<String, byte[]> provideBlobStore(Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> storage) {
         return new FcBlobsBytesStore(storage);
     }
 
@@ -84,10 +84,8 @@ public interface FilesModule {
 
     @Provides
     @Singleton
-    static IntFunction<BiPredicate<ExchangeRates, ExchangeRateSet>>
-            provideLimitChangeTestFactory() {
-        return limitPercent ->
-                (base, proposed) -> isNormalIntradayChange(base, proposed, limitPercent);
+    static IntFunction<BiPredicate<ExchangeRates, ExchangeRateSet>> provideLimitChangeTestFactory() {
+        return limitPercent -> (base, proposed) -> isNormalIntradayChange(base, proposed, limitPercent);
     }
 
     @Provides
@@ -100,31 +98,25 @@ public interface FilesModule {
             TxnAwareRatesManager txnAwareRatesManager,
             @CompositeProps PropertySource properties) {
         final var propertiesCb = sysFileCallbacks.propertiesCb();
-        final var propertiesManager =
-                new ValidatingCallbackInterceptor(
-                        0,
-                        FILES_NETWORK_PROPERTIES,
-                        properties,
-                        contents -> propertiesCb.accept(uncheckedParse(contents)),
-                        ConfigListUtils::isConfigList);
+        final var propertiesManager = new ValidatingCallbackInterceptor(
+                0,
+                FILES_NETWORK_PROPERTIES,
+                properties,
+                contents -> propertiesCb.accept(uncheckedParse(contents)),
+                ConfigListUtils::isConfigList);
 
         final var permissionsCb = sysFileCallbacks.permissionsCb();
-        final var permissionsManager =
-                new ValidatingCallbackInterceptor(
-                        0,
-                        FILES_HAPI_PERMISSIONS,
-                        properties,
-                        contents -> permissionsCb.accept(uncheckedParse(contents)),
-                        ConfigListUtils::isConfigList);
+        final var permissionsManager = new ValidatingCallbackInterceptor(
+                0,
+                FILES_HAPI_PERMISSIONS,
+                properties,
+                contents -> permissionsCb.accept(uncheckedParse(contents)),
+                ConfigListUtils::isConfigList);
 
         final var throttlesCb = sysFileCallbacks.throttlesCb();
         final var throttleDefsManager = new ThrottleDefsManager(fileNums, addressBook, throttlesCb);
 
         return Set.of(
-                feeSchedulesManager,
-                txnAwareRatesManager,
-                propertiesManager,
-                permissionsManager,
-                throttleDefsManager);
+                feeSchedulesManager, txnAwareRatesManager, propertiesManager, permissionsManager, throttleDefsManager);
     }
 }

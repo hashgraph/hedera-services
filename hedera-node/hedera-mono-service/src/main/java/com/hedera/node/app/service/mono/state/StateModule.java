@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
@@ -85,7 +86,6 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.jasperdb.JasperDbBuilder;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -113,8 +113,7 @@ public interface StateModule {
 
     @Binds
     @Singleton
-    NewSignedStateListener bindNewSignedStateListener(
-            ServicesSignedStateListener servicesSignedStateListener);
+    NewSignedStateListener bindNewSignedStateListener(ServicesSignedStateListener servicesSignedStateListener);
 
     @Binds
     @Singleton
@@ -126,13 +125,11 @@ public interface StateModule {
 
     @Binds
     @Singleton
-    StateWriteToDiskCompleteListener bindStateWrittenToDiskListener(
-            StateWriteToDiskListener stateWriteToDiskListener);
+    StateWriteToDiskCompleteListener bindStateWrittenToDiskListener(StateWriteToDiskListener stateWriteToDiskListener);
 
     @Binds
     @Singleton
-    PlatformStatusChangeListener bindStatusChangeListener(
-            StatusChangeListener statusChangeListener);
+    PlatformStatusChangeListener bindStatusChangeListener(StatusChangeListener statusChangeListener);
 
     @Binds
     @Singleton
@@ -150,11 +147,9 @@ public interface StateModule {
             final Function<byte[], Signature> signer,
             final GlobalDynamicProperties dynamicProperties) {
         try {
-            return new SignedStateBalancesExporter(
-                    systemExits, properties, signer, dynamicProperties);
+            return new SignedStateBalancesExporter(systemExits, properties, signer, dynamicProperties);
         } catch (final NoSuchAlgorithmException fatal) {
-            throw new IllegalStateException(
-                    "Could not construct signed state balances exporter", fatal);
+            throw new IllegalStateException("Could not construct signed state balances exporter", fatal);
         }
     }
 
@@ -173,7 +168,7 @@ public interface StateModule {
     @Provides
     @Singleton
     static VirtualMapFactory provideVirtualMapFactory() {
-        return new VirtualMapFactory(JasperDbBuilder::new);
+        return new VirtualMapFactory();
     }
 
     @Provides
@@ -208,8 +203,7 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Optional<PrintStream> providePrintStream(
-            final ConsoleCreator consoleCreator, final Platform platform) {
+    static Optional<PrintStream> providePrintStream(final ConsoleCreator consoleCreator, final Platform platform) {
         return Optional.ofNullable(consoleCreator.createConsole(platform, true)).map(c -> c.out);
     }
 
@@ -228,18 +222,14 @@ public interface StateModule {
     @Provides
     @Singleton
     static StateView provideCurrentView(
-            final ScheduleStore scheduleStore,
-            final MutableStateChildren workingState,
-            final NetworkInfo networkInfo) {
+            final ScheduleStore scheduleStore, final MutableStateChildren workingState, final NetworkInfo networkInfo) {
         return new StateView(scheduleStore, workingState, networkInfo);
     }
 
     @Provides
     @Singleton
     static Supplier<StateView> provideStateViews(
-            final ScheduleStore scheduleStore,
-            final MutableStateChildren workingState,
-            final NetworkInfo networkInfo) {
+            final ScheduleStore scheduleStore, final MutableStateChildren workingState, final NetworkInfo networkInfo) {
         return () -> new StateView(scheduleStore, workingState, networkInfo);
     }
 
@@ -251,15 +241,13 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Supplier<AccountStorageAdapter> provideWorkingAccounts(
-            final MutableStateChildren workingState) {
+    static Supplier<AccountStorageAdapter> provideWorkingAccounts(final MutableStateChildren workingState) {
         return workingState::accounts;
     }
 
     @Provides
     @Singleton
-    static Supplier<RecordsStorageAdapter> providePayerRecords(
-            final MutableStateChildren workingState) {
+    static Supplier<RecordsStorageAdapter> providePayerRecords(final MutableStateChildren workingState) {
         return workingState::payerRecords;
     }
 
@@ -293,57 +281,50 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Supplier<TokenRelStorageAdapter> provideWorkingTokenAssociations(
-            final MutableStateChildren workingState) {
+    static Supplier<TokenRelStorageAdapter> provideWorkingTokenAssociations(final MutableStateChildren workingState) {
         return workingState::tokenAssociations;
     }
 
     @Provides
     @Singleton
-    static Supplier<MerkleScheduledTransactions> provideWorkingSchedules(
-            final MutableStateChildren workingState) {
+    static Supplier<MerkleScheduledTransactions> provideWorkingSchedules(final MutableStateChildren workingState) {
         return workingState::schedules;
     }
 
     @Provides
     @Singleton
-    static Supplier<UniqueTokenMapAdapter> provideWorkingNfts(
-            final MutableStateChildren workingState) {
+    static Supplier<UniqueTokenMapAdapter> provideWorkingNfts(final MutableStateChildren workingState) {
         return workingState::uniqueTokens;
     }
 
     @Provides
     @Singleton
-    static Supplier<MerkleSpecialFiles> provideWorkingSpecialFiles(
-            final MutableStateChildren workingState) {
+    static Supplier<MerkleSpecialFiles> provideWorkingSpecialFiles(final MutableStateChildren workingState) {
         return workingState::specialFiles;
     }
 
     @Provides
     @Singleton
-    static Supplier<VirtualMapLike<ContractKey, IterableContractValue>>
-            provideWorkingContractStorage(final MutableStateChildren workingState) {
+    static Supplier<VirtualMapLike<ContractKey, IterableContractValue>> provideWorkingContractStorage(
+            final MutableStateChildren workingState) {
         return workingState::contractStorage;
     }
 
     @Provides
     @Singleton
-    static Supplier<MerkleNetworkContext> provideWorkingNetworkCtx(
-            final MutableStateChildren workingState) {
+    static Supplier<MerkleNetworkContext> provideWorkingNetworkCtx(final MutableStateChildren workingState) {
         return workingState::networkCtx;
     }
 
     @Provides
     @Singleton
-    static Supplier<RecordsRunningHashLeaf> provideRecordsRunningHashLeaf(
-            final MutableStateChildren workingState) {
+    static Supplier<RecordsRunningHashLeaf> provideRecordsRunningHashLeaf(final MutableStateChildren workingState) {
         return workingState::runningHashLeaf;
     }
 
     @Provides
     @Singleton
-    static Supplier<AddressBook> provideWorkingAddressBook(
-            final MutableStateChildren workingState) {
+    static Supplier<AddressBook> provideWorkingAddressBook(final MutableStateChildren workingState) {
         return workingState::addressBook;
     }
 
@@ -355,8 +336,7 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Supplier<ExchangeRates> provideWorkingMidnightRates(
-            final MutableStateChildren workingState) {
+    static Supplier<ExchangeRates> provideWorkingMidnightRates(final MutableStateChildren workingState) {
         return () -> workingState.networkCtx().midnightRates();
     }
 
@@ -368,21 +348,18 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Supplier<Map<ByteString, EntityNum>> provideWorkingAliases(
-            final MutableStateChildren workingState) {
+    static Supplier<Map<ByteString, EntityNum>> provideWorkingAliases(final MutableStateChildren workingState) {
         return workingState::aliases;
     }
 
     @Provides
     @Singleton
-    static Supplier<JEd25519Key> provideSystemFileKey(
-            @CompositeProps final PropertySource properties) {
+    static Supplier<JEd25519Key> provideSystemFileKey(@CompositeProps final PropertySource properties) {
         return () -> {
             final var hexedEd25519Key = properties.getStringProperty(BOOTSTRAP_GENESIS_PUBLIC_KEY);
             final var ed25519Key = new JEd25519Key(CommonUtils.unhex(hexedEd25519Key));
             if (!ed25519Key.isValid()) {
-                throw new IllegalStateException(
-                        "'" + hexedEd25519Key + "' is not a possible Ed25519 public key");
+                throw new IllegalStateException("'" + hexedEd25519Key + "' is not a possible Ed25519 public key");
             }
             return ed25519Key;
         };

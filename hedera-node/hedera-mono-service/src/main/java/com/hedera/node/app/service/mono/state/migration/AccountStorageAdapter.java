@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.migration;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
@@ -39,8 +40,7 @@ public class AccountStorageAdapter {
     private final @Nullable MerkleMapLike<EntityNum, MerklePayerRecords> payerRecords;
     private final @Nullable VirtualMapLike<EntityNumVirtualKey, OnDiskAccount> onDiskAccounts;
 
-    public static AccountStorageAdapter fromInMemory(
-            final MerkleMapLike<EntityNum, MerkleAccount> accounts) {
+    public static AccountStorageAdapter fromInMemory(final MerkleMapLike<EntityNum, MerkleAccount> accounts) {
         return new AccountStorageAdapter(accounts, null, null);
     }
 
@@ -68,9 +68,7 @@ public class AccountStorageAdapter {
     }
 
     public HederaAccount get(final EntityNum num) {
-        return accountsOnDisk
-                ? onDiskAccounts.get(EntityNumVirtualKey.from(num))
-                : inMemoryAccounts.get(num);
+        return accountsOnDisk ? onDiskAccounts.get(EntityNumVirtualKey.from(num)) : inMemoryAccounts.get(num);
     }
 
     public HederaAccount getForModify(final EntityNum num) {

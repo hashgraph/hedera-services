@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.validation;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -112,16 +113,12 @@ class QueryFeeCheckTest {
 
         validator = mock(OptionValidator.class);
 
-        subject =
-                new QueryFeeCheck(
-                        validator,
-                        () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
+        subject = new QueryFeeCheck(validator, () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
     }
 
     @Test
     void rejectsEmptyTransfers() {
-        assertEquals(
-                INVALID_ACCOUNT_AMOUNTS, subject.transfersPlausibility(Collections.emptyList()));
+        assertEquals(INVALID_ACCOUNT_AMOUNTS, subject.transfersPlausibility(Collections.emptyList()));
     }
 
     @Test
@@ -129,8 +126,7 @@ class QueryFeeCheckTest {
         assertEquals(
                 OK,
                 subject.nodePaymentValidity(
-                        transfersWith(
-                                adjustmentWith(aRich, -aLittle), adjustmentWith(aNode, aLittle)),
+                        transfersWith(adjustmentWith(aRich, -aLittle), adjustmentWith(aNode, aLittle)),
                         aLittle - 1,
                         aNode));
     }
@@ -140,8 +136,7 @@ class QueryFeeCheckTest {
         assertEquals(
                 INVALID_RECEIVING_NODE_ACCOUNT,
                 subject.nodePaymentValidity(
-                        transfersWith(
-                                adjustmentWith(aRich, -aLittle), adjustmentWith(aBroke, aLittle)),
+                        transfersWith(adjustmentWith(aRich, -aLittle), adjustmentWith(aBroke, aLittle)),
                         aLittle - 1,
                         aNode));
     }
@@ -190,8 +185,7 @@ class QueryFeeCheckTest {
         assertEquals(
                 INSUFFICIENT_TX_FEE,
                 subject.nodePaymentValidity(
-                        transfersWith(
-                                adjustmentWith(aRich, -aLittle), adjustmentWith(aBroke, aLittle)),
+                        transfersWith(adjustmentWith(aRich, -aLittle), adjustmentWith(aBroke, aLittle)),
                         aLittle + 1,
                         aNode));
     }
@@ -201,9 +195,7 @@ class QueryFeeCheckTest {
         assertEquals(
                 INVALID_ACCOUNT_AMOUNTS,
                 subject.nodePaymentValidity(
-                        transfersWith(adjustmentWith(aRich, aLot), adjustmentWith(aBroke, aLittle)),
-                        0L,
-                        aNode));
+                        transfersWith(adjustmentWith(aRich, aLot), adjustmentWith(aBroke, aLittle)), 0L, aNode));
     }
 
     @Test
@@ -211,8 +203,7 @@ class QueryFeeCheckTest {
         assertEquals(
                 INVALID_ACCOUNT_AMOUNTS,
                 subject.transfersPlausibility(
-                        transfersWith(
-                                adjustmentWith(aRich, aLot), adjustmentWith(aBroke, aLittle))));
+                        transfersWith(adjustmentWith(aRich, aLot), adjustmentWith(aBroke, aLittle))));
     }
 
     @Test
@@ -220,19 +211,17 @@ class QueryFeeCheckTest {
         assertEquals(
                 INVALID_ACCOUNT_AMOUNTS,
                 subject.transfersPlausibility(
-                        transfersWith(
-                                adjustmentWith(aRich, aLittle), adjustmentWith(aBroke, aLittle))));
+                        transfersWith(adjustmentWith(aRich, aLittle), adjustmentWith(aBroke, aLittle))));
     }
 
     @Test
     void catchesBadEntry() {
         assertEquals(
                 ACCOUNT_ID_DOES_NOT_EXIST,
-                subject.transfersPlausibility(
-                        transfersWith(
-                                adjustmentWith(aRich, -aLittle),
-                                adjustmentWith(aMissing, 0),
-                                adjustmentWith(aBroke, aLittle))));
+                subject.transfersPlausibility(transfersWith(
+                        adjustmentWith(aRich, -aLittle),
+                        adjustmentWith(aMissing, 0),
+                        adjustmentWith(aBroke, aLittle))));
     }
 
     @Test
@@ -307,22 +296,17 @@ class QueryFeeCheckTest {
     @Test
     void paymentFailsWithQueryPayerBalance() {
         final long amount = 5000L;
-        final var transList =
-                TransferList.newBuilder()
-                        .addAccountAmounts(
-                                AccountAmount.newBuilder()
-                                        .setAccountID(aBroke)
-                                        .setAmount(-1 * amount))
-                        .addAccountAmounts(
-                                AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount));
-        final var body =
-                TransactionBody.newBuilder()
-                        .setCryptoTransfer(
-                                CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
-                        .setTransactionID(txnId)
-                        .setNodeAccountID(aNode)
-                        .setTransactionFee(feeRequired)
-                        .build();
+        final var transList = TransferList.newBuilder()
+                .addAccountAmounts(
+                        AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1 * amount))
+                .addAccountAmounts(
+                        AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount));
+        final var body = TransactionBody.newBuilder()
+                .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
+                .setTransactionID(txnId)
+                .setNodeAccountID(aNode)
+                .setTransactionFee(feeRequired)
+                .build();
         givenOkExpiry();
 
         assertEquals(aRich, body.getTransactionID().getAccountID());
@@ -333,22 +317,17 @@ class QueryFeeCheckTest {
     @Test
     void paymentFailsWithBrokenPayer() {
         final long amount = 5000L;
-        final var transList =
-                TransferList.newBuilder()
-                        .addAccountAmounts(
-                                AccountAmount.newBuilder()
-                                        .setAccountID(aBroke)
-                                        .setAmount(-1 * amount))
-                        .addAccountAmounts(
-                                AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount));
-        final var body =
-                TransactionBody.newBuilder()
-                        .setCryptoTransfer(
-                                CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
-                        .setTransactionID(TransactionID.newBuilder().setAccountID(aBroke))
-                        .setNodeAccountID(aNode)
-                        .setTransactionFee(feeRequired)
-                        .build();
+        final var transList = TransferList.newBuilder()
+                .addAccountAmounts(
+                        AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1 * amount))
+                .addAccountAmounts(
+                        AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount));
+        final var body = TransactionBody.newBuilder()
+                .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
+                .setTransactionID(TransactionID.newBuilder().setAccountID(aBroke))
+                .setNodeAccountID(aNode)
+                .setTransactionFee(feeRequired)
+                .build();
         givenOkExpiry();
 
         assertEquals(aBroke, body.getTransactionID().getAccountID());
@@ -359,22 +338,17 @@ class QueryFeeCheckTest {
     @Test
     void paymentFailsWithInsufficientPayerBalance() {
         final long amount = 5000L;
-        final var transList =
-                TransferList.newBuilder()
-                        .addAccountAmounts(
-                                AccountAmount.newBuilder()
-                                        .setAccountID(aBroke)
-                                        .setAmount(-1 * amount))
-                        .addAccountAmounts(
-                                AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount));
-        final var body =
-                TransactionBody.newBuilder()
-                        .setCryptoTransfer(
-                                CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
-                        .setTransactionID(TransactionID.newBuilder().setAccountID(aBroke))
-                        .setNodeAccountID(aNode)
-                        .setTransactionFee(Long.MAX_VALUE)
-                        .build();
+        final var transList = TransferList.newBuilder()
+                .addAccountAmounts(
+                        AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1 * amount))
+                .addAccountAmounts(
+                        AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount));
+        final var body = TransactionBody.newBuilder()
+                .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
+                .setTransactionID(TransactionID.newBuilder().setAccountID(aBroke))
+                .setNodeAccountID(aNode)
+                .setTransactionFee(Long.MAX_VALUE)
+                .build();
 
         assertEquals(INSUFFICIENT_PAYER_BALANCE, subject.validateQueryPaymentTransfers(body));
     }
@@ -382,28 +356,17 @@ class QueryFeeCheckTest {
     @Test
     void queryPaymentMultiPayerMultiNodeSucceeds() {
         final long amount = 200L;
-        final var transList =
-                TransferList.newBuilder()
-                        .addAccountAmounts(
-                                AccountAmount.newBuilder()
-                                        .setAccountID(aRich)
-                                        .setAmount(-1 * amount / 4))
-                        .addAccountAmounts(
-                                AccountAmount.newBuilder()
-                                        .setAccountID(aTestPayer)
-                                        .setAmount(-1 * amount / 4))
-                        .addAccountAmounts(
-                                AccountAmount.newBuilder()
-                                        .setAccountID(aQueryPayer)
-                                        .setAmount(-1 * amount / 2))
-                        .addAccountAmounts(
-                                AccountAmount.newBuilder()
-                                        .setAccountID(aNode)
-                                        .setAmount(amount / 2))
-                        .addAccountAmounts(
-                                AccountAmount.newBuilder()
-                                        .setAccountID(anotherNode)
-                                        .setAmount(amount / 2));
+        final var transList = TransferList.newBuilder()
+                .addAccountAmounts(
+                        AccountAmount.newBuilder().setAccountID(aRich).setAmount(-1 * amount / 4))
+                .addAccountAmounts(
+                        AccountAmount.newBuilder().setAccountID(aTestPayer).setAmount(-1 * amount / 4))
+                .addAccountAmounts(
+                        AccountAmount.newBuilder().setAccountID(aQueryPayer).setAmount(-1 * amount / 2))
+                .addAccountAmounts(
+                        AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount / 2))
+                .addAccountAmounts(
+                        AccountAmount.newBuilder().setAccountID(anotherNode).setAmount(amount / 2));
         final var body = getPaymentTxnBody(amount, transList);
 
         assertEquals(
@@ -418,26 +381,17 @@ class QueryFeeCheckTest {
     @Test
     void queryPaymentMultiTransferFails() {
         final long amount = 200L;
-        final var transList =
-                TransferList.newBuilder()
-                        .addAccountAmounts(
-                                AccountAmount.newBuilder()
-                                        .setAccountID(aRich)
-                                        .setAmount(-1 * amount / 4))
-                        .addAccountAmounts(
-                                AccountAmount.newBuilder()
-                                        .setAccountID(aBroke)
-                                        .setAmount(-1 * amount / 4))
-                        .addAccountAmounts(
-                                AccountAmount.newBuilder()
-                                        .setAccountID(aQueryPayer)
-                                        .setAmount(-1 * amount / 4))
-                        .addAccountAmounts(
-                                AccountAmount.newBuilder()
-                                        .setAccountID(aTestPayer)
-                                        .setAmount(-1 * amount / 4))
-                        .addAccountAmounts(
-                                AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount));
+        final var transList = TransferList.newBuilder()
+                .addAccountAmounts(
+                        AccountAmount.newBuilder().setAccountID(aRich).setAmount(-1 * amount / 4))
+                .addAccountAmounts(
+                        AccountAmount.newBuilder().setAccountID(aBroke).setAmount(-1 * amount / 4))
+                .addAccountAmounts(
+                        AccountAmount.newBuilder().setAccountID(aQueryPayer).setAmount(-1 * amount / 4))
+                .addAccountAmounts(
+                        AccountAmount.newBuilder().setAccountID(aTestPayer).setAmount(-1 * amount / 4))
+                .addAccountAmounts(
+                        AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount));
         final var body = getPaymentTxnBody(amount, transList);
         givenOkExpiry();
 
@@ -451,7 +405,8 @@ class QueryFeeCheckTest {
     }
 
     private void givenOkExpiry() {
-        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean()))
+                .willReturn(OK);
     }
 
     private AccountAmount adjustmentWith(final AccountID id, final long amount) {
@@ -462,28 +417,20 @@ class QueryFeeCheckTest {
         return List.of(a, b);
     }
 
-    private List<AccountAmount> transfersWith(
-            final AccountAmount a, final AccountAmount b, final AccountAmount c) {
+    private List<AccountAmount> transfersWith(final AccountAmount a, final AccountAmount b, final AccountAmount c) {
         return List.of(a, b, c);
     }
 
-    private TransactionBody getPaymentTxnBody(
-            final long amount, final TransferList.Builder transferList) {
-        final var transList =
-                (transferList != null)
-                        ? transferList
-                        : TransferList.newBuilder()
-                                .addAccountAmounts(
-                                        AccountAmount.newBuilder()
-                                                .setAccountID(aRich)
-                                                .setAmount(-1 * amount))
-                                .addAccountAmounts(
-                                        AccountAmount.newBuilder()
-                                                .setAccountID(aNode)
-                                                .setAmount(amount));
+    private TransactionBody getPaymentTxnBody(final long amount, final TransferList.Builder transferList) {
+        final var transList = (transferList != null)
+                ? transferList
+                : TransferList.newBuilder()
+                        .addAccountAmounts(
+                                AccountAmount.newBuilder().setAccountID(aRich).setAmount(-1 * amount))
+                        .addAccountAmounts(
+                                AccountAmount.newBuilder().setAccountID(aNode).setAmount(amount));
         return TransactionBody.newBuilder()
-                .setCryptoTransfer(
-                        CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
+                .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transList))
                 .setTransactionID(txnId)
                 .setNodeAccountID(aNode)
                 .setTransactionFee(feeRequired)
@@ -491,11 +438,10 @@ class QueryFeeCheckTest {
     }
 
     private boolean checkPayerInTransferList(final TransactionBody body, final AccountID payer) {
-        final var payerTransfer =
-                body.getCryptoTransfer().getTransfers().getAccountAmountsList().stream()
-                        .filter(aa -> aa.getAccountID() == payer)
-                        .findAny()
-                        .orElse(null);
+        final var payerTransfer = body.getCryptoTransfer().getTransfers().getAccountAmountsList().stream()
+                .filter(aa -> aa.getAccountID() == payer)
+                .findAny()
+                .orElse(null);
         return payerTransfer != null;
     }
 }

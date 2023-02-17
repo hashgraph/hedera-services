@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.file.impl.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,7 +34,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class FileServiceImplTest {
-    @Mock private SchemaRegistry registry;
+    @Mock
+    private SchemaRegistry registry;
 
     @Test
     void testSpi() {
@@ -57,7 +59,7 @@ class FileServiceImplTest {
         Mockito.verify(registry).register(captor.capture());
         final var schema = captor.getValue();
 
-        assertEquals(SemVerUtils.standardSemverWith(0, 1, 0), schema.getVersion());
+        assertEquals(SemVerUtils.standardSemverWith(0, 34, 0), schema.getVersion());
         assertTrue(schema.statesToRemove().isEmpty());
         final var requestedStates = schema.statesToCreate();
         assertEquals(1, requestedStates.size());

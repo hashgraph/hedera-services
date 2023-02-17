@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.consensus;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromTopicId;
@@ -57,7 +58,7 @@ class MerkleTopicDeleteTransitionLogicTest {
     private TransactionBody transactionBody;
     private TransactionContext transactionContext;
     private SignedTxnAccessor accessor;
-    private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
+    private MerkleMapLike<EntityNum, MerkleTopic> topics = MerkleMapLike.from(new MerkleMap<>());
     private OptionValidator validator;
     private TopicDeleteTransitionLogic subject;
     private SigImpactHistorian sigImpactHistorian;
@@ -74,14 +75,8 @@ class MerkleTopicDeleteTransitionLogicTest {
         accessor = mock(SignedTxnAccessor.class);
         validator = mock(OptionValidator.class);
         sigImpactHistorian = mock(SigImpactHistorian.class);
-        topics.clear();
 
-        subject =
-                new TopicDeleteTransitionLogic(
-                        () -> MerkleMapLike.from(topics),
-                        validator,
-                        sigImpactHistorian,
-                        transactionContext);
+        subject = new TopicDeleteTransitionLogic(() -> topics, validator, sigImpactHistorian, transactionContext);
     }
 
     @Test
@@ -121,17 +116,12 @@ class MerkleTopicDeleteTransitionLogicTest {
         given(validator.queryableTopicStatus(any(), any())).willReturn(OK);
         givenTransaction(getBasicValidTransactionBodyBuilder());
 
-        topics = (MerkleMap<EntityNum, MerkleTopic>) mock(MerkleMap.class);
+        topics = (MerkleMapLike<EntityNum, MerkleTopic>) mock(MerkleMapLike.class);
 
         given(topics.get(topicFcKey)).willReturn(deletableTopic);
         given(topics.getForModify(topicFcKey)).willReturn(deletableTopic);
 
-        subject =
-                new TopicDeleteTransitionLogic(
-                        () -> MerkleMapLike.from(topics),
-                        validator,
-                        sigImpactHistorian,
-                        transactionContext);
+        subject = new TopicDeleteTransitionLogic(() -> topics, validator, sigImpactHistorian, transactionContext);
     }
 
     @Test
@@ -167,19 +157,17 @@ class MerkleTopicDeleteTransitionLogicTest {
     }
 
     private void givenTransaction(ConsensusDeleteTopicTransactionBody.Builder body) {
-        transactionBody =
-                TransactionBody.newBuilder()
-                        .setTransactionID(ourTxnId())
-                        .setConsensusDeleteTopic(body.build())
-                        .build();
+        transactionBody = TransactionBody.newBuilder()
+                .setTransactionID(ourTxnId())
+                .setConsensusDeleteTopic(body.build())
+                .build();
         given(accessor.getTxn()).willReturn(transactionBody);
         given(transactionContext.accessor()).willReturn(accessor);
     }
 
     private void givenValidTransactionContext() throws Throwable {
         givenTransaction(getBasicValidTransactionBodyBuilder());
-        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), MerkleMapLike.from(topics)))
-                .willReturn(OK);
+        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(OK);
         var topicWithAdminKey = new MerkleTopic();
         topicWithAdminKey.setAdminKey(MISC_ACCOUNT_KT.asJKey());
         topics.put(fromTopicId(asTopic(TOPIC_ID)), topicWithAdminKey);
@@ -187,22 +175,19 @@ class MerkleTopicDeleteTransitionLogicTest {
 
     private void givenTransactionContextNoAdminKey() {
         givenTransaction(getBasicValidTransactionBodyBuilder());
-        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), MerkleMapLike.from(topics)))
-                .willReturn(OK);
+        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(OK);
         topics.put(fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
     }
 
     private void givenTransactionContextInvalidTopic() {
         givenTransaction(getBasicValidTransactionBodyBuilder());
-        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), MerkleMapLike.from(topics)))
-                .willReturn(INVALID_TOPIC_ID);
+        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(INVALID_TOPIC_ID);
     }
 
     private TransactionID ourTxnId() {
         return TransactionID.newBuilder()
                 .setAccountID(payer)
-                .setTransactionValidStart(
-                        Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
+                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
                 .build();
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.serdes;
 
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -36,8 +37,7 @@ public class EntityNumSerdes implements Serdes<EntityNum> {
     }
 
     @Override
-    public void write(final @NonNull EntityNum item, final @NonNull DataOutput output)
-            throws IOException {
+    public void write(final @NonNull EntityNum item, final @NonNull DataOutput output) throws IOException {
         if (output instanceof SerializableDataOutputStream out) {
             out.writeInt(item.intValue());
         } else {
