@@ -15,20 +15,25 @@
  *
  */
 
-package com.hedera.node.app.spi;
+package com.hedera.node.app.service.token.impl;
 
+import com.hedera.node.app.service.token.CryptoService;
+import com.hedera.node.app.spi.FacilityFacade;
+import com.hedera.node.app.spi.ServiceFactory;
+import com.hedera.node.app.spi.ServiceProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
 
-public interface ServiceFactory<T extends Service> {
-
-    @NonNull
-    Class<T> getServiceClass();
+public final class CryptoServiceFactory implements ServiceFactory<CryptoService> {
 
     @NonNull
-    T createService(ServiceProvider serviceProvider, FacilityFacade facilityFacade);
+    @Override
+    public Class<CryptoService> getServiceClass() {
+        return CryptoService.class;
+    }
 
-    default Set<Class<Service>> getDependencies() {
-        return Set.of();
+    @NonNull
+    @Override
+    public CryptoService createService(final ServiceProvider serviceProvider, final FacilityFacade facilityFacade) {
+        return new CryptoServiceImpl();
     }
 }

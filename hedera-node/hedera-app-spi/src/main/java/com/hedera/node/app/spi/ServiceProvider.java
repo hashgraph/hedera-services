@@ -19,30 +19,26 @@ package com.hedera.node.app.spi;
 
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.swirlds.common.context.PlatformContext;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class ServiceEntryPoint {
+public class ServiceProvider {
 
     final private Set<Service> services;
 
-    public ServiceEntryPoint() {
-        services = new HashSet<>();
-    }
-
-    public void init(final PlatformContext platformContext) {
+    public ServiceProvider(final FacilityFacade facilityFacade) {
         final ServiceLoader<ServiceFactory> serviceLoader = ServiceLoader.load(ServiceFactory.class);
-        final Iterator<ServiceFactory> iterator = serviceLoader.iterator();
-        while (iterator.hasNext()) {
-            services.add(iterator.next().createService(platformContext));
-        }
+        final Set<ServiceFactory> servicesFactories = serviceLoader.stream()
+                .map(provider -> provider.get())
+                .collect(Collectors.toSet());
+
+        services = servicesFactories.stream()
+                .map(factory -> factory.createService(this, facilityFacade))
+                .collect(Collectors.toSet());
     }
 
     public Set<Service> getAllServices() {

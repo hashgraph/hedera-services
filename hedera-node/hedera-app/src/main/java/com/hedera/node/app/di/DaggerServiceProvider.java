@@ -20,7 +20,7 @@ package com.hedera.node.app.di;
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.handlers.CryptoApproveAllowanceHandlerI;
 import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.ServiceEntryPoint;
+import com.hedera.node.app.spi.ServiceProvider;
 import com.hedera.node.app.spi.workflows.FreeQueryHandler;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
@@ -28,9 +28,9 @@ import java.util.Set;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-public class ServiceProvider {
+public class DaggerServiceProvider {
 
-    private static final ServiceEntryPoint serviceEntryPoint = new ServiceEntryPoint();
+    private static final ServiceProvider serviceEntryPoint = new ServiceProvider(null);
 
     @Provides
     @ElementsIntoSet

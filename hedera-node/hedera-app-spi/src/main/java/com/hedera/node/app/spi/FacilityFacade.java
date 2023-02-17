@@ -17,18 +17,13 @@
 
 package com.hedera.node.app.spi;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
+import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.swirlds.config.api.Configuration;
 
-public interface ServiceFactory<T extends Service> {
+public interface FacilityFacade {
 
-    @NonNull
-    Class<T> getServiceClass();
+    Configuration getConfiguration();
 
-    @NonNull
-    T createService(ServiceProvider serviceProvider, FacilityFacade facilityFacade);
+    SchemaRegistry getSchemaRegistry();
 
-    default Set<Class<Service>> getDependencies() {
-        return Set.of();
-    }
 }
