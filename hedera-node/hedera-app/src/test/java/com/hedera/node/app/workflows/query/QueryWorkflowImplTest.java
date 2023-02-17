@@ -33,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -43,6 +44,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.fees.FeeAccumulator;
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
@@ -144,7 +146,6 @@ class QueryWorkflowImplTest {
     void setup() throws InvalidProtocolBufferException, PreCheckException {
         when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
         when(stateAccessor.apply(any())).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
-
         requestBuffer = ByteBuffer.wrap(new byte[] {1, 2, 3});
         payment = Transaction.newBuilder().build();
         final var queryHeader = QueryHeader.newBuilder().setPayment(payment).build();
@@ -177,7 +178,7 @@ class QueryWorkflowImplTest {
         final var response = Response.newBuilder().setFileGetInfo(fileGetInfo).build();
 
         when(dispatcher.getHandler(query)).thenReturn(handler);
-        when(dispatcher.getResponse(any(), eq(query), eq(responseHeader), queryContext))
+        when(dispatcher.getResponse(any(), eq(query), eq(responseHeader), eq(queryContext)))
                 .thenReturn(response);
 
         workflow = new QueryWorkflowImpl(
@@ -335,10 +336,10 @@ class QueryWorkflowImplTest {
     }
 
     @Test
-    void testSuccess() throws InvalidProtocolBufferException {
+    void testSuccessIfPaymentNotRequired() throws InvalidProtocolBufferException, PreCheckException {
+        given(dispatcher.validate(any(), any())).willReturn(OK);
         // given
         final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
-
         // when
         workflow.handleQuery(ctx, requestBuffer, responseBuffer);
 
@@ -348,12 +349,31 @@ class QueryWorkflowImplTest {
         final var header = response.getFileGetInfo().getHeader();
         assertThat(header.getNodeTransactionPrecheckCode()).isEqualTo(OK);
         assertThat(header.getResponseType()).isEqualTo(ANSWER_ONLY);
-        // TODO: Expected costs need to be updated once fee calculation was integrated
-        assertThat(header.getCost()).isZero();
+        assertThat(header.getCost()).isEqualTo(0L);
         verify(opCounters).countReceived(FileGetInfo);
         verify(opCounters).countAnswered(FileGetInfo);
     }
+    @Test
+    void testSuccessIfPaymentRequired() throws InvalidProtocolBufferException, PreCheckException {
+        given(feeAccumulator.computePayment(any(), any(), any()))
+                .willReturn(new FeeObject(100L, 0L, 100L));
+        given(handler.requiresNodePayment(any())).willReturn(true);
+        given(dispatcher.validate(any(), any())).willReturn(OK);
+        // given
+        final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
+        // when
+        workflow.handleQuery(ctx, requestBuffer, responseBuffer);
 
+        // then
+        final var response = parseResponse(responseBuffer);
+        assertThat(response.getFileGetInfo()).isNotNull();
+        final var header = response.getFileGetInfo().getHeader();
+        assertThat(header.getNodeTransactionPrecheckCode()).isEqualTo(OK);
+        assertThat(header.getResponseType()).isEqualTo(ANSWER_ONLY);
+        assertThat(header.getCost()).isEqualTo(0L);
+        verify(opCounters).countReceived(FileGetInfo);
+        verify(opCounters).countAnswered(FileGetInfo);
+    }
     @Test
     void testParsingFails(@Mock Parser<Query> localQueryParser) throws InvalidProtocolBufferException {
         // given
@@ -658,6 +678,7 @@ class QueryWorkflowImplTest {
         doThrow(new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED))
                 .when(submissionManager)
                 .submit(txBody, payment.toByteArray(), ctx.txBodyParser());
+        given(feeAccumulator.computePayment(any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
         final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
 
         // when
@@ -669,7 +690,7 @@ class QueryWorkflowImplTest {
         final var header = response.getFileGetInfo().getHeader();
         assertThat(header.getNodeTransactionPrecheckCode()).isEqualTo(PLATFORM_TRANSACTION_NOT_CREATED);
         assertThat(header.getResponseType()).isEqualTo(ANSWER_ONLY);
-        assertThat(header.getCost()).isZero();
+        assertThat(header.getCost()).isEqualTo(200L);
         verify(opCounters).countReceived(FileGetInfo);
         verify(opCounters, never()).countAnswered(FileGetInfo);
     }
