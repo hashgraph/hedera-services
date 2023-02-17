@@ -54,11 +54,9 @@ import static com.hedera.node.app.spi.config.PropertyNames.STATS_RUNNING_AVG_HAL
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_SPEEDOMETER_HALF_LIFE_SECS;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS;
 import static com.hedera.node.app.spi.config.PropertyNames.WORKFLOWS_ENABLED;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.data.Index.atIndex;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -159,8 +157,7 @@ class ConfigurationAdaptorTest {
         final boolean exists = configurationAdapter.exists("test");
 
         // then
-        assertFalse(exists);
-        
+        assertThat(exists).isFalse();
         verify(propertySource).containsProperty("test");
     }
 
@@ -174,7 +171,7 @@ class ConfigurationAdaptorTest {
         final boolean exists = configurationAdapter.exists("test");
 
         // then
-        assertTrue(exists);
+        assertThat(exists).isTrue();
         verify(propertySource).containsProperty("test");
     }
 
@@ -189,7 +186,9 @@ class ConfigurationAdaptorTest {
                 configurationAdapter.getPropertyNames().collect(Collectors.toSet());
 
         // then
-        assertEquals(Set.of("foo", "bar"), names);
+        assertThat(names).hasSize(2);
+        assertThat(names).contains("foo");
+        assertThat(names).contains("bar");
         verify(propertySource).allPropertyNames();
     }
 
@@ -204,7 +203,7 @@ class ConfigurationAdaptorTest {
         final String value = configurationAdapter.getValue("test");
 
         // then
-        assertEquals("value", value);
+        assertThat(value).isEqualTo("value");
         verify(propertySource).getRawValue("test");
     }
 
@@ -218,7 +217,7 @@ class ConfigurationAdaptorTest {
         final String value = configurationAdapter.getValue("test", "value");
 
         // then
-        assertEquals("value", value);
+        assertThat(value).isEqualTo("value");
         verify(propertySource).containsProperty("test");
     }
 
@@ -233,7 +232,7 @@ class ConfigurationAdaptorTest {
         final int value = configurationAdapter.getValue("test", Integer.class);
 
         // then
-        assertEquals(1, value);
+        assertThat(value).isEqualTo(1);
         verify(propertySource).containsProperty("test");
         verify(propertySource).getTypedProperty(Integer.class, "test");
     }
@@ -248,7 +247,7 @@ class ConfigurationAdaptorTest {
         final int value = configurationAdapter.getValue("test", Integer.class, 12);
 
         // then
-        assertEquals(12, value);
+        assertThat(value).isEqualTo(12);
         verify(propertySource).containsProperty("test");
     }
 
@@ -264,7 +263,10 @@ class ConfigurationAdaptorTest {
         final List<String> values = configurationAdapter.getValues("test");
 
         // then
-        assertEquals(List.of("A", "B", "C"), values);
+        assertThat(values).hasSize(3);
+        assertThat(values).contains("A", atIndex(0));
+        assertThat(values).contains("B", atIndex(1));
+        assertThat(values).contains("C", atIndex(2));
         verify(propertySource).containsProperty("test");
         verify(propertySource).getTypedProperty(List.class, "test");
     }
@@ -279,7 +281,10 @@ class ConfigurationAdaptorTest {
         final List<String> values = configurationAdapter.getValues("test", List.of("A", "B", "C"));
 
         // then
-        assertEquals(List.of("A", "B", "C"), values);
+        assertThat(values).hasSize(3);
+        assertThat(values).contains("A", atIndex(0));
+        assertThat(values).contains("B", atIndex(1));
+        assertThat(values).contains("C", atIndex(2));
         verify(propertySource).containsProperty("test");
     }
 
@@ -294,7 +299,10 @@ class ConfigurationAdaptorTest {
         final List<Integer> values = configurationAdapter.getValues("test", Integer.class);
 
         // then
-        assertEquals(List.of(1, 2, 3), values);
+        assertThat(values).hasSize(3);
+        assertThat(values).contains(1, atIndex(0));
+        assertThat(values).contains(2, atIndex(1));
+        assertThat(values).contains(3, atIndex(2));
         verify(propertySource).containsProperty("test");
         verify(propertySource).getTypedProperty(List.class, "test");
     }
@@ -310,7 +318,10 @@ class ConfigurationAdaptorTest {
                 configurationAdapter.getValues("test", Integer.class, List.of(1, 2, 3));
 
         // then
-        assertEquals(List.of(1, 2, 3), values);
+        assertThat(values).hasSize(3);
+        assertThat(values).contains(1, atIndex(0));
+        assertThat(values).contains(2, atIndex(1));
+        assertThat(values).contains(3, atIndex(2));
         verify(propertySource).containsProperty("test");
     }
 
@@ -323,45 +334,45 @@ class ConfigurationAdaptorTest {
         final NodeConfig data = configurationAdapter.getConfigData(NodeConfig.class);
 
         // then
-        assertNotNull(data);
-        assertEquals(1, data.port());
-        assertEquals(1, data.tlsPort());
-        assertEquals(Long.MAX_VALUE, data.hapiOpStatsUpdateIntervalMs());
-        assertEquals(Long.MAX_VALUE, data.entityUtilStatsUpdateIntervalMs());
-        assertEquals(Long.MAX_VALUE, data.throttleUtilStatsUpdateIntervalMs());
-        assertEquals(Profile.TEST, data.activeProfile());
-        assertEquals(1.2D, data.statsSpeedometerHalfLifeSecs());
-        assertEquals(1.2D, data.statsRunningAvgHalfLifeSecs());
-        assertEquals("test", data.recordLogDir());
-        assertEquals(Long.MAX_VALUE, data.recordLogPeriod());
-        assertEquals(true, data.recordStreamEnabled());
-        assertEquals(1, data.recordStreamQueueCapacity());
-        assertEquals(1, data.queryBlobLookupRetries());
-        assertEquals(Long.MAX_VALUE, data.nettyProdKeepAliveTime());
-        assertEquals("test", data.nettyTlsCrtPath());
-        assertEquals("test", data.nettyTlsKeyPath());
-        assertEquals(Long.MAX_VALUE, data.nettyProdKeepAliveTimeout());
-        assertEquals(Long.MAX_VALUE, data.nettyMaxConnectionAge());
-        assertEquals(Long.MAX_VALUE, data.nettyMaxConnectionAgeGrace());
-        assertEquals(Long.MAX_VALUE, data.nettyMaxConnectionIdle());
-        assertEquals(1, data.nettyMaxConcurrentCalls());
-        assertEquals(1, data.nettyFlowControlWindow());
-        assertEquals("test", data.devListeningAccount());
-        assertEquals(true, data.devOnlyDefaultNodeListens());
-        assertEquals("test", data.accountsExportPath());
-        assertEquals(true, data.exportAccountsOnStartup());
-        assertEquals(Profile.TEST, data.nettyMode());
-        assertEquals(1, data.nettyStartRetries());
-        assertEquals(Long.MAX_VALUE, data.nettyStartRetryIntervalMs());
-        assertEquals(1, data.numExecutionTimesToTrack());
-        assertEquals(1, data.issResetPeriod());
-        assertEquals(1, data.issRoundsToLog());
-        assertEquals(1, data.prefetchQueueCapacity());
-        assertEquals(1, data.prefetchThreadPoolSize());
-        assertEquals(1, data.prefetchCodeCacheTtlSecs());
-        assertEquals(List.of(), data.consThrottlesToSample());
-        assertEquals(List.of(), data.hapiThrottlesToSample());
-        assertEquals("test", data.sidecarDir());
+        assertThat(data).isNotNull();
+        assertThat(data.port()).isEqualTo(1);
+        assertThat(data.tlsPort()).isEqualTo(1);
+        assertThat(data.hapiOpStatsUpdateIntervalMs()).isEqualTo(Long.MAX_VALUE);
+        assertThat(data.entityUtilStatsUpdateIntervalMs()).isEqualTo(Long.MAX_VALUE);
+        assertThat(data.throttleUtilStatsUpdateIntervalMs()).isEqualTo(Long.MAX_VALUE);
+        assertThat(data.activeProfile()).isEqualTo(Profile.TEST);
+        assertThat(data.statsSpeedometerHalfLifeSecs()).isEqualTo(1.2D);
+        assertThat(data.statsRunningAvgHalfLifeSecs()).isEqualTo(1.2D);
+        assertThat(data.recordLogDir()).isEqualTo("test");
+        assertThat(data.recordLogPeriod()).isEqualTo(Long.MAX_VALUE);
+        assertThat(data.recordStreamEnabled()).isEqualTo(true);
+        assertThat(data.recordStreamQueueCapacity()).isEqualTo(1);
+        assertThat(data.queryBlobLookupRetries()).isEqualTo(1);
+        assertThat(data.nettyProdKeepAliveTime()).isEqualTo(Long.MAX_VALUE);
+        assertThat(data.nettyTlsCrtPath()).isEqualTo("test");
+        assertThat(data.nettyTlsKeyPath()).isEqualTo("test");
+        assertThat(data.nettyProdKeepAliveTimeout()).isEqualTo(Long.MAX_VALUE);
+        assertThat(data.nettyMaxConnectionAge()).isEqualTo(Long.MAX_VALUE);
+        assertThat(data.nettyMaxConnectionAgeGrace()).isEqualTo(Long.MAX_VALUE);
+        assertThat(data.nettyMaxConnectionIdle()).isEqualTo(Long.MAX_VALUE);
+        assertThat(data.nettyMaxConcurrentCalls()).isEqualTo(1);
+        assertThat(data.nettyFlowControlWindow()).isEqualTo(1);
+        assertThat(data.devListeningAccount()).isEqualTo("test");
+        assertThat(data.devOnlyDefaultNodeListens()).isEqualTo(true);
+        assertThat(data.accountsExportPath()).isEqualTo("test");
+        assertThat(data.exportAccountsOnStartup()).isEqualTo(true);
+        assertThat(data.nettyMode()).isEqualTo(Profile.TEST);
+        assertThat(data.nettyStartRetries()).isEqualTo(1);
+        assertThat(data.nettyStartRetryIntervalMs()).isEqualTo(Long.MAX_VALUE);
+        assertThat(data.numExecutionTimesToTrack()).isEqualTo(1);
+        assertThat(data.issResetPeriod()).isEqualTo(1);
+        assertThat(data.issRoundsToLog()).isEqualTo(1);
+        assertThat(data.prefetchQueueCapacity()).isEqualTo(1);
+        assertThat(data.prefetchThreadPoolSize()).isEqualTo(1);
+        assertThat(data.prefetchCodeCacheTtlSecs()).isEqualTo(1);
+        assertThat(data.consThrottlesToSample()).isEmpty();
+        assertThat(data.hapiThrottlesToSample()).isEmpty();
+        assertThat(data.sidecarDir()).isEqualTo("test");
     }
 
     @Test
@@ -373,7 +384,7 @@ class ConfigurationAdaptorTest {
         final GlobalConfig data = configurationAdapter.getConfigData(GlobalConfig.class);
 
         // then
-        assertNotNull(data);
-        assertEquals(true, data.workflowsEnabled());
+        assertThat(data).isNotNull();
+        assertThat(data.workflowsEnabled()).isTrue();
     }
 }
