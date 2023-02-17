@@ -9,8 +9,6 @@ module com.hedera.node.app.service.token.impl {
     requires com.google.protobuf;
     requires com.hedera.node.app.service.evm;
     requires com.hedera.node.app.spi;
-    requires dagger;
-    requires javax.inject;
 
     provides com.hedera.node.app.service.token.TokenService with
             com.hedera.node.app.service.token.impl.TokenServiceImpl;

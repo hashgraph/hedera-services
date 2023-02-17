@@ -37,21 +37,15 @@ import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoTransfer}.
+ * This class contains all workflow-related functionality regarding {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoTransfer}.
  */
-@Singleton
 public class CryptoTransferHandler implements TransactionHandler {
-    @Inject
-    public CryptoTransferHandler() {}
 
     /**
-     * Validates a {@link com.hederahashgraph.api.proto.java.CryptoTransfer} that is part of a
-     * {@link com.hederahashgraph.api.proto.java.Query}.
+     * Validates a {@link com.hederahashgraph.api.proto.java.CryptoTransfer} that is part of a {@link
+     * com.hederahashgraph.api.proto.java.Query}.
      *
      * @param txn the {@link TransactionBody} of the {@code CryptoTransfer}
      * @throws PreCheckException if validation fails
@@ -62,14 +56,13 @@ public class CryptoTransferHandler implements TransactionHandler {
     }
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoTransfer}
-     * transaction, returning the metadata required to, at minimum, validate the signatures of all
-     * required signing keys.
+     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoTransfer} transaction,
+     * returning the metadata required to, at minimum, validate the signatures of all required signing keys.
      *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(TransactionMetadata)}
+     * @param context      the {@link PreHandleContext} which collects all information that will be passed to {@link
+     *                     #handle(TransactionMetadata)}
      * @param accountStore the {@link AccountKeyLookup} to use to resolve keys
-     * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
+     * @param tokenStore   the {@link ReadableTokenStore} to use to resolve token metadata
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(
@@ -108,7 +101,7 @@ public class CryptoTransferHandler implements TransactionHandler {
 
     private void handleTokenTransfers(
             final List<AccountAmount> transfers, final PreHandleContext meta, final ReadableAccountStore accountStore) {
-        for (AccountAmount accountAmount : transfers) {
+        for (final AccountAmount accountAmount : transfers) {
             final var keyOrFailure = accountStore.getKey(accountAmount.getAccountID());
             if (!keyOrFailure.failed()) {
                 final var isUnapprovedDebit = accountAmount.getAmount() < 0 && !accountAmount.getIsApproval();
@@ -174,7 +167,7 @@ public class CryptoTransferHandler implements TransactionHandler {
 
     private void handleHbarTransfers(
             final CryptoTransferTransactionBody op, final PreHandleContext meta, final AccountKeyLookup keyLookup) {
-        for (AccountAmount accountAmount : op.getTransfers().getAccountAmountsList()) {
+        for (final AccountAmount accountAmount : op.getTransfers().getAccountAmountsList()) {
             final var keyOrFailure = keyLookup.getKey(accountAmount.getAccountID());
 
             if (!keyOrFailure.failed()) {
@@ -200,7 +193,7 @@ public class CryptoTransferHandler implements TransactionHandler {
 
     private boolean receivesFungibleValue(
             final AccountID target, final CryptoTransferTransactionBody op, final ReadableAccountStore accountStore) {
-        for (var adjust : op.getTransfers().getAccountAmountsList()) {
+        for (final var adjust : op.getTransfers().getAccountAmountsList()) {
             final var unaliasedAccount = accountStore.getAccount(adjust.getAccountID());
             final var unaliasedTarget = accountStore.getAccount(target);
             if (unaliasedAccount.isPresent()
@@ -210,8 +203,8 @@ public class CryptoTransferHandler implements TransactionHandler {
                 return true;
             }
         }
-        for (var transfers : op.getTokenTransfersList()) {
-            for (var adjust : transfers.getTransfersList()) {
+        for (final var transfers : op.getTokenTransfersList()) {
+            for (final var adjust : transfers.getTransfersList()) {
                 final var unaliasedAccount = accountStore.getAccount(adjust.getAccountID());
                 final var unaliasedTarget = accountStore.getAccount(target);
                 if (unaliasedAccount.isPresent()

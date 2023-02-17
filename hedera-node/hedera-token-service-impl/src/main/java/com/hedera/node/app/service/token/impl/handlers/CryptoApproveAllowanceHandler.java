@@ -19,30 +19,22 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.token.handlers.CryptoApproveAllowanceHandlerI;
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoApproveAllowance}.
+ * This class contains all workflow-related functionality regarding {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoApproveAllowance}.
  */
-@Singleton
-public class CryptoApproveAllowanceHandler implements TransactionHandler {
-    @Inject
-    public CryptoApproveAllowanceHandler() {}
+public class CryptoApproveAllowanceHandler implements CryptoApproveAllowanceHandlerI {
 
     /**
-     * Pre-handles a {@link
-     * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoApproveAllowance} transaction,
-     * returning the metadata required to, at minimum, validate the signatures of all required
-     * signing keys.
+     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoApproveAllowance} transaction,
+     * returning the metadata required to, at minimum, validate the signatures of all required signing keys.
      *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(TransactionMetadata)}
+     * @param context the {@link PreHandleContext} which collects all information that will be passed to {@link
+     *                #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context) {

@@ -16,13 +16,12 @@
 package com.hedera.node.app.service.contract;
 
 import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.ServiceFactory;
+import com.hedera.node.app.spi.ServiceInstanceFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ServiceLoader;
 
 /**
- * Implements the HAPI <a
- * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/smart_contract_service.proto">Smart
+ * Implements the HAPI <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/smart_contract_service.proto">Smart
  * Contract Service</a>.
  */
 public interface ContractService extends Service {
@@ -42,7 +41,7 @@ public interface ContractService extends Service {
      */
     @NonNull
     static ContractService getInstance() {
-        return ServiceFactory.loadService(
+        return ServiceInstanceFactory.loadService(
                 ContractService.class, ServiceLoader.load(ContractService.class));
     }
 }

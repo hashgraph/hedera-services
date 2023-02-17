@@ -15,21 +15,16 @@
  *
  */
 
-package com.hedera.node.app.spi;
+package com.hedera.node.app.service.token.handlers;
 
-import com.swirlds.common.context.PlatformContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
+import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
 
-public interface ServiceFactory<T extends Service> {
+public interface CryptoApproveAllowanceHandlerI extends TransactionHandler {
 
-    @NonNull
-    Class<T> getServiceClass();
+    void preHandle(@NonNull final PreHandleContext context);
 
-    @NonNull
-    T createService(PlatformContext platformContext);
-
-    default Set<Class<Service>> getDependencies() {
-        return Set.of();
-    }
+    void handle(@NonNull final TransactionMetadata metadata);
 }

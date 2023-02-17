@@ -16,13 +16,12 @@
 package com.hedera.node.app.service.admin;
 
 import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.ServiceFactory;
+import com.hedera.node.app.spi.ServiceInstanceFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ServiceLoader;
 
 /**
- * Implements the HAPI <a
- * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/freeze_service.proto">Freeze
+ * Implements the HAPI <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/freeze_service.proto">Freeze
  * Service</a>.
  */
 public interface FreezeService extends Service {
@@ -42,7 +41,7 @@ public interface FreezeService extends Service {
      */
     @NonNull
     static FreezeService getInstance() {
-        return ServiceFactory.loadService(
+        return ServiceInstanceFactory.loadService(
                 FreezeService.class, ServiceLoader.load(FreezeService.class));
     }
 }

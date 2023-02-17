@@ -15,19 +15,31 @@
  */
 package com.hedera.node.app.spi;
 
+import com.hedera.node.app.spi.workflows.QueryHandler;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 
 /**
- * A definition of an interface that will be implemented by each conceptual "service" like
- * crypto-service, token-service etc.,
+ * A definition of an interface that will be implemented by each conceptual "service" like crypto-service, token-service
+ * etc.,
  */
 public interface Service {
     /**
-     * Returns the name of the service. This name must be unique for each service deployed on the
-     * application.
+     * Returns the name of the service. This name must be unique for each service deployed on the application.
      *
      * @return the name
      */
     @NonNull
     String getServiceName();
+
+    @NonNull
+    default Set<TransactionHandler> getTransactionHandler() {
+        return Set.of();
+    }
+
+    @NonNull
+    default Set<QueryHandler> getQueryHandler() {
+        return Set.of();
+    }
 }

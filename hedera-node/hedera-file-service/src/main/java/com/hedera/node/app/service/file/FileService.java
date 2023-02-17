@@ -16,13 +16,12 @@
 package com.hedera.node.app.service.file;
 
 import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.ServiceFactory;
+import com.hedera.node.app.spi.ServiceInstanceFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ServiceLoader;
 
 /**
- * Implements the HAPI <a
- * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/file_service.proto">File
+ * Implements the HAPI <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/file_service.proto">File
  * Service</a>.
  */
 public interface FileService extends Service {
@@ -42,6 +41,6 @@ public interface FileService extends Service {
      */
     @NonNull
     static FileService getInstance() {
-        return ServiceFactory.loadService(FileService.class, ServiceLoader.load(FileService.class));
+        return ServiceInstanceFactory.loadService(FileService.class, ServiceLoader.load(FileService.class));
     }
 }
