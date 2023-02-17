@@ -39,7 +39,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
     void tokenWipeWithValidExtantTokenScenario() {
         final var theTxn = txnFrom(VALID_WIPE_WITH_EXTANT_TOKEN);
 
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
@@ -52,7 +52,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
     void tokenWipeWithMissingTokenScenario() {
         final var theTxn = txnFrom(WIPE_WITH_MISSING_TOKEN);
 
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
 
         assertTrue(context.failed());
@@ -65,7 +65,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
     void tokenWipeWithoutKeyScenario() {
         final var theTxn = txnFrom(WIPE_FOR_TOKEN_WITHOUT_KEY);
 
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
