@@ -114,7 +114,7 @@ jobs:
 
   snyk-scan:
     name: Snyk Scan
-    uses: ./.github/workflows/comp-compile-application-code.yaml
+    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs:
       - unit-label-check
     with:
