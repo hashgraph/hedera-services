@@ -212,6 +212,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
             final SwirldDualState dualState,
             final InitTrigger trigger,
             final SoftwareVersion deserializedVersion) {
+        this.platform = platform;
+
         //        System.out.println("In init with " + trigger);
         if (trigger == GENESIS) {
             // Create the top-level children in the Merkle tree
@@ -240,11 +242,12 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     }
 
     private void createSpecialGenesisChildren(
-            final AddressBook addressBook, final long seqStart, final BootstrapProperties bootstrapProperties) {
+            final AddressBook addressBook,
+            final long seqStart,
+            final BootstrapProperties bootstrapProperties) {
         final var writableNetworkStates = createWritableStates("NetworkService");
         writableNetworkStates.getSingleton("CONTEXT").put(genesisNetworkCtxWith(seqStart));
         writableNetworkStates.getSingleton("RUNNING_HASHES").put(genesisRunningHashLeaf());
-        writableNetworkStates.getSingleton("ADDRESS_BOOK").put(addressBook);
         writableNetworkStates.getSingleton("SPECIAL_FILES").put(new MerkleSpecialFiles());
         final var writableStakingInfos = writableNetworkStates.<EntityNum, MerkleStakingInfo>get("STAKING");
         buildStakingInfoMap(addressBook, bootstrapProperties, writableStakingInfos);
@@ -391,13 +394,12 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
             }
         }
 
-        // **MOVE** over the handle listener. Don't leave it on the old copy anymore.
+        // **MOVE** over the handle listener. Don't leave it on the immutable state
         this.onHandleConsensusRound = from.onHandleConsensusRound;
         from.onHandleConsensusRound = null;
 
-        // **MOVE** over the pre-handle. Don't leave it on the old copy anymore.
+        // **MOVE** over the pre-handle; but also leave on the immutable state
         this.onPreHandle = from.onPreHandle;
-        from.onPreHandle = null;
 
         // **DO NOT** move over the onMigrate handler. We don't need it in subsequent
         // copies of the state
@@ -405,7 +407,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         from.onMigrate = null;
 
         this.platform = from.platform;
-        from.platform = null;
+        // Don't null out the platform reference, since we can't rule out that work
+        // based on an immutable state may still need access to the address book
     }
 
     @Override
@@ -451,9 +454,6 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     /** {@inheritDoc} */
     @Override
     public void handleConsensusRound(@NonNull final Round round, @NonNull final SwirldDualState swirldDualState) {
-        //        if (onHandleConsensusRound != null) {
-        //            onHandleConsensusRound.accept(round, swirldDualState);
-        //        }
         throwIfImmutable();
         if (onHandleConsensusRound != null) {
             onHandleConsensusRound.accept(round, swirldDualState, metadata);

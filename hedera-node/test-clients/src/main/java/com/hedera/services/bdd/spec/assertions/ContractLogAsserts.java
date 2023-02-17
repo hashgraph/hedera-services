@@ -42,21 +42,9 @@ public class ContractLogAsserts extends BaseErroringAssertsProvider<ContractLogi
         return this;
     }
 
-    public ContractLogAsserts accountAtBytes(String account, int start) {
-        registerProvider((spec, o) -> {
-            byte[] data = dataFrom(o);
-            System.out.println("Length of event: " + data.length);
-            AccountID expected = spec.registry().getAccountID(account);
-            AccountID actual = accountFromBytes(data, start);
-            Assertions.assertEquals(expected, actual, "Bad account in log data, starting at byte " + start);
-        });
-        return this;
-    }
-
     public ContractLogAsserts ecdsaAliasStartingAt(String aliasKey, int start) {
         registerProvider((spec, o) -> {
             byte[] data = dataFrom(o);
-            System.out.println("Length of event: " + data.length);
             ByteString alias = spec.registry().aliasIdFor(aliasKey).getAlias();
             byte[] expected = recoverAddressFromPubKey(alias.substring(2).toByteArray());
             byte[] actual = Arrays.copyOfRange(data, start, start + 20);

@@ -743,9 +743,7 @@ public class StateView {
         var counter = 0;
         while (tokenNum != MISSING_ID.num() && counter < maxRels) {
             final var rel = tokenRels.get(key);
-            System.out.println("Visiting rel " + rel);
             final var token = tokens.getOrDefault(key.getLowOrderAsNum(), REMOVED_TOKEN);
-            System.out.println("  for token " + token);
             visitor.accept(token, rel);
             tokenNum = rel.getNext();
             key = EntityNumPair.fromLongs(accountNum, tokenNum);
