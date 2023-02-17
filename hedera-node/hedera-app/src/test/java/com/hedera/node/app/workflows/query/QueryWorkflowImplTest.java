@@ -353,10 +353,10 @@ class QueryWorkflowImplTest {
         verify(opCounters).countReceived(FileGetInfo);
         verify(opCounters).countAnswered(FileGetInfo);
     }
+
     @Test
     void testSuccessIfPaymentRequired() throws InvalidProtocolBufferException, PreCheckException {
-        given(feeAccumulator.computePayment(any(), any(), any()))
-                .willReturn(new FeeObject(100L, 0L, 100L));
+        given(feeAccumulator.computePayment(any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
         given(handler.requiresNodePayment(any())).willReturn(true);
         given(dispatcher.validate(any(), any())).willReturn(OK);
         // given
@@ -374,6 +374,7 @@ class QueryWorkflowImplTest {
         verify(opCounters).countReceived(FileGetInfo);
         verify(opCounters).countAnswered(FileGetInfo);
     }
+
     @Test
     void testParsingFails(@Mock Parser<Query> localQueryParser) throws InvalidProtocolBufferException {
         // given

@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
@@ -42,6 +41,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
@@ -64,6 +64,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnpause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.allowanceTinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
@@ -227,12 +228,81 @@ public class CryptoTransferSuite extends HapiSuite {
                 aliasKeysAreValidated(),
                 hapiTransferFromForNFTWithCustomFeesWithAllowance(),
                 hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance(),
+                okToRepeatSerialNumbersInWipeList(),
+                okToRepeatSerialNumbersInBurnList(),
                 canUseAliasAndAccountCombinations());
     }
 
     @Override
     public boolean canRunConcurrent() {
         return true;
+    }
+
+    private HapiSpec okToRepeatSerialNumbersInWipeList() {
+        final var ownerWith4AutoAssoc = "ownerWith4AutoAssoc";
+        return defaultHapiSpec("OkToRepeatSerialNumbersInWipeList")
+                .given(
+                        newKeyNamed(SUPPLY_KEY),
+                        newKeyNamed(WIPE_KEY),
+                        cryptoCreate(TREASURY),
+                        cryptoCreate(RECEIVER),
+                        cryptoCreate(ownerWith4AutoAssoc).balance(0L).maxAutomaticTokenAssociations(4),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TREASURY)
+                                .maxSupply(12L)
+                                .wipeKey(WIPE_KEY)
+                                .supplyKey(SUPPLY_KEY)
+                                .initialSupply(0L),
+                        tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
+                        mintToken(
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        copyFromUtf8("a"),
+                                        copyFromUtf8("b"),
+                                        copyFromUtf8("c"),
+                                        copyFromUtf8("d"),
+                                        copyFromUtf8("e"),
+                                        copyFromUtf8("f"),
+                                        copyFromUtf8("g"))))
+                .when(cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L, 4L, 5L, 6L, 7L)
+                        .between(TREASURY, ownerWith4AutoAssoc)))
+                .then(
+                        wipeTokenAccount(NON_FUNGIBLE_TOKEN, ownerWith4AutoAssoc, List.of(1L, 1L, 2L, 3L, 4L, 5L, 6L)),
+                        wipeTokenAccount(NON_FUNGIBLE_TOKEN, ownerWith4AutoAssoc, List.of(7L)),
+                        getAccountBalance(ownerWith4AutoAssoc).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0L));
+    }
+
+    private HapiSpec okToRepeatSerialNumbersInBurnList() {
+        return defaultHapiSpec("CannotRepeatSerialNumbersInBurnList")
+                .given(
+                        newKeyNamed(SUPPLY_KEY),
+                        newKeyNamed(WIPE_KEY),
+                        cryptoCreate(TREASURY),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TREASURY)
+                                .maxSupply(12L)
+                                .wipeKey(WIPE_KEY)
+                                .supplyKey(SUPPLY_KEY)
+                                .initialSupply(0L),
+                        mintToken(
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        copyFromUtf8("a"),
+                                        copyFromUtf8("b"),
+                                        copyFromUtf8("c"),
+                                        copyFromUtf8("d"),
+                                        copyFromUtf8("e"),
+                                        copyFromUtf8("f"),
+                                        copyFromUtf8("g"))))
+                .when()
+                .then(
+                        burnToken(NON_FUNGIBLE_TOKEN, List.of(1L, 1L, 2L, 3L, 4L, 5L, 6L)),
+                        burnToken(NON_FUNGIBLE_TOKEN, List.of(7L)),
+                        getAccountBalance(TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0L));
     }
 
     private HapiSpec canUseAliasAndAccountCombinations() {
@@ -245,7 +315,7 @@ public class CryptoTransferSuite extends HapiSuite {
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
         final var collector = "collector";
 
-        return onlyDefaultHapiSpec("canUseAliasAndAccountCombinations")
+        return defaultHapiSpec("canUseAliasAndAccountCombinations")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(collector),

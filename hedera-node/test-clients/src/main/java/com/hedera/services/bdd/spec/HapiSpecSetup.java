@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
@@ -33,15 +34,15 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ShardID;
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 
 public class HapiSpecSetup {
-    private final Random r = new Random();
+    private final SecureRandom r = new SecureRandom();
 
     private static final HapiPropertySource defaultNodeProps;
 
@@ -55,8 +56,7 @@ public class HapiSpecSetup {
 
     private HapiPropertySource ciPropertiesMap = null;
     private static HapiPropertySource DEFAULT_PROPERTY_SOURCE = null;
-    private static final HapiPropertySource BASE_DEFAULT_PROPERTY_SOURCE =
-            JutilPropertySource.getDefaultInstance();
+    private static final HapiPropertySource BASE_DEFAULT_PROPERTY_SOURCE = JutilPropertySource.getDefaultInstance();
 
     public static final HapiPropertySource getDefaultPropertySource() {
         if (DEFAULT_PROPERTY_SOURCE == null) {
@@ -64,13 +64,9 @@ public class HapiSpecSetup {
             globals = (globals == null) ? "" : globals;
             String[] sources = globals.length() > 0 ? globals.split(",") : new String[0];
             DEFAULT_PROPERTY_SOURCE =
-                    inPriorityOrder(
-                            asSources(
-                                    Stream.of(
-                                                    Stream.of(sources),
-                                                    Stream.of(BASE_DEFAULT_PROPERTY_SOURCE))
-                                            .flatMap(Function.identity())
-                                            .toArray(n -> new Object[n])));
+                    inPriorityOrder(asSources(Stream.of(Stream.of(sources), Stream.of(BASE_DEFAULT_PROPERTY_SOURCE))
+                            .flatMap(Function.identity())
+                            .toArray(n -> new Object[n])));
         }
         return DEFAULT_PROPERTY_SOURCE;
     }
@@ -181,8 +177,7 @@ public class HapiSpecSetup {
 
     public HapiPropertySource ciPropertiesMap() {
         if (null == ciPropertiesMap) {
-            ciPropertiesMap =
-                    MapPropertySource.parsedFromCommaDelimited(props.get("ci.properties.map"));
+            ciPropertiesMap = MapPropertySource.parsedFromCommaDelimited(props.get("ci.properties.map"));
         }
         return ciPropertiesMap;
     }
@@ -473,7 +468,9 @@ public class HapiSpecSetup {
 
     public List<NodeConnectInfo> nodes() {
         NodeConnectInfo.NEXT_DEFAULT_ACCOUNT_NUM = 3;
-        return Stream.of(props.get("nodes").split(",")).map(NodeConnectInfo::new).collect(toList());
+        return Stream.of(props.get("nodes").split(","))
+                .map(NodeConnectInfo::new)
+                .collect(toList());
     }
 
     public NodeSelection nodeSelector() {
@@ -524,12 +521,20 @@ public class HapiSpecSetup {
         return asAccount("0.0.800");
     }
 
+    public AccountID feeCollectorAccount() {
+        return asAccount("0.0.802");
+    }
+
     public String nodeRewardAccountName() {
         return "NODE_REWARD";
     }
 
     public String stakingRewardAccountName() {
         return "STAKING_REWARD";
+    }
+
+    public String feeCollectorAccountName() {
+        return "FEE_COLLECTOR";
     }
 
     public FileID throttleDefinitionsId() {

@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.junit;
 
+import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SUFFIX;
 import static com.hedera.services.bdd.suites.SuiteRunner.SUITE_NAME_WIDTH;
 import static com.hedera.services.bdd.suites.SuiteRunner.rightPadded;
@@ -113,8 +114,7 @@ public abstract class TestBase {
     @SuppressWarnings("java:S1181")
     public static void assertValidatorsPass(final String loc, final List<RecordStreamValidator> validators)
             throws IOException {
-        final var access = new RecordStreamAccess();
-        final var streamData = access.readStreamDataFrom(loc, "sidecar");
+        final var streamData = RECORD_STREAM_ACCESS.readStreamDataFrom(loc, "sidecar");
         final var errorsIfAny = validators.stream()
                 .flatMap(v -> {
                     try {
