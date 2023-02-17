@@ -22,6 +22,7 @@ import com.hedera.node.app.service.mono.context.FullEvmResult;
 import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
+import com.hedera.node.app.service.mono.stats.SidecarInstrumentation;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.ArrayList;
@@ -64,6 +65,7 @@ public class RandomFactory {
         // TODO(Nathan): An 8th argument was added to the method but this code was no updated. I
         // added Collections.emptyList() to achieve successful compilation, but this logic may not
         // be correct.
+
         final var ans = TransactionProcessingResult.successful(
                 logs,
                 randomNonNegativeLong(),
@@ -72,7 +74,8 @@ public class RandomFactory {
                 output,
                 randomAddress(),
                 randomStateChanges(params),
-                Collections.emptyList());
+                Collections.emptyList(),
+                SidecarInstrumentation.createNoop());
         if (r.nextDouble() < params.creationProbability()) {
             ans.setCreatedContracts(randomCreations(params.maxCreations()));
         }
@@ -106,7 +109,8 @@ public class RandomFactory {
                 revertReason,
                 haltReason,
                 randomStateChanges(params),
-                Collections.emptyList());
+                Collections.emptyList(),
+                SidecarInstrumentation.createNoop());
     }
 
     private Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> randomStateChanges(final EvmResultRandomParams params) {

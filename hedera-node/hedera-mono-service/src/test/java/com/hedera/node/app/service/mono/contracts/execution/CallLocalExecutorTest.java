@@ -33,6 +33,7 @@ import com.hedera.node.app.hapi.utils.builder.RequestBuilder;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.stats.SidecarInstrumentation;
 import com.hedera.node.app.service.mono.store.AccountStore;
 import com.hedera.node.app.service.mono.store.contracts.EntityAccess;
 import com.hedera.node.app.service.mono.store.models.Account;
@@ -97,7 +98,15 @@ class CallLocalExecutorTest {
         given(aliasManager.lookupIdBy(target.getEvmAddress())).willReturn(EntityNum.fromLong(contractID.num()));
 
         final var transactionProcessingResult = TransactionProcessingResult.successful(
-                new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress(), new TreeMap<>(), new ArrayList<>());
+                new ArrayList<>(),
+                0,
+                0,
+                1,
+                Bytes.EMPTY,
+                callerID.asEvmAddress(),
+                new TreeMap<>(),
+                new ArrayList<>(),
+                SidecarInstrumentation.createNoop());
         final var expected = response(OK, transactionProcessingResult);
 
         given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
@@ -123,7 +132,15 @@ class CallLocalExecutorTest {
         given(aliasManager.lookupIdBy(sender.getAlias())).willReturn(EntityNum.fromLong(senderID.num()));
 
         final var transactionProcessingResult = TransactionProcessingResult.successful(
-                new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress(), new TreeMap<>(), new ArrayList<>());
+                new ArrayList<>(),
+                0,
+                0,
+                1,
+                Bytes.EMPTY,
+                callerID.asEvmAddress(),
+                new TreeMap<>(),
+                new ArrayList<>(),
+                SidecarInstrumentation.createNoop());
         final var expected = response(OK, transactionProcessingResult);
 
         given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
@@ -149,7 +166,8 @@ class CallLocalExecutorTest {
                 Bytes.EMPTY,
                 callerID.asEvmAddress(),
                 Collections.emptyMap(),
-                new ArrayList<>());
+                new ArrayList<>(),
+                SidecarInstrumentation.createNoop());
         final var expected = response(OK, transactionProcessingResult);
 
         given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
@@ -175,7 +193,8 @@ class CallLocalExecutorTest {
                 Bytes.EMPTY,
                 callerID.asEvmAddress(),
                 Collections.emptyMap(),
-                new ArrayList<>());
+                new ArrayList<>(),
+                SidecarInstrumentation.createNoop());
         final var expected = response(OK, transactionProcessingResult);
 
         given(entityAccess.isTokenAccount(any())).willReturn(true);
@@ -199,7 +218,8 @@ class CallLocalExecutorTest {
                 Optional.empty(),
                 Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE),
                 Collections.emptyMap(),
-                Collections.emptyList());
+                Collections.emptyList(),
+                SidecarInstrumentation.createNoop());
         final var expected = response(LOCAL_CALL_MODIFICATION_EXCEPTION, transactionProcessingResult);
 
         given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
@@ -224,7 +244,8 @@ class CallLocalExecutorTest {
                 Optional.empty(),
                 Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS),
                 Collections.emptyMap(),
-                Collections.emptyList());
+                Collections.emptyList(),
+                SidecarInstrumentation.createNoop());
         final var expected = response(INVALID_SOLIDITY_ADDRESS, transactionProcessingResult);
 
         given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
@@ -249,7 +270,8 @@ class CallLocalExecutorTest {
                 Optional.of(Bytes.of("out of gas".getBytes())),
                 Optional.empty(),
                 Collections.emptyMap(),
-                Collections.emptyList());
+                Collections.emptyList(),
+                SidecarInstrumentation.createNoop());
         final var expected = response(CONTRACT_REVERT_EXECUTED, transactionProcessingResult);
 
         given(accountStore.loadAccount(any())).willReturn(new Account(callerID));

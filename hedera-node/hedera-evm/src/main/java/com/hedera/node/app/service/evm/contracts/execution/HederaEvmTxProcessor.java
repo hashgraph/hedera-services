@@ -78,6 +78,10 @@ public abstract class HederaEvmTxProcessor {
         this.tracer = tracer;
     }
 
+    public HederaEvmOperationTracer getOperationTracer() {
+        return tracer;
+    }
+
     protected HederaEvmTxProcessor(
             final HederaEvmMutableWorldState worldState,
             final PricesAndFeesProvider livePricesSource,

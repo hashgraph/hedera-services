@@ -46,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
@@ -61,6 +62,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
+import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaTracer;
 import com.hedera.node.app.service.mono.files.HederaFs;
 import com.hedera.node.app.service.mono.files.TieredHederaFs;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
@@ -72,6 +74,7 @@ import com.hedera.node.app.service.mono.records.TransactionRecordService;
 import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
+import com.hedera.node.app.service.mono.stats.SidecarInstrumentation;
 import com.hedera.node.app.service.mono.store.AccountStore;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
@@ -187,10 +190,14 @@ class ContractCreateTransitionLogicTest {
 
     private ContractCreateTransitionLogic subject;
     private TransactionBody contractCreateTxn;
+    private HederaTracer hederaTracer;
+    private SidecarInstrumentation sidecarInstrumentationNoop;
     private MockedStatic<SidecarUtils> sidecarUtilsMockedStatic;
 
     @BeforeEach
     void setup() {
+        sidecarInstrumentationNoop = SidecarInstrumentation.createNoop();
+        hederaTracer = new HederaTracer(false, sidecarInstrumentationNoop);
         sidecarUtilsMockedStatic = mockStatic(SidecarUtils.class);
         subject = new ContractCreateTransitionLogic(
                 hfs,
@@ -405,6 +412,8 @@ class ContractCreateTransitionLogicTest {
     @Test
     void usesContractKeyWhenEmptyAdminKeySetInOp() {
         final var inOrder = inOrder(worldState);
+        given(evmTxProcessor.getOperationTracer()).willReturn(hederaTracer);
+
         final var op = ContractCreateTransactionBody.newBuilder()
                 .setFileID(bytecodeSrc)
                 .setInitialBalance(balance)
@@ -425,6 +434,7 @@ class ContractCreateTransitionLogicTest {
         given(accessor.getTxn()).willReturn(contractCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
         given(txnCtx.accessor()).willReturn(accessor);
+
         final var result = TransactionProcessingResult.successful(
                 null,
                 1234L,
@@ -433,7 +443,8 @@ class ContractCreateTransitionLogicTest {
                 Bytes.EMPTY,
                 contractAccount.getId().asEvmAddress(),
                 Map.of(),
-                new ArrayList<>());
+                new ArrayList<>(),
+                sidecarInstrumentationNoop);
         given(txnCtx.consensusTime()).willReturn(consensusTime);
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
                 .willReturn(contractAccount.getId().asEvmAddress());
@@ -468,6 +479,8 @@ class ContractCreateTransitionLogicTest {
 
     @Test
     void usesContractKeyWhenAdminKeyNotSetInOp() {
+        given(evmTxProcessor.getOperationTracer()).willReturn(hederaTracer);
+
         final var op = ContractCreateTransactionBody.newBuilder()
                 .setFileID(bytecodeSrc)
                 .setInitialBalance(balance)
@@ -487,6 +500,7 @@ class ContractCreateTransitionLogicTest {
         given(accessor.getTxn()).willReturn(contractCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
         given(txnCtx.accessor()).willReturn(accessor);
+
         final var result = TransactionProcessingResult.successful(
                 null,
                 1234L,
@@ -495,7 +509,8 @@ class ContractCreateTransitionLogicTest {
                 Bytes.EMPTY,
                 contractAccount.getId().asEvmAddress(),
                 Map.of(),
-                new ArrayList<>());
+                new ArrayList<>(),
+                sidecarInstrumentationNoop);
         given(txnCtx.consensusTime()).willReturn(consensusTime);
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
                 .willReturn(contractAccount.getId().asEvmAddress());
@@ -526,6 +541,8 @@ class ContractCreateTransitionLogicTest {
 
     @Test
     void usesAdminKeyWhenSetInOp() {
+        given(evmTxProcessor.getOperationTracer()).willReturn(hederaTracer);
+
         final var adminKey = Key.newBuilder()
                 .setEd25519(copyFromUtf8("01234567890123456789012345678901"))
                 .build();
@@ -554,6 +571,7 @@ class ContractCreateTransitionLogicTest {
         given(accessor.getTxn()).willReturn(contractCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
         given(txnCtx.accessor()).willReturn(accessor);
+
         final var result = TransactionProcessingResult.successful(
                 null,
                 1234L,
@@ -562,7 +580,8 @@ class ContractCreateTransitionLogicTest {
                 Bytes.EMPTY,
                 contractAccount.getId().asEvmAddress(),
                 Map.of(),
-                new ArrayList<>());
+                new ArrayList<>(),
+                sidecarInstrumentationNoop);
         given(txnCtx.consensusTime()).willReturn(consensusTime);
         given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
                 .willReturn(contractAccount.getId().asEvmAddress());
@@ -594,6 +613,7 @@ class ContractCreateTransitionLogicTest {
     @Test
     void capturesUnsuccessfulCreateWithoutSidecars() {
         // setup:
+        given(evmTxProcessor.getOperationTracer()).willReturn(hederaTracer);
         givenValidTxnCtx();
         List<ContractID> expectedCreatedContracts =
                 List.of(contractAccount.getId().asGrpcContract());
@@ -608,8 +628,16 @@ class ContractCreateTransitionLogicTest {
         given(txnCtx.activePayer()).willReturn(ourAccount());
         given(txnCtx.accessor()).willReturn(accessor);
         given(txnCtx.consensusTime()).willReturn(consensusTime);
+
         var result = TransactionProcessingResult.failed(
-                1234L, 0L, 124L, Optional.empty(), Optional.empty(), Map.of(), new ArrayList<>());
+                1234L,
+                0L,
+                124L,
+                Optional.empty(),
+                Optional.empty(),
+                Map.of(),
+                new ArrayList<>(),
+                sidecarInstrumentationNoop);
         given(evmTxProcessor.execute(
                         senderAccount,
                         contractAccount.getId().asEvmAddress(),
@@ -632,6 +660,7 @@ class ContractCreateTransitionLogicTest {
     @Test
     void successfullyUnlinkUnusedCreate1ContractAddress() {
         // setup:
+        given(evmTxProcessor.getOperationTracer()).willReturn(hederaTracer);
         givenValidTxnCtx();
         List<ContractID> expectedCreatedContracts =
                 List.of(contractAccount.getId().asGrpcContract());
@@ -648,7 +677,14 @@ class ContractCreateTransitionLogicTest {
         given(aliasManager.isInUse(create1ContractAddress)).willReturn(true);
 
         var result = TransactionProcessingResult.failed(
-                1234L, 0L, 124L, Optional.empty(), Optional.empty(), Map.of(), new ArrayList<>());
+                1234L,
+                0L,
+                124L,
+                Optional.empty(),
+                Optional.empty(),
+                Map.of(),
+                new ArrayList<>(),
+                sidecarInstrumentationNoop);
         given(evmTxProcessor.executeEth(
                         senderAccount,
                         create1ContractAddress,
@@ -676,6 +712,7 @@ class ContractCreateTransitionLogicTest {
     @Test
     void capturesUnsuccessfulCreateWithSidecars() {
         // setup:
+        given(evmTxProcessor.getOperationTracer()).willReturn(hederaTracer);
         givenValidTxnCtx();
         List<ContractID> expectedCreatedContracts =
                 List.of(contractAccount.getId().asGrpcContract());
@@ -691,7 +728,14 @@ class ContractCreateTransitionLogicTest {
         given(txnCtx.consensusTime()).willReturn(consensusTime);
 
         var result = TransactionProcessingResult.failed(
-                1234L, 0L, 124L, Optional.empty(), Optional.empty(), Map.of(), new ArrayList<>());
+                1234L,
+                0L,
+                124L,
+                Optional.empty(),
+                Optional.empty(),
+                Map.of(),
+                new ArrayList<>(),
+                sidecarInstrumentationNoop);
         given(evmTxProcessor.execute(
                         senderAccount,
                         contractAccount.getId().asEvmAddress(),
@@ -705,7 +749,8 @@ class ContractCreateTransitionLogicTest {
                 .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
         sidecarUtilsMockedStatic
                 .when(() -> SidecarUtils.createContractBytecodeSidecarForFailedCreate(
-                        Bytes.fromHexString(new String(bytecode)).toArrayUnsafe()))
+                        eq(Bytes.fromHexString(new String(bytecode)).toArrayUnsafe()),
+                        any(SidecarInstrumentation.class)))
                 .thenReturn(sidecarRecord);
 
         // when:
@@ -721,6 +766,7 @@ class ContractCreateTransitionLogicTest {
     @Test
     void capturesUnsuccessfulCreateWithSidecarEnabledButInlineInitCode() {
         // setup:
+        given(evmTxProcessor.getOperationTracer()).willReturn(hederaTracer);
         givenValidTxnCtxWithInlineInitCode();
         List<ContractID> expectedCreatedContracts =
                 List.of(contractAccount.getId().asGrpcContract());
@@ -736,7 +782,14 @@ class ContractCreateTransitionLogicTest {
         given(txnCtx.consensusTime()).willReturn(consensusTime);
 
         var result = TransactionProcessingResult.failed(
-                1234L, 0L, 124L, Optional.empty(), Optional.empty(), Map.of(), new ArrayList<>());
+                1234L,
+                0L,
+                124L,
+                Optional.empty(),
+                Optional.empty(),
+                Map.of(),
+                new ArrayList<>(),
+                sidecarInstrumentationNoop);
         given(evmTxProcessor.execute(
                         senderAccount,
                         contractAccount.getId().asEvmAddress(),
@@ -763,6 +816,7 @@ class ContractCreateTransitionLogicTest {
     @Test
     void followsHappyPathWithOverrides() {
         // setup:
+        given(evmTxProcessor.getOperationTracer()).willReturn(hederaTracer);
         givenValidTxnCtxWithMaxAssociations();
         final var captor = ArgumentCaptor.forClass(ContractCustomizer.class);
         final var secondaryCreations = List.of(IdUtils.asContract("0.0.849321"));
@@ -784,7 +838,8 @@ class ContractCreateTransitionLogicTest {
                 Bytes.EMPTY,
                 contractAccount.getId().asEvmAddress(),
                 Map.of(),
-                new ArrayList<>());
+                new ArrayList<>(),
+                sidecarInstrumentationNoop);
         given(txnCtx.consensusTime()).willReturn(consensusTime);
 
         final var newEvmAddress = contractAccount.getId().asEvmAddress();
@@ -825,6 +880,7 @@ class ContractCreateTransitionLogicTest {
     @Test
     void followsHappyPathWithOverridesWithSidecar() {
         // setup:
+        given(evmTxProcessor.getOperationTracer()).willReturn(hederaTracer);
         givenValidTxnCtxWithMaxAssociations();
         final var captor = ArgumentCaptor.forClass(ContractCustomizer.class);
         final var secondaryCreations = List.of(IdUtils.asContract("0.0.849321"));
@@ -841,7 +897,15 @@ class ContractCreateTransitionLogicTest {
 
         final var output = Bytes.of(123);
         final var result = TransactionProcessingResult.successful(
-                null, 1234L, 0L, 124L, output, contractAccount.getId().asEvmAddress(), Map.of(), List.of());
+                null,
+                1234L,
+                0L,
+                124L,
+                output,
+                contractAccount.getId().asEvmAddress(),
+                Map.of(),
+                List.of(),
+                sidecarInstrumentationNoop);
         given(txnCtx.consensusTime()).willReturn(consensusTime);
 
         final var newEvmAddress = contractAccount.getId().asEvmAddress();
@@ -862,7 +926,10 @@ class ContractCreateTransitionLogicTest {
                 .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
         sidecarUtilsMockedStatic
                 .when(() -> SidecarUtils.createContractBytecodeSidecarFrom(
-                        contractAccount.getId().asGrpcContract(), initCode.toArrayUnsafe(), output.toArrayUnsafe()))
+                        eq(contractAccount.getId().asGrpcContract()),
+                        eq(initCode.toArrayUnsafe()),
+                        eq(output.toArrayUnsafe()),
+                        any(SidecarInstrumentation.class)))
                 .thenReturn(sidecarRecord);
 
         // when:
@@ -890,6 +957,7 @@ class ContractCreateTransitionLogicTest {
     @Test
     void followsHappyPathWithOverridesAndInlineInitCodeAndWithSidecar() {
         // setup:
+        given(evmTxProcessor.getOperationTracer()).willReturn(hederaTracer);
         givenValidTxnCtxWithInlineInitCode();
         final var captor = ArgumentCaptor.forClass(ContractCustomizer.class);
         final var secondaryCreations = List.of(IdUtils.asContract("0.0.849321"));
@@ -904,7 +972,15 @@ class ContractCreateTransitionLogicTest {
         given(autoRenewModel.isSmartContract()).willReturn(false);
         final var output = Bytes.of(123);
         final var result = TransactionProcessingResult.successful(
-                null, 1234L, 0L, 124L, output, contractAccount.getId().asEvmAddress(), Map.of(), List.of());
+                null,
+                1234L,
+                0L,
+                124L,
+                output,
+                contractAccount.getId().asEvmAddress(),
+                Map.of(),
+                List.of(),
+                sidecarInstrumentationNoop);
         given(txnCtx.consensusTime()).willReturn(consensusTime);
 
         final var newEvmAddress = contractAccount.getId().asEvmAddress();
@@ -924,7 +1000,7 @@ class ContractCreateTransitionLogicTest {
                 .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
         sidecarUtilsMockedStatic
                 .when(() -> SidecarUtils.createContractBytecodeSidecarFrom(
-                        contractAccount.getId().asGrpcContract(), output.toArrayUnsafe()))
+                        contractAccount.getId().asGrpcContract(), output.toArrayUnsafe(), sidecarInstrumentationNoop))
                 .thenReturn(sidecarRecord);
 
         // when:
@@ -943,7 +1019,7 @@ class ContractCreateTransitionLogicTest {
         verify(accountStore).loadAccount(senderAccount.getId());
         verify(accountStore).loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT);
         sidecarUtilsMockedStatic.verify(() -> SidecarUtils.createContractBytecodeSidecarFrom(
-                contractAccount.getId().asGrpcContract(), output.toArrayUnsafe()));
+                contractAccount.getId().asGrpcContract(), output.toArrayUnsafe(), sidecarInstrumentationNoop));
         // and:
         final var customizerUsed = captor.getValue();
         final var changes = customizerUsed.accountCustomizer().getChanges();
@@ -954,6 +1030,7 @@ class ContractCreateTransitionLogicTest {
     @Test
     void followsHappyPathWithCounterAndRecord() {
         // setup:
+        given(evmTxProcessor.getOperationTracer()).willReturn(hederaTracer);
         givenValidTxnCtxWithMaxAssociations();
         final var captor = ArgumentCaptor.forClass(ContractCustomizer.class);
         final var secondaryCreations = List.of(IdUtils.asContract("0.0.849321"));
@@ -967,7 +1044,15 @@ class ContractCreateTransitionLogicTest {
         given(autoRenewModel.isSmartContract()).willReturn(false);
         given(aliasManager.resolveForEvm(create1ContractAddress)).willReturn(create1ContractResolvedAddress);
         final var result = TransactionProcessingResult.successful(
-                null, 1234L, 0L, 124L, Bytes.EMPTY, create1ContractAddress, Map.of(), new ArrayList<>());
+                null,
+                1234L,
+                0L,
+                124L,
+                Bytes.EMPTY,
+                create1ContractAddress,
+                Map.of(),
+                new ArrayList<>(),
+                sidecarInstrumentationNoop);
         given(txnCtx.consensusTime()).willReturn(consensusTime);
 
         given(evmTxProcessor.executeEth(
@@ -1007,6 +1092,7 @@ class ContractCreateTransitionLogicTest {
     @Test
     void followsHappyPathWithCounterAndRecordAndSidecars() {
         // setup:
+        given(evmTxProcessor.getOperationTracer()).willReturn(hederaTracer);
         givenValidTxnCtxWithMaxAssociations();
         final var captor = ArgumentCaptor.forClass(ContractCustomizer.class);
         final var secondaryCreations = List.of(IdUtils.asContract("0.0.849321"));
@@ -1022,7 +1108,7 @@ class ContractCreateTransitionLogicTest {
 
         final var output = Bytes.of(123);
         final var result = TransactionProcessingResult.successful(
-                null, 1234L, 0L, 124L, output, create1ContractAddress, Map.of(), List.of());
+                null, 1234L, 0L, 124L, output, create1ContractAddress, Map.of(), List.of(), sidecarInstrumentationNoop);
         given(txnCtx.consensusTime()).willReturn(consensusTime);
 
         final var initCode = Bytes.fromHexString(new String(bytecode));
@@ -1042,7 +1128,10 @@ class ContractCreateTransitionLogicTest {
                 .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
         sidecarUtilsMockedStatic
                 .when(() -> SidecarUtils.createContractBytecodeSidecarFrom(
-                        create1ContractId, initCode.toArrayUnsafe(), output.toArrayUnsafe()))
+                        eq(create1ContractId),
+                        eq(initCode.toArrayUnsafe()),
+                        eq(output.toArrayUnsafe()),
+                        any(SidecarInstrumentation.class)))
                 .thenReturn(sidecarRecord);
         final var nextChildRecordSourceId = 1234;
         given(recordsHistorian.nextChildRecordSourceId()).willReturn(nextChildRecordSourceId);

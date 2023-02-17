@@ -27,6 +27,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
+import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
@@ -115,6 +116,7 @@ class HederaEvmTxProcessorTest {
     private final String INSUFFICIENT_GAS = "INSUFFICIENT_GAS";
 
     private MockHederaEvmTxProcessor evmTxProcessor;
+    private HederaEvmOperationTracer tracer;
     private String mcpVersion;
     private String ccpVersion;
 
@@ -152,8 +154,14 @@ class HederaEvmTxProcessorTest {
         evmTxProcessor = new MockHederaEvmTxProcessor(
                 worldState, livePricesSource, globalDynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
 
-        final var hederaEvmOperationTracer = new DefaultHederaTracer();
-        evmTxProcessor.setOperationTracer(hederaEvmOperationTracer);
+        tracer = new DefaultHederaTracer();
+        evmTxProcessor.setOperationTracer(tracer);
+    }
+
+    @Test
+    void getterForTracerWorks() {
+        final var actual = evmTxProcessor.getOperationTracer();
+        assertEquals(tracer, actual);
     }
 
     @Test

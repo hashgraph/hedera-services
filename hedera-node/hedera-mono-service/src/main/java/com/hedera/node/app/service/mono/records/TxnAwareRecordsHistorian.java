@@ -308,6 +308,8 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 
     public static void timestampSidecars(
             final List<TransactionSidecarRecord.Builder> sidecars, final Instant txnTimestamp) {
+        // (This operation is not expensive so we don't bother to add it to the sidecar
+        // instrumentation)
         final var commonTimestamp = MiscUtils.asTimestamp(txnTimestamp);
         for (final var sidecar : sidecars) {
             sidecar.setConsensusTimestamp(commonTimestamp);

@@ -27,6 +27,7 @@ import com.hedera.node.app.service.mono.state.submerkle.EvmFnResult;
 import com.hedera.node.app.service.mono.store.models.Topic;
 import com.hedera.node.app.service.mono.utils.SidecarUtils;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -109,12 +110,15 @@ public class TransactionRecordService {
     }
 
     private void addAllSidecarsToTxnContextFrom(final TransactionProcessingResult result) {
+        final var sidecarInstrumentation = result.getSidecarInstrumentation();
+        Objects.requireNonNull(sidecarInstrumentation, "sidecarInstrumentation:SidecarInstrumentation required");
         if (!result.getStateChanges().isEmpty()) {
-            txnCtx.addSidecarRecord(SidecarUtils.createStateChangesSidecarFrom(result.getStateChanges()));
+            txnCtx.addSidecarRecord(
+                    SidecarUtils.createStateChangesSidecarFrom(result.getStateChanges(), sidecarInstrumentation));
         }
         final var actions = result.getActions();
         if (!actions.isEmpty()) {
-            txnCtx.addSidecarRecord(SidecarUtils.createContractActionsSidecar(actions));
+            txnCtx.addSidecarRecord(SidecarUtils.createContractActionsSidecar(actions, sidecarInstrumentation));
         }
     }
 

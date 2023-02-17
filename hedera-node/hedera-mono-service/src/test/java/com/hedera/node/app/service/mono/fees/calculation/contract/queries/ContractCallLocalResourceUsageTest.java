@@ -44,6 +44,7 @@ import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessin
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.queries.contract.ContractCallLocalAnswer;
+import com.hedera.node.app.service.mono.stats.SidecarInstrumentation;
 import com.hedera.node.app.service.mono.store.AccountStore;
 import com.hedera.node.app.service.mono.store.models.Account;
 import com.hedera.node.app.service.mono.store.models.Id;
@@ -156,7 +157,8 @@ class ContractCallLocalResourceUsageTest {
                 Bytes.EMPTY,
                 callerID.asEvmAddress(),
                 Collections.emptyMap(),
-                Collections.emptyList());
+                Collections.emptyList(),
+                SidecarInstrumentation.createNoop());
         final var response = okResponse(transactionProcessingResult);
         final var estimateResponse = subject.dummyResponse(target);
         final var expected = expectedUsage();

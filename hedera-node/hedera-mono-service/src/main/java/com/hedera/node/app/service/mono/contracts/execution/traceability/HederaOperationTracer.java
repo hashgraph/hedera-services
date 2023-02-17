@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.mono.contracts.execution.traceability;
 
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
+import com.hedera.node.app.service.mono.stats.SidecarInstrumentation;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
@@ -34,4 +36,12 @@ public interface HederaOperationTracer extends HederaEvmOperationTracer {
      *     SYSTEM}
      */
     void tracePrecompileResult(final MessageFrame frame, final ContractActionType type);
+
+    /**
+     * Get the instrumentation collector for operations involving the sidecar records.
+     *
+     * @return An instrumentation collector for EVM operations on sidecar records.
+     */
+    @NonNull
+    SidecarInstrumentation getInstrumentation();
 }

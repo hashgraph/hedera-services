@@ -45,6 +45,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
+import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaOperationTracer;
 import com.hedera.node.app.service.mono.files.HederaFs;
 import com.hedera.node.app.service.mono.files.TieredHederaFs;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
@@ -74,6 +75,7 @@ import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -240,17 +242,25 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         for (final var createdContract : createdContracts) {
             sigImpactHistorian.markEntityChanged(createdContract.getContractNum());
         }
+
+        final var tracer = evmTxProcessor.getOperationTracer() instanceof HederaOperationTracer tx ? tx : null;
+        Objects.requireNonNull(tracer, "must have a HederaOperationTracer");
+        final var sidecarInstrumentation = tracer.getInstrumentation();
+        Objects.requireNonNull(sidecarInstrumentation, "must have SidecarInstrumentation");
+
         if (result.isSuccessful()) {
             final var newEvmAddress = newContractAddress.toArrayUnsafe();
             final var newEvmAddressResolved = aliasManager.resolveForEvm(newContractAddress);
             final var newContractId = contractIdFromEvmAddress(newEvmAddressResolved);
+
             final var contractBytecodeSidecar = op.getInitcodeSourceCase() != INITCODE
                     ? SidecarUtils.createContractBytecodeSidecarFrom(
                             newContractId,
                             codeWithConstructorArgs.toArrayUnsafe(),
-                            result.getOutput().toArrayUnsafe())
+                            result.getOutput().toArrayUnsafe(),
+                            sidecarInstrumentation)
                     : SidecarUtils.createContractBytecodeSidecarFrom(
-                            newContractId, result.getOutput().toArrayUnsafe());
+                            newContractId, result.getOutput().toArrayUnsafe(), sidecarInstrumentation);
             if (createSyntheticRecord) {
                 recordSyntheticOperation(newContractId, newEvmAddress, hapiSenderCustomizer, contractBytecodeSidecar);
                 // bytecode sidecar is already externalized if needed in {@link
@@ -274,7 +284,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             if (properties.enabledSidecars().contains(SidecarType.CONTRACT_BYTECODE)
                     && op.getInitcodeSourceCase() != INITCODE) {
                 final var bytecodeSidecar = SidecarUtils.createContractBytecodeSidecarForFailedCreate(
-                        codeWithConstructorArgs.toArrayUnsafe());
+                        codeWithConstructorArgs.toArrayUnsafe(), sidecarInstrumentation);
                 recordService.externalizeUnsuccessfulEvmCreate(result, bytecodeSidecar);
             } else {
                 recordService.externalizeUnsuccessfulEvmCreate(result);

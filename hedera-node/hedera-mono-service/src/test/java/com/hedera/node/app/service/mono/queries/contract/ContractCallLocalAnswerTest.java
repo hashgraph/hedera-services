@@ -52,6 +52,7 @@ import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.stats.SidecarInstrumentation;
 import com.hedera.node.app.service.mono.store.AccountStore;
 import com.hedera.node.app.service.mono.store.contracts.EntityAccess;
 import com.hedera.node.app.service.mono.store.models.Account;
@@ -278,10 +279,15 @@ class ContractCallLocalAnswerTest {
     void getsCallResponseWhenNoBlockMetaAvailable() throws Throwable {
         // setup:
         final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
-
         final var transactionProcessingResult = TransactionProcessingResult.failed(
-                0, 0, 1, Optional.empty(), Optional.empty(), new TreeMap<>(), new ArrayList<>());
-
+                0,
+                0,
+                1,
+                Optional.empty(),
+                Optional.empty(),
+                new TreeMap<>(),
+                new ArrayList<>(),
+                SidecarInstrumentation.createNoop());
         final Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
 
         // then:
@@ -294,9 +300,15 @@ class ContractCallLocalAnswerTest {
     void getsCallResponseWhenNoCtx() throws Throwable {
         // setup:
         final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
-
         final var transactionProcessingResult = TransactionProcessingResult.failed(
-                0, 0, 1, Optional.empty(), Optional.empty(), new TreeMap<>(), new ArrayList<>());
+                0,
+                0,
+                1,
+                Optional.empty(),
+                Optional.empty(),
+                new TreeMap<>(),
+                new ArrayList<>(),
+                SidecarInstrumentation.createNoop());
 
         given(accountStore.loadAccount(any())).willReturn(new Account(Id.fromGrpcContract(target)));
         given(accountStore.loadContract(any())).willReturn(new Account(Id.fromGrpcContract(target)));

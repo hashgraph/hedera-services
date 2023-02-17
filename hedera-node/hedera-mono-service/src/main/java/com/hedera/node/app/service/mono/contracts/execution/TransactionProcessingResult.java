@@ -20,11 +20,14 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 import com.hedera.node.app.service.mono.contracts.execution.traceability.SolidityAction;
 import com.hedera.node.app.service.mono.state.submerkle.EvmFnResult;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
+import com.hedera.node.app.service.mono.stats.SidecarInstrumentation;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -39,6 +42,7 @@ import org.hyperledger.besu.evm.log.Log;
 public class TransactionProcessingResult extends HederaEvmTransactionProcessingResult {
     private Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
     private List<SolidityAction> actions;
+    private SidecarInstrumentation sidecarInstrumentation;
 
     private List<ContractID> createdContracts = Collections.emptyList();
 
@@ -49,7 +53,8 @@ public class TransactionProcessingResult extends HederaEvmTransactionProcessingR
             final Optional<Bytes> revertReason,
             final Optional<ExceptionalHaltReason> haltReason,
             final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
-            final List<SolidityAction> actions) {
+            final List<SolidityAction> actions,
+            final @NonNull SidecarInstrumentation instrumentation) {
         return new TransactionProcessingResult(
                 Status.FAILED,
                 Collections.emptyList(),
@@ -61,7 +66,8 @@ public class TransactionProcessingResult extends HederaEvmTransactionProcessingR
                 revertReason,
                 haltReason,
                 stateChanges,
-                actions);
+                actions,
+                instrumentation);
     }
 
     public static TransactionProcessingResult successful(
@@ -72,7 +78,8 @@ public class TransactionProcessingResult extends HederaEvmTransactionProcessingR
             final Bytes output,
             final Address recipient,
             final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
-            final List<SolidityAction> actions) {
+            final List<SolidityAction> actions,
+            final @NonNull SidecarInstrumentation instrumentation) {
         return new TransactionProcessingResult(
                 Status.SUCCESSFUL,
                 logs,
@@ -84,7 +91,8 @@ public class TransactionProcessingResult extends HederaEvmTransactionProcessingR
                 Optional.empty(),
                 Optional.empty(),
                 stateChanges,
-                actions);
+                actions,
+                instrumentation);
     }
 
     private TransactionProcessingResult(
@@ -98,10 +106,13 @@ public class TransactionProcessingResult extends HederaEvmTransactionProcessingR
             final Optional<Bytes> revertReason,
             final Optional<ExceptionalHaltReason> haltReason,
             final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
-            final List<SolidityAction> actions) {
+            final List<SolidityAction> actions,
+            final @NonNull SidecarInstrumentation instrumentation) {
         super(status, logs, gasUsed, sbhRefund, gasPrice, output, recipient, revertReason, haltReason);
+        Objects.requireNonNull(instrumentation, "instrumentation: SidecarInstrumentation");
         this.stateChanges = stateChanges;
         this.actions = actions;
+        this.sidecarInstrumentation = instrumentation;
     }
 
     /**
@@ -131,6 +142,10 @@ public class TransactionProcessingResult extends HederaEvmTransactionProcessingR
 
     public void setActions(final List<SolidityAction> actions) {
         this.actions = actions;
+    }
+
+    public @NonNull SidecarInstrumentation getSidecarInstrumentation() {
+        return sidecarInstrumentation;
     }
 
     /**

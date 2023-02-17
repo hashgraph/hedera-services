@@ -29,12 +29,16 @@ import static com.hedera.node.app.service.mono.contracts.execution.traceability.
 import static org.hyperledger.besu.evm.frame.MessageFrame.Type.CONTRACT_CREATION;
 
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.stats.SidecarInstrumentation;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.services.stream.proto.SidecarType;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.apache.tuweni.bytes.Bytes;
@@ -53,6 +57,8 @@ public class HederaTracer implements HederaOperationTracer {
     private final Deque<SolidityAction> currentActionsStack;
     private final boolean areActionSidecarsEnabled;
 
+    private SidecarInstrumentation sidecarInstrumentation;
+
     private static final int OP_CODE_CREATE = 0xF0;
     private static final int OP_CODE_CALL = 0xF1;
     private static final int OP_CODE_CALLCODE = 0xF2;
@@ -61,9 +67,17 @@ public class HederaTracer implements HederaOperationTracer {
     private static final int OP_CODE_STATICCALL = 0xFA;
 
     public HederaTracer(final boolean areActionSidecarsEnabled) {
+        this(areActionSidecarsEnabled, SidecarInstrumentation.createNoop());
+    }
+
+    public HederaTracer(
+            final boolean areActionSidecarsEnabled, @NonNull final SidecarInstrumentation sidecarInstrumentation) {
+        Objects.requireNonNull(sidecarInstrumentation, "sidecarInstrumentation:SidecarInstrumentation");
+
         this.currentActionsStack = new ArrayDeque<>();
         this.allActions = new ArrayList<>();
         this.areActionSidecarsEnabled = areActionSidecarsEnabled;
+        this.sidecarInstrumentation = sidecarInstrumentation;
     }
 
     @Override
@@ -76,15 +90,18 @@ public class HederaTracer implements HederaOperationTracer {
     @Override
     public void tracePostExecution(final MessageFrame currentFrame, final OperationResult operationResult) {
         if (areActionSidecarsEnabled) {
-            final var frameState = currentFrame.getState();
-            if (frameState != State.CODE_EXECUTING) {
-                if (frameState == State.CODE_SUSPENDED) {
-                    final var nextFrame = currentFrame.getMessageFrameStack().peek();
-                    trackInnerActionFor(nextFrame, currentFrame);
-                } else {
-                    finalizeActionFor(currentActionsStack.pop(), currentFrame, frameState);
+            sidecarInstrumentation.captureDurationSplit(SidecarType.CONTRACT_ACTION, () -> {
+                final var frameState = currentFrame.getState();
+                if (frameState != State.CODE_EXECUTING) {
+                    if (frameState == State.CODE_SUSPENDED) {
+                        final var nextFrame =
+                                currentFrame.getMessageFrameStack().peek();
+                        trackInnerActionFor(nextFrame, currentFrame);
+                    } else {
+                        finalizeActionFor(currentActionsStack.pop(), currentFrame, frameState);
+                    }
                 }
-            }
+            });
         }
     }
 
@@ -197,12 +214,14 @@ public class HederaTracer implements HederaOperationTracer {
     @Override
     public void tracePrecompileResult(final MessageFrame frame, final ContractActionType type) {
         if (areActionSidecarsEnabled) {
-            final var lastAction = currentActionsStack.pop();
-            lastAction.setCallType(type);
-            lastAction.setRecipientAccount(null);
-            lastAction.setTargetedAddress(null);
-            lastAction.setRecipientContract(EntityId.fromAddress(frame.getContractAddress()));
-            finalizeActionFor(lastAction, frame, frame.getState());
+            sidecarInstrumentation.captureDurationSplit(SidecarType.CONTRACT_ACTION, () -> {
+                final var lastAction = currentActionsStack.pop();
+                lastAction.setCallType(type);
+                lastAction.setRecipientAccount(null);
+                lastAction.setTargetedAddress(null);
+                lastAction.setRecipientContract(EntityId.fromAddress(frame.getContractAddress()));
+                finalizeActionFor(lastAction, frame, frame.getState());
+            });
         }
     }
 
@@ -210,11 +229,18 @@ public class HederaTracer implements HederaOperationTracer {
     public void traceAccountCreationResult(final MessageFrame frame, final Optional<ExceptionalHaltReason> haltReason) {
         frame.setExceptionalHaltReason(haltReason);
         if (areActionSidecarsEnabled) {
-            // we take the last action from the list since there is a chance
-            // it has already been popped from the stack
-            final var lastAction = allActions.get(allActions.size() - 1);
-            finalizeActionFor(lastAction, frame, frame.getState());
+            sidecarInstrumentation.captureDurationSplit(SidecarType.CONTRACT_ACTION, () -> {
+                // we take the last action from the list since there is a chance
+                // it has already been popped from the stack
+                final var lastAction = allActions.get(allActions.size() - 1);
+                finalizeActionFor(lastAction, frame, frame.getState());
+            });
         }
+    }
+
+    @Override
+    public @NonNull SidecarInstrumentation getInstrumentation() {
+        return sidecarInstrumentation;
     }
 
     public List<SolidityAction> getActions() {

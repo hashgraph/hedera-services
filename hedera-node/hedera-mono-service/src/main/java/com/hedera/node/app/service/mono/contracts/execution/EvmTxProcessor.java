@@ -28,6 +28,8 @@ import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaTracer;
 import com.hedera.node.app.service.mono.exceptions.ResourceLimitException;
+import com.hedera.node.app.service.mono.stats.SidecarInstrumentation;
+import com.hedera.node.app.service.mono.stats.SidecarInstrumentationImpl;
 import com.hedera.node.app.service.mono.store.contracts.HederaMutableWorldState;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
 import com.hedera.node.app.service.mono.store.models.Account;
@@ -131,9 +133,9 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
 
         // Enable tracing of contract actions if action sidecars are enabled and this is not a
         // static call
-        final HederaTracer hederaTracer =
-                new HederaTracer(!isStatic && isSideCarTypeEnabled(SidecarType.CONTRACT_ACTION));
-        super.setOperationTracer(hederaTracer);
+        final var sidecarInstrumentation = new SidecarInstrumentationImpl();
+        final HederaTracer hederaTracer = new HederaTracer(
+                !isStatic && isSideCarTypeEnabled(SidecarType.CONTRACT_ACTION), sidecarInstrumentation);
 
         try {
             super.execute(sender, receiver, gasPrice, gasLimit, value, payload, isStatic, mirrorReceiver);
@@ -179,7 +181,9 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
             initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
 
             if (isSideCarTypeEnabled(SidecarType.CONTRACT_STATE_CHANGE)) {
-                stateChanges = ((HederaWorldState.Updater) updater).getFinalStateChanges();
+                stateChanges = sidecarInstrumentation.captureDurationSplit(
+                        SidecarType.CONTRACT_STATE_CHANGE,
+                        () -> ((HederaWorldState.Updater) updater).getFinalStateChanges());
             } else {
                 stateChanges = Map.of();
             }
@@ -213,7 +217,8 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                     initialFrame.getOutputData(),
                     ((HederaWorldState.Updater) updater).aliases().resolveForEvm(mirrorReceiver),
                     stateChanges,
-                    hederaTracer.getActions());
+                    hederaTracer.getActions(),
+                    hederaTracer.getInstrumentation());
         } else {
             return TransactionProcessingResult.failed(
                     gasUsed,
@@ -222,7 +227,8 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                     initialFrame.getRevertReason(),
                     initialFrame.getExceptionalHaltReason(),
                     stateChanges,
-                    hederaTracer.getActions());
+                    hederaTracer.getActions(),
+                    hederaTracer.getInstrumentation());
         }
     }
 
@@ -344,6 +350,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                 Optional.of(e.messageBytes()),
                 Optional.empty(),
                 Collections.emptyMap(),
-                List.of());
+                List.of(),
+                SidecarInstrumentation.createNoop());
     }
 }

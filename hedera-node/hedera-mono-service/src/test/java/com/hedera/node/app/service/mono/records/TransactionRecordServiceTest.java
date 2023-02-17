@@ -41,6 +41,7 @@ import com.hedera.node.app.service.mono.contracts.execution.traceability.Contrac
 import com.hedera.node.app.service.mono.contracts.execution.traceability.SolidityAction;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.EvmFnResult;
+import com.hedera.node.app.service.mono.stats.SidecarInstrumentation;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.models.Topic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -75,6 +76,7 @@ class TransactionRecordServiceTest {
     private static final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = new TreeMap<>(
             Map.of(Address.fromHexString("0x9"), Map.of(Bytes.of(10), Pair.of(Bytes.of(11), Bytes.of(12)))));
     private static final List<SolidityAction> actions = List.of(createAction(OP_CALL), createAction(OP_CREATE2));
+    private static final SidecarInstrumentation sidecarInstrumentationNoop = SidecarInstrumentation.createNoop();
 
     @Mock
     private TransactionContext txnCtx;
@@ -106,6 +108,7 @@ class TransactionRecordServiceTest {
         given(processingResult.getGasUsed()).willReturn(GAS_USED);
         given(processingResult.getRecipient()).willReturn(recipient);
         given(processingResult.getOutput()).willReturn(Bytes.fromHexStringLenient("0xabcd"));
+        given(processingResult.getSidecarInstrumentation()).willReturn(sidecarInstrumentationNoop);
         // when:
         subject.externalizeSuccessfulEvmCreate(processingResult, mockAddr);
         // then:
@@ -130,6 +133,7 @@ class TransactionRecordServiceTest {
         given(processingResult.getOutput()).willReturn(Bytes.fromHexStringLenient("0xabcd"));
         given(processingResult.getStateChanges()).willReturn(stateChanges);
         given(processingResult.getActions()).willReturn(actions);
+        given(processingResult.getSidecarInstrumentation()).willReturn(sidecarInstrumentationNoop);
         final var contractBytecodeSidecar = SidecarUtils.createContractBytecodeSidecarFrom(
                 IdUtils.asContract("0.0.5"), "initCode".getBytes(), "runtimeCode".getBytes());
 
@@ -162,6 +166,7 @@ class TransactionRecordServiceTest {
         given(processingResult.getOutput()).willReturn(Bytes.fromHexStringLenient("0xabcd"));
         given(processingResult.getStateChanges()).willReturn(stateChanges);
         given(processingResult.getActions()).willReturn(actions);
+        given(processingResult.getSidecarInstrumentation()).willReturn(sidecarInstrumentationNoop);
         final var contextCaptor = ArgumentCaptor.forClass(TransactionSidecarRecord.Builder.class);
 
         // when:
@@ -190,6 +195,7 @@ class TransactionRecordServiceTest {
         given(processingResult.getOutput()).willReturn(Bytes.fromHexStringLenient("0xabcd"));
         given(processingResult.getStateChanges()).willReturn(Collections.emptyMap());
         given(processingResult.getActions()).willReturn(Collections.emptyList());
+        given(processingResult.getSidecarInstrumentation()).willReturn(sidecarInstrumentationNoop);
 
         // when:
         subject.externaliseEvmCallTransaction(processingResult);
@@ -206,6 +212,7 @@ class TransactionRecordServiceTest {
         final var contextCaptor = ArgumentCaptor.forClass(TransactionSidecarRecord.Builder.class);
         givenProcessingResult(false, null);
         given(processingResult.getStateChanges()).willReturn(stateChanges);
+        given(processingResult.getSidecarInstrumentation()).willReturn(sidecarInstrumentationNoop);
         final var contractBytecodeSidecar = SidecarUtils.createContractBytecodeSidecarFrom(
                 IdUtils.asContract("0.0.5"), "initCode".getBytes(), "runtimeCode".getBytes());
         // when:
@@ -229,6 +236,7 @@ class TransactionRecordServiceTest {
         final var contextCaptor = ArgumentCaptor.forClass(TransactionSidecarRecord.Builder.class);
         givenProcessingResult(false, null);
         given(processingResult.getStateChanges()).willReturn(stateChanges);
+        given(processingResult.getSidecarInstrumentation()).willReturn(sidecarInstrumentationNoop);
         // when
         subject.externalizeUnsuccessfulEvmCreate(processingResult, null);
         // then:
@@ -247,6 +255,7 @@ class TransactionRecordServiceTest {
     void externalisesEvmCreateTransactionWithContractRevert() {
         // given:
         givenProcessingResult(false, null);
+        given(processingResult.getSidecarInstrumentation()).willReturn(sidecarInstrumentationNoop);
         // when:
         subject.externalizeUnsuccessfulEvmCreate(processingResult);
         // then:
@@ -260,6 +269,7 @@ class TransactionRecordServiceTest {
     void externalisesEvmCreateTransactionWithSelfDestruct() {
         // given:
         givenProcessingResult(false, SELF_DESTRUCT_TO_SELF);
+        given(processingResult.getSidecarInstrumentation()).willReturn(sidecarInstrumentationNoop);
         // when:
         subject.externalizeUnsuccessfulEvmCreate(processingResult);
         // then:
@@ -272,6 +282,7 @@ class TransactionRecordServiceTest {
     void externalisesEvmCreateTransactionWithInvalidSolidityAddress() {
         // given:
         givenProcessingResult(false, INVALID_SOLIDITY_ADDRESS);
+        given(processingResult.getSidecarInstrumentation()).willReturn(sidecarInstrumentationNoop);
         // when:
         subject.externalizeUnsuccessfulEvmCreate(processingResult);
         // then:
@@ -284,6 +295,7 @@ class TransactionRecordServiceTest {
     void externalisesEvmCreateTransactionWithInvalidSignature() {
         // given:
         givenProcessingResult(false, INVALID_SIGNATURE);
+        given(processingResult.getSidecarInstrumentation()).willReturn(sidecarInstrumentationNoop);
         // when:
         subject.externalizeUnsuccessfulEvmCreate(processingResult);
         // then:

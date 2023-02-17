@@ -40,6 +40,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
+import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType;
@@ -50,6 +51,7 @@ import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.stats.SidecarInstrumentation;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
@@ -201,6 +203,7 @@ class CallEvmTxProcessorTest {
                 ccps,
                 aliasManager,
                 blockMetaSource);
+        callEvmTxProcessor.setOperationTracer(new DefaultHederaTracer());
     }
 
     @Test
@@ -433,6 +436,7 @@ class CallEvmTxProcessorTest {
                     doCallRealMethod()
                             .when(mock)
                             .tracePostExecution(any(MessageFrame.class), any(OperationResult.class));
+                    doReturn(SidecarInstrumentation.createNoop()).when(mock).getInstrumentation();
                     doReturn(List.of(action, action2)).when(mock).getActions();
                 })) {
 
@@ -669,6 +673,7 @@ class CallEvmTxProcessorTest {
                 ccps,
                 aliasManager,
                 blockMetaSource);
+        callEvmTxProcessor.setOperationTracer(new DefaultHederaTracer());
         given(worldState.updater()).willReturn(updater);
         given(updater.updater()).willReturn(stackedUpdater);
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(new Id(0, 0, 1010).asEvmAddress());

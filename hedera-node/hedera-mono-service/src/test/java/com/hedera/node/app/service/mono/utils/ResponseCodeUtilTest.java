@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
 import com.hedera.node.app.service.mono.exceptions.ResourceLimitException;
+import com.hedera.node.app.service.mono.stats.SidecarInstrumentation;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,13 @@ class ResponseCodeUtilTest {
     private TransactionProcessingResult failureWithRevertReasonFrom(final ResponseCodeEnum status) {
         final var ex = new ResourceLimitException(status);
         return TransactionProcessingResult.failed(
-                1L, 2L, 3L, Optional.of(ex.messageBytes()), Optional.empty(), Map.of(), List.of());
+                1L,
+                2L,
+                3L,
+                Optional.of(ex.messageBytes()),
+                Optional.empty(),
+                Map.of(),
+                List.of(),
+                SidecarInstrumentation.createNoop());
     }
 }

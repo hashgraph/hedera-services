@@ -31,6 +31,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
+import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
@@ -147,6 +148,7 @@ class CreateEvmTxProcessorTest {
                 ccps,
                 aliasManager,
                 blockMetaSource);
+        createEvmTxProcessor.setOperationTracer(new DefaultHederaTracer());
     }
 
     @Test

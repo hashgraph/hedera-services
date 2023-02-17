@@ -46,6 +46,7 @@ import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessin
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.records.TransactionRecordService;
+import com.hedera.node.app.service.mono.stats.SidecarInstrumentation;
 import com.hedera.node.app.service.mono.store.AccountStore;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.contracts.EntityAccess;
@@ -164,7 +165,15 @@ class ContractCallTransitionLogicTest {
         // flag
         // and:
         var results = TransactionProcessingResult.successful(
-                null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress(), Map.of(), List.of());
+                null,
+                1234L,
+                0L,
+                124L,
+                Bytes.EMPTY,
+                contractAccount.getId().asEvmAddress(),
+                Map.of(),
+                List.of(),
+                SidecarInstrumentation.createNoop());
         given(evmTxProcessor.execute(
                         senderAccount,
                         contractAccount.getId().asEvmAddress(),
@@ -198,7 +207,15 @@ class ContractCallTransitionLogicTest {
         given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
         // and:
         var results = TransactionProcessingResult.successful(
-                null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress(), Map.of(), List.of());
+                null,
+                1234L,
+                0L,
+                124L,
+                Bytes.EMPTY,
+                contractAccount.getId().asEvmAddress(),
+                Map.of(),
+                List.of(),
+                SidecarInstrumentation.createNoop());
         given(evmTxProcessor.executeEth(
                         senderAccount,
                         contractAccount.getId().asEvmAddress(),
@@ -239,7 +256,15 @@ class ContractCallTransitionLogicTest {
         given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
         // and:
         var results = TransactionProcessingResult.successful(
-                null, 1234L, 0L, 124L, Bytes.EMPTY, Address.wrap(Bytes.wrap(alias.toByteArray())), Map.of(), List.of());
+                null,
+                1234L,
+                0L,
+                124L,
+                Bytes.EMPTY,
+                Address.wrap(Bytes.wrap(alias.toByteArray())),
+                Map.of(),
+                List.of(),
+                SidecarInstrumentation.createNoop());
         given(evmTxProcessor.executeEth(
                         senderAccount,
                         Address.wrap(Bytes.wrap(alias.toByteArray())),
@@ -280,8 +305,16 @@ class ContractCallTransitionLogicTest {
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
         given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
         // and:
+
         var results = TransactionProcessingResult.failed(
-                1234L, 0L, 124L, Optional.of(Bytes.EMPTY), Optional.empty(), Map.of(), List.of());
+                1234L,
+                0L,
+                124L,
+                Optional.of(Bytes.EMPTY),
+                Optional.empty(),
+                Map.of(),
+                List.of(),
+                SidecarInstrumentation.createNoop());
         given(evmTxProcessor.executeEth(
                         senderAccount,
                         Address.wrap(Bytes.wrap(alias.toByteArray())),
@@ -493,7 +526,15 @@ class ContractCallTransitionLogicTest {
 
         // and:
         var results = TransactionProcessingResult.successful(
-                null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress(), Map.of(), List.of());
+                null,
+                1234L,
+                0L,
+                124L,
+                Bytes.EMPTY,
+                contractAccount.getId().asEvmAddress(),
+                Map.of(),
+                List.of(),
+                SidecarInstrumentation.createNoop());
         given(evmTxProcessor.execute(
                         senderAccount,
                         new Account(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum()))
@@ -536,7 +577,15 @@ class ContractCallTransitionLogicTest {
                 .willReturn(contractAccount);
         // and:
         var results = TransactionProcessingResult.successful(
-                null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress(), Map.of(), List.of());
+                null,
+                1234L,
+                0L,
+                124L,
+                Bytes.EMPTY,
+                contractAccount.getId().asEvmAddress(),
+                Map.of(),
+                List.of(),
+                SidecarInstrumentation.createNoop());
         given(evmTxProcessor.execute(
                         senderAccount,
                         contractAccount.getId().asEvmAddress(),

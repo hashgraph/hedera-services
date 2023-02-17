@@ -42,6 +42,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.stats.SidecarInstrumentation;
+import com.hedera.node.app.service.mono.stats.SidecarInstrumentationImpl;
 import com.hedera.node.app.service.mono.store.models.Account;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
@@ -112,7 +114,8 @@ class TransactionProcessingResultTest {
                 Bytes.EMPTY,
                 recipient.getId().asEvmAddress(),
                 Collections.emptyMap(),
-                Collections.emptyList());
+                Collections.emptyList(),
+                SidecarInstrumentation.createNoop());
         result.setCreatedContracts(listOfCreatedContracts);
         result.setStateChanges(Collections.emptyMap());
         result.setActions(Collections.emptyList());
@@ -152,7 +155,14 @@ class TransactionProcessingResultTest {
         expect.setErrorMessageBytes(ByteString.copyFrom(revertReason.get().toArray()));
 
         var result = TransactionProcessingResult.failed(
-                GAS_USAGE, GAS_REFUND, GAS_PRICE, revertReason, Optional.of(exception), Map.of(), List.of());
+                GAS_USAGE,
+                GAS_REFUND,
+                GAS_PRICE,
+                revertReason,
+                Optional.of(exception),
+                Map.of(),
+                List.of(),
+                SidecarInstrumentation.createNoop());
 
         assertEquals(expect.getGasUsed(), result.getGasUsed());
         assertEquals(GAS_PRICE, result.getGasPrice());
@@ -171,7 +181,8 @@ class TransactionProcessingResultTest {
                 Bytes.EMPTY,
                 recipient.getId().asEvmAddress(),
                 Map.of(),
-                List.of());
+                List.of(),
+                SidecarInstrumentation.createNoop());
 
         assertEquals(GAS_PRICE, result.getGasPrice());
     }
@@ -186,7 +197,8 @@ class TransactionProcessingResultTest {
                 Bytes.EMPTY,
                 recipient.getId().asEvmAddress(),
                 Map.of(),
-                List.of());
+                List.of(),
+                SidecarInstrumentation.createNoop());
 
         assertEquals(GAS_REFUND, result.getSbhRefund());
     }
@@ -201,7 +213,8 @@ class TransactionProcessingResultTest {
                 Bytes.EMPTY,
                 recipient.getId().asEvmAddress(),
                 Map.of(),
-                List.of());
+                List.of(),
+                SidecarInstrumentation.createNoop());
 
         assertEquals(GAS_USAGE, result.getGasUsed());
     }
@@ -216,8 +229,26 @@ class TransactionProcessingResultTest {
                 Bytes.EMPTY,
                 recipient.getId().asEvmAddress(),
                 Map.of(),
-                List.of());
+                List.of(),
+                SidecarInstrumentation.createNoop());
 
         assertTrue(result.isSuccessful());
+    }
+
+    @Test
+    void getSidecarInstrumentationTest() {
+        final var expected = new SidecarInstrumentationImpl();
+        var result = TransactionProcessingResult.successful(
+                List.of(log),
+                GAS_USAGE,
+                GAS_REFUND,
+                GAS_PRICE,
+                Bytes.EMPTY,
+                recipient.getId().asEvmAddress(),
+                Map.of(),
+                List.of(),
+                expected);
+        final var actual = result.getSidecarInstrumentation();
+        assertEquals(expected, actual);
     }
 }

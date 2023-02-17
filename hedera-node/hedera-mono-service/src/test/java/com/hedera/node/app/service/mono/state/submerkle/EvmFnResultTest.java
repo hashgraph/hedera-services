@@ -29,6 +29,7 @@ import com.google.protobuf.BytesValue;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
+import com.hedera.node.app.service.mono.stats.SidecarInstrumentation;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -132,7 +133,8 @@ class EvmFnResultTest {
                 Optional.of(HederaMessageCallProcessor.INVALID_TRANSFER),
                 Optional.empty(),
                 Collections.emptyMap(),
-                Collections.emptyList());
+                Collections.emptyList(),
+                SidecarInstrumentation.createNoop());
 
         final var actual = EvmFnResult.fromCall(input);
 
@@ -163,7 +165,8 @@ class EvmFnResultTest {
                 Bytes.wrap(result),
                 recipient,
                 Collections.emptyMap(),
-                Collections.emptyList());
+                Collections.emptyList(),
+                SidecarInstrumentation.createNoop());
         input.setCreatedContracts(grpcCreatedContractIds);
 
         final var actual = EvmFnResult.fromCall(input);
@@ -204,7 +207,8 @@ class EvmFnResultTest {
                 Bytes.wrap(result),
                 recipient,
                 Collections.emptyMap(),
-                Collections.emptyList());
+                Collections.emptyList(),
+                SidecarInstrumentation.createNoop());
         input.setCreatedContracts(grpcCreatedContractIds);
 
         final var actual = EvmFnResult.fromCreate(input, evmAddress);

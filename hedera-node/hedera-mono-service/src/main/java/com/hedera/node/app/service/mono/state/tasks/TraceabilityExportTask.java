@@ -198,6 +198,7 @@ public class TraceabilityExportTask implements SystemTask {
         }
         final var bytecodeSidecar =
                 SidecarUtils.createContractBytecodeSidecarFrom(contractId, runtimeCode.toArrayUnsafe());
+        // (Don't need sidecar instrumentation here because: migration only)
         bytecodeSidecar.setMigration(true);
         return bytecodeSidecar;
     }

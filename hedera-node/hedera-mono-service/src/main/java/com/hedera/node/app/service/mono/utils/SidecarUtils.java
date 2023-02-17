@@ -19,15 +19,19 @@ package com.hedera.node.app.service.mono.utils;
 import com.google.protobuf.BytesValue;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.SolidityAction;
+import com.hedera.node.app.service.mono.stats.SidecarInstrumentation;
 import com.hedera.services.stream.proto.ContractActions;
 import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChange;
 import com.hedera.services.stream.proto.ContractStateChanges;
+import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.stream.proto.StorageChange;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.ContractID;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -38,33 +42,62 @@ public class SidecarUtils {
 
     public static TransactionSidecarRecord.Builder createContractBytecodeSidecarFrom(
             final ContractID contractID, final byte[] initCode, final byte[] runtimeCode) {
-        return TransactionSidecarRecord.newBuilder()
-                .setBytecode(ContractBytecode.newBuilder()
-                        .setContractId(contractID)
-                        .setInitcode(ByteStringUtils.wrapUnsafely(initCode))
-                        .setRuntimeBytecode(ByteStringUtils.wrapUnsafely(runtimeCode))
-                        .build());
+        return createContractBytecodeSidecarFrom(
+                contractID, initCode, runtimeCode, SidecarInstrumentation.createNoop());
+    }
+
+    public static TransactionSidecarRecord.Builder createContractBytecodeSidecarFrom(
+            final ContractID contractID,
+            final byte[] initCode,
+            final byte[] runtimeCode,
+            final @NonNull SidecarInstrumentation sidecarInstrumentation) {
+        Objects.requireNonNull(sidecarInstrumentation, "sidecarInstrumentation:SidecarInstrumentation");
+        return sidecarInstrumentation.captureDurationSplit(
+                SidecarType.CONTRACT_BYTECODE, () -> TransactionSidecarRecord.newBuilder()
+                        .setBytecode(ContractBytecode.newBuilder()
+                                .setContractId(contractID)
+                                .setInitcode(ByteStringUtils.wrapUnsafely(initCode))
+                                .setRuntimeBytecode(ByteStringUtils.wrapUnsafely(runtimeCode))
+                                .build()));
     }
 
     public static TransactionSidecarRecord.Builder createContractBytecodeSidecarFrom(
             final ContractID contractID, final byte[] runtimeCode) {
-        return TransactionSidecarRecord.newBuilder()
-                .setBytecode(ContractBytecode.newBuilder()
-                        .setContractId(contractID)
-                        .setRuntimeBytecode(ByteStringUtils.wrapUnsafely(runtimeCode))
-                        .build());
+        return createContractBytecodeSidecarFrom(contractID, runtimeCode, SidecarInstrumentation.createNoop());
+    }
+
+    public static TransactionSidecarRecord.Builder createContractBytecodeSidecarFrom(
+            final ContractID contractID,
+            final byte[] runtimeCode,
+            @NonNull final SidecarInstrumentation sidecarInstrumentation) {
+        Objects.requireNonNull(sidecarInstrumentation, "sidecarInstrumentation:SidecarInstrumentation");
+        return sidecarInstrumentation.captureDurationSplit(
+                SidecarType.CONTRACT_BYTECODE, () -> TransactionSidecarRecord.newBuilder()
+                        .setBytecode(ContractBytecode.newBuilder()
+                                .setContractId(contractID)
+                                .setRuntimeBytecode(ByteStringUtils.wrapUnsafely(runtimeCode))
+                                .build()));
     }
 
     public static TransactionSidecarRecord.Builder createStateChangesSidecarFrom(
             final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges) {
-        final var grpc = ContractStateChanges.newBuilder();
-        stateChanges.forEach((address, slotAccessPairs) -> {
-            final var builder = ContractStateChange.newBuilder()
-                    .setContractId(EntityIdUtils.contractIdFromEvmAddress(address.toArrayUnsafe()));
-            slotAccessPairs.forEach((slot, access) -> builder.addStorageChanges(trimmedGrpc(slot, access)));
-            grpc.addContractStateChanges(builder);
+        return createStateChangesSidecarFrom(stateChanges, SidecarInstrumentation.createNoop());
+    }
+
+    public static TransactionSidecarRecord.Builder createStateChangesSidecarFrom(
+            final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
+            @NonNull final SidecarInstrumentation sidecarInstrumentation) {
+        Objects.requireNonNull(sidecarInstrumentation, "sidecarInstrumentation:SidecarInstrumentation");
+        return sidecarInstrumentation.captureDurationSplit(SidecarType.CONTRACT_STATE_CHANGE, () -> {
+            final var grpc = ContractStateChanges.newBuilder();
+            stateChanges.forEach((address, slotAccessPairs) -> {
+                final var builder = ContractStateChange.newBuilder()
+                        .setContractId(EntityIdUtils.contractIdFromEvmAddress(address.toArrayUnsafe()));
+                slotAccessPairs.forEach((slot, access) -> builder.addStorageChanges(trimmedGrpc(slot, access)));
+                grpc.addContractStateChanges(builder);
+            });
+            return TransactionSidecarRecord.newBuilder().setStateChanges(grpc.build());
         });
-        return TransactionSidecarRecord.newBuilder().setStateChanges(grpc.build());
     }
 
     static StorageChange.Builder trimmedGrpc(final Bytes slot, final Pair<Bytes, Bytes> access) {
@@ -81,17 +114,32 @@ public class SidecarUtils {
     }
 
     public static TransactionSidecarRecord.Builder createContractActionsSidecar(final List<SolidityAction> actions) {
-        final var actionsBuilder = ContractActions.newBuilder();
-        for (final var action : actions) {
-            actionsBuilder.addContractActions(action.toGrpc());
-        }
-        return TransactionSidecarRecord.newBuilder().setActions(actionsBuilder.build());
+        return createContractActionsSidecar(actions, SidecarInstrumentation.createNoop());
+    }
+
+    public static TransactionSidecarRecord.Builder createContractActionsSidecar(
+            final List<SolidityAction> actions, @NonNull final SidecarInstrumentation sidecarInstrumentation) {
+        Objects.requireNonNull(sidecarInstrumentation, "sidecarInstrumentation:SidecarInstrumentation");
+        return sidecarInstrumentation.captureDurationSplit(SidecarType.CONTRACT_ACTION, () -> {
+            final var actionsBuilder = ContractActions.newBuilder();
+            for (final var action : actions) {
+                actionsBuilder.addContractActions(action.toGrpc());
+            }
+            return TransactionSidecarRecord.newBuilder().setActions(actionsBuilder.build());
+        });
     }
 
     public static TransactionSidecarRecord.Builder createContractBytecodeSidecarForFailedCreate(final byte[] initCode) {
-        return TransactionSidecarRecord.newBuilder()
-                .setBytecode(ContractBytecode.newBuilder()
-                        .setInitcode(ByteStringUtils.wrapUnsafely(initCode))
-                        .build());
+        return createContractBytecodeSidecarForFailedCreate(initCode, SidecarInstrumentation.createNoop());
+    }
+
+    public static TransactionSidecarRecord.Builder createContractBytecodeSidecarForFailedCreate(
+            final byte[] initCode, @NonNull final SidecarInstrumentation sidecarInstrumentation) {
+        Objects.requireNonNull(sidecarInstrumentation, "sidecarInstrumentation:SidecarInstrumentation");
+        return sidecarInstrumentation.captureDurationSplit(
+                SidecarType.CONTRACT_BYTECODE, () -> TransactionSidecarRecord.newBuilder()
+                        .setBytecode(ContractBytecode.newBuilder()
+                                .setInitcode(ByteStringUtils.wrapUnsafely(initCode))
+                                .build()));
     }
 }
