@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.schedule.impl.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
@@ -49,9 +50,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
      *     txn
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(
-            @NonNull final PreHandleContext context,
-            @NonNull final PreHandleDispatcher dispatcher) {
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull final PreHandleDispatcher dispatcher) {
         requireNonNull(context);
         final var txn = context.getTxn();
         final var op = txn.getScheduleCreate();
@@ -61,18 +60,16 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
             key.ifPresent(context::addToReqNonPayerKeys);
         }
 
-        final var scheduledTxn =
-                asOrdinary(op.getScheduledTransactionBody(), txn.getTransactionID());
+        final var scheduledTxn = asOrdinary(op.getScheduledTransactionBody(), txn.getTransactionID());
 
         /* We need to always add the custom payer to the sig requirements even if it equals the to level transaction
         payer. It is still part of the "other" parties, and we need to know to store it's key with the
         schedule in all cases. This fixes a case where the ScheduleCreate payer and the custom payer are
         the same payer, which would cause the custom payers signature to not get stored and then a ScheduleSign
         would not execute the transaction without and extra signature from the custom payer.*/
-        final var payerForNested =
-                op.hasPayerAccountID()
-                        ? op.getPayerAccountID()
-                        : txn.getTransactionID().getAccountID();
+        final var payerForNested = op.hasPayerAccountID()
+                ? op.getPayerAccountID()
+                : txn.getTransactionID().getAccountID();
 
         // FUTURE: Once we allow schedule transactions to be scheduled inside, we need a check here
         // to see

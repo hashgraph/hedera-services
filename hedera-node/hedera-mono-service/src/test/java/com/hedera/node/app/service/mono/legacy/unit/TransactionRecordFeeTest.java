@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.legacy.unit;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -47,19 +48,16 @@ class TransactionRecordFeeTest {
                 AccountID.newBuilder().setAccountNum(1l).setRealmNum(0l).setShardNum(0l);
         final var secondAccount =
                 AccountID.newBuilder().setAccountNum(2l).setRealmNum(0l).setShardNum(0l);
-        transactionReceipt =
-                TransactionReceipt.newBuilder()
-                        .setStatus(ResponseCodeEnum.OK)
-                        .setAccountID(firstAccount)
-                        .setExchangeRate(exchangeRateSet)
-                        .build();
+        transactionReceipt = TransactionReceipt.newBuilder()
+                .setStatus(ResponseCodeEnum.OK)
+                .setAccountID(firstAccount)
+                .setExchangeRate(exchangeRateSet)
+                .build();
 
         final var transactionHash = TxnUtils.randomUtf8ByteString(48);
         final var commonTimeStamp = Timestamp.newBuilder().setSeconds(10000000l);
         final var txId =
-                TransactionID.newBuilder()
-                        .setAccountID(firstAccount)
-                        .setTransactionValidStart(commonTimeStamp);
+                TransactionID.newBuilder().setAccountID(firstAccount).setTransactionValidStart(commonTimeStamp);
         final String memo = "TestTransactionRecord";
         final long transactionFee = 10000l;
         final var accountAmount1 =
@@ -68,26 +66,22 @@ class TransactionRecordFeeTest {
                 AccountAmount.newBuilder().setAccountID(secondAccount).setAmount(10000);
 
         final var transferList =
-                TransferList.newBuilder()
-                        .addAccountAmounts(accountAmount1)
-                        .addAccountAmounts(accountAmount2);
+                TransferList.newBuilder().addAccountAmounts(accountAmount1).addAccountAmounts(accountAmount2);
 
-        transactionRecord =
-                TransactionRecord.newBuilder()
-                        .setReceipt(transactionReceipt)
-                        .setTransactionHash(transactionHash)
-                        .setConsensusTimestamp(commonTimeStamp)
-                        .setTransactionID(txId)
-                        .setMemo(memo)
-                        .setTransactionFee(transactionFee)
-                        .setTransferList(transferList)
-                        .build();
+        transactionRecord = TransactionRecord.newBuilder()
+                .setReceipt(transactionReceipt)
+                .setTransactionHash(transactionHash)
+                .setConsensusTimestamp(commonTimeStamp)
+                .setTransactionID(txId)
+                .setMemo(memo)
+                .setTransactionFee(transactionFee)
+                .setTransferList(transferList)
+                .build();
     }
 
     @Test
     void testTransactionRecordRBH() {
-        final long transactionRecordRbh =
-                FeeBuilder.getTxRecordUsageRBH(transactionRecord, receiptStorageTime);
+        final long transactionRecordRbh = FeeBuilder.getTxRecordUsageRBH(transactionRecord, receiptStorageTime);
         assertNotEquals(0, transactionRecordRbh);
     }
 }

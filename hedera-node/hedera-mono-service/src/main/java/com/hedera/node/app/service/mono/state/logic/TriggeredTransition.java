@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
@@ -79,10 +80,7 @@ public class TriggeredTransition implements Runnable {
             var markExecutedOutcome = scheduleStore.markAsExecuted(accessor.getScheduleRef(), now);
             if (markExecutedOutcome != OK) {
                 txnCtx.setStatus(markExecutedOutcome);
-                log.error(
-                        "Marking schedule {} as executed failed! {}",
-                        accessor.getScheduleRef(),
-                        markExecutedOutcome);
+                log.error("Marking schedule {} as executed failed! {}", accessor.getScheduleRef(), markExecutedOutcome);
                 return;
             }
             sigImpactHistorian.markEntityChanged(

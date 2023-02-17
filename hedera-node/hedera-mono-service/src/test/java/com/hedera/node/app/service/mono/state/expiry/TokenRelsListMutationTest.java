@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,7 +36,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenRelsListMutationTest {
     private static final long accountNum = 1_234L;
 
-    @Mock private TokenRelStorageAdapter tokenRels;
+    @Mock
+    private TokenRelStorageAdapter tokenRels;
 
     private TokenRelsListMutation subject;
 
@@ -142,10 +144,7 @@ class TokenRelsListMutationTest {
     private final EntityNumPair rootRelKey = EntityNumPair.fromLongs(accountNum, rootNum);
     private final EntityNumPair nextRelKey = EntityNumPair.fromLongs(accountNum, nextNum);
     private final EntityNumPair targetRelKey = EntityNumPair.fromLongs(accountNum, targetNum);
-    private final MerkleTokenRelStatus rootRel =
-            new MerkleTokenRelStatus(1, true, false, true, rootRelKey.value());
-    private final MerkleTokenRelStatus nextRel =
-            new MerkleTokenRelStatus(2, false, true, false, nextRelKey.value());
-    private final MerkleTokenRelStatus targetRel =
-            new MerkleTokenRelStatus(2, true, false, true, targetRelKey.value());
+    private final MerkleTokenRelStatus rootRel = new MerkleTokenRelStatus(1, true, false, true, rootRelKey.value());
+    private final MerkleTokenRelStatus nextRel = new MerkleTokenRelStatus(2, false, true, false, nextRelKey.value());
+    private final MerkleTokenRelStatus targetRel = new MerkleTokenRelStatus(2, true, false, true, targetRelKey.value());
 }

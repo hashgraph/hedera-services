@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
@@ -115,43 +116,91 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class GetTokenInfoPrecompilesTest {
 
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private GasCalculator gasCalculator;
-    @Mock private MessageFrame frame;
-    @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private EncodingFacade encoder;
-    @Mock private EvmEncodingFacade evmEncoder;
-    @Mock private SideEffectsTracker sideEffects;
-    @Mock private TransactionBody.Builder mockSynthBodyBuilder;
-    @Mock private ExpirableTxnRecord.Builder mockRecordBuilder;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private HederaStackedWorldStateUpdater worldUpdater;
-    @Mock private WorldLedgers wrappedLedgers;
-    @Mock private ExpiringCreations creator;
-    @Mock private ImpliedTransfersMarshal impliedTransfersMarshal;
-    @Mock private FeeCalculator feeCalculator;
-    @Mock private StateView stateView;
-    @Mock private UsagePricesProvider resourceCosts;
-    @Mock private InfrastructureFactory infrastructureFactory;
-    @Mock private AssetsLoader assetLoader;
-    @Mock private HbarCentExchange exchange;
-    @Mock private FeeObject mockFeeObject;
-    @Mock private AccessorFactory accessorFactory;
-    @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
-    @Mock private NetworkInfo networkInfo;
-    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private GasCalculator gasCalculator;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private TxnAwareEvmSigsVerifier sigsVerifier;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private EncodingFacade encoder;
+
+    @Mock
+    private EvmEncodingFacade evmEncoder;
+
+    @Mock
+    private SideEffectsTracker sideEffects;
+
+    @Mock
+    private TransactionBody.Builder mockSynthBodyBuilder;
+
+    @Mock
+    private ExpirableTxnRecord.Builder mockRecordBuilder;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private HederaStackedWorldStateUpdater worldUpdater;
+
+    @Mock
+    private WorldLedgers wrappedLedgers;
+
+    @Mock
+    private ExpiringCreations creator;
+
+    @Mock
+    private ImpliedTransfersMarshal impliedTransfersMarshal;
+
+    @Mock
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private StateView stateView;
+
+    @Mock
+    private UsagePricesProvider resourceCosts;
+
+    @Mock
+    private InfrastructureFactory infrastructureFactory;
+
+    @Mock
+    private AssetsLoader assetLoader;
+
+    @Mock
+    private HbarCentExchange exchange;
+
+    @Mock
+    private FeeObject mockFeeObject;
+
+    @Mock
+    private AccessorFactory accessorFactory;
+
+    @Mock
+    private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
+
+    @Mock
+    private NetworkInfo networkInfo;
+
+    @Mock
+    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     public static final Bytes GET_TOKEN_INFO_INPUT =
-            Bytes.fromHexString(
-                    "0x1f69565f000000000000000000000000000000000000000000000000000000000000000a");
+            Bytes.fromHexString("0x1f69565f000000000000000000000000000000000000000000000000000000000000000a");
     public static final Bytes GET_FUNGIBLE_TOKEN_INFO_INPUT =
-            Bytes.fromHexString(
-                    "0x3f28a19b000000000000000000000000000000000000000000000000000000000000000b");
+            Bytes.fromHexString("0x3f28a19b000000000000000000000000000000000000000000000000000000000000000b");
 
-    public static final Bytes GET_NON_FUNGIBLE_TOKEN_INFO_INPUT =
-            Bytes.fromHexString(
-                    "0x287e1da8000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000001");
+    public static final Bytes GET_NON_FUNGIBLE_TOKEN_INFO_INPUT = Bytes.fromHexString(
+            "0x287e1da8000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000001");
     private HTSPrecompiledContract subject;
     private MockedStatic<EntityIdUtils> entityIdUtils;
     private MockedStatic<TokenInfoPrecompile> tokenInfoPrecompile;
@@ -168,8 +217,9 @@ class GetTokenInfoPrecompilesTest {
     private final long totalSupply = 20500;
 
     // Key properties
-    private final Key tokenKey =
-            Key.newBuilder().setContractID(parentContractAddressConvertedToContractId).build();
+    private final Key tokenKey = Key.newBuilder()
+            .setContractID(parentContractAddressConvertedToContractId)
+            .build();
     private final List<Key> tokenKeys = new ArrayList<>();
 
     // Expiry properties
@@ -195,8 +245,10 @@ class GetTokenInfoPrecompilesTest {
     private final long maximumAmount = 400_000_000L;
 
     // Info objects
-    private final NftID nftID =
-            NftID.newBuilder().setTokenID(tokenMerkleId).setSerialNumber(serialNumber).build();
+    private final NftID nftID = NftID.newBuilder()
+            .setTokenID(tokenMerkleId)
+            .setSerialNumber(serialNumber)
+            .build();
     private TokenInfo.Builder tokenInfo;
     private TokenNftInfo nonFungibleTokenInfo;
 
@@ -205,22 +257,14 @@ class GetTokenInfoPrecompilesTest {
 
     @BeforeEach
     void setUp() {
-        final PrecompilePricingUtils precompilePricingUtils =
-                new PrecompilePricingUtils(
-                        assetLoader,
-                        exchange,
-                        () -> feeCalculator,
-                        resourceCosts,
-                        stateView,
-                        accessorFactory);
+        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
+                assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
 
         entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
         entityIdUtils
                 .when(() -> EntityIdUtils.asTypedEvmAddress(tokenMerkleId))
                 .thenReturn(HTSTestsUtil.tokenMerkleAddress);
-        entityIdUtils
-                .when(() -> EntityIdUtils.asTypedEvmAddress(treasury))
-                .thenReturn(treasuryAddress);
+        entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(treasury)).thenReturn(treasuryAddress);
         entityIdUtils
                 .when(() -> EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.payerId))
                 .thenReturn(HTSTestsUtil.payerIdConvertedToAddress);
@@ -233,62 +277,54 @@ class GetTokenInfoPrecompilesTest {
 
         tokenKeys.add(tokenKey);
         tokenInfo = createTokenInfoWithSingleKey(1, false);
-        evmTokenInfo =
-                new EvmTokenInfo(
-                        fromString("0x03").toByteArray(),
-                        1,
-                        false,
-                        "FT",
-                        "NAME",
-                        "MEMO",
-                        Address.wrap(
-                                Bytes.fromHexString("0x00000000000000000000000000000000000005cc")),
-                        1L,
-                        1000L,
-                        0,
-                        0L);
+        evmTokenInfo = new EvmTokenInfo(
+                fromString("0x03").toByteArray(),
+                1,
+                false,
+                "FT",
+                "NAME",
+                "MEMO",
+                Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005cc")),
+                1L,
+                1000L,
+                0,
+                0L);
 
-        evmNftInfo =
-                new EvmNftInfo(
-                        serialNumber,
-                        payerIdConvertedToAddress,
-                        creationTime,
-                        metadata.toByteArray(),
-                        EntityIdUtils.asTypedEvmAddress(sender),
-                        evmTokenInfo.getLedgerId());
-        nonFungibleTokenInfo =
-                TokenNftInfo.newBuilder()
-                        .setLedgerId(fromString("0x03"))
-                        .setNftID(
-                                NftID.newBuilder()
-                                        .setTokenID(tokenMerkleId)
-                                        .setSerialNumber(serialNumber)
-                                        .build())
-                        .setAccountID(payer)
-                        .setCreationTime(
-                                new RichInstant(
-                                                unsignedHighOrder32From(creationTime),
-                                                signedLowOrder32From(creationTime))
-                                        .toGrpc())
-                        .setMetadata(metadata)
-                        .setSpenderId(sender)
-                        .build();
+        evmNftInfo = new EvmNftInfo(
+                serialNumber,
+                payerIdConvertedToAddress,
+                creationTime,
+                metadata.toByteArray(),
+                EntityIdUtils.asTypedEvmAddress(sender),
+                evmTokenInfo.getLedgerId());
+        nonFungibleTokenInfo = TokenNftInfo.newBuilder()
+                .setLedgerId(fromString("0x03"))
+                .setNftID(NftID.newBuilder()
+                        .setTokenID(tokenMerkleId)
+                        .setSerialNumber(serialNumber)
+                        .build())
+                .setAccountID(payer)
+                .setCreationTime(
+                        new RichInstant(unsignedHighOrder32From(creationTime), signedLowOrder32From(creationTime))
+                                .toGrpc())
+                .setMetadata(metadata)
+                .setSpenderId(sender)
+                .build();
 
-        subject =
-                new HTSPrecompiledContract(
-                        dynamicProperties,
-                        gasCalculator,
-                        recordsHistorian,
-                        sigsVerifier,
-                        encoder,
-                        evmEncoder,
-                        syntheticTxnFactory,
-                        creator,
-                        () -> feeCalculator,
-                        stateView,
-                        precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+        subject = new HTSPrecompiledContract(
+                dynamicProperties,
+                gasCalculator,
+                recordsHistorian,
+                sigsVerifier,
+                encoder,
+                evmEncoder,
+                syntheticTxnFactory,
+                creator,
+                () -> feeCalculator,
+                stateView,
+                precompilePricingUtils,
+                infrastructureFactory,
+                evmHTSPrecompiledContract);
 
         tokenInfoPrecompile = Mockito.mockStatic(TokenInfoPrecompile.class);
         fungibleTokenInfoPrecompile = Mockito.mockStatic(FungibleTokenInfoPrecompile.class);
@@ -311,13 +347,9 @@ class GetTokenInfoPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
-        final Bytes pretendArguments =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
-        tokenInfoPrecompile
-                .when(() -> decodeGetTokenInfo(pretendArguments))
-                .thenReturn(tokenInfoWrapper);
+        final Bytes pretendArguments = Bytes.concatenate(
+                Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)), EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
+        tokenInfoPrecompile.when(() -> decodeGetTokenInfo(pretendArguments)).thenReturn(tokenInfoWrapper);
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
@@ -337,8 +369,7 @@ class GetTokenInfoPrecompilesTest {
         // then:
         assertEquals(successResult, result);
         // and:
-        verify(worldUpdater)
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -349,19 +380,14 @@ class GetTokenInfoPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
-        final Bytes pretendArguments =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
-        tokenInfoPrecompile
-                .when(() -> decodeGetTokenInfo(pretendArguments))
-                .thenReturn(tokenInfoWrapper);
+        final Bytes pretendArguments = Bytes.concatenate(
+                Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)), EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
+        tokenInfoPrecompile.when(() -> decodeGetTokenInfo(pretendArguments)).thenReturn(tokenInfoWrapper);
 
         tokenInfo = createTokenInfoWithSingleKey(0, false);
-        final var supplyKey =
-                Key.newBuilder()
-                        .setDelegatableContractId(parentContractAddressConvertedToContractId)
-                        .build();
+        final var supplyKey = Key.newBuilder()
+                .setDelegatableContractId(parentContractAddressConvertedToContractId)
+                .build();
         tokenInfo.setSupplyKey(supplyKey);
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
@@ -370,10 +396,7 @@ class GetTokenInfoPrecompilesTest {
                 .willReturn(Optional.of(evmTokenInfo));
 
         entityIdUtils
-                .when(
-                        () ->
-                                EntityIdUtils.asTypedEvmAddress(
-                                        parentContractAddressConvertedToContractId))
+                .when(() -> EntityIdUtils.asTypedEvmAddress(parentContractAddressConvertedToContractId))
                 .thenReturn(parentContractAddress);
 
         given(evmEncoder.encodeGetTokenInfo(evmTokenInfo)).willReturn(successResult);
@@ -390,8 +413,7 @@ class GetTokenInfoPrecompilesTest {
         // then:
         assertEquals(successResult, result);
         // and:
-        verify(worldUpdater)
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -402,13 +424,9 @@ class GetTokenInfoPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
-        final Bytes pretendArguments =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
-        tokenInfoPrecompile
-                .when(() -> decodeGetTokenInfo(pretendArguments))
-                .thenReturn(tokenInfoWrapper);
+        final Bytes pretendArguments = Bytes.concatenate(
+                Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)), EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
+        tokenInfoPrecompile.when(() -> decodeGetTokenInfo(pretendArguments)).thenReturn(tokenInfoWrapper);
 
         tokenInfo = createTokenInfoWithAllKeys();
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
@@ -430,8 +448,7 @@ class GetTokenInfoPrecompilesTest {
         // then:
         assertEquals(successResult, result);
         // and:
-        verify(worldUpdater)
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -442,10 +459,9 @@ class GetTokenInfoPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
-        final Bytes pretendArguments =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_FUNGIBLE_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
+        final Bytes pretendArguments = Bytes.concatenate(
+                Bytes.of(Integers.toBytes(ABI_ID_GET_FUNGIBLE_TOKEN_INFO)),
+                EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         fungibleTokenInfoPrecompile
                 .when(() -> decodeGetFungibleTokenInfo(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
@@ -468,8 +484,7 @@ class GetTokenInfoPrecompilesTest {
         // then:
         assertEquals(successResult, result);
         // and:
-        verify(worldUpdater)
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -479,13 +494,11 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper =
-                createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
-        final Bytes pretendArguments =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
-                        Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
+        final var tokenInfoWrapper = createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
+        final Bytes pretendArguments = Bytes.concatenate(
+                Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
+                EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
+                Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
         nonFungibleTokenInfoPrecompile
                 .when(() -> decodeGetNonFungibleTokenInfo(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
@@ -494,13 +507,12 @@ class GetTokenInfoPrecompilesTest {
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
         given(wrappedLedgers.evmInfoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.of(evmTokenInfo));
-        given(
-                        wrappedLedgers.evmNftInfo(
-                                NftID.newBuilder()
-                                        .setSerialNumber(serialNumber)
-                                        .setTokenID(tokenMerkleId)
-                                        .build(),
-                                networkInfo.ledgerId()))
+        given(wrappedLedgers.evmNftInfo(
+                        NftID.newBuilder()
+                                .setSerialNumber(serialNumber)
+                                .setTokenID(tokenMerkleId)
+                                .build(),
+                        networkInfo.ledgerId()))
                 .willReturn(Optional.of(evmNftInfo));
         given(evmEncoder.encodeGetNonFungibleTokenInfo(evmTokenInfo, evmNftInfo))
                 .willReturn(successResult);
@@ -517,8 +529,7 @@ class GetTokenInfoPrecompilesTest {
         // then:
         assertEquals(successResult, result);
         // and:
-        verify(worldUpdater)
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -529,13 +540,9 @@ class GetTokenInfoPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
-        final Bytes pretendArguments =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
-        tokenInfoPrecompile
-                .when(() -> decodeGetTokenInfo(pretendArguments))
-                .thenReturn(tokenInfoWrapper);
+        final Bytes pretendArguments = Bytes.concatenate(
+                Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)), EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
+        tokenInfoPrecompile.when(() -> decodeGetTokenInfo(pretendArguments)).thenReturn(tokenInfoWrapper);
 
         final var fixedFee = getFixedFeeWithDenomination();
         tokenInfo.addAllCustomFees(List.of(fixedFee));
@@ -558,8 +565,7 @@ class GetTokenInfoPrecompilesTest {
         // then:
         assertEquals(successResult, result);
         // and:
-        verify(worldUpdater)
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -570,13 +576,9 @@ class GetTokenInfoPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
-        final Bytes pretendArguments =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
-        tokenInfoPrecompile
-                .when(() -> decodeGetTokenInfo(pretendArguments))
-                .thenReturn(tokenInfoWrapper);
+        final Bytes pretendArguments = Bytes.concatenate(
+                Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)), EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
+        tokenInfoPrecompile.when(() -> decodeGetTokenInfo(pretendArguments)).thenReturn(tokenInfoWrapper);
 
         final var fixedFee = getFixedFeeWithoutDenomination();
         tokenInfo.addAllCustomFees(List.of(fixedFee));
@@ -599,8 +601,7 @@ class GetTokenInfoPrecompilesTest {
         // then:
         assertEquals(successResult, result);
         // and:
-        verify(worldUpdater)
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -611,13 +612,9 @@ class GetTokenInfoPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
-        final Bytes pretendArguments =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
-        tokenInfoPrecompile
-                .when(() -> decodeGetTokenInfo(pretendArguments))
-                .thenReturn(tokenInfoWrapper);
+        final Bytes pretendArguments = Bytes.concatenate(
+                Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)), EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
+        tokenInfoPrecompile.when(() -> decodeGetTokenInfo(pretendArguments)).thenReturn(tokenInfoWrapper);
 
         final var fractionalFee = getFractionalFee();
         tokenInfo.addAllCustomFees(List.of(fractionalFee));
@@ -640,8 +637,7 @@ class GetTokenInfoPrecompilesTest {
         // then:
         assertEquals(successResult, result);
         // and:
-        verify(worldUpdater)
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -651,13 +647,11 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper =
-                createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
-        final Bytes pretendArguments =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
-                        Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
+        final var tokenInfoWrapper = createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
+        final Bytes pretendArguments = Bytes.concatenate(
+                Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
+                EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
+                Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
         nonFungibleTokenInfoPrecompile
                 .when(() -> decodeGetNonFungibleTokenInfo(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
@@ -668,13 +662,12 @@ class GetTokenInfoPrecompilesTest {
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
         given(wrappedLedgers.evmInfoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.of(evmTokenInfo));
-        given(
-                        wrappedLedgers.evmNftInfo(
-                                NftID.newBuilder()
-                                        .setTokenID(tokenMerkleId)
-                                        .setSerialNumber(serialNumber)
-                                        .build(),
-                                networkInfo.ledgerId()))
+        given(wrappedLedgers.evmNftInfo(
+                        NftID.newBuilder()
+                                .setTokenID(tokenMerkleId)
+                                .setSerialNumber(serialNumber)
+                                .build(),
+                        networkInfo.ledgerId()))
                 .willReturn(Optional.of(evmNftInfo));
 
         given(evmEncoder.encodeGetNonFungibleTokenInfo(evmTokenInfo, evmNftInfo))
@@ -692,8 +685,7 @@ class GetTokenInfoPrecompilesTest {
         // then:
         assertEquals(successResult, result);
         // and:
-        verify(worldUpdater)
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -703,13 +695,11 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper =
-                createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
-        final Bytes pretendArguments =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
-                        Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
+        final var tokenInfoWrapper = createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
+        final Bytes pretendArguments = Bytes.concatenate(
+                Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
+                EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
+                Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
         nonFungibleTokenInfoPrecompile
                 .when(() -> decodeGetNonFungibleTokenInfo(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
@@ -720,13 +710,12 @@ class GetTokenInfoPrecompilesTest {
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
         given(wrappedLedgers.evmInfoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.of(evmTokenInfo));
-        given(
-                        wrappedLedgers.evmNftInfo(
-                                NftID.newBuilder()
-                                        .setTokenID(tokenMerkleId)
-                                        .setSerialNumber(serialNumber)
-                                        .build(),
-                                networkInfo.ledgerId()))
+        given(wrappedLedgers.evmNftInfo(
+                        NftID.newBuilder()
+                                .setTokenID(tokenMerkleId)
+                                .setSerialNumber(serialNumber)
+                                .build(),
+                        networkInfo.ledgerId()))
                 .willReturn(Optional.of(evmNftInfo));
 
         given(evmEncoder.encodeGetNonFungibleTokenInfo(evmTokenInfo, evmNftInfo))
@@ -744,8 +733,7 @@ class GetTokenInfoPrecompilesTest {
         // then:
         assertEquals(successResult, result);
         // and:
-        verify(worldUpdater)
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -756,13 +744,9 @@ class GetTokenInfoPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
-        final Bytes pretendArguments =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
-        tokenInfoPrecompile
-                .when(() -> decodeGetTokenInfo(pretendArguments))
-                .thenReturn(tokenInfoWrapper);
+        final Bytes pretendArguments = Bytes.concatenate(
+                Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)), EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
+        tokenInfoPrecompile.when(() -> decodeGetTokenInfo(pretendArguments)).thenReturn(tokenInfoWrapper);
 
         givenMinimalContextForInvalidTokenIdCall(pretendArguments);
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
@@ -778,8 +762,7 @@ class GetTokenInfoPrecompilesTest {
         // then:
         assertEquals(invalidTokenIdResult, result);
         // and:
-        verify(worldUpdater)
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -790,10 +773,9 @@ class GetTokenInfoPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
-        final Bytes pretendArguments =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_FUNGIBLE_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
+        final Bytes pretendArguments = Bytes.concatenate(
+                Bytes.of(Integers.toBytes(ABI_ID_GET_FUNGIBLE_TOKEN_INFO)),
+                EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         fungibleTokenInfoPrecompile
                 .when(() -> decodeGetFungibleTokenInfo(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
@@ -812,8 +794,7 @@ class GetTokenInfoPrecompilesTest {
         // then:
         assertEquals(invalidTokenIdResult, result);
         // and:
-        verify(worldUpdater)
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -823,13 +804,11 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper =
-                createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
-        final Bytes pretendArguments =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
-                        Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
+        final var tokenInfoWrapper = createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
+        final Bytes pretendArguments = Bytes.concatenate(
+                Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
+                EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
+                Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
         nonFungibleTokenInfoPrecompile
                 .when(() -> decodeGetNonFungibleTokenInfo(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
@@ -838,8 +817,7 @@ class GetTokenInfoPrecompilesTest {
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
         given(wrappedLedgers.evmInfoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.of(evmTokenInfo));
-        given(wrappedLedgers.evmNftInfo(nftID, networkInfo.ledgerId()))
-                .willReturn(Optional.empty());
+        given(wrappedLedgers.evmNftInfo(nftID, networkInfo.ledgerId())).willReturn(Optional.empty());
 
         givenMinimalContextForInvalidNftSerialNumberCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -853,8 +831,7 @@ class GetTokenInfoPrecompilesTest {
         // then:
         assertEquals(invalidSerialNumberResult, result);
         // and:
-        verify(worldUpdater)
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -865,13 +842,9 @@ class GetTokenInfoPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
-        final Bytes pretendArguments =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
-        tokenInfoPrecompile
-                .when(() -> decodeGetTokenInfo(pretendArguments))
-                .thenReturn(tokenInfoWrapper);
+        final Bytes pretendArguments = Bytes.concatenate(
+                Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)), EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
+        tokenInfoPrecompile.when(() -> decodeGetTokenInfo(pretendArguments)).thenReturn(tokenInfoWrapper);
 
         tokenInfo = createTokenInfoWithSingleKey(1, true);
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
@@ -893,8 +866,7 @@ class GetTokenInfoPrecompilesTest {
         // then:
         assertEquals(successResult, result);
         // and:
-        verify(worldUpdater)
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -905,10 +877,9 @@ class GetTokenInfoPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
-        final Bytes pretendArguments =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_FUNGIBLE_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
+        final Bytes pretendArguments = Bytes.concatenate(
+                Bytes.of(Integers.toBytes(ABI_ID_GET_FUNGIBLE_TOKEN_INFO)),
+                EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         fungibleTokenInfoPrecompile
                 .when(() -> decodeGetFungibleTokenInfo(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
@@ -933,8 +904,7 @@ class GetTokenInfoPrecompilesTest {
         // then:
         assertEquals(successResult, result);
         // and:
-        verify(worldUpdater)
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -944,13 +914,11 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper =
-                createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
-        final Bytes pretendArguments =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
-                        Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
+        final var tokenInfoWrapper = createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
+        final Bytes pretendArguments = Bytes.concatenate(
+                Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
+                EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
+                Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
         nonFungibleTokenInfoPrecompile
                 .when(() -> decodeGetNonFungibleTokenInfo(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
@@ -960,8 +928,7 @@ class GetTokenInfoPrecompilesTest {
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
         given(wrappedLedgers.evmInfoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.of(evmTokenInfo));
-        given(wrappedLedgers.evmNftInfo(nftID, networkInfo.ledgerId()))
-                .willReturn(Optional.of(evmNftInfo));
+        given(wrappedLedgers.evmNftInfo(nftID, networkInfo.ledgerId())).willReturn(Optional.of(evmNftInfo));
 
         given(evmEncoder.encodeGetNonFungibleTokenInfo(evmTokenInfo, evmNftInfo))
                 .willReturn(successResult);
@@ -978,15 +945,12 @@ class GetTokenInfoPrecompilesTest {
         // then:
         assertEquals(successResult, result);
         // and:
-        verify(worldUpdater)
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
     void decodeGetTokenInfoAsExpected() {
-        tokenInfoPrecompile
-                .when(() -> decodeGetTokenInfo(GET_TOKEN_INFO_INPUT))
-                .thenCallRealMethod();
+        tokenInfoPrecompile.when(() -> decodeGetTokenInfo(GET_TOKEN_INFO_INPUT)).thenCallRealMethod();
         entityIdUtils
                 .when(() -> EntityIdUtils.tokenIdFromEvmAddress(BLS12_G1ADD.toArray()))
                 .thenCallRealMethod();
@@ -1025,11 +989,8 @@ class GetTokenInfoPrecompilesTest {
     }
 
     private void givenReadOnlyFeeSchedule() {
-        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any()))
-                .willReturn(mockFeeObject);
-        given(
-                        feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
+        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
                 .willReturn(1L);
         given(mockFeeObject.getNodeFee()).willReturn(1L);
         given(mockFeeObject.getNetworkFee()).willReturn(1L);
@@ -1047,53 +1008,52 @@ class GetTokenInfoPrecompilesTest {
     }
 
     private void givenMinimalContextForSuccessfulCall(final Bytes pretendArguments) {
-        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
-                .willReturn(mockSynthBodyBuilder);
-        given(
-                        creator.createSuccessfulSyntheticRecord(
-                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
+        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+        given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
     }
 
     private void givenMinimalContextForInvalidNftSerialNumberCall(final Bytes pretendArguments) {
-        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
-                .willReturn(mockSynthBodyBuilder);
-        given(
-                        creator.createUnsuccessfulSyntheticRecord(
-                                ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER))
+        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+        given(creator.createUnsuccessfulSyntheticRecord(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER))
                 .willReturn(mockRecordBuilder);
     }
 
     private void givenMinimalContextForInvalidTokenIdCall(final Bytes pretendArguments) {
-        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
-                .willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(creator.createUnsuccessfulSyntheticRecord(ResponseCodeEnum.INVALID_TOKEN_ID))
                 .willReturn(mockRecordBuilder);
     }
 
     private CustomFee getFixedFeeWithDenomination() {
-        final var fixedFee =
-                FixedFee.newBuilder()
-                        .setAmount(amount)
-                        .setDenominatingTokenId(feeTokenEntityId)
-                        .build();
-        return CustomFee.newBuilder().setFixedFee(fixedFee).setFeeCollectorAccountId(payer).build();
+        final var fixedFee = FixedFee.newBuilder()
+                .setAmount(amount)
+                .setDenominatingTokenId(feeTokenEntityId)
+                .build();
+        return CustomFee.newBuilder()
+                .setFixedFee(fixedFee)
+                .setFeeCollectorAccountId(payer)
+                .build();
     }
 
     private CustomFee getFixedFeeWithoutDenomination() {
         final var fixedFee = FixedFee.newBuilder().setAmount(amount).build();
-        return CustomFee.newBuilder().setFixedFee(fixedFee).setFeeCollectorAccountId(payer).build();
+        return CustomFee.newBuilder()
+                .setFixedFee(fixedFee)
+                .setFeeCollectorAccountId(payer)
+                .build();
     }
 
     private CustomFee getFractionalFee() {
-        final var fraction =
-                Fraction.newBuilder().setNumerator(numerator).setDenominator(denominator).build();
-        final var fractionalFee =
-                FractionalFee.newBuilder()
-                        .setFractionalAmount(fraction)
-                        .setMinimumAmount(minimumAmount)
-                        .setMaximumAmount(maximumAmount)
-                        .build();
+        final var fraction = Fraction.newBuilder()
+                .setNumerator(numerator)
+                .setDenominator(denominator)
+                .build();
+        final var fractionalFee = FractionalFee.newBuilder()
+                .setFractionalAmount(fraction)
+                .setMinimumAmount(minimumAmount)
+                .setMaximumAmount(maximumAmount)
+                .build();
         return CustomFee.newBuilder()
                 .setFractionalFee(fractionalFee)
                 .setFeeCollectorAccountId(payer)
@@ -1102,68 +1062,63 @@ class GetTokenInfoPrecompilesTest {
 
     private CustomFee getRoyaltyFee(final boolean hasFallbackFee) {
         final RoyaltyFee royaltyFee;
-        final var fraction =
-                Fraction.newBuilder().setNumerator(numerator).setDenominator(denominator).build();
+        final var fraction = Fraction.newBuilder()
+                .setNumerator(numerator)
+                .setDenominator(denominator)
+                .build();
         if (hasFallbackFee) {
 
-            final var fallbackFee =
-                    FixedFee.newBuilder()
-                            .setAmount(amount)
-                            .setDenominatingTokenId(feeTokenId)
-                            .build();
-            royaltyFee =
-                    RoyaltyFee.newBuilder()
-                            .setExchangeValueFraction(fraction)
-                            .setFallbackFee(fallbackFee)
-                            .build();
+            final var fallbackFee = FixedFee.newBuilder()
+                    .setAmount(amount)
+                    .setDenominatingTokenId(feeTokenId)
+                    .build();
+            royaltyFee = RoyaltyFee.newBuilder()
+                    .setExchangeValueFraction(fraction)
+                    .setFallbackFee(fallbackFee)
+                    .build();
         } else {
-            royaltyFee = RoyaltyFee.newBuilder().setExchangeValueFraction(fraction).build();
+            royaltyFee =
+                    RoyaltyFee.newBuilder().setExchangeValueFraction(fraction).build();
         }
 
         return CustomFee.newBuilder().setRoyaltyFee(royaltyFee).build();
     }
 
-    private TokenInfo.Builder createTokenInfoWithSingleKey(
-            final int tokenSupplyType, final boolean isDeleted) {
-        final var tokenInfoBuilder =
-                TokenInfo.newBuilder()
-                        .setLedgerId(fromString("0x03"))
-                        .setSupplyTypeValue(tokenSupplyType)
-                        .setExpiry(
-                                new RichInstant(
-                                                unsignedHighOrder32From(expiryPeriod),
-                                                signedLowOrder32From(expiryPeriod))
-                                        .toGrpc())
-                        .setAutoRenewAccount(sender)
-                        .setAutoRenewPeriod(
-                                Duration.newBuilder().setSeconds(autoRenewPeriod).build())
-                        .setTokenId(tokenMerkleId)
-                        .setDeleted(isDeleted)
-                        .setSymbol(symbol)
-                        .setName(name)
-                        .setMemo(memo)
-                        .setDecimals(decimals)
-                        .setTreasury(sender)
-                        .setTotalSupply(totalSupply)
-                        .setMaxSupply(maxSupply);
+    private TokenInfo.Builder createTokenInfoWithSingleKey(final int tokenSupplyType, final boolean isDeleted) {
+        final var tokenInfoBuilder = TokenInfo.newBuilder()
+                .setLedgerId(fromString("0x03"))
+                .setSupplyTypeValue(tokenSupplyType)
+                .setExpiry(new RichInstant(unsignedHighOrder32From(expiryPeriod), signedLowOrder32From(expiryPeriod))
+                        .toGrpc())
+                .setAutoRenewAccount(sender)
+                .setAutoRenewPeriod(
+                        Duration.newBuilder().setSeconds(autoRenewPeriod).build())
+                .setTokenId(tokenMerkleId)
+                .setDeleted(isDeleted)
+                .setSymbol(symbol)
+                .setName(name)
+                .setMemo(memo)
+                .setDecimals(decimals)
+                .setTreasury(sender)
+                .setTotalSupply(totalSupply)
+                .setMaxSupply(maxSupply);
 
         tokenInfoBuilder.setAdminKey(tokenKey);
         return tokenInfoBuilder;
     }
 
     private TokenInfo.Builder createTokenInfoWithAllKeys() {
-        final var tokenInfoBuilder =
-                TokenInfo.newBuilder()
-                        .setLedgerId(fromString("0x03"))
-                        .setSupplyTypeValue(1)
-                        .setTokenId(tokenMerkleId)
-                        .setDeleted(false)
-                        .setSymbol(symbol)
-                        .setName(name)
-                        .setMemo(memo)
-                        .setTreasury(sender)
-                        .setTotalSupply(totalSupply)
-                        .setMaxSupply(maxSupply);
+        final var tokenInfoBuilder = TokenInfo.newBuilder()
+                .setLedgerId(fromString("0x03"))
+                .setSupplyTypeValue(1)
+                .setTokenId(tokenMerkleId)
+                .setDeleted(false)
+                .setSymbol(symbol)
+                .setName(name)
+                .setMemo(memo)
+                .setTreasury(sender)
+                .setTotalSupply(totalSupply)
+                .setMaxSupply(maxSupply);
 
         tokenInfoBuilder.setAdminKey(tokenKey);
         tokenInfoBuilder.setKycKey(tokenKey);

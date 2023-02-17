@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.txns;
 
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
@@ -57,13 +58,12 @@ public class CryptoCreateFactory extends SignedTxnFactory<CryptoCreateFactory> {
 
     @Override
     protected void customizeTxn(TransactionBody.Builder txn) {
-        CryptoCreateTransactionBody.Builder op =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setKey(accountKt.asKey(keyFactory))
-                        .setAutoRenewPeriod(autoRenewPeriod)
-                        .setReceiverSigRequired(receiverSigRequired)
-                        .setSendRecordThreshold(sendThresholdTinybars)
-                        .setReceiveRecordThreshold(receiveThresholdTinybars);
+        CryptoCreateTransactionBody.Builder op = CryptoCreateTransactionBody.newBuilder()
+                .setKey(accountKt.asKey(keyFactory))
+                .setAutoRenewPeriod(autoRenewPeriod)
+                .setReceiverSigRequired(receiverSigRequired)
+                .setSendRecordThreshold(sendThresholdTinybars)
+                .setReceiveRecordThreshold(receiveThresholdTinybars);
         balance.ifPresent(op::setInitialBalance);
         txn.setCryptoCreateAccount(op);
     }

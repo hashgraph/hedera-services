@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -35,8 +36,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TopicStoreTest {
-    @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
-    @Mock private TransactionRecordService transactionRecordService;
+    @Mock
+    private MerkleMap<EntityNum, MerkleTopic> topics;
+
+    @Mock
+    private TransactionRecordService transactionRecordService;
 
     private TopicStore subject;
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.assertions;
 
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -24,50 +25,41 @@ import org.junit.jupiter.api.Assertions;
 
 public class AssertUtils {
     public static <T> ErroringAssertsProvider<List<T>> notEmpty() {
-        return spec ->
-                (List<T> instance) -> {
-                    try {
-                        Assertions.assertTrue(!instance.isEmpty(), "List shouldn't be empty!");
-                    } catch (Throwable t) {
-                        return List.of(t);
-                    }
-                    return Collections.EMPTY_LIST;
-                };
+        return spec -> (List<T> instance) -> {
+            try {
+                Assertions.assertTrue(!instance.isEmpty(), "List shouldn't be empty!");
+            } catch (Throwable t) {
+                return List.of(t);
+            }
+            return Collections.EMPTY_LIST;
+        };
     }
 
     @SafeVarargs
-    public static <T> ErroringAssertsProvider<List<T>> inOrder(
-            ErroringAssertsProvider<T>... providers) {
-        return spec ->
-                (List<T> instance) -> {
-                    try {
-                        Assertions.assertEquals(
-                                providers.length, instance.size(), "Bad list size!");
-                        for (int i = 0; i < providers.length; i++) {
-                            List<Throwable> errorsHere =
-                                    providers[i].assertsFor(spec).errorsIn(instance.get(i));
-                            if (!errorsHere.isEmpty()) {
-                                return errorsHere;
-                            }
-                        }
-                    } catch (Throwable t) {
-                        return List.of(t);
+    public static <T> ErroringAssertsProvider<List<T>> inOrder(ErroringAssertsProvider<T>... providers) {
+        return spec -> (List<T> instance) -> {
+            try {
+                Assertions.assertEquals(providers.length, instance.size(), "Bad list size!");
+                for (int i = 0; i < providers.length; i++) {
+                    List<Throwable> errorsHere = providers[i].assertsFor(spec).errorsIn(instance.get(i));
+                    if (!errorsHere.isEmpty()) {
+                        return errorsHere;
                     }
-                    return Collections.EMPTY_LIST;
-                };
+                }
+            } catch (Throwable t) {
+                return List.of(t);
+            }
+            return Collections.EMPTY_LIST;
+        };
     }
 
-    public static void rethrowSummaryError(Logger log, String summaryPrefix, List<Throwable> errors)
-            throws Throwable {
+    public static void rethrowSummaryError(Logger log, String summaryPrefix, List<Throwable> errors) throws Throwable {
         if (errors.isEmpty()) {
             return;
         }
-        String summary =
-                summaryPrefix
-                        + " :: "
-                        + errors.stream()
-                                .map(Throwable::getMessage)
-                                .collect(Collectors.joining(", "));
+        String summary = summaryPrefix
+                + " :: "
+                + errors.stream().map(Throwable::getMessage).collect(Collectors.joining(", "));
         throw new Exception(summary);
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
@@ -49,15 +50,12 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class AllowancePrecompile extends AbstractReadOnlyPrecompile
-        implements EvmAllowancePrecompile {
+public class AllowancePrecompile extends AbstractReadOnlyPrecompile implements EvmAllowancePrecompile {
 
     private static final Function HAPI_ALLOWANCE_FUNCTION =
             new Function("allowance(address,address,address)", "(int,int)");
-    private static final Bytes HAPI_ALLOWANCE_SELECTOR =
-            Bytes.wrap(HAPI_ALLOWANCE_FUNCTION.selector());
-    private static final ABIType<Tuple> HAPI_ALLOWANCE_DECODER =
-            TypeFactory.create(ADDRESS_TRIO_RAW_TYPE);
+    private static final Bytes HAPI_ALLOWANCE_SELECTOR = Bytes.wrap(HAPI_ALLOWANCE_FUNCTION.selector());
+    private static final ABIType<Tuple> HAPI_ALLOWANCE_DECODER = TypeFactory.create(ADDRESS_TRIO_RAW_TYPE);
 
     private TokenAllowanceWrapper<TokenID, AccountID, AccountID> allowanceWrapper;
 
@@ -80,8 +78,7 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         allowanceWrapper = decodeTokenAllowance(input, tokenId, aliasResolver);
         return super.body(input, aliasResolver);
     }
@@ -89,18 +86,13 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile
     @Override
     @SuppressWarnings("unchecked")
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        Objects.requireNonNull(
-                allowanceWrapper, "`body` method should be called before `getSuccessResultsFor`");
+        Objects.requireNonNull(allowanceWrapper, "`body` method should be called before `getSuccessResultsFor`");
 
-        final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger =
-                ledgers.accounts();
-        validateTrueOrRevert(
-                accountsLedger.contains(allowanceWrapper.owner()), INVALID_ALLOWANCE_OWNER_ID);
+        final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger = ledgers.accounts();
+        validateTrueOrRevert(accountsLedger.contains(allowanceWrapper.owner()), INVALID_ALLOWANCE_OWNER_ID);
         final var allowances =
-                (Map<FcTokenAllowanceId, Long>)
-                        accountsLedger.get(allowanceWrapper.owner(), FUNGIBLE_TOKEN_ALLOWANCES);
-        final var fcTokenAllowanceId =
-                FcTokenAllowanceId.from(allowanceWrapper.token(), allowanceWrapper.spender());
+                (Map<FcTokenAllowanceId, Long>) accountsLedger.get(allowanceWrapper.owner(), FUNGIBLE_TOKEN_ALLOWANCES);
+        final var fcTokenAllowanceId = FcTokenAllowanceId.from(allowanceWrapper.token(), allowanceWrapper.spender());
         final var value = allowances.getOrDefault(fcTokenAllowanceId, 0L);
         return tokenId == null
                 ? encoder.encodeAllowance(SUCCESS.getNumber(), value)
@@ -108,13 +100,10 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile
     }
 
     public static TokenAllowanceWrapper<TokenID, AccountID, AccountID> decodeTokenAllowance(
-            final Bytes input,
-            final TokenID impliedTokenId,
-            final UnaryOperator<byte[]> aliasResolver) {
+            final Bytes input, final TokenID impliedTokenId, final UnaryOperator<byte[]> aliasResolver) {
         final var offset = impliedTokenId == null ? 1 : 0;
         if (offset == 1) {
-            final Tuple decodedArguments =
-                    decodeFunctionCall(input, HAPI_ALLOWANCE_SELECTOR, HAPI_ALLOWANCE_DECODER);
+            final Tuple decodedArguments = decodeFunctionCall(input, HAPI_ALLOWANCE_SELECTOR, HAPI_ALLOWANCE_DECODER);
 
             return new TokenAllowanceWrapper<>(
                     convertAddressBytesToTokenID(decodedArguments.get(0)),
@@ -124,10 +113,8 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile
             final var rawTokenAllowanceWrapper = EvmAllowancePrecompile.decodeTokenAllowance(input);
             return new TokenAllowanceWrapper<>(
                     tokenIdFromEvmAddress(rawTokenAllowanceWrapper.token()),
-                    convertLeftPaddedAddressToAccountId(
-                            rawTokenAllowanceWrapper.owner(), aliasResolver),
-                    convertLeftPaddedAddressToAccountId(
-                            rawTokenAllowanceWrapper.spender(), aliasResolver));
+                    convertLeftPaddedAddressToAccountId(rawTokenAllowanceWrapper.owner(), aliasResolver),
+                    convertLeftPaddedAddressToAccountId(rawTokenAllowanceWrapper.spender(), aliasResolver));
         }
     }
 }

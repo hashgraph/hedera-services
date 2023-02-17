@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.meta;
 
 import static com.hedera.node.app.service.mono.fees.calculation.meta.FixedUsageEstimates.GET_VERSION_INFO_NODE_USAGE;

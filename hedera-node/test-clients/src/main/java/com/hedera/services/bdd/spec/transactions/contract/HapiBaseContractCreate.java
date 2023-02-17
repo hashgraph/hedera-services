@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.contract;
 
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
@@ -98,11 +99,7 @@ public abstract class HapiBaseContractCreate<T extends HapiTxnOp<T>> extends Hap
     protected void updateStateOf(HapiSpec spec) throws Throwable {
         if (actualStatus != SUCCESS) {
             if (gasObserver.isPresent()) {
-                doGasLookup(
-                        gas -> gasObserver.get().accept(actualStatus, gas),
-                        spec,
-                        txnSubmitted,
-                        true);
+                doGasLookup(gas -> gasObserver.get().accept(actualStatus, gas), spec, txnSubmitted, true);
             }
             return;
         }
@@ -111,23 +108,15 @@ public abstract class HapiBaseContractCreate<T extends HapiTxnOp<T>> extends Hap
         if (shouldAlsoRegisterAsAccount) {
             spec.registry().saveAccountId(contract, equivAccount(lastReceipt.getContractID()));
         }
-        spec.registry()
-                .saveKey(
-                        contract,
-                        (omitAdminKey || useDeprecatedAdminKey) ? MISSING_ADMIN_KEY : adminKey);
+        spec.registry().saveKey(contract, (omitAdminKey || useDeprecatedAdminKey) ? MISSING_ADMIN_KEY : adminKey);
         spec.registry().saveContractId(contract, newId);
-        final var otherInfoBuilder =
-                ContractGetInfoResponse.ContractInfo.newBuilder()
-                        .setContractAccountID(solidityIdFrom(lastReceipt.getContractID()))
-                        .setMemo(memo.orElse(spec.setup().defaultMemo()))
-                        .setAutoRenewPeriod(
-                                Duration.newBuilder()
-                                        .setSeconds(
-                                                autoRenewPeriodSecs.orElse(
-                                                        spec.setup()
-                                                                .defaultAutoRenewPeriod()
-                                                                .getSeconds()))
-                                        .build());
+        final var otherInfoBuilder = ContractGetInfoResponse.ContractInfo.newBuilder()
+                .setContractAccountID(solidityIdFrom(lastReceipt.getContractID()))
+                .setMemo(memo.orElse(spec.setup().defaultMemo()))
+                .setAutoRenewPeriod(Duration.newBuilder()
+                        .setSeconds(autoRenewPeriodSecs.orElse(
+                                spec.setup().defaultAutoRenewPeriod().getSeconds()))
+                        .build());
         if (!omitAdminKey && !useDeprecatedAdminKey) {
             otherInfoBuilder.setAdminKey(adminKey);
         }
@@ -135,13 +124,10 @@ public abstract class HapiBaseContractCreate<T extends HapiTxnOp<T>> extends Hap
         spec.registry().saveContractInfo(contract, otherInfo);
         successCb.ifPresent(cb -> cb.accept(spec.registry()));
         if (advertiseCreation) {
-            String banner =
-                    "\n\n"
-                            + bannerWith(
-                                    String.format(
-                                            "Created contract '%s' with id '0.0.%d'.",
-                                            contract,
-                                            lastReceipt.getContractID().getContractNum()));
+            String banner = "\n\n"
+                    + bannerWith(String.format(
+                            "Created contract '%s' with id '0.0.%d'.",
+                            contract, lastReceipt.getContractID().getContractNum()));
             log.info(banner);
         }
         if (gasObserver.isPresent()) {
@@ -155,12 +141,7 @@ public abstract class HapiBaseContractCreate<T extends HapiTxnOp<T>> extends Hap
         } else {
             KeyGenerator generator = effectiveKeyGen();
             if (adminKeyControl.isEmpty()) {
-                adminKey =
-                        spec.keys()
-                                .generate(
-                                        spec,
-                                        adminKeyType.orElse(KeyFactory.KeyType.SIMPLE),
-                                        generator);
+                adminKey = spec.keys().generate(spec, adminKeyType.orElse(KeyFactory.KeyType.SIMPLE), generator);
             } else {
                 adminKey = spec.keys().generateSubjectTo(spec, adminKeyControl.get(), generator);
             }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.commands.accounts;
 
 import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
@@ -29,7 +30,8 @@ import picocli.CommandLine.ParentCommand;
         subcommands = {HelpCommand.class},
         description = "Checks account balances")
 public class BalanceCommand implements Callable<Integer> {
-    @ParentCommand AccountsCommand accountsCommand;
+    @ParentCommand
+    AccountsCommand accountsCommand;
 
     @Parameters(arity = "1..*", paramLabel = "<accounts>", description = "account names or numbers")
     String[] accounts;

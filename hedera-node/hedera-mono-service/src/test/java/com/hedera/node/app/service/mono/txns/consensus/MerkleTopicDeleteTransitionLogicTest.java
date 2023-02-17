@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.consensus;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromTopicId;
@@ -75,9 +76,7 @@ class MerkleTopicDeleteTransitionLogicTest {
         sigImpactHistorian = mock(SigImpactHistorian.class);
         topics.clear();
 
-        subject =
-                new TopicDeleteTransitionLogic(
-                        () -> topics, validator, sigImpactHistorian, transactionContext);
+        subject = new TopicDeleteTransitionLogic(() -> topics, validator, sigImpactHistorian, transactionContext);
     }
 
     @Test
@@ -122,9 +121,7 @@ class MerkleTopicDeleteTransitionLogicTest {
         given(topics.get(topicFcKey)).willReturn(deletableTopic);
         given(topics.getForModify(topicFcKey)).willReturn(deletableTopic);
 
-        subject =
-                new TopicDeleteTransitionLogic(
-                        () -> topics, validator, sigImpactHistorian, transactionContext);
+        subject = new TopicDeleteTransitionLogic(() -> topics, validator, sigImpactHistorian, transactionContext);
     }
 
     @Test
@@ -160,11 +157,10 @@ class MerkleTopicDeleteTransitionLogicTest {
     }
 
     private void givenTransaction(ConsensusDeleteTopicTransactionBody.Builder body) {
-        transactionBody =
-                TransactionBody.newBuilder()
-                        .setTransactionID(ourTxnId())
-                        .setConsensusDeleteTopic(body.build())
-                        .build();
+        transactionBody = TransactionBody.newBuilder()
+                .setTransactionID(ourTxnId())
+                .setConsensusDeleteTopic(body.build())
+                .build();
         given(accessor.getTxn()).willReturn(transactionBody);
         given(transactionContext.accessor()).willReturn(accessor);
     }
@@ -185,15 +181,13 @@ class MerkleTopicDeleteTransitionLogicTest {
 
     private void givenTransactionContextInvalidTopic() {
         givenTransaction(getBasicValidTransactionBodyBuilder());
-        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics))
-                .willReturn(INVALID_TOPIC_ID);
+        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(INVALID_TOPIC_ID);
     }
 
     private TransactionID ourTxnId() {
         return TransactionID.newBuilder()
                 .setAccountID(payer)
-                .setTransactionValidStart(
-                        Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
+                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
                 .build();
     }
 }

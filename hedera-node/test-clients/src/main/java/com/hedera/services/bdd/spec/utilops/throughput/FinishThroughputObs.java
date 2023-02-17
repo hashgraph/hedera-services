@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops.throughput;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -68,11 +69,7 @@ public class FinishThroughputObs extends UtilOp {
         if (gateSupplier.isEmpty()) {
             int n = spec.numLedgerOps() - baseObs.getNumOpsAtObservationStart();
             long timeToOpenGate = System.currentTimeMillis() - baseObs.getCreationTime();
-            LOG.info(
-                    "{}{} saw {} ops for its throughput measurement.",
-                    spec::logPrefix,
-                    () -> this,
-                    () -> n);
+            LOG.info("{}{} saw {} ops for its throughput measurement.", spec::logPrefix, () -> this, () -> n);
             baseObs.setNumOpsAtObservationFinish(spec.numLedgerOps());
             baseObs.setObsLengthMs(timeToOpenGate);
             return false;
@@ -80,10 +77,7 @@ public class FinishThroughputObs extends UtilOp {
 
         sleepUntil(baseObs.getExpectedQueueSaturationTime());
         if (baseObs.getNumOpsAtExpectedQueueSaturation() == -1) {
-            LOG.warn(
-                    "{}{} saw no ops executed after the expected queue saturation time!",
-                    spec::logPrefix,
-                    () -> this);
+            LOG.warn("{}{} saw no ops executed after the expected queue saturation time!", spec::logPrefix, () -> this);
             return false;
         }
         LOG.info(
@@ -94,8 +88,7 @@ public class FinishThroughputObs extends UtilOp {
 
         long now = System.currentTimeMillis();
         long sleepTimeMs = sleepMs.orElse(spec.setup().defaultThroughputObsSleepMs());
-        long obsExpirationTime =
-                now + maxObsLengthMs.orElse(spec.setup().defaultThroughputObsExpiryMs());
+        long obsExpirationTime = now + maxObsLengthMs.orElse(spec.setup().defaultThroughputObsExpiryMs());
         HapiQueryOp<?>[] gatingQueries = gateSupplier.get().get();
         while (gatingQueries.length > 0 && now < obsExpirationTime) {
             try {
@@ -104,11 +97,7 @@ public class FinishThroughputObs extends UtilOp {
             } catch (final Exception ignored) {
                 // Intentionally ignored
             }
-            LOG.info(
-                    "{}{} sleeping {}ms before retrying gate!",
-                    spec::logPrefix,
-                    () -> this,
-                    () -> sleepTimeMs);
+            LOG.info("{}{} sleeping {}ms before retrying gate!", spec::logPrefix, () -> this, () -> sleepTimeMs);
             try {
                 MILLISECONDS.sleep(sleepTimeMs);
             } catch (InterruptedException ignored) {

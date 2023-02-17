@@ -67,9 +67,10 @@ public class BalanceReconciliationValidator implements RecordStreamValidator {
                 });
             }
 
-            for(final var entry : expectedBalances.entrySet()) {
-                if(entry.getValue() < 0) {
-                    throw new IllegalStateException("Negative balance for account " + entry.getKey() + " with value " + entry.getValue());
+            for (final var entry : expectedBalances.entrySet()) {
+                if (entry.getValue() < 0) {
+                    throw new IllegalStateException(
+                            "Negative balance for account " + entry.getKey() + " with value " + entry.getValue());
                 }
             }
         }

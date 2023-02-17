@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.token;
 
 import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
@@ -60,12 +61,11 @@ class TokenGetInfoUsageTest {
                 .givenCurrentSymbol(symbol);
         // and:
         final var expectedKeyBytes = 6 * FeeBuilder.getAccountKeyStorageSize(aKey.get());
-        final var expectedBytes =
-                BASIC_QUERY_RES_HEADER
-                        + expectedKeyBytes
-                        + TOKEN_ENTITY_SIZES.totalBytesInTokenReprGiven(symbol, name)
-                        + memo.length()
-                        + BASIC_ENTITY_ID_SIZE;
+        final var expectedBytes = BASIC_QUERY_RES_HEADER
+                + expectedKeyBytes
+                + TOKEN_ENTITY_SIZES.totalBytesInTokenReprGiven(symbol, name)
+                + memo.length()
+                + BASIC_ENTITY_ID_SIZE;
 
         // when:
         final var usage = subject.get();

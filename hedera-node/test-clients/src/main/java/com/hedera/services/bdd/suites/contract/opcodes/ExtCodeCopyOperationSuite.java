@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
@@ -68,65 +69,46 @@ public class ExtCodeCopyOperationSuite extends HapiSuite {
                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
                         contractCallLocal(contract, codeCopyOf, asHeadlongAddress(invalidAddress))
                                 .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var accountID =
-                                            spec.registry().getAccountID(DEFAULT_PAYER);
-                                    final var contractID = spec.registry().getContractId(contract);
-                                    final var accountSolidityAddress =
-                                            asHexedSolidityAddress(accountID);
-                                    final var contractAddress = asHexedSolidityAddress(contractID);
+                        withOpContext((spec, opLog) -> {
+                            final var accountID = spec.registry().getAccountID(DEFAULT_PAYER);
+                            final var contractID = spec.registry().getContractId(contract);
+                            final var accountSolidityAddress = asHexedSolidityAddress(accountID);
+                            final var contractAddress = asHexedSolidityAddress(contractID);
 
-                                    final var call =
-                                            contractCall(
-                                                            contract,
-                                                            codeCopyOf,
-                                                            asHeadlongAddress(
-                                                                    accountSolidityAddress))
-                                                    .via("callRecord");
-                                    final var callRecord = getTxnRecord("callRecord");
+                            final var call = contractCall(
+                                            contract, codeCopyOf, asHeadlongAddress(accountSolidityAddress))
+                                    .via("callRecord");
+                            final var callRecord = getTxnRecord("callRecord");
 
-                                    final var accountCodeCallLocal =
-                                            contractCallLocal(
-                                                            contract,
-                                                            codeCopyOf,
-                                                            asHeadlongAddress(
-                                                                    accountSolidityAddress))
-                                                    .saveResultTo("accountCode");
+                            final var accountCodeCallLocal = contractCallLocal(
+                                            contract, codeCopyOf, asHeadlongAddress(accountSolidityAddress))
+                                    .saveResultTo("accountCode");
 
-                                    final var contractCodeCallLocal =
-                                            contractCallLocal(
-                                                            contract,
-                                                            codeCopyOf,
-                                                            asHeadlongAddress(contractAddress))
-                                                    .saveResultTo("contractCode");
+                            final var contractCodeCallLocal = contractCallLocal(
+                                            contract, codeCopyOf, asHeadlongAddress(contractAddress))
+                                    .saveResultTo("contractCode");
 
-                                    final var getBytecodeCall =
-                                            getContractBytecode(contract)
-                                                    .saveResultTo("contractGetBytecode");
+                            final var getBytecodeCall =
+                                    getContractBytecode(contract).saveResultTo("contractGetBytecode");
 
-                                    allRunFor(
-                                            spec,
-                                            call,
-                                            callRecord,
-                                            accountCodeCallLocal,
-                                            contractCodeCallLocal,
-                                            getBytecodeCall);
+                            allRunFor(
+                                    spec,
+                                    call,
+                                    callRecord,
+                                    accountCodeCallLocal,
+                                    contractCodeCallLocal,
+                                    getBytecodeCall);
 
-                                    final var recordResult =
-                                            callRecord.getResponseRecord().getContractCallResult();
-                                    final var accountCode = spec.registry().getBytes("accountCode");
-                                    final var contractCode =
-                                            spec.registry().getBytes("contractCode");
-                                    final var getBytecode =
-                                            spec.registry().getBytes("contractGetBytecode");
+                            final var recordResult =
+                                    callRecord.getResponseRecord().getContractCallResult();
+                            final var accountCode = spec.registry().getBytes("accountCode");
+                            final var contractCode = spec.registry().getBytes("contractCode");
+                            final var getBytecode = spec.registry().getBytes("contractGetBytecode");
 
-                                    Assertions.assertEquals(
-                                            emptyBytecode, recordResult.getContractCallResult());
-                                    Assertions.assertArrayEquals(
-                                            emptyBytecode.toByteArray(), accountCode);
-                                    Assertions.assertArrayEquals(getBytecode, contractCode);
-                                }));
+                            Assertions.assertEquals(emptyBytecode, recordResult.getContractCallResult());
+                            Assertions.assertArrayEquals(emptyBytecode.toByteArray(), accountCode);
+                            Assertions.assertArrayEquals(getBytecode, contractCode);
+                        }));
     }
 
     @Override

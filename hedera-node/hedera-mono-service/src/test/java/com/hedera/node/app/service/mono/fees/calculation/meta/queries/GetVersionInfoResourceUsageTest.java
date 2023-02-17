@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.meta.queries;
 
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -28,10 +29,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class GetVersionInfoResourceUsageTest {
-    private static final Query versionInfoQuery =
-            Query.newBuilder()
-                    .setNetworkGetVersionInfo(NetworkGetVersionInfoQuery.getDefaultInstance())
-                    .build();
+    private static final Query versionInfoQuery = Query.newBuilder()
+            .setNetworkGetVersionInfo(NetworkGetVersionInfoQuery.getDefaultInstance())
+            .build();
     private GetVersionInfoResourceUsage subject;
 
     @BeforeEach

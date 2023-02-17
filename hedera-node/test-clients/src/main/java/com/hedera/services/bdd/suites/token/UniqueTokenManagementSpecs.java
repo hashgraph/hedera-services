@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -75,8 +76,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 public class UniqueTokenManagementSpecs extends HapiSuite {
-    private static final org.apache.logging.log4j.Logger log =
-            LogManager.getLogger(UniqueTokenManagementSpecs.class);
+    private static final org.apache.logging.log4j.Logger log = LogManager.getLogger(UniqueTokenManagementSpecs.class);
     private static final String A_TOKEN = "TokenA";
     private static final String NFT = "nft";
     private static final String FUNGIBLE_TOKEN = "fungible";
@@ -90,38 +90,37 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    mintFailsWithLargeBatchSize(),
-                    mintFailsWithTooLongMetadata(),
-                    mintFailsWithInvalidMetadataFromBatch(),
-                    mintUniqueTokenHappyPath(),
-                    mintTokenWorksWhenAccountsAreFrozenByDefault(),
-                    mintFailsWithDeletedToken(),
-                    mintUniqueTokenWorksWithRepeatedMetadata(),
-                    mintDistinguishesFeeSubTypes(),
-                    mintUniqueTokenReceiptCheck(),
-                    populatingMetadataForFungibleDoesNotWork(),
-                    populatingAmountForNonFungibleDoesNotWork(),
-                    finiteNftReachesMaxSupplyProperly(),
-                    burnHappyPath(),
-                    canOnlyBurnFromTreasury(),
-                    burnFailsOnInvalidSerialNumber(),
-                    burnRespectsBurnBatchConstraints(),
-                    treasuryBalanceCorrectAfterBurn(),
-                    burnWorksWhenAccountsAreFrozenByDefault(),
-                    serialNumbersOnlyOnFungibleBurnFails(),
-                    amountOnlyOnNonFungibleBurnFails(),
-                    wipeHappyPath(),
-                    wipeRespectsConstraints(),
-                    commonWipeFailsWhenInvokedOnUniqueToken(),
-                    uniqueWipeFailsWhenInvokedOnFungibleToken(),
-                    wipeFailsWithInvalidSerialNumber(),
-                    getTokenNftInfoWorks(),
-                    getTokenNftInfoFailsWithNoNft(),
-                    tokenDissociateHappyPath(),
-                    tokenDissociateFailsIfAccountOwnsUniqueTokens(),
-                });
+        return List.of(new HapiSpec[] {
+            mintFailsWithLargeBatchSize(),
+            mintFailsWithTooLongMetadata(),
+            mintFailsWithInvalidMetadataFromBatch(),
+            mintUniqueTokenHappyPath(),
+            mintTokenWorksWhenAccountsAreFrozenByDefault(),
+            mintFailsWithDeletedToken(),
+            mintUniqueTokenWorksWithRepeatedMetadata(),
+            mintDistinguishesFeeSubTypes(),
+            mintUniqueTokenReceiptCheck(),
+            populatingMetadataForFungibleDoesNotWork(),
+            populatingAmountForNonFungibleDoesNotWork(),
+            finiteNftReachesMaxSupplyProperly(),
+            burnHappyPath(),
+            canOnlyBurnFromTreasury(),
+            burnFailsOnInvalidSerialNumber(),
+            burnRespectsBurnBatchConstraints(),
+            treasuryBalanceCorrectAfterBurn(),
+            burnWorksWhenAccountsAreFrozenByDefault(),
+            serialNumbersOnlyOnFungibleBurnFails(),
+            amountOnlyOnNonFungibleBurnFails(),
+            wipeHappyPath(),
+            wipeRespectsConstraints(),
+            commonWipeFailsWhenInvokedOnUniqueToken(),
+            uniqueWipeFailsWhenInvokedOnFungibleToken(),
+            wipeFailsWithInvalidSerialNumber(),
+            getTokenNftInfoWorks(),
+            getTokenNftInfoFailsWithNoNft(),
+            tokenDissociateHappyPath(),
+            tokenDissociateFailsIfAccountOwnsUniqueTokens(),
+        });
     }
 
     private HapiSpec populatingMetadataForFungibleDoesNotWork() {
@@ -135,26 +134,24 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .supplyType(TokenSupplyType.INFINITE)
                                 .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY))
-                .when(
-                        mintToken(
-                                        FUNGIBLE_TOKEN,
-                                        List.of(
-                                                metadata("some-data"),
-                                                metadata("some-data2"),
-                                                metadata("some-data3"),
-                                                metadata("some-data4")))
-                                .hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT)
-                                .via("should-not-work"))
+                .when(mintToken(
+                                FUNGIBLE_TOKEN,
+                                List.of(
+                                        metadata("some-data"),
+                                        metadata("some-data2"),
+                                        metadata("some-data3"),
+                                        metadata("some-data4")))
+                        .hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT)
+                        .via("should-not-work"))
                 .then(
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 0),
                         getTxnRecord("should-not-work").showsNoTransfers(),
-                        UtilVerbs.withOpContext(
-                                (spec, opLog) -> {
-                                    var mintNFT = getTxnRecord("should-not-work");
-                                    allRunFor(spec, mintNFT);
-                                    var receipt = mintNFT.getResponseRecord().getReceipt();
-                                    Assertions.assertEquals(0, receipt.getNewTotalSupply());
-                                }));
+                        UtilVerbs.withOpContext((spec, opLog) -> {
+                            var mintNFT = getTxnRecord("should-not-work");
+                            allRunFor(spec, mintNFT);
+                            var receipt = mintNFT.getResponseRecord().getReceipt();
+                            Assertions.assertEquals(0, receipt.getNewTotalSupply());
+                        }));
     }
 
     private HapiSpec populatingAmountForNonFungibleDoesNotWork() {
@@ -168,21 +165,19 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .supplyType(TokenSupplyType.INFINITE)
                                 .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY))
-                .when(
-                        mintToken(NFT, 300)
-                                .hasKnownStatus(INVALID_TOKEN_MINT_METADATA)
-                                .via("should-not-work"))
+                .when(mintToken(NFT, 300)
+                        .hasKnownStatus(INVALID_TOKEN_MINT_METADATA)
+                        .via("should-not-work"))
                 .then(
                         getTxnRecord("should-not-work").showsNoTransfers(),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NFT, 0),
-                        UtilVerbs.withOpContext(
-                                (spec, opLog) -> {
-                                    var mintNFT = getTxnRecord("should-not-work");
-                                    allRunFor(spec, mintNFT);
-                                    var receipt = mintNFT.getResponseRecord().getReceipt();
-                                    Assertions.assertEquals(0, receipt.getNewTotalSupply());
-                                    Assertions.assertEquals(0, receipt.getSerialNumbersCount());
-                                }));
+                        UtilVerbs.withOpContext((spec, opLog) -> {
+                            var mintNFT = getTxnRecord("should-not-work");
+                            allRunFor(spec, mintNFT);
+                            var receipt = mintNFT.getResponseRecord().getReceipt();
+                            Assertions.assertEquals(0, receipt.getNewTotalSupply());
+                            Assertions.assertEquals(0, receipt.getSerialNumbersCount());
+                        }));
     }
 
     private HapiSpec finiteNftReachesMaxSupplyProperly() {
@@ -197,27 +192,25 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .supplyType(TokenSupplyType.FINITE)
                                 .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY))
-                .when(
-                        mintToken(
-                                        NFT,
-                                        List.of(
-                                                metadata("some-data"),
-                                                metadata("some-data2"),
-                                                metadata("some-data3"),
-                                                metadata("some-data4")))
-                                .hasKnownStatus(TOKEN_MAX_SUPPLY_REACHED)
-                                .via("should-not-appear"))
+                .when(mintToken(
+                                NFT,
+                                List.of(
+                                        metadata("some-data"),
+                                        metadata("some-data2"),
+                                        metadata("some-data3"),
+                                        metadata("some-data4")))
+                        .hasKnownStatus(TOKEN_MAX_SUPPLY_REACHED)
+                        .via("should-not-appear"))
                 .then(
                         getTxnRecord("should-not-appear").showsNoTransfers(),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NFT, 0),
-                        UtilVerbs.withOpContext(
-                                (spec, opLog) -> {
-                                    var mintNFT = getTxnRecord("should-not-appear");
-                                    allRunFor(spec, mintNFT);
-                                    var receipt = mintNFT.getResponseRecord().getReceipt();
-                                    Assertions.assertEquals(0, receipt.getNewTotalSupply());
-                                    Assertions.assertEquals(0, receipt.getSerialNumbersCount());
-                                }));
+                        UtilVerbs.withOpContext((spec, opLog) -> {
+                            var mintNFT = getTxnRecord("should-not-appear");
+                            allRunFor(spec, mintNFT);
+                            var receipt = mintNFT.getResponseRecord().getReceipt();
+                            Assertions.assertEquals(0, receipt.getNewTotalSupply());
+                            Assertions.assertEquals(0, receipt.getSerialNumbersCount());
+                        }));
     }
 
     private HapiSpec serialNumbersOnlyOnFungibleBurnFails() {
@@ -238,16 +231,12 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .via("burn-failure"),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 300),
                         getTxnRecord("burn-failure").showsNoTransfers(),
-                        UtilVerbs.withOpContext(
-                                (spec, opLog) -> {
-                                    var burnTxn = getTxnRecord("burn-failure");
-                                    allRunFor(spec, burnTxn);
-                                    Assertions.assertEquals(
-                                            0,
-                                            burnTxn.getResponseRecord()
-                                                    .getReceipt()
-                                                    .getNewTotalSupply());
-                                }));
+                        UtilVerbs.withOpContext((spec, opLog) -> {
+                            var burnTxn = getTxnRecord("burn-failure");
+                            allRunFor(spec, burnTxn);
+                            Assertions.assertEquals(
+                                    0, burnTxn.getResponseRecord().getReceipt().getNewTotalSupply());
+                        }));
     }
 
     private HapiSpec amountOnlyOnNonFungibleBurnFails() {
@@ -261,28 +250,19 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .supplyType(TokenSupplyType.INFINITE)
                                 .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY))
-                .when(
-                        mintToken(
-                                NFT,
-                                List.of(
-                                        metadata("some-random-data"),
-                                        metadata("some-other-random-data"))))
+                .when(mintToken(NFT, List.of(metadata("some-random-data"), metadata("some-other-random-data"))))
                 .then(
                         burnToken(NFT, 300)
                                 .hasKnownStatus(INVALID_TOKEN_BURN_METADATA)
                                 .via("burn-failure"),
                         getTxnRecord("burn-failure").showsNoTransfers(),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NFT, 2),
-                        UtilVerbs.withOpContext(
-                                (spec, opLog) -> {
-                                    var burnTxn = getTxnRecord("burn-failure");
-                                    allRunFor(spec, burnTxn);
-                                    Assertions.assertEquals(
-                                            0,
-                                            burnTxn.getResponseRecord()
-                                                    .getReceipt()
-                                                    .getNewTotalSupply());
-                                }));
+                        UtilVerbs.withOpContext((spec, opLog) -> {
+                            var burnTxn = getTxnRecord("burn-failure");
+                            allRunFor(spec, burnTxn);
+                            Assertions.assertEquals(
+                                    0, burnTxn.getResponseRecord().getReceipt().getNewTotalSupply());
+                        }));
     }
 
     private HapiSpec burnWorksWhenAccountsAreFrozenByDefault() {
@@ -318,9 +298,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         mintToken(NFT, List.of(metadata("memo"))))
                 .when()
                 .then(
-                        burnToken(NFT, List.of(0L, 1L, 2L))
-                                .via("burnTxn")
-                                .hasPrecheck(INVALID_NFT_ID),
+                        burnToken(NFT, List.of(0L, 1L, 2L)).via("burnTxn").hasPrecheck(INVALID_NFT_ID),
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(1));
     }
 
@@ -337,14 +315,9 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .treasury(TOKEN_TREASURY),
                         mintToken(NFT, List.of(metadata("memo"))))
                 .when()
-                .then(
-                        burnToken(
-                                        NFT,
-                                        LongStream.range(0, 1000)
-                                                .boxed()
-                                                .collect(Collectors.toList()))
-                                .via("burnTxn")
-                                .hasPrecheck(BATCH_SIZE_LIMIT_EXCEEDED));
+                .then(burnToken(NFT, LongStream.range(0, 1000).boxed().collect(Collectors.toList()))
+                        .via("burnTxn")
+                        .hasPrecheck(BATCH_SIZE_LIMIT_EXCEEDED));
     }
 
     private HapiSpec burnHappyPath() {
@@ -386,10 +359,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         mintToken(NFT, List.of(metadata("1"), metadata("2"))),
                         tokenAssociate(nonTreasury, NFT),
                         cryptoTransfer(movingUnique(NFT, 2L).between(TOKEN_TREASURY, nonTreasury)))
-                .when(
-                        burnToken(NFT, List.of(1L, 2L))
-                                .via("burnTxn")
-                                .hasKnownStatus(TREASURY_MUST_OWN_BURNED_NFT))
+                .when(burnToken(NFT, List.of(1L, 2L)).via("burnTxn").hasKnownStatus(TREASURY_MUST_OWN_BURNED_NFT))
                 .then(
                         getTokenNftInfo(NFT, 1).hasSerialNum(1),
                         getTokenNftInfo(NFT, 2).hasSerialNum(2),
@@ -413,12 +383,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .treasury(TOKEN_TREASURY),
                         mintToken(
                                 NFT,
-                                List.of(
-                                        metadata("1"),
-                                        metadata("2"),
-                                        metadata("3"),
-                                        metadata("4"),
-                                        metadata("5"))))
+                                List.of(metadata("1"), metadata("2"), metadata("3"), metadata("4"), metadata("5"))))
                 .when(burnToken(NFT, List.of(3L, 4L, 5L)).via("burnTxn"))
                 .then(
                         getTokenNftInfo(NFT, 1).hasSerialNum(1).hasCostAnswerPrecheck(OK),
@@ -459,20 +424,14 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .payingWith("customPayer")
                                 .signedBy("customPayer", "supplyKey")
                                 .via("mintFungible"))
-                .then(
-                        UtilVerbs.withOpContext(
-                                (spec, opLog) -> {
-                                    var mintNFT = getTxnRecord("mintNFT");
-                                    var mintFungible = getTxnRecord("mintFungible");
-                                    allRunFor(spec, mintNFT, mintFungible);
-                                    var nftFee = mintNFT.getResponseRecord().getTransactionFee();
-                                    var fungibleFee =
-                                            mintFungible.getResponseRecord().getTransactionFee();
-                                    Assertions.assertNotEquals(
-                                            nftFee,
-                                            fungibleFee,
-                                            "NFT Fee should NOT equal to the Fungible Fee!");
-                                }));
+                .then(UtilVerbs.withOpContext((spec, opLog) -> {
+                    var mintNFT = getTxnRecord("mintNFT");
+                    var mintFungible = getTxnRecord("mintFungible");
+                    allRunFor(spec, mintNFT, mintFungible);
+                    var nftFee = mintNFT.getResponseRecord().getTransactionFee();
+                    var fungibleFee = mintFungible.getResponseRecord().getTransactionFee();
+                    Assertions.assertNotEquals(nftFee, fungibleFee, "NFT Fee should NOT equal to the Fungible Fee!");
+                }));
     }
 
     private HapiSpec mintFailsWithTooLongMetadata() {
@@ -487,9 +446,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY))
                 .when()
-                .then(
-                        mintToken(NFT, List.of(metadataOfLength(101)))
-                                .hasPrecheck(ResponseCodeEnum.METADATA_TOO_LONG));
+                .then(mintToken(NFT, List.of(metadataOfLength(101))).hasPrecheck(ResponseCodeEnum.METADATA_TOO_LONG));
     }
 
     private HapiSpec mintFailsWithInvalidMetadataFromBatch() {
@@ -504,9 +461,8 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY))
                 .when()
-                .then(
-                        mintToken(NFT, List.of(metadataOfLength(101), metadataOfLength(1)))
-                                .hasPrecheck(ResponseCodeEnum.METADATA_TOO_LONG));
+                .then(mintToken(NFT, List.of(metadataOfLength(101), metadataOfLength(1)))
+                        .hasPrecheck(ResponseCodeEnum.METADATA_TOO_LONG));
     }
 
     private HapiSpec mintFailsWithLargeBatchSize() {
@@ -521,9 +477,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY))
                 .when()
-                .then(
-                        mintToken(NFT, batchOfSize(BIGGER_THAN_LIMIT))
-                                .hasPrecheck(BATCH_SIZE_LIMIT_EXCEEDED));
+                .then(mintToken(NFT, batchOfSize(BIGGER_THAN_LIMIT)).hasPrecheck(BATCH_SIZE_LIMIT_EXCEEDED));
     }
 
     private HapiSpec mintUniqueTokenHappyPath() {
@@ -538,7 +492,8 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .initialSupply(0)
                                 .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY))
-                .when(mintToken(NFT, List.of(metadata("memo"), metadata("memo1"))).via("mintTxn"))
+                .when(mintToken(NFT, List.of(metadata("memo"), metadata("memo1")))
+                        .via("mintTxn"))
                 .then(
                         getReceipt("mintTxn").logged(),
                         getTokenNftInfo(NFT, 1)
@@ -596,9 +551,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .treasury(TOKEN_TREASURY))
                 .when(tokenDelete(NFT))
                 .then(
-                        mintToken(NFT, List.of(metadata("memo")))
-                                .via("mintTxn")
-                                .hasKnownStatus(TOKEN_WAS_DELETED),
+                        mintToken(NFT, List.of(metadata("memo"))).via("mintTxn").hasKnownStatus(TOKEN_WAS_DELETED),
                         getTokenNftInfo(NFT, 1).hasCostAnswerPrecheck(INVALID_NFT_ID),
                         getTokenInfo(NFT).isDeleted());
     }
@@ -615,10 +568,8 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .treasury(TOKEN_TREASURY),
                         mintToken(NFT, List.of(metadata("memo"))).via("mintTxn"))
                 .then(
-                        getTokenNftInfo(NFT, 0)
-                                .hasCostAnswerPrecheck(INVALID_TOKEN_NFT_SERIAL_NUMBER),
-                        getTokenNftInfo(NFT, -1)
-                                .hasCostAnswerPrecheck(INVALID_TOKEN_NFT_SERIAL_NUMBER),
+                        getTokenNftInfo(NFT, 0).hasCostAnswerPrecheck(INVALID_TOKEN_NFT_SERIAL_NUMBER),
+                        getTokenNftInfo(NFT, -1).hasCostAnswerPrecheck(INVALID_TOKEN_NFT_SERIAL_NUMBER),
                         getTokenNftInfo(NFT, 2).hasCostAnswerPrecheck(INVALID_NFT_ID));
     }
 
@@ -634,10 +585,8 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .treasury(TOKEN_TREASURY),
                         mintToken(NFT, List.of(metadata("memo"))))
                 .then(
-                        getTokenNftInfo(NFT, 0)
-                                .hasCostAnswerPrecheck(INVALID_TOKEN_NFT_SERIAL_NUMBER),
-                        getTokenNftInfo(NFT, -1)
-                                .hasCostAnswerPrecheck(INVALID_TOKEN_NFT_SERIAL_NUMBER),
+                        getTokenNftInfo(NFT, 0).hasCostAnswerPrecheck(INVALID_TOKEN_NFT_SERIAL_NUMBER),
+                        getTokenNftInfo(NFT, -1).hasCostAnswerPrecheck(INVALID_TOKEN_NFT_SERIAL_NUMBER),
                         getTokenNftInfo(NFT, 2).hasCostAnswerPrecheck(INVALID_NFT_ID),
                         getTokenNftInfo(NFT, 1)
                                 .hasTokenID(NFT)
@@ -658,7 +607,8 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .supplyKey(SUPPLY_KEY)
                                 .initialSupply(0)
                                 .treasury(TOKEN_TREASURY))
-                .when(mintToken(NFT, List.of(metadata("memo"), metadata("memo"))).via("mintTxn"))
+                .when(mintToken(NFT, List.of(metadata("memo"), metadata("memo")))
+                        .via("mintTxn"))
                 .then(
                         getTokenNftInfo(NFT, 1)
                                 .hasSerialNum(1)
@@ -692,11 +642,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .wipeKey("wipeKey"),
                         tokenAssociate("account", NFT),
-                        mintToken(
-                                NFT,
-                                List.of(
-                                        ByteString.copyFromUtf8("memo"),
-                                        ByteString.copyFromUtf8("memo2"))),
+                        mintToken(NFT, List.of(ByteString.copyFromUtf8("memo"), ByteString.copyFromUtf8("memo2"))),
                         cryptoTransfer(movingUnique(NFT, 2L).between(TOKEN_TREASURY, "account")))
                 .when(wipeTokenAccount(NFT, "account", List.of(2L)).via("wipeTxn"))
                 .then(
@@ -705,8 +651,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         getTokenInfo(NFT).hasTotalSupply(1),
                         getTokenNftInfo(NFT, 2).hasCostAnswerPrecheck(INVALID_NFT_ID),
                         getTokenNftInfo(NFT, 1).hasSerialNum(1),
-                        wipeTokenAccount(NFT, "account", List.of(1L))
-                                .hasKnownStatus(ACCOUNT_DOES_NOT_OWN_WIPED_NFT));
+                        wipeTokenAccount(NFT, "account", List.of(1L)).hasKnownStatus(ACCOUNT_DOES_NOT_OWN_WIPED_NFT));
     }
 
     private HapiSpec wipeRespectsConstraints() {
@@ -724,17 +669,15 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .wipeKey("wipeKey"),
                         tokenAssociate("account", NFT),
-                        mintToken(NFT, List.of(metadata("memo"), metadata("memo2"))).via("mintTxn"),
+                        mintToken(NFT, List.of(metadata("memo"), metadata("memo2")))
+                                .via("mintTxn"),
                         cryptoTransfer(movingUnique(NFT, 1, 2).between(TOKEN_TREASURY, "account")))
                 .when()
-                .then(
-                        wipeTokenAccount(
-                                        NFT,
-                                        "account",
-                                        LongStream.range(0, 1000)
-                                                .boxed()
-                                                .collect(Collectors.toList()))
-                                .hasPrecheck(BATCH_SIZE_LIMIT_EXCEEDED));
+                .then(wipeTokenAccount(
+                                NFT,
+                                "account",
+                                LongStream.range(0, 1000).boxed().collect(Collectors.toList()))
+                        .hasPrecheck(BATCH_SIZE_LIMIT_EXCEEDED));
     }
 
     private HapiSpec commonWipeFailsWhenInvokedOnUniqueToken() {
@@ -768,8 +711,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                         getAccountBalance("account").hasTokenBalance(NFT, 1));
     }
 
-    private HapiSpec
-            uniqueWipeFailsWhenInvokedOnFungibleToken() { // invokes unique wipe on fungible tokens
+    private HapiSpec uniqueWipeFailsWhenInvokedOnFungibleToken() { // invokes unique wipe on fungible tokens
         return defaultHapiSpec("UniqueWipeFailsWhenInvokedOnFungibleToken")
                 .given(
                         newKeyNamed("wipeKey"),
@@ -781,9 +723,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .wipeKey("wipeKey"),
                         tokenAssociate("account", A_TOKEN),
-                        cryptoTransfer(
-                                TokenMovement.moving(5, A_TOKEN)
-                                        .between(TOKEN_TREASURY, "account")))
+                        cryptoTransfer(TokenMovement.moving(5, A_TOKEN).between(TOKEN_TREASURY, "account")))
                 .when(
                         wipeTokenAccount(A_TOKEN, "account", List.of(1L, 2L))
                                 .hasKnownStatus(INVALID_WIPING_AMOUNT)
@@ -812,11 +752,10 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .wipeKey("wipeKey"),
                         tokenAssociate("account", NFT),
-                        mintToken(NFT, List.of(metadata("memo"), metadata("memo"))).via("mintTxn"))
+                        mintToken(NFT, List.of(metadata("memo"), metadata("memo")))
+                                .via("mintTxn"))
                 .when()
-                .then(
-                        wipeTokenAccount(NFT, "account", List.of(-5L, -6L))
-                                .hasPrecheck(INVALID_NFT_ID));
+                .then(wipeTokenAccount(NFT, "account", List.of(-5L, -6L)).hasPrecheck(INVALID_NFT_ID));
     }
 
     private HapiSpec mintUniqueTokenReceiptCheck() {
@@ -832,44 +771,24 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .treasury(TOKEN_TREASURY))
                 .when(mintToken(A_TOKEN, List.of(metadata("memo"))).via("mintTransferTxn"))
                 .then(
-                        UtilVerbs.withOpContext(
-                                (spec, opLog) -> {
-                                    var mintNft = getTxnRecord("mintTransferTxn");
-                                    allRunFor(spec, mintNft);
-                                    var tokenTransferLists =
-                                            mintNft.getResponseRecord().getTokenTransferListsList();
-                                    Assertions.assertEquals(1, tokenTransferLists.size());
-                                    tokenTransferLists.stream()
-                                            .forEach(
-                                                    tokenTransferList -> {
-                                                        Assertions.assertEquals(
-                                                                1,
-                                                                tokenTransferList
-                                                                        .getNftTransfersList()
-                                                                        .size());
-                                                        tokenTransferList
-                                                                .getNftTransfersList()
-                                                                .stream()
-                                                                .forEach(
-                                                                        nftTransfers -> {
-                                                                            Assertions.assertEquals(
-                                                                                    AccountID
-                                                                                            .getDefaultInstance(),
-                                                                                    nftTransfers
-                                                                                            .getSenderAccountID());
-                                                                            Assertions.assertEquals(
-                                                                                    TxnUtils.asId(
-                                                                                            TOKEN_TREASURY,
-                                                                                            spec),
-                                                                                    nftTransfers
-                                                                                            .getReceiverAccountID());
-                                                                            Assertions.assertEquals(
-                                                                                    1L,
-                                                                                    nftTransfers
-                                                                                            .getSerialNumber());
-                                                                        });
-                                                    });
-                                }),
+                        UtilVerbs.withOpContext((spec, opLog) -> {
+                            var mintNft = getTxnRecord("mintTransferTxn");
+                            allRunFor(spec, mintNft);
+                            var tokenTransferLists = mintNft.getResponseRecord().getTokenTransferListsList();
+                            Assertions.assertEquals(1, tokenTransferLists.size());
+                            tokenTransferLists.stream().forEach(tokenTransferList -> {
+                                Assertions.assertEquals(
+                                        1,
+                                        tokenTransferList.getNftTransfersList().size());
+                                tokenTransferList.getNftTransfersList().stream().forEach(nftTransfers -> {
+                                    Assertions.assertEquals(
+                                            AccountID.getDefaultInstance(), nftTransfers.getSenderAccountID());
+                                    Assertions.assertEquals(
+                                            TxnUtils.asId(TOKEN_TREASURY, spec), nftTransfers.getReceiverAccountID());
+                                    Assertions.assertEquals(1L, nftTransfers.getSerialNumber());
+                                });
+                            });
+                        }),
                         getTxnRecord("mintTransferTxn").logged(),
                         getReceipt("mintTransferTxn").logged());
     }
@@ -904,13 +823,9 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .supplyType(TokenSupplyType.INFINITE)
                                 .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY))
-                .when(
-                        tokenAssociate("acc", NFT),
-                        mintToken(NFT, List.of(metadata("memo1"), metadata("memo2"))))
+                .when(tokenAssociate("acc", NFT), mintToken(NFT, List.of(metadata("memo1"), metadata("memo2"))))
                 .then(
-                        cryptoTransfer(
-                                TokenMovement.movingUnique(NFT, 1, 2)
-                                        .between(TOKEN_TREASURY, "acc")),
+                        cryptoTransfer(TokenMovement.movingUnique(NFT, 1, 2).between(TOKEN_TREASURY, "acc")),
                         tokenDissociate("acc", NFT).hasKnownStatus(ACCOUNT_STILL_OWNS_NFTS));
     }
 

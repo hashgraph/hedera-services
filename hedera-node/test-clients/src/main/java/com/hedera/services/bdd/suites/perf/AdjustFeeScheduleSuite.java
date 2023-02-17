@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -50,8 +51,7 @@ public class AdjustFeeScheduleSuite extends HapiSuite {
     private HapiSpec updateFeesFor() {
         final var fixedFee = ONE_HUNDRED_HBARS;
         return customHapiSpec("updateFees")
-                .withProperties(
-                        Map.of("fees.useFixedOffer", "true", "fees.fixedOffer", "" + fixedFee))
+                .withProperties(Map.of("fees.useFixedOffer", "true", "fees.fixedOffer", "" + fixedFee))
                 .given()
                 .when()
                 .then(

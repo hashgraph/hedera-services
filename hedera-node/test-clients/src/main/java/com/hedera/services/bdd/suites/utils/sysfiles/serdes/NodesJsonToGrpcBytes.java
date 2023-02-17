@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.utils.sysfiles.serdes;
 
 import static com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo.nodeDetailsFrom;
@@ -43,9 +44,7 @@ public class NodesJsonToGrpcBytes implements SysFileSerde<String> {
         try {
             var pojoBook = mapper.readValue(styledFile, AddressBookPojo.class);
             NodeAddressBook.Builder addressBook = NodeAddressBook.newBuilder();
-            pojoBook.getEntries().stream()
-                    .flatMap(BookEntryPojo::toGrpcStream)
-                    .forEach(addressBook::addNodeAddress);
+            pojoBook.getEntries().stream().flatMap(BookEntryPojo::toGrpcStream).forEach(addressBook::addNodeAddress);
             return addressBook.build().toByteArray();
         } catch (IOException ex) {
             throw new IllegalArgumentException("Not a Node Details file!", ex);

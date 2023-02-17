@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl.sigs;
 
 import static org.mockito.ArgumentCaptor.forClass;
@@ -47,13 +48,26 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TokenCreateReqsTest {
-    @Mock private MessageFrame frame;
-    @Mock private LegacyKeyValidator legacyKeyValidator;
-    @Mock private ContractAliases aliases;
-    @Mock private EvmSigsVerifier sigsVerifier;
-    @Mock private WorldLedgers ledgers;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
-    @Mock private LegacyActivationTest legacyActivationTest;
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private LegacyKeyValidator legacyKeyValidator;
+
+    @Mock
+    private ContractAliases aliases;
+
+    @Mock
+    private EvmSigsVerifier sigsVerifier;
+
+    @Mock
+    private WorldLedgers ledgers;
+
+    @Mock
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
+
+    @Mock
+    private LegacyActivationTest legacyActivationTest;
 
     private TokenCreateReqs subject;
 
@@ -75,28 +89,13 @@ class TokenCreateReqsTest {
         subject.assertNonAdminOrTreasurySigs(op.build());
 
         verify(legacyKeyValidator)
-                .validateKey(
-                        eq(frame),
-                        eq(autoRenewMirrorAddress),
-                        captor.capture(),
-                        eq(ledgers),
-                        eq(aliases));
+                .validateKey(eq(frame), eq(autoRenewMirrorAddress), captor.capture(), eq(ledgers), eq(aliases));
         // and when:
         final var tests = captor.getAllValues();
-        tests.get(0)
-                .apply(
-                        false,
-                        autoRenewMirrorAddress,
-                        pretendActiveContract,
-                        ledgers,
-                        legacyActivationTest);
+        tests.get(0).apply(false, autoRenewMirrorAddress, pretendActiveContract, ledgers, legacyActivationTest);
         verify(sigsVerifier)
                 .hasLegacyActiveKey(
-                        false,
-                        autoRenewMirrorAddress,
-                        pretendActiveContract,
-                        ledgers,
-                        legacyActivationTest);
+                        false, autoRenewMirrorAddress, pretendActiveContract, ledgers, legacyActivationTest);
     }
 
     @Test
@@ -107,37 +106,20 @@ class TokenCreateReqsTest {
         given(ledgers.accounts()).willReturn(accounts);
         given(accounts.exists(aCollector)).willReturn(true);
 
-        final var op =
-                baseCreateOp()
-                        .addCustomFees(aFractionalFee(aCollector))
-                        .addCustomFees(anOtherDenominatedFixedFee(bCollector));
+        final var op = baseCreateOp()
+                .addCustomFees(aFractionalFee(aCollector))
+                .addCustomFees(anOtherDenominatedFixedFee(bCollector));
 
         subject.assertNonAdminOrTreasurySigs(op.build());
 
         verify(legacyKeyValidator)
-                .validateKey(
-                        eq(frame),
-                        eq(aCollectorAddress),
-                        captor.capture(),
-                        eq(ledgers),
-                        eq(aliases));
+                .validateKey(eq(frame), eq(aCollectorAddress), captor.capture(), eq(ledgers), eq(aliases));
         verifyNoMoreInteractions(legacyKeyValidator);
         // and when:
         final var tests = captor.getAllValues();
-        tests.get(0)
-                .apply(
-                        false,
-                        aCollectorAddress,
-                        pretendActiveContract,
-                        ledgers,
-                        legacyActivationTest);
+        tests.get(0).apply(false, aCollectorAddress, pretendActiveContract, ledgers, legacyActivationTest);
         verify(sigsVerifier)
-                .hasLegacyActiveKey(
-                        false,
-                        aCollectorAddress,
-                        pretendActiveContract,
-                        ledgers,
-                        legacyActivationTest);
+                .hasLegacyActiveKey(false, aCollectorAddress, pretendActiveContract, ledgers, legacyActivationTest);
     }
 
     @Test
@@ -148,37 +130,20 @@ class TokenCreateReqsTest {
         given(ledgers.accounts()).willReturn(accounts);
         given(accounts.exists(aCollector)).willReturn(true);
 
-        final var op =
-                baseCreateOp()
-                        .addCustomFees(aSelfDenominatedFixedFee(aCollector))
-                        .addCustomFees(aRoyaltyWithOtherDenominatedFallback(bCollector));
+        final var op = baseCreateOp()
+                .addCustomFees(aSelfDenominatedFixedFee(aCollector))
+                .addCustomFees(aRoyaltyWithOtherDenominatedFallback(bCollector));
 
         subject.assertNonAdminOrTreasurySigs(op.build());
 
         verify(legacyKeyValidator)
-                .validateKey(
-                        eq(frame),
-                        eq(aCollectorAddress),
-                        captor.capture(),
-                        eq(ledgers),
-                        eq(aliases));
+                .validateKey(eq(frame), eq(aCollectorAddress), captor.capture(), eq(ledgers), eq(aliases));
         verifyNoMoreInteractions(legacyKeyValidator);
         // and when:
         final var tests = captor.getAllValues();
-        tests.get(0)
-                .apply(
-                        false,
-                        aCollectorAddress,
-                        pretendActiveContract,
-                        ledgers,
-                        legacyActivationTest);
+        tests.get(0).apply(false, aCollectorAddress, pretendActiveContract, ledgers, legacyActivationTest);
         verify(sigsVerifier)
-                .hasLegacyActiveKey(
-                        false,
-                        aCollectorAddress,
-                        pretendActiveContract,
-                        ledgers,
-                        legacyActivationTest);
+                .hasLegacyActiveKey(false, aCollectorAddress, pretendActiveContract, ledgers, legacyActivationTest);
     }
 
     @Test
@@ -189,37 +154,20 @@ class TokenCreateReqsTest {
         given(ledgers.accounts()).willReturn(accounts);
         given(accounts.exists(aCollector)).willReturn(true);
 
-        final var op =
-                baseCreateOp()
-                        .addCustomFees(aRoyaltyWithSelfDenominatedFallback(aCollector))
-                        .addCustomFees(aRoyaltyWithNoFallback(bCollector));
+        final var op = baseCreateOp()
+                .addCustomFees(aRoyaltyWithSelfDenominatedFallback(aCollector))
+                .addCustomFees(aRoyaltyWithNoFallback(bCollector));
 
         subject.assertNonAdminOrTreasurySigs(op.build());
 
         verify(legacyKeyValidator)
-                .validateKey(
-                        eq(frame),
-                        eq(aCollectorAddress),
-                        captor.capture(),
-                        eq(ledgers),
-                        eq(aliases));
+                .validateKey(eq(frame), eq(aCollectorAddress), captor.capture(), eq(ledgers), eq(aliases));
         verifyNoMoreInteractions(legacyKeyValidator);
         // and when:
         final var tests = captor.getAllValues();
-        tests.get(0)
-                .apply(
-                        false,
-                        aCollectorAddress,
-                        pretendActiveContract,
-                        ledgers,
-                        legacyActivationTest);
+        tests.get(0).apply(false, aCollectorAddress, pretendActiveContract, ledgers, legacyActivationTest);
         verify(sigsVerifier)
-                .hasLegacyActiveKey(
-                        false,
-                        aCollectorAddress,
-                        pretendActiveContract,
-                        ledgers,
-                        legacyActivationTest);
+                .hasLegacyActiveKey(false, aCollectorAddress, pretendActiveContract, ledgers, legacyActivationTest);
     }
 
     private TokenCreateTransactionBody.Builder baseCreateOp() {
@@ -227,23 +175,18 @@ class TokenCreateReqsTest {
     }
 
     private CustomFee aFractionalFee(final AccountID collector) {
-        return FcCustomFee.fractionalFee(
-                        1, 10, 0, 0, false, EntityId.fromGrpcAccountId(collector), true)
+        return FcCustomFee.fractionalFee(1, 10, 0, 0, false, EntityId.fromGrpcAccountId(collector), true)
                 .asGrpc();
     }
 
     private CustomFee aSelfDenominatedFixedFee(final AccountID collector) {
-        return FcCustomFee.fixedFee(
-                        1, EntityId.MISSING_ENTITY_ID, EntityId.fromGrpcAccountId(collector), true)
+        return FcCustomFee.fixedFee(1, EntityId.MISSING_ENTITY_ID, EntityId.fromGrpcAccountId(collector), true)
                 .asGrpc();
     }
 
     private CustomFee anOtherDenominatedFixedFee(final AccountID collector) {
         return FcCustomFee.fixedFee(
-                        1,
-                        EntityId.fromGrpcTokenId(denomination),
-                        EntityId.fromGrpcAccountId(collector),
-                        true)
+                        1, EntityId.fromGrpcTokenId(denomination), EntityId.fromGrpcAccountId(collector), true)
                 .asGrpc();
     }
 
@@ -264,11 +207,7 @@ class TokenCreateReqsTest {
         return FcCustomFee.royaltyFee(
                         1,
                         10,
-                        FcCustomFee.fixedFee(
-                                        1,
-                                        EntityId.fromGrpcTokenId(denomination),
-                                        collectorId,
-                                        true)
+                        FcCustomFee.fixedFee(1, EntityId.fromGrpcTokenId(denomination), collectorId, true)
                                 .getFixedFeeSpec(),
                         collectorId,
                         true)
@@ -280,12 +219,17 @@ class TokenCreateReqsTest {
         return FcCustomFee.royaltyFee(1, 10, null, collectorId, true).asGrpc();
     }
 
-    private static final AccountID autoRenew = AccountID.newBuilder().setAccountNum(7777).build();
+    private static final AccountID autoRenew =
+            AccountID.newBuilder().setAccountNum(7777).build();
     private static final Address autoRenewMirrorAddress =
             Id.fromGrpcAccount(autoRenew).asEvmAddress();
     private static final Address pretendActiveContract = Address.BLAKE2B_F_COMPRESSION;
-    private static final AccountID aCollector = AccountID.newBuilder().setAccountNum(8888).build();
-    private static final AccountID bCollector = AccountID.newBuilder().setAccountNum(9999).build();
-    private static final TokenID denomination = TokenID.newBuilder().setTokenNum(9999).build();
-    private static final Address aCollectorAddress = Id.fromGrpcAccount(aCollector).asEvmAddress();
+    private static final AccountID aCollector =
+            AccountID.newBuilder().setAccountNum(8888).build();
+    private static final AccountID bCollector =
+            AccountID.newBuilder().setAccountNum(9999).build();
+    private static final TokenID denomination =
+            TokenID.newBuilder().setTokenNum(9999).build();
+    private static final Address aCollectorAddress =
+            Id.fromGrpcAccount(aCollector).asEvmAddress();
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.contracts.operations;
 
 /*
@@ -70,8 +71,7 @@ public class HederaExtCodeHashOperation extends ExtCodeHashOperation {
         try {
             final Address address = Words.toAddress(frame.popStackItem());
             if (!addressValidator.test(address, frame)) {
-                return new OperationResult(
-                        cost(true), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
+                return new OperationResult(cost(true), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
             }
             final var account = frame.getWorldUpdater().get(address);
             boolean accountIsWarm =

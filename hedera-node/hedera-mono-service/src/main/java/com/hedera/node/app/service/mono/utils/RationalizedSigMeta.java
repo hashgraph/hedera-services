@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.INVALID_MISSING_SIG;
@@ -65,8 +66,7 @@ import org.hyperledger.besu.datatypes.Hash;
 public class RationalizedSigMeta {
     private static final Logger log = LogManager.getLogger(RationalizedSigMeta.class);
     private static final RationalizedSigMeta NONE_AVAIL = new RationalizedSigMeta();
-    private static final ExpandHandleSpanMapAccessor SPAN_MAP_ACCESSOR =
-            new ExpandHandleSpanMapAccessor();
+    private static final ExpandHandleSpanMapAccessor SPAN_MAP_ACCESSOR = new ExpandHandleSpanMapAccessor();
     private final List<JKey> othersReqSigs;
     private final List<TransactionSignature> rationalizedSigs;
     private JKey payerReqSig;
@@ -98,9 +98,7 @@ public class RationalizedSigMeta {
     }
 
     public static RationalizedSigMeta forPayerOnly(
-            final JKey payerReqSig,
-            final List<TransactionSignature> rationalizedSigs,
-            final TxnAccessor accessor) {
+            final JKey payerReqSig, final List<TransactionSignature> rationalizedSigs, final TxnAccessor accessor) {
         return forPayerAndOthers(payerReqSig, null, rationalizedSigs, accessor);
     }
 
@@ -113,18 +111,16 @@ public class RationalizedSigMeta {
         final var explicitVerifiedSigsFn = pkToSigMapFrom(rationalizedSigs);
         var verifiedSigsFn = explicitVerifiedSigsFn;
         if (accessor.getFunction() == EthereumTransaction) {
-            verifiedSigsFn =
-                    publicKey -> {
-                        final var ethTxSigs = SPAN_MAP_ACCESSOR.getEthTxSigsMeta(accessor);
-                        if (ethTxSigs != null && Arrays.equals(publicKey, ethTxSigs.publicKey())) {
-                            return VALID_IMPLICIT_SIG;
-                        } else {
-                            return explicitVerifiedSigsFn.apply(publicKey);
-                        }
-                    };
+            verifiedSigsFn = publicKey -> {
+                final var ethTxSigs = SPAN_MAP_ACCESSOR.getEthTxSigsMeta(accessor);
+                if (ethTxSigs != null && Arrays.equals(publicKey, ethTxSigs.publicKey())) {
+                    return VALID_IMPLICIT_SIG;
+                } else {
+                    return explicitVerifiedSigsFn.apply(publicKey);
+                }
+            };
         }
-        return new RationalizedSigMeta(
-                payerReqSig, othersReqSigs, rationalizedSigs, verifiedSigsFn);
+        return new RationalizedSigMeta(payerReqSig, othersReqSigs, rationalizedSigs, verifiedSigsFn);
     }
 
     /**
@@ -135,15 +131,11 @@ public class RationalizedSigMeta {
      */
     public void revokeCryptoSigsFrom(final JKey key) {
         final Set<BytesKey> revokedKeys = new HashSet<>();
-        visitSimpleKeys(
-                key, publicKey -> revokedKeys.add(new BytesKey(publicKey.primitiveKeyIfPresent())));
+        visitSimpleKeys(key, publicKey -> revokedKeys.add(new BytesKey(publicKey.primitiveKeyIfPresent())));
 
         final var wrappedFn = pkToVerifiedSigFn;
-        pkToVerifiedSigFn =
-                publicKey ->
-                        revokedKeys.contains(new BytesKey(publicKey))
-                                ? INVALID_MISSING_SIG
-                                : wrappedFn.apply(publicKey);
+        pkToVerifiedSigFn = publicKey ->
+                revokedKeys.contains(new BytesKey(publicKey)) ? INVALID_MISSING_SIG : wrappedFn.apply(publicKey);
     }
 
     public void replacePayerHollowKeyIfNeeded() {
@@ -167,9 +159,7 @@ public class RationalizedSigMeta {
                     publicKeyHashed.length - 20,
                     publicKeyHashed.length)) {
 
-                payerReqSig =
-                        new JECDSASecp256k1Key(
-                                MiscCryptoUtils.compressSecp256k1(sig.getExpandedPublicKey()));
+                payerReqSig = new JECDSASecp256k1Key(MiscCryptoUtils.compressSecp256k1(sig.getExpandedPublicKey()));
                 replacedHollowKey = true;
             }
         }
@@ -192,16 +182,14 @@ public class RationalizedSigMeta {
 
     public JKey payerKey() {
         if (payerReqSig == null) {
-            throw new IllegalStateException(
-                    "Payer required signing keys could not be rationalized");
+            throw new IllegalStateException("Payer required signing keys could not be rationalized");
         }
         return payerReqSig;
     }
 
     public List<JKey> othersReqSigs() {
         if (othersReqSigs == null) {
-            throw new IllegalStateException(
-                    "Other-party required signing keys could not be rationalized");
+            throw new IllegalStateException("Other-party required signing keys could not be rationalized");
         }
         return othersReqSigs;
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
@@ -32,8 +33,7 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class BalanceOfPrecompile extends AbstractReadOnlyPrecompile
-        implements EvmBalanceOfPrecompile {
+public class BalanceOfPrecompile extends AbstractReadOnlyPrecompile implements EvmBalanceOfPrecompile {
 
     private BalanceOfWrapper<AccountID> balanceWrapper;
 
@@ -48,8 +48,7 @@ public class BalanceOfPrecompile extends AbstractReadOnlyPrecompile
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var nestedInput = input.slice(24);
         balanceWrapper = decodeBalanceOf(nestedInput, aliasResolver);
         return super.body(input, aliasResolver);
@@ -57,8 +56,7 @@ public class BalanceOfPrecompile extends AbstractReadOnlyPrecompile
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        Objects.requireNonNull(
-                balanceWrapper, "`body` method should be called before `getSuccessResultsFor`");
+        Objects.requireNonNull(balanceWrapper, "`body` method should be called before `getSuccessResultsFor`");
 
         final var balance = ledgers.balanceOf(balanceWrapper.account(), tokenId);
         return evmEncoder.encodeBalance(balance);

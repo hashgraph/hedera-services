@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
@@ -85,11 +86,10 @@ public class RawTokenRelationship {
                 .setBalance(balance)
                 .setDecimals(token.decimals())
                 .setSymbol(token.symbol())
-                .setTokenId(
-                        TokenID.newBuilder()
-                                .setShardNum(shardNum)
-                                .setRealmNum(realmNum)
-                                .setTokenNum(tokenNum))
+                .setTokenId(TokenID.newBuilder()
+                        .setShardNum(shardNum)
+                        .setRealmNum(realmNum)
+                        .setTokenNum(tokenNum))
                 .setFreezeStatus(freezeStatusFor(token))
                 .setKycStatus(kycStatusFor(token))
                 .setAutomaticAssociation(automaticAssociation)

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.domain.trackers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -37,20 +38,12 @@ public class ConsensusStatusCounts {
     }
 
     public String asJson() {
-        var asList =
-                counts.entrySet().stream()
-                        .flatMap(
-                                entries ->
-                                        entries.getValue().entrySet().stream()
-                                                .map(
-                                                        entry ->
-                                                                Map.of(
-                                                                        String.format(
-                                                                                "%s:%s",
-                                                                                entries.getKey(),
-                                                                                entry.getKey()),
-                                                                        entry.getValue().get())))
-                        .toList();
+        var asList = counts.entrySet().stream()
+                .flatMap(entries -> entries.getValue().entrySet().stream()
+                        .map(entry -> Map.of(
+                                String.format("%s:%s", entries.getKey(), entry.getKey()),
+                                entry.getValue().get())))
+                .toList();
         try {
             return om.writerWithDefaultPrettyPrinter().writeValueAsString(asList);
         } catch (JsonProcessingException unlikely) {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.crypto;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -63,57 +64,51 @@ public class SimpleXfersAvoidingHotspot extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    runSimpleXfers(),
-                });
+        return List.of(new HapiSpec[] {
+            runSimpleXfers(),
+        });
     }
 
     private HapiSpec runSimpleXfers() {
         return HapiSpec.customHapiSpec("RunTokenTransfers")
-                .withProperties(
-                        Map.of(
-                                //				"default.keyAlgorithm", "SECP256K1"
-                                "default.keyAlgorithm", "ED25519"))
+                .withProperties(Map.of(
+                        //				"default.keyAlgorithm", "SECP256K1"
+                        "default.keyAlgorithm", "ED25519"))
                 .given()
                 .when()
-                .then(
-                        runWithProvider(avoidantXfersFactory())
-                                .lasting(duration::get, unit::get)
-                                .maxOpsPerSec(maxOpsPerSec::get));
+                .then(runWithProvider(avoidantXfersFactory())
+                        .lasting(duration::get, unit::get)
+                        .maxOpsPerSec(maxOpsPerSec::get));
     }
 
     private Function<HapiSpec, OpProvider> avoidantXfersFactory() {
         final var nextSender = new AtomicInteger();
         final IntFunction<String> nameFn = i -> "account" + i;
 
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        return List.of(
-                                inParallel(
-                                        IntStream.range(0, NUM_ACCOUNTS)
-                                                .mapToObj(i -> uniqueCreation(nameFn.apply(i)))
-                                                .toArray(HapiSpecOperation[]::new)),
-                                sleepFor(10_000L));
-                    }
+        return spec -> new OpProvider() {
+            @Override
+            public List<HapiSpecOperation> suggestedInitializers() {
+                return List.of(
+                        inParallel(IntStream.range(0, NUM_ACCOUNTS)
+                                .mapToObj(i -> uniqueCreation(nameFn.apply(i)))
+                                .toArray(HapiSpecOperation[]::new)),
+                        sleepFor(10_000L));
+            }
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        final int sender = nextSender.getAndUpdate(i -> (i + 1) % NUM_ACCOUNTS);
-                        final int receiver = (sender + 1) % NUM_ACCOUNTS;
-                        final var from = nameFn.apply(sender);
-                        final var to = nameFn.apply(receiver);
-                        final var op =
-                                cryptoTransfer(tinyBarsFromTo(from, to, 1))
-                                        .payingWith(from)
-                                        .hasKnownStatusFrom(ACCEPTED_STATUSES)
-                                        .deferStatusResolution()
-                                        .noLogging();
-                        return Optional.of(op);
-                    }
-                };
+            @Override
+            public Optional<HapiSpecOperation> get() {
+                final int sender = nextSender.getAndUpdate(i -> (i + 1) % NUM_ACCOUNTS);
+                final int receiver = (sender + 1) % NUM_ACCOUNTS;
+                final var from = nameFn.apply(sender);
+                final var to = nameFn.apply(receiver);
+                final var op = cryptoTransfer(tinyBarsFromTo(from, to, 1))
+                        .payingWith(from)
+                        .hasKnownStatusFrom(ACCEPTED_STATUSES)
+                        .deferStatusResolution()
+                        .noLogging();
+                return Optional.of(op);
+            }
+        };
     }
 
     static HapiSpecOperation uniqueQuietCreation(final String name) {
@@ -124,27 +119,24 @@ public class SimpleXfersAvoidingHotspot extends HapiSuite {
         return internalUniqueCreation(name, true);
     }
 
-    private static HapiSpecOperation internalUniqueCreation(
-            final String name, final boolean verbose) {
-        return withOpContext(
-                (spec, opLog) -> {
-                    while (true) {
-                        try {
-                            final var attempt =
-                                    cryptoCreate(name)
-                                            .payingWith(GENESIS)
-                                            .ensuringResolvedStatusIsntFromDuplicate()
-                                            .balance(ONE_HUNDRED_HBARS * 10_000);
-                            if (!verbose) {
-                                attempt.noLogging();
-                            }
-                            allRunFor(spec, attempt);
-                            return;
-                        } catch (IllegalStateException ignore) {
-                            /* Collision with another client also using the treasury as its payer */
-                        }
+    private static HapiSpecOperation internalUniqueCreation(final String name, final boolean verbose) {
+        return withOpContext((spec, opLog) -> {
+            while (true) {
+                try {
+                    final var attempt = cryptoCreate(name)
+                            .payingWith(GENESIS)
+                            .ensuringResolvedStatusIsntFromDuplicate()
+                            .balance(ONE_HUNDRED_HBARS * 10_000);
+                    if (!verbose) {
+                        attempt.noLogging();
                     }
-                });
+                    allRunFor(spec, attempt);
+                    return;
+                } catch (IllegalStateException ignore) {
+                    /* Collision with another client also using the treasury as its payer */
+                }
+            }
+        });
     }
 
     private static final ResponseCodeEnum[] ACCEPTED_STATUSES = {

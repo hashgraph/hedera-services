@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops.checks;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
@@ -28,14 +29,12 @@ import org.junit.jupiter.api.Assertions;
 public class VerifyGetTokenNftInfosNotSupported extends UtilOp {
     @Override
     protected boolean submitOp(HapiSpec spec) throws Throwable {
-        TokenGetNftInfosQuery.Builder op =
-                TokenGetNftInfosQuery.newBuilder().setTokenID(asToken("0.0.1001"));
+        TokenGetNftInfosQuery.Builder op = TokenGetNftInfosQuery.newBuilder().setTokenID(asToken("0.0.1001"));
         Query query = Query.newBuilder().setTokenGetNftInfos(op).build();
         Response response =
                 spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getTokenNftInfos(query);
         Assertions.assertEquals(
-                NOT_SUPPORTED,
-                response.getTokenGetNftInfos().getHeader().getNodeTransactionPrecheckCode());
+                NOT_SUPPORTED, response.getTokenGetNftInfos().getHeader().getNodeTransactionPrecheckCode());
         return false;
     }
 }

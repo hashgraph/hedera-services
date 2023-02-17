@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
@@ -48,8 +49,7 @@ public class JECDSASecp256k1Key extends JKey {
         if (secp256k1Key.getECDSASecp256K1().size() != ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
             return false;
         }
-        final var parityByte =
-                ByteStringUtils.unwrapUnsafelyIfPossible(secp256k1Key.getECDSASecp256K1())[0];
+        final var parityByte = ByteStringUtils.unwrapUnsafelyIfPossible(secp256k1Key.getECDSASecp256K1())[0];
         return parityByte == ODD_PARITY || parityByte == EVEN_PARITY;
     }
 
@@ -60,9 +60,7 @@ public class JECDSASecp256k1Key extends JKey {
 
     @Override
     public String toString() {
-        return "<JECDSASecp256k1Key: ecdsaSecp256k1Key hex="
-                + CommonUtils.hex(ecdsaSecp256k1Key)
-                + ">";
+        return "<JECDSASecp256k1Key: ecdsaSecp256k1Key hex=" + CommonUtils.hex(ecdsaSecp256k1Key) + ">";
     }
 
     @Override

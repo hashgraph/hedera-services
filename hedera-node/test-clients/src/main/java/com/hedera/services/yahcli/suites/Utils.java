@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.suites;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
@@ -73,45 +74,38 @@ public class Utils {
         INVALID
     }
 
-    private static final Map<String, ServiceType> SERVICES_TO_ENUM =
-            Map.ofEntries(
-                    Map.entry("crypto", ServiceType.CRYPTO),
-                    Map.entry("consensus", ServiceType.CONSENSUS),
-                    Map.entry("token", ServiceType.TOKEN),
-                    Map.entry("file", ServiceType.FILE),
-                    Map.entry("contract", ServiceType.CONTRACT),
-                    Map.entry("scheduled", ServiceType.SCHEDULED));
-    private static final Set<ServiceType> VALID_SERVICE_TYPES =
-            new HashSet<>(SERVICES_TO_ENUM.values());
+    private static final Map<String, ServiceType> SERVICES_TO_ENUM = Map.ofEntries(
+            Map.entry("crypto", ServiceType.CRYPTO),
+            Map.entry("consensus", ServiceType.CONSENSUS),
+            Map.entry("token", ServiceType.TOKEN),
+            Map.entry("file", ServiceType.FILE),
+            Map.entry("contract", ServiceType.CONTRACT),
+            Map.entry("scheduled", ServiceType.SCHEDULED));
+    private static final Set<ServiceType> VALID_SERVICE_TYPES = new HashSet<>(SERVICES_TO_ENUM.values());
 
-    private static final Map<String, Long> NAMES_TO_NUMBERS =
-            Map.ofEntries(
-                    Map.entry("address-book", 101L),
-                    Map.entry("addressBook.json", 101L),
-                    Map.entry("node-details", 102L),
-                    Map.entry("nodeDetails.json", 102L),
-                    Map.entry("rates", 112L),
-                    Map.entry("exchangeRates.json", 112L),
-                    Map.entry("fees", 111L),
-                    Map.entry("feeSchedules.json", 111L),
-                    Map.entry("props", 121L),
-                    Map.entry("application.properties", 121L),
-                    Map.entry("permissions", 122L),
-                    Map.entry("api-permission.properties", 122L),
-                    Map.entry("throttles", 123L),
-                    Map.entry("throttles.json", 123L),
-                    Map.entry("software-zip", 150L),
-                    Map.entry("telemetry-zip", 159L));
-    private static final Map<FileID, String> IDS_TO_NAMES =
-            NAMES_TO_NUMBERS.entrySet().stream()
-                    .filter(entry -> !entry.getKey().contains("."))
-                    .collect(
-                            Collectors.toMap(
-                                    (Map.Entry<String, Long> entry) ->
-                                            FileID.newBuilder()
-                                                    .setFileNum(entry.getValue())
-                                                    .build(),
-                                    Map.Entry::getKey));
+    private static final Map<String, Long> NAMES_TO_NUMBERS = Map.ofEntries(
+            Map.entry("address-book", 101L),
+            Map.entry("addressBook.json", 101L),
+            Map.entry("node-details", 102L),
+            Map.entry("nodeDetails.json", 102L),
+            Map.entry("rates", 112L),
+            Map.entry("exchangeRates.json", 112L),
+            Map.entry("fees", 111L),
+            Map.entry("feeSchedules.json", 111L),
+            Map.entry("props", 121L),
+            Map.entry("application.properties", 121L),
+            Map.entry("permissions", 122L),
+            Map.entry("api-permission.properties", 122L),
+            Map.entry("throttles", 123L),
+            Map.entry("throttles.json", 123L),
+            Map.entry("software-zip", 150L),
+            Map.entry("telemetry-zip", 159L));
+    private static final Map<FileID, String> IDS_TO_NAMES = NAMES_TO_NUMBERS.entrySet().stream()
+            .filter(entry -> !entry.getKey().contains("."))
+            .collect(Collectors.toMap(
+                    (Map.Entry<String, Long> entry) ->
+                            FileID.newBuilder().setFileNum(entry.getValue()).build(),
+                    Map.Entry::getKey));
 
     private static final Set<Long> VALID_NUMBERS = new HashSet<>(NAMES_TO_NUMBERS.values());
 
@@ -125,12 +119,11 @@ public class Utils {
         }
         return Arrays.stream(services)
                 .map(s -> SERVICES_TO_ENUM.getOrDefault(s, ServiceType.INVALID))
-                .peek(
-                        s -> {
-                            if (!VALID_SERVICE_TYPES.contains(s)) {
-                                throw new IllegalArgumentException("Invalid ServiceType provided!");
-                            }
-                        })
+                .peek(s -> {
+                    if (!VALID_SERVICE_TYPES.contains(s)) {
+                        throw new IllegalArgumentException("Invalid ServiceType provided!");
+                    }
+                })
                 .collect(Collectors.toCollection(() -> EnumSet.noneOf(ServiceType.class)));
     }
 
@@ -154,13 +147,11 @@ public class Utils {
 
         return Arrays.stream(sysfiles)
                 .map(Utils::getFileId)
-                .peek(
-                        num -> {
-                            if (!VALID_NUMBERS.contains(num)) {
-                                throw new IllegalArgumentException(
-                                        "No such system file '" + num + "'!");
-                            }
-                        })
+                .peek(num -> {
+                    if (!VALID_NUMBERS.contains(num)) {
+                        throw new IllegalArgumentException("No such system file '" + num + "'!");
+                    }
+                })
                 .mapToLong(l -> l)
                 .toArray();
     }

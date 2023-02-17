@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.serde;
 
 import static com.hedera.test.serde.SerializedForms.assertSameSerialization;
@@ -161,8 +162,7 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
         final var serializedForm = getSerializedForm(version, testCaseNo);
         final var expectedObject = getExpectedObject(version, testCaseNo);
 
-        final T actualObject =
-                deserializeFromBytes(() -> instantiate(getType()), version, serializedForm);
+        final T actualObject = deserializeFromBytes(() -> instantiate(getType()), version, serializedForm);
 
         customAssertEquals()
                 .ifPresentOrElse(
@@ -179,9 +179,7 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
     @ParameterizedTest
     @ArgumentsSource(GettersAndSettersArgumentsProvider.class)
     void gettersAndSettersWork(
-            final Object mutableSubject,
-            @Nullable final Method getter,
-            @Nullable final Method setter) {
+            final Object mutableSubject, @Nullable final Method getter, @Nullable final Method setter) {
         if (getter == null || setter == null) {
             return;
         }
@@ -192,14 +190,7 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
             assertEquals(
                     param,
                     result,
-                    "Set "
-                            + param
-                            + " via "
-                            + setter.getName()
-                            + " but got "
-                            + result
-                            + " via "
-                            + getter.getName());
+                    "Set " + param + " via " + setter.getName() + " but got " + result + " via " + getter.getName());
         } catch (final IllegalAccessException | InvocationTargetException fatal) {
             throw new RuntimeException(fatal);
         }
@@ -215,8 +206,7 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
         @Override
         public Stream<? extends Arguments> provideArguments(final ExtensionContext context) {
             final var testType = context.getRequiredTestClass();
-            final var ref =
-                    (SelfSerializableDataTest<? extends SelfSerializable>) instantiate(testType);
+            final var ref = (SelfSerializableDataTest<? extends SelfSerializable>) instantiate(testType);
             return allTestCasesFrom(ref).stream();
         }
     }
@@ -225,8 +215,7 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
         @Override
         public Stream<? extends Arguments> provideArguments(final ExtensionContext context) {
             final var testType = context.getRequiredTestClass();
-            final var ref =
-                    (SelfSerializableDataTest<? extends SelfSerializable>) instantiate(testType);
+            final var ref = (SelfSerializableDataTest<? extends SelfSerializable>) instantiate(testType);
             return currentTestCasesFrom(ref).stream();
         }
     }
@@ -235,8 +224,7 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
         @Override
         public Stream<? extends Arguments> provideArguments(final ExtensionContext context) {
             final var testType = context.getRequiredTestClass();
-            final var ref =
-                    (SelfSerializableDataTest<? extends SelfSerializable>) instantiate(testType);
+            final var ref = (SelfSerializableDataTest<? extends SelfSerializable>) instantiate(testType);
             final var subjectType = ref.getType();
             return getterSetterTestCasesFor(subjectType);
         }
@@ -292,14 +280,13 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
         for (int i = minVersion; i <= version; i++) {
             final var testCasesForVersion = refTest.getNumTestCasesFor(i);
             if (testCasesForVersion < MIN_TEST_CASES_PER_VERSION) {
-                throw new IllegalStateException(
-                        "Only "
-                                + testCasesForVersion
-                                + " registered test cases for supported version "
-                                + i
-                                + "( at least "
-                                + MIN_TEST_CASES_PER_VERSION
-                                + " required)");
+                throw new IllegalStateException("Only "
+                        + testCasesForVersion
+                        + " registered test cases for supported version "
+                        + i
+                        + "( at least "
+                        + MIN_TEST_CASES_PER_VERSION
+                        + " required)");
             }
             for (int j = 0; j < testCasesForVersion; j++) {
                 argumentsList.add(Arguments.of(i, j));
@@ -312,11 +299,8 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
         try {
             final var cons = noArgConstructorFor(type);
             return cons.newInstance();
-        } catch (final InvocationTargetException
-                | InstantiationException
-                | IllegalAccessException e) {
-            throw new IllegalStateException(
-                    "Could not instantiate " + type.getName() + " (is it a public class?)", e);
+        } catch (final InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            throw new IllegalStateException("Could not instantiate " + type.getName() + " (is it a public class?)", e);
         }
     }
 
@@ -324,8 +308,7 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
         try {
             return type.getConstructor();
         } catch (final NoSuchMethodException e) {
-            throw new IllegalStateException(
-                    "No zero-args constructor available for " + type.getName(), e);
+            throw new IllegalStateException("No zero-args constructor available for " + type.getName(), e);
         }
     }
 

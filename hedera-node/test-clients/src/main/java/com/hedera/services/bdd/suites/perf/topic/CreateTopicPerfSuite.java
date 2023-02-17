@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.topic;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -64,13 +65,11 @@ public class CreateTopicPerfSuite extends HapiSuite {
                                 // only ask for record for the last transaction
                                 asOpArray(
                                         NUM_TOPICS,
-                                        i ->
-                                                (i == (NUM_TOPICS - 1))
-                                                        ? createTopic("testTopic" + i)
-                                                                .submitKeyShape(submitKeyShape)
-                                                        : createTopic("testTopic" + i)
-                                                                .submitKeyShape(submitKeyShape)
-                                                                .deferStatusResolution())))
+                                        i -> (i == (NUM_TOPICS - 1))
+                                                ? createTopic("testTopic" + i).submitKeyShape(submitKeyShape)
+                                                : createTopic("testTopic" + i)
+                                                        .submitKeyShape(submitKeyShape)
+                                                        .deferStatusResolution())))
                 .then(
                         // wait until the record of the last transaction are ready
                         finishThroughputObs("createTopicThroughput")

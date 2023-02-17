@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -56,14 +57,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final AliasManager aliasManager,
             final InHandleBlockMetaSource blockMetaSource) {
-        super(
-                worldState,
-                livePricesSource,
-                dynamicProperties,
-                gasCalculator,
-                mcps,
-                ccps,
-                blockMetaSource);
+        super(worldState, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
     }
@@ -126,19 +120,13 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 
     @Override
     protected MessageFrame buildInitialFrame(
-            final MessageFrame.Builder baseInitialFrame,
-            final Address to,
-            final Bytes payload,
-            final long value) {
+            final MessageFrame.Builder baseInitialFrame, final Address to, final Bytes payload, final long value) {
         Code code;
         if (dynamicProperties.evmVersion().equals(EVM_VERSION_0_30)) {
             code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
         } else {
             final var resolvedForEvm = aliasManager.resolveForEvm(to);
-            code =
-                    aliasManager.isMirror(resolvedForEvm)
-                            ? codeCache.getIfPresent(resolvedForEvm)
-                            : null;
+            code = aliasManager.isMirror(resolvedForEvm) ? codeCache.getIfPresent(resolvedForEvm) : null;
         }
         /* The ContractCallTransitionLogic would have rejected a missing or deleted
          * contract, so at this point we should have non-null bytecode available.

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.file.positive;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -71,9 +72,7 @@ public class SysDelSysUndelSpec extends HapiSuite {
                         systemFileUndelete("misc")
                                 .payingWith(SYSTEM_DELETE_ADMIN)
                                 .hasPrecheck(AUTHORIZATION_FAILED),
-                        systemFileDelete(ADDRESS_BOOK)
-                                .payingWith(GENESIS)
-                                .hasPrecheck(ENTITY_NOT_ALLOWED_TO_DELETE));
+                        systemFileDelete(ADDRESS_BOOK).payingWith(GENESIS).hasPrecheck(ENTITY_NOT_ALLOWED_TO_DELETE));
     }
 
     private HapiSpec systemDeleteWithPastExpiryDestroysFile() {
@@ -83,13 +82,10 @@ public class SysDelSysUndelSpec extends HapiSuite {
                 .given(fileCreate("misc").lifetime(lifetime).contents(ORIG_FILE))
                 .when(
                         systemFileDelete("misc").payingWith(SYSTEM_DELETE_ADMIN).updatingExpiry(1L),
-                        getFileInfo("misc")
-                                .nodePayment(1_234L)
-                                .hasAnswerOnlyPrecheck(INVALID_FILE_ID))
-                .then(
-                        systemFileUndelete("misc")
-                                .payingWith(SYSTEM_UNDELETE_ADMIN)
-                                .hasKnownStatus(INVALID_FILE_ID));
+                        getFileInfo("misc").nodePayment(1_234L).hasAnswerOnlyPrecheck(INVALID_FILE_ID))
+                .then(systemFileUndelete("misc")
+                        .payingWith(SYSTEM_UNDELETE_ADMIN)
+                        .hasKnownStatus(INVALID_FILE_ID));
     }
 
     private HapiSpec systemDeleteThenUndeleteRestoresContentsAndExpiry() {
@@ -100,11 +96,9 @@ public class SysDelSysUndelSpec extends HapiSuite {
         return defaultHapiSpec("happyPathFlows")
                 .given(
                         fileCreate("misc").lifetime(lifetime).contents(ORIG_FILE),
-                        UtilVerbs.withOpContext(
-                                (spec, opLog) -> {
-                                    initExpiry.set(
-                                            spec.registry().getTimestamp("misc").getSeconds());
-                                }))
+                        UtilVerbs.withOpContext((spec, opLog) -> {
+                            initExpiry.set(spec.registry().getTimestamp("misc").getSeconds());
+                        }))
                 .when(
                         systemFileDelete("misc")
                                 .payingWith(SYSTEM_DELETE_ADMIN)
@@ -114,7 +108,9 @@ public class SysDelSysUndelSpec extends HapiSuite {
                                 .nodePayment(1_234L)
                                 .hasAnswerOnlyPrecheck(OK)
                                 .hasDeleted(true),
-                        systemFileUndelete("misc").payingWith(SYSTEM_UNDELETE_ADMIN).fee(0L))
+                        systemFileUndelete("misc")
+                                .payingWith(SYSTEM_UNDELETE_ADMIN)
+                                .fee(0L))
                 .then(
                         getFileContents("misc").hasContents(ignore -> ORIG_FILE),
                         getFileInfo("misc").hasExpiry(initExpiry::get));

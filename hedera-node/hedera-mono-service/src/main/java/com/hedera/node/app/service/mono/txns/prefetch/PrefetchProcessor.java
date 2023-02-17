@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.prefetch;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -40,9 +41,11 @@ import org.apache.logging.log4j.Logger;
 public class PrefetchProcessor {
     private static final Logger logger = LogManager.getLogger(PrefetchProcessor.class);
 
-    @VisibleForTesting static final int MINIMUM_QUEUE_CAPACITY = 10_000;
+    @VisibleForTesting
+    static final int MINIMUM_QUEUE_CAPACITY = 10_000;
 
-    @VisibleForTesting static final int MINIMUM_THREAD_POOL_SIZE = 2;
+    @VisibleForTesting
+    static final int MINIMUM_THREAD_POOL_SIZE = 2;
 
     BlockingQueue<Runnable> queue;
     ExecutorService executorService;
@@ -51,8 +54,7 @@ public class PrefetchProcessor {
     @Inject
     public PrefetchProcessor(NodeLocalProperties properties, TransitionLogicLookup lookup) {
         final int queueSize = Math.max(properties.prefetchQueueCapacity(), MINIMUM_QUEUE_CAPACITY);
-        final int threadPoolSize =
-                Math.max(properties.prefetchThreadPoolSize(), MINIMUM_THREAD_POOL_SIZE);
+        final int threadPoolSize = Math.max(properties.prefetchThreadPoolSize(), MINIMUM_THREAD_POOL_SIZE);
 
         this.lookup = lookup;
         queue = new ArrayBlockingQueue<>(queueSize);
@@ -61,11 +63,8 @@ public class PrefetchProcessor {
 
     @VisibleForTesting
     ExecutorService createExecutorService(int threadPoolSize, BlockingQueue<Runnable> queue) {
-        final var executor =
-                new ThreadPoolExecutor(
-                        threadPoolSize, threadPoolSize, 0L, TimeUnit.MILLISECONDS, queue);
-        executor.setRejectedExecutionHandler(
-                (runnable, execService) -> logger.warn("Pre-fetch queue is FULL!"));
+        final var executor = new ThreadPoolExecutor(threadPoolSize, threadPoolSize, 0L, TimeUnit.MILLISECONDS, queue);
+        executor.setRejectedExecutionHandler((runnable, execService) -> logger.warn("Pre-fetch queue is FULL!"));
         executor.prestartAllCoreThreads();
         return executor;
     }
@@ -86,14 +85,13 @@ public class PrefetchProcessor {
         if (opt.isPresent()) {
             final var logic = opt.get();
             if (logic instanceof PreFetchableTransition transition) {
-                executorService.execute(
-                        () -> {
-                            try {
-                                transition.preFetch(accessor);
-                            } catch (RuntimeException e) {
-                                logger.warn("Exception thrown during pre-fetch", e);
-                            }
-                        });
+                executorService.execute(() -> {
+                    try {
+                        transition.preFetch(accessor);
+                    } catch (RuntimeException e) {
+                        logger.warn("Exception thrown during pre-fetch", e);
+                    }
+                });
             }
         }
     }

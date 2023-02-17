@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.operation;
 
 import static com.swirlds.common.utility.CommonUtils.unhex;
@@ -57,8 +58,7 @@ class HederaLogOperationTest {
     private static final long dataLocation = 13L;
     private static final Bytes firstLogTopic = Bytes.fromHexString("0xee");
     private static final Bytes secondLogTopic = Bytes.fromHexString("0xff");
-    private static final byte[] rawNonMirrorAddress =
-            unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");
+    private static final byte[] rawNonMirrorAddress = unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");
     private static final EntityNum num = EntityNum.fromLong(1234L);
     private static final Address nonMirrorAddress = Address.wrap(Bytes.wrap(rawNonMirrorAddress));
     private static final Address mirrorAddress = num.toEvmAddress();
@@ -68,17 +68,28 @@ class HederaLogOperationTest {
             new Operation.OperationResult(reqGas, INSUFFICIENT_GAS);
     private static final Operation.OperationResult illegalStateChangeResult =
             new Operation.OperationResult(reqGas, ILLEGAL_STATE_CHANGE);
-    private static final Operation.OperationResult goodResult =
-            new Operation.OperationResult(reqGas, null);
+    private static final Operation.OperationResult goodResult = new Operation.OperationResult(reqGas, null);
 
-    @Mock private GasCalculator gasCalculator;
-    @Mock private EVM evm;
-    @Mock private MessageFrame frame;
-    @Mock private HederaStackedWorldStateUpdater updater;
-    @Mock private ContractAliases aliases;
+    @Mock
+    private GasCalculator gasCalculator;
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private HederaLogOperation subject;
+    @Mock
+    private EVM evm;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private HederaStackedWorldStateUpdater updater;
+
+    @Mock
+    private ContractAliases aliases;
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private HederaLogOperation subject;
 
     @BeforeEach
     void setUp() {
@@ -120,13 +131,12 @@ class HederaLogOperationTest {
     @Test
     void getsExpectedResultForHappyPath() {
         final var captor = ArgumentCaptor.forClass(Log.class);
-        final var expectedLog =
-                new Log(
-                        mirrorAddress,
-                        data,
-                        List.of(
-                                LogTopic.create(Bytes32.leftPad(firstLogTopic)),
-                                LogTopic.create(Bytes32.leftPad(secondLogTopic))));
+        final var expectedLog = new Log(
+                mirrorAddress,
+                data,
+                List.of(
+                        LogTopic.create(Bytes32.leftPad(firstLogTopic)),
+                        LogTopic.create(Bytes32.leftPad(secondLogTopic))));
 
         given(frame.getWorldUpdater()).willReturn(updater);
         given(updater.aliases()).willReturn(aliases);
@@ -155,13 +165,12 @@ class HederaLogOperationTest {
     @Test
     void getsExpectedResultForHappyPathWithUnresolvable() {
         final var captor = ArgumentCaptor.forClass(Log.class);
-        final var expectedLog =
-                new Log(
-                        unknownAddress,
-                        data,
-                        List.of(
-                                LogTopic.create(Bytes32.leftPad(firstLogTopic)),
-                                LogTopic.create(Bytes32.leftPad(secondLogTopic))));
+        final var expectedLog = new Log(
+                unknownAddress,
+                data,
+                List.of(
+                        LogTopic.create(Bytes32.leftPad(firstLogTopic)),
+                        LogTopic.create(Bytes32.leftPad(secondLogTopic))));
 
         given(frame.getWorldUpdater()).willReturn(updater);
         given(updater.aliases()).willReturn(aliases);
@@ -190,8 +199,7 @@ class HederaLogOperationTest {
                 contains(Matchers.equalTo("Could not resolve logger address " + nonMirrorAddress)));
     }
 
-    private void assertResultMatch(
-            final Operation.OperationResult expected, final Operation.OperationResult actual) {
+    private void assertResultMatch(final Operation.OperationResult expected, final Operation.OperationResult actual) {
         assertEquals(expected.getGasCost(), actual.getGasCost());
         assertEquals(expected.getHaltReason(), actual.getHaltReason());
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.operation;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
@@ -106,12 +107,12 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
         final Wei value = Wei.wrap(frame.getStackItem(0));
 
         final Address address = frame.getRecipientAddress();
-        final MutableAccount account = frame.getWorldUpdater().getAccount(address).getMutable();
+        final MutableAccount account =
+                frame.getWorldUpdater().getAccount(address).getMutable();
 
         frame.clearReturnData();
 
-        if (value.compareTo(account.getBalance()) > 0
-                || frame.getMessageStackDepth() >= MAX_STACK_DEPTH) {
+        if (value.compareTo(account.getBalance()) > 0 || frame.getMessageStackDepth() >= MAX_STACK_DEPTH) {
             fail(frame);
         } else {
             spawnChildMessage(frame);
@@ -144,7 +145,8 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
         frame.decrementRemainingGas(cost);
 
         final Address address = frame.getRecipientAddress();
-        final MutableAccount account = frame.getWorldUpdater().getAccount(address).getMutable();
+        final MutableAccount account =
+                frame.getWorldUpdater().getAccount(address).getMutable();
 
         account.incrementNonce();
 
@@ -157,9 +159,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 
         if (!dynamicProperties.isLazyCreationEnabled()) {
             final var hollowAccountID =
-                    matchingHollowAccountId(
-                            (HederaStackedWorldStateUpdater) frame.getWorldUpdater(),
-                            contractAddress);
+                    matchingHollowAccountId((HederaStackedWorldStateUpdater) frame.getWorldUpdater(), contractAddress);
 
             if (hollowAccountID != null) {
                 fail(frame);
@@ -167,32 +167,30 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
             }
         }
 
-        final long childGasStipend =
-                gasCalculator().gasAvailableForChildCreate(frame.getRemainingGas());
+        final long childGasStipend = gasCalculator().gasAvailableForChildCreate(frame.getRemainingGas());
         frame.decrementRemainingGas(childGasStipend);
 
-        final MessageFrame childFrame =
-                MessageFrame.builder()
-                        .type(MessageFrame.Type.CONTRACT_CREATION)
-                        .messageFrameStack(frame.getMessageFrameStack())
-                        .worldUpdater(frame.getWorldUpdater().updater())
-                        .initialGas(childGasStipend)
-                        .address(contractAddress)
-                        .originator(frame.getOriginatorAddress())
-                        .contract(contractAddress)
-                        .gasPrice(frame.getGasPrice())
-                        .inputData(Bytes.EMPTY)
-                        .sender(frame.getRecipientAddress())
-                        .value(value)
-                        .apparentValue(value)
-                        .code(CodeFactory.createCode(inputData, Hash.EMPTY, 0, false))
-                        .blockValues(frame.getBlockValues())
-                        .depth(frame.getMessageStackDepth() + 1)
-                        .completer(child -> complete(frame, child))
-                        .miningBeneficiary(frame.getMiningBeneficiary())
-                        .blockHashLookup(frame.getBlockHashLookup())
-                        .maxStackSize(frame.getMaxStackSize())
-                        .build();
+        final MessageFrame childFrame = MessageFrame.builder()
+                .type(MessageFrame.Type.CONTRACT_CREATION)
+                .messageFrameStack(frame.getMessageFrameStack())
+                .worldUpdater(frame.getWorldUpdater().updater())
+                .initialGas(childGasStipend)
+                .address(contractAddress)
+                .originator(frame.getOriginatorAddress())
+                .contract(contractAddress)
+                .gasPrice(frame.getGasPrice())
+                .inputData(Bytes.EMPTY)
+                .sender(frame.getRecipientAddress())
+                .value(value)
+                .apparentValue(value)
+                .code(CodeFactory.createCode(inputData, Hash.EMPTY, 0, false))
+                .blockValues(frame.getBlockValues())
+                .depth(frame.getMessageStackDepth() + 1)
+                .completer(child -> complete(frame, child))
+                .miningBeneficiary(frame.getMiningBeneficiary())
+                .blockHashLookup(frame.getBlockHashLookup())
+                .maxStackSize(frame.getMaxStackSize())
+                .build();
 
         frame.incrementRemainingGas(cost);
 
@@ -221,8 +219,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
             final var sideEffects = new SideEffectsTracker();
 
             ContractID createdContractId;
-            final var hollowAccountID =
-                    matchingHollowAccountId(updater, childFrame.getContractAddress());
+            final var hollowAccountID = matchingHollowAccountId(updater, childFrame.getContractAddress());
 
             // if a hollow account exists at the alias address, finalize it to a contract
             if (hollowAccountID != null) {
@@ -233,28 +230,19 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
             }
 
             sideEffects.trackNewContract(createdContractId, childFrame.getContractAddress());
-            final var childRecord =
-                    creator.createSuccessfulSyntheticRecord(
-                            NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+            final var childRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
             childRecord.onlyExternalizeIfSuccessful();
             final var opCustomizer = updater.customizerForPendingCreation();
             final var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer);
             if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_BYTECODE)) {
-                final var contractBytecodeSidecar =
-                        SidecarUtils.createContractBytecodeSidecarFrom(
-                                createdContractId,
-                                childFrame.getCode().getContainerBytes().toArrayUnsafe(),
-                                updater.get(childFrame.getContractAddress())
-                                        .getCode()
-                                        .toArrayUnsafe());
+                final var contractBytecodeSidecar = SidecarUtils.createContractBytecodeSidecarFrom(
+                        createdContractId,
+                        childFrame.getCode().getContainerBytes().toArrayUnsafe(),
+                        updater.get(childFrame.getContractAddress()).getCode().toArrayUnsafe());
                 updater.manageInProgressRecord(
-                        recordsHistorian,
-                        childRecord,
-                        syntheticOp,
-                        List.of(contractBytecodeSidecar));
+                        recordsHistorian, childRecord, syntheticOp, List.of(contractBytecodeSidecar));
             } else {
-                updater.manageInProgressRecord(
-                        recordsHistorian, childRecord, syntheticOp, Collections.emptyList());
+                updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticOp, Collections.emptyList());
             }
         } else {
             frame.setReturnData(childFrame.getOutputData());
@@ -265,8 +253,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
         frame.setPC(currentPC + 1);
     }
 
-    private AccountID matchingHollowAccountId(
-            HederaStackedWorldStateUpdater updater, Address contract) {
+    private AccountID matchingHollowAccountId(HederaStackedWorldStateUpdater updater, Address contract) {
         final var accountID = accountIdFromEvmAddress(updater.aliases().resolveForEvm(contract));
         final var trackingAccounts = updater.trackingAccounts();
         if (trackingAccounts.contains(accountID)) {
@@ -277,8 +264,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
         }
     }
 
-    private void finalizeHollowAccountIntoContract(
-            AccountID hollowAccountID, HederaStackedWorldStateUpdater updater) {
+    private void finalizeHollowAccountIntoContract(AccountID hollowAccountID, HederaStackedWorldStateUpdater updater) {
         // reclaim the id for the contract
         updater.reclaimLatestContractId();
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.keys;
 
 import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.relocatedIfNotPresentInWorkingDir;
@@ -39,7 +40,8 @@ class Ed25519UtilsTest {
     final String devPrivateKey = "91132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137";
     final String devPublicKey = "0aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
 
-    @TempDir private File tempDir;
+    @TempDir
+    private File tempDir;
 
     @Test
     void throwsIllegalArgumentOnMissingTargetLoc() {
@@ -47,9 +49,7 @@ class Ed25519UtilsTest {
         final var tmpPassphrase = "hedera";
         final var seed = CommonUtils.unhex(devPrivateKey);
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> Ed25519Utils.writeKeyTo(seed, tmpLoc, tmpPassphrase));
+        assertThrows(IllegalArgumentException.class, () -> Ed25519Utils.writeKeyTo(seed, tmpLoc, tmpPassphrase));
     }
 
     @Test
@@ -57,8 +57,7 @@ class Ed25519UtilsTest {
         final var missingLoc = "test/resources/vectors/genesis.pem";
 
         final var relocated =
-                relocatedIfNotPresentWithCurrentPathPrefix(
-                        new File(missingLoc), "test", "src" + File.separator);
+                relocatedIfNotPresentWithCurrentPathPrefix(new File(missingLoc), "test", "src" + File.separator);
 
         assertEquals("src/test/resources/vectors/genesis.pem", relocated.getPath());
     }
@@ -68,8 +67,7 @@ class Ed25519UtilsTest {
         final var missingLoc = "test/resources/vectors/genesis.pem";
 
         final var relocated =
-                relocatedIfNotPresentWithCurrentPathPrefix(
-                        new File(missingLoc), "NOPE", "src" + File.separator);
+                relocatedIfNotPresentWithCurrentPathPrefix(new File(missingLoc), "NOPE", "src" + File.separator);
 
         assertEquals(missingLoc, relocated.getPath());
     }
@@ -99,8 +97,7 @@ class Ed25519UtilsTest {
 
     @Test
     void recoversDevGenesisKeyPair() {
-        final var recovered =
-                Ed25519Utils.readKeyPairFrom(new File(devGenesisPemLoc), devGenesisPassphrase);
+        final var recovered = Ed25519Utils.readKeyPairFrom(new File(devGenesisPemLoc), devGenesisPassphrase);
 
         assertIsGenesisDevKeyPair(recovered);
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl;
 
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
@@ -78,8 +79,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
 
     /** {@inheritDoc} */
     @Override
-    public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(
-            @NonNull final AccountID idOrAlias) {
+    public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(@NonNull final AccountID idOrAlias) {
         Objects.requireNonNull(idOrAlias);
         final var account = getAccountLeaf(idOrAlias);
         if (account.isEmpty()) {
@@ -109,8 +109,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
 
     /** {@inheritDoc} */
     @Override
-    public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(
-            @NonNull final ContractID idOrAlias) {
+    public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(@NonNull final ContractID idOrAlias) {
         Objects.requireNonNull(idOrAlias);
         final var contract = getContractLeaf(idOrAlias);
         final var validity = basicContractValidations(contract);
@@ -225,7 +224,8 @@ public class ReadableAccountStore implements AccountKeyLookup {
                 // it and look it up
                 var evmKeyAliasAddress = keyAliasToEVMAddress(alias);
                 if (evmKeyAliasAddress != null) {
-                    entityNum = aliases.get(ByteString.copyFrom(evmKeyAliasAddress).toStringUtf8());
+                    entityNum =
+                            aliases.get(ByteString.copyFrom(evmKeyAliasAddress).toStringUtf8());
                 }
             }
             if (entityNum == null) {
@@ -237,8 +237,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
         }
     }
 
-    private KeyOrLookupFailureReason validateKey(
-            @Nullable final JKey key, final boolean isContractKey) {
+    private KeyOrLookupFailureReason validateKey(@Nullable final JKey key, final boolean isContractKey) {
         if (key == null || key.isEmpty()) {
             if (isContractKey) {
                 return withFailureReason(MODIFYING_IMMUTABLE_CONTRACT);
@@ -252,28 +251,27 @@ public class ReadableAccountStore implements AccountKeyLookup {
     }
 
     private Account mapAccount(final AccountID idOrAlias, final HederaAccount account) {
-        final var builder =
-                new AccountBuilderImpl()
-                        .key(account.getAccountKey())
-                        .expiry(account.getExpiry())
-                        .balance(account.getBalance())
-                        .memo(account.getMemo())
-                        .deleted(account.isDeleted())
-                        .receiverSigRequired(account.isReceiverSigRequired())
-                        .numberOfOwnedNfts(account.getNftsOwned())
-                        .maxAutoAssociations(account.getMaxAutomaticAssociations())
-                        .usedAutoAssociations(account.getUsedAutoAssociations())
-                        .numAssociations(account.getNumAssociations())
-                        .numPositiveBalances(account.getNumPositiveBalances())
-                        .ethereumNonce(account.getEthereumNonce())
-                        .stakedToMe(account.getStakedToMe())
-                        .stakePeriodStart(account.getStakePeriodStart())
-                        .stakedNum(account.totalStake())
-                        .declineReward(account.isDeclinedReward())
-                        .stakeAtStartOfLastRewardedPeriod(account.getStakePeriodStart())
-                        .autoRenewSecs(account.getAutoRenewSecs())
-                        .accountNumber(idOrAlias.getAccountNum())
-                        .isSmartContract(account.isSmartContract());
+        final var builder = new AccountBuilderImpl()
+                .key(account.getAccountKey())
+                .expiry(account.getExpiry())
+                .balance(account.getBalance())
+                .memo(account.getMemo())
+                .deleted(account.isDeleted())
+                .receiverSigRequired(account.isReceiverSigRequired())
+                .numberOfOwnedNfts(account.getNftsOwned())
+                .maxAutoAssociations(account.getMaxAutomaticAssociations())
+                .usedAutoAssociations(account.getUsedAutoAssociations())
+                .numAssociations(account.getNumAssociations())
+                .numPositiveBalances(account.getNumPositiveBalances())
+                .ethereumNonce(account.getEthereumNonce())
+                .stakedToMe(account.getStakedToMe())
+                .stakePeriodStart(account.getStakePeriodStart())
+                .stakedNum(account.totalStake())
+                .declineReward(account.isDeclinedReward())
+                .stakeAtStartOfLastRewardedPeriod(account.getStakePeriodStart())
+                .autoRenewSecs(account.getAutoRenewSecs())
+                .accountNumber(idOrAlias.getAccountNum())
+                .isSmartContract(account.isSmartContract());
         if (account.getAutoRenewAccount() != null) {
             builder.autoRenewAccountNumber(account.getAutoRenewAccount().num());
         }

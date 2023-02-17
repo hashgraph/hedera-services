@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.util;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
@@ -67,11 +68,8 @@ public class HapiUtilPrng extends HapiTxnOp<HapiUtilPrng> {
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
-            throws Throwable {
-        return spec.fees()
-                .forActivityBasedOp(
-                        HederaFunctionality.UtilPrng, this::usageEstimate, txn, numPayerKeys);
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+        return spec.fees().forActivityBasedOp(HederaFunctionality.UtilPrng, this::usageEstimate, txn, numPayerKeys);
     }
 
     private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
@@ -84,15 +82,12 @@ public class HapiUtilPrng extends HapiTxnOp<HapiUtilPrng> {
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
-        final UtilPrngTransactionBody opBody =
-                spec.txns()
-                        .<UtilPrngTransactionBody, UtilPrngTransactionBody.Builder>body(
-                                UtilPrngTransactionBody.class,
-                                b -> {
-                                    if (range.isPresent()) {
-                                        b.setRange(range.get());
-                                    }
-                                });
+        final UtilPrngTransactionBody opBody = spec.txns()
+                .<UtilPrngTransactionBody, UtilPrngTransactionBody.Builder>body(UtilPrngTransactionBody.class, b -> {
+                    if (range.isPresent()) {
+                        b.setRange(range.get());
+                    }
+                });
         return b -> b.setUtilPrng(opBody);
     }
 

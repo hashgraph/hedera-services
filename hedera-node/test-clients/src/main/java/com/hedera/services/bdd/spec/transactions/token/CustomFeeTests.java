@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.builtFixedHts;
@@ -30,8 +31,7 @@ import java.util.function.BiConsumer;
 import org.junit.jupiter.api.Assertions;
 
 public class CustomFeeTests {
-    public static BiConsumer<HapiSpec, List<CustomFee>> fixedHbarFeeInSchedule(
-            long amount, String collector) {
+    public static BiConsumer<HapiSpec, List<CustomFee>> fixedHbarFeeInSchedule(long amount, String collector) {
         return (spec, actual) -> {
             final var expected = CustomFeeSpecs.builtFixedHbar(amount, collector, false, spec);
             failUnlessPresent("fixed ℏ", actual, expected);
@@ -47,23 +47,10 @@ public class CustomFeeTests {
     }
 
     public static BiConsumer<HapiSpec, List<CustomFee>> fractionalFeeInSchedule(
-            long numerator,
-            long denominator,
-            long min,
-            OptionalLong max,
-            boolean netOfTransfers,
-            String collector) {
+            long numerator, long denominator, long min, OptionalLong max, boolean netOfTransfers, String collector) {
         return (spec, actual) -> {
             final var expected =
-                    builtFractional(
-                            numerator,
-                            denominator,
-                            min,
-                            max,
-                            netOfTransfers,
-                            collector,
-                            false,
-                            spec);
+                    builtFractional(numerator, denominator, min, max, netOfTransfers, collector, false, spec);
             failUnlessPresent("fractional", actual, expected);
         };
     }
@@ -71,8 +58,7 @@ public class CustomFeeTests {
     public static BiConsumer<HapiSpec, List<CustomFee>> royaltyFeeWithoutFallbackInSchedule(
             long numerator, long denominator, String collector) {
         return (spec, actual) -> {
-            final var expected =
-                    builtRoyaltyNoFallback(numerator, denominator, collector, false, spec);
+            final var expected = builtRoyaltyNoFallback(numerator, denominator, collector, false, spec);
             failUnlessPresent("royalty", actual, expected);
         };
     }
@@ -80,39 +66,32 @@ public class CustomFeeTests {
     public static BiConsumer<HapiSpec, List<CustomFee>> royaltyFeeWithFallbackInHbarsInSchedule(
             long numerator, long denominator, long fallbackAmount, String collector) {
         return (spec, actual) -> {
-            final var expected =
-                    builtRoyaltyWithFallback(
-                            numerator,
-                            denominator,
-                            collector,
-                            false,
-                            fixedHbarFeeInheritingRoyaltyCollector(fallbackAmount),
-                            spec);
+            final var expected = builtRoyaltyWithFallback(
+                    numerator,
+                    denominator,
+                    collector,
+                    false,
+                    fixedHbarFeeInheritingRoyaltyCollector(fallbackAmount),
+                    spec);
             failUnlessPresent("royalty", actual, expected);
         };
     }
 
     public static BiConsumer<HapiSpec, List<CustomFee>> royaltyFeeWithFallbackInTokenInSchedule(
-            long numerator,
-            long denominator,
-            long fallbackAmount,
-            String fallbackDenom,
-            String collector) {
+            long numerator, long denominator, long fallbackAmount, String fallbackDenom, String collector) {
         return (spec, actual) -> {
-            final var expected =
-                    builtRoyaltyWithFallback(
-                            numerator,
-                            denominator,
-                            collector,
-                            false,
-                            fixedHtsFeeInheritingRoyaltyCollector(fallbackAmount, fallbackDenom),
-                            spec);
+            final var expected = builtRoyaltyWithFallback(
+                    numerator,
+                    denominator,
+                    collector,
+                    false,
+                    fixedHtsFeeInheritingRoyaltyCollector(fallbackAmount, fallbackDenom),
+                    spec);
             failUnlessPresent("royalty", actual, expected);
         };
     }
 
-    private static void failUnlessPresent(
-            String detail, List<CustomFee> actual, CustomFee expected) {
+    private static void failUnlessPresent(String detail, List<CustomFee> actual, CustomFee expected) {
         for (var customFee : actual) {
             if (expected.equals(customFee)) {
                 return;

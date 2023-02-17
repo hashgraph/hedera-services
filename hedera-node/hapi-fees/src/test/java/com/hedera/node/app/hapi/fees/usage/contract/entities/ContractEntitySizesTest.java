@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.contract.entities;
 
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
@@ -28,8 +29,6 @@ class ContractEntitySizesTest {
     @Test
     void knowsExpectedFixedBytes() {
         // expect:
-        assertEquals(
-                1 * BOOL_SIZE + 4 * LONG_SIZE + 2 * BASIC_ENTITY_ID_SIZE + 40,
-                subject.fixedBytesInContractRepr());
+        assertEquals(1 * BOOL_SIZE + 4 * LONG_SIZE + 2 * BASIC_ENTITY_ID_SIZE + 40, subject.fixedBytesInContractRepr());
     }
 }

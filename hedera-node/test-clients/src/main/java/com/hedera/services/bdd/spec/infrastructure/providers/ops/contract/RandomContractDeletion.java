@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.contract;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
@@ -40,12 +41,10 @@ public class RandomContractDeletion implements OpProvider {
     private final ResponseCodeEnum[] permissiblePrechecks =
             standardPrechecksAnd(ACCOUNT_DELETED, CONTRACT_DELETED, INVALID_ACCOUNT_ID);
     private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(
-                    ACCOUNT_DELETED, CONTRACT_DELETED, INVALID_ACCOUNT_ID, INVALID_CONTRACT_ID);
+            standardOutcomesAnd(ACCOUNT_DELETED, CONTRACT_DELETED, INVALID_ACCOUNT_ID, INVALID_CONTRACT_ID);
 
     public RandomContractDeletion(
-            RegistrySourcedNameProvider<AccountID> accounts,
-            RegistrySourcedNameProvider<ContractID> contracts) {
+            RegistrySourcedNameProvider<AccountID> accounts, RegistrySourcedNameProvider<ContractID> contracts) {
         this.accounts = accounts;
         this.contracts = contracts;
     }
@@ -75,11 +74,10 @@ public class RandomContractDeletion implements OpProvider {
             return Optional.empty();
         }
 
-        var op =
-                contractDelete(tbd.get())
-                        .purging()
-                        .hasPrecheckFrom(permissiblePrechecks)
-                        .hasKnownStatusFrom(permissibleOutcomes);
+        var op = contractDelete(tbd.get())
+                .purging()
+                .hasPrecheckFrom(permissiblePrechecks)
+                .hasKnownStatusFrom(permissibleOutcomes);
         if (contractThisTime) {
             op.transferContract(transfer.get());
         } else {

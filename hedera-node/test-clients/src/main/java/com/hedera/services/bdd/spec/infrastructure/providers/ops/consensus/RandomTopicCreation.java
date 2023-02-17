@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.consensus;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
@@ -39,11 +40,9 @@ public class RandomTopicCreation implements OpProvider {
     private final AtomicInteger opNo = new AtomicInteger();
     private final EntityNameProvider<Key> keys;
     private final RegistrySourcedNameProvider<TopicID> topics;
-    private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(INVALID_TOPIC_ID, TOPIC_EXPIRED);
+    private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(INVALID_TOPIC_ID, TOPIC_EXPIRED);
 
-    public RandomTopicCreation(
-            EntityNameProvider<Key> keys, RegistrySourcedNameProvider<TopicID> topics) {
+    public RandomTopicCreation(EntityNameProvider<Key> keys, RegistrySourcedNameProvider<TopicID> topics) {
         this.keys = keys;
         this.topics = topics;
     }
@@ -66,13 +65,12 @@ public class RandomTopicCreation implements OpProvider {
 
         int n = opNo.getAndIncrement();
         final String newTopic = my("topic" + n);
-        var op =
-                createTopic(newTopic)
-                        .adminKeyName(key.get())
-                        .submitKeyName(key.get())
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                        .hasAnyPrecheck()
-                        .hasKnownStatusFrom(permissibleOutcomes);
+        var op = createTopic(newTopic)
+                .adminKeyName(key.get())
+                .submitKeyName(key.get())
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                .hasAnyPrecheck()
+                .hasKnownStatusFrom(permissibleOutcomes);
 
         return Optional.of(op);
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.openzeppelin;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -63,9 +64,7 @@ public class ERC721ContractInteractions extends HapiSuite {
         final var TRANSFER_FROM_TX = "transferFrom";
 
         return defaultHapiSpec("CallsERC721ContractInteractions")
-                .given(
-                        QueryVerbs.getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
-                        uploadInitCode(CONTRACT))
+                .given(QueryVerbs.getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(), uploadInitCode(CONTRACT))
                 .when(
                         QueryVerbs.getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
                         contractCreate(CONTRACT)
@@ -73,57 +72,39 @@ public class ERC721ContractInteractions extends HapiSuite {
                                 .hasKnownStatus(SUCCESS)
                                 .via(CREATE_TX))
                 .then(
-                        QueryVerbs.getAccountInfo(DEFAULT_CONTRACT_SENDER)
-                                .savingSnapshot(DEFAULT_CONTRACT_SENDER),
-                        QueryVerbs.getAccountInfo(DEFAULT_CONTRACT_RECEIVER)
-                                .savingSnapshot(DEFAULT_CONTRACT_RECEIVER),
-                        withOpContext(
-                                (spec, log) -> {
-                                    final var contractCreatorId =
-                                            spec.registry()
-                                                    .getAccountInfo(DEFAULT_CONTRACT_SENDER)
-                                                    .getContractAccountID();
-                                    final var nftSenderId =
-                                            spec.registry()
-                                                    .getAccountInfo(DEFAULT_CONTRACT_RECEIVER)
-                                                    .getContractAccountID();
+                        QueryVerbs.getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER),
+                        QueryVerbs.getAccountInfo(DEFAULT_CONTRACT_RECEIVER).savingSnapshot(DEFAULT_CONTRACT_RECEIVER),
+                        withOpContext((spec, log) -> {
+                            final var contractCreatorId = spec.registry()
+                                    .getAccountInfo(DEFAULT_CONTRACT_SENDER)
+                                    .getContractAccountID();
+                            final var nftSenderId = spec.registry()
+                                    .getAccountInfo(DEFAULT_CONTRACT_RECEIVER)
+                                    .getContractAccountID();
 
-                                    final var mintParams =
-                                            new Object[] {asHeadlongAddress(nftSenderId), nftId};
-                                    final var approveParams =
-                                            new Object[] {
-                                                asHeadlongAddress(contractCreatorId), nftId
-                                            };
-                                    final var transferFromParams =
-                                            new Object[] {
-                                                asHeadlongAddress(nftSenderId),
-                                                asHeadlongAddress(contractCreatorId),
-                                                nftId
-                                            };
+                            final var mintParams = new Object[] {asHeadlongAddress(nftSenderId), nftId};
+                            final var approveParams = new Object[] {asHeadlongAddress(contractCreatorId), nftId};
+                            final var transferFromParams = new Object[] {
+                                asHeadlongAddress(nftSenderId), asHeadlongAddress(contractCreatorId), nftId
+                            };
 
-                                    final var mint =
-                                            contractCall(CONTRACT, "mint", mintParams)
-                                                    .payingWith(DEFAULT_CONTRACT_SENDER)
-                                                    .via(MINT_TX);
-                                    allRunFor(spec, mint);
+                            final var mint = contractCall(CONTRACT, "mint", mintParams)
+                                    .payingWith(DEFAULT_CONTRACT_SENDER)
+                                    .via(MINT_TX);
+                            allRunFor(spec, mint);
 
-                                    final var approve =
-                                            contractCall(CONTRACT, "approve", approveParams)
-                                                    .payingWith(DEFAULT_CONTRACT_RECEIVER)
-                                                    .signingWith(SECP_256K1_RECEIVER_SOURCE_KEY)
-                                                    .gas(4_000_000L)
-                                                    .via(APPROVE_TX);
-                                    allRunFor(spec, approve);
+                            final var approve = contractCall(CONTRACT, "approve", approveParams)
+                                    .payingWith(DEFAULT_CONTRACT_RECEIVER)
+                                    .signingWith(SECP_256K1_RECEIVER_SOURCE_KEY)
+                                    .gas(4_000_000L)
+                                    .via(APPROVE_TX);
+                            allRunFor(spec, approve);
 
-                                    final var transferFrom =
-                                            contractCall(
-                                                            CONTRACT,
-                                                            "transferFrom",
-                                                            transferFromParams)
-                                                    .payingWith(DEFAULT_CONTRACT_SENDER)
-                                                    .via(TRANSFER_FROM_TX);
-                                    allRunFor(spec, transferFrom);
-                                }),
+                            final var transferFrom = contractCall(CONTRACT, "transferFrom", transferFromParams)
+                                    .payingWith(DEFAULT_CONTRACT_SENDER)
+                                    .via(TRANSFER_FROM_TX);
+                            allRunFor(spec, transferFrom);
+                        }),
                         QueryVerbs.getTxnRecord(CREATE_TX).logged(),
                         QueryVerbs.getTxnRecord(MINT_TX).logged(),
                         QueryVerbs.getTxnRecord(APPROVE_TX).logged(),

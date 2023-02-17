@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
@@ -130,9 +131,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
             txnCtx.setStatus(ACCOUNT_DELETED);
         } catch (Exception e) {
             log.warn(
-                    "Unhandled error while processing :: {}!",
-                    txnCtx.accessor().getSignedTxnWrapper(),
-                    e);
+                    "Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
             txnCtx.setStatus(FAIL_INVALID);
         }
     }
@@ -161,8 +160,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
             if (newMax < ledger.alreadyUsedAutomaticAssociations(target)) {
                 return EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
             }
-            if (dynamicProperties.areTokenAssociationsLimited()
-                    && newMax > dynamicProperties.maxTokensPerAccount()) {
+            if (dynamicProperties.areTokenAssociationsLimited() && newMax > dynamicProperties.maxTokensPerAccount()) {
                 return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
             }
         }
@@ -192,14 +190,14 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
             customizer.memo(op.getMemo().getValue());
         }
         if (op.hasMaxAutomaticTokenAssociations()) {
-            customizer.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations().getValue());
+            customizer.maxAutomaticAssociations(
+                    op.getMaxAutomaticTokenAssociations().getValue());
         }
         if (op.hasDeclineReward()) {
             customizer.isDeclinedReward(op.getDeclineReward().getValue());
         }
         if (hasStakedId(op.getStakedIdCase().name())) {
-            customizer.customizeStakedId(
-                    op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId());
+            customizer.customizeStakedId(op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId());
         }
 
         return customizer;
@@ -238,8 +236,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
         if (op.hasAutoRenewPeriod() && !validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {
             return AUTORENEW_DURATION_NOT_IN_RANGE;
         }
-        if (op.hasProxyAccountID()
-                && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
+        if (op.hasProxyAccountID() && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
             return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
         }
 
@@ -252,11 +249,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
             if (validSentinel(stakedIdCase, op.getStakedAccountId(), op.getStakedNodeId())) {
                 return OK;
             } else if (!validator.isValidStakedId(
-                    stakedIdCase,
-                    op.getStakedAccountId(),
-                    op.getStakedNodeId(),
-                    accounts.get(),
-                    nodeInfo)) {
+                    stakedIdCase, op.getStakedAccountId(), op.getStakedNodeId(), accounts.get(), nodeInfo)) {
                 return INVALID_STAKING_ID;
             }
         }

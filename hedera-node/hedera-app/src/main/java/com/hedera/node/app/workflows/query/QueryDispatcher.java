@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.query;
 
 import static java.util.Objects.requireNonNull;
@@ -35,8 +36,7 @@ import javax.inject.Singleton;
 public class QueryDispatcher {
 
     private static final String QUERY_NOT_SET = "Query not set";
-    private static final String GET_FAST_RECORD_IS_NOT_SUPPORTED =
-            "TransactionGetFastRecord is not supported";
+    private static final String GET_FAST_RECORD_IS_NOT_SUPPORTED = "TransactionGetFastRecord is not supported";
 
     private final QueryHandlers handlers;
 
@@ -91,8 +91,7 @@ public class QueryDispatcher {
             case TOKENGETNFTINFO -> handlers.tokenGetNftInfoHandler();
             case TOKENGETNFTINFOS -> handlers.tokenGetNftInfosHandler();
 
-            case TRANSACTIONGETFASTRECORD -> throw new UnsupportedOperationException(
-                    GET_FAST_RECORD_IS_NOT_SUPPORTED);
+            case TRANSACTIONGETFASTRECORD -> throw new UnsupportedOperationException(GET_FAST_RECORD_IS_NOT_SUPPORTED);
             case QUERY_NOT_SET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
         };
     }
@@ -111,7 +110,8 @@ public class QueryDispatcher {
         requireNonNull(query);
 
         switch (query.getQueryCase()) {
-            case CONSENSUSGETTOPICINFO -> handlers.consensusGetTopicInfoHandler().validate(query);
+            case CONSENSUSGETTOPICINFO -> handlers.consensusGetTopicInfoHandler()
+                    .validate(query);
 
             case GETBYSOLIDITYID -> handlers.contractGetBySolidityIDHandler().validate(query);
             case CONTRACTCALLLOCAL -> handlers.contractCallLocalHandler().validate(query);
@@ -132,7 +132,8 @@ public class QueryDispatcher {
 
             case ACCOUNTDETAILS -> handlers.networkGetAccountDetailsHandler().validate(query);
             case GETBYKEY -> handlers.networkGetByKeyHandler().validate(query);
-            case NETWORKGETVERSIONINFO -> handlers.networkGetVersionInfoHandler().validate(query);
+            case NETWORKGETVERSIONINFO -> handlers.networkGetVersionInfoHandler()
+                    .validate(query);
             case NETWORKGETEXECUTIONTIME -> handlers.networkGetExecutionTimeHandler()
                     .validate(query);
             case TRANSACTIONGETRECEIPT -> handlers.networkTransactionGetReceiptHandler()
@@ -148,8 +149,7 @@ public class QueryDispatcher {
             case TOKENGETNFTINFO -> handlers.tokenGetNftInfoHandler().validate(query);
             case TOKENGETNFTINFOS -> handlers.tokenGetNftInfosHandler().validate(query);
 
-            case TRANSACTIONGETFASTRECORD -> throw new UnsupportedOperationException(
-                    GET_FAST_RECORD_IS_NOT_SUPPORTED);
+            case TRANSACTIONGETFASTRECORD -> throw new UnsupportedOperationException(GET_FAST_RECORD_IS_NOT_SUPPORTED);
             case QUERY_NOT_SET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
 
             default -> throw new UnsupportedOperationException(
@@ -179,32 +179,24 @@ public class QueryDispatcher {
             case CONSENSUSGETTOPICINFO -> handlers.consensusGetTopicInfoHandler()
                     .findResponse(query, header);
 
-            case GETBYSOLIDITYID -> handlers.contractGetBySolidityIDHandler()
-                    .findResponse(query, header);
-            case CONTRACTCALLLOCAL -> handlers.contractCallLocalHandler()
-                    .findResponse(query, header);
+            case GETBYSOLIDITYID -> handlers.contractGetBySolidityIDHandler().findResponse(query, header);
+            case CONTRACTCALLLOCAL -> handlers.contractCallLocalHandler().findResponse(query, header);
             case CONTRACTGETINFO -> handlers.contractGetInfoHandler().findResponse(query, header);
-            case CONTRACTGETBYTECODE -> handlers.contractGetBytecodeHandler()
-                    .findResponse(query, header);
-            case CONTRACTGETRECORDS -> handlers.contractGetRecordsHandler()
-                    .findResponse(query, header);
+            case CONTRACTGETBYTECODE -> handlers.contractGetBytecodeHandler().findResponse(query, header);
+            case CONTRACTGETRECORDS -> handlers.contractGetRecordsHandler().findResponse(query, header);
 
             case CRYPTOGETACCOUNTBALANCE -> handlers.cryptoGetAccountBalanceHandler()
                     .findResponse(query, header);
-            case CRYPTOGETINFO -> handlers.cryptoGetAccountInfoHandler()
-                    .findResponse(query, header);
+            case CRYPTOGETINFO -> handlers.cryptoGetAccountInfoHandler().findResponse(query, header);
             case CRYPTOGETACCOUNTRECORDS -> handlers.cryptoGetAccountRecordsHandler()
                     .findResponse(query, header);
-            case CRYPTOGETLIVEHASH -> handlers.cryptoGetLiveHashHandler()
-                    .findResponse(query, header);
-            case CRYPTOGETPROXYSTAKERS -> handlers.cryptoGetStakersHandler()
-                    .findResponse(query, header);
+            case CRYPTOGETLIVEHASH -> handlers.cryptoGetLiveHashHandler().findResponse(query, header);
+            case CRYPTOGETPROXYSTAKERS -> handlers.cryptoGetStakersHandler().findResponse(query, header);
 
             case FILEGETCONTENTS -> handlers.fileGetContentsHandler().findResponse(query, header);
             case FILEGETINFO -> handlers.fileGetInfoHandler().findResponse(query, header);
 
-            case ACCOUNTDETAILS -> handlers.networkGetAccountDetailsHandler()
-                    .findResponse(query, header);
+            case ACCOUNTDETAILS -> handlers.networkGetAccountDetailsHandler().findResponse(query, header);
             case GETBYKEY -> handlers.networkGetByKeyHandler().findResponse(query, header);
             case NETWORKGETVERSIONINFO -> handlers.networkGetVersionInfoHandler()
                     .findResponse(query, header);
@@ -223,8 +215,7 @@ public class QueryDispatcher {
             case TOKENGETNFTINFO -> handlers.tokenGetNftInfoHandler().findResponse(query, header);
             case TOKENGETNFTINFOS -> handlers.tokenGetNftInfosHandler().findResponse(query, header);
 
-            case TRANSACTIONGETFASTRECORD -> throw new UnsupportedOperationException(
-                    GET_FAST_RECORD_IS_NOT_SUPPORTED);
+            case TRANSACTIONGETFASTRECORD -> throw new UnsupportedOperationException(GET_FAST_RECORD_IS_NOT_SUPPORTED);
             case QUERY_NOT_SET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
         };
     }

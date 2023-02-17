@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.assertions;
 
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -31,8 +32,7 @@ public class NoTokenTransfers implements ErroringAssertsProvider<List<TokenTrans
         return tokenTransfers -> {
             try {
                 Assertions.assertTrue(
-                        tokenTransfers.isEmpty(),
-                        () -> "Expected no token transfers, were: " + tokenTransfers);
+                        tokenTransfers.isEmpty(), () -> "Expected no token transfers, were: " + tokenTransfers);
             } catch (Throwable t) {
                 return List.of(t);
             }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.exceptions;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
@@ -39,27 +40,18 @@ class ValidationUtilsTest {
     @Test
     void factoriesWorkAsExpected() {
         final var falseExCapturedByCode =
-                assertThrows(
-                        InvalidTransactionException.class,
-                        () -> validateTrue(false, MEMO_TOO_LONG));
-        final var falseExCapturedByCodeAndMsg =
-                assertThrows(
-                        InvalidTransactionException.class,
-                        () -> validateTrue(false, INVALID_TOKEN_BURN_AMOUNT, "Should be true!"));
-        final var trueExCapturedByCode =
-                assertThrows(
-                        InvalidTransactionException.class,
-                        () -> validateFalse(true, CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT));
-        final var trueExCapturedByCodeAndMsg =
-                assertThrows(
-                        InvalidTransactionException.class,
-                        () -> validateFalse(true, TOKEN_HAS_NO_SUPPLY_KEY, "Should be false!"));
-        final var resourceLimitCapturedByCode =
-                assertThrows(
-                        ResourceLimitException.class,
-                        () ->
-                                validateResourceLimit(
-                                        false, MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED));
+                assertThrows(InvalidTransactionException.class, () -> validateTrue(false, MEMO_TOO_LONG));
+        final var falseExCapturedByCodeAndMsg = assertThrows(
+                InvalidTransactionException.class,
+                () -> validateTrue(false, INVALID_TOKEN_BURN_AMOUNT, "Should be true!"));
+        final var trueExCapturedByCode = assertThrows(
+                InvalidTransactionException.class, () -> validateFalse(true, CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT));
+        final var trueExCapturedByCodeAndMsg = assertThrows(
+                InvalidTransactionException.class,
+                () -> validateFalse(true, TOKEN_HAS_NO_SUPPLY_KEY, "Should be false!"));
+        final var resourceLimitCapturedByCode = assertThrows(
+                ResourceLimitException.class,
+                () -> validateResourceLimit(false, MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED));
 
         assertEquals(MEMO_TOO_LONG, falseExCapturedByCode.getResponseCode());
         assertEquals(INVALID_TOKEN_BURN_AMOUNT, falseExCapturedByCodeAndMsg.getResponseCode());
@@ -67,21 +59,16 @@ class ValidationUtilsTest {
         assertEquals(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT, trueExCapturedByCode.getResponseCode());
         assertEquals(TOKEN_HAS_NO_SUPPLY_KEY, trueExCapturedByCodeAndMsg.getResponseCode());
         assertEquals("Should be false!", trueExCapturedByCodeAndMsg.getMessage());
-        assertEquals(
-                MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED,
-                resourceLimitCapturedByCode.getResponseCode());
+        assertEquals(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, resourceLimitCapturedByCode.getResponseCode());
     }
 
     @Test
     void validatesWithRevertingReason() {
-        final var capturedEx =
-                assertThrows(
-                        InvalidTransactionException.class,
-                        () -> validateTrueOrRevert(false, INVALID_ALLOWANCE_OWNER_ID));
-        final var trueExCapturedByCode =
-                assertThrows(
-                        InvalidTransactionException.class,
-                        () -> validateFalseOrRevert(true, CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT));
+        final var capturedEx = assertThrows(
+                InvalidTransactionException.class, () -> validateTrueOrRevert(false, INVALID_ALLOWANCE_OWNER_ID));
+        final var trueExCapturedByCode = assertThrows(
+                InvalidTransactionException.class,
+                () -> validateFalseOrRevert(true, CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT));
         assertTrue(capturedEx.isReverting());
         assertTrue(trueExCapturedByCode.isReverting());
         final var reason = Bytes.of(INVALID_ALLOWANCE_OWNER_ID.name().getBytes());

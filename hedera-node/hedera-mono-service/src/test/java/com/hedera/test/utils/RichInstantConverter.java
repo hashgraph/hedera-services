@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.utils;
 
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
@@ -23,8 +24,7 @@ import org.junit.jupiter.params.converter.ArgumentConverter;
 /** Converts string to JTimestamp. Format of string is "seconds_nanos". */
 public final class RichInstantConverter implements ArgumentConverter {
     @Override
-    public Object convert(Object input, ParameterContext parameterContext)
-            throws ArgumentConversionException {
+    public Object convert(Object input, ParameterContext parameterContext) throws ArgumentConversionException {
         if (null == input) {
             return null;
         }

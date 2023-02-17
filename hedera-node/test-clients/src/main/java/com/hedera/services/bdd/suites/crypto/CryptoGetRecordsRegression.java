@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -54,17 +55,16 @@ public class CryptoGetRecordsRegression extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    //						failsForDeletedAccount(),
-                    //						failsForMissingAccount(),
-                    //						failsForMissingPayment(),
-                    //						failsForInsufficientPayment(),
-                    //						failsForMalformedPayment(),
-                    //						failsForUnfundablePayment(),
-                    //						succeedsNormally(),
-                    getAccountRecords_testForDuplicates()
-                });
+        return List.of(new HapiSpec[] {
+            //						failsForDeletedAccount(),
+            //						failsForMissingAccount(),
+            //						failsForMissingPayment(),
+            //						failsForInsufficientPayment(),
+            //						failsForMalformedPayment(),
+            //						failsForUnfundablePayment(),
+            //						succeedsNormally(),
+            getAccountRecords_testForDuplicates()
+        });
     }
 
     private HapiSpec succeedsNormally() {
@@ -72,25 +72,17 @@ public class CryptoGetRecordsRegression extends HapiSuite {
 
         return defaultHapiSpec("SucceedsNormally")
                 .given(cryptoCreate("misc"), cryptoCreate("lowThreshPayer").sendThreshold(1L))
-                .when(
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, "misc", 1))
-                                .payingWith("lowThreshPayer")
+                .when(cryptoTransfer(tinyBarsFromTo(GENESIS, "misc", 1))
+                        .payingWith("lowThreshPayer")
+                        .memo(memo)
+                        .via("txn"))
+                .then(getAccountRecords("lowThreshPayer")
+                        .has(AssertUtils.inOrder(recordWith()
+                                .txnId("txn")
                                 .memo(memo)
-                                .via("txn"))
-                .then(
-                        getAccountRecords("lowThreshPayer")
-                                .has(
-                                        AssertUtils.inOrder(
-                                                recordWith()
-                                                        .txnId("txn")
-                                                        .memo(memo)
-                                                        .transfers(
-                                                                including(
-                                                                        tinyBarsFromTo(
-                                                                                GENESIS, "misc",
-                                                                                1L)))
-                                                        .status(SUCCESS)
-                                                        .payer("lowThreshPayer"))));
+                                .transfers(including(tinyBarsFromTo(GENESIS, "misc", 1L)))
+                                .status(SUCCESS)
+                                .payer("lowThreshPayer"))));
     }
 
     private HapiSpec failsForMissingAccount() {
@@ -99,19 +91,14 @@ public class CryptoGetRecordsRegression extends HapiSuite {
                 .when()
                 .then(
                         getAccountRecords("1.2.3").hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
-                        getAccountRecords("1.2.3")
-                                .nodePayment(123L)
-                                .hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID));
+                        getAccountRecords("1.2.3").nodePayment(123L).hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID));
     }
 
     private HapiSpec failsForMalformedPayment() {
         return defaultHapiSpec("FailsForMalformedPayment")
                 .given(newKeyNamed("wrong").shape(SIMPLE))
                 .when()
-                .then(
-                        getAccountRecords(GENESIS)
-                                .signedBy("wrong")
-                                .hasAnswerOnlyPrecheck(INVALID_SIGNATURE));
+                .then(getAccountRecords(GENESIS).signedBy("wrong").hasAnswerOnlyPrecheck(INVALID_SIGNATURE));
     }
 
     private HapiSpec failsForUnfundablePayment() {
@@ -119,31 +106,24 @@ public class CryptoGetRecordsRegression extends HapiSuite {
         return defaultHapiSpec("FailsForUnfundablePayment")
                 .given(cryptoCreate("brokePayer").balance(everything))
                 .when()
-                .then(
-                        getAccountRecords(GENESIS)
-                                .payingWith("brokePayer")
-                                .nodePayment(everything)
-                                .hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE));
+                .then(getAccountRecords(GENESIS)
+                        .payingWith("brokePayer")
+                        .nodePayment(everything)
+                        .hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE));
     }
 
     private HapiSpec failsForInsufficientPayment() {
         return defaultHapiSpec("FailsForInsufficientPayment")
                 .given()
                 .when()
-                .then(
-                        getAccountRecords(GENESIS)
-                                .nodePayment(1L)
-                                .hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
+                .then(getAccountRecords(GENESIS).nodePayment(1L).hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
     }
 
     private HapiSpec failsForMissingPayment() {
         return defaultHapiSpec("FailsForMissingPayment")
                 .given()
                 .when()
-                .then(
-                        getAccountRecords(GENESIS)
-                                .useEmptyTxnAsAnswerPayment()
-                                .hasAnswerOnlyPrecheck(NOT_SUPPORTED));
+                .then(getAccountRecords(GENESIS).useEmptyTxnAsAnswerPayment().hasAnswerOnlyPrecheck(NOT_SUPPORTED));
     }
 
     private HapiSpec failsForDeletedAccount() {
@@ -152,9 +132,7 @@ public class CryptoGetRecordsRegression extends HapiSuite {
                 .when(cryptoDelete("toBeDeleted").transfer(GENESIS))
                 .then(
                         getAccountRecords("toBeDeleted").hasCostAnswerPrecheck(ACCOUNT_DELETED),
-                        getAccountRecords("toBeDeleted")
-                                .nodePayment(123L)
-                                .hasAnswerOnlyPrecheck(ACCOUNT_DELETED));
+                        getAccountRecords("toBeDeleted").nodePayment(123L).hasAnswerOnlyPrecheck(ACCOUNT_DELETED));
     }
 
     private HapiSpec getAccountRecords_testForDuplicates() {
@@ -162,10 +140,9 @@ public class CryptoGetRecordsRegression extends HapiSuite {
                 .given(
                         cryptoCreate("account1").balance(5000000000000L).sendThreshold(1L),
                         cryptoCreate("account2").balance(5000000000000L).sendThreshold(1L))
-                .when(
-                        cryptoTransfer(tinyBarsFromTo("account1", "account2", 10L))
-                                .payingWith("account1")
-                                .via("thresholdTxn"))
+                .when(cryptoTransfer(tinyBarsFromTo("account1", "account2", 10L))
+                        .payingWith("account1")
+                        .via("thresholdTxn"))
                 .then(getAccountRecords("account1").logged());
     }
 }

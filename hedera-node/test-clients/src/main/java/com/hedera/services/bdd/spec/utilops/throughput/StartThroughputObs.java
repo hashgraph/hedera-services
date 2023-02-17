@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops.throughput;
 
 import com.google.common.base.MoreObjects;
@@ -36,10 +37,8 @@ public class StartThroughputObs extends UtilOp {
 
     @Override
     protected boolean submitOp(HapiSpec spec) {
-        long saturationTime =
-                System.currentTimeMillis()
-                        + expectedTimeToSaturateQueue.orElse(
-                                spec.setup().defaultQueueSaturationMs());
+        long saturationTime = System.currentTimeMillis()
+                + expectedTimeToSaturateQueue.orElse(spec.setup().defaultQueueSaturationMs());
         ThroughputObs baseObs = new ThroughputObs(name, saturationTime, spec);
         spec.registry().saveThroughputObs(baseObs);
         return false;

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,8 +45,7 @@ class FcTokenAllowanceIdTest {
         final var one = subject;
         final var two = FcTokenAllowanceId.from(EntityNum.fromLong(3L), EntityNum.fromLong(4L));
         final var three = FcTokenAllowanceId.from(EntityNum.fromLong(1L), EntityNum.fromLong(2L));
-        final var four =
-                FcTokenAllowanceId.from(tokenNum.toGrpcTokenId(), spenderNum.toGrpcAccountId());
+        final var four = FcTokenAllowanceId.from(tokenNum.toGrpcTokenId(), spenderNum.toGrpcAccountId());
 
         assertNotEquals(null, one);
         assertNotEquals(new Object(), one);
@@ -60,11 +60,7 @@ class FcTokenAllowanceIdTest {
     @Test
     void toStringWorks() {
         assertEquals(
-                "FcTokenAllowanceId{tokenNum="
-                        + tokenNum.longValue()
-                        + ", spenderNum="
-                        + spenderNum.longValue()
-                        + "}",
+                "FcTokenAllowanceId{tokenNum=" + tokenNum.longValue() + ", spenderNum=" + spenderNum.longValue() + "}",
                 subject.toString());
     }
 
@@ -107,15 +103,11 @@ class FcTokenAllowanceIdTest {
         final var base = new FcTokenAllowanceId(tokenNum, spenderNum);
         final var sameButDiff = base;
         assertEquals(0, base.compareTo(sameButDiff));
-        final var largerNum =
-                new FcTokenAllowanceId(
-                        EntityNum.fromInt(tokenNum.intValue() + 1),
-                        EntityNum.fromInt(spenderNum.intValue() - 1));
+        final var largerNum = new FcTokenAllowanceId(
+                EntityNum.fromInt(tokenNum.intValue() + 1), EntityNum.fromInt(spenderNum.intValue() - 1));
         assertEquals(-1, base.compareTo(largerNum));
-        final var smallerKey =
-                new FcTokenAllowanceId(
-                        EntityNum.fromInt(tokenNum.intValue() - 1),
-                        EntityNum.fromInt(spenderNum.intValue() - 1));
+        final var smallerKey = new FcTokenAllowanceId(
+                EntityNum.fromInt(tokenNum.intValue() - 1), EntityNum.fromInt(spenderNum.intValue() - 1));
         assertEquals(+1, base.compareTo(smallerKey));
     }
 }

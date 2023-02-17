@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.queries.token;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
@@ -241,14 +242,10 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         var actualInfo = response.getTokenGetInfo().getTokenInfo();
 
         expectedTokenType.ifPresent(
-                tokenType ->
-                        Assertions.assertEquals(
-                                tokenType, actualInfo.getTokenType(), "Wrong token type!"));
+                tokenType -> Assertions.assertEquals(tokenType, actualInfo.getTokenType(), "Wrong token type!"));
 
         expectedSupplyType.ifPresent(
-                supplyType ->
-                        Assertions.assertEquals(
-                                supplyType, actualInfo.getSupplyType(), "Wrong supply type!"));
+                supplyType -> Assertions.assertEquals(supplyType, actualInfo.getSupplyType(), "Wrong supply type!"));
 
         if (expectedSymbol.isPresent()) {
             Assertions.assertEquals(expectedSymbol.get(), actualInfo.getSymbol(), "Wrong symbol!");
@@ -260,8 +257,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 
         if (expectedAutoRenewAccount.isPresent()) {
             var id = TxnUtils.asId(expectedAutoRenewAccount.get(), spec);
-            Assertions.assertEquals(
-                    id, actualInfo.getAutoRenewAccount(), "Wrong auto renew account!");
+            Assertions.assertEquals(id, actualInfo.getAutoRenewAccount(), "Wrong auto renew account!");
         }
 
         if (expectedAutoRenewPeriod.isPresent()) {
@@ -272,20 +268,16 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         }
 
         if (expectedMaxSupply.isPresent()) {
-            Assertions.assertEquals(
-                    expectedMaxSupply.getAsLong(), actualInfo.getMaxSupply(), "Wrong max supply!");
+            Assertions.assertEquals(expectedMaxSupply.getAsLong(), actualInfo.getMaxSupply(), "Wrong max supply!");
         }
 
         if (expectedTotalSupply.isPresent()) {
             Assertions.assertEquals(
-                    expectedTotalSupply.getAsLong(),
-                    actualInfo.getTotalSupply(),
-                    "Wrong total supply!");
+                    expectedTotalSupply.getAsLong(), actualInfo.getTotalSupply(), "Wrong total supply!");
         }
 
         if (expectedDecimals.isPresent()) {
-            Assertions.assertEquals(
-                    expectedDecimals.getAsInt(), actualInfo.getDecimals(), "Wrong decimals!");
+            Assertions.assertEquals(expectedDecimals.getAsInt(), actualInfo.getDecimals(), "Wrong decimals!");
         }
 
         if (expectedTreasury.isPresent()) {
@@ -294,25 +286,17 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         }
 
         expectedPauseStatus.ifPresent(
-                status ->
-                        Assertions.assertEquals(
-                                status, actualInfo.getPauseStatus(), "wrong Pause status"));
+                status -> Assertions.assertEquals(status, actualInfo.getPauseStatus(), "wrong Pause status"));
 
         final var actualFees = actualInfo.getCustomFeesList();
         for (var expectedFee : expectedFees) {
             expectedFee.accept(spec, actualFees);
         }
 
-        expectedMemo.ifPresent(
-                s -> Assertions.assertEquals(s, actualInfo.getMemo(), "Wrong memo!"));
+        expectedMemo.ifPresent(s -> Assertions.assertEquals(s, actualInfo.getMemo(), "Wrong memo!"));
 
         var registry = spec.registry();
-        assertFor(
-                actualInfo.getTokenId(),
-                expectedId,
-                (n, r) -> r.getTokenID(n),
-                "Wrong token id!",
-                registry);
+        assertFor(actualInfo.getTokenId(), expectedId, (n, r) -> r.getTokenID(n), "Wrong token id!", registry);
         assertFor(
                 actualInfo.getExpiry(),
                 expectedExpiry,
@@ -367,8 +351,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
                 "Wrong token pause key!",
                 registry);
 
-        expectedLedgerId.ifPresent(
-                id -> Assertions.assertEquals(rationalize(id), actualInfo.getLedgerId()));
+        expectedLedgerId.ifPresent(id -> Assertions.assertEquals(rationalize(id), actualInfo.getLedgerId()));
     }
 
     private <T, R> void assertFor(
@@ -402,11 +385,10 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 
     private Query getTokenInfoQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         var id = TxnUtils.asTokenId(token, spec);
-        TokenGetInfoQuery getTokenQuery =
-                TokenGetInfoQuery.newBuilder()
-                        .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
-                        .setToken(id)
-                        .build();
+        TokenGetInfoQuery getTokenQuery = TokenGetInfoQuery.newBuilder()
+                .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
+                .setToken(id)
+                .build();
         return Query.newBuilder().setTokenGetInfo(getTokenQuery).build();
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
@@ -113,13 +114,9 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             long balance = op.getInitialBalance();
             final var customizer = asCustomizer(op);
             final var isLazyCreation =
-                    !op.getAlias().isEmpty()
-                            && op.getAlias().size() == EVM_ADDRESS_SIZE
-                            && !op.hasKey();
-            final var lazyCreationFinalizationFee =
-                    autoCreationLogic.getLazyCreationFinalizationFee();
-            final var minPayerBalanceRequired =
-                    balance + (isLazyCreation ? lazyCreationFinalizationFee : 0);
+                    !op.getAlias().isEmpty() && op.getAlias().size() == EVM_ADDRESS_SIZE && !op.hasKey();
+            final var lazyCreationFinalizationFee = autoCreationLogic.getLazyCreationFinalizationFee();
+            final var minPayerBalanceRequired = balance + (isLazyCreation ? lazyCreationFinalizationFee : 0);
             if (minPayerBalanceRequired > (long) ledger.getAccountsLedger().get(sponsor, BALANCE)) {
                 throw new InsufficientFundsException(txnCtx.activePayer(), minPayerBalanceRequired);
             }
@@ -143,11 +140,10 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
                 }
             }
 
-            aliasesToLink.forEach(
-                    alias -> {
-                        aliasManager.link(alias, EntityNum.fromAccountId(created));
-                        sigImpactHistorian.markAliasChanged(alias);
-                    });
+            aliasesToLink.forEach(alias -> {
+                aliasManager.link(alias, EntityNum.fromAccountId(created));
+                sigImpactHistorian.markAliasChanged(alias);
+            });
         } catch (InsufficientFundsException ife) {
             txnCtx.setStatus(INSUFFICIENT_PAYER_BALANCE);
         } catch (Exception e) {
@@ -194,8 +190,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         }
 
         if (hasStakedId(op.getStakedIdCase().name())) {
-            customizer.customizeStakedId(
-                    op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId());
+            customizer.customizeStakedId(op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId());
         }
         return customizer;
     }

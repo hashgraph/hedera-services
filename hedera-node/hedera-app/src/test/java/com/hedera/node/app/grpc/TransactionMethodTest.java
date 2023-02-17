@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.grpc;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -38,24 +39,21 @@ class TransactionMethodTest {
     void nullServiceNameThrows() {
         //noinspection ConstantConditions
         assertThrows(
-                NullPointerException.class,
-                () -> new TransactionMethod(null, "testMethod", ingestWorkflow, metrics));
+                NullPointerException.class, () -> new TransactionMethod(null, "testMethod", ingestWorkflow, metrics));
     }
 
     @Test
     void nullMethodNameThrows() {
         //noinspection ConstantConditions
         assertThrows(
-                NullPointerException.class,
-                () -> new TransactionMethod("testService", null, ingestWorkflow, metrics));
+                NullPointerException.class, () -> new TransactionMethod("testService", null, ingestWorkflow, metrics));
     }
 
     @Test
     void nullWorkflowThrows() {
         //noinspection ConstantConditions
         assertThrows(
-                NullPointerException.class,
-                () -> new TransactionMethod("testService", "testMethod", null, metrics));
+                NullPointerException.class, () -> new TransactionMethod("testService", "testMethod", null, metrics));
     }
 
     @Test
@@ -70,11 +68,10 @@ class TransactionMethodTest {
     void handleDelegatesToWorkflow(@Mock final StreamObserver<ByteBuffer> streamObserver) {
         final var requestBuffer = ByteBuffer.allocate(100);
         final AtomicBoolean called = new AtomicBoolean(false);
-        final IngestWorkflow w =
-                (s, r1, r2) -> {
-                    assertEquals(requestBuffer, r1);
-                    called.set(true);
-                };
+        final IngestWorkflow w = (s, r1, r2) -> {
+            assertEquals(requestBuffer, r1);
+            called.set(true);
+        };
 
         final var method = new TransactionMethod("testService", "testMethod", w, metrics);
         method.invoke(requestBuffer, streamObserver);
@@ -84,10 +81,9 @@ class TransactionMethodTest {
     @Test
     void unexpectedExceptionFromHandler(@Mock final StreamObserver<ByteBuffer> streamObserver) {
         final var requestBuffer = ByteBuffer.allocate(100);
-        final IngestWorkflow w =
-                (s, r1, r2) -> {
-                    throw new RuntimeException("Unexpected!");
-                };
+        final IngestWorkflow w = (s, r1, r2) -> {
+            throw new RuntimeException("Unexpected!");
+        };
         final var method = new TransactionMethod("testService", "testMethod", w, metrics);
         method.invoke(requestBuffer, streamObserver);
         Mockito.verify(streamObserver).onError(Mockito.any());

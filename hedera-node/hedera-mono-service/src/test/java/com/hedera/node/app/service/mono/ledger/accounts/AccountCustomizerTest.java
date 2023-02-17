@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.accounts;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_ACCOUNT_ID;
@@ -65,8 +66,7 @@ class AccountCustomizerTest {
     @Test
     void testChanges() {
         setupWithLiveChangeManager();
-        final var a =
-                subject.isDeleted(false).expiry(100L).memo("memo").customizing(new TestAccount());
+        final var a = subject.isDeleted(false).expiry(100L).memo("memo").customizing(new TestAccount());
 
         assertNotNull(subject.getChanges());
         assertNotEquals(0, subject.getChanges().size());
@@ -76,11 +76,7 @@ class AccountCustomizerTest {
     void directlyCustomizesAnAccount() {
         setupWithLiveChangeManager();
 
-        final var ta =
-                subject.isDeleted(true)
-                        .expiry(55L)
-                        .memo("Something!")
-                        .customizing(new TestAccount());
+        final var ta = subject.isDeleted(true).expiry(55L).memo("Something!").customizing(new TestAccount());
 
         assertEquals(55L, ta.value);
         assertTrue(ta.flag);
@@ -91,8 +87,7 @@ class AccountCustomizerTest {
     void setsCustomizedProperties() {
         setupWithLiveChangeManager();
         final var id = 1L;
-        final TransactionalLedger<Long, TestAccountProperty, TestAccount> ledger =
-                mock(TransactionalLedger.class);
+        final TransactionalLedger<Long, TestAccountProperty, TestAccount> ledger = mock(TransactionalLedger.class);
         final var customMemo = "alpha bravo charlie";
         final var customIsReceiverSigRequired = true;
 
@@ -126,10 +121,7 @@ class AccountCustomizerTest {
         verify(changeManager)
                 .update(
                         any(EnumMap.class),
-                        argThat(
-                                TestAccountCustomizer.OPTION_PROPERTIES.get(
-                                                EXPIRED_AND_PENDING_REMOVAL)
-                                        ::equals),
+                        argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(EXPIRED_AND_PENDING_REMOVAL)::equals),
                         argThat(Boolean.TRUE::equals));
     }
 
@@ -181,9 +173,7 @@ class AccountCustomizerTest {
         verify(changeManager)
                 .update(
                         any(EnumMap.class),
-                        argThat(
-                                TestAccountCustomizer.OPTION_PROPERTIES.get(AUTO_RENEW_ACCOUNT_ID)
-                                        ::equals),
+                        argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(AUTO_RENEW_ACCOUNT_ID)::equals),
                         argThat(autoRenewId::equals));
     }
 
@@ -211,9 +201,7 @@ class AccountCustomizerTest {
         verify(changeManager)
                 .update(
                         any(EnumMap.class),
-                        argThat(
-                                TestAccountCustomizer.OPTION_PROPERTIES.get(AUTO_RENEW_PERIOD)
-                                        ::equals),
+                        argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(AUTO_RENEW_PERIOD)::equals),
                         argThat(autoRenew::equals));
     }
 
@@ -227,9 +215,7 @@ class AccountCustomizerTest {
         verify(changeManager)
                 .update(
                         any(EnumMap.class),
-                        argThat(
-                                TestAccountCustomizer.OPTION_PROPERTIES.get(IS_SMART_CONTRACT)
-                                        ::equals),
+                        argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(IS_SMART_CONTRACT)::equals),
                         argThat(isSmartContract::equals));
     }
 
@@ -257,10 +243,7 @@ class AccountCustomizerTest {
         verify(changeManager)
                 .update(
                         any(EnumMap.class),
-                        argThat(
-                                TestAccountCustomizer.OPTION_PROPERTIES.get(
-                                                IS_RECEIVER_SIG_REQUIRED)
-                                        ::equals),
+                        argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(IS_RECEIVER_SIG_REQUIRED)::equals),
                         argThat(isSigRequired::equals));
     }
 
@@ -274,9 +257,7 @@ class AccountCustomizerTest {
         verify(changeManager)
                 .update(
                         any(EnumMap.class),
-                        argThat(
-                                TestAccountCustomizer.OPTION_PROPERTIES.get(DECLINE_REWARD)
-                                        ::equals),
+                        argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(DECLINE_REWARD)::equals),
                         argThat(isDeclineReward::equals));
     }
 
@@ -306,18 +287,12 @@ class AccountCustomizerTest {
         verify(changeManager)
                 .update(
                         any(EnumMap.class),
-                        argThat(
-                                TestAccountCustomizer.OPTION_PROPERTIES.get(
-                                                MAX_AUTOMATIC_ASSOCIATIONS)
-                                        ::equals),
+                        argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(MAX_AUTOMATIC_ASSOCIATIONS)::equals),
                         argThat(maxAutoAssociations::equals));
         verify(changeManager)
                 .update(
                         any(EnumMap.class),
-                        argThat(
-                                TestAccountCustomizer.OPTION_PROPERTIES.get(
-                                                USED_AUTOMATIC_ASSOCIATIONS)
-                                        ::equals),
+                        argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(USED_AUTOMATIC_ASSOCIATIONS)::equals),
                         argThat(alreadyUsedAutoAssociations::equals));
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.utils.sysfiles;
 
 import static java.util.stream.Collectors.toList;
@@ -41,8 +42,7 @@ public class AddressBookPojo {
         return from(book, BookEntryPojo::fromGrpc);
     }
 
-    private static AddressBookPojo from(
-            NodeAddressBook book, Function<NodeAddress, BookEntryPojo> converter) {
+    private static AddressBookPojo from(NodeAddressBook book, Function<NodeAddress, BookEntryPojo> converter) {
         var pojo = new AddressBookPojo();
         pojo.setEntries(book.getNodeAddressList().stream().map(converter).collect(toList()));
         return pojo;

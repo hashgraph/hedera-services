@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
@@ -74,13 +75,17 @@ class HederaTracerTest {
     private static final Address contract = Address.fromHexString("0x2");
     private static final Address accountReceiver = Address.fromHexString("0x3");
 
-    @Mock private MessageFrame messageFrame;
+    @Mock
+    private MessageFrame messageFrame;
 
-    @Mock private HederaStackedWorldStateUpdater worldUpdater;
+    @Mock
+    private HederaStackedWorldStateUpdater worldUpdater;
 
-    @Mock private ContractAliases contractAliases;
+    @Mock
+    private ContractAliases contractAliases;
 
-    @Mock private OperationResult operationResult;
+    @Mock
+    private OperationResult operationResult;
 
     private HederaTracer subject;
 
@@ -296,9 +301,7 @@ class HederaTracerTest {
         // then
         final var solidityAction = subject.getActions().get(0);
         assertEquals(initialGas, solidityAction.getGasUsed());
-        assertArrayEquals(
-                codeTooLarge.get().name().getBytes(StandardCharsets.UTF_8),
-                solidityAction.getError());
+        assertArrayEquals(codeTooLarge.get().name().getBytes(StandardCharsets.UTF_8), solidityAction.getError());
         assertNull(solidityAction.getInvalidSolidityAddress());
     }
 
@@ -333,8 +336,7 @@ class HederaTracerTest {
         final var topLevelAction = subject.getActions().get(0);
         assertEquals(initialGas, topLevelAction.getGasUsed());
         assertArrayEquals(
-                invalidSolidityAddress.get().name().getBytes(StandardCharsets.UTF_8),
-                topLevelAction.getError());
+                invalidSolidityAddress.get().name().getBytes(StandardCharsets.UTF_8), topLevelAction.getError());
         assertEquals(EntityId.fromAddress(accountReceiver), topLevelAction.getRecipientAccount());
         assertNull(topLevelAction.getRecipientContract());
         assertNull(topLevelAction.getInvalidSolidityAddress());
@@ -343,18 +345,11 @@ class HederaTracerTest {
         assertEquals(OP_CALL, syntheticInvalidAddressAction.getCallOperationType());
         assertEquals(0, syntheticInvalidAddressAction.getValue());
         assertArrayEquals(new byte[0], syntheticInvalidAddressAction.getInput());
-        assertEquals(
-                messageFrame.getMessageStackDepth() + 1,
-                syntheticInvalidAddressAction.getCallDepth());
-        assertEquals(
-                EntityId.fromAddress(accountReceiver),
-                syntheticInvalidAddressAction.getCallingContract());
+        assertEquals(messageFrame.getMessageStackDepth() + 1, syntheticInvalidAddressAction.getCallDepth());
+        assertEquals(EntityId.fromAddress(accountReceiver), syntheticInvalidAddressAction.getCallingContract());
+        assertArrayEquals(contract.toArrayUnsafe(), syntheticInvalidAddressAction.getInvalidSolidityAddress());
         assertArrayEquals(
-                contract.toArrayUnsafe(),
-                syntheticInvalidAddressAction.getInvalidSolidityAddress());
-        assertArrayEquals(
-                invalidSolidityAddress.get().name().getBytes(StandardCharsets.UTF_8),
-                topLevelAction.getError());
+                invalidSolidityAddress.get().name().getBytes(StandardCharsets.UTF_8), topLevelAction.getError());
         assertEquals(messageFrame.getRemainingGas(), syntheticInvalidAddressAction.getGas());
     }
 
@@ -385,8 +380,7 @@ class HederaTracerTest {
         final var topLevelAction = subject.getActions().get(0);
         assertEquals(initialGas, topLevelAction.getGasUsed());
         assertArrayEquals(
-                invalidSolidityAddress.get().name().getBytes(StandardCharsets.UTF_8),
-                topLevelAction.getError());
+                invalidSolidityAddress.get().name().getBytes(StandardCharsets.UTF_8), topLevelAction.getError());
         assertEquals(EntityId.fromAddress(accountReceiver), topLevelAction.getRecipientAccount());
         assertNull(topLevelAction.getRecipientContract());
         assertNull(topLevelAction.getInvalidSolidityAddress());
@@ -583,8 +577,7 @@ class HederaTracerTest {
 
         // when
         given(messageFrame.getState()).willReturn(State.EXCEPTIONAL_HALT);
-        given(messageFrame.getExceptionalHaltReason())
-                .willReturn(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
+        given(messageFrame.getExceptionalHaltReason()).willReturn(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
 
         subject.tracePostExecution(messageFrame, operationResult);
 

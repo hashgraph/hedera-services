@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -43,9 +44,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class FractionalFeeAssessorTest {
     private final List<AssessedCustomFeeWrapper> accumulator = new ArrayList<>();
 
-    @Mock private BalanceChangeManager changeManager;
-    @Mock private FixedFeeAssessor fixedFeeAssessor;
-    @Mock private CustomFeePayerExemptions customFeePayerExemptions;
+    @Mock
+    private BalanceChangeManager changeManager;
+
+    @Mock
+    private FixedFeeAssessor fixedFeeAssessor;
+
+    @Mock
+    private CustomFeePayerExemptions customFeePayerExemptions;
 
     private FractionalFeeAssessor subject;
 
@@ -57,46 +63,38 @@ class FractionalFeeAssessorTest {
     @Test
     void appliesFeesAsExpected() {
         // setup:
-        final var feeMeta =
-                newCustomFeeMeta(
-                        tokenWithFractionalFee,
-                        List.of(
-                                firstFractionalFee,
-                                secondFractionalFee,
-                                exemptFractionalFee,
-                                skippedFixedFee,
-                                fractionalFeeNetOfTransfers));
+        final var feeMeta = newCustomFeeMeta(
+                tokenWithFractionalFee,
+                List.of(
+                        firstFractionalFee,
+                        secondFractionalFee,
+                        exemptFractionalFee,
+                        skippedFixedFee,
+                        fractionalFeeNetOfTransfers));
         final var firstCollectorChange =
-                BalanceChange.tokenCustomFeeAdjust(
-                        firstFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L);
+                BalanceChange.tokenCustomFeeAdjust(firstFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L);
         final var secondCollectorChange =
-                BalanceChange.tokenCustomFeeAdjust(
-                        secondFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L);
+                BalanceChange.tokenCustomFeeAdjust(secondFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L);
         final var credits = List.of(firstVanillaReclaim, aliasedVanillaReclaim);
         // and:
         final var firstExpectedFee =
-                subject.amountOwedGiven(
-                        vanillaTriggerAmount, firstFractionalFee.getFractionalFeeSpec());
+                subject.amountOwedGiven(vanillaTriggerAmount, firstFractionalFee.getFractionalFeeSpec());
         final var secondExpectedFee =
-                subject.amountOwedGiven(
-                        vanillaTriggerAmount, secondFractionalFee.getFractionalFeeSpec());
+                subject.amountOwedGiven(vanillaTriggerAmount, secondFractionalFee.getFractionalFeeSpec());
         final var netFee =
-                subject.amountOwedGiven(
-                        vanillaTriggerAmount, fractionalFeeNetOfTransfers.getFractionalFeeSpec());
+                subject.amountOwedGiven(vanillaTriggerAmount, fractionalFeeNetOfTransfers.getFractionalFeeSpec());
         final var totalReclaimedFees = firstExpectedFee + secondExpectedFee;
         // and:
-        final var expFirstAssess =
-                new AssessedCustomFeeWrapper(
-                        firstFractionalFeeCollector,
-                        tokenWithFractionalFee.asEntityId(),
-                        firstExpectedFee,
-                        effPayerAccountNums);
-        final var expSecondAssess =
-                new AssessedCustomFeeWrapper(
-                        secondFractionalFeeCollector,
-                        tokenWithFractionalFee.asEntityId(),
-                        secondExpectedFee,
-                        effPayerAccountNums);
+        final var expFirstAssess = new AssessedCustomFeeWrapper(
+                firstFractionalFeeCollector,
+                tokenWithFractionalFee.asEntityId(),
+                firstExpectedFee,
+                effPayerAccountNums);
+        final var expSecondAssess = new AssessedCustomFeeWrapper(
+                secondFractionalFeeCollector,
+                tokenWithFractionalFee.asEntityId(),
+                secondExpectedFee,
+                effPayerAccountNums);
 
         given(changeManager.changeFor(firstFractionalFeeCollector.asId(), tokenWithFractionalFee))
                 .willReturn(firstCollectorChange);
@@ -105,18 +103,13 @@ class FractionalFeeAssessorTest {
         given(changeManager.creditsInCurrentLevel(tokenWithFractionalFee)).willReturn(credits);
 
         // when:
-        final var result =
-                subject.assessAllFractional(vanillaTrigger, feeMeta, changeManager, accumulator);
+        final var result = subject.assessAllFractional(vanillaTrigger, feeMeta, changeManager, accumulator);
 
         // then:
         assertEquals(OK, result);
         // and:
-        assertEquals(
-                firstCreditAmount - (totalReclaimedFees * 4 / 5),
-                firstVanillaReclaim.getAggregatedUnits());
-        assertEquals(
-                secondCreditAmount - (totalReclaimedFees / 5),
-                aliasedVanillaReclaim.getAggregatedUnits());
+        assertEquals(firstCreditAmount - (totalReclaimedFees * 4 / 5), firstVanillaReclaim.getAggregatedUnits());
+        assertEquals(secondCreditAmount - (totalReclaimedFees / 5), aliasedVanillaReclaim.getAggregatedUnits());
         // and:
         assertEquals(firstExpectedFee, firstCollectorChange.getAggregatedUnits());
         assertEquals(secondExpectedFee, secondCollectorChange.getAggregatedUnits());
@@ -130,10 +123,7 @@ class FractionalFeeAssessorTest {
                         payer,
                         tokenWithFractionalMeta,
                         FcCustomFee.fixedFee(
-                                netFee,
-                                tokenWithFractionalFee.asEntityId(),
-                                netOfTransfersFeeCollector,
-                                true),
+                                netFee, tokenWithFractionalFee.asEntityId(), netOfTransfersFeeCollector, true),
                         changeManager,
                         accumulator);
     }
@@ -143,27 +133,20 @@ class FractionalFeeAssessorTest {
         // setup:
         final var feeMeta = newCustomFeeMeta(tokenWithFractionalFee, List.of(firstFractionalFee));
         final var collectorChange =
-                BalanceChange.tokenCustomFeeAdjust(
-                        firstFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L);
+                BalanceChange.tokenCustomFeeAdjust(firstFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L);
         final var credits = List.of(firstVanillaReclaim, secondVanillaReclaim);
         // and:
         final var expectedReclaimed =
-                subject.amountOwedGiven(
-                        vanillaTriggerAmount, firstFractionalFee.getFractionalFeeSpec());
-        final var expectedAssess =
-                new AssessedCustomFeeWrapper(
-                        firstFractionalFeeCollector,
-                        tokenWithFractionalFee.asEntityId(),
-                        expectedReclaimed,
-                        // The first candidate payer is going to be exempt
-                        new AccountID[] {secondVanillaReclaim.getAccount().asGrpcAccount()});
-        given(
-                        customFeePayerExemptions.isPayerExempt(
-                                feeMeta, firstFractionalFee, firstVanillaReclaim.getAccount()))
+                subject.amountOwedGiven(vanillaTriggerAmount, firstFractionalFee.getFractionalFeeSpec());
+        final var expectedAssess = new AssessedCustomFeeWrapper(
+                firstFractionalFeeCollector,
+                tokenWithFractionalFee.asEntityId(),
+                expectedReclaimed,
+                // The first candidate payer is going to be exempt
+                new AccountID[] {secondVanillaReclaim.getAccount().asGrpcAccount()});
+        given(customFeePayerExemptions.isPayerExempt(feeMeta, firstFractionalFee, firstVanillaReclaim.getAccount()))
                 .willReturn(true);
-        given(
-                        customFeePayerExemptions.isPayerExempt(
-                                feeMeta, firstFractionalFee, secondVanillaReclaim.getAccount()))
+        given(customFeePayerExemptions.isPayerExempt(feeMeta, firstFractionalFee, secondVanillaReclaim.getAccount()))
                 .willReturn(false);
 
         given(changeManager.changeFor(firstFractionalFeeCollector.asId(), tokenWithFractionalFee))
@@ -171,15 +154,13 @@ class FractionalFeeAssessorTest {
         given(changeManager.creditsInCurrentLevel(tokenWithFractionalFee)).willReturn(credits);
 
         // when:
-        final var result =
-                subject.assessAllFractional(vanillaTrigger, feeMeta, changeManager, accumulator);
+        final var result = subject.assessAllFractional(vanillaTrigger, feeMeta, changeManager, accumulator);
 
         // then:
         assertEquals(OK, result);
         // and:
         assertEquals(firstCreditAmount, firstVanillaReclaim.getAggregatedUnits());
-        assertEquals(
-                secondCreditAmount - expectedReclaimed, secondVanillaReclaim.getAggregatedUnits());
+        assertEquals(secondCreditAmount - expectedReclaimed, secondVanillaReclaim.getAggregatedUnits());
         // and:
         assertEquals(expectedReclaimed, collectorChange.getAggregatedUnits());
         // and:
@@ -192,23 +173,17 @@ class FractionalFeeAssessorTest {
         // setup:
         final var feeMeta = newCustomFeeMeta(tokenWithFractionalFee, List.of(firstFractionalFee));
         final var collectorChange =
-                BalanceChange.tokenCustomFeeAdjust(
-                        firstFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L);
+                BalanceChange.tokenCustomFeeAdjust(firstFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L);
         final var credits = List.of(firstVanillaReclaim, secondVanillaReclaim);
-        given(
-                        customFeePayerExemptions.isPayerExempt(
-                                feeMeta, firstFractionalFee, firstVanillaReclaim.getAccount()))
+        given(customFeePayerExemptions.isPayerExempt(feeMeta, firstFractionalFee, firstVanillaReclaim.getAccount()))
                 .willReturn(true);
-        given(
-                        customFeePayerExemptions.isPayerExempt(
-                                feeMeta, firstFractionalFee, secondVanillaReclaim.getAccount()))
+        given(customFeePayerExemptions.isPayerExempt(feeMeta, firstFractionalFee, secondVanillaReclaim.getAccount()))
                 .willReturn(true);
 
         given(changeManager.creditsInCurrentLevel(tokenWithFractionalFee)).willReturn(credits);
 
         // when:
-        final var result =
-                subject.assessAllFractional(vanillaTrigger, feeMeta, changeManager, accumulator);
+        final var result = subject.assessAllFractional(vanillaTrigger, feeMeta, changeManager, accumulator);
 
         // then:
         assertEquals(OK, result);
@@ -218,9 +193,7 @@ class FractionalFeeAssessorTest {
     @Test
     void abortsOnCreditOverflow() {
         // setup:
-        final var feeMeta =
-                newCustomFeeMeta(
-                        tokenWithFractionalFee, List.of(firstFractionalFee, secondFractionalFee));
+        final var feeMeta = newCustomFeeMeta(tokenWithFractionalFee, List.of(firstFractionalFee, secondFractionalFee));
         final var credits = List.of(firstVanillaReclaim, secondVanillaReclaim);
         // and:
         firstVanillaReclaim.aggregateUnits(Long.MAX_VALUE / 2);
@@ -229,8 +202,7 @@ class FractionalFeeAssessorTest {
         given(changeManager.creditsInCurrentLevel(tokenWithFractionalFee)).willReturn(credits);
 
         // when:
-        final var result =
-                subject.assessAllFractional(vanillaTrigger, feeMeta, changeManager, accumulator);
+        final var result = subject.assessAllFractional(vanillaTrigger, feeMeta, changeManager, accumulator);
 
         // then:
         assertEquals(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE, result);
@@ -239,14 +211,12 @@ class FractionalFeeAssessorTest {
     @Test
     void cannotOverflowWithCrazyFraction() {
         // setup:
-        final var feeMeta =
-                newCustomFeeMeta(tokenWithFractionalFee, List.of(nonsenseFee, secondFractionalFee));
+        final var feeMeta = newCustomFeeMeta(tokenWithFractionalFee, List.of(nonsenseFee, secondFractionalFee));
         final var credits = List.of(firstVanillaReclaim, secondVanillaReclaim);
         given(changeManager.creditsInCurrentLevel(tokenWithFractionalFee)).willReturn(credits);
 
         // when:
-        final var result =
-                subject.assessAllFractional(vanillaTrigger, feeMeta, changeManager, accumulator);
+        final var result = subject.assessAllFractional(vanillaTrigger, feeMeta, changeManager, accumulator);
 
         // then:
         assertEquals(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE, result);
@@ -255,16 +225,12 @@ class FractionalFeeAssessorTest {
     @Test
     void failsWithInsufficientBalanceWhenAppropos() {
         // setup:
-        final var feeMeta =
-                newCustomFeeMeta(
-                        tokenWithFractionalFee, List.of(firstFractionalFee, secondFractionalFee));
+        final var feeMeta = newCustomFeeMeta(tokenWithFractionalFee, List.of(firstFractionalFee, secondFractionalFee));
         final var credits = List.of(someCredit);
         given(changeManager.creditsInCurrentLevel(tokenWithFractionalFee)).willReturn(credits);
 
         // when:
-        final var result =
-                subject.assessAllFractional(
-                        wildlyInsufficientChange, feeMeta, changeManager, accumulator);
+        final var result = subject.assessAllFractional(wildlyInsufficientChange, feeMeta, changeManager, accumulator);
 
         // then:
         assertEquals(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE, result);
@@ -279,21 +245,16 @@ class FractionalFeeAssessorTest {
         // expect:
         assertThrows(
                 IllegalArgumentException.class,
-                () ->
-                        subject.assessAllFractional(
-                                vanillaTrigger, feeMeta, changeManager, accumulator));
+                () -> subject.assessAllFractional(vanillaTrigger, feeMeta, changeManager, accumulator));
     }
 
     @Test
     void failsFastOnNonFungibleChange() {
         // setup:
-        final var feeMeta =
-                newCustomFeeMeta(
-                        tokenWithFractionalFee, List.of(firstFractionalFee, secondFractionalFee));
+        final var feeMeta = newCustomFeeMeta(tokenWithFractionalFee, List.of(firstFractionalFee, secondFractionalFee));
 
         // when:
-        final var result =
-                subject.assessAllFractional(nonFungibleChange, feeMeta, changeManager, accumulator);
+        final var result = subject.assessAllFractional(nonFungibleChange, feeMeta, changeManager, accumulator);
 
         // then:
         assertEquals(INVALID_TOKEN_ID, result);
@@ -319,11 +280,10 @@ class FractionalFeeAssessorTest {
         long n = 10;
         long d = 9;
         // and:
-        final var expected =
-                BigInteger.valueOf(huge)
-                        .multiply(BigInteger.valueOf(n))
-                        .divide(BigInteger.valueOf(d))
-                        .longValueExact();
+        final var expected = BigInteger.valueOf(huge)
+                .multiply(BigInteger.valueOf(n))
+                .divide(BigInteger.valueOf(d))
+                .longValueExact();
 
         // expect:
         assertEquals(expected, AdjustmentUtils.safeFractionMultiply(n, d, huge));
@@ -337,8 +297,7 @@ class FractionalFeeAssessorTest {
         long d = 9;
 
         // expect:
-        assertThrows(
-                ArithmeticException.class, () -> AdjustmentUtils.safeFractionMultiply(n, d, huge));
+        assertThrows(ArithmeticException.class, () -> AdjustmentUtils.safeFractionMultiply(n, d, huge));
     }
 
     @Test
@@ -346,8 +305,7 @@ class FractionalFeeAssessorTest {
         // expect:
         assertEquals(
                 vanillaTriggerAmount / firstDenominator,
-                subject.amountOwedGiven(
-                        vanillaTriggerAmount, firstFractionalFee.getFractionalFeeSpec()));
+                subject.amountOwedGiven(vanillaTriggerAmount, firstFractionalFee.getFractionalFeeSpec()));
     }
 
     @Test
@@ -355,8 +313,7 @@ class FractionalFeeAssessorTest {
         // expect:
         assertEquals(
                 firstMaxAmountOfFractionalFee,
-                subject.amountOwedGiven(
-                        maxApplicableTriggerAmount, firstFractionalFee.getFractionalFeeSpec()));
+                subject.amountOwedGiven(maxApplicableTriggerAmount, firstFractionalFee.getFractionalFeeSpec()));
     }
 
     @Test
@@ -364,8 +321,7 @@ class FractionalFeeAssessorTest {
         // expect:
         assertEquals(
                 firstMinAmountOfFractionalFee,
-                subject.amountOwedGiven(
-                        minApplicableTriggerAmount, firstFractionalFee.getFractionalFeeSpec()));
+                subject.amountOwedGiven(minApplicableTriggerAmount, firstFractionalFee.getFractionalFeeSpec()));
     }
 
     @Test
@@ -401,12 +357,8 @@ class FractionalFeeAssessorTest {
         subject.reclaim(1000L, credits);
 
         // then:
-        assertEquals(
-                perturbedFirstCreditAmount - expFromFirst,
-                firstVanillaReclaim.getAggregatedUnits());
-        assertEquals(
-                perturbedSecondCreditAmount - expFromSecond,
-                secondVanillaReclaim.getAggregatedUnits());
+        assertEquals(perturbedFirstCreditAmount - expFromFirst, firstVanillaReclaim.getAggregatedUnits());
+        assertEquals(perturbedSecondCreditAmount - expFromSecond, secondVanillaReclaim.getAggregatedUnits());
     }
 
     private CustomFeeMeta newCustomFeeMeta(Id tokenId, List<FcCustomFee> customFees) {
@@ -442,83 +394,67 @@ class FractionalFeeAssessorTest {
     private final EntityId secondFractionalFeeCollector = new EntityId(5, 6, 7);
     private final EntityId netOfTransfersFeeCollector = new EntityId(6, 7, 8);
     private final FcCustomFee skippedFixedFee =
-            FcCustomFee.fixedFee(
-                    100L, EntityId.MISSING_ENTITY_ID, EntityId.MISSING_ENTITY_ID, false);
-    private final FcCustomFee fractionalFeeNetOfTransfers =
-            FcCustomFee.fractionalFee(
-                    netOfTransfersNumerator,
-                    netOfTransfersDenominator,
-                    netOfTransfersMinAmountOfFractionalFee,
-                    netOfTransfersMaxAmountOfFractionalFee,
-                    !notNetOfTransfers,
-                    netOfTransfersFeeCollector,
-                    true);
-    private final FcCustomFee firstFractionalFee =
-            FcCustomFee.fractionalFee(
-                    firstNumerator,
-                    firstDenominator,
-                    firstMinAmountOfFractionalFee,
-                    firstMaxAmountOfFractionalFee,
-                    notNetOfTransfers,
-                    firstFractionalFeeCollector,
-                    false);
-    private final FcCustomFee secondFractionalFee =
-            FcCustomFee.fractionalFee(
-                    secondNumerator,
-                    secondDenominator,
-                    secondMinAmountOfFractionalFee,
-                    secondMaxAmountOfFractionalFee,
-                    notNetOfTransfers,
-                    secondFractionalFeeCollector,
-                    false);
-    private final FcCustomFee exemptFractionalFee =
-            FcCustomFee.fractionalFee(
-                    firstNumerator,
-                    secondDenominator,
-                    firstMinAmountOfFractionalFee,
-                    secondMaxAmountOfFractionalFee,
-                    notNetOfTransfers,
-                    payer.asEntityId(),
-                    false);
-    private final FcCustomFee nonsenseFee =
-            FcCustomFee.fractionalFee(
-                    nonsenseNumerator,
-                    nonsenseDenominator,
-                    1,
-                    1,
-                    notNetOfTransfers,
-                    secondFractionalFeeCollector,
-                    false);
-    private final CustomFeeMeta tokenWithFractionalMeta =
-            new CustomFeeMeta(
-                    tokenWithFractionalFee,
-                    treasury,
-                    List.of(
-                            firstFractionalFee,
-                            secondFractionalFee,
-                            exemptFractionalFee,
-                            skippedFixedFee,
-                            fractionalFeeNetOfTransfers));
+            FcCustomFee.fixedFee(100L, EntityId.MISSING_ENTITY_ID, EntityId.MISSING_ENTITY_ID, false);
+    private final FcCustomFee fractionalFeeNetOfTransfers = FcCustomFee.fractionalFee(
+            netOfTransfersNumerator,
+            netOfTransfersDenominator,
+            netOfTransfersMinAmountOfFractionalFee,
+            netOfTransfersMaxAmountOfFractionalFee,
+            !notNetOfTransfers,
+            netOfTransfersFeeCollector,
+            true);
+    private final FcCustomFee firstFractionalFee = FcCustomFee.fractionalFee(
+            firstNumerator,
+            firstDenominator,
+            firstMinAmountOfFractionalFee,
+            firstMaxAmountOfFractionalFee,
+            notNetOfTransfers,
+            firstFractionalFeeCollector,
+            false);
+    private final FcCustomFee secondFractionalFee = FcCustomFee.fractionalFee(
+            secondNumerator,
+            secondDenominator,
+            secondMinAmountOfFractionalFee,
+            secondMaxAmountOfFractionalFee,
+            notNetOfTransfers,
+            secondFractionalFeeCollector,
+            false);
+    private final FcCustomFee exemptFractionalFee = FcCustomFee.fractionalFee(
+            firstNumerator,
+            secondDenominator,
+            firstMinAmountOfFractionalFee,
+            secondMaxAmountOfFractionalFee,
+            notNetOfTransfers,
+            payer.asEntityId(),
+            false);
+    private final FcCustomFee nonsenseFee = FcCustomFee.fractionalFee(
+            nonsenseNumerator, nonsenseDenominator, 1, 1, notNetOfTransfers, secondFractionalFeeCollector, false);
+    private final CustomFeeMeta tokenWithFractionalMeta = new CustomFeeMeta(
+            tokenWithFractionalFee,
+            treasury,
+            List.of(
+                    firstFractionalFee,
+                    secondFractionalFee,
+                    exemptFractionalFee,
+                    skippedFixedFee,
+                    fractionalFeeNetOfTransfers));
     private final BalanceChange vanillaTrigger =
-            BalanceChange.tokenCustomFeeAdjust(
-                    payer, tokenWithFractionalFee, -vanillaTriggerAmount);
+            BalanceChange.tokenCustomFeeAdjust(payer, tokenWithFractionalFee, -vanillaTriggerAmount);
     private final BalanceChange firstVanillaReclaim =
-            BalanceChange.tokenCustomFeeAdjust(
-                    firstReclaimedAcount, tokenWithFractionalFee, +firstCreditAmount);
+            BalanceChange.tokenCustomFeeAdjust(firstReclaimedAcount, tokenWithFractionalFee, +firstCreditAmount);
     private final BalanceChange secondVanillaReclaim =
-            BalanceChange.tokenCustomFeeAdjust(
-                    secondReclaimedAcount, tokenWithFractionalFee, +secondCreditAmount);
-    final AccountID aliasedAccountId =
-            AccountID.newBuilder().setAlias(ByteString.copyFrom("alias".getBytes())).build();
-    private final BalanceChange aliasedVanillaReclaim =
-            BalanceChange.changingFtUnits(
-                    tokenWithFractionalFee,
-                    tokenWithFractionalFee.asGrpcToken(),
-                    AccountAmount.newBuilder()
-                            .setAccountID(aliasedAccountId)
-                            .setAmount(+secondCreditAmount)
-                            .build(),
-                    payer.asGrpcAccount());
+            BalanceChange.tokenCustomFeeAdjust(secondReclaimedAcount, tokenWithFractionalFee, +secondCreditAmount);
+    final AccountID aliasedAccountId = AccountID.newBuilder()
+            .setAlias(ByteString.copyFrom("alias".getBytes()))
+            .build();
+    private final BalanceChange aliasedVanillaReclaim = BalanceChange.changingFtUnits(
+            tokenWithFractionalFee,
+            tokenWithFractionalFee.asGrpcToken(),
+            AccountAmount.newBuilder()
+                    .setAccountID(aliasedAccountId)
+                    .setAmount(+secondCreditAmount)
+                    .build(),
+            payer.asGrpcAccount());
     private final AccountID[] effPayerAccountNums =
             new AccountID[] {AccountID.newBuilder().setAccountNum(8L).build(), aliasedAccountId};
     private final BalanceChange wildlyInsufficientChange =
@@ -526,17 +462,12 @@ class FractionalFeeAssessorTest {
     private final BalanceChange someCredit =
             BalanceChange.tokenCustomFeeAdjust(firstReclaimedAcount, tokenWithFractionalFee, +1);
 
-    private final NftTransfer ownershipChange =
-            NftTransfer.newBuilder()
-                    .setSenderAccountID(payer.asGrpcAccount())
-                    .setReceiverAccountID(firstReclaimedAcount.asGrpcAccount())
-                    .setSerialNumber(666)
-                    .build();
+    private final NftTransfer ownershipChange = NftTransfer.newBuilder()
+            .setSenderAccountID(payer.asGrpcAccount())
+            .setReceiverAccountID(firstReclaimedAcount.asGrpcAccount())
+            .setSerialNumber(666)
+            .build();
 
-    private final BalanceChange nonFungibleChange =
-            BalanceChange.changingNftOwnership(
-                    tokenWithFractionalFee,
-                    tokenWithFractionalFee.asGrpcToken(),
-                    ownershipChange,
-                    payer.asGrpcAccount());
+    private final BalanceChange nonFungibleChange = BalanceChange.changingNftOwnership(
+            tokenWithFractionalFee, tokenWithFractionalFee.asGrpcToken(), ownershipChange, payer.asGrpcAccount());
 }

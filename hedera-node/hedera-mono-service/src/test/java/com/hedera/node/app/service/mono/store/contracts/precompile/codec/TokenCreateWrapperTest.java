@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.codec;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
@@ -45,22 +46,16 @@ class TokenCreateWrapperTest {
     private static final byte[] ecdsaSecpk256k1 = "123456789012345678901234567890123".getBytes();
     private static final byte[] ed25519 = "12345678901234567890123456789012".getBytes();
     private final TokenKeyWrapper tokenKeyWrapper =
-            new TokenKeyWrapper(
-                    1, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null));
+            new TokenKeyWrapper(1, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null));
     private final ContractID contractID = EntityIdUtils.contractIdFromEvmAddress(contractAddress);
 
     @Test
     void setInheritedKeysToSpecificKeyWorksAsExpected() throws DecoderException {
         // given
         final var key = new JContractIDKey(contractID);
-        final var wrapper =
-                createTokenCreateWrapperWithKeys(
-                        List.of(
-                                tokenKeyWrapper,
-                                new TokenKeyWrapper(
-                                        4,
-                                        new KeyValueWrapper(
-                                                true, null, new byte[] {}, new byte[] {}, null))));
+        final var wrapper = createTokenCreateWrapperWithKeys(List.of(
+                tokenKeyWrapper,
+                new TokenKeyWrapper(4, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null))));
 
         // when
         wrapper.setAllInheritedKeysTo(key);
@@ -86,8 +81,7 @@ class TokenCreateWrapperTest {
     @Test
     void getAdminKeyReturnsEmptyOptionalWhenNoAdminkeyIsPresent() {
         // given
-        final TokenCreateWrapper wrapper =
-                createTokenCreateWrapperWithKeys(Collections.emptyList());
+        final TokenCreateWrapper wrapper = createTokenCreateWrapperWithKeys(Collections.emptyList());
 
         // when
         final var result = wrapper.getAdminKey();
@@ -112,8 +106,7 @@ class TokenCreateWrapperTest {
     @Test
     void translatesKeyValueWrapperWithContractIdAsExpected() {
         // given
-        final var wrapper =
-                new KeyValueWrapper(false, contractID, new byte[] {}, new byte[] {}, null);
+        final var wrapper = new KeyValueWrapper(false, contractID, new byte[] {}, new byte[] {}, null);
 
         // when
         final var key = wrapper.asGrpc();
@@ -126,15 +119,13 @@ class TokenCreateWrapperTest {
     @Test
     void translatesKeyValueWrapperWithDelegatableContractIdAsExpected() {
         // given
-        final var wrapper =
-                new KeyValueWrapper(false, null, new byte[] {}, new byte[] {}, contractID);
+        final var wrapper = new KeyValueWrapper(false, null, new byte[] {}, new byte[] {}, contractID);
 
         // when
         final var key = wrapper.asGrpc();
 
         // then
-        assertEquals(
-                KeyValueWrapper.KeyValueType.DELEGATABLE_CONTRACT_ID, wrapper.getKeyValueType());
+        assertEquals(KeyValueWrapper.KeyValueType.DELEGATABLE_CONTRACT_ID, wrapper.getKeyValueType());
         assertEquals(contractID, key.getDelegatableContractId());
     }
 
@@ -174,16 +165,14 @@ class TokenCreateWrapperTest {
 
     @Test
     void keyValueWrapperWithInheritAccountAndOneMoreValueHasInvalidKeyType() {
-        final var wrapper =
-                new KeyValueWrapper(true, contractID, new byte[] {}, new byte[] {}, null);
+        final var wrapper = new KeyValueWrapper(true, contractID, new byte[] {}, new byte[] {}, null);
 
         assertEquals(KeyValueWrapper.KeyValueType.INVALID_KEY, wrapper.getKeyValueType());
     }
 
     @Test
     void keyValueWrapperWithContractIdAndOneMoreKeyValueHasInvalidKeyType() {
-        final var wrapper =
-                new KeyValueWrapper(false, contractID, new byte[] {}, new byte[] {}, contractID);
+        final var wrapper = new KeyValueWrapper(false, contractID, new byte[] {}, new byte[] {}, contractID);
 
         assertEquals(KeyValueWrapper.KeyValueType.INVALID_KEY, wrapper.getKeyValueType());
     }
@@ -197,36 +186,27 @@ class TokenCreateWrapperTest {
 
     @Test
     void keyValueWrapperWithEcdsaSecpk256k1AndOneMoreKeyValueHasInvalidKeyType() {
-        final var wrapper =
-                new KeyValueWrapper(false, null, new byte[] {}, ecdsaSecpk256k1, contractID);
+        final var wrapper = new KeyValueWrapper(false, null, new byte[] {}, ecdsaSecpk256k1, contractID);
 
         assertEquals(KeyValueWrapper.KeyValueType.INVALID_KEY, wrapper.getKeyValueType());
     }
 
     @Test
-    void
-            keyValueWrapperWithEd25519KeyWithByteArrayWithSizeDifferentFromRequiredHasInvalidKeyType() {
+    void keyValueWrapperWithEd25519KeyWithByteArrayWithSizeDifferentFromRequiredHasInvalidKeyType() {
         final var wrapper =
-                new KeyValueWrapper(
-                        false,
-                        null,
-                        new byte[JEd25519Key.ED25519_BYTE_LENGTH - 1],
-                        new byte[] {},
-                        null);
+                new KeyValueWrapper(false, null, new byte[JEd25519Key.ED25519_BYTE_LENGTH - 1], new byte[] {}, null);
 
         assertEquals(KeyValueWrapper.KeyValueType.INVALID_KEY, wrapper.getKeyValueType());
     }
 
     @Test
-    void
-            keyValueWrapperWithEcdsaSecpk256k1KeyWithByteArrayWithSizeDifferentFromRequiredHasInvalidKeyType() {
-        final var wrapper =
-                new KeyValueWrapper(
-                        false,
-                        null,
-                        new byte[] {},
-                        new byte[JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH - 1],
-                        null);
+    void keyValueWrapperWithEcdsaSecpk256k1KeyWithByteArrayWithSizeDifferentFromRequiredHasInvalidKeyType() {
+        final var wrapper = new KeyValueWrapper(
+                false,
+                null,
+                new byte[] {},
+                new byte[JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH - 1],
+                null);
 
         assertEquals(KeyValueWrapper.KeyValueType.INVALID_KEY, wrapper.getKeyValueType());
     }
@@ -250,8 +230,7 @@ class TokenCreateWrapperTest {
     @Test
     void translatesFixedFeeWithDenominatedTokenAsExpected() {
         // given
-        final var feeWrapper =
-                new TokenCreateWrapper.FixedFeeWrapper(5, token, false, false, receiver);
+        final var feeWrapper = new TokenCreateWrapper.FixedFeeWrapper(5, token, false, false, receiver);
 
         // when
         final var result = feeWrapper.asGrpc();
@@ -267,8 +246,7 @@ class TokenCreateWrapperTest {
     @Test
     void translatesFixedFeeWithHbarPaymentAsExpected() {
         // given
-        final var feeWrapper =
-                new TokenCreateWrapper.FixedFeeWrapper(5, null, true, false, receiver);
+        final var feeWrapper = new TokenCreateWrapper.FixedFeeWrapper(5, null, true, false, receiver);
 
         // when
         final var result = feeWrapper.asGrpc();
@@ -283,8 +261,7 @@ class TokenCreateWrapperTest {
     @Test
     void translatesFixedFeeWithCreatedTokenAsExpected() {
         // given
-        final var feeWrapper =
-                new TokenCreateWrapper.FixedFeeWrapper(5, null, false, true, receiver);
+        final var feeWrapper = new TokenCreateWrapper.FixedFeeWrapper(5, null, false, true, receiver);
 
         // when
         final var result = feeWrapper.asGrpc();
@@ -294,56 +271,47 @@ class TokenCreateWrapperTest {
         final var fixedFee = result.getFixedFee();
         assertEquals(5, fixedFee.getAmount());
         assertTrue(fixedFee.hasDenominatingTokenId());
-        assertEquals(
-                EntityIdUtils.tokenIdFromEvmAddress(Address.ZERO),
-                fixedFee.getDenominatingTokenId());
+        assertEquals(EntityIdUtils.tokenIdFromEvmAddress(Address.ZERO), fixedFee.getDenominatingTokenId());
         assertEquals(receiver, result.getFeeCollectorAccountId());
     }
 
     @Test
     void fixedFeeWithMultipleFormsOfPaymentIsInvalid() {
         // given
-        final var feeWrapper =
-                new TokenCreateWrapper.FixedFeeWrapper(5, null, true, true, receiver);
+        final var feeWrapper = new TokenCreateWrapper.FixedFeeWrapper(5, null, true, true, receiver);
 
         // when
         assertEquals(
-                TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT,
-                feeWrapper.getFixedFeePayment());
+                TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT, feeWrapper.getFixedFeePayment());
     }
 
     @Test
     void fixedFeeWithNoFormOfPaymentIsInvalid() {
         // given
-        final var feeWrapper =
-                new TokenCreateWrapper.FixedFeeWrapper(5, null, false, false, receiver);
+        final var feeWrapper = new TokenCreateWrapper.FixedFeeWrapper(5, null, false, false, receiver);
 
         // when
         assertEquals(
-                TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT,
-                feeWrapper.getFixedFeePayment());
+                TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT, feeWrapper.getFixedFeePayment());
     }
 
     @Test
     void invalidFixedFeeWithHbarsAndNewTokenAsPaymentTranslationThrows() {
-        final var feeWrapper =
-                new TokenCreateWrapper.FixedFeeWrapper(5, null, true, true, receiver);
+        final var feeWrapper = new TokenCreateWrapper.FixedFeeWrapper(5, null, true, true, receiver);
 
         assertThrows(InvalidTransactionException.class, feeWrapper::asGrpc);
     }
 
     @Test
     void invalidFixedFeeWithTokenIdAndHbarsAsPaymentTranslationThrows() {
-        final var feeWrapper =
-                new TokenCreateWrapper.FixedFeeWrapper(5, token, true, false, receiver);
+        final var feeWrapper = new TokenCreateWrapper.FixedFeeWrapper(5, token, true, false, receiver);
 
         assertThrows(InvalidTransactionException.class, feeWrapper::asGrpc);
     }
 
     @Test
     void invalidFixedFeeWithNoPaymentTypeTranslationThrows() {
-        final var feeWrapper =
-                new TokenCreateWrapper.FixedFeeWrapper(5, null, false, false, receiver);
+        final var feeWrapper = new TokenCreateWrapper.FixedFeeWrapper(5, null, false, false, receiver);
 
         assertThrows(InvalidTransactionException.class, feeWrapper::asGrpc);
     }
@@ -351,8 +319,7 @@ class TokenCreateWrapperTest {
     @Test
     void translatesFractionalFeesAsExpected() {
         // given
-        final var feeWrapper =
-                new TokenCreateWrapper.FractionalFeeWrapper(4, 5, 10, 20, true, receiver);
+        final var feeWrapper = new TokenCreateWrapper.FractionalFeeWrapper(4, 5, 10, 20, true, receiver);
 
         // when
         final var result = feeWrapper.asGrpc();
@@ -369,8 +336,7 @@ class TokenCreateWrapperTest {
     @Test
     void translatesFractionalFeesWithoutCollectorAsExpected() {
         // given
-        final var feeWrapper =
-                new TokenCreateWrapper.FractionalFeeWrapper(4, 5, 10, 20, true, null);
+        final var feeWrapper = new TokenCreateWrapper.FractionalFeeWrapper(4, 5, 10, 20, true, null);
 
         // when
         final var result = feeWrapper.asGrpc();
@@ -387,10 +353,8 @@ class TokenCreateWrapperTest {
     @Test
     void translatesRoyaltyFeesAsExpected() {
         // given
-        final var fallbackFeeWrapper =
-                new TokenCreateWrapper.FixedFeeWrapper(5, token, false, false, receiver);
-        final var feeWrapper =
-                new TokenCreateWrapper.RoyaltyFeeWrapper(4, 5, fallbackFeeWrapper, receiver);
+        final var fallbackFeeWrapper = new TokenCreateWrapper.FixedFeeWrapper(5, token, false, false, receiver);
+        final var feeWrapper = new TokenCreateWrapper.RoyaltyFeeWrapper(4, 5, fallbackFeeWrapper, receiver);
 
         // when
         final var result = feeWrapper.asGrpc();
@@ -399,7 +363,8 @@ class TokenCreateWrapperTest {
         assertEquals(4, result.getRoyaltyFee().getExchangeValueFraction().getNumerator());
         assertEquals(5, result.getRoyaltyFee().getExchangeValueFraction().getDenominator());
         assertEquals(
-                fallbackFeeWrapper.asGrpc().getFixedFee(), result.getRoyaltyFee().getFallbackFee());
+                fallbackFeeWrapper.asGrpc().getFixedFee(),
+                result.getRoyaltyFee().getFallbackFee());
         assertEquals(receiver, result.getFeeCollectorAccountId());
     }
 
@@ -421,20 +386,15 @@ class TokenCreateWrapperTest {
     @Test
     void royaltyFeeWithInvalidFallbackFeeTranslationThrows() {
         // given
-        final var feeWrapper =
-                new TokenCreateWrapper.RoyaltyFeeWrapper(
-                        4,
-                        5,
-                        new TokenCreateWrapper.FixedFeeWrapper(5, null, true, true, null),
-                        null);
+        final var feeWrapper = new TokenCreateWrapper.RoyaltyFeeWrapper(
+                4, 5, new TokenCreateWrapper.FixedFeeWrapper(5, null, true, true, null), null);
 
         assertThrows(InvalidTransactionException.class, feeWrapper::asGrpc);
     }
 
     @Test
     void autoRenewAccountIsCheckedAsExpected() {
-        final TokenCreateWrapper wrapper =
-                createTokenCreateWrapperWithKeys(Collections.emptyList());
+        final TokenCreateWrapper wrapper = createTokenCreateWrapperWithKeys(Collections.emptyList());
         assertTrue(wrapper.hasAutoRenewAccount());
         assertEquals(
                 EntityId.fromIdentityCode(12345).toGrpcAccountId(),

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static com.hedera.node.app.service.mono.grpc.marshalling.AdjustmentUtils.adjustedChange;
@@ -29,7 +30,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AdjustmentUtilsTest {
-    @Mock private BalanceChangeManager changeManager;
+    @Mock
+    private BalanceChangeManager changeManager;
 
     @Test
     void includesNewHtsChange() {

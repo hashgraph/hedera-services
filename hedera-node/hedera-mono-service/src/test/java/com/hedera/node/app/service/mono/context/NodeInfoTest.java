@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -44,12 +45,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class NodeInfoTest {
     private final long nodeId = 0L;
 
-    @Mock private Address address;
-    @Mock private AddressBook book;
+    @Mock
+    private Address address;
 
-    @LoggingTarget private LogCaptor logCaptor;
+    @Mock
+    private AddressBook book;
 
-    @LoggingSubject private NodeInfo subject;
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private NodeInfo subject;
 
     @BeforeEach
     void setUp() {
@@ -108,9 +114,7 @@ class NodeInfoTest {
         // then:
         assertThat(
                 logCaptor.errorLogs(),
-                contains(
-                        startsWith(
-                                "Cannot parse account for staked node id 0, potentially fatal")));
+                contains(startsWith("Cannot parse account for staked node id 0, potentially fatal")));
         assertFalse(subject.hasSelfAccount());
     }
 

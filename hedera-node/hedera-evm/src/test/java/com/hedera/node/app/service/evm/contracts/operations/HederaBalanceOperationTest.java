@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.contracts.operations;
 
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
@@ -43,12 +44,23 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HederaBalanceOperationTest {
 
-    @Mock private GasCalculator gasCalculator;
-    @Mock private MessageFrame frame;
-    @Mock private EVM evm;
-    @Mock private WorldUpdater worldUpdater;
-    @Mock private Account account;
-    @Mock private BiPredicate<Address, MessageFrame> addressValidator;
+    @Mock
+    private GasCalculator gasCalculator;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private EVM evm;
+
+    @Mock
+    private WorldUpdater worldUpdater;
+
+    @Mock
+    private Account account;
+
+    @Mock
+    private BiPredicate<Address, MessageFrame> addressValidator;
 
     private HederaBalanceOperation subject;
 

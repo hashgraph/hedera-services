@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import com.google.common.base.MoreObjects;
@@ -30,8 +31,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
-        implements MerkleInternal {
+public class MerkleScheduledTransactions extends PartialNaryMerkleInternal implements MerkleInternal {
     private static final Logger log = LogManager.getLogger(MerkleScheduledTransactions.class);
 
     private int pendingMigrationSize;
@@ -57,8 +57,7 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
     }
 
     public MerkleScheduledTransactions(
-            final List<MerkleNode> children,
-            final MerkleScheduledTransactions immutableMerkleScheduledTransactions) {
+            final List<MerkleNode> children, final MerkleScheduledTransactions immutableMerkleScheduledTransactions) {
         super(immutableMerkleScheduledTransactions);
         addDeserializedChildren(children, CURRENT_VERSION);
     }
@@ -108,15 +107,13 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
     @Override
     public MerkleScheduledTransactions copy() {
         if (isImmutable()) {
-            final var msg =
-                    String.format(
-                            "Copy called on immutable MerkleScheduledTransactions by thread '%s'!",
-                            Thread.currentThread().getName());
+            final var msg = String.format(
+                    "Copy called on immutable MerkleScheduledTransactions by thread '%s'!",
+                    Thread.currentThread().getName());
             log.warn(msg);
             /* Ensure we get this stack trace in case a caller incorrectly suppresses the exception. */
             stackDump.run();
-            throw new IllegalStateException(
-                    "Tried to make a copy of an immutable MerkleScheduledTransactions!");
+            throw new IllegalStateException("Tried to make a copy of an immutable MerkleScheduledTransactions!");
         }
 
         setImmutable(true);
@@ -173,9 +170,7 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
     }
 
     public void setCurrentMinSecond(final long currentMinSecond) {
-        throwIfImmutable(
-                "Cannot change this MerkleScheduledTransactions' currentMinSecond if it's"
-                        + " immutable.");
+        throwIfImmutable("Cannot change this MerkleScheduledTransactions' currentMinSecond if it's" + " immutable.");
         state().setCurrentMinSecond(currentMinSecond);
     }
 }

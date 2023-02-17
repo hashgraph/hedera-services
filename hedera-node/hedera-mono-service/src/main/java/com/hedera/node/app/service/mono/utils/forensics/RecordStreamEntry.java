@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils.forensics;
 
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
@@ -27,8 +28,7 @@ import java.time.Instant;
  * @param txnRecord the resolved record the transaction
  * @param consensusTime the consensus time
  */
-public record RecordStreamEntry(
-        TxnAccessor accessor, TransactionRecord txnRecord, Instant consensusTime) {
+public record RecordStreamEntry(TxnAccessor accessor, TransactionRecord txnRecord, Instant consensusTime) {
 
     public Transaction submittedTransaction() {
         return accessor.getSignedTxnWrapper();
@@ -49,7 +49,6 @@ public record RecordStreamEntry(
     @Override
     public String toString() {
         return String.format(
-                "RecordStreamEntry{consensusTime=%s, txn=%s, record=%s}",
-                consensusTime, body(), txnRecord);
+                "RecordStreamEntry{consensusTime=%s, txn=%s, record=%s}", consensusTime, body(), txnRecord);
     }
 }

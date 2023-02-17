@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
@@ -56,15 +57,32 @@ class TokenMintTransitionLogicTest {
     private final long amount = 123L;
     private final TokenID grpcId = IdUtils.asToken("1.2.3");
 
-    @Mock private TransactionContext txnCtx;
-    @Mock private SignedTxnAccessor accessor;
-    @Mock private TransactionBody transactionBody;
-    @Mock private TokenMintTransactionBody mintTransactionBody;
-    @Mock private OptionValidator validator;
-    @Mock private UsageLimits usageLimits;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private TypedTokenStore tokenStore;
-    @Mock private AccountStore accountStore;
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private SignedTxnAccessor accessor;
+
+    @Mock
+    private TransactionBody transactionBody;
+
+    @Mock
+    private TokenMintTransactionBody mintTransactionBody;
+
+    @Mock
+    private OptionValidator validator;
+
+    @Mock
+    private UsageLimits usageLimits;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private TypedTokenStore tokenStore;
+
+    @Mock
+    private AccountStore accountStore;
 
     private TransactionBody tokenMintTxn;
 
@@ -73,8 +91,7 @@ class TokenMintTransitionLogicTest {
 
     @BeforeEach
     void setup() {
-        mintLogic =
-                new MintLogic(usageLimits, validator, tokenStore, accountStore, dynamicProperties);
+        mintLogic = new MintLogic(usageLimits, validator, tokenStore, accountStore, dynamicProperties);
         subject = new TokenMintTransitionLogic(txnCtx, mintLogic);
     }
 
@@ -131,24 +148,21 @@ class TokenMintTransitionLogicTest {
     @Test
     void rejectsInvalidTxnBody() {
         given(dynamicProperties.areNftsEnabled()).willReturn(true);
-        tokenMintTxn =
-                TransactionBody.newBuilder()
-                        .setTokenMint(
-                                TokenMintTransactionBody.newBuilder()
-                                        .setToken(grpcId)
-                                        .setAmount(amount)
-                                        .addAllMetadata(List.of(ByteString.copyFromUtf8("memo"))))
-                        .build();
+        tokenMintTxn = TransactionBody.newBuilder()
+                .setTokenMint(TokenMintTransactionBody.newBuilder()
+                        .setToken(grpcId)
+                        .setAmount(amount)
+                        .addAllMetadata(List.of(ByteString.copyFromUtf8("memo"))))
+                .build();
 
         assertEquals(INVALID_TRANSACTION_BODY, subject.semanticCheck().apply(tokenMintTxn));
     }
 
     @Test
     void allowsTxnBodyWithNoProps() {
-        tokenMintTxn =
-                TransactionBody.newBuilder()
-                        .setTokenMint(TokenMintTransactionBody.newBuilder().setToken(grpcId))
-                        .build();
+        tokenMintTxn = TransactionBody.newBuilder()
+                .setTokenMint(TokenMintTransactionBody.newBuilder().setToken(grpcId))
+                .build();
 
         assertEquals(OK, subject.semanticCheck().apply(tokenMintTxn));
     }
@@ -156,16 +170,11 @@ class TokenMintTransitionLogicTest {
     @Test
     void propagatesErrorOnBadMetadata() {
         given(dynamicProperties.areNftsEnabled()).willReturn(true);
-        tokenMintTxn =
-                TransactionBody.newBuilder()
-                        .setTokenMint(
-                                TokenMintTransactionBody.newBuilder()
-                                        .addAllMetadata(
-                                                List.of(
-                                                        ByteString.copyFromUtf8(""),
-                                                        ByteString.EMPTY))
-                                        .setToken(grpcId))
-                        .build();
+        tokenMintTxn = TransactionBody.newBuilder()
+                .setTokenMint(TokenMintTransactionBody.newBuilder()
+                        .addAllMetadata(List.of(ByteString.copyFromUtf8(""), ByteString.EMPTY))
+                        .setToken(grpcId))
+                .build();
         given(validator.maxBatchSizeMintCheck(tokenMintTxn.getTokenMint().getMetadataCount()))
                 .willReturn(OK);
         given(validator.nftMetadataCheck(any())).willReturn(METADATA_TOO_LONG);
@@ -175,13 +184,11 @@ class TokenMintTransitionLogicTest {
     @Test
     void propagatesErrorOnMaxBatchSizeReached() {
         given(dynamicProperties.areNftsEnabled()).willReturn(true);
-        tokenMintTxn =
-                TransactionBody.newBuilder()
-                        .setTokenMint(
-                                TokenMintTransactionBody.newBuilder()
-                                        .addAllMetadata(List.of(ByteString.copyFromUtf8("")))
-                                        .setToken(grpcId))
-                        .build();
+        tokenMintTxn = TransactionBody.newBuilder()
+                .setTokenMint(TokenMintTransactionBody.newBuilder()
+                        .addAllMetadata(List.of(ByteString.copyFromUtf8("")))
+                        .setToken(grpcId))
+                .build();
 
         given(validator.maxBatchSizeMintCheck(tokenMintTxn.getTokenMint().getMetadataCount()))
                 .willReturn(BATCH_SIZE_LIMIT_EXCEEDED);
@@ -197,8 +204,7 @@ class TokenMintTransitionLogicTest {
         var grpcId = IdUtils.asToken("0.0.1");
         var amount = 4321L;
         var count = 3;
-        List<ByteString> metadataList =
-                List.of(ByteString.copyFromUtf8("test"), ByteString.copyFromUtf8("test test"));
+        List<ByteString> metadataList = List.of(ByteString.copyFromUtf8("test"), ByteString.copyFromUtf8("test test"));
         given(txnCtx.accessor()).willReturn(accessor);
         given(txnCtx.consensusTime()).willReturn(consensus);
         given(accessor.getTxn()).willReturn(transactionBody);
@@ -213,51 +219,41 @@ class TokenMintTransitionLogicTest {
     }
 
     private void givenValidTxnCtx() {
-        tokenMintTxn =
-                TransactionBody.newBuilder()
-                        .setTokenMint(
-                                TokenMintTransactionBody.newBuilder()
-                                        .setToken(grpcId)
-                                        .setAmount(amount))
-                        .build();
+        tokenMintTxn = TransactionBody.newBuilder()
+                .setTokenMint(
+                        TokenMintTransactionBody.newBuilder().setToken(grpcId).setAmount(amount))
+                .build();
     }
 
     private void givenValidUniqueTxnCtx() {
-        tokenMintTxn =
-                TransactionBody.newBuilder()
-                        .setTokenMint(
-                                TokenMintTransactionBody.newBuilder()
-                                        .setToken(grpcId)
-                                        .addAllMetadata(List.of(ByteString.copyFromUtf8("memo"))))
-                        .build();
+        tokenMintTxn = TransactionBody.newBuilder()
+                .setTokenMint(TokenMintTransactionBody.newBuilder()
+                        .setToken(grpcId)
+                        .addAllMetadata(List.of(ByteString.copyFromUtf8("memo"))))
+                .build();
     }
 
     private void givenMissingToken() {
-        tokenMintTxn =
-                TransactionBody.newBuilder()
-                        .setTokenMint(TokenMintTransactionBody.newBuilder().build())
-                        .build();
+        tokenMintTxn = TransactionBody.newBuilder()
+                .setTokenMint(TokenMintTransactionBody.newBuilder().build())
+                .build();
     }
 
     private void givenInvalidNegativeAmount() {
-        tokenMintTxn =
-                TransactionBody.newBuilder()
-                        .setTokenMint(
-                                TokenMintTransactionBody.newBuilder()
-                                        .setToken(grpcId)
-                                        .setAmount(-1)
-                                        .build())
-                        .build();
+        tokenMintTxn = TransactionBody.newBuilder()
+                .setTokenMint(TokenMintTransactionBody.newBuilder()
+                        .setToken(grpcId)
+                        .setAmount(-1)
+                        .build())
+                .build();
     }
 
     private void givenZeroAmount() {
-        tokenMintTxn =
-                TransactionBody.newBuilder()
-                        .setTokenMint(
-                                TokenMintTransactionBody.newBuilder()
-                                        .setToken(grpcId)
-                                        .setAmount(0)
-                                        .build())
-                        .build();
+        tokenMintTxn = TransactionBody.newBuilder()
+                .setTokenMint(TokenMintTransactionBody.newBuilder()
+                        .setToken(grpcId)
+                        .setAmount(0)
+                        .build())
+                .build();
     }
 }

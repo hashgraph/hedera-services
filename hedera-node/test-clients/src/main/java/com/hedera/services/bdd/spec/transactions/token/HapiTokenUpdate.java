@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -183,48 +184,41 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     @Override
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         try {
-            final TokenInfo info =
-                    HapiTokenFeeScheduleUpdate.lookupInfo(spec, token, log, loggingOff);
-            FeeCalculator.ActivityMetrics metricsCalc =
-                    (_txn, svo) -> {
-                        var estimate =
-                                TokenUpdateUsage.newEstimate(
-                                        _txn,
-                                        new TxnUsageEstimator(suFrom(svo), _txn, ESTIMATOR_UTILS));
-                        estimate.givenCurrentExpiry(info.getExpiry().getSeconds())
-                                .givenCurrentMemo(info.getMemo())
-                                .givenCurrentName(info.getName())
-                                .givenCurrentSymbol(info.getSymbol());
-                        if (info.hasFreezeKey()) {
-                            estimate.givenCurrentFreezeKey(Optional.of(info.getFreezeKey()));
-                        }
-                        if (info.hasAdminKey()) {
-                            estimate.givenCurrentAdminKey(Optional.of(info.getAdminKey()));
-                        }
-                        if (info.hasSupplyKey()) {
-                            estimate.givenCurrentSupplyKey(Optional.of(info.getSupplyKey()));
-                        }
-                        if (info.hasKycKey()) {
-                            estimate.givenCurrentKycKey(Optional.of(info.getKycKey()));
-                        }
-                        if (info.hasWipeKey()) {
-                            estimate.givenCurrentWipeKey(Optional.of(info.getWipeKey()));
-                        }
-                        if (info.hasFeeScheduleKey()) {
-                            estimate.givenCurrentFeeScheduleKey(
-                                    Optional.of(info.getFeeScheduleKey()));
-                        }
-                        if (info.hasPauseKey()) {
-                            estimate.givenCurrentPauseKey(Optional.of(info.getPauseKey()));
-                        }
-                        if (info.hasAutoRenewAccount()) {
-                            estimate.givenCurrentlyUsingAutoRenewAccount();
-                        }
-                        return estimate.get();
-                    };
-            return spec.fees()
-                    .forActivityBasedOp(
-                            HederaFunctionality.TokenUpdate, metricsCalc, txn, numPayerKeys);
+            final TokenInfo info = HapiTokenFeeScheduleUpdate.lookupInfo(spec, token, log, loggingOff);
+            FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> {
+                var estimate =
+                        TokenUpdateUsage.newEstimate(_txn, new TxnUsageEstimator(suFrom(svo), _txn, ESTIMATOR_UTILS));
+                estimate.givenCurrentExpiry(info.getExpiry().getSeconds())
+                        .givenCurrentMemo(info.getMemo())
+                        .givenCurrentName(info.getName())
+                        .givenCurrentSymbol(info.getSymbol());
+                if (info.hasFreezeKey()) {
+                    estimate.givenCurrentFreezeKey(Optional.of(info.getFreezeKey()));
+                }
+                if (info.hasAdminKey()) {
+                    estimate.givenCurrentAdminKey(Optional.of(info.getAdminKey()));
+                }
+                if (info.hasSupplyKey()) {
+                    estimate.givenCurrentSupplyKey(Optional.of(info.getSupplyKey()));
+                }
+                if (info.hasKycKey()) {
+                    estimate.givenCurrentKycKey(Optional.of(info.getKycKey()));
+                }
+                if (info.hasWipeKey()) {
+                    estimate.givenCurrentWipeKey(Optional.of(info.getWipeKey()));
+                }
+                if (info.hasFeeScheduleKey()) {
+                    estimate.givenCurrentFeeScheduleKey(Optional.of(info.getFeeScheduleKey()));
+                }
+                if (info.hasPauseKey()) {
+                    estimate.givenCurrentPauseKey(Optional.of(info.getPauseKey()));
+                }
+                if (info.hasAutoRenewAccount()) {
+                    estimate.givenCurrentlyUsingAutoRenewAccount();
+                }
+                return estimate.get();
+            };
+            return spec.fees().forActivityBasedOp(HederaFunctionality.TokenUpdate, metricsCalc, txn, numPayerKeys);
         } catch (Throwable t) {
             log.warn("Couldn't estimate usage", t);
             return HapiSuite.ONE_HBAR;
@@ -240,66 +234,48 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
         if (newNameFn.isPresent()) {
             newName = Optional.of(newNameFn.get().apply(spec));
         }
-        TokenUpdateTransactionBody opBody =
-                spec.txns()
-                        .<TokenUpdateTransactionBody, TokenUpdateTransactionBody.Builder>body(
-                                TokenUpdateTransactionBody.class,
-                                b -> {
-                                    b.setToken(id);
-                                    newSymbol.ifPresent(b::setSymbol);
-                                    newName.ifPresent(b::setName);
-                                    newMemo.ifPresent(
-                                            s ->
-                                                    b.setMemo(
-                                                            StringValue.newBuilder()
-                                                                    .setValue(s)
-                                                                    .build()));
-                                    if (useImproperEmptyKey) {
-                                        b.setAdminKey(TxnUtils.EMPTY_THRESHOLD_KEY);
-                                    } else if (useEmptyAdminKeyList) {
-                                        b.setAdminKey(TxnUtils.EMPTY_KEY_LIST);
-                                    } else {
-                                        newAdminKey.ifPresent(
-                                                a -> b.setAdminKey(spec.registry().getKey(a)));
-                                    }
-                                    newTreasury.ifPresent(a -> b.setTreasury(asId(a, spec)));
-                                    newSupplyKey.ifPresent(
-                                            k -> b.setSupplyKey(spec.registry().getKey(k)));
-                                    newSupplyKeySupplier.ifPresent(s -> b.setSupplyKey(s.get()));
-                                    newWipeKey.ifPresent(
-                                            k -> b.setWipeKey(spec.registry().getKey(k)));
-                                    newKycKey.ifPresent(
-                                            k -> b.setKycKey(spec.registry().getKey(k)));
-                                    if (useInvalidFeeScheduleKey) {
-                                        b.setFeeScheduleKey(TxnUtils.EMPTY_THRESHOLD_KEY);
-                                    } else {
-                                        newFeeScheduleKey.ifPresent(
-                                                k ->
-                                                        b.setFeeScheduleKey(
-                                                                spec.registry().getKey(k)));
-                                    }
-                                    newFreezeKey.ifPresent(
-                                            k -> b.setFreezeKey(spec.registry().getKey(k)));
-                                    newPauseKey.ifPresent(
-                                            k -> b.setPauseKey(spec.registry().getKey(k)));
-                                    if (autoRenewAccount.isPresent()) {
-                                        var autoRenewId =
-                                                TxnUtils.asId(autoRenewAccount.get(), spec);
-                                        b.setAutoRenewAccount(autoRenewId);
-                                    }
-                                    expiry.ifPresent(
-                                            t ->
-                                                    b.setExpiry(
-                                                            Timestamp.newBuilder()
-                                                                    .setSeconds(t)
-                                                                    .build()));
-                                    autoRenewPeriod.ifPresent(
-                                            secs ->
-                                                    b.setAutoRenewPeriod(
-                                                            Duration.newBuilder()
-                                                                    .setSeconds(secs)
-                                                                    .build()));
-                                });
+        TokenUpdateTransactionBody opBody = spec.txns()
+                .<TokenUpdateTransactionBody, TokenUpdateTransactionBody.Builder>body(
+                        TokenUpdateTransactionBody.class, b -> {
+                            b.setToken(id);
+                            newSymbol.ifPresent(b::setSymbol);
+                            newName.ifPresent(b::setName);
+                            newMemo.ifPresent(s -> b.setMemo(
+                                    StringValue.newBuilder().setValue(s).build()));
+                            if (useImproperEmptyKey) {
+                                b.setAdminKey(TxnUtils.EMPTY_THRESHOLD_KEY);
+                            } else if (useEmptyAdminKeyList) {
+                                b.setAdminKey(TxnUtils.EMPTY_KEY_LIST);
+                            } else {
+                                newAdminKey.ifPresent(
+                                        a -> b.setAdminKey(spec.registry().getKey(a)));
+                            }
+                            newTreasury.ifPresent(a -> b.setTreasury(asId(a, spec)));
+                            newSupplyKey.ifPresent(
+                                    k -> b.setSupplyKey(spec.registry().getKey(k)));
+                            newSupplyKeySupplier.ifPresent(s -> b.setSupplyKey(s.get()));
+                            newWipeKey.ifPresent(
+                                    k -> b.setWipeKey(spec.registry().getKey(k)));
+                            newKycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
+                            if (useInvalidFeeScheduleKey) {
+                                b.setFeeScheduleKey(TxnUtils.EMPTY_THRESHOLD_KEY);
+                            } else {
+                                newFeeScheduleKey.ifPresent(
+                                        k -> b.setFeeScheduleKey(spec.registry().getKey(k)));
+                            }
+                            newFreezeKey.ifPresent(
+                                    k -> b.setFreezeKey(spec.registry().getKey(k)));
+                            newPauseKey.ifPresent(
+                                    k -> b.setPauseKey(spec.registry().getKey(k)));
+                            if (autoRenewAccount.isPresent()) {
+                                var autoRenewId = TxnUtils.asId(autoRenewAccount.get(), spec);
+                                b.setAutoRenewAccount(autoRenewId);
+                            }
+                            expiry.ifPresent(t -> b.setExpiry(
+                                    Timestamp.newBuilder().setSeconds(t).build()));
+                            autoRenewPeriod.ifPresent(secs -> b.setAutoRenewPeriod(
+                                    Duration.newBuilder().setSeconds(secs).build()));
+                        });
         return b -> b.setTokenUpdate(opBody);
     }
 
@@ -307,14 +283,13 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     protected List<Function<HapiSpec, Key>> defaultSigners() {
         List<Function<HapiSpec, Key>> signers = new ArrayList<>();
         signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
-        signers.add(
-                spec -> {
-                    try {
-                        return spec.registry().getAdminKey(token);
-                    } catch (Exception ignore) {
-                        return Key.getDefaultInstance();
-                    }
-                });
+        signers.add(spec -> {
+            try {
+                return spec.registry().getAdminKey(token);
+            } catch (Exception ignore) {
+                return Key.getDefaultInstance();
+            }
+        });
         newTreasury.ifPresent(n -> signers.add((spec -> spec.registry().getKey(n))));
         newAdminKey.ifPresent(n -> signers.add(spec -> spec.registry().getKey(n)));
         autoRenewAccount.ifPresent(a -> signers.add(spec -> spec.registry().getKey(a)));

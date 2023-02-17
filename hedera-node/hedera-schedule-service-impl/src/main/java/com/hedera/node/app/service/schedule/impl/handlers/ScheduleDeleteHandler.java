@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.schedule.impl.handlers;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
@@ -51,9 +52,7 @@ public class ScheduleDeleteHandler implements TransactionHandler {
      * @param scheduleStore the {@link ReadableScheduleStore} that contains all scheduled-data
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(
-            @NonNull final PreHandleContext context,
-            @NonNull final ReadableScheduleStore scheduleStore) {
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableScheduleStore scheduleStore) {
         requireNonNull(context);
         final var op = context.getTxn().getScheduleDelete();
         final var id = op.getScheduleID();

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.operation;
 
 /*
@@ -66,14 +67,29 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HederaCallCodeOperationTest {
 
-    @Mock private GasCalculator calc;
-    @Mock private MessageFrame evmMsgFrame;
-    @Mock private EVM evm;
-    @Mock private HederaStackedWorldStateUpdater worldUpdater;
-    @Mock private Account acc;
-    @Mock private EvmSigsVerifier sigsVerifier;
-    @Mock private BiPredicate<Address, MessageFrame> addressValidator;
-    @Mock private Map<String, PrecompiledContract> precompiledContractMap;
+    @Mock
+    private GasCalculator calc;
+
+    @Mock
+    private MessageFrame evmMsgFrame;
+
+    @Mock
+    private EVM evm;
+
+    @Mock
+    private HederaStackedWorldStateUpdater worldUpdater;
+
+    @Mock
+    private Account acc;
+
+    @Mock
+    private EvmSigsVerifier sigsVerifier;
+
+    @Mock
+    private BiPredicate<Address, MessageFrame> addressValidator;
+
+    @Mock
+    private Map<String, PrecompiledContract> precompiledContractMap;
 
     private final long cost = 100L;
 
@@ -81,19 +97,15 @@ class HederaCallCodeOperationTest {
 
     @BeforeEach
     void setup() {
-        subject =
-                new HederaCallCodeOperation(
-                        sigsVerifier, calc, addressValidator, precompiledContractMap);
+        subject = new HederaCallCodeOperation(sigsVerifier, calc, addressValidator, precompiledContractMap);
         commonSetup(evmMsgFrame, worldUpdater, acc);
     }
 
     @Test
     void haltWithInvalidAddr() {
         given(worldUpdater.get(any())).willReturn(null);
-        given(
-                        calc.callOperationGasCost(
-                                any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(),
-                                any(), any()))
+        given(calc.callOperationGasCost(
+                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
                 .willReturn(cost);
         given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
         given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.EMPTY);
@@ -112,10 +124,8 @@ class HederaCallCodeOperationTest {
 
     @Test
     void executesAsExpected() {
-        given(
-                        calc.callOperationGasCost(
-                                any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(),
-                                any(), any()))
+        given(calc.callOperationGasCost(
+                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
                 .willReturn(cost);
         // and:
         given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
@@ -135,9 +145,7 @@ class HederaCallCodeOperationTest {
         given(acc.getBalance()).willReturn(Wei.of(100));
         given(calc.gasAvailableForChildCall(any(), anyLong(), anyBoolean())).willReturn(10L);
         given(acc.getAddress()).willReturn(Address.ZERO);
-        given(
-                        sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any()))
                 .willReturn(true);
         given(addressValidator.test(any(), any())).willReturn(true);
 
@@ -148,15 +156,11 @@ class HederaCallCodeOperationTest {
 
     @Test
     void executeHaltsWithInvalidSignature() {
-        given(
-                        calc.callOperationGasCost(
-                                any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(),
-                                any(), any()))
+        given(calc.callOperationGasCost(
+                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
                 .willReturn(cost);
-        given(
-                        calc.callOperationGasCost(
-                                any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(),
-                                any(), any()))
+        given(calc.callOperationGasCost(
+                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
                 .willReturn(cost);
         // and:
         given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
@@ -169,9 +173,7 @@ class HederaCallCodeOperationTest {
         // and:
         given(worldUpdater.get(any())).willReturn(acc);
         given(acc.getAddress()).willReturn(Address.ZERO);
-        given(
-                        sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any()))
                 .willReturn(false);
         given(addressValidator.test(any(), any())).willReturn(true);
 

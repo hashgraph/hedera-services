@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.keys;
 
 import static com.hedera.services.bdd.spec.keys.SigControl.Nature.CONTRACT_ID;
@@ -59,8 +60,7 @@ public class KeyShape extends SigControl {
         if (M > N) {
             throw new IllegalArgumentException("A threshold key requires M <= N");
         }
-        return threshOf(
-                M, IntStream.range(0, N).mapToObj(ignore -> SIMPLE).toArray(KeyShape[]::new));
+        return threshOf(M, IntStream.range(0, N).mapToObj(ignore -> SIMPLE).toArray(KeyShape[]::new));
     }
 
     public static KeyShape threshOf(int M, KeyShape... childShapes) {
@@ -72,31 +72,19 @@ public class KeyShape extends SigControl {
             IntSupplier listSizeSupplier,
             Supplier<KeyFactory.KeyType> typeSupplier,
             Supplier<Map.Entry<Integer, Integer>> thresholdSizesSupplier) {
-        KeyFactory.KeyType type =
-                (depthAtMost == 1) ? KeyFactory.KeyType.SIMPLE : typeSupplier.get();
+        KeyFactory.KeyType type = (depthAtMost == 1) ? KeyFactory.KeyType.SIMPLE : typeSupplier.get();
         switch (type) {
             case SIMPLE:
                 return SIMPLE;
             case LIST:
                 int listSize = listSizeSupplier.getAsInt();
-                return listOf(
-                        randomlyListing(
-                                listSize,
-                                depthAtMost - 1,
-                                listSizeSupplier,
-                                typeSupplier,
-                                thresholdSizesSupplier));
+                return listOf(randomlyListing(
+                        listSize, depthAtMost - 1, listSizeSupplier, typeSupplier, thresholdSizesSupplier));
             case THRESHOLD:
                 Map.Entry<Integer, Integer> mOfN = thresholdSizesSupplier.get();
                 int M = mOfN.getKey(), N = mOfN.getValue();
                 return threshOf(
-                        M,
-                        randomlyListing(
-                                N,
-                                depthAtMost - 1,
-                                listSizeSupplier,
-                                typeSupplier,
-                                thresholdSizesSupplier));
+                        M, randomlyListing(N, depthAtMost - 1, listSizeSupplier, typeSupplier, thresholdSizesSupplier));
         }
         throw new IllegalStateException("Unanticipated key type - " + type);
     }
@@ -108,13 +96,7 @@ public class KeyShape extends SigControl {
             Supplier<KeyFactory.KeyType> typeSupplier,
             Supplier<Map.Entry<Integer, Integer>> thresholdSizesSupplier) {
         return IntStream.range(0, N)
-                .mapToObj(
-                        ignore ->
-                                randomly(
-                                        depthAtMost,
-                                        listSizeSupplier,
-                                        typeSupplier,
-                                        thresholdSizesSupplier))
+                .mapToObj(ignore -> randomly(depthAtMost, listSizeSupplier, typeSupplier, thresholdSizesSupplier))
                 .toArray(KeyShape[]::new);
     }
 
@@ -134,47 +116,35 @@ public class KeyShape extends SigControl {
                 case UNSPECIFIED:
                     return reqControl.getNature() == Nature.SIG_ON ? SigControl.ON : SigControl.OFF;
                 case ED25519:
-                    return reqControl.getNature() == Nature.SIG_ON
-                            ? SigControl.ED25519_ON
-                            : SigControl.ED25519_OFF;
+                    return reqControl.getNature() == Nature.SIG_ON ? SigControl.ED25519_ON : SigControl.ED25519_OFF;
                 case SECP256K1:
-                    return reqControl.getNature() == Nature.SIG_ON
-                            ? SigControl.SECP256K1_ON
-                            : SigControl.SECP256K1_OFF;
+                    return reqControl.getNature() == Nature.SIG_ON ? SigControl.SECP256K1_ON : SigControl.SECP256K1_OFF;
             }
         } else if (this == CONTRACT || this == DELEGATE_CONTRACT || this == PREDEFINED_SHAPE) {
             if (control instanceof String id) {
                 return new SigControl(this.getNature(), id);
             } else {
                 throw new IllegalArgumentException(
-                        "Shape is "
-                                + this.getNature()
-                                + " but "
-                                + control
-                                + " not a contract ref or key name");
+                        "Shape is " + this.getNature() + " but " + control + " not a contract ref or key name");
             }
         } else {
             KeyShape[] childShapes = (KeyShape[]) getChildControls();
             int size = childShapes.length;
             final var controls = (List<Object>) control;
             if (size != controls.size()) {
-                final var errMsg =
-                        "Shape is "
-                                + this.getNature()
-                                + "[n="
-                                + size
-                                + (this.getNature().equals(Nature.THRESHOLD)
-                                        ? ",m=" + this.getThreshold()
-                                        : "")
-                                + "] but "
-                                + controls.size()
-                                + " controls given";
+                final var errMsg = "Shape is "
+                        + this.getNature()
+                        + "[n="
+                        + size
+                        + (this.getNature().equals(Nature.THRESHOLD) ? ",m=" + this.getThreshold() : "")
+                        + "] but "
+                        + controls.size()
+                        + " controls given";
                 throw new IllegalArgumentException(errMsg);
             }
-            final var childControls =
-                    IntStream.range(0, size)
-                            .mapToObj(i -> childShapes[i].signedWith(controls.get(i)))
-                            .toArray(SigControl[]::new);
+            final var childControls = IntStream.range(0, size)
+                    .mapToObj(i -> childShapes[i].signedWith(controls.get(i)))
+                    .toArray(SigControl[]::new);
             if (this.getNature() == Nature.LIST) {
                 return listSigs(childControls);
             } else {

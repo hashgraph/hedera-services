@@ -337,7 +337,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                             opLog.info("Renewal fee with storage: {}", renewalFeeWithStorage.get());
                             assertTrue(renewalFeeWithStorage.get() > renewalFeeWithoutStorage.get());
                         }),
-        overriding(INDIVIDUAL_KV_LIMIT_PROP, String.valueOf(163_840)));
+                        overriding(INDIVIDUAL_KV_LIMIT_PROP, String.valueOf(163_840)));
     }
 
     private HapiSpec autoRenewWorksAsExpected() {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.utils;
 
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -43,13 +44,12 @@ public class ClassLoaderHelper {
         prefixes.add("com.swirlds");
         prefixes.addAll(Arrays.stream(additionalPrefixes).toList());
 
-        var result =
-                classGraph
-                        .enableClassInfo()
-                        .enableMethodInfo()
-                        .whitelistPackages(prefixes.toArray(new String[] {}))
-                        .overrideClasspath((Object[]) urlList)
-                        .scan();
+        var result = classGraph
+                .enableClassInfo()
+                .enableMethodInfo()
+                .whitelistPackages(prefixes.toArray(new String[] {}))
+                .overrideClasspath((Object[]) urlList)
+                .scan();
 
         for (var info : result.getAllClasses()) {
             if (!info.implementsInterface(RuntimeConstructable.class.getName())) {
@@ -63,9 +63,7 @@ public class ClassLoaderHelper {
                 if (ConstructableRegistry.getInstance().getConstructor(classId) == null) {
                     ConstructableRegistry.getInstance()
                             .registerConstructable(
-                                    new ClassConstructorPair(
-                                            object.getClass(),
-                                            tryOrNull(constructor::newInstance)));
+                                    new ClassConstructorPair(object.getClass(), tryOrNull(constructor::newInstance)));
                 }
             } catch (Exception ignore) {
                 // Skip class since not valid

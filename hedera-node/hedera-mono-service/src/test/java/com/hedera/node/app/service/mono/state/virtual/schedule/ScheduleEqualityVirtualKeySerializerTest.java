@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.schedule;
 
 import static com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKey.BYTES_IN_SERIALIZED_FORM;
@@ -34,8 +35,7 @@ class ScheduleEqualityVirtualKeySerializerTest {
     private final long longKey = 2;
     private final long otherLongKey = 3;
 
-    private final ScheduleEqualityVirtualKeySerializer subject =
-            new ScheduleEqualityVirtualKeySerializer();
+    private final ScheduleEqualityVirtualKeySerializer subject = new ScheduleEqualityVirtualKeySerializer();
 
     @Test
     void gettersWork() {
@@ -43,8 +43,7 @@ class ScheduleEqualityVirtualKeySerializerTest {
 
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.deserializeKeySize(bin));
         assertEquals(BYTES_IN_SERIALIZED_FORM, subject.getSerializedSize());
-        assertEquals(
-                ScheduleEqualityVirtualKeySerializer.DATA_VERSION, subject.getCurrentDataVersion());
+        assertEquals(ScheduleEqualityVirtualKeySerializer.DATA_VERSION, subject.getCurrentDataVersion());
         assertEquals(ScheduleEqualityVirtualKeySerializer.CLASS_ID, subject.getClassId());
         assertEquals(ScheduleEqualityVirtualKeySerializer.CURRENT_VERSION, subject.getVersion());
     }

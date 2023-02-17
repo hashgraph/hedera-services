@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.commands.accounts;
 
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED;
@@ -41,7 +42,8 @@ import picocli.CommandLine.ParentCommand;
         description = "scheduling update account key list option")
 public class UpdateCommand implements Callable<Integer> {
 
-    @ParentCommand AccountsCommand accountsCommand;
+    @ParentCommand
+    AccountsCommand accountsCommand;
 
     @CommandLine.Option(
             names = {"--pathKeys"},
@@ -75,35 +77,32 @@ public class UpdateCommand implements Callable<Integer> {
             throw new CommandLine.PicocliException("you have to schedule the update command");
         }
 
-        final var delegate =
-                new UpdateSuite(
-                        config.asSpecConfig(),
-                        effectiveMemo,
-                        effectivePublicKeys,
-                        effectiveTargetAccount,
-                        accountsCommand.getYahcli().isScheduled());
+        final var delegate = new UpdateSuite(
+                config.asSpecConfig(),
+                effectiveMemo,
+                effectivePublicKeys,
+                effectiveTargetAccount,
+                accountsCommand.getYahcli().isScheduled());
         delegate.runSuiteSync();
 
         if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
-            COMMON_MESSAGES.info(
-                    "SUCCESS - "
-                            + "Scheduled update account "
-                            + effectiveTargetAccount
-                            + " keys "
-                            + effectivePublicKeys
-                            + " with memo: '"
-                            + memo
-                            + "'");
+            COMMON_MESSAGES.info("SUCCESS - "
+                    + "Scheduled update account "
+                    + effectiveTargetAccount
+                    + " keys "
+                    + effectivePublicKeys
+                    + " with memo: '"
+                    + memo
+                    + "'");
         } else {
-            COMMON_MESSAGES.warn(
-                    "FAILED - "
-                            + "Schedule update account "
-                            + effectiveTargetAccount
-                            + " keys "
-                            + effectivePublicKeys
-                            + " with memo: '"
-                            + memo
-                            + "'");
+            COMMON_MESSAGES.warn("FAILED - "
+                    + "Schedule update account "
+                    + effectiveTargetAccount
+                    + " keys "
+                    + effectivePublicKeys
+                    + " with memo: '"
+                    + memo
+                    + "'");
             return 1;
         }
 

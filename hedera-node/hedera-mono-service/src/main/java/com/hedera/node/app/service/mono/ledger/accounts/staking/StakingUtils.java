@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.STAKED_ACCOUNT_ID_CASE;
@@ -34,8 +35,7 @@ import java.util.function.Predicate;
 
 public class StakingUtils {
     private static final Predicate<HederaAccount> HAS_BEEN_DELETED = HederaAccount::isDeleted;
-    private static final Predicate<HederaAccount> IS_DECLINING_REWARD =
-            HederaAccount::isDeclinedReward;
+    private static final Predicate<HederaAccount> IS_DECLINING_REWARD = HederaAccount::isDeclinedReward;
 
     // Sentinel value for a field that wasn't applicable to this transaction
     public static final long NA = Long.MIN_VALUE;
@@ -60,8 +60,7 @@ public class StakingUtils {
     }
 
     public static long finalBalanceGiven(
-            @Nullable final HederaAccount account,
-            @NonNull final Map<AccountProperty, Object> changes) {
+            @Nullable final HederaAccount account, @NonNull final Map<AccountProperty, Object> changes) {
         if (changes.containsKey(BALANCE)) {
             return (long) changes.get(BALANCE);
         } else {
@@ -70,14 +69,12 @@ public class StakingUtils {
     }
 
     public static boolean finalDeclineRewardGiven(
-            @Nullable final HederaAccount account,
-            @NonNull final Map<AccountProperty, Object> changes) {
+            @Nullable final HederaAccount account, @NonNull final Map<AccountProperty, Object> changes) {
         return internalFinalBooleanGiven(account, changes, DECLINE_REWARD, IS_DECLINING_REWARD);
     }
 
     public static boolean finalIsDeletedGiven(
-            @Nullable final HederaAccount account,
-            @NonNull final Map<AccountProperty, Object> changes) {
+            @Nullable final HederaAccount account, @NonNull final Map<AccountProperty, Object> changes) {
         return internalFinalBooleanGiven(account, changes, IS_DELETED, HAS_BEEN_DELETED);
     }
 
@@ -94,9 +91,7 @@ public class StakingUtils {
     }
 
     public static long finalStakedToMeGiven(
-            final int stakeeI,
-            @Nullable final HederaAccount account,
-            @NonNull final long[] stakedToMeUpdates) {
+            final int stakeeI, @Nullable final HederaAccount account, @NonNull final long[] stakedToMeUpdates) {
         if (stakedToMeUpdates[stakeeI] != NA) {
             return stakedToMeUpdates[stakeeI];
         } else {
@@ -108,9 +103,7 @@ public class StakingUtils {
             final int stakeeI,
             final long delta,
             @NonNull final long[] stakedToMeUpdates,
-            @NonNull
-                    final EntityChangeSet<AccountID, HederaAccount, AccountProperty>
-                            pendingChanges) {
+            @NonNull final EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges) {
         if (stakedToMeUpdates[stakeeI] != NA) {
             stakedToMeUpdates[stakeeI] += delta;
         } else {
@@ -125,9 +118,7 @@ public class StakingUtils {
     public static void updateBalance(
             final long delta,
             final int rewardAccountI,
-            @NonNull
-                    final EntityChangeSet<AccountID, HederaAccount, AccountProperty>
-                            pendingChanges) {
+            @NonNull final EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges) {
         final var mutableChanges = pendingChanges.changes(rewardAccountI);
         if (mutableChanges.containsKey(BALANCE)) {
             mutableChanges.put(BALANCE, (long) mutableChanges.get(BALANCE) + delta);
@@ -138,23 +129,18 @@ public class StakingUtils {
     }
 
     public static boolean hasStakeMetaChanges(
-            @NonNull final Map<AccountProperty, Object> changes,
-            @Nullable final HederaAccount account) {
+            @NonNull final Map<AccountProperty, Object> changes, @Nullable final HederaAccount account) {
         return (changes.containsKey(DECLINE_REWARD)
-                        && (account == null
-                                || account.isDeclinedReward()
-                                        != (boolean) changes.get(DECLINE_REWARD)))
+                        && (account == null || account.isDeclinedReward() != (boolean) changes.get(DECLINE_REWARD)))
                 || (changes.containsKey(STAKED_ID)
-                        && (account == null
-                                || account.getStakedId() != (long) changes.get(STAKED_ID)));
+                        && (account == null || account.getStakedId() != (long) changes.get(STAKED_ID)));
     }
 
     public static long roundedToHbar(final long value) {
         return (value / HBARS_TO_TINYBARS) * HBARS_TO_TINYBARS;
     }
 
-    public static boolean validSentinel(
-            final String idCase, final AccountID stakedAccountId, final long stakedNodeId) {
+    public static boolean validSentinel(final String idCase, final AccountID stakedAccountId, final long stakedNodeId) {
         // sentinel values on -1 for stakedNodeId and 0.0.0 for stakedAccountId are used to reset
         // staking on an account
         if (idCase.matches(STAKED_ACCOUNT_ID_CASE)) {
