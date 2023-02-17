@@ -102,8 +102,8 @@ public class CryptoTransferHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
-        requireNonNull(metadata);
-        throw new UnsupportedOperationException("Not implemented");
+//        requireNonNull(metadata);
+//        throw new UnsupportedOperationException("Not implemented");
     }
 
     private void handleTokenTransfers(

@@ -52,4 +52,10 @@ public class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
         assertFalse(meta.isDeleted());
         assertArrayEquals(new byte[48], meta.runningHash());
     }
+
+    @Test
+    void constructorCreatesTopicState() {
+        final var store = new ReadableTopicStore(states);
+        assertNotNull(store);
+    }
 }
