@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.compose;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -39,33 +40,26 @@ public class LocalNetworkCheck extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    balancesChangeOnTransfer(),
-                });
+        return List.of(new HapiSpec[] {
+            balancesChangeOnTransfer(),
+        });
     }
 
     private HapiSpec balancesChangeOnTransfer() {
         return customHapiSpec("BalancesChangeOnTransfer")
-                .withProperties(
-                        Map.of(
-                                "nodes",
-                                "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"))
+                .withProperties(Map.of("nodes", "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"))
                 .given(
                         cryptoCreate("sponsor").setNode("0.0.3"),
                         cryptoCreate("beneficiary").setNode("0.0.4"),
                         balanceSnapshot("sponsorBefore", "sponsor"),
                         balanceSnapshot("beneficiaryBefore", "beneficiary"))
-                .when(
-                        cryptoTransfer(tinyBarsFromTo("sponsor", "beneficiary", 1L))
-                                .payingWith(GENESIS)
-                                .memo("Hello World!")
-                                .setNode("0.0.5"))
+                .when(cryptoTransfer(tinyBarsFromTo("sponsor", "beneficiary", 1L))
+                        .payingWith(GENESIS)
+                        .memo("Hello World!")
+                        .setNode("0.0.5"))
                 .then(
-                        getAccountBalance("sponsor")
-                                .hasTinyBars(changeFromSnapshot("sponsorBefore", -1L)),
-                        getAccountBalance("beneficiary")
-                                .hasTinyBars(changeFromSnapshot("beneficiaryBefore", +1L)));
+                        getAccountBalance("sponsor").hasTinyBars(changeFromSnapshot("sponsorBefore", -1L)),
+                        getAccountBalance("beneficiary").hasTinyBars(changeFromSnapshot("beneficiaryBefore", +1L)));
     }
 
     @Override

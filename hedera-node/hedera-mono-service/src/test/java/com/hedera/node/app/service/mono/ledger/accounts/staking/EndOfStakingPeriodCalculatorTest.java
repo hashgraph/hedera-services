@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
@@ -50,29 +51,43 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class EndOfStakingPeriodCalculatorTest {
 
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
-    @Mock private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos;
-    @Mock private MerkleNetworkContext merkleNetworkContext;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private EntityCreator creator;
-    @Mock private PropertySource properties;
-    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock
+    private MerkleMap<EntityNum, MerkleAccount> accounts;
+
+    @Mock
+    private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos;
+
+    @Mock
+    private MerkleNetworkContext merkleNetworkContext;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private EntityCreator creator;
+
+    @Mock
+    private PropertySource properties;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
 
     private EndOfStakingPeriodCalculator subject;
 
     @BeforeEach
     void setup() {
-        subject =
-                new EndOfStakingPeriodCalculator(
-                        () -> AccountStorageAdapter.fromInMemory(accounts),
-                        () -> stakingInfos,
-                        () -> merkleNetworkContext,
-                        syntheticTxnFactory,
-                        recordsHistorian,
-                        creator,
-                        properties,
-                        dynamicProperties);
+        subject = new EndOfStakingPeriodCalculator(
+                () -> AccountStorageAdapter.fromInMemory(accounts),
+                () -> stakingInfos,
+                () -> merkleNetworkContext,
+                syntheticTxnFactory,
+                recordsHistorian,
+                creator,
+                properties,
+                dynamicProperties);
     }
 
     @Test
@@ -96,8 +111,7 @@ class EndOfStakingPeriodCalculatorTest {
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
         given(dynamicProperties.maxDailyStakeRewardThPerH()).willReturn(Long.MAX_VALUE);
         given(properties.getLongProperty(STAKING_REWARD_RATE)).willReturn(100L);
-        given(properties.getLongProperty(ACCOUNTS_STAKING_REWARD_ACCOUNT))
-                .willReturn(stakingRewardAccount);
+        given(properties.getLongProperty(ACCOUNTS_STAKING_REWARD_ACCOUNT)).willReturn(stakingRewardAccount);
         given(accounts.get(EntityNum.fromInt(800))).willReturn(account_800);
         given(account_800.getBalance()).willReturn(balance_800);
         given(stakingInfos.keySet()).willReturn(Set.of(nodeNum1, nodeNum2, nodeNum3));
@@ -108,8 +122,7 @@ class EndOfStakingPeriodCalculatorTest {
 
         subject.updateNodes(consensusTime);
 
-        verify(merkleNetworkContext)
-                .setTotalStakedRewardStart(stakeToReward1 + stakeToReward2 + stakeToReward3);
+        verify(merkleNetworkContext).setTotalStakedRewardStart(stakeToReward1 + stakeToReward2 + stakeToReward3);
         verify(merkleNetworkContext).setTotalStakedStart(1300L);
         assertEquals(800L, stakingInfo1.getStake());
         assertEquals(500L, stakingInfo2.getStake());
@@ -128,8 +141,10 @@ class EndOfStakingPeriodCalculatorTest {
         final var consensusNanos = 12345L;
         final var expectedNanos = 999_999_999;
         final var consensusTime = Instant.ofEpochSecond(consensusSecs, consensusNanos);
-        final var expectedMidnightTime =
-                Timestamp.newBuilder().setSeconds(1653609599L).setNanos(expectedNanos).build();
+        final var expectedMidnightTime = Timestamp.newBuilder()
+                .setSeconds(1653609599L)
+                .setNanos(expectedNanos)
+                .build();
 
         assertEquals(expectedMidnightTime, subject.lastInstantOfPreviousPeriodFor(consensusTime));
     }
@@ -158,34 +173,31 @@ class EndOfStakingPeriodCalculatorTest {
     final EntityNum nodeNum1 = EntityNum.fromInt(0);
     final EntityNum nodeNum2 = EntityNum.fromInt(1);
     final EntityNum nodeNum3 = EntityNum.fromInt(2);
-    final MerkleStakingInfo stakingInfo1 =
-            new MerkleStakingInfo(
-                    minStake,
-                    maxStake,
-                    stakeToReward1,
-                    stakeToNotReward1,
-                    stakedRewardStart1,
-                    unclaimedStakedRewardStart1,
-                    stake1,
-                    rewardSumHistory1);
-    final MerkleStakingInfo stakingInfo2 =
-            new MerkleStakingInfo(
-                    minStake,
-                    maxStake,
-                    stakeToReward2,
-                    stakeToNotReward2,
-                    stakedRewardStart2,
-                    unclaimedStakedRewardStart2,
-                    stake2,
-                    rewardSumHistory2);
-    final MerkleStakingInfo stakingInfo3 =
-            new MerkleStakingInfo(
-                    minStake,
-                    maxStake,
-                    stakeToReward3,
-                    stakeToNotReward3,
-                    stakedRewardStart3,
-                    unclaimedStakedRewardStart3,
-                    stake3,
-                    rewardSumHistory3);
+    final MerkleStakingInfo stakingInfo1 = new MerkleStakingInfo(
+            minStake,
+            maxStake,
+            stakeToReward1,
+            stakeToNotReward1,
+            stakedRewardStart1,
+            unclaimedStakedRewardStart1,
+            stake1,
+            rewardSumHistory1);
+    final MerkleStakingInfo stakingInfo2 = new MerkleStakingInfo(
+            minStake,
+            maxStake,
+            stakeToReward2,
+            stakeToNotReward2,
+            stakedRewardStart2,
+            unclaimedStakedRewardStart2,
+            stake2,
+            rewardSumHistory2);
+    final MerkleStakingInfo stakingInfo3 = new MerkleStakingInfo(
+            minStake,
+            maxStake,
+            stakeToReward3,
+            stakeToNotReward3,
+            stakedRewardStart3,
+            unclaimedStakedRewardStart3,
+            stake3,
+            rewardSumHistory3);
 }

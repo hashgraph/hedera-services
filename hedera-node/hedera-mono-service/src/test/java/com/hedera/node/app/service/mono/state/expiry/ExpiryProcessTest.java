@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry;
 
 import static com.hedera.node.app.service.mono.state.expiry.classification.ClassificationResult.*;
@@ -68,42 +69,59 @@ class ExpiryProcessTest {
     private final long actualRenewalPeriod = 3600L;
     private final long nonExpiredAccountNum = 1002L;
     private final long fundedExpiredContractNum = 1004L;
-    private final MerkleAccount mockAccount =
-            MerkleAccountFactory.newAccount()
-                    .autoRenewPeriod(requestedRenewalPeriod)
-                    .balance(nonZeroBalance)
-                    .expirationTime(now.getEpochSecond() - 1)
-                    .get();
-    private final MerkleAccount mockContract =
-            MerkleAccountFactory.newContract()
-                    .autoRenewPeriod(requestedRenewalPeriod)
-                    .balance(nonZeroBalance)
-                    .expirationTime(now.getEpochSecond() - 1)
-                    .get();
-    private final CryptoGcOutcome finishedReturns =
-            new CryptoGcOutcome(
-                    FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS,
-                    NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
-                    true);
+    private final MerkleAccount mockAccount = MerkleAccountFactory.newAccount()
+            .autoRenewPeriod(requestedRenewalPeriod)
+            .balance(nonZeroBalance)
+            .expirationTime(now.getEpochSecond() - 1)
+            .get();
+    private final MerkleAccount mockContract = MerkleAccountFactory.newContract()
+            .autoRenewPeriod(requestedRenewalPeriod)
+            .balance(nonZeroBalance)
+            .expirationTime(now.getEpochSecond() - 1)
+            .get();
+    private final CryptoGcOutcome finishedReturns = new CryptoGcOutcome(
+            FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS,
+            NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
+            true);
 
-    private final CryptoGcOutcome partiallyFinishedReturns =
-            new CryptoGcOutcome(
-                    FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS,
-                    new NonFungibleTreasuryReturns(
-                            List.of(EntityId.fromIdentityCode(1234)), List.of(), false),
-                    false);
+    private final CryptoGcOutcome partiallyFinishedReturns = new CryptoGcOutcome(
+            FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS,
+            new NonFungibleTreasuryReturns(List.of(EntityId.fromIdentityCode(1234)), List.of(), false),
+            false);
 
-    @Mock private FeeCalculator fees;
-    @Mock private ClassificationWork classifier;
-    @Mock private AccountGC accountGC;
-    @Mock private ContractGC contractGC;
-    @Mock private ExpiryRecordsHelper recordsHelper;
-    @Mock private ExpiryThrottle expiryThrottle;
-    @Mock private ExpiryStats expiryStats;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
-    @Mock private FeeDistribution feeDistribution;
-    @Mock private SideEffectsTracker sideEffectsTracker;
-    @Mock private ConsensusTimeTracker consensusTimeTracker;
+    @Mock
+    private FeeCalculator fees;
+
+    @Mock
+    private ClassificationWork classifier;
+
+    @Mock
+    private AccountGC accountGC;
+
+    @Mock
+    private ContractGC contractGC;
+
+    @Mock
+    private ExpiryRecordsHelper recordsHelper;
+
+    @Mock
+    private ExpiryThrottle expiryThrottle;
+
+    @Mock
+    private ExpiryStats expiryStats;
+
+    @Mock
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
+
+    @Mock
+    private FeeDistribution feeDistribution;
+
+    @Mock
+    private SideEffectsTracker sideEffectsTracker;
+
+    @Mock
+    private ConsensusTimeTracker consensusTimeTracker;
+
     private MockGlobalDynamicProps dynamicProperties = new MockGlobalDynamicProps();
     private RenewalWork renewalWork;
     private RemovalWork removalWork;
@@ -120,26 +138,18 @@ class ExpiryProcessTest {
 
     private void setUpPreRequisites() {
         nonHapiFeeCharging = new NonHapiFeeCharging(feeDistribution);
-        renewalWork =
-                new RenewalHelper(
-                        expiryStats,
-                        expiryThrottle,
-                        classifier,
-                        dynamicProperties,
-                        fees,
-                        recordsHelper,
-                        nonHapiFeeCharging,
-                        accountsLedger,
-                        sideEffectsTracker);
-        removalWork =
-                new RemovalHelper(
-                        expiryStats,
-                        classifier,
-                        dynamicProperties,
-                        contractGC,
-                        accountGC,
-                        recordsHelper,
-                        expiryThrottle);
+        renewalWork = new RenewalHelper(
+                expiryStats,
+                expiryThrottle,
+                classifier,
+                dynamicProperties,
+                fees,
+                recordsHelper,
+                nonHapiFeeCharging,
+                accountsLedger,
+                sideEffectsTracker);
+        removalWork = new RemovalHelper(
+                expiryStats, classifier, dynamicProperties, contractGC, accountGC, recordsHelper, expiryThrottle);
     }
 
     @Test
@@ -153,7 +163,8 @@ class ExpiryProcessTest {
 
     @Test
     void doesNothingOnNonExpiredAccount() {
-        given(classifier.classify(EntityNum.fromLong(nonExpiredAccountNum), now)).willReturn(OTHER);
+        given(classifier.classify(EntityNum.fromLong(nonExpiredAccountNum), now))
+                .willReturn(OTHER);
 
         var result = subject.process(nonExpiredAccountNum, now);
 
@@ -220,11 +231,10 @@ class ExpiryProcessTest {
 
     @Test
     void removesExpiredBrokeAccount() {
-        final var treasuryReturns =
-                new CryptoGcOutcome(
-                        FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS,
-                        NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
-                        true);
+        final var treasuryReturns = new CryptoGcOutcome(
+                FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS,
+                NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
+                true);
 
         long brokeExpiredAccountNum = 1003L;
         final var expiredNum = EntityNum.fromLong(brokeExpiredAccountNum);
@@ -309,8 +319,7 @@ class ExpiryProcessTest {
         final var expiredNum = EntityNum.fromLong(brokeExpiredAccountNum);
         given(classifier.classify(expiredNum, now)).willReturn(DETACHED_ACCOUNT_GRACE_PERIOD_OVER);
         given(classifier.getLastClassified()).willReturn(mockAccount);
-        given(accountGC.expireBestEffort(expiredNum, mockAccount))
-                .willReturn(partiallyFinishedReturns);
+        given(accountGC.expireBestEffort(expiredNum, mockAccount)).willReturn(partiallyFinishedReturns);
         dynamicProperties.enableAutoRenew();
 
         final var result = subject.process(brokeExpiredAccountNum, now);
@@ -336,10 +345,8 @@ class ExpiryProcessTest {
         given(classifier.getPayerNumForLastClassified()).willReturn(key);
         given(expiryThrottle.allow(anyList())).willReturn(true);
 
-        given(
-                        accountsLedger.get(
-                                EntityNum.fromLong(fundedExpiredAccountNum).toGrpcAccountId(),
-                                AccountProperty.BALANCE))
+        given(accountsLedger.get(
+                        EntityNum.fromLong(fundedExpiredAccountNum).toGrpcAccountId(), AccountProperty.BALANCE))
                 .willReturn(nonZeroBalance);
 
         given(fees.assessCryptoAutoRenewal(mockAccount, requestedRenewalPeriod, now, mockAccount))
@@ -350,8 +357,7 @@ class ExpiryProcessTest {
         assertEquals(DONE, result);
 
         verify(feeDistribution).distributeChargedFee(anyLong(), eq(accountsLedger));
-        verify(recordsHelper)
-                .streamCryptoRenewal(key, fee, now.getEpochSecond() + actualRenewalPeriod, false);
+        verify(recordsHelper).streamCryptoRenewal(key, fee, now.getEpochSecond() + actualRenewalPeriod, false);
     }
 
     @Test
@@ -364,19 +370,15 @@ class ExpiryProcessTest {
         given(classifier.classify(EntityNum.fromLong(fundedExpiredContractNum), now))
                 .willReturn(EXPIRED_CONTRACT_READY_TO_RENEW);
         given(classifier.getLastClassified()).willReturn(mockContract);
-        given(classifier.getLastClassifiedNum())
-                .willReturn(EntityNum.fromLong(fundedExpiredContractNum));
+        given(classifier.getLastClassifiedNum()).willReturn(EntityNum.fromLong(fundedExpiredContractNum));
         given(fees.assessCryptoAutoRenewal(mockContract, requestedRenewalPeriod, now, mockContract))
                 .willReturn(new RenewAssessment(fee, actualRenewalPeriod));
 
-        given(
-                        accountsLedger.get(
-                                EntityNum.fromLong(fundedExpiredContractNum).toGrpcAccountId(),
-                                AccountProperty.BALANCE))
+        given(accountsLedger.get(
+                        EntityNum.fromLong(fundedExpiredContractNum).toGrpcAccountId(), AccountProperty.BALANCE))
                 .willReturn(nonZeroBalance);
 
-        given(classifier.getPayerNumForLastClassified())
-                .willReturn(EntityNum.fromLong(fundedExpiredContractNum));
+        given(classifier.getPayerNumForLastClassified()).willReturn(EntityNum.fromLong(fundedExpiredContractNum));
         given(classifier.getPayerForLastClassified()).willReturn(mockContract);
 
         final var result = subject.process(fundedExpiredContractNum, now);
@@ -384,8 +386,7 @@ class ExpiryProcessTest {
         assertEquals(DONE, result);
 
         verify(feeDistribution).distributeChargedFee(anyLong(), eq(accountsLedger));
-        verify(recordsHelper)
-                .streamCryptoRenewal(key, fee, now.getEpochSecond() + actualRenewalPeriod, true);
+        verify(recordsHelper).streamCryptoRenewal(key, fee, now.getEpochSecond() + actualRenewalPeriod, true);
     }
 
     @Test

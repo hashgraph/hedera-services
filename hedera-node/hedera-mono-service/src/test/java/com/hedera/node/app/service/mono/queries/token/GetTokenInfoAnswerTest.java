@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.token;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
@@ -71,12 +72,11 @@ class GetTokenInfoAnswerTest {
 
     @BeforeEach
     void setup() {
-        info =
-                TokenInfo.newBuilder()
-                        .setLedgerId(ledgerId)
-                        .setTokenId(tokenId)
-                        .setAdminKey(COMPLEX_KEY_ACCOUNT_KT.asKey())
-                        .build();
+        info = TokenInfo.newBuilder()
+                .setLedgerId(ledgerId)
+                .setTokenId(tokenId)
+                .setAdminKey(COMPLEX_KEY_ACCOUNT_KT.asKey())
+                .build();
 
         view = mock(StateView.class);
         optionValidator = mock(OptionValidator.class);
@@ -148,8 +148,7 @@ class GetTokenInfoAnswerTest {
         final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, tokenId);
 
         // when:
-        final Response response =
-                subject.responseGiven(sensibleQuery, view, OK, 0L, Collections.emptyMap());
+        final Response response = subject.responseGiven(sensibleQuery, view, OK, 0L, Collections.emptyMap());
 
         // then:
         final TokenGetInfoResponse opResponse = response.getTokenGetInfo();
@@ -183,9 +182,7 @@ class GetTokenInfoAnswerTest {
 
         // then:
         assertTrue(response.hasTokenGetInfo());
-        assertEquals(
-                INVALID_TOKEN_ID,
-                response.getTokenGetInfo().getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(INVALID_TOKEN_ID, response.getTokenGetInfo().getHeader().getNodeTransactionPrecheckCode());
         assertEquals(COST_ANSWER, response.getTokenGetInfo().getHeader().getResponseType());
         assertEquals(fee, response.getTokenGetInfo().getHeader().getCost());
     }
@@ -213,14 +210,10 @@ class GetTokenInfoAnswerTest {
     @Test
     void getsValidity() {
         // given:
-        final Response response =
-                Response.newBuilder()
-                        .setTokenGetInfo(
-                                TokenGetInfoResponse.newBuilder()
-                                        .setHeader(
-                                                subject.answerOnlyHeader(
-                                                        RESULT_SIZE_LIMIT_EXCEEDED)))
-                        .build();
+        final Response response = Response.newBuilder()
+                .setTokenGetInfo(TokenGetInfoResponse.newBuilder()
+                        .setHeader(subject.answerOnlyHeader(RESULT_SIZE_LIMIT_EXCEEDED)))
+                .build();
 
         // expect:
         assertEquals(RESULT_SIZE_LIMIT_EXCEEDED, subject.extractValidityFrom(response));
@@ -249,8 +242,7 @@ class GetTokenInfoAnswerTest {
         assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getSignedTxnWrapper());
     }
 
-    private Query validQuery(final ResponseType type, final long payment, final TokenID id)
-            throws Throwable {
+    private Query validQuery(final ResponseType type, final long payment, final TokenID id) throws Throwable {
         this.paymentTxn = payerSponsoredTransfer(payer, COMPLEX_KEY_ACCOUNT_KT, node, payment);
         final QueryHeader.Builder header =
                 QueryHeader.newBuilder().setPayment(this.paymentTxn).setResponseType(type);

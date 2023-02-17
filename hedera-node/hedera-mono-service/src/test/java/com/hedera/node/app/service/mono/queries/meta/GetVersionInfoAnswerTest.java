@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.meta;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
@@ -56,8 +57,7 @@ class GetVersionInfoAnswerTest {
     void setup() {
         view = mock(StateView.class);
         semanticVersions = mock(SemanticVersions.class);
-        given(semanticVersions.getDeployed())
-                .willReturn(new ActiveVersions(expectedVersions, expectedVersions));
+        given(semanticVersions.getDeployed()).willReturn(new ActiveVersions(expectedVersions, expectedVersions));
 
         subject = new GetVersionInfoAnswer(semanticVersions);
     }
@@ -70,8 +70,7 @@ class GetVersionInfoAnswerTest {
 
         assertTrue(response.hasNetworkGetVersionInfo());
         assertEquals(
-                FAIL_INVALID,
-                response.getNetworkGetVersionInfo().getHeader().getNodeTransactionPrecheckCode());
+                FAIL_INVALID, response.getNetworkGetVersionInfo().getHeader().getNodeTransactionPrecheckCode());
         assertEquals(
                 COST_ANSWER, response.getNetworkGetVersionInfo().getHeader().getResponseType());
         assertEquals(fee, response.getNetworkGetVersionInfo().getHeader().getCost());
@@ -117,8 +116,7 @@ class GetVersionInfoAnswerTest {
     private Query validQuery(final ResponseType type, final long payment) throws Throwable {
         this.paymentTxn = payerSponsoredTransfer(payer, COMPLEX_KEY_ACCOUNT_KT, node, payment);
 
-        final var header =
-                QueryHeader.newBuilder().setPayment(this.paymentTxn).setResponseType(type);
+        final var header = QueryHeader.newBuilder().setPayment(this.paymentTxn).setResponseType(type);
         final var op = NetworkGetVersionInfoQuery.newBuilder().setHeader(header);
         return Query.newBuilder().setNetworkGetVersionInfo(op).build();
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.consensus.txns;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -46,11 +47,9 @@ class CreateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
 
     @Test
     void recognizesApplicableQuery() {
-        final var createTopicTx =
-                TransactionBody.newBuilder()
-                        .setConsensusCreateTopic(
-                                ConsensusCreateTopicTransactionBody.getDefaultInstance())
-                        .build();
+        final var createTopicTx = TransactionBody.newBuilder()
+                .setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.getDefaultInstance())
+                .build();
         final var nonCreateTopicTx = TransactionBody.getDefaultInstance();
 
         assertTrue(subject.applicableTo(createTopicTx));
@@ -61,11 +60,8 @@ class CreateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     void getFeeThrowsExceptionForBadTxBody() {
         final var nonCreateTopicTx = TransactionBody.getDefaultInstance();
 
-        assertThrows(
-                InvalidTxBodyException.class, () -> subject.usageGiven(null, sigValueObj, view));
-        assertThrows(
-                InvalidTxBodyException.class,
-                () -> subject.usageGiven(nonCreateTopicTx, sigValueObj, view));
+        assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(null, sigValueObj, view));
+        assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(nonCreateTopicTx, sigValueObj, view));
     }
 
     @ParameterizedTest
@@ -74,19 +70,18 @@ class CreateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
         ", , , , 3600, 8, 100", // 3600 is chosen as duration so that each extra byte increases rbh
         // by 1
         "12345678, , , , 3600, 16, 108", // + 8 (memo size)
-        "12345678, 0000000000000000000000000000000000000000000000000000000000000000, , , 3600, 48,"
-                + " 140",
+        "12345678, 0000000000000000000000000000000000000000000000000000000000000000, , , 3600, 48," + " 140",
         //  +32 (admin key)
         "12345678, 0000000000000000000000000000000000000000000000000000000000000000,"
-            + " 1111111111111111111111111111111111111111111111111111111111111111, , 3600, 80, 172",
+                + " 1111111111111111111111111111111111111111111111111111111111111111, , 3600, 80, 172",
         // +32 (submit key)
         "12345678, 0000000000000000000000000000000000000000000000000000000000000000,"
-            + " 1111111111111111111111111111111111111111111111111111111111111111, 0.1.2, 3600, 104,"
-            + " 196",
+                + " 1111111111111111111111111111111111111111111111111111111111111111, 0.1.2, 3600, 104,"
+                + " 196",
         // +24 (auto renew account)
         "12345678, 0000000000000000000000000000000000000000000000000000000000000000,"
-            + " 1111111111111111111111111111111111111111111111111111111111111111, 0.1.2, 7200, 104,"
-            + " 392"
+                + " 1111111111111111111111111111111111111111111111111111111111111111, 0.1.2, 7200, 104,"
+                + " 392"
         // increase duration => increase rbh
     })
     void feeDataAsExpected(
@@ -98,9 +93,7 @@ class CreateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
             final int expectedExtraBpt,
             final int expectedExtraServicesRbh)
             throws InvalidTxBodyException {
-        final var txBody =
-                makeTransactionBody(
-                        memo, adminJKey, submitJKey, autoRenewAccountId, autoRenewPeriod);
+        final var txBody = makeTransactionBody(memo, adminJKey, submitJKey, autoRenewAccountId, autoRenewPeriod);
 
         final var feeData = subject.usageGiven(txBody, sigValueObj, view);
 
@@ -116,11 +109,10 @@ class CreateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
             final Key submitKey,
             final AccountID autoRenewAccountId,
             @Nullable final Duration autoRenewPeriod) {
-        final var createTopicTxBodyBuilder =
-                ConsensusCreateTopicTransactionBody.newBuilder()
-                        .mergeAdminKey(adminKey)
-                        .mergeSubmitKey(submitKey)
-                        .mergeAutoRenewAccount(autoRenewAccountId);
+        final var createTopicTxBodyBuilder = ConsensusCreateTopicTransactionBody.newBuilder()
+                .mergeAdminKey(adminKey)
+                .mergeSubmitKey(submitKey)
+                .mergeAutoRenewAccount(autoRenewAccountId);
         if (memo != null) {
             createTopicTxBodyBuilder.setMemo(memo);
         }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
 import static com.hedera.node.app.service.mono.utils.MapValueListUtils.insertInPlaceAtMapValueListHead;
@@ -38,8 +39,7 @@ public class TokenRelsLinkManager {
 
     @Inject
     public TokenRelsLinkManager(
-            final Supplier<AccountStorageAdapter> accounts,
-            final Supplier<TokenRelStorageAdapter> tokenRels) {
+            final Supplier<AccountStorageAdapter> accounts, final Supplier<TokenRelStorageAdapter> tokenRels) {
         this.accounts = accounts;
         this.tokenRels = tokenRels;
     }
@@ -78,9 +78,7 @@ public class TokenRelsLinkManager {
             for (final var newRel : newTokenRels) {
                 final var literalTokenNum = newRel.getRelatedTokenNum();
                 final var newKey = EntityNumPair.fromLongs(primitiveNum, literalTokenNum);
-                rootKey =
-                        insertInPlaceAtMapValueListHead(
-                                newKey, newRel, rootKey, rootRel, listMutation);
+                rootKey = insertInPlaceAtMapValueListHead(newKey, newRel, rootKey, rootRel, listMutation);
                 rootRel = newRel;
             }
         }

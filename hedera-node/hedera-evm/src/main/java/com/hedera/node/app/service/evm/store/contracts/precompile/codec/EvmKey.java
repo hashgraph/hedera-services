@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
 import org.hyperledger.besu.datatypes.Address;
@@ -32,11 +33,7 @@ public class EvmKey {
         this.ecdsaSecp256K1 = new byte[0];
     }
 
-    public EvmKey(
-            Address contractId,
-            byte[] ed25519,
-            byte[] ecdsaSecp256K1,
-            Address delegatableContractId) {
+    public EvmKey(Address contractId, byte[] ed25519, byte[] ecdsaSecp256K1, Address delegatableContractId) {
         this.contractId = contractId;
         this.ed25519 = ed25519;
         this.ecdsaSecp256K1 = ecdsaSecp256K1;

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hedera.node.app.service.mono.txns.token.TokenOpsValidator.validateTokenOpsWith;
@@ -40,7 +41,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TokenOpsValidatorTest {
-    @Mock private OptionValidator validator;
+    @Mock
+    private OptionValidator validator;
 
     @Test
     void validateNftTokenMintHappyPath() {

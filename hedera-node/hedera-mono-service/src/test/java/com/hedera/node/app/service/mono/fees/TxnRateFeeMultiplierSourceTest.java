@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
@@ -62,22 +63,28 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TxnRateFeeMultiplierSourceTest {
     private static final int ROUNDED_PERCENT_UTIL = 33;
     private static final long EXPECTED_MULTIPLIER = 7L;
-    private static final EntityScaleFactors ENTITY_SCALE_FACTORS =
-            EntityScaleFactors.from("DEFAULT(32,7:1)");
-    private final Instant[] congestionStarts =
-            new Instant[] {
-                ofEpochSecond(1L), ofEpochSecond(2L), ofEpochSecond(3L),
-            };
+    private static final EntityScaleFactors ENTITY_SCALE_FACTORS = EntityScaleFactors.from("DEFAULT(32,7:1)");
+    private final Instant[] congestionStarts = new Instant[] {
+        ofEpochSecond(1L), ofEpochSecond(2L), ofEpochSecond(3L),
+    };
     private final Instant consensusNow = congestionStarts[2].plusSeconds(1L);
 
-    @Mock private FunctionalityThrottling throttling;
-    @Mock private TxnAccessor accessor;
-    @Mock private UsageLimits usageLimits;
+    @Mock
+    private FunctionalityThrottling throttling;
+
+    @Mock
+    private TxnAccessor accessor;
+
+    @Mock
+    private UsageLimits usageLimits;
 
     private MockGlobalDynamicProps mockProps;
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private TxnRateFeeMultiplierSource subject;
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private TxnRateFeeMultiplierSource subject;
 
     @BeforeEach
     void setUp() {
@@ -87,10 +94,9 @@ class TxnRateFeeMultiplierSourceTest {
 
     @Test
     void makesDefensiveCopyOfCongestionStarts() {
-        final var someInstants =
-                new Instant[] {
-                    Instant.ofEpochSecond(1_234_567L), Instant.ofEpochSecond(2_234_567L),
-                };
+        final var someInstants = new Instant[] {
+            Instant.ofEpochSecond(1_234_567L), Instant.ofEpochSecond(2_234_567L),
+        };
         subject.resetCongestionLevelStarts(someInstants);
 
         final var equalNotSameInstants = subject.congestionLevelStarts();
@@ -103,8 +109,7 @@ class TxnRateFeeMultiplierSourceTest {
     void updatesCongestionStarts() {
         subject.resetCongestionLevelStarts(congestionStarts);
 
-        Assertions.assertEquals(
-                List.of(congestionStarts), List.of(subject.congestionLevelStarts()));
+        Assertions.assertEquals(List.of(congestionStarts), List.of(subject.congestionLevelStarts()));
     }
 
     /* MockGlobalDynamicProps has 2 secs for minCongestionPeriod */
@@ -142,12 +147,10 @@ class TxnRateFeeMultiplierSourceTest {
         final var bThrottle = DeterministicThrottle.withTps(secondTps);
         aThrottle.allow(firstUsed, Instant.now());
         bThrottle.allow(secondUsed, Instant.now());
-        given(throttling.activeThrottlesFor(CryptoTransfer))
-                .willReturn(List.of(aThrottle, bThrottle));
+        given(throttling.activeThrottlesFor(CryptoTransfer)).willReturn(List.of(aThrottle, bThrottle));
 
         subject.resetExpectations();
-        subject.resetCongestionLevelStarts(
-                instants(old10XLevelStart, old25XLevelStart, old100XLevelStart));
+        subject.resetCongestionLevelStarts(instants(old10XLevelStart, old25XLevelStart, old100XLevelStart));
         subject.updateMultiplier(accessor, Instant.ofEpochSecond(consensusSec));
         final long actualMultiplier = subject.currentMultiplier(accessor);
         final var starts = subject.congestionLevelStarts();
@@ -330,8 +333,7 @@ class TxnRateFeeMultiplierSourceTest {
 
     @Test
     void toStringIndicatesUnavailableConfig() {
-        final var desired =
-                "The new cutoffs for CryptoTransfer throughput congestion pricing are :  <N/A>";
+        final var desired = "The new cutoffs for CryptoTransfer throughput congestion pricing are :  <N/A>";
 
         subject.getDelegate().logReadableCutoffs();
 
@@ -340,20 +342,18 @@ class TxnRateFeeMultiplierSourceTest {
 
     @Test
     void toStringHasExpectedCutoffsMsg() {
-        final var desired =
-                "The new cutoffs for CryptoTransfer throughput congestion pricing are : \n"
-                        + "  (A) When logical TPS exceeds:\n"
-                        + "    900.00 TPS, multiplier is 10x\n"
-                        + "    950.00 TPS, multiplier is 25x\n"
-                        + "    990.00 TPS, multiplier is 100x\n"
-                        + "  (B) When logical TPS exceeds:\n"
-                        + "    9.00 TPS, multiplier is 10x\n"
-                        + "    9.50 TPS, multiplier is 25x\n"
-                        + "    9.90 TPS, multiplier is 100x";
+        final var desired = "The new cutoffs for CryptoTransfer throughput congestion pricing are : \n"
+                + "  (A) When logical TPS exceeds:\n"
+                + "    900.00 TPS, multiplier is 10x\n"
+                + "    950.00 TPS, multiplier is 25x\n"
+                + "    990.00 TPS, multiplier is 100x\n"
+                + "  (B) When logical TPS exceeds:\n"
+                + "    9.00 TPS, multiplier is 10x\n"
+                + "    9.50 TPS, multiplier is 25x\n"
+                + "    9.90 TPS, multiplier is 100x";
         final var aThrottle = DeterministicThrottle.withTpsNamed(1000, "A");
         final var bThrottle = DeterministicThrottle.withTpsNamed(10, "B");
-        given(throttling.activeThrottlesFor(CryptoTransfer))
-                .willReturn(List.of(aThrottle, bThrottle));
+        given(throttling.activeThrottlesFor(CryptoTransfer)).willReturn(List.of(aThrottle, bThrottle));
 
         subject.resetExpectations();
 

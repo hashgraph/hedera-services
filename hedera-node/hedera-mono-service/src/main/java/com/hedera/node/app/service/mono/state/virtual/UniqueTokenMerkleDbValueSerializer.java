@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -59,8 +60,7 @@ public class UniqueTokenMerkleDbValueSerializer implements ValueSerializer<Uniqu
     // Value serialization
 
     @Override
-    public int serialize(final UniqueTokenValue value, final SerializableDataOutputStream out)
-            throws IOException {
+    public int serialize(final UniqueTokenValue value, final SerializableDataOutputStream out) throws IOException {
         Objects.requireNonNull(value);
         Objects.requireNonNull(out);
         value.serialize(out);
@@ -70,8 +70,7 @@ public class UniqueTokenMerkleDbValueSerializer implements ValueSerializer<Uniqu
     // Value deserialization
 
     @Override
-    public UniqueTokenValue deserialize(final ByteBuffer buffer, final long version)
-            throws IOException {
+    public UniqueTokenValue deserialize(final ByteBuffer buffer, final long version) throws IOException {
         Objects.requireNonNull(buffer);
         final UniqueTokenValue value = new UniqueTokenValue();
         value.deserialize(buffer, (int) version);

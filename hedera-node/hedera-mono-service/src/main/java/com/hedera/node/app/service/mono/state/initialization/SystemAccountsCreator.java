@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.initialization;
 
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
@@ -29,6 +30,5 @@ public interface SystemAccountsCreator {
      * @param backingAccounts the ledger accounts
      * @param addressBook the current address book
      */
-    void ensureSystemAccounts(
-            BackingStore<AccountID, HederaAccount> backingAccounts, AddressBook addressBook);
+    void ensureSystemAccounts(BackingStore<AccountID, HederaAccount> backingAccounts, AddressBook addressBook);
 }

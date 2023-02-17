@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.contract;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -92,8 +93,7 @@ public class FibonacciPlusLoadProvider extends HapiSuite {
     private final AtomicLong duration = new AtomicLong(SECS_TO_RUN);
     private final AtomicDouble minCallProb = new AtomicDouble(MIN_CALL_PROB);
     private final AtomicDouble powerLawScale = new AtomicDouble(POWER_LAW_SCALE);
-    private final AtomicInteger powerLawBaseReciprocal =
-            new AtomicInteger(POWER_LAW_BASE_RECIPROCAL);
+    private final AtomicInteger powerLawBaseReciprocal = new AtomicInteger(POWER_LAW_BASE_RECIPROCAL);
     private final AtomicInteger maxOpsPerSec = new AtomicInteger(CALL_TPS);
     private final AtomicInteger smallestNumSlots = new AtomicInteger(SMALLEST_NUM_SLOTS);
     private final AtomicInteger slotsPerCall = new AtomicInteger(SLOTS_PER_CALL);
@@ -115,18 +115,17 @@ public class FibonacciPlusLoadProvider extends HapiSuite {
     private final Map<String, BigInteger[]> contractStorage = new HashMap<>();
     private final Set<String> createdSoFar = ConcurrentHashMap.newKeySet();
 
-    private final Function<SplittableRandom, String> randomCallChoice =
-            random -> {
-                final var iter = createdSoFar.iterator();
-                final var n = createdSoFar.size();
-                if (n == 1) {
-                    return iter.next();
-                }
-                for (int i = 0; i < random.nextInt(n - 1); i++, iter.next()) {
-                    /* No-op */
-                }
-                return iter.next();
-            };
+    private final Function<SplittableRandom, String> randomCallChoice = random -> {
+        final var iter = createdSoFar.iterator();
+        final var n = createdSoFar.size();
+        if (n == 1) {
+            return iter.next();
+        }
+        for (int i = 0; i < random.nextInt(n - 1); i++, iter.next()) {
+            /* No-op */
+        }
+        return iter.next();
+    };
 
     public static void main(String... args) {
         final var suite = new FibonacciPlusLoadProvider();
@@ -141,16 +140,15 @@ public class FibonacciPlusLoadProvider extends HapiSuite {
         }
         final var secs = Duration.between(start, end).toSeconds();
         final var gasPerSec = gasUsed.get() / secs;
-        final var summary =
-                "Consumed "
-                        + gasUsed.get()
-                        + " gas (~"
-                        + gasPerSec
-                        + " gas/sec) in "
-                        + completedOps.get()
-                        + " completed ops at attempted "
-                        + maxOpsPerSec.get()
-                        + " ops/sec";
+        final var summary = "Consumed "
+                + gasUsed.get()
+                + " gas (~"
+                + gasPerSec
+                + " gas/sec) in "
+                + completedOps.get()
+                + " completed ops at attempted "
+                + maxOpsPerSec.get()
+                + " ops/sec";
         LOG.info(summary);
     }
 
@@ -168,40 +166,39 @@ public class FibonacciPlusLoadProvider extends HapiSuite {
                         mgmtOfIntProp(numContracts, SUITE_PROPS_PREFIX + "numContracts"),
                         mgmtOfBooleanProp(validateStorage, SUITE_PROPS_PREFIX + "validateStorage"),
                         mgmtOfBooleanProp(verbose, SUITE_PROPS_PREFIX + "verbose"),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    fibNValue.set(BigInteger.valueOf(fib(fibN.get())));
-                                    opLog.info(
-                                            "Resolved configuration:\n  "
-                                                    + SUITE_PROPS_PREFIX
-                                                    + "duration={}\n  "
-                                                    + SUITE_PROPS_PREFIX
-                                                    + "maxOpsPerSec={}\n  "
-                                                    + SUITE_PROPS_PREFIX
-                                                    + "numContracts={}\n  "
-                                                    + SUITE_PROPS_PREFIX
-                                                    + "smallestNumSlots={}\n  "
-                                                    + SUITE_PROPS_PREFIX
-                                                    + "powerLawScale={}\n  "
-                                                    + SUITE_PROPS_PREFIX
-                                                    + "powerLawBaseReciprocal={}\n  "
-                                                    + SUITE_PROPS_PREFIX
-                                                    + "minCallProb={}\n  "
-                                                    + SUITE_PROPS_PREFIX
-                                                    + "fibN={} ({})\n  "
-                                                    + SUITE_PROPS_PREFIX
-                                                    + "slotsPerCall={}",
-                                            duration.get(),
-                                            maxOpsPerSec.get(),
-                                            numContracts.get(),
-                                            smallestNumSlots.get(),
-                                            powerLawScale.get(),
-                                            powerLawBaseReciprocal.get(),
-                                            minCallProb.get(),
-                                            fibN.get(),
-                                            fibNValue.get(),
-                                            slotsPerCall.get());
-                                }))
+                        withOpContext((spec, opLog) -> {
+                            fibNValue.set(BigInteger.valueOf(fib(fibN.get())));
+                            opLog.info(
+                                    "Resolved configuration:\n  "
+                                            + SUITE_PROPS_PREFIX
+                                            + "duration={}\n  "
+                                            + SUITE_PROPS_PREFIX
+                                            + "maxOpsPerSec={}\n  "
+                                            + SUITE_PROPS_PREFIX
+                                            + "numContracts={}\n  "
+                                            + SUITE_PROPS_PREFIX
+                                            + "smallestNumSlots={}\n  "
+                                            + SUITE_PROPS_PREFIX
+                                            + "powerLawScale={}\n  "
+                                            + SUITE_PROPS_PREFIX
+                                            + "powerLawBaseReciprocal={}\n  "
+                                            + SUITE_PROPS_PREFIX
+                                            + "minCallProb={}\n  "
+                                            + SUITE_PROPS_PREFIX
+                                            + "fibN={} ({})\n  "
+                                            + SUITE_PROPS_PREFIX
+                                            + "slotsPerCall={}",
+                                    duration.get(),
+                                    maxOpsPerSec.get(),
+                                    numContracts.get(),
+                                    smallestNumSlots.get(),
+                                    powerLawScale.get(),
+                                    powerLawBaseReciprocal.get(),
+                                    minCallProb.get(),
+                                    fibN.get(),
+                                    fibNValue.get(),
+                                    slotsPerCall.get());
+                        }))
                 .when()
                 .then(
                         runWithProvider(contractOpsFactory())
@@ -214,28 +211,18 @@ public class FibonacciPlusLoadProvider extends HapiSuite {
 
     private HapiSpecOperation doStorageValidation() {
         final var currentSlots = getABIFor(FUNCTION, "currentSlots", CONTRACT);
-        return withOpContext(
-                (spec, opLog) -> {
-                    for (var contract : createdSoFar) {
-                        final var expectedStorage = contractStorage.get(contract);
-                        opLog.info(
-                                "Expecting {} to have storage slots {}",
-                                contract,
-                                Arrays.toString(expectedStorage));
-                        final var lookup =
-                                contractCallLocal(contract, currentSlots)
-                                        .payingWith(GENESIS)
-                                        .nodePayment(ONE_HBAR)
-                                        .gas(GAS_TO_OFFER)
-                                        .has(
-                                                resultWith()
-                                                        .resultThruAbi(
-                                                                currentSlots,
-                                                                isLiteralArrayResult(
-                                                                        expectedStorage)));
-                        allRunFor(spec, lookup);
-                    }
-                });
+        return withOpContext((spec, opLog) -> {
+            for (var contract : createdSoFar) {
+                final var expectedStorage = contractStorage.get(contract);
+                opLog.info("Expecting {} to have storage slots {}", contract, Arrays.toString(expectedStorage));
+                final var lookup = contractCallLocal(contract, currentSlots)
+                        .payingWith(GENESIS)
+                        .nodePayment(ONE_HBAR)
+                        .gas(GAS_TO_OFFER)
+                        .has(resultWith().resultThruAbi(currentSlots, isLiteralArrayResult(expectedStorage)));
+                allRunFor(spec, lookup);
+            }
+        });
     }
 
     @SuppressWarnings("java:S3776")
@@ -246,16 +233,14 @@ public class FibonacciPlusLoadProvider extends HapiSuite {
 
         final int r = powerLawBaseReciprocal.get();
         final DoubleUnaryOperator logBaseReciprocal = x -> Math.log(x) / Math.log(r);
-        final int numDiscreteSizes =
-                (int) ceil(logBaseReciprocal.applyAsDouble(numContracts.get() * (r - 1d)));
+        final int numDiscreteSizes = (int) ceil(logBaseReciprocal.applyAsDouble(numContracts.get() * (r - 1d)));
 
         double scale = powerLawScale.get();
         int numSlots = (int) Math.pow(scale, numDiscreteSizes - 1d) * smallestNumSlots.get();
         int numContractsWithThisManySlots = 1;
         int nextContractNum = 0;
         for (int i = 0; i < numDiscreteSizes; i++) {
-            LOG.info(
-                    "Will use {} contracts with {} slots", numContractsWithThisManySlots, numSlots);
+            LOG.info("Will use {} contracts with {} slots", numContractsWithThisManySlots, numSlots);
             for (int j = 0; j < numContractsWithThisManySlots; j++) {
                 final var thisContractNum = nextContractNum++;
                 final var thisContract = contractNameFn.apply(thisContractNum);
@@ -274,115 +259,92 @@ public class FibonacciPlusLoadProvider extends HapiSuite {
 
         final var that = this;
 
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        final List<HapiSpecOperation> inits = new ArrayList<>();
-                        inits.add(uploadInitCode(CONTRACT));
-                        inits.add(
-                                cryptoCreate(civilian)
-                                        .balance(100 * ONE_MILLION_HBARS)
-                                        .payingWith(GENESIS));
-                        return inits;
+        return spec -> new OpProvider() {
+            @Override
+            public List<HapiSpecOperation> suggestedInitializers() {
+                final List<HapiSpecOperation> inits = new ArrayList<>();
+                inits.add(uploadInitCode(CONTRACT));
+                inits.add(
+                        cryptoCreate(civilian).balance(100 * ONE_MILLION_HBARS).payingWith(GENESIS));
+                return inits;
+            }
+
+            @Override
+            public Optional<HapiSpecOperation> get() {
+                final var aCallNum = submittedOps.incrementAndGet();
+                if (aCallNum == 1) {
+                    effStart.set(Instant.now());
+                }
+
+                final var choice = (createdSoFar.isEmpty() || random.nextDouble() > MIN_CALL_PROB)
+                        ? contractNameFn.apply(random.nextInt(numContracts.get()))
+                        : randomCallChoice.apply(random);
+                final HapiSpecOperation op;
+                if (createdSoFar.contains(choice)) {
+                    final var n = slotsPerCall.get();
+                    final int[] targets = new int[n];
+                    final var m = contractSlots.get(choice);
+                    for (int i = 0; i < n; i++) {
+                        targets[i] = random.nextInt(m);
+                    }
+                    final var targetsDesc = Arrays.toString(targets);
+                    if (verbose.get()) {
+                        LOG.info("Calling {} with targets {} and fibN {}", choice, targetsDesc, fibN.get());
                     }
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        final var aCallNum = submittedOps.incrementAndGet();
-                        if (aCallNum == 1) {
-                            effStart.set(Instant.now());
-                        }
-
-                        final var choice =
-                                (createdSoFar.isEmpty() || random.nextDouble() > MIN_CALL_PROB)
-                                        ? contractNameFn.apply(random.nextInt(numContracts.get()))
-                                        : randomCallChoice.apply(random);
-                        final HapiSpecOperation op;
-                        if (createdSoFar.contains(choice)) {
-                            final var n = slotsPerCall.get();
-                            final int[] targets = new int[n];
-                            final var m = contractSlots.get(choice);
-                            for (int i = 0; i < n; i++) {
-                                targets[i] = random.nextInt(m);
-                            }
-                            final var targetsDesc = Arrays.toString(targets);
-                            if (verbose.get()) {
+                    op = contractCall(CONTRACT, ADD_NTH_FIB, targets, fibN.get())
+                            .noLogging()
+                            .payingWith(civilian)
+                            .gas(GAS_TO_OFFER)
+                            .exposingGasTo((code, gas) -> {
+                                if (verbose.get()) {
+                                    LOG.info(
+                                            "(Tried to) call {} (targets =" + " {}, fibN = {}) with {}" + " gas --> {}",
+                                            choice,
+                                            targetsDesc,
+                                            fibN.get(),
+                                            gas,
+                                            code);
+                                }
+                                that.observeExposedGas(gas);
+                                if (code == SUCCESS && validateStorage.get()) {
+                                    final var curSlots = contractStorage.get(choice);
+                                    final var newSlots = Arrays.copyOf(curSlots, m);
+                                    for (int i = 0; i < n; i++) {
+                                        final var j = targets[i];
+                                        newSlots[j] = newSlots[j].add(fibNValue.get());
+                                    }
+                                    contractStorage.put(choice, newSlots);
+                                }
+                            })
+                            .hasKnownStatusFrom(SUCCESS, CONTRACT_EXECUTION_EXCEPTION, INSUFFICIENT_GAS)
+                            .deferStatusResolution();
+                } else {
+                    final var numSlots = contractSlots.get(choice);
+                    op = contractCreate(CONTRACT, numSlots)
+                            .payingWith(civilian)
+                            .balance(0L)
+                            .gas(GAS_TO_OFFER)
+                            .exposingGasTo((code, gas) -> {
+                                if (code == SUCCESS) {
+                                    createdSoFar.add(choice);
+                                }
                                 LOG.info(
-                                        "Calling {} with targets {} and fibN {}",
+                                        "(Tried to) create {} ({} slots)" + " with {} gas --> {}",
                                         choice,
-                                        targetsDesc,
-                                        fibN.get());
-                            }
+                                        numSlots,
+                                        gas,
+                                        code);
+                                that.observeExposedGas(gas);
+                            })
+                            .noLogging()
+                            .hasKnownStatusFrom(SUCCESS, INSUFFICIENT_GAS)
+                            .deferStatusResolution();
+                }
 
-                            op =
-                                    contractCall(CONTRACT, ADD_NTH_FIB, targets, fibN.get())
-                                            .noLogging()
-                                            .payingWith(civilian)
-                                            .gas(GAS_TO_OFFER)
-                                            .exposingGasTo(
-                                                    (code, gas) -> {
-                                                        if (verbose.get()) {
-                                                            LOG.info(
-                                                                    "(Tried to) call {} (targets ="
-                                                                        + " {}, fibN = {}) with {}"
-                                                                        + " gas --> {}",
-                                                                    choice,
-                                                                    targetsDesc,
-                                                                    fibN.get(),
-                                                                    gas,
-                                                                    code);
-                                                        }
-                                                        that.observeExposedGas(gas);
-                                                        if (code == SUCCESS
-                                                                && validateStorage.get()) {
-                                                            final var curSlots =
-                                                                    contractStorage.get(choice);
-                                                            final var newSlots =
-                                                                    Arrays.copyOf(curSlots, m);
-                                                            for (int i = 0; i < n; i++) {
-                                                                final var j = targets[i];
-                                                                newSlots[j] =
-                                                                        newSlots[j].add(
-                                                                                fibNValue.get());
-                                                            }
-                                                            contractStorage.put(choice, newSlots);
-                                                        }
-                                                    })
-                                            .hasKnownStatusFrom(
-                                                    SUCCESS,
-                                                    CONTRACT_EXECUTION_EXCEPTION,
-                                                    INSUFFICIENT_GAS)
-                                            .deferStatusResolution();
-                        } else {
-                            final var numSlots = contractSlots.get(choice);
-                            op =
-                                    contractCreate(CONTRACT, numSlots)
-                                            .payingWith(civilian)
-                                            .balance(0L)
-                                            .gas(GAS_TO_OFFER)
-                                            .exposingGasTo(
-                                                    (code, gas) -> {
-                                                        if (code == SUCCESS) {
-                                                            createdSoFar.add(choice);
-                                                        }
-                                                        LOG.info(
-                                                                "(Tried to) create {} ({} slots)"
-                                                                        + " with {} gas --> {}",
-                                                                choice,
-                                                                numSlots,
-                                                                gas,
-                                                                code);
-                                                        that.observeExposedGas(gas);
-                                                    })
-                                            .noLogging()
-                                            .hasKnownStatusFrom(SUCCESS, INSUFFICIENT_GAS)
-                                            .deferStatusResolution();
-                        }
-
-                        return Optional.of(op);
-                    }
-                };
+                return Optional.of(op);
+            }
+        };
     }
 
     private void observeExposedGas(final long gas) {
@@ -407,51 +369,46 @@ public class FibonacciPlusLoadProvider extends HapiSuite {
                 .given(
                         uploadInitCode(CONTRACT),
                         cryptoCreate(civilian).balance(100 * ONE_MILLION_HBARS).payingWith(GENESIS))
-                .when(
-                        contractCreate(CONTRACT, 32)
-                                .payingWith(civilian)
-                                .balance(0L)
-                                .gas(300_000L)
-                                .exposingGasTo(
-                                        (code, gas) -> {
-                                            LOG.info("Got {} for creation using {} gas", code, gas);
-                                            this.observeExposedGas(gas);
-                                        })
-                                .via(createTxn))
+                .when(contractCreate(CONTRACT, 32)
+                        .payingWith(civilian)
+                        .balance(0L)
+                        .gas(300_000L)
+                        .exposingGasTo((code, gas) -> {
+                            LOG.info("Got {} for creation using {} gas", code, gas);
+                            this.observeExposedGas(gas);
+                        })
+                        .via(createTxn))
                 .then(
-                        sourcing(
-                                () -> {
-                                    callStart.set(Instant.now());
-                                    return noOp();
-                                }),
+                        sourcing(() -> {
+                            callStart.set(Instant.now());
+                            return noOp();
+                        }),
                         contractCall(CONTRACT, ADD_NTH_FIB, firstTargets, FIBONACCI_NUM_TO_USE)
                                 .payingWith(civilian)
                                 .gas(300_000L)
-                                .exposingGasTo(
-                                        (code, gas) -> {
-                                            final var done = Instant.now();
-                                            LOG.info(
-                                                    "Called FIRST in {}ms using {} gas --> {}",
-                                                    Duration.between(callStart.get(), done)
-                                                            .toMillis(),
-                                                    gas,
-                                                    code);
-                                            callStart.set(done);
-                                        })
+                                .exposingGasTo((code, gas) -> {
+                                    final var done = Instant.now();
+                                    LOG.info(
+                                            "Called FIRST in {}ms using {} gas --> {}",
+                                            Duration.between(callStart.get(), done)
+                                                    .toMillis(),
+                                            gas,
+                                            code);
+                                    callStart.set(done);
+                                })
                                 .via(firstCallTxn),
                         contractCall(CONTRACT, ADD_NTH_FIB, secondTargets, FIBONACCI_NUM_TO_USE)
                                 .payingWith(civilian)
                                 .gas(300_000L)
-                                .exposingGasTo(
-                                        (code, gas) -> {
-                                            final var done = Instant.now();
-                                            LOG.info(
-                                                    "Called SECOND in {}ms using {} gas --> {}",
-                                                    Duration.between(callStart.get(), done)
-                                                            .toMillis(),
-                                                    gas,
-                                                    code);
-                                        })
+                                .exposingGasTo((code, gas) -> {
+                                    final var done = Instant.now();
+                                    LOG.info(
+                                            "Called SECOND in {}ms using {} gas --> {}",
+                                            Duration.between(callStart.get(), done)
+                                                    .toMillis(),
+                                            gas,
+                                            code);
+                                })
                                 .via(secondCallTxn));
     }
 

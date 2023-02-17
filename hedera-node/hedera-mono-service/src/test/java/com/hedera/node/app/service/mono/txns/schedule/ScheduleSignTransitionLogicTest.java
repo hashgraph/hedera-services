@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.schedule;
 
 import static com.hedera.node.app.service.mono.txns.schedule.SigMapScheduleClassifierTest.pretendKeyStartingWith;
@@ -64,11 +65,10 @@ class ScheduleSignTransitionLogicTest {
     private ScheduleStore store;
     private SignedTxnAccessor accessor;
     private TransactionContext txnCtx;
-    final TransactionID scheduledTxnId =
-            TransactionID.newBuilder()
-                    .setAccountID(IdUtils.asAccount("0.0.2"))
-                    .setScheduled(true)
-                    .build();
+    final TransactionID scheduledTxnId = TransactionID.newBuilder()
+            .setAccountID(IdUtils.asAccount("0.0.2"))
+            .setScheduled(true)
+            .build();
     private JKey payerKey = new JEd25519Key(pretendKeyStartingWith("payer"));
     private SigMapScheduleClassifier classifier;
     private Optional<List<JKey>> validScheduleKeys =
@@ -101,15 +101,12 @@ class ScheduleSignTransitionLogicTest {
         scheduleProcessing = mock(ScheduleProcessing.class);
         given(txnCtx.activePayerKey()).willReturn(payerKey);
 
-        given(
-                        replSigningWitness.observeInScope(
-                                scheduleId, store, validScheduleKeys, activationHelper, false))
+        given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper, false))
                 .willReturn(Pair.of(OK, true));
         given(executor.processImmediateExecution(scheduleId, store, txnCtx)).willReturn(OK);
 
-        subject =
-                new ScheduleSignTransitionLogic(
-                        properties, store, txnCtx, activationHelper, executor, scheduleProcessing);
+        subject = new ScheduleSignTransitionLogic(
+                properties, store, txnCtx, activationHelper, executor, scheduleProcessing);
 
         subject.replSigningsWitness = replSigningWitness;
         subject.classifier = classifier;
@@ -229,8 +226,7 @@ class ScheduleSignTransitionLogicTest {
         givenValidTxnCtx();
         given(store.getNoError(scheduleId)).willReturn(schedule);
         given(properties.schedulingLongTermEnabled()).willReturn(true);
-        given(schedule.calculatedExpirationTime())
-                .willReturn(RichInstant.fromJava(Instant.EPOCH.minusNanos(1)));
+        given(schedule.calculatedExpirationTime()).willReturn(RichInstant.fromJava(Instant.EPOCH.minusNanos(1)));
 
         // when:
         subject.doStateTransition();
@@ -243,13 +239,11 @@ class ScheduleSignTransitionLogicTest {
     }
 
     @Test
-    void abortsImmediatelyIfAfterExpirationLongTermDisabled()
-            throws InvalidProtocolBufferException {
+    void abortsImmediatelyIfAfterExpirationLongTermDisabled() throws InvalidProtocolBufferException {
         givenValidTxnCtx();
         given(store.get(scheduleId)).willReturn(schedule);
         given(properties.schedulingLongTermEnabled()).willReturn(false);
-        given(schedule.calculatedExpirationTime())
-                .willReturn(RichInstant.fromJava(Instant.EPOCH.minusNanos(1)));
+        given(schedule.calculatedExpirationTime()).willReturn(RichInstant.fromJava(Instant.EPOCH.minusNanos(1)));
 
         // when:
         subject.doStateTransition();
@@ -286,9 +280,7 @@ class ScheduleSignTransitionLogicTest {
         given(schedule.scheduledTransactionId()).willReturn(scheduledTxnId);
         given(schedule.calculatedWaitForExpiry()).willReturn(true);
         given(properties.schedulingLongTermEnabled()).willReturn(true);
-        given(
-                        replSigningWitness.observeInScope(
-                                scheduleId, store, validScheduleKeys, activationHelper, true))
+        given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper, true))
                 .willReturn(Pair.of(OK, false));
 
         // when:
@@ -302,8 +294,7 @@ class ScheduleSignTransitionLogicTest {
     }
 
     @Test
-    void followsHappyPathIfLongTermDisabledAndWaitForExpiry()
-            throws InvalidProtocolBufferException {
+    void followsHappyPathIfLongTermDisabledAndWaitForExpiry() throws InvalidProtocolBufferException {
         givenValidTxnCtx();
         given(store.get(scheduleId)).willReturn(schedule);
         given(store.getNoError(scheduleId)).willReturn(schedule);
@@ -339,9 +330,7 @@ class ScheduleSignTransitionLogicTest {
         givenValidTxnCtx();
         given(store.get(scheduleId)).willReturn(schedule);
         given(schedule.scheduledTransactionId()).willReturn(scheduledTxnId);
-        given(
-                        replSigningWitness.observeInScope(
-                                scheduleId, store, validScheduleKeys, activationHelper, false))
+        given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper, false))
                 .willReturn(Pair.of(OK, false));
 
         // when:
@@ -357,9 +346,7 @@ class ScheduleSignTransitionLogicTest {
     void shortCircuitsOnNonOkSigningOutcome() throws InvalidProtocolBufferException {
         givenValidTxnCtx();
         given(store.get(scheduleId)).willReturn(schedule);
-        given(
-                        replSigningWitness.observeInScope(
-                                scheduleId, store, validScheduleKeys, activationHelper, false))
+        given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper, false))
                 .willReturn(Pair.of(SOME_SIGNATURES_WERE_INVALID, true));
 
         // when:
@@ -382,13 +369,11 @@ class ScheduleSignTransitionLogicTest {
     }
 
     private void givenCtx(boolean invalidScheduleId) {
-        sigMap =
-                SignatureMap.newBuilder()
-                        .addSigPair(
-                                SignaturePair.newBuilder()
-                                        .setPubKeyPrefix(ByteString.copyFromUtf8("a"))
-                                        .build())
-                        .build();
+        sigMap = SignatureMap.newBuilder()
+                .addSigPair(SignaturePair.newBuilder()
+                        .setPubKeyPrefix(ByteString.copyFromUtf8("a"))
+                        .build())
+                .build();
         given(accessor.getSigMap()).willReturn(sigMap);
         given(classifier.validScheduleKeys(eq(List.of(payerKey)), eq(sigMap), any(), any()))
                 .willReturn(validScheduleKeys);

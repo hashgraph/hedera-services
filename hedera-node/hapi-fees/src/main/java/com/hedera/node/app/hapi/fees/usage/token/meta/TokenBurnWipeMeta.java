@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.token.meta;
 
 import com.google.common.base.MoreObjects;
@@ -24,10 +25,7 @@ public class TokenBurnWipeMeta extends TokenOpMetaBase {
     private final int serialNumsCount;
 
     public TokenBurnWipeMeta(
-            final int bpt,
-            final SubType subType,
-            final long transferRecordRb,
-            final int serialNumsCount) {
+            final int bpt, final SubType subType, final long transferRecordRb, final int serialNumsCount) {
         super(bpt, subType, transferRecordRb);
         this.serialNumsCount = serialNumsCount;
     }

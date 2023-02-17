@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.keys;
 
 import static com.hedera.node.app.hapi.utils.SignatureGenerator.BOUNCYCASTLE_PROVIDER;
@@ -55,19 +56,19 @@ public enum DefaultKeyGen implements KeyGenerator {
     public Key genEcdsaSecp256k1AndUpdate(final Map<String, PrivateKey> mutablePkMap) {
         final var kp = ecKpGenerator.generateKeyPair();
         final var encodedPk = kp.getPublic().getEncoded();
-        final var rawPkCoords =
-                Arrays.copyOfRange(encodedPk, encodedPk.length - 64, encodedPk.length);
+        final var rawPkCoords = Arrays.copyOfRange(encodedPk, encodedPk.length - 64, encodedPk.length);
 
         final var compressedPk = new byte[33];
         compressedPk[0] = (rawPkCoords[63] & 1) == 1 ? (byte) 0x03 : (byte) 0x02;
         System.arraycopy(rawPkCoords, 0, compressedPk, 1, 32);
 
         mutablePkMap.put(CommonUtils.hex(compressedPk), kp.getPrivate());
-        return Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(compressedPk)).build();
+        return Key.newBuilder()
+                .setECDSASecp256K1(ByteString.copyFrom(compressedPk))
+                .build();
     }
 
-    public static Key genAndRememberEd25519Key(
-            final Map<String, PrivateKey> hexedPublicToPrivateKeys) {
+    public static Key genAndRememberEd25519Key(final Map<String, PrivateKey> hexedPublicToPrivateKeys) {
         final var pair = new net.i2p.crypto.eddsa.KeyPairGenerator().generateKeyPair();
         final var pubKey = remember(pair, hexedPublicToPrivateKeys);
         return grpcEd25519KeyWith(pubKey);
@@ -77,8 +78,7 @@ public enum DefaultKeyGen implements KeyGenerator {
         return Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
     }
 
-    private static byte[] remember(
-            final KeyPair pair, final Map<String, PrivateKey> hexedPublicToPrivateKeys) {
+    private static byte[] remember(final KeyPair pair, final Map<String, PrivateKey> hexedPublicToPrivateKeys) {
         final var pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
         final var pubKeyHex = CommonUtils.hex(pubKey);
         hexedPublicToPrivateKeys.put(pubKeyHex, pair.getPrivate());

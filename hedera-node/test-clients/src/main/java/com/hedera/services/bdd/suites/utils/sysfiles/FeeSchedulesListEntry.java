@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.utils.sysfiles;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -26,10 +27,9 @@ public class FeeSchedulesListEntry {
     List<ScheduleEntryWrapperPojo> currentFeeSchedule;
 
     public static List<ScheduleEntryWrapperPojo> from(FeeSchedule grpc) {
-        var list =
-                grpc.getTransactionFeeScheduleList().stream()
-                        .map(ScheduleEntryWrapperPojo::from)
-                        .collect(Collectors.toList());
+        var list = grpc.getTransactionFeeScheduleList().stream()
+                .map(ScheduleEntryWrapperPojo::from)
+                .collect(Collectors.toList());
         var expiryEntry = new ScheduleEntryWrapperPojo();
         expiryEntry.setExpiryTime(grpc.getExpiryTime().getSeconds());
         list.add(expiryEntry);

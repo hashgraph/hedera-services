@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token.process;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -61,9 +62,7 @@ public class Creation {
     @FunctionalInterface
     public interface NewRelsListing {
         List<TokenRelationship> listFrom(
-                Token provisionalToken,
-                TypedTokenStore tokenStore,
-                GlobalDynamicProperties dynamicProperties);
+                Token provisionalToken, TypedTokenStore tokenStore, GlobalDynamicProperties dynamicProperties);
     }
 
     private Id provisionalId;
@@ -88,15 +87,12 @@ public class Creation {
         this.dynamicProperties = dynamicProperties;
     }
 
-    public void loadModelsWith(
-            final AccountID sponsor, final EntityIdSource ids, final OptionValidator validator) {
-        final var hasValidOrNoExplicitExpiry =
-                !op.hasExpiry() || validator.isValidExpiry(op.getExpiry());
+    public void loadModelsWith(final AccountID sponsor, final EntityIdSource ids, final OptionValidator validator) {
+        final var hasValidOrNoExplicitExpiry = !op.hasExpiry() || validator.isValidExpiry(op.getExpiry());
         validateTrue(hasValidOrNoExplicitExpiry, INVALID_EXPIRATION_TIME);
 
         final var treasuryId = Id.fromGrpcAccount(op.getTreasury());
-        treasury =
-                accountStore.loadAccountOrFailWith(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+        treasury = accountStore.loadAccountOrFailWith(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
         autoRenew = null;
         if (op.hasAutoRenewAccount()) {
             final var autoRenewId = Id.fromGrpcAccount(op.getAutoRenewAccount());
@@ -114,10 +110,7 @@ public class Creation {
         provisionalToken = modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now);
         provisionalToken
                 .getCustomFees()
-                .forEach(
-                        fee ->
-                                fee.validateAndFinalizeWith(
-                                        provisionalToken, accountStore, tokenStore));
+                .forEach(fee -> fee.validateAndFinalizeWith(provisionalToken, accountStore, tokenStore));
         newRels = listing.listFrom(provisionalToken, tokenStore, dynamicProperties);
         if (op.getInitialSupply() > 0) {
             // Treasury relationship is always first

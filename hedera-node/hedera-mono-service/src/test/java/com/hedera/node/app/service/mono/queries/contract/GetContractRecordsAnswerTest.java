@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.contract;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -30,11 +31,9 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import org.junit.jupiter.api.Test;
 
 class GetContractRecordsAnswerTest {
-    private static final ByteString address =
-            ByteString.copyFrom(unhex("0000000000000000000000009abcdefabcdefbbb"));
-    private final ContractGetRecordsQuery.Builder queryBuilder =
-            ContractGetRecordsQuery.newBuilder()
-                    .setContractID(ContractID.newBuilder().setEvmAddress(address).build());
+    private static final ByteString address = ByteString.copyFrom(unhex("0000000000000000000000009abcdefabcdefbbb"));
+    private final ContractGetRecordsQuery.Builder queryBuilder = ContractGetRecordsQuery.newBuilder()
+            .setContractID(ContractID.newBuilder().setEvmAddress(address).build());
 
     private final GetContractRecordsAnswer subject = new GetContractRecordsAnswer();
 
@@ -47,9 +46,7 @@ class GetContractRecordsAnswerTest {
 
         assertEquals(
                 NOT_SUPPORTED,
-                result.getContractGetRecordsResponse()
-                        .getHeader()
-                        .getNodeTransactionPrecheckCode());
+                result.getContractGetRecordsResponse().getHeader().getNodeTransactionPrecheckCode());
         assertEquals(
                 COST_ANSWER, result.getContractGetRecordsResponse().getHeader().getResponseType());
         assertEquals(0L, result.getContractGetRecordsResponse().getHeader().getCost());
@@ -57,28 +54,22 @@ class GetContractRecordsAnswerTest {
 
     @Test
     void assertHeadersWhenResponseTypeIsMissing() {
-        final Query query = Query.newBuilder().setContractGetRecords(queryBuilder.build()).build();
+        final Query query =
+                Query.newBuilder().setContractGetRecords(queryBuilder.build()).build();
         final var result = subject.responseGiven(query, null, null, 0);
 
         assertEquals(
                 NOT_SUPPORTED,
-                result.getContractGetRecordsResponse()
-                        .getHeader()
-                        .getNodeTransactionPrecheckCode());
+                result.getContractGetRecordsResponse().getHeader().getNodeTransactionPrecheckCode());
     }
 
     @Test
     void canExtractPayment() {
-        final var query =
-                Query.newBuilder()
-                        .setContractGetRecords(
-                                queryBuilder
-                                        .setHeader(
-                                                QueryHeader.newBuilder()
-                                                        .setPayment(
-                                                                Transaction.getDefaultInstance()))
-                                        .build())
-                        .build();
+        final var query = Query.newBuilder()
+                .setContractGetRecords(queryBuilder
+                        .setHeader(QueryHeader.newBuilder().setPayment(Transaction.getDefaultInstance()))
+                        .build())
+                .build();
         assertTrue(subject.extractPaymentFrom(query).isPresent());
     }
 }

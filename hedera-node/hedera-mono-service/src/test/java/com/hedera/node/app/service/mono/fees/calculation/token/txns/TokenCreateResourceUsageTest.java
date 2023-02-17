@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.token.txns;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -47,10 +48,9 @@ class TokenCreateResourceUsageTest {
     SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
     SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
     AccountID treasury = IdUtils.asAccount("1.2.3");
-    TransactionID txnId =
-            TransactionID.newBuilder()
-                    .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now))
-                    .build();
+    TransactionID txnId = TransactionID.newBuilder()
+            .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now))
+            .build();
 
     FeeData expected;
 
@@ -80,8 +80,7 @@ class TokenCreateResourceUsageTest {
 
         txnUsageEstimator = mock(TxnUsageEstimator.class);
         final EstimatorFactory estimatorFactory = mock(EstimatorFactory.class);
-        given(estimatorFactory.get(sigUsage, tokenCreateTxn, ESTIMATOR_UTILS))
-                .willReturn(txnUsageEstimator);
+        given(estimatorFactory.get(sigUsage, tokenCreateTxn, ESTIMATOR_UTILS)).willReturn(txnUsageEstimator);
         subject = new TokenCreateResourceUsage(estimatorFactory);
     }
 

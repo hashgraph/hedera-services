@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -74,44 +75,28 @@ public class RedirectPrecompileSuite extends HapiSuite {
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                CONTRACT,
-                                                                "getBalanceOf",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                FUNGIBLE_TOKEN))),
-                                                                asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                TOKEN_TREASURY))))
-                                                        .payingWith(ACCOUNT)
-                                                        .via(TXN)
-                                                        .hasKnownStatus(SUCCESS)
-                                                        .gas(1_000_000))))
-                .then(
-                        childRecordsCheck(
-                                TXN,
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                ParsingConstants
-                                                                                        .FunctionType
-                                                                                        .ERC_BALANCE)
-                                                                        .withBalance(
-                                                                                totalSupply)))));
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        CONTRACT,
+                                        "getBalanceOf",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(TOKEN_TREASURY))))
+                                .payingWith(ACCOUNT)
+                                .via(TXN)
+                                .hasKnownStatus(SUCCESS)
+                                .gas(1_000_000))))
+                .then(childRecordsCheck(
+                        TXN,
+                        SUCCESS,
+                        recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(htsPrecompileResult()
+                                                .forFunction(ParsingConstants.FunctionType.ERC_BALANCE)
+                                                .withBalance(totalSupply)))));
     }
 
     private HapiSpec redirectToInvalidToken() {
@@ -122,38 +107,25 @@ public class RedirectPrecompileSuite extends HapiSuite {
                         cryptoCreate(TOKEN_TREASURY),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                CONTRACT,
-                                                                "getBalanceOf",
-                                                                asHeadlongAddress(
-                                                                        asAddress(
-                                                                                TokenID.newBuilder()
-                                                                                        .setTokenNum(
-                                                                                                spec.registry()
-                                                                                                                .getContractId(
-                                                                                                                        CONTRACT)
-                                                                                                                .getContractNum()
-                                                                                                        + 5)
-                                                                                        .build())),
-                                                                asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                TOKEN_TREASURY))))
-                                                        .payingWith(ACCOUNT)
-                                                        .via(TXN)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                        .gas(1_000_000))))
-                .then(
-                        childRecordsCheck(
-                                TXN,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_TOKEN_ID)));
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        CONTRACT,
+                                        "getBalanceOf",
+                                        asHeadlongAddress(asAddress(TokenID.newBuilder()
+                                                .setTokenNum(spec.registry()
+                                                                .getContractId(CONTRACT)
+                                                                .getContractNum()
+                                                        + 5)
+                                                .build())),
+                                        asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(TOKEN_TREASURY))))
+                                .payingWith(ACCOUNT)
+                                .via(TXN)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .gas(1_000_000))))
+                .then(childRecordsCheck(
+                        TXN, CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_TOKEN_ID)));
     }
 
     @Override

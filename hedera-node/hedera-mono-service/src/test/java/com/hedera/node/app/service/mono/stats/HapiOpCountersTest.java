@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stats;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
@@ -56,10 +57,7 @@ class HapiOpCountersTest {
     @BeforeEach
     void setup() {
         HapiOpCounters.setAllFunctions(
-                () ->
-                        new HederaFunctionality[] {
-                            CryptoTransfer, TokenGetInfo, ConsensusSubmitMessage, NONE
-                        });
+                () -> new HederaFunctionality[] {CryptoTransfer, TokenGetInfo, ConsensusSubmitMessage, NONE});
 
         txnCtx = mock(TransactionContext.class);
         counter = mock(Counter.class);

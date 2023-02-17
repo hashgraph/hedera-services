@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle.disk;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -87,8 +88,7 @@ class OnDiskWritableStateTest extends MerkleTestBase {
         @Test
         @DisplayName("Iterate over keys in the virtual map is not allowed")
         void iterateThrows() {
-            assertThatThrownBy(() -> state.keys())
-                    .isInstanceOf(UnsupportedOperationException.class);
+            assertThatThrownBy(() -> state.keys()).isInstanceOf(UnsupportedOperationException.class);
         }
     }
 

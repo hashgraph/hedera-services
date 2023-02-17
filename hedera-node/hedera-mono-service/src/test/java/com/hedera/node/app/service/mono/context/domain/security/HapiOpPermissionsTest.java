@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.domain.security;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -43,8 +44,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class HapiOpPermissionsTest {
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private HapiOpPermissions subject;
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private HapiOpPermissions subject;
 
     @BeforeEach
     void setUp() {
@@ -60,11 +64,10 @@ class HapiOpPermissionsTest {
         var unluckyCivilian = IdUtils.asAccount("0.0.1235");
 
         // given:
-        var config =
-                configWith(
-                        Pair.of("uncheckedSubmit", "50"),
-                        Pair.of("cryptoTransfer", "3-1234"),
-                        Pair.of("tokenMint", "666-1234"));
+        var config = configWith(
+                Pair.of("uncheckedSubmit", "50"),
+                Pair.of("cryptoTransfer", "3-1234"),
+                Pair.of("tokenMint", "666-1234"));
 
         // when:
         subject.reloadFrom(config);
@@ -77,25 +80,22 @@ class HapiOpPermissionsTest {
         Assertions.assertEquals(OK, subject.permissibilityOf(CryptoTransfer, treasury));
         Assertions.assertEquals(OK, subject.permissibilityOf(CryptoTransfer, luckyCivilian));
         Assertions.assertEquals(OK, subject.permissibilityOf(CryptoTransfer, sysadmin));
-        Assertions.assertEquals(
-                NOT_SUPPORTED, subject.permissibilityOf(CryptoTransfer, unluckyCivilian));
+        Assertions.assertEquals(NOT_SUPPORTED, subject.permissibilityOf(CryptoTransfer, unluckyCivilian));
         Assertions.assertEquals(OK, subject.permissibilityOf(TokenMint, treasury));
         Assertions.assertEquals(OK, subject.permissibilityOf(TokenMint, sysadmin));
         Assertions.assertEquals(OK, subject.permissibilityOf(TokenMint, luckyCivilian));
-        Assertions.assertEquals(
-                NOT_SUPPORTED, subject.permissibilityOf(TokenMint, unluckyCivilian));
+        Assertions.assertEquals(NOT_SUPPORTED, subject.permissibilityOf(TokenMint, unluckyCivilian));
     }
 
     @Test
     void reloadsAsExpected() {
         // given:
-        var config =
-                configWith(
-                        Pair.of("doesntExist", "0-*"),
-                        Pair.of("uncheckedSubmit", "50"),
-                        Pair.of("cryptoTransfer", "3-1234"),
-                        Pair.of("tokenMint", "666-*"),
-                        Pair.of("tokenBurn", "abcde"));
+        var config = configWith(
+                Pair.of("doesntExist", "0-*"),
+                Pair.of("uncheckedSubmit", "50"),
+                Pair.of("cryptoTransfer", "3-1234"),
+                Pair.of("tokenMint", "666-*"),
+                Pair.of("tokenBurn", "abcde"));
 
         // when:
         subject.reloadFrom(config);
@@ -111,11 +111,7 @@ class HapiOpPermissionsTest {
                 logCaptor.warnLogs(),
                 contains(
                         equalTo(String.format(HapiOpPermissions.MISSING_OP_TPL, "doesntExist")),
-                        equalTo(
-                                String.format(
-                                        HapiOpPermissions.UNPARSEABLE_RANGE_TPL,
-                                        TokenBurn,
-                                        "abcde"))));
+                        equalTo(String.format(HapiOpPermissions.UNPARSEABLE_RANGE_TPL, TokenBurn, "abcde"))));
     }
 
     private void assertRangeProps(PermissionedAccountsRange range, Long l, Long r) {
@@ -127,8 +123,7 @@ class HapiOpPermissionsTest {
     private ServicesConfigurationList configWith(Pair<String, String>... entries) {
         var config = ServicesConfigurationList.newBuilder();
         for (var entry : entries) {
-            config.addNameValue(
-                    Setting.newBuilder().setName(entry.getLeft()).setValue(entry.getRight()));
+            config.addNameValue(Setting.newBuilder().setName(entry.getLeft()).setValue(entry.getRight()));
         }
         return config.build();
     }

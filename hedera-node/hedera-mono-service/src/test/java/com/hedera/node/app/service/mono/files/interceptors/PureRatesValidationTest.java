@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.interceptors;
 
 import static com.hedera.node.app.service.mono.files.interceptors.PureRatesValidation.isNormalIntradayChange;
@@ -41,14 +42,8 @@ class PureRatesValidationTest {
 
     @BeforeAll
     public static void setUp() {
-        midnightRates =
-                new ExchangeRates(
-                        currentHbarEquiv,
-                        currentCentEquiv,
-                        ratesExpiry,
-                        nextHbarEquiv,
-                        nextCentEquiv,
-                        ratesExpiry);
+        midnightRates = new ExchangeRates(
+                currentHbarEquiv, currentCentEquiv, ratesExpiry, nextHbarEquiv, nextCentEquiv, ratesExpiry);
     }
 
     @Test
@@ -62,26 +57,20 @@ class PureRatesValidationTest {
         final ExchangeRateSet bigChangeInCurrent = newRates(midnightRates, false, true, false);
         Assertions.assertFalse(isNormalIntradayChange(midnightRates, bigChangeInCurrent, bound));
 
-        final ExchangeRateSet increasingBigChangeInCurrent =
-                newRates(midnightRates, false, true, true);
-        Assertions.assertFalse(
-                isNormalIntradayChange(midnightRates, increasingBigChangeInCurrent, bound));
+        final ExchangeRateSet increasingBigChangeInCurrent = newRates(midnightRates, false, true, true);
+        Assertions.assertFalse(isNormalIntradayChange(midnightRates, increasingBigChangeInCurrent, bound));
 
         final ExchangeRateSet bigChangeInNext = newRates(midnightRates, true, false, true);
         Assertions.assertFalse(isNormalIntradayChange(midnightRates, bigChangeInNext, bound));
 
-        final ExchangeRateSet decreasingBigChangeInCurrent =
-                newRates(midnightRates, true, false, false);
-        Assertions.assertFalse(
-                isNormalIntradayChange(midnightRates, decreasingBigChangeInCurrent, bound));
+        final ExchangeRateSet decreasingBigChangeInCurrent = newRates(midnightRates, true, false, false);
+        Assertions.assertFalse(isNormalIntradayChange(midnightRates, decreasingBigChangeInCurrent, bound));
 
         final ExchangeRateSet bigChangeInBoth = newRates(midnightRates, false, false, true);
         Assertions.assertFalse(isNormalIntradayChange(midnightRates, bigChangeInBoth, bound));
 
-        final ExchangeRateSet decreasingBigChangeInBoth =
-                newRates(midnightRates, false, false, false);
-        Assertions.assertFalse(
-                isNormalIntradayChange(midnightRates, decreasingBigChangeInBoth, bound));
+        final ExchangeRateSet decreasingBigChangeInBoth = newRates(midnightRates, false, false, false);
+        Assertions.assertFalse(isNormalIntradayChange(midnightRates, decreasingBigChangeInBoth, bound));
     }
 
     private ExchangeRateSet newRates(
@@ -89,28 +78,22 @@ class PureRatesValidationTest {
             final boolean smallChangeToCurrentRate,
             final boolean smallChangeToNextRate,
             final boolean increaseRates) {
-        final Pair<Integer, Integer> currentPair =
-                getNewHandC(
-                        exchangeRates.getCurrHbarEquiv(),
-                        exchangeRates.getCurrCentEquiv(),
-                        smallChangeToCurrentRate,
-                        increaseRates);
+        final Pair<Integer, Integer> currentPair = getNewHandC(
+                exchangeRates.getCurrHbarEquiv(),
+                exchangeRates.getCurrCentEquiv(),
+                smallChangeToCurrentRate,
+                increaseRates);
 
         final ExchangeRate.Builder currentRate =
-                ExchangeRate.newBuilder()
-                        .setHbarEquiv(currentPair.getLeft())
-                        .setCentEquiv(currentPair.getRight());
+                ExchangeRate.newBuilder().setHbarEquiv(currentPair.getLeft()).setCentEquiv(currentPair.getRight());
 
-        final Pair<Integer, Integer> nextPair =
-                getNewHandC(
-                        exchangeRates.getNextHbarEquiv(),
-                        exchangeRates.getNextCentEquiv(),
-                        smallChangeToNextRate,
-                        increaseRates);
+        final Pair<Integer, Integer> nextPair = getNewHandC(
+                exchangeRates.getNextHbarEquiv(),
+                exchangeRates.getNextCentEquiv(),
+                smallChangeToNextRate,
+                increaseRates);
         final ExchangeRate.Builder nextRate =
-                ExchangeRate.newBuilder()
-                        .setHbarEquiv(nextPair.getLeft())
-                        .setCentEquiv(nextPair.getRight());
+                ExchangeRate.newBuilder().setHbarEquiv(nextPair.getLeft()).setCentEquiv(nextPair.getRight());
 
         return ExchangeRateSet.newBuilder()
                 .setCurrentRate(currentRate)

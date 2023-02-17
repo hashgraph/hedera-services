@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import com.hedera.node.app.service.mono.ServicesState;
@@ -38,8 +39,7 @@ public class ReconnectListener implements ReconnectCompleteListener {
     @Override
     public void notify(final ReconnectCompleteNotification notification) {
         log.info(
-                "Notification Received: Reconnect Finished. "
-                        + "consensusTimestamp: {}, roundNumber: {}, sequence: {}",
+                "Notification Received: Reconnect Finished. " + "consensusTimestamp: {}, roundNumber: {}, sequence: {}",
                 notification.getConsensusTimestamp(),
                 notification.getRoundNumber(),
                 notification.getSequence());

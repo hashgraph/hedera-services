@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.mono.state.submerkle.ExchangeRates.MERKLE_VERSION;
@@ -44,36 +45,28 @@ class ExchangeRatesTest {
     private static final int expNextCentEquiv = 2;
     private static final long expNextExpiry = Instant.now().getEpochSecond() + 5_678L;
 
-    private static final ExchangeRateSet grpc =
-            ExchangeRateSet.newBuilder()
-                    .setCurrentRate(
-                            ExchangeRate.newBuilder()
-                                    .setHbarEquiv(expCurrentHbarEquiv)
-                                    .setCentEquiv(expCurrentCentEquiv)
-                                    .setExpirationTime(
-                                            TimestampSeconds.newBuilder()
-                                                    .setSeconds(expCurrentExpiry)))
-                    .setNextRate(
-                            ExchangeRate.newBuilder()
-                                    .setHbarEquiv(expNextHbarEquiv)
-                                    .setCentEquiv(expNextCentEquiv)
-                                    .setExpirationTime(
-                                            TimestampSeconds.newBuilder()
-                                                    .setSeconds(expNextExpiry)))
-                    .build();
+    private static final ExchangeRateSet grpc = ExchangeRateSet.newBuilder()
+            .setCurrentRate(ExchangeRate.newBuilder()
+                    .setHbarEquiv(expCurrentHbarEquiv)
+                    .setCentEquiv(expCurrentCentEquiv)
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(expCurrentExpiry)))
+            .setNextRate(ExchangeRate.newBuilder()
+                    .setHbarEquiv(expNextHbarEquiv)
+                    .setCentEquiv(expNextCentEquiv)
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(expNextExpiry)))
+            .build();
 
     private ExchangeRates subject;
 
     @BeforeEach
     void setup() {
-        subject =
-                new ExchangeRates(
-                        expCurrentHbarEquiv,
-                        expCurrentCentEquiv,
-                        expCurrentExpiry,
-                        expNextHbarEquiv,
-                        expNextCentEquiv,
-                        expNextExpiry);
+        subject = new ExchangeRates(
+                expCurrentHbarEquiv,
+                expCurrentCentEquiv,
+                expCurrentExpiry,
+                expNextHbarEquiv,
+                expNextCentEquiv,
+                expNextExpiry);
     }
 
     @Test
@@ -99,20 +92,19 @@ class ExchangeRatesTest {
 
     @Test
     void readableReprWorks() {
-        var expected =
-                new StringBuilder()
-                        .append(expCurrentHbarEquiv)
-                        .append("ℏ <-> ")
-                        .append(expCurrentCentEquiv)
-                        .append("¢ til ")
-                        .append(expCurrentExpiry)
-                        .append(" | ")
-                        .append(expNextHbarEquiv)
-                        .append("ℏ <-> ")
-                        .append(expNextCentEquiv)
-                        .append("¢ til ")
-                        .append(expNextExpiry)
-                        .toString();
+        var expected = new StringBuilder()
+                .append(expCurrentHbarEquiv)
+                .append("ℏ <-> ")
+                .append(expCurrentCentEquiv)
+                .append("¢ til ")
+                .append(expCurrentExpiry)
+                .append(" | ")
+                .append(expNextHbarEquiv)
+                .append("ℏ <-> ")
+                .append(expNextCentEquiv)
+                .append("¢ til ")
+                .append(expNextExpiry)
+                .toString();
 
         assertEquals(expected, subject.readableRepr());
     }
@@ -184,23 +176,16 @@ class ExchangeRatesTest {
 
     @Test
     void replaces() {
-        final var newRates =
-                ExchangeRateSet.newBuilder()
-                        .setCurrentRate(
-                                ExchangeRate.newBuilder()
-                                        .setHbarEquiv(expCurrentHbarEquiv)
-                                        .setCentEquiv(expCurrentCentEquiv)
-                                        .setExpirationTime(
-                                                TimestampSeconds.newBuilder()
-                                                        .setSeconds(expCurrentExpiry)))
-                        .setNextRate(
-                                ExchangeRate.newBuilder()
-                                        .setHbarEquiv(expNextHbarEquiv)
-                                        .setCentEquiv(expNextCentEquiv)
-                                        .setExpirationTime(
-                                                TimestampSeconds.newBuilder()
-                                                        .setSeconds(expNextExpiry)))
-                        .build();
+        final var newRates = ExchangeRateSet.newBuilder()
+                .setCurrentRate(ExchangeRate.newBuilder()
+                        .setHbarEquiv(expCurrentHbarEquiv)
+                        .setCentEquiv(expCurrentCentEquiv)
+                        .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(expCurrentExpiry)))
+                .setNextRate(ExchangeRate.newBuilder()
+                        .setHbarEquiv(expNextHbarEquiv)
+                        .setCentEquiv(expNextCentEquiv)
+                        .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(expNextExpiry)))
+                .build();
         subject = new ExchangeRates();
 
         subject.replaceWith(newRates);

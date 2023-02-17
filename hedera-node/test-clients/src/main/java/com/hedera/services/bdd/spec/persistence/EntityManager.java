@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.persistence;
 
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -59,13 +60,7 @@ public class EntityManager {
     static final String SCHEDULES_SUBDIR = "schedules";
     static final String CONTRACTS_SUBDIR = "contracts";
     static final String[] ALL_SUBDIRS = {
-        KEYS_SUBDIR,
-        TOKENS_SUBDIR,
-        TOPICS_SUBDIR,
-        ACCOUNTS_SUBDIR,
-        SCHEDULES_SUBDIR,
-        FILES_SUBDIR,
-        CONTRACTS_SUBDIR
+        KEYS_SUBDIR, TOKENS_SUBDIR, TOPICS_SUBDIR, ACCOUNTS_SUBDIR, SCHEDULES_SUBDIR, FILES_SUBDIR, CONTRACTS_SUBDIR
     };
 
     public static String accountLoc(String base, String name) {
@@ -123,10 +118,7 @@ public class EntityManager {
         for (Entity entity : candEntities) {
             var name = entity.getName();
             if (registeredEntityMeta.containsKey(name)) {
-                log.warn(
-                        "Skipping entity from '{}', name '{}' already used!",
-                        entity.getManifestAbsPath(),
-                        name);
+                log.warn("Skipping entity from '{}', name '{}' already used!", entity.getManifestAbsPath(), name);
             } else {
                 entity.registerWhatIsKnown(spec);
                 entities.add(entity);
@@ -137,11 +129,10 @@ public class EntityManager {
     }
 
     public void runExistenceChecks() {
-        var checks =
-                entities.stream()
-                        .map(Entity::existenceCheck)
-                        .map(HapiQueryOp::logged)
-                        .toArray(HapiSpecOperation[]::new);
+        var checks = entities.stream()
+                .map(Entity::existenceCheck)
+                .map(HapiQueryOp::logged)
+                .toArray(HapiSpecOperation[]::new);
         allRunFor(spec, checks);
     }
 
@@ -183,17 +174,15 @@ public class EntityManager {
         registeredEntityMeta.entrySet().stream()
                 .map(Map.Entry::getValue)
                 .filter(EntityMeta::neededCreation)
-                .forEach(
-                        meta -> {
-                            var entity = meta.getEntity();
-                            var optionalCreatedId = extractCreated(entity.getCreateOp());
-                            optionalCreatedId.ifPresent(
-                                    createdId -> {
-                                        entity.setId(createdId);
-                                        entity.clearCreateOp();
-                                        YamlHelper.serializeEntity(entity, meta.getManifestLoc());
-                                    });
-                        });
+                .forEach(meta -> {
+                    var entity = meta.getEntity();
+                    var optionalCreatedId = extractCreated(entity.getCreateOp());
+                    optionalCreatedId.ifPresent(createdId -> {
+                        entity.setId(createdId);
+                        entity.clearCreateOp();
+                        YamlHelper.serializeEntity(entity, meta.getManifestLoc());
+                    });
+                });
     }
 
     private Optional<EntityId> extractCreated(HapiSpecOperation veiledCreationOp) {
@@ -206,23 +195,19 @@ public class EntityManager {
         var receipt = creationOp.getLastReceipt();
         EntityId createdEntityId = null;
         if (receipt.hasAccountID()) {
-            createdEntityId =
-                    new EntityId(HapiPropertySource.asAccountString(receipt.getAccountID()));
+            createdEntityId = new EntityId(HapiPropertySource.asAccountString(receipt.getAccountID()));
         } else if (receipt.hasTokenID()) {
             createdEntityId = new EntityId(HapiPropertySource.asTokenString(receipt.getTokenID()));
         } else if (receipt.hasTopicID()) {
             createdEntityId = new EntityId(HapiPropertySource.asTopicString(receipt.getTopicID()));
         } else if (receipt.hasContractID()) {
-            createdEntityId =
-                    new EntityId(HapiPropertySource.asContractString(receipt.getContractID()));
+            createdEntityId = new EntityId(HapiPropertySource.asContractString(receipt.getContractID()));
         } else if (receipt.hasFileID()) {
             createdEntityId = new EntityId(HapiPropertySource.asFileString(receipt.getFileID()));
         } else if (receipt.hasScheduleID()) {
-            createdEntityId =
-                    new EntityId(HapiPropertySource.asScheduleString(receipt.getScheduleID()));
+            createdEntityId = new EntityId(HapiPropertySource.asScheduleString(receipt.getScheduleID()));
         } else if (receipt.hasContractID()) {
-            createdEntityId =
-                    new EntityId(HapiPropertySource.asContractString(receipt.getContractID()));
+            createdEntityId = new EntityId(HapiPropertySource.asContractString(receipt.getContractID()));
         }
         return Optional.ofNullable(createdEntityId);
     }

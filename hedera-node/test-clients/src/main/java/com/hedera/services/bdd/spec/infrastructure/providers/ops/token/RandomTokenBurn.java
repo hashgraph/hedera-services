@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.token;
 
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomToken.DEFAULT_MAX_SUPPLY;
@@ -32,8 +33,7 @@ public class RandomTokenBurn implements OpProvider {
     private final RegistrySourcedNameProvider<TokenID> tokens;
 
     private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(
-                    TOKEN_WAS_DELETED, TOKEN_HAS_NO_SUPPLY_KEY, INVALID_TOKEN_BURN_AMOUNT);
+            standardOutcomesAnd(TOKEN_WAS_DELETED, TOKEN_HAS_NO_SUPPLY_KEY, INVALID_TOKEN_BURN_AMOUNT);
 
     public RandomTokenBurn(RegistrySourcedNameProvider<TokenID> tokens) {
         this.tokens = tokens;
@@ -48,10 +48,9 @@ public class RandomTokenBurn implements OpProvider {
 
         var amount = BASE_RANDOM.nextLong(1, DEFAULT_MAX_SUPPLY);
 
-        var op =
-                burnToken(token.get(), amount)
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                        .hasKnownStatusFrom(permissibleOutcomes);
+        var op = burnToken(token.get(), amount)
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                .hasKnownStatusFrom(permissibleOutcomes);
 
         return Optional.of(op);
     }

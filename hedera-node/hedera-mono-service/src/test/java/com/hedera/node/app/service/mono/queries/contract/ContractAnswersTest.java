@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.contract;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -32,13 +33,12 @@ class ContractAnswersTest {
     @Test
     void hasExpectedAnswers() {
         // given:
-        subject =
-                new ContractAnswers(
-                        getBytecodeAnswer,
-                        getContractInfoAnswer,
-                        getBySolidityIdAnswer,
-                        getContractRecordsAnswer,
-                        contractCallLocalAnswer);
+        subject = new ContractAnswers(
+                getBytecodeAnswer,
+                getContractInfoAnswer,
+                getBySolidityIdAnswer,
+                getContractRecordsAnswer,
+                contractCallLocalAnswer);
 
         // then:
         assertSame(getBytecodeAnswer, subject.getBytecode());

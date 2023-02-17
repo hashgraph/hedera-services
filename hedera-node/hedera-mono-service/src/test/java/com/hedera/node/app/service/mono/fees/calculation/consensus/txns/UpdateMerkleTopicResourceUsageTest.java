@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.consensus.txns;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -66,18 +67,16 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 @ExtendWith(LogCaptureExtension.class)
 class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
-    @LoggingTarget private LogCaptor logCaptor;
+    @LoggingTarget
+    private LogCaptor logCaptor;
 
-    @LoggingSubject private UpdateTopicResourceUsage subject;
+    @LoggingSubject
+    private UpdateTopicResourceUsage subject;
 
     private static final JEd25519Key adminKey =
-            new JEd25519Key(
-                    CommonUtils.unhex(
-                            "0000000000000000000000000000000000000000000000000000000000000000"));
+            new JEd25519Key(CommonUtils.unhex("0000000000000000000000000000000000000000000000000000000000000000"));
     private static final JEd25519Key submitKey =
-            new JEd25519Key(
-                    CommonUtils.unhex(
-                            "1111111111111111111111111111111111111111111111111111111111111111"));
+            new JEd25519Key(CommonUtils.unhex("1111111111111111111111111111111111111111111111111111111111111111"));
     private static final String defaultMemo = "12345678";
 
     @BeforeEach
@@ -88,11 +87,9 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
 
     @Test
     void recognizesApplicableQuery() {
-        final var updateTopicTx =
-                TransactionBody.newBuilder()
-                        .setConsensusUpdateTopic(
-                                ConsensusUpdateTopicTransactionBody.getDefaultInstance())
-                        .build();
+        final var updateTopicTx = TransactionBody.newBuilder()
+                .setConsensusUpdateTopic(ConsensusUpdateTopicTransactionBody.getDefaultInstance())
+                .build();
         final var nonUpdateTopicTx = TransactionBody.getDefaultInstance();
 
         assertTrue(subject.applicableTo(updateTopicTx));
@@ -105,54 +102,35 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
         given(mockTxnBody.hasConsensusUpdateTopic()).willReturn(false);
 
         Exception exception =
-                assertThrows(
-                        InvalidTxBodyException.class,
-                        () -> subject.usageGiven(null, sigValueObj, view));
-        assertEquals(
-                "consensusUpdateTopic field not available for Fee Calculation",
-                exception.getMessage());
+                assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(null, sigValueObj, view));
+        assertEquals("consensusUpdateTopic field not available for Fee Calculation", exception.getMessage());
 
         exception =
-                assertThrows(
-                        InvalidTxBodyException.class,
-                        () -> subject.usageGiven(mockTxnBody, sigValueObj, view));
-        assertEquals(
-                "consensusUpdateTopic field not available for Fee Calculation",
-                exception.getMessage());
+                assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(mockTxnBody, sigValueObj, view));
+        assertEquals("consensusUpdateTopic field not available for Fee Calculation", exception.getMessage());
 
         given(mockTxnBody.hasConsensusUpdateTopic()).willReturn(true);
-        exception =
-                assertThrows(
-                        IllegalStateException.class,
-                        () -> subject.usageGiven(mockTxnBody, sigValueObj, null));
+        exception = assertThrows(IllegalStateException.class, () -> subject.usageGiven(mockTxnBody, sigValueObj, null));
         assertEquals("No StateView present !!", exception.getMessage());
     }
 
     @Test
     void getFeeThrowsExceptionForBadKeys() throws DecoderException, IllegalArgumentException {
-        final var txnBody =
-                makeTransactionBody(
-                        topicId,
-                        defaultMemo,
-                        JKey.mapJKey(adminKey),
-                        JKey.mapJKey(submitKey),
-                        IdUtils.asAccount("0.1.2"),
-                        null,
-                        null);
+        final var txnBody = makeTransactionBody(
+                topicId,
+                defaultMemo,
+                JKey.mapJKey(adminKey),
+                JKey.mapJKey(submitKey),
+                IdUtils.asAccount("0.1.2"),
+                null,
+                null);
         final var merkleTopic =
-                new MerkleTopic(
-                        defaultMemo,
-                        adminKey,
-                        submitKey,
-                        0,
-                        new EntityId(0, 1, 2),
-                        new RichInstant(36_000, 0));
+                new MerkleTopic(defaultMemo, adminKey, submitKey, 0, new EntityId(0, 1, 2), new RichInstant(36_000, 0));
         given(topics.get(EntityNum.fromTopicId(topicId))).willReturn(merkleTopic);
         final var mockedJkey = mockStatic(JKey.class);
         mockedJkey.when(() -> JKey.mapJKey(any())).thenThrow(new DecoderException());
 
-        assertThrows(
-                InvalidTxBodyException.class, () -> subject.usageGiven(txnBody, sigValueObj, view));
+        assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(txnBody, sigValueObj, view));
         assertThat(
                 logCaptor.warnLogs(),
                 Matchers.contains(Matchers.startsWith("Usage estimation unexpectedly failed for")));
@@ -161,15 +139,14 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
 
     @Test
     void updateToMissingTopic() throws DecoderException, InvalidTxBodyException {
-        final var txBody =
-                makeTransactionBody(
-                        topicId,
-                        defaultMemo,
-                        JKey.mapJKey(adminKey),
-                        JKey.mapJKey(submitKey),
-                        IdUtils.asAccount("0.1.2"),
-                        null,
-                        null);
+        final var txBody = makeTransactionBody(
+                topicId,
+                defaultMemo,
+                JKey.mapJKey(adminKey),
+                JKey.mapJKey(submitKey),
+                IdUtils.asAccount("0.1.2"),
+                null,
+                null);
         given(topics.get(EntityNum.fromTopicId(topicId))).willReturn(null);
 
         final var feeData = subject.usageGiven(txBody, sigValueObj, view);
@@ -189,8 +166,8 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
         // no change in
         // expiration timestamp, 0 increase in rbs as no Old Admin Key making it immutable
         ", 12345678,, 0000000000000000000000000000000000000000000000000000000000000000,,"
-            + " 1111111111111111111111111111111111111111111111111111111111111111,, 0.1.2,, 3600_0,,"
-            + " 120, 0",
+                + " 1111111111111111111111111111111111111111111111111111111111111111,, 0.1.2,, 3600_0,,"
+                + " 120, 0",
         // No change to fields; 24(topicId); no change in expiration timestamp, no additional rbs
         // cost
         "12345678,, 0000000000000000000000000000000000000000000000000000000000000000,,"
@@ -218,24 +195,17 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
             final int expectedExtraServicesRbh)
             throws InvalidTxBodyException, IllegalStateException {
         final var merkleTopic =
-                new MerkleTopic(
-                        oldMemo,
-                        oldAdminKey,
-                        oldSubmitKey,
-                        0,
-                        oldAutoRenewAccountId,
-                        oldExpirationTimestamp);
-        final var txBody =
-                makeTransactionBody(
-                        topicId,
-                        newMemo,
-                        newAdminKey,
-                        newSubmitKey,
-                        newAutoRenewAccountId,
-                        newAutoRenewPeriod,
-                        Optional.ofNullable(newExpirationTimestamp)
-                                .map(RichInstant::toGrpc)
-                                .orElse(null));
+                new MerkleTopic(oldMemo, oldAdminKey, oldSubmitKey, 0, oldAutoRenewAccountId, oldExpirationTimestamp);
+        final var txBody = makeTransactionBody(
+                topicId,
+                newMemo,
+                newAdminKey,
+                newSubmitKey,
+                newAutoRenewAccountId,
+                newAutoRenewPeriod,
+                Optional.ofNullable(newExpirationTimestamp)
+                        .map(RichInstant::toGrpc)
+                        .orElse(null));
 
         given(topics.get(EntityNum.fromTopicId(topicId))).willReturn(merkleTopic);
         final var feeData = subject.usageGiven(txBody, sigValueObj, view);
@@ -253,12 +223,11 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
             final AccountID autoRenewAccountId,
             @Nullable final Duration autoRenewPeriod,
             @Nullable final Timestamp expirationTime) {
-        final var updateTopicTxBodyBuilder =
-                ConsensusUpdateTopicTransactionBody.newBuilder()
-                        .setTopicID(topicId)
-                        .mergeAdminKey(adminKey)
-                        .mergeSubmitKey(submitKey)
-                        .mergeAutoRenewAccount(autoRenewAccountId);
+        final var updateTopicTxBodyBuilder = ConsensusUpdateTopicTransactionBody.newBuilder()
+                .setTopicID(topicId)
+                .mergeAdminKey(adminKey)
+                .mergeSubmitKey(submitKey)
+                .mergeAutoRenewAccount(autoRenewAccountId);
         if (memo != null) {
             updateTopicTxBodyBuilder.setMemo(StringValue.of(memo));
         }
@@ -269,9 +238,8 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
             updateTopicTxBodyBuilder.setAutoRenewPeriod(autoRenewPeriod);
         }
         // Set transaction valid start time to 0. Makes expiration time based tests easy.
-        final var txId =
-                TransactionID.newBuilder()
-                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(0).setNanos(0));
+        final var txId = TransactionID.newBuilder()
+                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(0).setNanos(0));
         return TransactionBody.newBuilder()
                 .setTransactionID(txId)
                 .setConsensusUpdateTopic(updateTopicTxBodyBuilder)

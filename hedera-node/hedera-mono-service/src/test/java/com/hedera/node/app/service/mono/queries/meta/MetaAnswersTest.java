@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.meta;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -40,14 +41,7 @@ class MetaAnswersTest {
         accountDetails = mock(GetAccountDetailsAnswer.class);
 
         // given:
-        subject =
-                new MetaAnswers(
-                        execTime,
-                        txnRecord,
-                        txnReceipt,
-                        versionInfo,
-                        fastTxnRecord,
-                        accountDetails);
+        subject = new MetaAnswers(execTime, txnRecord, txnReceipt, versionInfo, fastTxnRecord, accountDetails);
 
         // then:
         assertSame(txnRecord, subject.getTxnRecord());

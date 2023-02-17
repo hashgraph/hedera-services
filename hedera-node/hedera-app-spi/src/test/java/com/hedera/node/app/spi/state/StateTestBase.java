@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state;
 
 import com.hedera.node.app.spi.fixtures.state.*;
@@ -80,8 +81,7 @@ public class StateTestBase extends TestBase {
     @NonNull
     protected WritableSingletonState<String> writableSpaceState() {
         final AtomicReference<String> backingValue = new AtomicReference<>(ASTRONAUT);
-        return new WritableSingletonStateBase<>(
-                SPACE_STATE_KEY, backingValue::get, backingValue::set);
+        return new WritableSingletonStateBase<>(SPACE_STATE_KEY, backingValue::get, backingValue::set);
     }
 
     @NonNull
@@ -118,8 +118,7 @@ public class StateTestBase extends TestBase {
     @NonNull
     protected WritableSingletonState<String> writableCountryState() {
         final AtomicReference<String> backingValue = new AtomicReference<>(AUSTRALIA);
-        return new WritableSingletonStateBase<>(
-                COUNTRY_STATE_KEY, backingValue::get, backingValue::set);
+        return new WritableSingletonStateBase<>(COUNTRY_STATE_KEY, backingValue::get, backingValue::set);
     }
 
     @NonNull

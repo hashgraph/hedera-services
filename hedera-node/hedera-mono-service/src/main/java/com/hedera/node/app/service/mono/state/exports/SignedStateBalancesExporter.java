@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.exports;
 
 import static com.hedera.node.app.hapi.utils.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
@@ -70,14 +71,10 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
     private static final String UNKNOWN_EXPORT_DIR = "";
     private static final String BAD_EXPORT_ATTEMPT_ERROR_MSG_TPL = "Could not export to '{}'!";
-    private static final String BAD_SIGNING_ATTEMPT_ERROR_MSG_TPL =
-            "Could not sign balance file '{}'!";
-    private static final String BAD_EXPORT_DIR_ERROR_MSG_TPL =
-            "Cannot ensure existence of export dir '{}'!";
-    private static final String LOW_NODE_BALANCE_WARN_MSG_TPL =
-            "Node '{}' has unacceptably low balance {}!";
-    private static final String GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL =
-            "Created balance signature file '{}'.";
+    private static final String BAD_SIGNING_ATTEMPT_ERROR_MSG_TPL = "Could not sign balance file '{}'!";
+    private static final String BAD_EXPORT_DIR_ERROR_MSG_TPL = "Cannot ensure existence of export dir '{}'!";
+    private static final String LOW_NODE_BALANCE_WARN_MSG_TPL = "Node '{}' has unacceptably low balance {}!";
+    private static final String GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL = "Created balance signature file '{}'.";
 
     private static final String PROTO_FILE_EXTENSION = ".pb";
 
@@ -112,8 +109,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
         this.expectedFloat = properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT);
         this.dynamicProperties = dynamicProperties;
         this.exportPeriod = dynamicProperties.balancesExportPeriodSecs();
-        this.accountBalanceDigest =
-                MessageDigest.getInstance(Cryptography.DEFAULT_DIGEST_TYPE.algorithmName());
+        this.accountBalanceDigest = MessageDigest.getInstance(Cryptography.DEFAULT_DIGEST_TYPE.algorithmName());
     }
 
     private Instant getFirstExportTime(final Instant now, final int exportPeriodInSecs) {
@@ -145,8 +141,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
     }
 
     @Override
-    public void exportBalancesFrom(
-            final ServicesState signedState, final Instant consensusTime, final NodeId nodeId) {
+    public void exportBalancesFrom(final ServicesState signedState, final Instant consensusTime, final NodeId nodeId) {
         if (!ensureExportDir(signedState.getAccountFromNodeId(nodeId))) {
             return;
         }
@@ -154,9 +149,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
         summary = summarized(signedState);
         final var expected = BigInteger.valueOf(expectedFloat);
         if (expected.equals(summary.totalFloat())) {
-            log.info(
-                    "Took {}ms to summarize signed state balances",
-                    watch.getTime(TimeUnit.MILLISECONDS));
+            log.info("Took {}ms to summarize signed state balances", watch.getTime(TimeUnit.MILLISECONDS));
             toProtoFile(consensusTime);
         } else {
             log.error(
@@ -173,13 +166,12 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
         final var builder = AllAccountBalances.newBuilder();
         summarizeAsProto(exportTimeStamp, builder);
-        final var protoLoc =
-                lastUsedExportDir
-                        + exportTimeStamp.toString().replace(":", "_")
-                        + "_Balances"
-                        + (dynamicProperties.shouldCompressAccountBalanceFilesOnCreation()
-                                ? PROTO_FILE_EXTENSION + COMPRESSION_ALGORITHM_EXTENSION
-                                : PROTO_FILE_EXTENSION);
+        final var protoLoc = lastUsedExportDir
+                + exportTimeStamp.toString().replace(":", "_")
+                + "_Balances"
+                + (dynamicProperties.shouldCompressAccountBalanceFilesOnCreation()
+                        ? PROTO_FILE_EXTENSION + COMPRESSION_ALGORITHM_EXTENSION
+                        : PROTO_FILE_EXTENSION);
         final boolean exportSucceeded = exportBalancesProtoFile(builder, protoLoc);
         if (exportSucceeded) {
             tryToSign(protoLoc);
@@ -195,8 +187,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
         try {
             final var hash = accountBalanceDigest.digest();
             final var sig = signer.apply(hash);
-            final var sigFileLoc =
-                    sigFileWriter.writeSigFile(fileLoc, sig.getSignatureBytes(), hash);
+            final var sigFileLoc = sigFileWriter.writeSigFile(fileLoc, sig.getSignatureBytes(), hash);
             if (log.isDebugEnabled()) {
                 log.debug(GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL, sigFileLoc);
             }
@@ -205,24 +196,20 @@ public class SignedStateBalancesExporter implements BalancesExporter {
         }
     }
 
-    private void summarizeAsProto(
-            final Instant exportTimeStamp, final AllAccountBalances.Builder builder) {
-        builder.setConsensusTimestamp(
-                Timestamp.newBuilder()
-                        .setSeconds(exportTimeStamp.getEpochSecond())
-                        .setNanos(exportTimeStamp.getNano()));
+    private void summarizeAsProto(final Instant exportTimeStamp, final AllAccountBalances.Builder builder) {
+        builder.setConsensusTimestamp(Timestamp.newBuilder()
+                .setSeconds(exportTimeStamp.getEpochSecond())
+                .setNanos(exportTimeStamp.getNano()));
         builder.addAllAllAccounts(summary.orderedBalances());
     }
 
     private boolean exportBalancesProtoFile(
             final AllAccountBalances.Builder allAccountsBuilder, final String protoLoc) {
         accountBalanceDigest.reset();
-        try (final var outputStream =
-                        dynamicProperties.shouldCompressAccountBalanceFilesOnCreation()
-                                ? new GZIPOutputStream(new FileOutputStream(protoLoc))
-                                : new FileOutputStream(protoLoc);
-                final var hashingOutputStream =
-                        new HashingOutputStream(accountBalanceDigest, outputStream)) {
+        try (final var outputStream = dynamicProperties.shouldCompressAccountBalanceFilesOnCreation()
+                        ? new GZIPOutputStream(new FileOutputStream(protoLoc))
+                        : new FileOutputStream(protoLoc);
+                final var hashingOutputStream = new HashingOutputStream(accountBalanceDigest, outputStream)) {
             allAccountsBuilder.build().writeTo(hashingOutputStream);
             outputStream.flush();
         } catch (final IOException e) {
@@ -241,25 +228,22 @@ public class SignedStateBalancesExporter implements BalancesExporter {
         final var tokens = signedState.tokens();
         final var accounts = signedState.accounts();
         final var tokenAssociations = signedState.tokenAssociations();
-        accounts.forEach(
-                (id, account) -> {
-                    if (!account.isDeleted()) {
-                        final var accountId = id.toGrpcAccountId();
-                        final var balance = account.getBalance();
-                        if (nodeIds.contains(accountId) && balance < nodeBalanceWarnThreshold) {
-                            log.warn(LOW_NODE_BALANCE_WARN_MSG_TPL, readableId(accountId), balance);
-                        }
-                        totalFloat.set(
-                                totalFloat.get().add(BigInteger.valueOf(account.getBalance())));
-                        final SingleAccountBalances.Builder sabBuilder =
-                                SingleAccountBalances.newBuilder();
-                        sabBuilder.setHbarBalance(balance).setAccountID(accountId);
-                        if (dynamicProperties.shouldExportTokenBalances()) {
-                            addTokenBalances(account, sabBuilder, tokens, tokenAssociations);
-                        }
-                        accountBalances.add(sabBuilder.build());
-                    }
-                });
+        accounts.forEach((id, account) -> {
+            if (!account.isDeleted()) {
+                final var accountId = id.toGrpcAccountId();
+                final var balance = account.getBalance();
+                if (nodeIds.contains(accountId) && balance < nodeBalanceWarnThreshold) {
+                    log.warn(LOW_NODE_BALANCE_WARN_MSG_TPL, readableId(accountId), balance);
+                }
+                totalFloat.set(totalFloat.get().add(BigInteger.valueOf(account.getBalance())));
+                final SingleAccountBalances.Builder sabBuilder = SingleAccountBalances.newBuilder();
+                sabBuilder.setHbarBalance(balance).setAccountID(accountId);
+                if (dynamicProperties.shouldExportTokenBalances()) {
+                    addTokenBalances(account, sabBuilder, tokens, tokenAssociations);
+                }
+                accountBalances.add(sabBuilder.build());
+            }
+        });
         accountBalances.sort(SINGLE_ACCOUNT_BALANCES_COMPARATOR);
         return new BalancesSummary(totalFloat.get(), accountBalances);
     }
@@ -269,16 +253,11 @@ public class SignedStateBalancesExporter implements BalancesExporter {
             final SingleAccountBalances.Builder sabBuilder,
             final MerkleMap<EntityNum, MerkleToken> tokens,
             final TokenRelStorageAdapter tokenAssociations) {
-        doBoundedIteration(
-                tokenAssociations,
-                tokens,
-                account,
-                (token, rel) -> {
-                    if (token != StateView.REMOVED_TOKEN) {
-                        sabBuilder.addTokenUnitBalances(
-                                unitBalanceFrom(token.grpcId(), rel.getBalance()));
-                    }
-                });
+        doBoundedIteration(tokenAssociations, tokens, account, (token, rel) -> {
+            if (token != StateView.REMOVED_TOKEN) {
+                sabBuilder.addTokenUnitBalances(unitBalanceFrom(token.grpcId(), rel.getBalance()));
+            }
+        });
     }
 
     private TokenUnitBalance unitBalanceFrom(final TokenID id, final long balance) {

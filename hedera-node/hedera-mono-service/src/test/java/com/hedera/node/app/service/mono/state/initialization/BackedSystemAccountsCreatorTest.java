@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.initialization;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
@@ -68,8 +69,7 @@ class BackedSystemAccountsCreatorTest {
     private final long totalBalance = 100l;
     private final long expiry = Instant.now().getEpochSecond() + 1_234_567L;
     private final int numAccounts = 4;
-    private final JEd25519Key pretendKey =
-            new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
+    private final JEd25519Key pretendKey = new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
 
     private JKey genesisKey;
     private PropertySource properties;
@@ -78,20 +78,18 @@ class BackedSystemAccountsCreatorTest {
     private TreasuryCloner treasuryCloner;
     private HederaAccountNumbers accountNums;
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private BackedSystemAccountsCreator subject;
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private BackedSystemAccountsCreator subject;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
-    void setup()
-            throws DecoderException, NegativeAccountBalanceException, IllegalArgumentException {
-        genesisKey =
-                JKey.mapKey(
-                        Key.newBuilder()
-                                .setKeyList(
-                                        KeyList.newBuilder()
-                                                .addKeys(MiscUtils.asKeyUnchecked(pretendKey)))
-                                .build());
+    void setup() throws DecoderException, NegativeAccountBalanceException, IllegalArgumentException {
+        genesisKey = JKey.mapKey(Key.newBuilder()
+                .setKeyList(KeyList.newBuilder().addKeys(MiscUtils.asKeyUnchecked(pretendKey)))
+                .build());
 
         HederaNumbers hederaNums = mock(HederaNumbers.class);
         given(hederaNums.realm()).willReturn(realm);
@@ -116,20 +114,14 @@ class BackedSystemAccountsCreatorTest {
         given(backingAccounts.idSet())
                 .willReturn(Set.of(accountWith(1), accountWith(2), accountWith(3), accountWith(4)));
         given(backingAccounts.getImmutableRef(accountWith(1))).willReturn(withExpectedBalance(0));
-        given(backingAccounts.getImmutableRef(accountWith(2)))
-                .willReturn(withExpectedBalance(totalBalance));
+        given(backingAccounts.getImmutableRef(accountWith(2))).willReturn(withExpectedBalance(totalBalance));
         given(backingAccounts.getImmutableRef(accountWith(3))).willReturn(withExpectedBalance(0));
         given(backingAccounts.getImmutableRef(accountWith(4))).willReturn(withExpectedBalance(0));
 
         treasuryCloner = mock(TreasuryCloner.class);
 
-        subject =
-                new BackedSystemAccountsCreator(
-                        accountNums,
-                        properties,
-                        () -> pretendKey,
-                        MerkleAccount::new,
-                        treasuryCloner);
+        subject = new BackedSystemAccountsCreator(
+                accountNums, properties, () -> pretendKey, MerkleAccount::new, treasuryCloner);
     }
 
     @Test
@@ -157,9 +149,7 @@ class BackedSystemAccountsCreatorTest {
         given(properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(-100L);
 
         // expect:
-        assertThrows(
-                IllegalStateException.class,
-                () -> subject.ensureSystemAccounts(backingAccounts, book));
+        assertThrows(IllegalStateException.class, () -> subject.ensureSystemAccounts(backingAccounts, book));
     }
 
     @Test
@@ -211,8 +201,7 @@ class BackedSystemAccountsCreatorTest {
     @Test
     void createsNothingIfAllPresent() {
         given(backingAccounts.contains(any())).willReturn(true);
-        var desiredInfo =
-                String.format("Ledger float is %d tinyBars in %d accounts.", totalBalance, 4);
+        var desiredInfo = String.format("Ledger float is %d tinyBars in %d accounts.", totalBalance, 4);
 
         // when:
         subject.ensureSystemAccounts(backingAccounts, book);
@@ -269,22 +258,14 @@ class BackedSystemAccountsCreatorTest {
     }
 
     private void givenAllPresentSpecialAccounts() {
-        given(
-                        backingAccounts.contains(
-                                argThat(
-                                        accountID ->
-                                                (900 <= accountID.getAccountNum()
-                                                        && accountID.getAccountNum() <= 1000))))
+        given(backingAccounts.contains(
+                        argThat(accountID -> (900 <= accountID.getAccountNum() && accountID.getAccountNum() <= 1000))))
                 .willReturn(true);
     }
 
     private void givenMissingSpecialAccounts() {
-        given(
-                        backingAccounts.contains(
-                                argThat(
-                                        accountID ->
-                                                (accountID.getAccountNum() != 900
-                                                        && accountID.getAccountNum() != 1000))))
+        given(backingAccounts.contains(
+                        argThat(accountID -> (accountID.getAccountNum() != 900 && accountID.getAccountNum() != 1000))))
                 .willReturn(true);
         given(backingAccounts.contains(accountWith(900L))).willReturn(false);
         given(backingAccounts.contains(accountWith(1000L))).willReturn(false);
@@ -295,17 +276,15 @@ class BackedSystemAccountsCreatorTest {
     }
 
     private HederaAccount withExpectedBalance(long balance) throws NegativeAccountBalanceException {
-        MerkleAccount hAccount =
-                (MerkleAccount)
-                        new HederaAccountCustomizer()
-                                .isReceiverSigRequired(false)
-                                .isDeleted(false)
-                                .expiry(expiry)
-                                .memo("")
-                                .isSmartContract(false)
-                                .key(genesisKey)
-                                .autoRenewPeriod(expiry)
-                                .customizing(new MerkleAccount());
+        MerkleAccount hAccount = (MerkleAccount) new HederaAccountCustomizer()
+                .isReceiverSigRequired(false)
+                .isDeleted(false)
+                .expiry(expiry)
+                .memo("")
+                .isSmartContract(false)
+                .key(genesisKey)
+                .autoRenewPeriod(expiry)
+                .customizing(new MerkleAccount());
         hAccount.setBalance(balance);
         return hAccount;
     }

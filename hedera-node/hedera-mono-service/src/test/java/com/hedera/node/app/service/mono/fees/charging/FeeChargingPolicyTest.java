@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.charging;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -37,7 +38,8 @@ class FeeChargingPolicyTest {
     private final FeeObject fees = new FeeObject(1L, 2L, 3L);
     private final FeeObject feesForDuplicateTxn = new FeeObject(1L, 2L, 0L);
 
-    @Mock private NarratedCharging narratedCharging;
+    @Mock
+    private NarratedCharging narratedCharging;
 
     private FeeChargingPolicy subject;
 

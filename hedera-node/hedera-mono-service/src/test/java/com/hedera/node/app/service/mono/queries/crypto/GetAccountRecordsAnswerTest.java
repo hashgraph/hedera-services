@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.crypto;
 
 import static com.hedera.node.app.service.mono.queries.meta.GetTxnRecordAnswer.PAYER_RECORDS_CTX_KEY;
@@ -78,15 +79,14 @@ class GetAccountRecordsAnswerTest {
 
     @BeforeEach
     void setup() throws Exception {
-        payerAccount =
-                MerkleAccountFactory.newAccount()
-                        .accountKeys(COMPLEX_KEY_ACCOUNT_KT)
-                        .proxy(asAccount("1.2.3"))
-                        .receiverSigRequired(true)
-                        .balance(555L)
-                        .autoRenewPeriod(1_000_000L)
-                        .expirationTime(9_999_999L)
-                        .get();
+        payerAccount = MerkleAccountFactory.newAccount()
+                .accountKeys(COMPLEX_KEY_ACCOUNT_KT)
+                .proxy(asAccount("1.2.3"))
+                .receiverSigRequired(true)
+                .balance(555L)
+                .autoRenewPeriod(1_000_000L)
+                .expirationTime(9_999_999L)
+                .get();
         payerAccount.records().offer(recordOne());
         payerAccount.records().offer(recordTwo());
 
@@ -95,9 +95,7 @@ class GetAccountRecordsAnswerTest {
         final var targetNum = EntityNum.fromAccountId(asAccount(target));
         given(accounts.containsKey(targetNum)).willReturn(true);
         given(payerRecords.getReadOnlyPayerRecords(targetNum))
-                .willReturn(
-                        new QueryableRecords(
-                                payerAccount.numRecords(), payerAccount.recordIterator()));
+                .willReturn(new QueryableRecords(payerAccount.numRecords(), payerAccount.recordIterator()));
 
         final MutableStateChildren children = new MutableStateChildren();
         children.setAccounts(accounts);
@@ -106,9 +104,7 @@ class GetAccountRecordsAnswerTest {
 
         optionValidator = mock(OptionValidator.class);
 
-        subject =
-                new GetAccountRecordsAnswer(
-                        new AnswerFunctions(dynamicProperties), optionValidator);
+        subject = new GetAccountRecordsAnswer(new AnswerFunctions(dynamicProperties), optionValidator);
     }
 
     @Test
@@ -194,8 +190,7 @@ class GetAccountRecordsAnswerTest {
         final var query = validQuery(COST_ANSWER, fee, target);
 
         assertEquals(
-                defaultPaymentTxn(fee),
-                subject.extractPaymentFrom(query).get().getSignedTxnWrapper());
+                defaultPaymentTxn(fee), subject.extractPaymentFrom(query).get().getSignedTxnWrapper());
     }
 
     @Test
@@ -211,23 +206,16 @@ class GetAccountRecordsAnswerTest {
 
     @Test
     void getsValidity() {
-        final var response =
-                Response.newBuilder()
-                        .setCryptoGetAccountRecords(
-                                CryptoGetAccountRecordsResponse.newBuilder()
-                                        .setHeader(
-                                                subject.answerOnlyHeader(
-                                                        RESULT_SIZE_LIMIT_EXCEEDED)))
-                        .build();
+        final var response = Response.newBuilder()
+                .setCryptoGetAccountRecords(CryptoGetAccountRecordsResponse.newBuilder()
+                        .setHeader(subject.answerOnlyHeader(RESULT_SIZE_LIMIT_EXCEEDED)))
+                .build();
 
         assertEquals(RESULT_SIZE_LIMIT_EXCEEDED, subject.extractValidityFrom(response));
     }
 
     private void validate(
-            final Response response,
-            final ResponseCodeEnum precheck,
-            final ResponseType type,
-            final long fee) {
+            final Response response, final ResponseCodeEnum precheck, final ResponseType type, final long fee) {
         assertTrue(response.hasCryptoGetAccountRecords());
         final var opResponse = response.getCryptoGetAccountRecords();
 
@@ -242,9 +230,7 @@ class GetAccountRecordsAnswerTest {
     private Query validQuery(final ResponseType type, final long payment, final String idLit) {
         final var header = queryHeaderOf(type, payment);
         final var op =
-                CryptoGetAccountRecordsQuery.newBuilder()
-                        .setHeader(header)
-                        .setAccountID(asAccount(idLit));
+                CryptoGetAccountRecordsQuery.newBuilder().setHeader(header).setAccountID(asAccount(idLit));
         return queryOf(op);
     }
 }

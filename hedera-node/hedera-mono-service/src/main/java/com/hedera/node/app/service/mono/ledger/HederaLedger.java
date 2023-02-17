@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ALIAS;
@@ -91,18 +92,16 @@ import org.apache.commons.lang3.tuple.Pair;
 public class HederaLedger {
     public static final String NO_ACTIVE_TXN_CHANGE_SET = "{*NO ACTIVE TXN*}";
 
-    public static final Comparator<AccountID> ACCOUNT_ID_COMPARATOR =
-            Comparator.comparingLong(AccountID::getAccountNum)
-                    .thenComparingLong(AccountID::getShardNum)
-                    .thenComparingLong(AccountID::getRealmNum);
-    public static final Comparator<TokenID> TOKEN_ID_COMPARATOR =
-            Comparator.comparingLong(TokenID::getTokenNum)
-                    .thenComparingLong(TokenID::getRealmNum)
-                    .thenComparingLong(TokenID::getShardNum);
-    public static final Comparator<ContractID> CONTRACT_ID_COMPARATOR =
-            Comparator.comparingLong(ContractID::getContractNum)
-                    .thenComparingLong(ContractID::getShardNum)
-                    .thenComparingLong(ContractID::getRealmNum);
+    public static final Comparator<AccountID> ACCOUNT_ID_COMPARATOR = Comparator.comparingLong(AccountID::getAccountNum)
+            .thenComparingLong(AccountID::getShardNum)
+            .thenComparingLong(AccountID::getRealmNum);
+    public static final Comparator<TokenID> TOKEN_ID_COMPARATOR = Comparator.comparingLong(TokenID::getTokenNum)
+            .thenComparingLong(TokenID::getRealmNum)
+            .thenComparingLong(TokenID::getShardNum);
+    public static final Comparator<ContractID> CONTRACT_ID_COMPARATOR = Comparator.comparingLong(
+                    ContractID::getContractNum)
+            .thenComparingLong(ContractID::getShardNum)
+            .thenComparingLong(ContractID::getRealmNum);
 
     private final TokenStore tokenStore;
     private final TransferLogic transferLogic;
@@ -115,8 +114,7 @@ public class HederaLedger {
 
     private MutableEntityAccess mutableEntityAccess;
     private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger = null;
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-            tokenRelsLedger = null;
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRelsLedger = null;
 
     private final AutoCreationLogic autoCreationLogic;
 
@@ -151,14 +149,12 @@ public class HederaLedger {
         this.mutableEntityAccess = mutableEntityAccess;
     }
 
-    public void setNftsLedger(
-            final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger) {
+    public void setNftsLedger(final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger) {
         this.nftsLedger = nftsLedger;
     }
 
     public void setTokenRelsLedger(
-            final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-                    tokenRelsLedger) {
+            final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRelsLedger) {
         this.tokenRelsLedger = tokenRelsLedger;
     }
 
@@ -170,8 +166,7 @@ public class HederaLedger {
         return nftsLedger;
     }
 
-    public TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-            getTokenRelsLedger() {
+    public TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> getTokenRelsLedger() {
         return tokenRelsLedger;
     }
 
@@ -222,11 +217,9 @@ public class HederaLedger {
 
     public String currentChangeSet() {
         if (accountsLedger.isInTransaction()) {
-            final var sb =
-                    new StringBuilder("--- ACCOUNTS ---\n").append(accountsLedger.changeSetSoFar());
+            final var sb = new StringBuilder("--- ACCOUNTS ---\n").append(accountsLedger.changeSetSoFar());
             if (tokenRelsLedger != null) {
-                sb.append("\n--- TOKEN RELATIONSHIPS ---\n")
-                        .append(tokenRelsLedger.changeSetSoFar());
+                sb.append("\n--- TOKEN RELATIONSHIPS ---\n").append(tokenRelsLedger.changeSetSoFar());
             }
             if (nftsLedger != null) {
                 sb.append("\n--- NFTS ---\n").append(nftsLedger.changeSetSoFar());
@@ -295,8 +288,7 @@ public class HederaLedger {
         return (long) accountsLedger.get(aId, NUM_NFTS_OWNED) > 0L;
     }
 
-    public ResponseCodeEnum adjustTokenBalance(
-            final AccountID aId, final TokenID tId, final long adjustment) {
+    public ResponseCodeEnum adjustTokenBalance(final AccountID aId, final TokenID tId, final long adjustment) {
         return tokenStore.adjustBalance(aId, tId, adjustment);
     }
 
@@ -313,8 +305,7 @@ public class HederaLedger {
     }
 
     public void dropPendingTokenChanges() {
-        TransferLogic.dropTokenChanges(
-                sideEffectsTracker, nftsLedger, accountsLedger, tokenRelsLedger);
+        TransferLogic.dropTokenChanges(sideEffectsTracker, nftsLedger, accountsLedger, tokenRelsLedger);
     }
 
     public ResponseCodeEnum doTokenTransfer(
@@ -335,8 +326,7 @@ public class HederaLedger {
     }
 
     /* -- ACCOUNT META MANIPULATION -- */
-    public AccountID create(
-            final AccountID sponsor, final long balance, final HederaAccountCustomizer customizer) {
+    public AccountID create(final AccountID sponsor, final long balance, final HederaAccountCustomizer customizer) {
         final long newSponsorBalance = computeNewBalance(sponsor, -1 * balance);
         setBalance(sponsor, newSponsorBalance);
 
@@ -346,8 +336,7 @@ public class HederaLedger {
         return id;
     }
 
-    public void spawn(
-            final AccountID id, final long balance, final HederaAccountCustomizer customizer) {
+    public void spawn(final AccountID id, final long balance, final HederaAccountCustomizer customizer) {
         accountsLedger.create(id);
         setBalance(id, balance);
         customizer.customize(id, accountsLedger);
@@ -367,8 +356,7 @@ public class HederaLedger {
      * @param id target account
      * @param customizer properties to update
      */
-    public void customizePotentiallyDeleted(
-            final AccountID id, final HederaAccountCustomizer customizer) {
+    public void customizePotentiallyDeleted(final AccountID id, final HederaAccountCustomizer customizer) {
         customizer.customize(id, accountsLedger);
     }
 

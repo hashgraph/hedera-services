@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -37,7 +38,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AbstractCodeCacheTest {
-    @Mock HederaEvmEntityAccess entityAccess;
+    @Mock
+    HederaEvmEntityAccess entityAccess;
 
     MockAbstractCodeCache codeCache;
 
@@ -57,8 +59,7 @@ class AbstractCodeCacheTest {
         Code code = codeCache.getIfPresent(Address.fromHexString("0xabc"));
 
         assertEquals(
-                Hash.fromHexString(
-                        "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45"),
+                Hash.fromHexString("0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45"),
                 code.getCodeHash());
     }
 

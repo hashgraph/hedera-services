@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.schedule;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
@@ -75,13 +76,12 @@ class GetScheduleInfoAnswerTest {
 
     @BeforeEach
     void setup() {
-        info =
-                ScheduleInfo.newBuilder()
-                        .setLedgerId(ledgerId)
-                        .setScheduleID(scheduleID)
-                        .setPayerAccountID(payerAccount)
-                        .setCreatorAccountID(creatorAccount)
-                        .build();
+        info = ScheduleInfo.newBuilder()
+                .setLedgerId(ledgerId)
+                .setScheduleID(scheduleID)
+                .setPayerAccountID(payerAccount)
+                .setCreatorAccountID(creatorAccount)
+                .build();
 
         view = mock(StateView.class);
         optionValidator = mock(OptionValidator.class);
@@ -102,8 +102,7 @@ class GetScheduleInfoAnswerTest {
         // then:
         assertTrue(response.hasScheduleGetInfo());
         assertTrue(response.getScheduleGetInfo().hasHeader(), "Missing response header!");
-        assertEquals(
-                OK, response.getScheduleGetInfo().getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(OK, response.getScheduleGetInfo().getHeader().getNodeTransactionPrecheckCode());
         assertEquals(ANSWER_ONLY, response.getScheduleGetInfo().getHeader().getResponseType());
         assertEquals(fee, response.getScheduleGetInfo().getHeader().getCost());
         // and:
@@ -154,8 +153,7 @@ class GetScheduleInfoAnswerTest {
         final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, scheduleID);
 
         // when:
-        final Response response =
-                subject.responseGiven(sensibleQuery, view, OK, 0L, Collections.emptyMap());
+        final Response response = subject.responseGiven(sensibleQuery, view, OK, 0L, Collections.emptyMap());
 
         // then:
         final ScheduleGetInfoResponse opResponse = response.getScheduleGetInfo();
@@ -174,8 +172,7 @@ class GetScheduleInfoAnswerTest {
 
         // then:
         assertTrue(response.hasScheduleGetInfo());
-        assertEquals(
-                OK, response.getScheduleGetInfo().getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(OK, response.getScheduleGetInfo().getHeader().getNodeTransactionPrecheckCode());
         assertEquals(COST_ANSWER, response.getScheduleGetInfo().getHeader().getResponseType());
         assertEquals(fee, response.getScheduleGetInfo().getHeader().getCost());
     }
@@ -191,8 +188,7 @@ class GetScheduleInfoAnswerTest {
         // then:
         assertTrue(response.hasScheduleGetInfo());
         assertEquals(
-                INVALID_SCHEDULE_ID,
-                response.getScheduleGetInfo().getHeader().getNodeTransactionPrecheckCode());
+                INVALID_SCHEDULE_ID, response.getScheduleGetInfo().getHeader().getNodeTransactionPrecheckCode());
         assertEquals(COST_ANSWER, response.getScheduleGetInfo().getHeader().getResponseType());
         assertEquals(fee, response.getScheduleGetInfo().getHeader().getCost());
     }
@@ -220,14 +216,10 @@ class GetScheduleInfoAnswerTest {
     @Test
     void getsValidity() {
         // given:
-        final Response response =
-                Response.newBuilder()
-                        .setScheduleGetInfo(
-                                ScheduleGetInfoResponse.newBuilder()
-                                        .setHeader(
-                                                subject.answerOnlyHeader(
-                                                        RESULT_SIZE_LIMIT_EXCEEDED)))
-                        .build();
+        final Response response = Response.newBuilder()
+                .setScheduleGetInfo(ScheduleGetInfoResponse.newBuilder()
+                        .setHeader(subject.answerOnlyHeader(RESULT_SIZE_LIMIT_EXCEEDED)))
+                .build();
 
         // expect:
         assertEquals(RESULT_SIZE_LIMIT_EXCEEDED, subject.extractValidityFrom(response));
@@ -256,8 +248,7 @@ class GetScheduleInfoAnswerTest {
         assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getSignedTxnWrapper());
     }
 
-    private Query validQuery(final ResponseType type, final long payment, final ScheduleID id)
-            throws Throwable {
+    private Query validQuery(final ResponseType type, final long payment, final ScheduleID id) throws Throwable {
         this.paymentTxn = payerSponsoredTransfer(payer, COMPLEX_KEY_ACCOUNT_KT, node, payment);
         final QueryHeader.Builder header =
                 QueryHeader.newBuilder().setPayment(this.paymentTxn).setResponseType(type);

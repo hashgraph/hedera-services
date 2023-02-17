@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,17 +32,14 @@ import org.mockito.Mockito;
 class WrappedWritableKVStateTest extends WritableKVStateBaseTest {
     private WritableKVStateBase<String, String> delegate;
 
-    protected WritableKVStateBase<String, String> createFruitState(
-            @NonNull final Map<String, String> map) {
+    protected WritableKVStateBase<String, String> createFruitState(@NonNull final Map<String, String> map) {
         this.delegate = new MapWritableKVState<>(FRUIT_STATE_KEY, map);
         this.state = Mockito.spy(new WrappedWritableKVState<>(delegate));
         return this.state;
     }
 
     @Test
-    @DisplayName(
-            "If we commit on the wrapped state, the commit goes to the delegate, but not the"
-                    + " backing store")
+    @DisplayName("If we commit on the wrapped state, the commit goes to the delegate, but not the" + " backing store")
     void commitGoesToDelegateNotBackingStore() {
         state.put(B_KEY, BLACKBERRY);
         state.put(E_KEY, ELDERBERRY);

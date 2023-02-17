@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.meta;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
@@ -57,8 +58,11 @@ class GetExecTimeAnswerTest {
 
     private Transaction paymentTxn;
 
-    @Mock private StateView view;
-    @Mock private ExecutionTimeTracker executionTimeTracker;
+    @Mock
+    private StateView view;
+
+    @Mock
+    private ExecutionTimeTracker executionTimeTracker;
 
     private GetExecTimeAnswer subject;
 
@@ -70,15 +74,10 @@ class GetExecTimeAnswerTest {
     @Test
     void helpersWork() throws Throwable {
         final Query query = validQuery(ANSWER_ONLY, 5L);
-        final Response response =
-                Response.newBuilder()
-                        .setNetworkGetExecutionTime(
-                                NetworkGetExecutionTimeResponse.newBuilder()
-                                        .setHeader(
-                                                ResponseHeader.newBuilder()
-                                                        .setNodeTransactionPrecheckCode(
-                                                                INVALID_TRANSACTION_ID)))
-                        .build();
+        final Response response = Response.newBuilder()
+                .setNetworkGetExecutionTime(NetworkGetExecutionTimeResponse.newBuilder()
+                        .setHeader(ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(INVALID_TRANSACTION_ID)))
+                .build();
 
         final var payment = subject.extractPaymentFrom(query);
         assertTrue(payment.isPresent());
@@ -97,8 +96,7 @@ class GetExecTimeAnswerTest {
         // then:
         assertTrue(response.hasNetworkGetExecutionTime());
         assertEquals(
-                FAIL_INVALID,
-                response.getNetworkGetExecutionTime().getHeader().getNodeTransactionPrecheckCode());
+                FAIL_INVALID, response.getNetworkGetExecutionTime().getHeader().getNodeTransactionPrecheckCode());
         assertEquals(
                 COST_ANSWER, response.getNetworkGetExecutionTime().getHeader().getResponseType());
         assertEquals(fee, response.getNetworkGetExecutionTime().getHeader().getCost());
@@ -129,8 +127,7 @@ class GetExecTimeAnswerTest {
         final Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
 
         final var opResponse = response.getNetworkGetExecutionTime();
-        assertEquals(
-                INVALID_TRANSACTION_ID, opResponse.getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(INVALID_TRANSACTION_ID, opResponse.getHeader().getNodeTransactionPrecheckCode());
     }
 
     @Test
@@ -157,25 +154,21 @@ class GetExecTimeAnswerTest {
         final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
 
         // when:
-        final Response response =
-                subject.responseGiven(sensibleQuery, view, INVALID_TRANSACTION, 0L);
+        final Response response = subject.responseGiven(sensibleQuery, view, INVALID_TRANSACTION, 0L);
 
         // then:
         final var opResponse = response.getNetworkGetExecutionTime();
         assertEquals(INVALID_TRANSACTION, opResponse.getHeader().getNodeTransactionPrecheckCode());
     }
 
-    private Query validQuery(
-            final ResponseType type, final long payment, final TransactionID... txnIds)
+    private Query validQuery(final ResponseType type, final long payment, final TransactionID... txnIds)
             throws Throwable {
         this.paymentTxn = payerSponsoredTransfer(payer, COMPLEX_KEY_ACCOUNT_KT, node, payment);
 
         final QueryHeader.Builder header =
                 QueryHeader.newBuilder().setPayment(this.paymentTxn).setResponseType(type);
         final NetworkGetExecutionTimeQuery.Builder op =
-                NetworkGetExecutionTimeQuery.newBuilder()
-                        .setHeader(header)
-                        .addAllTransactionIds(List.of(txnIds));
+                NetworkGetExecutionTimeQuery.newBuilder().setHeader(header).addAllTransactionIds(List.of(txnIds));
 
         for (final var txnId : txnIds) {
             given(executionTimeTracker.getExecNanosIfPresentFor(txnId)).willReturn(nanos);
@@ -184,19 +177,16 @@ class GetExecTimeAnswerTest {
         return Query.newBuilder().setNetworkGetExecutionTime(op).build();
     }
 
-    private final TransactionID aTxnId =
-            TransactionID.newBuilder()
-                    .setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234_567L))
-                    .setAccountID(IdUtils.asAccount("0.0.2"))
-                    .build();
-    private final TransactionID bTxnId =
-            TransactionID.newBuilder()
-                    .setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234_567L))
-                    .setAccountID(IdUtils.asAccount("0.0.3"))
-                    .build();
-    private final TransactionID cTxnId =
-            TransactionID.newBuilder()
-                    .setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234_567L))
-                    .setAccountID(IdUtils.asAccount("0.0.4"))
-                    .build();
+    private final TransactionID aTxnId = TransactionID.newBuilder()
+            .setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234_567L))
+            .setAccountID(IdUtils.asAccount("0.0.2"))
+            .build();
+    private final TransactionID bTxnId = TransactionID.newBuilder()
+            .setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234_567L))
+            .setAccountID(IdUtils.asAccount("0.0.3"))
+            .build();
+    private final TransactionID cTxnId = TransactionID.newBuilder()
+            .setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234_567L))
+            .setAccountID(IdUtils.asAccount("0.0.4"))
+            .build();
 }

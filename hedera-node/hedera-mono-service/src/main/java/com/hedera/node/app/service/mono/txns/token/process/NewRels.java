@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token.process;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -35,23 +36,11 @@ public final class NewRels {
         final Set<Id> associatedSoFar = new HashSet<>();
         final List<TokenRelationship> newRels = new ArrayList<>();
 
-        associateGiven(
-                provisionalToken,
-                treasury,
-                tokenStore,
-                associatedSoFar,
-                newRels,
-                dynamicProperties);
+        associateGiven(provisionalToken, treasury, tokenStore, associatedSoFar, newRels, dynamicProperties);
         for (final var customFee : provisionalToken.getCustomFees()) {
             if (customFee.requiresCollectorAutoAssociation()) {
                 final var collector = customFee.getValidatedCollector();
-                associateGiven(
-                        provisionalToken,
-                        collector,
-                        tokenStore,
-                        associatedSoFar,
-                        newRels,
-                        dynamicProperties);
+                associateGiven(provisionalToken, collector, tokenStore, associatedSoFar, newRels, dynamicProperties);
             }
         }
 
@@ -70,8 +59,7 @@ public final class NewRels {
             return;
         }
         newRelations.addAll(
-                account.associateWith(
-                        List.of(provisionalToken), tokenStore, false, true, dynamicProperties));
+                account.associateWith(List.of(provisionalToken), tokenStore, false, true, dynamicProperties));
         associatedSoFar.add(accountId);
     }
 

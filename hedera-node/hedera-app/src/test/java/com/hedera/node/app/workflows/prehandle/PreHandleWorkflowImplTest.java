@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.prehandle;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
@@ -87,18 +88,17 @@ class PreHandleWorkflowImplTest {
         final AccountID payerID = AccountID.newBuilder().build();
         final TransactionID transactionID =
                 TransactionID.newBuilder().setAccountID(payerID).build();
-        final TransactionBody txBody =
-                TransactionBody.newBuilder()
-                        .setTransactionID(transactionID)
-                        .setConsensusCreateTopic(content)
-                        .build();
+        final TransactionBody txBody = TransactionBody.newBuilder()
+                .setTransactionID(transactionID)
+                .setConsensusCreateTopic(content)
+                .build();
         final SignatureMap signatureMap = SignatureMap.newBuilder().build();
         final HederaFunctionality functionality = HederaFunctionality.ConsensusCreateTopic;
-        final OnsetResult onsetResult =
-                new OnsetResult(txBody, txBody.toByteArray(), OK, signatureMap, functionality);
+        final OnsetResult onsetResult = new OnsetResult(txBody, txBody.toByteArray(), OK, signatureMap, functionality);
         when(onset.parseAndCheck(any(), any(byte[].class))).thenReturn(onsetResult);
 
-        final Iterator<Transaction> iterator = List.of((Transaction) transaction).iterator();
+        final Iterator<Transaction> iterator =
+                List.of((Transaction) transaction).iterator();
         when(event.transactionIterator()).thenReturn(iterator);
 
         when(transaction.getContents()).thenReturn(new byte[0]);
@@ -121,10 +121,8 @@ class PreHandleWorkflowImplTest {
     @Test
     void testStartWithIllegalParameters() {
         // then
-        assertThatThrownBy(() -> workflow.start(null, event))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> workflow.start(state, null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> workflow.start(null, event)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> workflow.start(state, null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -138,8 +136,7 @@ class PreHandleWorkflowImplTest {
 
     @SuppressWarnings("JUnitMalformedDeclaration")
     @Test
-    void testStartEventWithTwoTransactions(
-            @Mock Event localEvent, @Mock SwirldTransaction transaction2) {
+    void testStartEventWithTwoTransactions(@Mock Event localEvent, @Mock SwirldTransaction transaction2) {
         // given
         final Iterator<Transaction> iterator =
                 List.of(transaction, (Transaction) transaction2).iterator();
@@ -160,26 +157,22 @@ class PreHandleWorkflowImplTest {
         workflow.start(state, event);
 
         // then
-        final ArgumentCaptor<Future<TransactionMetadata>> captor =
-                ArgumentCaptor.forClass(Future.class);
+        final ArgumentCaptor<Future<TransactionMetadata>> captor = ArgumentCaptor.forClass(Future.class);
         verify(transaction).setMetadata(any());
     }
 
     @SuppressWarnings("unchecked")
     @Test
-    void testPreHandleOnsetCatastrophicFail(@Mock WorkflowOnset localOnset)
-            throws PreCheckException {
+    void testPreHandleOnsetCatastrophicFail(@Mock WorkflowOnset localOnset) throws PreCheckException {
         // given
-        when(localOnset.parseAndCheck(any(), any(byte[].class)))
-                .thenThrow(new PreCheckException(INVALID_TRANSACTION));
+        when(localOnset.parseAndCheck(any(), any(byte[].class))).thenThrow(new PreCheckException(INVALID_TRANSACTION));
         workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, RUN_INSTANTLY);
 
         // when
         workflow.start(state, event);
 
         // then
-        final ArgumentCaptor<Future<TransactionMetadata>> captor =
-                ArgumentCaptor.forClass(Future.class);
+        final ArgumentCaptor<Future<TransactionMetadata>> captor = ArgumentCaptor.forClass(Future.class);
         verify(transaction).setMetadata(captor.capture());
         assertThat(captor.getValue())
                 .succeedsWithin(Duration.ofMillis(100))
@@ -196,20 +189,14 @@ class PreHandleWorkflowImplTest {
         final AccountID payerID = AccountID.newBuilder().build();
         final TransactionID transactionID =
                 TransactionID.newBuilder().setAccountID(payerID).build();
-        final TransactionBody txBody =
-                TransactionBody.newBuilder()
-                        .setTransactionID(transactionID)
-                        .setConsensusCreateTopic(content)
-                        .build();
+        final TransactionBody txBody = TransactionBody.newBuilder()
+                .setTransactionID(transactionID)
+                .setConsensusCreateTopic(content)
+                .build();
         final SignatureMap signatureMap = SignatureMap.newBuilder().build();
         final HederaFunctionality functionality = HederaFunctionality.ConsensusCreateTopic;
         final OnsetResult onsetResult =
-                new OnsetResult(
-                        txBody,
-                        txBody.toByteArray(),
-                        DUPLICATE_TRANSACTION,
-                        signatureMap,
-                        functionality);
+                new OnsetResult(txBody, txBody.toByteArray(), DUPLICATE_TRANSACTION, signatureMap, functionality);
         when(localOnset.parseAndCheck(any(), any(byte[].class))).thenReturn(onsetResult);
 
         workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, RUN_INSTANTLY);

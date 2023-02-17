@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
 import java.util.List;
@@ -22,10 +23,8 @@ import org.junit.jupiter.api.Test;
 class JObjectTypeTest {
     @Test
     void lookupsWork() {
-        List.of(JObjectType.class.getEnumConstants())
-                .forEach(
-                        type -> {
-                            Assertions.assertSame(type, JObjectType.valueOf(type.longValue()));
-                        });
+        List.of(JObjectType.class.getEnumConstants()).forEach(type -> {
+            Assertions.assertSame(type, JObjectType.valueOf(type.longValue()));
+        });
     }
 }

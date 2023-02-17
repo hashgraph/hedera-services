@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono;
 
 import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
@@ -129,36 +130,92 @@ class ServicesStateTest extends ResponsibleVMapUser {
     private final NodeId selfId = new NodeId(false, 1L);
     private static final String bookMemo = "0.0.4";
 
-    @Mock private StakeStartupHelper stakeStartupHelper;
-    @Mock private HashLogger hashLogger;
-    @Mock private Platform platform;
-    @Mock private AddressBook addressBook;
-    @Mock private Address address;
-    @Mock private ServicesApp app;
-    @Mock private MerkleSpecialFiles specialFiles;
-    @Mock private MerkleNetworkContext networkContext;
-    @Mock private Round round;
-    @Mock private Event event;
-    @Mock private EventExpansion eventExpansion;
-    @Mock private SwirldDualState dualState;
-    @Mock private StateMetadata metadata;
-    @Mock private ProcessLogic logic;
-    @Mock private FCHashMap<ByteString, EntityNum> aliases;
-    @Mock private MutableStateChildren workingState;
-    @Mock private DualStateAccessor dualStateAccessor;
-    @Mock private ServicesInitFlow initFlow;
-    @Mock private ServicesApp.Builder appBuilder;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
-    @Mock private VirtualMapFactory virtualMapFactory;
-    @Mock private ServicesState.StakingInfoBuilder stakingInfoBuilder;
-    @Mock private ServicesState.MapToDiskMigration mapToDiskMigration;
-    @Mock private Supplier<VirtualMapFactory> vmf;
-    @Mock private BootstrapProperties bootstrapProperties;
-    @Mock private SystemAccountsCreator accountsCreator;
-    @Mock private SystemFilesManager systemFilesManager;
+    @Mock
+    private StakeStartupHelper stakeStartupHelper;
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private ServicesState subject;
+    @Mock
+    private HashLogger hashLogger;
+
+    @Mock
+    private Platform platform;
+
+    @Mock
+    private AddressBook addressBook;
+
+    @Mock
+    private Address address;
+
+    @Mock
+    private ServicesApp app;
+
+    @Mock
+    private MerkleSpecialFiles specialFiles;
+
+    @Mock
+    private MerkleNetworkContext networkContext;
+
+    @Mock
+    private Round round;
+
+    @Mock
+    private Event event;
+
+    @Mock
+    private EventExpansion eventExpansion;
+
+    @Mock
+    private SwirldDualState dualState;
+
+    @Mock
+    private StateMetadata metadata;
+
+    @Mock
+    private ProcessLogic logic;
+
+    @Mock
+    private FCHashMap<ByteString, EntityNum> aliases;
+
+    @Mock
+    private MutableStateChildren workingState;
+
+    @Mock
+    private DualStateAccessor dualStateAccessor;
+
+    @Mock
+    private ServicesInitFlow initFlow;
+
+    @Mock
+    private ServicesApp.Builder appBuilder;
+
+    @Mock
+    private MerkleMap<EntityNum, MerkleAccount> accounts;
+
+    @Mock
+    private VirtualMapFactory virtualMapFactory;
+
+    @Mock
+    private ServicesState.StakingInfoBuilder stakingInfoBuilder;
+
+    @Mock
+    private ServicesState.MapToDiskMigration mapToDiskMigration;
+
+    @Mock
+    private Supplier<VirtualMapFactory> vmf;
+
+    @Mock
+    private BootstrapProperties bootstrapProperties;
+
+    @Mock
+    private SystemAccountsCreator accountsCreator;
+
+    @Mock
+    private SystemFilesManager systemFilesManager;
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private ServicesState subject;
 
     @BeforeEach
     void setUp() {
@@ -314,8 +371,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
     void handleThrowsIfImmutable() {
         tracked(subject.copy());
 
-        assertThrows(
-                MutabilityException.class, () -> subject.handleConsensusRound(round, dualState));
+        assertThrows(MutabilityException.class, () -> subject.handleConsensusRound(round, dualState));
     }
 
     @Test
@@ -611,9 +667,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
     void nonGenesisInitThrowsWithUnsupportedStateVersionUsed() {
         subject.setDeserializedStateVersion(StateVersions.RELEASE_030X_VERSION - 1);
 
-        assertThrows(
-                IllegalStateException.class,
-                () -> subject.init(platform, dualState, RESTART, null));
+        assertThrows(IllegalStateException.class, () -> subject.init(platform, dualState, RESTART, null));
     }
 
     @Test
@@ -792,18 +846,12 @@ class ServicesStateTest extends ResponsibleVMapUser {
     void testLoading0305State() {
         ClassLoaderHelper.loadClassPathDependencies();
         final AtomicReference<SignedState> ref = new AtomicReference<>();
-        assertDoesNotThrow(
-                () -> ref.set(loadSignedState(signedStateDir + "v0.30.5/SignedState.swh")));
+        assertDoesNotThrow(() -> ref.set(loadSignedState(signedStateDir + "v0.30.5/SignedState.swh")));
         final var mockPlatform = createMockPlatformWithCrypto();
         given(mockPlatform.getAddressBook()).willReturn(addressBook);
         ServicesState swirldState = (ServicesState) ref.get().getSwirldState();
         final var pretendAddressBook = createPretendBookFrom(mockPlatform, false);
-        tracked(swirldState)
-                .init(
-                        mockPlatform,
-                        new DualStateImpl(),
-                        RESTART,
-                        forHapiAndHedera("0.30.0", "0.30.5"));
+        tracked(swirldState).init(mockPlatform, new DualStateImpl(), RESTART, forHapiAndHedera("0.30.0", "0.30.5"));
     }
 
     @Test
@@ -815,13 +863,11 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(platform.getAddressBook()).willReturn(addressBook);
         final var recordsRunningHashLeaf = new RecordsRunningHashLeaf();
         recordsRunningHashLeaf.setRunningHash(new RunningHash(EMPTY_HASH));
-        servicesState.setChild(
-                StateChildIndices.RECORD_STREAM_RUNNING_HASH, recordsRunningHashLeaf);
+        servicesState.setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, recordsRunningHashLeaf);
         final var app = createApp(platform);
 
         APPS.save(platform.getSelfId().getId(), app);
-        assertDoesNotThrow(
-                () -> servicesState.init(platform, new DualStateImpl(), InitTrigger.GENESIS, null));
+        assertDoesNotThrow(() -> servicesState.init(platform, new DualStateImpl(), InitTrigger.GENESIS, null));
     }
 
     @Test
@@ -840,33 +886,31 @@ class ServicesStateTest extends ResponsibleVMapUser {
         assertSame(mmap, subject.uniqueTokens().merkleMap());
     }
 
-    private AddressBook createPretendBookFrom(
-            final Platform platform, final boolean withKeyDetails) {
+    private AddressBook createPretendBookFrom(final Platform platform, final boolean withKeyDetails) {
         final var pubKey = mock(PublicKey.class);
         given(pubKey.getAlgorithm()).willReturn("EC");
         if (withKeyDetails) {
             given(pubKey.getEncoded()).willReturn(Longs.toByteArray(Long.MAX_VALUE));
         }
         final var nodeId = platform.getSelfId().getId();
-        final var address =
-                new Address(
-                        nodeId,
-                        "",
-                        "",
-                        1L,
-                        false,
-                        null,
-                        -1,
-                        Ints.toByteArray(123456789),
-                        -1,
-                        null,
-                        -1,
-                        null,
-                        -1,
-                        new SerializablePublicKey(pubKey),
-                        null,
-                        new SerializablePublicKey(pubKey),
-                        "");
+        final var address = new Address(
+                nodeId,
+                "",
+                "",
+                1L,
+                false,
+                null,
+                -1,
+                Ints.toByteArray(123456789),
+                -1,
+                null,
+                -1,
+                null,
+                -1,
+                new SerializablePublicKey(pubKey),
+                null,
+                new SerializablePublicKey(pubKey),
+                "");
         return new AddressBook(List.of(address));
     }
 
@@ -886,9 +930,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         final var platform = mock(Platform.class);
         when(platform.getSelfId()).thenReturn(new NodeId(false, 0));
         when(platform.getCryptography())
-                .thenReturn(
-                        new CryptoEngine(
-                                getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG));
+                .thenReturn(new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG));
         assertNotNull(platform.getCryptography());
         return platform;
     }
@@ -915,8 +957,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(addressBook.getSize()).willReturn(1);
         given(addressBook.getAddress(0)).willReturn(address);
         given(address.getId()).willReturn(0L);
-        given(bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT))
-                .willReturn(3_000_000_000L);
+        given(bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(3_000_000_000L);
         given(bootstrapProperties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS))
                 .willReturn(2);
         final File databaseFolder = new File("database");

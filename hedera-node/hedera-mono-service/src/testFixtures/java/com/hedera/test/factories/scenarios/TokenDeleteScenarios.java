@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.scenarios;
 
 import static com.hedera.test.factories.txns.TokenDeleteFactory.newSignedTokenDelete;
@@ -30,7 +31,8 @@ public enum TokenDeleteScenarios implements TxnHandlingScenario {
     DELETE_WITH_MISSING_TOKEN {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenDelete().deleting(MISSING_TOKEN).get());
+            return PlatformTxnAccessor.from(
+                    newSignedTokenDelete().deleting(MISSING_TOKEN).get());
         }
     },
     DELETE_WITH_MISSING_TOKEN_ADMIN_KEY {

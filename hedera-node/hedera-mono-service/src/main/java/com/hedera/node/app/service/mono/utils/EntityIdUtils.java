@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
@@ -60,24 +61,19 @@ public final class EntityIdUtils {
             return String.format(ENTITY_ID_FORMAT, id.shard(), id.realm(), id.num());
         }
         if (o instanceof AccountID id) {
-            return String.format(
-                    ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+            return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getAccountNum());
         }
         if (o instanceof FileID id) {
-            return String.format(
-                    ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getFileNum());
+            return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getFileNum());
         }
         if (o instanceof TopicID id) {
-            return String.format(
-                    ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getTopicNum());
+            return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getTopicNum());
         }
         if (o instanceof TokenID id) {
-            return String.format(
-                    ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getTokenNum());
+            return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getTokenNum());
         }
         if (o instanceof ScheduleID id) {
-            return String.format(
-                    ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getScheduleNum());
+            return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getScheduleNum());
         }
         if (o instanceof NftID id) {
             final var tokenID = id.getTokenID();
@@ -108,8 +104,7 @@ public final class EntityIdUtils {
                     .setAccountNum(parts[2])
                     .build();
         } catch (final NumberFormatException | ArrayIndexOutOfBoundsException e) {
-            throw new IllegalArgumentException(
-                    String.format("Argument 'literal=%s' is not an account", literal), e);
+            throw new IllegalArgumentException(String.format("Argument 'literal=%s' is not an account", literal), e);
         }
     }
 
@@ -121,19 +116,14 @@ public final class EntityIdUtils {
                 final var right = Long.valueOf(matcher.group(2));
                 if (left > right) {
                     throw new IllegalArgumentException(
-                            "Range left endpoint "
-                                    + left
-                                    + " should be <= right endpoint "
-                                    + right);
+                            "Range left endpoint " + left + " should be <= right endpoint " + right);
                 }
                 return Pair.of(left, right);
             } catch (final NumberFormatException nfe) {
-                throw new IllegalArgumentException(
-                        "Argument literal='" + literal + "' has malformatted long value");
+                throw new IllegalArgumentException("Argument literal='" + literal + "' has malformatted long value");
             }
         } else {
-            throw new IllegalArgumentException(
-                    "Argument literal='" + literal + "' is not a valid range literal");
+            throw new IllegalArgumentException("Argument literal='" + literal + "' is not a valid range literal");
         }
     }
 
@@ -146,19 +136,16 @@ public final class EntityIdUtils {
                 triple[i++] = v;
                 v = 0;
             } else if (c < '0' || c > '9') {
-                throw new NumberFormatException(
-                        CANNOT_PARSE_PREFIX + dotDelimited + "' due to character '" + c + "'");
+                throw new NumberFormatException(CANNOT_PARSE_PREFIX + dotDelimited + "' due to character '" + c + "'");
             } else {
                 v = 10 * v + (c - '0');
                 if (v < 0) {
-                    throw new IllegalArgumentException(
-                            CANNOT_PARSE_PREFIX + dotDelimited + "' due to overflow");
+                    throw new IllegalArgumentException(CANNOT_PARSE_PREFIX + dotDelimited + "' due to overflow");
                 }
             }
         }
         if (i < 2) {
-            throw new IllegalArgumentException(
-                    CANNOT_PARSE_PREFIX + dotDelimited + "' due to only " + i + " dots");
+            throw new IllegalArgumentException(CANNOT_PARSE_PREFIX + dotDelimited + "' due to only " + i + " dots");
         }
         triple[i] = v;
         return triple;
@@ -200,8 +187,7 @@ public final class EntityIdUtils {
     }
 
     public static String asHexedEvmAddress(final AccountID id) {
-        return CommonUtils.hex(
-                asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum()));
+        return CommonUtils.hex(asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum()));
     }
 
     public static byte[] asEvmAddress(final ContractID id) {
@@ -263,9 +249,7 @@ public final class EntityIdUtils {
     }
 
     public static long numFromEvmAddress(final byte[] bytes) {
-        return Longs.fromBytes(
-                bytes[12], bytes[13], bytes[14], bytes[15], bytes[16], bytes[17], bytes[18],
-                bytes[19]);
+        return Longs.fromBytes(bytes[12], bytes[13], bytes[14], bytes[15], bytes[16], bytes[17], bytes[18], bytes[19]);
     }
 
     public static AccountID accountIdFromEvmAddress(final Address address) {
@@ -305,8 +289,7 @@ public final class EntityIdUtils {
     }
 
     public static String asLiteralString(final AccountID id) {
-        return String.format(
-                ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+        return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getAccountNum());
     }
 
     public static String asLiteralString(final FileID id) {
@@ -373,9 +356,7 @@ public final class EntityIdUtils {
     }
 
     public static EntityNum unaliased(
-            final AccountID idOrAlias,
-            final AliasManager aliasManager,
-            @Nullable final Consumer<ByteString> aliasObs) {
+            final AccountID idOrAlias, final AliasManager aliasManager, @Nullable final Consumer<ByteString> aliasObs) {
         if (isAlias(idOrAlias)) {
             final var alias = idOrAlias.getAlias();
             final var evmAddress = alias.toByteArray();

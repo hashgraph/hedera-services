@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stats;
 
 import static com.hedera.node.app.service.mono.stats.ServicesStatsManager.SPEEDOMETER_FORMAT;
@@ -29,16 +30,14 @@ public class MiscSpeedometers {
     private SpeedometerMetric platformTxnRejections;
 
     public MiscSpeedometers(final double halfLife) {
-        syncVerificationsConfig =
-                new SpeedometerMetric.Config(STAT_CATEGORY, Names.SYNC_VERIFICATIONS)
-                        .withDescription(Descriptions.SYNC_VERIFICATIONS)
-                        .withFormat(SPEEDOMETER_FORMAT)
-                        .withHalfLife(halfLife);
-        platformTxnRejectionsConfig =
-                new SpeedometerMetric.Config(STAT_CATEGORY, Names.PLATFORM_TXN_REJECTIONS)
-                        .withDescription(Descriptions.PLATFORM_TXN_REJECTIONS)
-                        .withFormat(SPEEDOMETER_FORMAT)
-                        .withHalfLife(halfLife);
+        syncVerificationsConfig = new SpeedometerMetric.Config(STAT_CATEGORY, Names.SYNC_VERIFICATIONS)
+                .withDescription(Descriptions.SYNC_VERIFICATIONS)
+                .withFormat(SPEEDOMETER_FORMAT)
+                .withHalfLife(halfLife);
+        platformTxnRejectionsConfig = new SpeedometerMetric.Config(STAT_CATEGORY, Names.PLATFORM_TXN_REJECTIONS)
+                .withDescription(Descriptions.PLATFORM_TXN_REJECTIONS)
+                .withFormat(SPEEDOMETER_FORMAT)
+                .withHalfLife(halfLife);
     }
 
     public void registerWith(final Platform platform) {
@@ -70,8 +69,7 @@ public class MiscSpeedometers {
         static final String SYNC_VERIFICATIONS =
                 "number of transactions received per second that must be verified synchronously in"
                         + " handleTransaction";
-        static final String PLATFORM_TXN_REJECTIONS =
-                "number of platform transactions not created per second";
+        static final String PLATFORM_TXN_REJECTIONS = "number of platform transactions not created per second";
 
         private Descriptions() {
             throw new UnsupportedOperationException("Utility Class");

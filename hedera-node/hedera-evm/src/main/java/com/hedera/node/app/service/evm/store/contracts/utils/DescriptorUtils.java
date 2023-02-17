@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.utils;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
@@ -71,8 +72,7 @@ public class DescriptorUtils {
         final var tokenBytes = finalInput.slice(4, 20);
         final var tokenAddress = Address.wrap(Bytes.wrap(tokenBytes.toArrayUnsafe()));
         final var nestedInput = finalInput.slice(24);
-        return new RedirectTarget(
-                nestedInput.getInt(0), tokenAddress, finalInput != input ? finalInput : null);
+        return new RedirectTarget(nestedInput.getInt(0), tokenAddress, finalInput != input ? finalInput : null);
     }
 
     public static Address addressFromBytes(final byte[] addressBytes) {
@@ -88,8 +88,7 @@ public class DescriptorUtils {
             // try decoding the input to see if redirectForToken() was called explicitly, using
             // normal encoding
             // if so, massage it to our expected "packed" redirect input
-            final var redirectForTokenWrapper =
-                    EvmRedirectForTokenPrecompile.decodeExplicitRedirectForToken(input);
+            final var redirectForTokenWrapper = EvmRedirectForTokenPrecompile.decodeExplicitRedirectForToken(input);
             return Bytes.concatenate(
                     Bytes.ofUnsignedInt(ABI_ID_REDIRECT_FOR_TOKEN),
                     addressFromBytes(redirectForTokenWrapper.token()),

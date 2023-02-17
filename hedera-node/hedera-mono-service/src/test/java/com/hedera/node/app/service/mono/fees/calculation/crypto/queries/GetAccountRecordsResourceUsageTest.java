@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.crypto.queries;
 
 import static com.hedera.node.app.service.mono.queries.meta.GetTxnRecordAnswer.PAYER_RECORDS_CTX_KEY;
@@ -57,16 +58,22 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class GetAccountRecordsResourceUsageTest {
     private final String a = "0.0.1234";
-    private final List<TransactionRecord> someRecords =
-            ExpirableTxnRecord.allToGrpc(List.of(recordOne(), recordTwo()));
+    private final List<TransactionRecord> someRecords = ExpirableTxnRecord.allToGrpc(List.of(recordOne(), recordTwo()));
 
     private StateView view;
     private MerkleAccount aValue;
 
-    @Mock private CryptoFeeBuilder usageEstimator;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private AccountStorageAdapter accounts;
-    @Mock private RecordsStorageAdapter payerRecords;
+    @Mock
+    private CryptoFeeBuilder usageEstimator;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private AccountStorageAdapter accounts;
+
+    @Mock
+    private RecordsStorageAdapter payerRecords;
 
     private GetAccountRecordsResourceUsage subject;
 
@@ -80,9 +87,7 @@ class GetAccountRecordsResourceUsageTest {
         children.setPayerRecords(payerRecords);
         view = new StateView(null, children, null);
 
-        subject =
-                new GetAccountRecordsResourceUsage(
-                        new AnswerFunctions(dynamicProperties), usageEstimator);
+        subject = new GetAccountRecordsResourceUsage(new AnswerFunctions(dynamicProperties), usageEstimator);
     }
 
     @Test
@@ -149,10 +154,9 @@ class GetAccountRecordsResourceUsageTest {
 
     private Query accountRecordsQuery(final String target, final ResponseType type) {
         final var id = asAccount(target);
-        final var op =
-                CryptoGetAccountRecordsQuery.newBuilder()
-                        .setAccountID(id)
-                        .setHeader(QueryHeader.newBuilder().setResponseType(type));
+        final var op = CryptoGetAccountRecordsQuery.newBuilder()
+                .setAccountID(id)
+                .setHeader(QueryHeader.newBuilder().setResponseType(type));
         return Query.newBuilder().setCryptoGetAccountRecords(op).build();
     }
 

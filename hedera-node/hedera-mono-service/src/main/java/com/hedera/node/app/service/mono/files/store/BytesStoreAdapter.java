@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.store;
 
 import static java.util.stream.Collectors.toSet;
@@ -92,10 +93,7 @@ public class BytesStoreAdapter<K, V> extends AbstractMap<K, V> {
     public Set<Entry<K, V>> entrySet() {
         return delegate.entrySet().stream()
                 .filter(entry -> delegateEntryFilter.orElse(ignore -> true).test(entry.getKey()))
-                .map(
-                        entry ->
-                                new AbstractMap.SimpleEntry<>(
-                                        toK.apply(entry.getKey()), toV.apply(entry.getValue())))
+                .map(entry -> new AbstractMap.SimpleEntry<>(toK.apply(entry.getKey()), toV.apply(entry.getValue())))
                 .collect(toSet());
     }
 }

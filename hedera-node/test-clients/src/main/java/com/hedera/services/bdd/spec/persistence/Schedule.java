@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.persistence;
 
 import static com.hedera.services.bdd.spec.persistence.Entity.UNUSED_KEY;
@@ -45,10 +46,9 @@ public class Schedule {
         if (adminKey != UNUSED_KEY) {
             adminKey.registerWith(spec, asAdminKeyFor(name));
         }
-        entityId.ifPresent(
-                id -> {
-                    spec.registry().saveScheduleId(name, id.asSchedule());
-                });
+        entityId.ifPresent(id -> {
+            spec.registry().saveScheduleId(name, id.asSchedule());
+        });
     }
 
     public HapiQueryOp<?> existenceCheck(String name) {
@@ -60,16 +60,12 @@ public class Schedule {
             simpleXfer = new SimpleXfer();
         }
 
-        var op =
-                scheduleCreate(
-                                name,
-                                cryptoTransfer(
-                                        tinyBarsFromTo(
-                                                simpleXfer.getFrom(),
-                                                simpleXfer.getTo(),
-                                                simpleXfer.getAmount())))
-                        .alsoSigningWith(signatories.toArray(new String[0]))
-                        .advertisingCreation();
+        var op = scheduleCreate(
+                        name,
+                        cryptoTransfer(
+                                tinyBarsFromTo(simpleXfer.getFrom(), simpleXfer.getTo(), simpleXfer.getAmount())))
+                .alsoSigningWith(signatories.toArray(new String[0]))
+                .advertisingCreation();
 
         if (adminKey != UNUSED_KEY) {
             op.adminKey(adminKeyFor(name));

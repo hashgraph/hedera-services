@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.commands.accounts;
 
 import com.hedera.services.yahcli.Yahcli;
@@ -35,7 +36,8 @@ import picocli.CommandLine.ParentCommand;
         },
         description = "Performs account operations")
 public class AccountsCommand implements Callable<Integer> {
-    @ParentCommand Yahcli yahcli;
+    @ParentCommand
+    Yahcli yahcli;
 
     @Override
     public Integer call() throws Exception {

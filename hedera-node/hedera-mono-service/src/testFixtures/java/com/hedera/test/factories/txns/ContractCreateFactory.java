@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.txns;
 
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
@@ -29,10 +30,9 @@ import java.util.OptionalLong;
 
 public class ContractCreateFactory extends SignedTxnFactory<ContractCreateFactory> {
     public static final KeyTree DEFAULT_ADMIN_KT = KeyTree.withRoot(ed25519());
-    public static final Key DEPRECATED_CID_KEY =
-            Key.newBuilder()
-                    .setContractID(ContractID.newBuilder().setContractNum(1234L).build())
-                    .build();
+    public static final Key DEPRECATED_CID_KEY = Key.newBuilder()
+            .setContractID(ContractID.newBuilder().setContractNum(1234L).build())
+            .build();
 
     private KeyTree adminKt = DEFAULT_ADMIN_KT;
     private boolean useAdminKey = true;

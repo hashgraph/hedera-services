@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.throttling;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -57,68 +58,46 @@ public class PrivilegedOpsSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    superusersAreNeverThrottledOnTransfers(),
-                    superusersAreNeverThrottledOnMiscTxns(),
-                    superusersAreNeverThrottledOnHcsTxns(),
-                    superusersAreNeverThrottledOnMiscQueries(),
-                    superusersAreNeverThrottledOnHcsQueries(),
-                    systemAccountUpdatePrivilegesAsExpected(),
-                    freezeAdminPrivilegesAsExpected(),
-                });
+        return List.of(new HapiSpec[] {
+            superusersAreNeverThrottledOnTransfers(),
+            superusersAreNeverThrottledOnMiscTxns(),
+            superusersAreNeverThrottledOnHcsTxns(),
+            superusersAreNeverThrottledOnMiscQueries(),
+            superusersAreNeverThrottledOnHcsQueries(),
+            systemAccountUpdatePrivilegesAsExpected(),
+            freezeAdminPrivilegesAsExpected(),
+        });
     }
 
     final int BURST_SIZE = 10;
-    Function<String, HapiSpecOperation[]> transferBurstFn =
-            payer ->
-                    IntStream.range(0, BURST_SIZE)
-                            .mapToObj(
-                                    ignore ->
-                                            cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
-                                                    .payingWith(payer)
-                                                    .fee(ONE_HUNDRED_HBARS)
-                                                    .deferStatusResolution())
-                            .toArray(n -> new HapiSpecOperation[n]);
-    Function<String, HapiSpecOperation[]> miscTxnBurstFn =
-            payer ->
-                    IntStream.range(0, BURST_SIZE)
-                            .mapToObj(
-                                    i ->
-                                            cryptoCreate(String.format("Account%d", i))
-                                                    .payingWith(payer)
-                                                    .deferStatusResolution())
-                            .toArray(n -> new HapiSpecOperation[n]);
-    Function<String, HapiSpecOperation[]> hcsTxnBurstFn =
-            payer ->
-                    IntStream.range(0, BURST_SIZE)
-                            .mapToObj(
-                                    i ->
-                                            createTopic(String.format("Topic%d", i))
-                                                    .payingWith(payer)
-                                                    .deferStatusResolution())
-                            .toArray(n -> new HapiSpecOperation[n]);
-    Function<String, HapiSpecOperation[]> miscQueryBurstFn =
-            payer ->
-                    IntStream.range(0, BURST_SIZE)
-                            .mapToObj(
-                                    i ->
-                                            getAccountInfo(ADDRESS_BOOK_CONTROL)
-                                                    .nodePayment(100L)
-                                                    .payingWith(payer))
-                            .toArray(n -> new HapiSpecOperation[n]);
-    Function<String, HapiSpecOperation[]> hcsQueryBurstFn =
-            payer ->
-                    IntStream.range(0, BURST_SIZE)
-                            .mapToObj(i -> getTopicInfo("misc").nodePayment(100L).payingWith(payer))
-                            .toArray(n -> new HapiSpecOperation[n]);
+    Function<String, HapiSpecOperation[]> transferBurstFn = payer -> IntStream.range(0, BURST_SIZE)
+            .mapToObj(ignore -> cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
+                    .payingWith(payer)
+                    .fee(ONE_HUNDRED_HBARS)
+                    .deferStatusResolution())
+            .toArray(n -> new HapiSpecOperation[n]);
+    Function<String, HapiSpecOperation[]> miscTxnBurstFn = payer -> IntStream.range(0, BURST_SIZE)
+            .mapToObj(i -> cryptoCreate(String.format("Account%d", i))
+                    .payingWith(payer)
+                    .deferStatusResolution())
+            .toArray(n -> new HapiSpecOperation[n]);
+    Function<String, HapiSpecOperation[]> hcsTxnBurstFn = payer -> IntStream.range(0, BURST_SIZE)
+            .mapToObj(i ->
+                    createTopic(String.format("Topic%d", i)).payingWith(payer).deferStatusResolution())
+            .toArray(n -> new HapiSpecOperation[n]);
+    Function<String, HapiSpecOperation[]> miscQueryBurstFn = payer -> IntStream.range(0, BURST_SIZE)
+            .mapToObj(
+                    i -> getAccountInfo(ADDRESS_BOOK_CONTROL).nodePayment(100L).payingWith(payer))
+            .toArray(n -> new HapiSpecOperation[n]);
+    Function<String, HapiSpecOperation[]> hcsQueryBurstFn = payer -> IntStream.range(0, BURST_SIZE)
+            .mapToObj(i -> getTopicInfo("misc").nodePayment(100L).payingWith(payer))
+            .toArray(n -> new HapiSpecOperation[n]);
 
     private HapiSpec freezeAdminPrivilegesAsExpected() {
         return defaultHapiSpec("FreezeAdminPrivilegesAsExpected")
                 .given(
                         cryptoCreate("civilian"),
-                        cryptoTransfer(
-                                tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, ONE_MILLION_HBARS)))
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, ONE_MILLION_HBARS)))
                 .when(
                         fileUpdate(UPDATE_ZIP_FILE)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
@@ -153,21 +132,17 @@ public class PrivilegedOpsSuite extends HapiSuite {
                                 .fee(0L)
                                 .payingWith(SYSTEM_ADMIN)
                                 .contents("Yuuupp"),
-                        fileAppend(UPDATE_ZIP_FILE)
-                                .fee(0L)
-                                .payingWith(GENESIS)
-                                .content(new byte[0]));
+                        fileAppend(UPDATE_ZIP_FILE).fee(0L).payingWith(GENESIS).content(new byte[0]));
     }
 
     private HapiSpec systemAccountUpdatePrivilegesAsExpected() {
         final var tmpTreasury = "tmpTreasury";
         return defaultHapiSpec("SystemAccountUpdatePrivilegesAsExpected")
                 .given(newKeyNamed(tmpTreasury), newKeyNamed("new88"), cryptoCreate("civilian"))
-                .when(
-                        cryptoUpdate("0.0.88")
-                                .payingWith(GENESIS)
-                                .signedBy(GENESIS, "new88")
-                                .key("new88"))
+                .when(cryptoUpdate("0.0.88")
+                        .payingWith(GENESIS)
+                        .signedBy(GENESIS, "new88")
+                        .key("new88"))
                 .then(
                         cryptoUpdate("0.0.2")
                                 .receiverSigRequired(true)
@@ -216,110 +191,93 @@ public class PrivilegedOpsSuite extends HapiSuite {
     private HapiSpec superusersAreNeverThrottledOnTransfers() {
         return defaultHapiSpec("SuperusersAreNeverThrottledOnTransfers")
                 .given(
-                        cryptoTransfer(
-                                        tinyBarsFromTo(
-                                                GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L))
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L))
                                 .fee(ONE_HUNDRED_HBARS),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L))
                                 .fee(ONE_HUNDRED_HBARS))
-                .when(
+                .when(fileUpdate(THROTTLE_DEFS)
+                        .payingWith(EXCHANGE_RATE_CONTROL)
+                        .contents(totalLimits)
+                        .hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION))
+                .then(flattened(
+                        transferBurstFn.apply(SYSTEM_ADMIN),
+                        transferBurstFn.apply(ADDRESS_BOOK_CONTROL),
+                        sleepFor(5_000L),
                         fileUpdate(THROTTLE_DEFS)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
-                                .contents(totalLimits)
-                                .hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION))
-                .then(
-                        flattened(
-                                transferBurstFn.apply(SYSTEM_ADMIN),
-                                transferBurstFn.apply(ADDRESS_BOOK_CONTROL),
-                                sleepFor(5_000L),
-                                fileUpdate(THROTTLE_DEFS)
-                                        .payingWith(EXCHANGE_RATE_CONTROL)
-                                        .contents(defaultThrottles)));
+                                .contents(defaultThrottles)));
     }
 
     private HapiSpec superusersAreNeverThrottledOnMiscTxns() {
         return defaultHapiSpec("MasterIsNeverThrottledOnMiscTxns")
                 .given(
-                        cryptoTransfer(
-                                        tinyBarsFromTo(
-                                                GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L))
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L))
                                 .fee(ONE_HUNDRED_HBARS),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L))
                                 .fee(ONE_HUNDRED_HBARS))
-                .when(
+                .when(fileUpdate(THROTTLE_DEFS)
+                        .payingWith(EXCHANGE_RATE_CONTROL)
+                        .contents(totalLimits)
+                        .hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION))
+                .then(flattened(
+                        miscTxnBurstFn.apply(SYSTEM_ADMIN),
+                        miscTxnBurstFn.apply(ADDRESS_BOOK_CONTROL),
+                        sleepFor(5_000L),
                         fileUpdate(THROTTLE_DEFS)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
-                                .contents(totalLimits)
-                                .hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION))
-                .then(
-                        flattened(
-                                miscTxnBurstFn.apply(SYSTEM_ADMIN),
-                                miscTxnBurstFn.apply(ADDRESS_BOOK_CONTROL),
-                                sleepFor(5_000L),
-                                fileUpdate(THROTTLE_DEFS)
-                                        .payingWith(EXCHANGE_RATE_CONTROL)
-                                        .contents(defaultThrottles)));
+                                .contents(defaultThrottles)));
     }
 
     private HapiSpec superusersAreNeverThrottledOnHcsTxns() {
         return defaultHapiSpec("MasterIsNeverThrottledOnHcsTxns")
                 .given(
-                        cryptoTransfer(
-                                tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L)))
-                .when(
+                .when(fileUpdate(THROTTLE_DEFS)
+                        .payingWith(EXCHANGE_RATE_CONTROL)
+                        .contents(totalLimits)
+                        .hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION))
+                .then(flattened(
+                        hcsTxnBurstFn.apply(SYSTEM_ADMIN),
+                        hcsTxnBurstFn.apply(ADDRESS_BOOK_CONTROL),
                         fileUpdate(THROTTLE_DEFS)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
-                                .contents(totalLimits)
-                                .hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION))
-                .then(
-                        flattened(
-                                hcsTxnBurstFn.apply(SYSTEM_ADMIN),
-                                hcsTxnBurstFn.apply(ADDRESS_BOOK_CONTROL),
-                                fileUpdate(THROTTLE_DEFS)
-                                        .payingWith(EXCHANGE_RATE_CONTROL)
-                                        .contents(defaultThrottles)));
+                                .contents(defaultThrottles)));
     }
 
     private HapiSpec superusersAreNeverThrottledOnMiscQueries() {
         return defaultHapiSpec("MasterIsNeverThrottledOnMiscQueries")
                 .given(
-                        cryptoTransfer(
-                                tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L)))
-                .when(
+                .when(fileUpdate(THROTTLE_DEFS)
+                        .payingWith(EXCHANGE_RATE_CONTROL)
+                        .contents(totalLimits)
+                        .hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION))
+                .then(flattened(
+                        inParallel(miscQueryBurstFn.apply(SYSTEM_ADMIN)),
+                        inParallel(miscQueryBurstFn.apply(ADDRESS_BOOK_CONTROL)),
                         fileUpdate(THROTTLE_DEFS)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
-                                .contents(totalLimits)
-                                .hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION))
-                .then(
-                        flattened(
-                                inParallel(miscQueryBurstFn.apply(SYSTEM_ADMIN)),
-                                inParallel(miscQueryBurstFn.apply(ADDRESS_BOOK_CONTROL)),
-                                fileUpdate(THROTTLE_DEFS)
-                                        .payingWith(EXCHANGE_RATE_CONTROL)
-                                        .contents(defaultThrottles)));
+                                .contents(defaultThrottles)));
     }
 
     private HapiSpec superusersAreNeverThrottledOnHcsQueries() {
         return defaultHapiSpec("MasterIsNeverThrottledOnHcsQueries")
                 .given(
-                        cryptoTransfer(
-                                tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L)),
                         createTopic("misc"))
-                .when(
+                .when(fileUpdate(THROTTLE_DEFS)
+                        .payingWith(EXCHANGE_RATE_CONTROL)
+                        .contents(totalLimits)
+                        .hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION))
+                .then(flattened(
+                        inParallel(hcsQueryBurstFn.apply(SYSTEM_ADMIN)),
+                        inParallel(hcsQueryBurstFn.apply(ADDRESS_BOOK_CONTROL)),
                         fileUpdate(THROTTLE_DEFS)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
-                                .contents(totalLimits)
-                                .hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION))
-                .then(
-                        flattened(
-                                inParallel(hcsQueryBurstFn.apply(SYSTEM_ADMIN)),
-                                inParallel(hcsQueryBurstFn.apply(ADDRESS_BOOK_CONTROL)),
-                                fileUpdate(THROTTLE_DEFS)
-                                        .payingWith(EXCHANGE_RATE_CONTROL)
-                                        .contents(defaultThrottles)));
+                                .contents(defaultThrottles)));
     }
 
     @Override

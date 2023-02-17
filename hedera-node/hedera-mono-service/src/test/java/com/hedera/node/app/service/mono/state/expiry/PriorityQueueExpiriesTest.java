@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,13 +32,12 @@ class PriorityQueueExpiriesTest {
     private long expiry1 = 50, expiry2 = 1000, expiry3 = 200;
 
     private PriorityQueueExpiries<String> subject;
-    private Comparator<ExpiryEvent<String>> testCmp =
-            (aEvent, bEvent) -> {
-                int order;
-                return (order = Long.compare(aEvent.expiry(), bEvent.expiry())) != 0
-                        ? order
-                        : aEvent.id().compareTo(bEvent.id());
-            };
+    private Comparator<ExpiryEvent<String>> testCmp = (aEvent, bEvent) -> {
+        int order;
+        return (order = Long.compare(aEvent.expiry(), bEvent.expiry())) != 0
+                ? order
+                : aEvent.id().compareTo(bEvent.id());
+    };
 
     @BeforeEach
     void setup() {
@@ -131,8 +131,7 @@ class PriorityQueueExpiriesTest {
 
         // given:
         long startTime = 1L;
-        List<ExpiryEvent<String>> events =
-                buildTestEvents(entitiesToTrack, reuseOfEachExpiryTime, startTime);
+        List<ExpiryEvent<String>> events = buildTestEvents(entitiesToTrack, reuseOfEachExpiryTime, startTime);
         // and:
         var fullPq = pqFrom(events);
 
@@ -149,10 +148,7 @@ class PriorityQueueExpiriesTest {
             long now = events.get(i).expiry();
             var fromFull = fullPq.expireNextAt(now);
             var fromPartial = partialPq.expireNextAt(now);
-            assertEquals(
-                    fromFull,
-                    fromPartial,
-                    "The purge order of keys with the same expiry should be deterministic");
+            assertEquals(fromFull, fromPartial, "The purge order of keys with the same expiry should be deterministic");
         }
     }
 

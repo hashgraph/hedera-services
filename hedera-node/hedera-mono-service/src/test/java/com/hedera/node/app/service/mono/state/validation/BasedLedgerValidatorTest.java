@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.validation;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
@@ -109,16 +110,14 @@ class BasedLedgerValidatorTest {
     }
 
     private MerkleAccount expectedWith(long balance) throws NegativeAccountBalanceException {
-        MerkleAccount hAccount =
-                (MerkleAccount)
-                        new HederaAccountCustomizer()
-                                .isReceiverSigRequired(false)
-                                .proxy(MISSING_ENTITY_ID)
-                                .isDeleted(false)
-                                .expiry(1_234_567L)
-                                .memo("")
-                                .isSmartContract(false)
-                                .customizing(new MerkleAccount());
+        MerkleAccount hAccount = (MerkleAccount) new HederaAccountCustomizer()
+                .isReceiverSigRequired(false)
+                .proxy(MISSING_ENTITY_ID)
+                .isDeleted(false)
+                .expiry(1_234_567L)
+                .memo("")
+                .isSmartContract(false)
+                .customizing(new MerkleAccount());
         hAccount.setBalance(balance);
         return hAccount;
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stats;
 
 import static com.hedera.node.app.service.mono.stats.ServicesStatsManager.RUNNING_AVG_FORMAT;
@@ -34,39 +35,26 @@ public class MiscRunningAvgs {
     }
 
     public void registerWith(final Platform platform) {
-        gasPerConsSec =
-                platform.getMetrics()
-                        .getOrCreate(
-                                new RunningAverageMetric.Config(
-                                                STAT_CATEGORY, Names.GAS_PER_CONSENSUS_SEC)
-                                        .withDescription(Descriptions.GAS_PER_CONSENSUS_SEC)
-                                        .withFormat(RUNNING_AVG_FORMAT)
-                                        .withHalfLife(halfLife));
-        handledSubmitMessageSize =
-                platform.getMetrics()
-                        .getOrCreate(
-                                new RunningAverageMetric.Config(
-                                                STAT_CATEGORY, Names.HANDLED_SUBMIT_MESSAGE_SIZE)
-                                        .withDescription(Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE)
-                                        .withFormat(RUNNING_AVG_FORMAT)
-                                        .withHalfLife(halfLife));
-        writeQueueSizeRecordStream =
-                platform.getMetrics()
-                        .getOrCreate(
-                                new RunningAverageMetric.Config(
-                                                STAT_CATEGORY, Names.WRITE_QUEUE_SIZE_RECORD_STREAM)
-                                        .withDescription(
-                                                Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM)
-                                        .withFormat(RUNNING_AVG_FORMAT)
-                                        .withHalfLife(halfLife));
-        hashQueueSizeRecordStream =
-                platform.getMetrics()
-                        .getOrCreate(
-                                new RunningAverageMetric.Config(
-                                                STAT_CATEGORY, Names.HASH_QUEUE_SIZE_RECORD_STREAM)
-                                        .withDescription(Descriptions.HASH_QUEUE_SIZE_RECORD_STREAM)
-                                        .withFormat(RUNNING_AVG_FORMAT)
-                                        .withHalfLife(halfLife));
+        gasPerConsSec = platform.getMetrics()
+                .getOrCreate(new RunningAverageMetric.Config(STAT_CATEGORY, Names.GAS_PER_CONSENSUS_SEC)
+                        .withDescription(Descriptions.GAS_PER_CONSENSUS_SEC)
+                        .withFormat(RUNNING_AVG_FORMAT)
+                        .withHalfLife(halfLife));
+        handledSubmitMessageSize = platform.getMetrics()
+                .getOrCreate(new RunningAverageMetric.Config(STAT_CATEGORY, Names.HANDLED_SUBMIT_MESSAGE_SIZE)
+                        .withDescription(Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE)
+                        .withFormat(RUNNING_AVG_FORMAT)
+                        .withHalfLife(halfLife));
+        writeQueueSizeRecordStream = platform.getMetrics()
+                .getOrCreate(new RunningAverageMetric.Config(STAT_CATEGORY, Names.WRITE_QUEUE_SIZE_RECORD_STREAM)
+                        .withDescription(Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM)
+                        .withFormat(RUNNING_AVG_FORMAT)
+                        .withHalfLife(halfLife));
+        hashQueueSizeRecordStream = platform.getMetrics()
+                .getOrCreate(new RunningAverageMetric.Config(STAT_CATEGORY, Names.HASH_QUEUE_SIZE_RECORD_STREAM)
+                        .withDescription(Descriptions.HASH_QUEUE_SIZE_RECORD_STREAM)
+                        .withFormat(RUNNING_AVG_FORMAT)
+                        .withHalfLife(halfLife));
     }
 
     public void recordHandledSubmitMessageSize(final int bytes) {
@@ -98,10 +86,8 @@ public class MiscRunningAvgs {
     }
 
     public static final class Descriptions {
-        static final String GAS_PER_CONSENSUS_SEC =
-                "average EVM gas used per second of consensus time";
-        static final String HANDLED_SUBMIT_MESSAGE_SIZE =
-                "average size of the handled HCS submit message transaction";
+        static final String GAS_PER_CONSENSUS_SEC = "average EVM gas used per second of consensus time";
+        static final String HANDLED_SUBMIT_MESSAGE_SIZE = "average size of the handled HCS submit message transaction";
         static final String WRITE_QUEUE_SIZE_RECORD_STREAM =
                 "size of the queue from which we take records and write to RecordStream file";
         static final String HASH_QUEUE_SIZE_RECORD_STREAM =

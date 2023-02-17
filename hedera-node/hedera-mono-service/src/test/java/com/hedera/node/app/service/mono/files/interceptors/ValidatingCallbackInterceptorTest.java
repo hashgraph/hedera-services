@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.interceptors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -62,8 +63,7 @@ class ValidatingCallbackInterceptorTest {
         given(properties.getLongProperty(numProperty)).willReturn(actualNum);
 
         subject =
-                new ValidatingCallbackInterceptor(
-                        applicablePriority, numProperty, properties, postUpdateCb, validator);
+                new ValidatingCallbackInterceptor(applicablePriority, numProperty, properties, postUpdateCb, validator);
     }
 
     @Test

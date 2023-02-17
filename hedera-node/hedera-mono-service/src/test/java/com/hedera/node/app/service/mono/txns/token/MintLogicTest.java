@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
@@ -61,15 +62,29 @@ class MintLogicTest {
     private final Id treasuryId = new Id(2, 4, 6);
     private final Account treasury = new Account(treasuryId);
 
-    @Mock private Token token;
-    @Mock private TypedTokenStore store;
-    @Mock private TransactionContext txnCtx;
-    @Mock private SignedTxnAccessor accessor;
-    @Mock private OptionValidator validator;
-    @Mock private AccountStore accountStore;
-    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock
+    private Token token;
 
-    @Mock private UsageLimits usageLimits;
+    @Mock
+    private TypedTokenStore store;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private SignedTxnAccessor accessor;
+
+    @Mock
+    private OptionValidator validator;
+
+    @Mock
+    private AccountStore accountStore;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private UsageLimits usageLimits;
 
     private TokenRelationship treasuryRel;
     private TransactionBody tokenMintTxn;
@@ -95,13 +110,12 @@ class MintLogicTest {
 
         // expect:
         assertFailsWith(
-                () ->
-                        subject.mint(
-                                token.getId(),
-                                txnCtx.accessor().getTxn().getTokenMint().getMetadataCount(),
-                                txnCtx.accessor().getTxn().getTokenMint().getAmount(),
-                                txnCtx.accessor().getTxn().getTokenMint().getMetadataList(),
-                                Instant.now()),
+                () -> subject.mint(
+                        token.getId(),
+                        txnCtx.accessor().getTxn().getTokenMint().getMetadataCount(),
+                        txnCtx.accessor().getTxn().getTokenMint().getAmount(),
+                        txnCtx.accessor().getTxn().getTokenMint().getMetadataList(),
+                        Instant.now()),
                 MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
     }
 
@@ -154,12 +168,7 @@ class MintLogicTest {
                 Instant.now());
 
         // then:
-        verify(token)
-                .mint(
-                        any(OwnershipTracker.class),
-                        eq(treasuryRel),
-                        any(List.class),
-                        any(RichInstant.class));
+        verify(token).mint(any(OwnershipTracker.class), eq(treasuryRel), any(List.class), any(RichInstant.class));
         verify(store).commitToken(token);
         verify(store).commitTokenRelationships(List.of(treasuryRel));
         verify(store).commitTrackers(any(OwnershipTracker.class));
@@ -179,40 +188,31 @@ class MintLogicTest {
     }
 
     private void givenValidUniqueTxnCtx() {
-        tokenMintTxn =
-                TransactionBody.newBuilder()
-                        .setTokenMint(
-                                TokenMintTransactionBody.newBuilder()
-                                        .setToken(grpcId)
-                                        .addAllMetadata(List.of(ByteString.copyFromUtf8("memo"))))
-                        .build();
+        tokenMintTxn = TransactionBody.newBuilder()
+                .setTokenMint(TokenMintTransactionBody.newBuilder()
+                        .setToken(grpcId)
+                        .addAllMetadata(List.of(ByteString.copyFromUtf8("memo"))))
+                .build();
     }
 
     private void givenValidTxnCtx() {
-        tokenMintTxn =
-                TransactionBody.newBuilder()
-                        .setTokenMint(
-                                TokenMintTransactionBody.newBuilder()
-                                        .setToken(grpcId)
-                                        .setAmount(amount))
-                        .build();
+        tokenMintTxn = TransactionBody.newBuilder()
+                .setTokenMint(
+                        TokenMintTransactionBody.newBuilder().setToken(grpcId).setAmount(amount))
+                .build();
     }
 
     private void givenValidTxnCtxWithZeroAmount() {
-        tokenMintTxn =
-                TransactionBody.newBuilder()
-                        .setTokenMint(
-                                TokenMintTransactionBody.newBuilder().setToken(grpcId).setAmount(0))
-                        .build();
+        tokenMintTxn = TransactionBody.newBuilder()
+                .setTokenMint(
+                        TokenMintTransactionBody.newBuilder().setToken(grpcId).setAmount(0))
+                .build();
     }
 
     private void givenUniqueTxnCtxWithNoSerials() {
-        tokenMintTxn =
-                TransactionBody.newBuilder()
-                        .setTokenMint(
-                                TokenMintTransactionBody.newBuilder()
-                                        .setToken(grpcId)
-                                        .addAllMetadata(List.of()))
-                        .build();
+        tokenMintTxn = TransactionBody.newBuilder()
+                .setTokenMint(
+                        TokenMintTransactionBody.newBuilder().setToken(grpcId).addAllMetadata(List.of()))
+                .build();
     }
 }

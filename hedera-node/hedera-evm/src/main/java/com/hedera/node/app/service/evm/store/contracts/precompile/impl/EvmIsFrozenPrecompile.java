@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
@@ -34,10 +35,8 @@ public interface EvmIsFrozenPrecompile {
 
     static TokenFreezeUnfreezeWrapper<byte[], byte[]> decodeIsFrozen(final Bytes input) {
         final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input, IS_FROZEN_TOKEN_FUNCTION_SELECTOR, IS_FROZEN_TOKEN_DECODER);
+                decodeFunctionCall(input, IS_FROZEN_TOKEN_FUNCTION_SELECTOR, IS_FROZEN_TOKEN_DECODER);
 
-        return TokenFreezeUnfreezeWrapper.forIsFrozen(
-                decodedArguments.get(0), decodedArguments.get(1));
+        return TokenFreezeUnfreezeWrapper.forIsFrozen(decodedArguments.get(0), decodedArguments.get(1));
     }
 }

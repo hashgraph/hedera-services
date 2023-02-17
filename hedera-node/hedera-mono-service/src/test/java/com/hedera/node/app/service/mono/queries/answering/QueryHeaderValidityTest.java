@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.answering;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_QUERY_HEADER;
@@ -41,16 +42,10 @@ class QueryHeaderValidityTest {
     @Test
     void rejectsCostAnswerStateProof() {
         // given:
-        final var costAnswerStateProof =
-                Query.newBuilder()
-                        .setConsensusGetTopicInfo(
-                                ConsensusGetTopicInfoQuery.newBuilder()
-                                        .setHeader(
-                                                QueryHeader.newBuilder()
-                                                        .setResponseType(
-                                                                ResponseType
-                                                                        .COST_ANSWER_STATE_PROOF)))
-                        .build();
+        final var costAnswerStateProof = Query.newBuilder()
+                .setConsensusGetTopicInfo(ConsensusGetTopicInfoQuery.newBuilder()
+                        .setHeader(QueryHeader.newBuilder().setResponseType(ResponseType.COST_ANSWER_STATE_PROOF)))
+                .build();
 
         // expect:
         assertEquals(NOT_SUPPORTED, subject.checkHeader(costAnswerStateProof));
@@ -59,15 +54,10 @@ class QueryHeaderValidityTest {
     @Test
     void rejectsAnswerOnlyStateProof() {
         // given:
-        final var answerStateProof =
-                Query.newBuilder()
-                        .setConsensusGetTopicInfo(
-                                ConsensusGetTopicInfoQuery.newBuilder()
-                                        .setHeader(
-                                                QueryHeader.newBuilder()
-                                                        .setResponseType(
-                                                                ResponseType.ANSWER_STATE_PROOF)))
-                        .build();
+        final var answerStateProof = Query.newBuilder()
+                .setConsensusGetTopicInfo(ConsensusGetTopicInfoQuery.newBuilder()
+                        .setHeader(QueryHeader.newBuilder().setResponseType(ResponseType.ANSWER_STATE_PROOF)))
+                .build();
 
         // expect:
         assertEquals(NOT_SUPPORTED, subject.checkHeader(answerStateProof));
@@ -76,14 +66,10 @@ class QueryHeaderValidityTest {
     @Test
     void acceptsSupportedResponseType() {
         // given:
-        final var answerStateProof =
-                Query.newBuilder()
-                        .setConsensusGetTopicInfo(
-                                ConsensusGetTopicInfoQuery.newBuilder()
-                                        .setHeader(
-                                                QueryHeader.newBuilder()
-                                                        .setResponseType(ResponseType.ANSWER_ONLY)))
-                        .build();
+        final var answerStateProof = Query.newBuilder()
+                .setConsensusGetTopicInfo(ConsensusGetTopicInfoQuery.newBuilder()
+                        .setHeader(QueryHeader.newBuilder().setResponseType(ResponseType.ANSWER_ONLY)))
+                .build();
 
         // expect:
         assertEquals(OK, subject.checkHeader(answerStateProof));

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.records;
 
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
@@ -20,6 +21,5 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public interface RecordSubmissions {
 
-    void submitForTracking(
-            TransactionBody.Builder syntheticBody, ExpirableTxnRecord.Builder recordSoFar);
+    void submitForTracking(TransactionBody.Builder syntheticBody, ExpirableTxnRecord.Builder recordSoFar);
 }

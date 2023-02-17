@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.exceptions;
 
 /** Captures a failure when an invalid signed state is provided to update state children */

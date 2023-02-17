@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.contract;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
@@ -78,12 +79,23 @@ class GetContractInfoAnswerTest {
     private final long fee = 1_234L;
     private final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
 
-    @Mock private OptionValidator optionValidator;
-    @Mock private AliasManager aliasManager;
-    @Mock private StateView view;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> contracts;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private RewardCalculator rewardCalculator;
+    @Mock
+    private OptionValidator optionValidator;
+
+    @Mock
+    private AliasManager aliasManager;
+
+    @Mock
+    private StateView view;
+
+    @Mock
+    private MerkleMap<EntityNum, MerkleAccount> contracts;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private RewardCalculator rewardCalculator;
 
     ContractGetInfoResponse.ContractInfo info;
 
@@ -91,29 +103,22 @@ class GetContractInfoAnswerTest {
 
     @BeforeEach
     void setup() {
-        info =
-                ContractGetInfoResponse.ContractInfo.newBuilder()
-                        .setLedgerId(ledgerId)
-                        .setContractID(asContract(target))
-                        .setContractAccountID(
-                                EntityIdUtils.asHexedEvmAddress(IdUtils.asAccount(target)))
-                        .setMemo("Stay cold...")
-                        .setAdminKey(COMPLEX_KEY_ACCOUNT_KT.asKey())
-                        .setStakingInfo(
-                                StakingInfo.newBuilder()
-                                        .setStakedAccountId(asAccount("0.0.2"))
-                                        .setStakePeriodStart(
-                                                com.hederahashgraph.api.proto.java.Timestamp
-                                                        .newBuilder()
-                                                        .setSeconds(12345678L)
-                                                        .build())
-                                        .setDeclineReward(true)
-                                        .build())
-                        .build();
+        info = ContractGetInfoResponse.ContractInfo.newBuilder()
+                .setLedgerId(ledgerId)
+                .setContractID(asContract(target))
+                .setContractAccountID(EntityIdUtils.asHexedEvmAddress(IdUtils.asAccount(target)))
+                .setMemo("Stay cold...")
+                .setAdminKey(COMPLEX_KEY_ACCOUNT_KT.asKey())
+                .setStakingInfo(StakingInfo.newBuilder()
+                        .setStakedAccountId(asAccount("0.0.2"))
+                        .setStakePeriodStart(com.hederahashgraph.api.proto.java.Timestamp.newBuilder()
+                                .setSeconds(12345678L)
+                                .build())
+                        .setDeclineReward(true)
+                        .build())
+                .build();
 
-        subject =
-                new GetContractInfoAnswer(
-                        aliasManager, optionValidator, dynamicProperties, rewardCalculator);
+        subject = new GetContractInfoAnswer(aliasManager, optionValidator, dynamicProperties, rewardCalculator);
     }
 
     @Test
@@ -121,12 +126,7 @@ class GetContractInfoAnswerTest {
         given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenPerContractInfo);
         final Query query = validQuery(ANSWER_ONLY, fee, target);
 
-        given(
-                        view.infoForContract(
-                                asContract(target),
-                                aliasManager,
-                                maxTokenPerContractInfo,
-                                rewardCalculator))
+        given(view.infoForContract(asContract(target), aliasManager, maxTokenPerContractInfo, rewardCalculator))
                 .willReturn(Optional.of(info));
 
         // when:
@@ -135,8 +135,7 @@ class GetContractInfoAnswerTest {
         // then:
         assertTrue(response.hasContractGetInfo());
         assertTrue(response.getContractGetInfo().hasHeader(), "Missing response header!");
-        assertEquals(
-                OK, response.getContractGetInfo().getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(OK, response.getContractGetInfo().getHeader().getNodeTransactionPrecheckCode());
         assertEquals(ANSWER_ONLY, response.getContractGetInfo().getHeader().getResponseType());
         assertEquals(fee, response.getContractGetInfo().getHeader().getCost());
 
@@ -177,12 +176,7 @@ class GetContractInfoAnswerTest {
         given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenPerContractInfo);
         final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, target);
 
-        given(
-                        view.infoForContract(
-                                asContract(target),
-                                aliasManager,
-                                maxTokenPerContractInfo,
-                                rewardCalculator))
+        given(view.infoForContract(asContract(target), aliasManager, maxTokenPerContractInfo, rewardCalculator))
                 .willReturn(Optional.empty());
 
         // when:
@@ -200,8 +194,7 @@ class GetContractInfoAnswerTest {
         final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, target);
 
         // when:
-        final Response response =
-                subject.responseGiven(sensibleQuery, view, OK, 0L, Collections.emptyMap());
+        final Response response = subject.responseGiven(sensibleQuery, view, OK, 0L, Collections.emptyMap());
 
         // then:
         final ContractGetInfoResponse opResponse = response.getContractGetInfo();
@@ -220,8 +213,7 @@ class GetContractInfoAnswerTest {
 
         // then:
         assertTrue(response.hasContractGetInfo());
-        assertEquals(
-                OK, response.getContractGetInfo().getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(OK, response.getContractGetInfo().getHeader().getNodeTransactionPrecheckCode());
         assertEquals(COST_ANSWER, response.getContractGetInfo().getHeader().getResponseType());
         assertEquals(fee, response.getContractGetInfo().getHeader().getCost());
     }
@@ -236,9 +228,7 @@ class GetContractInfoAnswerTest {
 
         // then:
         assertTrue(response.hasContractGetInfo());
-        assertEquals(
-                CONTRACT_DELETED,
-                response.getContractGetInfo().getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(CONTRACT_DELETED, response.getContractGetInfo().getHeader().getNodeTransactionPrecheckCode());
         assertEquals(COST_ANSWER, response.getContractGetInfo().getHeader().getResponseType());
         assertEquals(fee, response.getContractGetInfo().getHeader().getCost());
     }
@@ -266,14 +256,10 @@ class GetContractInfoAnswerTest {
     @Test
     void getsValidity() {
         // given:
-        final Response response =
-                Response.newBuilder()
-                        .setContractGetInfo(
-                                ContractGetInfoResponse.newBuilder()
-                                        .setHeader(
-                                                subject.answerOnlyHeader(
-                                                        RESULT_SIZE_LIMIT_EXCEEDED)))
-                        .build();
+        final Response response = Response.newBuilder()
+                .setContractGetInfo(ContractGetInfoResponse.newBuilder()
+                        .setHeader(subject.answerOnlyHeader(RESULT_SIZE_LIMIT_EXCEEDED)))
+                .build();
 
         // expect:
         assertEquals(RESULT_SIZE_LIMIT_EXCEEDED, subject.extractValidityFrom(response));
@@ -317,15 +303,12 @@ class GetContractInfoAnswerTest {
         assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getSignedTxnWrapper());
     }
 
-    private Query validQuery(final ResponseType type, final long payment, final String idLit)
-            throws Throwable {
+    private Query validQuery(final ResponseType type, final long payment, final String idLit) throws Throwable {
         this.paymentTxn = payerSponsoredTransfer(payer, COMPLEX_KEY_ACCOUNT_KT, node, payment);
         final QueryHeader.Builder header =
                 QueryHeader.newBuilder().setPayment(this.paymentTxn).setResponseType(type);
         final ContractGetInfoQuery.Builder op =
-                ContractGetInfoQuery.newBuilder()
-                        .setHeader(header)
-                        .setContractID(asContract(idLit));
+                ContractGetInfoQuery.newBuilder().setHeader(header).setContractID(asContract(idLit));
         return Query.newBuilder().setContractGetInfo(op).build();
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
 import static com.hedera.node.app.service.mono.state.serdes.IoUtils.readNullableSerializable;
@@ -84,16 +85,14 @@ public class TxnReceipt implements SelfSerializable {
         this.scheduleId = builder.scheduleId;
         this.topicSequenceNumber = builder.topicSequenceNumber;
         this.topicRunningHash =
-                ((builder.topicRunningHash != MISSING_RUNNING_HASH)
-                                && (builder.topicRunningHash.length > 0))
+                ((builder.topicRunningHash != MISSING_RUNNING_HASH) && (builder.topicRunningHash.length > 0))
                         ? builder.topicRunningHash
                         : MISSING_RUNNING_HASH;
         this.runningHashVersion = builder.runningHashVersion;
         this.newTotalSupply = builder.newTotalSupply;
         this.scheduledTxnId = builder.scheduledTxnId;
 
-        final var hasSerialNumbers =
-                (builder.serialNumbers != null) && (builder.serialNumbers.length > 0);
+        final var hasSerialNumbers = (builder.serialNumbers != null) && (builder.serialNumbers.length > 0);
         this.serialNumbers = hasSerialNumbers ? builder.serialNumbers : null;
     }
 
@@ -137,8 +136,7 @@ public class TxnReceipt implements SelfSerializable {
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         status = getNormalisedStringFromBytes(in.readByteArray(MAX_STATUS_BYTES));
         exchangeRates = in.readSerializable(true, ExchangeRates::new);
         accountId = readNullableSerializable(in);
@@ -267,19 +265,18 @@ public class TxnReceipt implements SelfSerializable {
 
     @Override
     public String toString() {
-        var helper =
-                MoreObjects.toStringHelper(this)
-                        .omitNullValues()
-                        .add("status", status)
-                        .add("exchangeRates", exchangeRates)
-                        .add("accountCreated", accountId)
-                        .add("fileCreated", fileId)
-                        .add("tokenCreated", tokenId)
-                        .add("contractCreated", contractId)
-                        .add("topicCreated", topicId)
-                        .add("newTotalTokenSupply", newTotalSupply)
-                        .add("scheduledTxnId", scheduledTxnId)
-                        .add("serialNumbers", serialNumbers);
+        var helper = MoreObjects.toStringHelper(this)
+                .omitNullValues()
+                .add("status", status)
+                .add("exchangeRates", exchangeRates)
+                .add("accountCreated", accountId)
+                .add("fileCreated", fileId)
+                .add("tokenCreated", tokenId)
+                .add("contractCreated", contractId)
+                .add("topicCreated", topicId)
+                .add("newTotalTokenSupply", newTotalSupply)
+                .add("scheduledTxnId", scheduledTxnId)
+                .add("serialNumbers", serialNumbers);
         if (topicRunningHash != MISSING_RUNNING_HASH) {
             helper.add("topicSeqNo", topicSequenceNumber);
             helper.add("topicRunningHash", CommonUtils.hex(topicRunningHash));
@@ -306,25 +303,22 @@ public class TxnReceipt implements SelfSerializable {
             builder.setStatus(ResponseCodeEnum.valueOf(txReceipt.getStatus()));
         }
         if (txReceipt.getAccountId() != null) {
-            builder.setAccountID(
-                    RequestBuilder.getAccountIdBuild(
-                            txReceipt.getAccountId().num(),
-                            txReceipt.getAccountId().realm(),
-                            txReceipt.getAccountId().shard()));
+            builder.setAccountID(RequestBuilder.getAccountIdBuild(
+                    txReceipt.getAccountId().num(),
+                    txReceipt.getAccountId().realm(),
+                    txReceipt.getAccountId().shard()));
         }
         if (txReceipt.getFileId() != null) {
-            builder.setFileID(
-                    RequestBuilder.getFileIdBuild(
-                            txReceipt.getFileId().num(),
-                            txReceipt.getFileId().realm(),
-                            txReceipt.getFileId().shard()));
+            builder.setFileID(RequestBuilder.getFileIdBuild(
+                    txReceipt.getFileId().num(),
+                    txReceipt.getFileId().realm(),
+                    txReceipt.getFileId().shard()));
         }
         if (txReceipt.getContractId() != null) {
-            builder.setContractID(
-                    RequestBuilder.getContractIdBuild(
-                            txReceipt.getContractId().num(),
-                            txReceipt.getContractId().realm(),
-                            txReceipt.getContractId().shard()));
+            builder.setContractID(RequestBuilder.getContractIdBuild(
+                    txReceipt.getContractId().num(),
+                    txReceipt.getContractId().realm(),
+                    txReceipt.getContractId().shard()));
         }
         if (txReceipt.getTokenId() != null) {
             builder.setTokenID(txReceipt.getTokenId().toGrpcTokenId());
@@ -337,12 +331,11 @@ public class TxnReceipt implements SelfSerializable {
         }
         if (txReceipt.getTopicId() != null) {
             var receiptTopic = txReceipt.getTopicId();
-            builder.setTopicID(
-                    TopicID.newBuilder()
-                            .setShardNum(receiptTopic.shard())
-                            .setRealmNum(receiptTopic.realm())
-                            .setTopicNum(receiptTopic.num())
-                            .build());
+            builder.setTopicID(TopicID.newBuilder()
+                    .setShardNum(receiptTopic.shard())
+                    .setRealmNum(receiptTopic.realm())
+                    .setTopicNum(receiptTopic.num())
+                    .build());
         }
         if (txReceipt.getTopicSequenceNumber() != MISSING_TOPIC_SEQ_NO) {
             builder.setTopicSequenceNumber(txReceipt.getTopicSequenceNumber());

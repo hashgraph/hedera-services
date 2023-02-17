@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.commands.accounts;
 
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED;
@@ -30,7 +31,8 @@ import picocli.CommandLine;
         subcommands = {CommandLine.HelpCommand.class},
         description = "Changes the staking election for an account")
 public class StakeCommand implements Callable<Integer> {
-    @CommandLine.ParentCommand AccountsCommand accountsCommand;
+    @CommandLine.ParentCommand
+    AccountsCommand accountsCommand;
 
     @CommandLine.Option(
             names = {"-n", "--to-node-id"},
@@ -52,10 +54,7 @@ public class StakeCommand implements Callable<Integer> {
             paramLabel = "trigger to add declineReward=true")
     Boolean startDecliningRewards;
 
-    @CommandLine.Parameters(
-            arity = "0..1",
-            paramLabel = "<account>",
-            description = "the account to stake")
+    @CommandLine.Parameters(arity = "0..1", paramLabel = "<account>", description = "the account to stake")
     String stakedAccountNum;
 
     @Override
@@ -81,23 +80,16 @@ public class StakeCommand implements Callable<Integer> {
             declineReward = Boolean.FALSE;
         }
         final var delegate =
-                new StakeSuite(
-                        config,
-                        config.asSpecConfig(),
-                        target,
-                        type,
-                        stakedAccountNum,
-                        declineReward);
+                new StakeSuite(config, config.asSpecConfig(), target, type, stakedAccountNum, declineReward);
         delegate.runSuiteSync();
 
         if (stakedAccountNum == null) {
             stakedAccountNum = ConfigUtils.asId(config.getDefaultPayer());
         }
         if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
-            final var msgSb =
-                    new StringBuilder("SUCCESS - account ")
-                            .append(Utils.extractAccount(stakedAccountNum))
-                            .append(" updated");
+            final var msgSb = new StringBuilder("SUCCESS - account ")
+                    .append(Utils.extractAccount(stakedAccountNum))
+                    .append(" updated");
             if (type != StakeSuite.TargetType.NONE) {
                 msgSb.append(", now staked to ")
                         .append(type.name())
@@ -113,8 +105,7 @@ public class StakeCommand implements Callable<Integer> {
             COMMON_MESSAGES.info(msgSb.toString());
         } else {
             COMMON_MESSAGES.warn(
-                    "FAILED to change staking election for account "
-                            + Utils.extractAccount(stakedAccountNum));
+                    "FAILED to change staking election for account " + Utils.extractAccount(stakedAccountNum));
             return 1;
         }
 
@@ -128,28 +119,19 @@ public class StakeCommand implements Callable<Integer> {
                     accountsCommand.getYahcli().getSpec().commandLine(),
                     "Cannot both start and stop declining rewards");
         }
-        final var changedDeclineRewards =
-                startDecliningRewards != null || stopDecliningRewards != null;
+        final var changedDeclineRewards = startDecliningRewards != null || stopDecliningRewards != null;
         if (electedNodeId != null) {
             if (electedAccountNum != null) {
                 throw new CommandLine.ParameterException(
                         accountsCommand.getYahcli().getSpec().commandLine(),
-                        "Cannot stake to both node ("
-                                + electedNodeId
-                                + ") and account ("
-                                + electedAccountNum
-                                + ")");
+                        "Cannot stake to both node (" + electedNodeId + ") and account (" + electedAccountNum + ")");
             }
             try {
                 Long.parseLong(electedNodeId);
             } catch (final Exception any) {
                 throw new CommandLine.ParameterException(
                         accountsCommand.getYahcli().getSpec().commandLine(),
-                        "--node-id value '"
-                                + electedNodeId
-                                + "' is un-parseable ("
-                                + any.getMessage()
-                                + ")");
+                        "--node-id value '" + electedNodeId + "' is un-parseable (" + any.getMessage() + ")");
             }
         } else if (electedAccountNum == null && !changedDeclineRewards) {
             throw new CommandLine.ParameterException(
@@ -164,11 +146,7 @@ public class StakeCommand implements Callable<Integer> {
             } catch (final Exception any) {
                 throw new CommandLine.ParameterException(
                         accountsCommand.getYahcli().getSpec().commandLine(),
-                        "--account-num value '"
-                                + electedAccountNum
-                                + "' is un-parseable ("
-                                + any.getMessage()
-                                + ")");
+                        "--account-num value '" + electedAccountNum + "' is un-parseable (" + any.getMessage() + ")");
             }
         }
 

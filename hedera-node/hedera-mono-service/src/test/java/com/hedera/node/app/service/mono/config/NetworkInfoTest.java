@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.config;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_ID;
@@ -29,7 +30,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class NetworkInfoTest {
-    @Mock private PropertySource properties;
+    @Mock
+    private PropertySource properties;
 
     private NetworkInfo subject;
 

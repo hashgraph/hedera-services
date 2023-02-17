@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.fixtures.state;
 
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -38,7 +39,11 @@ public class TestSchema extends Schema {
     }
 
     public TestSchema(int major, int minor, int patch) {
-        this(SemanticVersion.newBuilder().setMajor(major).setMinor(minor).setPatch(patch).build());
+        this(SemanticVersion.newBuilder()
+                .setMajor(major)
+                .setMinor(minor)
+                .setPatch(patch)
+                .build());
     }
 
     public TestSchema(SemanticVersion version, Runnable onMigrate) {

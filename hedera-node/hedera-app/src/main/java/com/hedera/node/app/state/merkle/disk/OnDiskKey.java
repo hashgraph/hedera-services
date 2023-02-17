@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.spi.state.Serdes;
@@ -88,8 +89,7 @@ public final class OnDiskKey<K extends Comparable<K>> implements VirtualKey<OnDi
 
     /** Writes the "real" key to the given stream. {@inheritDoc} */
     @Override
-    public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream)
-            throws IOException {
+    public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream) throws IOException {
         serdes.write(key, serializableDataOutputStream);
     }
 
@@ -104,8 +104,7 @@ public final class OnDiskKey<K extends Comparable<K>> implements VirtualKey<OnDi
     }
 
     @Override
-    public void deserialize(
-            @NonNull final SerializableDataInputStream serializableDataInputStream, int ignored)
+    public void deserialize(@NonNull final SerializableDataInputStream serializableDataInputStream, int ignored)
             throws IOException {
         key = serdes.parse(new DataInputStream(serializableDataInputStream));
     }

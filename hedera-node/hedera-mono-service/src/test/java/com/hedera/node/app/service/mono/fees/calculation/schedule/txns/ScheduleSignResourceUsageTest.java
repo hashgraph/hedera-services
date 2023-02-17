@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.schedule.txns;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,11 +41,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ScheduleSignResourceUsageTest {
-    TransactionID scheduledTxnId =
-            TransactionID.newBuilder()
-                    .setScheduled(true)
-                    .setAccountID(IdUtils.asAccount("0.0.2"))
-                    .build();
+    TransactionID scheduledTxnId = TransactionID.newBuilder()
+            .setScheduled(true)
+            .setAccountID(IdUtils.asAccount("0.0.2"))
+            .build();
 
     ScheduleSignResourceUsage subject;
     StateView view;
@@ -59,11 +59,10 @@ class ScheduleSignResourceUsageTest {
     SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
     FeeData expected;
 
-    ScheduleInfo info =
-            ScheduleInfo.newBuilder()
-                    .setScheduledTransactionID(scheduledTxnId)
-                    .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
-                    .build();
+    ScheduleInfo info = ScheduleInfo.newBuilder()
+            .setScheduledTransactionID(scheduledTxnId)
+            .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
+            .build();
 
     @BeforeEach
     void setup() {
@@ -72,7 +71,9 @@ class ScheduleSignResourceUsageTest {
         scheduleSignTxn = mock(TransactionBody.class);
         given(scheduleSignTxn.hasScheduleSign()).willReturn(true);
         given(scheduleSignTxn.getScheduleSign())
-                .willReturn(ScheduleSignTransactionBody.newBuilder().setScheduleID(target).build());
+                .willReturn(ScheduleSignTransactionBody.newBuilder()
+                        .setScheduleID(target)
+                        .build());
 
         nonScheduleSignTxn = mock(TransactionBody.class);
         given(nonScheduleSignTxn.hasScheduleSign()).willReturn(false);
@@ -103,10 +104,9 @@ class ScheduleSignResourceUsageTest {
     void returnsDefaultIfInfoMissing() throws Exception {
         // setup:
         final long start = 1_234_567L;
-        final TransactionID txnId =
-                TransactionID.newBuilder()
-                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(start))
-                        .build();
+        final TransactionID txnId = TransactionID.newBuilder()
+                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(start))
+                .build();
         given(scheduleSignTxn.getTransactionID()).willReturn(txnId);
         given(view.infoForSchedule(target)).willReturn(Optional.empty());
         given(scheduleOpsUsage.scheduleSignUsage(scheduleSignTxn, sigUsage, start + 1800))

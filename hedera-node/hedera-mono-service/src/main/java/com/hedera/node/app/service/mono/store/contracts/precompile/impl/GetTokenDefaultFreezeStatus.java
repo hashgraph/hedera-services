@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
@@ -31,8 +32,7 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class GetTokenDefaultFreezeStatus extends AbstractReadOnlyPrecompile
-        implements EvmGetTokenDefaultFreezeStatus {
+public class GetTokenDefaultFreezeStatus extends AbstractReadOnlyPrecompile implements EvmGetTokenDefaultFreezeStatus {
 
     private GetTokenDefaultFreezeStatusWrapper<TokenID> defaultFreezeStatusWrapper;
 
@@ -46,8 +46,7 @@ public class GetTokenDefaultFreezeStatus extends AbstractReadOnlyPrecompile
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         defaultFreezeStatusWrapper = decodeTokenDefaultFreezeStatus(input);
         return super.body(input, aliasResolver);
     }
@@ -55,16 +54,13 @@ public class GetTokenDefaultFreezeStatus extends AbstractReadOnlyPrecompile
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
         Objects.requireNonNull(
-                defaultFreezeStatusWrapper,
-                "`body` method should be called before `getSuccessResultsFor`");
+                defaultFreezeStatusWrapper, "`body` method should be called before `getSuccessResultsFor`");
 
-        final var defaultFreezeStatus =
-                ledgers.defaultFreezeStatus(defaultFreezeStatusWrapper.token());
+        final var defaultFreezeStatus = ledgers.defaultFreezeStatus(defaultFreezeStatusWrapper.token());
         return evmEncoder.encodeGetTokenDefaultFreezeStatus(defaultFreezeStatus);
     }
 
-    public static GetTokenDefaultFreezeStatusWrapper<TokenID> decodeTokenDefaultFreezeStatus(
-            final Bytes input) {
+    public static GetTokenDefaultFreezeStatusWrapper<TokenID> decodeTokenDefaultFreezeStatus(final Bytes input) {
         final var rawGetTokenDefaultFreezeStatusWrapper =
                 EvmGetTokenDefaultFreezeStatus.decodeTokenDefaultFreezeStatus(input);
         return new GetTokenDefaultFreezeStatusWrapper<>(

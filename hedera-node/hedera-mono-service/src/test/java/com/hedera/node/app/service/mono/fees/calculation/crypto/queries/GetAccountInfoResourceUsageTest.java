@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.crypto.queries;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -57,8 +58,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class GetAccountInfoResourceUsageTest {
-    private static final Key aKey =
-            Key.newBuilder().setEd25519(ByteString.copyFrom("NONSENSE".getBytes())).build();
+    private static final Key aKey = Key.newBuilder()
+            .setEd25519(ByteString.copyFrom("NONSENSE".getBytes()))
+            .build();
     private static final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
     private static final String a = "0.0.1234";
     private static final long expiry = 1_234_567L;
@@ -71,45 +73,48 @@ class GetAccountInfoResourceUsageTest {
     private static final int maxTokensPerAccountInfo = 10;
     private static final AccountID queryTarget = IdUtils.asAccount(a);
 
-    @Mock private FeeData expected;
-    @Mock private CryptoOpsUsage cryptoOpsUsage;
-    @Mock private StateView view;
-    @Mock private AliasManager aliasManager;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private RewardCalculator rewardCalculator;
+    @Mock
+    private FeeData expected;
+
+    @Mock
+    private CryptoOpsUsage cryptoOpsUsage;
+
+    @Mock
+    private StateView view;
+
+    @Mock
+    private AliasManager aliasManager;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private RewardCalculator rewardCalculator;
 
     private GetAccountInfoResourceUsage subject;
 
     @BeforeEach
     void setup() {
-        subject =
-                new GetAccountInfoResourceUsage(
-                        cryptoOpsUsage, aliasManager, dynamicProperties, rewardCalculator);
+        subject = new GetAccountInfoResourceUsage(cryptoOpsUsage, aliasManager, dynamicProperties, rewardCalculator);
     }
 
     @Test
     void usesEstimator() {
         given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
         final var captor = ArgumentCaptor.forClass(ExtantCryptoContext.class);
-        final var info =
-                CryptoGetInfoResponse.AccountInfo.newBuilder()
-                        .setLedgerId(ledgerId)
-                        .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
-                        .setMemo(memo)
-                        .setProxyAccountID(proxy)
-                        .setKey(aKey)
-                        .addTokenRelationships(0, TokenRelationship.newBuilder().setTokenId(aToken))
-                        .addTokenRelationships(1, TokenRelationship.newBuilder().setTokenId(bToken))
-                        .addTokenRelationships(2, TokenRelationship.newBuilder().setTokenId(cToken))
-                        .setMaxAutomaticTokenAssociations(maxAutomaticAssociations)
-                        .build();
+        final var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
+                .setLedgerId(ledgerId)
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
+                .setMemo(memo)
+                .setProxyAccountID(proxy)
+                .setKey(aKey)
+                .addTokenRelationships(0, TokenRelationship.newBuilder().setTokenId(aToken))
+                .addTokenRelationships(1, TokenRelationship.newBuilder().setTokenId(bToken))
+                .addTokenRelationships(2, TokenRelationship.newBuilder().setTokenId(cToken))
+                .setMaxAutomaticTokenAssociations(maxAutomaticAssociations)
+                .build();
         final var query = accountInfoQuery(a, ANSWER_ONLY);
-        given(
-                        view.infoForAccount(
-                                queryTarget,
-                                aliasManager,
-                                maxTokensPerAccountInfo,
-                                rewardCalculator))
+        given(view.infoForAccount(queryTarget, aliasManager, maxTokensPerAccountInfo, rewardCalculator))
                 .willReturn(Optional.of(info));
         given(cryptoOpsUsage.cryptoInfoUsage(any(), any())).willReturn(expected);
 
@@ -133,12 +138,7 @@ class GetAccountInfoResourceUsageTest {
     @Test
     void returnsDefaultIfNoSuchAccount() {
         given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
-        given(
-                        view.infoForAccount(
-                                queryTarget,
-                                aliasManager,
-                                maxTokensPerAccountInfo,
-                                rewardCalculator))
+        given(view.infoForAccount(queryTarget, aliasManager, maxTokensPerAccountInfo, rewardCalculator))
                 .willReturn(Optional.empty());
 
         final var usage = subject.usageGiven(accountInfoQuery(a, ANSWER_ONLY), view);
@@ -157,10 +157,9 @@ class GetAccountInfoResourceUsageTest {
 
     private static final Query accountInfoQuery(final String target, final ResponseType type) {
         final var id = asAccount(target);
-        final var op =
-                CryptoGetInfoQuery.newBuilder()
-                        .setAccountID(id)
-                        .setHeader(QueryHeader.newBuilder().setResponseType(type));
+        final var op = CryptoGetInfoQuery.newBuilder()
+                .setAccountID(id)
+                .setHeader(QueryHeader.newBuilder().setResponseType(type));
         return Query.newBuilder().setCryptoGetInfo(op).build();
     }
 }

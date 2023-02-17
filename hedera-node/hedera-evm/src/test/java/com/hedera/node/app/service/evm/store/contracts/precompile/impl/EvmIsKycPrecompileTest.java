@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,9 +26,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class EvmIsKycPrecompileTest {
 
-    public static final Bytes IS_KYC =
-            Bytes.fromHexString(
-                    "0xf2c31ff400000000000000000000000000000000000000000000000000000000000004b200000000000000000000000000000000000000000000000000000000000004b0");
+    public static final Bytes IS_KYC = Bytes.fromHexString(
+            "0xf2c31ff400000000000000000000000000000000000000000000000000000000000004b200000000000000000000000000000000000000000000000000000000000004b0");
 
     @Test
     void decodeIsKyc() {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files;
 
 import static com.hedera.node.app.service.mono.files.DataMapFactory.dataMapFrom;
@@ -93,21 +94,11 @@ class DataMapFactoryTest {
         assertEquals(
                 "/2/f3->SOME, /4/f555555->THE, /2/f7->APRIORI",
                 delegate.entrySet().stream()
-                        .sorted(
-                                Comparator.comparingLong(
-                                        entry ->
-                                                Long.parseLong(
-                                                        entry.getKey()
-                                                                .substring(
-                                                                        entry.getKey().indexOf('f')
-                                                                                + 1,
-                                                                        entry.getKey().indexOf('f')
-                                                                                + 2))))
-                        .map(
-                                entry ->
-                                        String.format(
-                                                "%s->%s",
-                                                entry.getKey(), new String(entry.getValue())))
+                        .sorted(Comparator.comparingLong(entry -> Long.parseLong(entry.getKey()
+                                .substring(
+                                        entry.getKey().indexOf('f') + 1,
+                                        entry.getKey().indexOf('f') + 2))))
+                        .map(entry -> String.format("%s->%s", entry.getKey(), new String(entry.getValue())))
                         .collect(Collectors.joining(", ")));
 
         assertTrue(dataMap.containsKey(fid1));

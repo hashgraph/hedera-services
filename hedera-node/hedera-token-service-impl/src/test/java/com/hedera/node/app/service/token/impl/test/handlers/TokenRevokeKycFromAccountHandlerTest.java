@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.txnFrom;
@@ -59,8 +60,7 @@ class TokenRevokeKycFromAccountHandlerTest {
         subject.preHandle(context, tokenStore);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_KYC_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_KYC_KT.asKey()));
         basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
     }
 

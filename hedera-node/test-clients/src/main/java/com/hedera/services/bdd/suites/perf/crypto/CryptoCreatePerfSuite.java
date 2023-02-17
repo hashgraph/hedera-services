@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -43,25 +44,22 @@ public class CryptoCreatePerfSuite extends LoadTest {
         final int NUM_CREATES = 1000000;
         return defaultHapiSpec("cryptoCreatePerf")
                 .given()
-                .when(
-                        inParallel(
-                                asOpArray(
-                                        NUM_CREATES,
-                                        i ->
-                                                (i == (NUM_CREATES - 1))
-                                                        ? cryptoCreate("testAccount" + i)
-                                                                .balance(100_000_000_000L)
-                                                                .key(GENESIS)
-                                                                .withRecharging()
-                                                                .rechargeWindow(30)
-                                                                .payingWith(GENESIS)
-                                                        : cryptoCreate("testAccount" + i)
-                                                                .balance(100_000_000_000L)
-                                                                .key(GENESIS)
-                                                                .withRecharging()
-                                                                .rechargeWindow(30)
-                                                                .payingWith(GENESIS)
-                                                                .deferStatusResolution())))
+                .when(inParallel(asOpArray(
+                        NUM_CREATES,
+                        i -> (i == (NUM_CREATES - 1))
+                                ? cryptoCreate("testAccount" + i)
+                                        .balance(100_000_000_000L)
+                                        .key(GENESIS)
+                                        .withRecharging()
+                                        .rechargeWindow(30)
+                                        .payingWith(GENESIS)
+                                : cryptoCreate("testAccount" + i)
+                                        .balance(100_000_000_000L)
+                                        .key(GENESIS)
+                                        .withRecharging()
+                                        .rechargeWindow(30)
+                                        .payingWith(GENESIS)
+                                        .deferStatusResolution())))
                 .then(freezeOnly().payingWith(GENESIS).startingIn(60).seconds());
     }
 

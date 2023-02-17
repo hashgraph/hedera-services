@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
@@ -38,9 +39,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StakePeriodManagerTest {
-    @Mock private TransactionContext txnCtx;
-    @Mock private MerkleNetworkContext networkCtx;
-    @Mock private PropertySource properties;
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private MerkleNetworkContext networkCtx;
+
+    @Mock
+    private PropertySource properties;
 
     private StakePeriodManager subject;
 
@@ -63,9 +69,7 @@ class StakePeriodManagerTest {
 
         final var somePeriod = 1_234_567L;
 
-        assertEquals(
-                somePeriod * 2 * Units.MINUTES_TO_SECONDS,
-                subject.epochSecondAtStartOfPeriod(somePeriod));
+        assertEquals(somePeriod * 2 * Units.MINUTES_TO_SECONDS, subject.epochSecondAtStartOfPeriod(somePeriod));
     }
 
     @Test
@@ -211,8 +215,8 @@ class StakePeriodManagerTest {
         final var stakePeriod = subject.currentStakePeriod();
         final var period = subject.effectivePeriod(stakePeriod - delta);
 
-        final var expectedEffectivePeriod =
-                LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L), ZONE_UTC).toEpochDay();
+        final var expectedEffectivePeriod = LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L), ZONE_UTC)
+                .toEpochDay();
         assertEquals(expectedEffectivePeriod - 365, period);
         assertEquals(expectedEffectivePeriod - 10, subject.effectivePeriod(stakePeriod - 10));
     }
@@ -238,7 +242,8 @@ class StakePeriodManagerTest {
     }
 
     private void givenProdManager() {
-        given(properties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS)).willReturn(365);
+        given(properties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS))
+                .willReturn(365);
         given(properties.getLongProperty(STAKING_PERIOD_MINS)).willReturn(1440L);
         subject = new StakePeriodManager(txnCtx, () -> networkCtx, properties);
     }

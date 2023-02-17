@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
 import static com.hedera.node.app.service.mono.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
@@ -51,36 +52,37 @@ import org.mockito.Mockito;
 class UniqueTokensLinkManagerTest extends ResponsibleVMapUser {
     private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
     private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
-    private final UniqueTokenMapAdapter uniqueTokens =
-            UniqueTokenMapAdapter.wrap(new MerkleMap<>());
+    private final UniqueTokenMapAdapter uniqueTokens = UniqueTokenMapAdapter.wrap(new MerkleMap<>());
     private final UniqueTokenMapAdapter virtualUniqueTokens =
-            UniqueTokenMapAdapter.wrap(
-                    trackedMap(new VirtualMapFactory().newVirtualizedUniqueTokenStorage()));
+            UniqueTokenMapAdapter.wrap(trackedMap(new VirtualMapFactory().newVirtualizedUniqueTokenStorage()));
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private UniqueTokensLinkManager subject;
-    @LoggingSubject private UniqueTokensLinkManager subjectForVm;
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private UniqueTokensLinkManager subject;
+
+    @LoggingSubject
+    private UniqueTokensLinkManager subjectForVm;
 
     @BeforeEach
     void setUp() {
         final BootstrapProperties bootstrapProperties = Mockito.mock(BootstrapProperties.class);
         when(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .thenReturn(false);
-        subject =
-                new UniqueTokensLinkManager(
-                        () -> AccountStorageAdapter.fromInMemory(accounts),
-                        () -> tokens,
-                        () -> uniqueTokens,
-                        bootstrapProperties);
+        subject = new UniqueTokensLinkManager(
+                () -> AccountStorageAdapter.fromInMemory(accounts),
+                () -> tokens,
+                () -> uniqueTokens,
+                bootstrapProperties);
 
         when(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .thenReturn(true);
-        subjectForVm =
-                new UniqueTokensLinkManager(
-                        () -> AccountStorageAdapter.fromInMemory(accounts),
-                        () -> tokens,
-                        () -> virtualUniqueTokens,
-                        bootstrapProperties);
+        subjectForVm = new UniqueTokensLinkManager(
+                () -> AccountStorageAdapter.fromInMemory(accounts),
+                () -> tokens,
+                () -> virtualUniqueTokens,
+                bootstrapProperties);
     }
 
     @Test

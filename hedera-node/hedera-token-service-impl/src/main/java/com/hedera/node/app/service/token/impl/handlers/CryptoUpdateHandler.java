@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
@@ -44,9 +45,7 @@ public class CryptoUpdateHandler implements TransactionHandler {
      *     passed to {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(
-            @NonNull final PreHandleContext context,
-            @NonNull final CryptoSignatureWaivers waivers) {
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull final CryptoSignatureWaivers waivers) {
         requireNonNull(context);
         requireNonNull(waivers);
         final var txn = context.getTxn();

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.junit;
 
 import static com.hedera.services.bdd.junit.TestBase.concurrentExecutionOf;
@@ -47,10 +48,9 @@ public class BalanceReconciliationValidator implements RecordStreamValidator {
         getExpectedBalanceFrom(recordsWithSidecars);
         System.out.println("Expected balances: " + expectedBalances);
 
-        final var validationSpecs =
-                TestBase.extractContextualizedSpecsFrom(
-                        List.of(() -> new BalanceValidation(expectedBalances, accountClassifier)),
-                        TestBase::contextualizedSpecsFromConcurrent);
+        final var validationSpecs = TestBase.extractContextualizedSpecsFrom(
+                List.of(() -> new BalanceValidation(expectedBalances, accountClassifier)),
+                TestBase::contextualizedSpecsFromConcurrent);
         concurrentExecutionOf(validationSpecs);
     }
 
@@ -60,27 +60,17 @@ public class BalanceReconciliationValidator implements RecordStreamValidator {
             for (final var item : items) {
                 accountClassifier.incorporate(item);
                 final var grpcRecord = item.getRecord();
-                grpcRecord
-                        .getTransferList()
-                        .getAccountAmountsList()
-                        .forEach(
-                                aa -> {
-                                    final var accountNum = aa.getAccountID().getAccountNum();
-                                    final var amount = aa.getAmount();
-                                    expectedBalances.merge(accountNum, amount, Long::sum);
-                                });
+                grpcRecord.getTransferList().getAccountAmountsList().forEach(aa -> {
+                    final var accountNum = aa.getAccountID().getAccountNum();
+                    final var amount = aa.getAmount();
+                    expectedBalances.merge(accountNum, amount, Long::sum);
+                });
             }
         }
     }
 
-    public static Stream<RecordStreamItem> streamOfItemsFrom(
-            final List<RecordWithSidecars> recordsWithSidecars) {
+    public static Stream<RecordStreamItem> streamOfItemsFrom(final List<RecordWithSidecars> recordsWithSidecars) {
         return recordsWithSidecars.stream()
-                .flatMap(
-                        recordWithSidecars ->
-                                recordWithSidecars
-                                        .recordFile()
-                                        .getRecordStreamItemsList()
-                                        .stream());
+                .flatMap(recordWithSidecars -> recordWithSidecars.recordFile().getRecordStreamItemsList().stream());
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token.validators;
 
 import static com.hedera.node.app.service.mono.txns.validation.TokenListChecks.checkKeys;
@@ -45,20 +46,17 @@ public final class CreateChecks {
     private final OptionValidator validator;
 
     @Inject
-    public CreateChecks(
-            final GlobalDynamicProperties dynamicProperties, final OptionValidator validator) {
+    public CreateChecks(final GlobalDynamicProperties dynamicProperties, final OptionValidator validator) {
         this.dynamicProperties = dynamicProperties;
         this.validator = validator;
     }
 
-    public Function<TransactionBody, ResponseCodeEnum> validatorForConsTime(
-            final Instant curConsTime) {
+    public Function<TransactionBody, ResponseCodeEnum> validatorForConsTime(final Instant curConsTime) {
         return txnBody -> {
             final TokenCreateTransactionBody op = txnBody.getTokenCreation();
 
             final var domainType = TokenTypesMapper.mapToDomain(op.getTokenType());
-            if (domainType == TokenType.NON_FUNGIBLE_UNIQUE
-                    && !dynamicProperties.areNftsEnabled()) {
+            if (domainType == TokenType.NON_FUNGIBLE_UNIQUE && !dynamicProperties.areNftsEnabled()) {
                 return NOT_SUPPORTED;
             }
 
@@ -101,15 +99,14 @@ public final class CreateChecks {
                 return INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
             }
 
-            validity =
-                    checkKeys(
-                            op.hasAdminKey(), op.getAdminKey(),
-                            op.hasKycKey(), op.getKycKey(),
-                            op.hasWipeKey(), op.getWipeKey(),
-                            op.hasSupplyKey(), op.getSupplyKey(),
-                            op.hasFreezeKey(), op.getFreezeKey(),
-                            op.hasFeeScheduleKey(), op.getFeeScheduleKey(),
-                            op.hasPauseKey(), op.getPauseKey());
+            validity = checkKeys(
+                    op.hasAdminKey(), op.getAdminKey(),
+                    op.hasKycKey(), op.getKycKey(),
+                    op.hasWipeKey(), op.getWipeKey(),
+                    op.hasSupplyKey(), op.getSupplyKey(),
+                    op.hasFreezeKey(), op.getFreezeKey(),
+                    op.hasFeeScheduleKey(), op.getFeeScheduleKey(),
+                    op.hasPauseKey(), op.getPauseKey());
             if (validity != OK) {
                 return validity;
             }
@@ -122,19 +119,13 @@ public final class CreateChecks {
     }
 
     private ResponseCodeEnum validateAutoRenewAccount(
-            final TokenCreateTransactionBody op,
-            final OptionValidator validator,
-            final Instant curConsTime) {
+            final TokenCreateTransactionBody op, final OptionValidator validator, final Instant curConsTime) {
         ResponseCodeEnum validity = OK;
         if (op.hasAutoRenewAccount()) {
-            validity =
-                    validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())
-                            ? OK
-                            : INVALID_RENEWAL_PERIOD;
+            validity = validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod()) ? OK : INVALID_RENEWAL_PERIOD;
             return validity;
         } else {
-            if (curConsTime != null
-                    && op.getExpiry().getSeconds() <= curConsTime.getEpochSecond()) {
+            if (curConsTime != null && op.getExpiry().getSeconds() <= curConsTime.getEpochSecond()) {
                 return INVALID_EXPIRATION_TIME;
             }
         }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -48,8 +49,7 @@ public class SelfDestructSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                hscsEvm008SelfDestructInConstructorWorks(), hscsEvm008SelfDestructWhenCalling());
+        return List.of(hscsEvm008SelfDestructInConstructorWorks(), hscsEvm008SelfDestructWhenCalling());
     }
 
     @Override
@@ -63,22 +63,18 @@ public class SelfDestructSuite extends HapiSuite {
 
         return defaultHapiSpec("HSCS_EVM_008_SelfDestructInConstructorWorks")
                 .given(uploadInitCode(contract))
-                .when(
-                        contractCreate(contract).balance(3 * ONE_HBAR).via("contractCreate"),
-                        cryptoCreate(nextAccount))
+                .when(contractCreate(contract).balance(3 * ONE_HBAR).via("contractCreate"), cryptoCreate(nextAccount))
                 .then(
                         getAccountInfo(contract).hasCostAnswerPrecheck(ACCOUNT_DELETED),
                         getContractInfo(contract).has(contractWith().isDeleted()),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var registry = spec.registry();
-                                    final var destroyedNum =
-                                            registry.getContractId(contract).getContractNum();
-                                    final var childInfoQuery =
-                                            getContractInfo("0.0." + (destroyedNum + 1))
-                                                    .has(contractWith().isNotDeleted());
-                                    allRunFor(spec, childInfoQuery);
-                                }));
+                        withOpContext((spec, opLog) -> {
+                            final var registry = spec.registry();
+                            final var destroyedNum =
+                                    registry.getContractId(contract).getContractNum();
+                            final var childInfoQuery = getContractInfo("0.0." + (destroyedNum + 1))
+                                    .has(contractWith().isNotDeleted());
+                            allRunFor(spec, childInfoQuery);
+                        }));
     }
 
     private HapiSpec hscsEvm008SelfDestructWhenCalling() {

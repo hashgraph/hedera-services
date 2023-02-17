@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -83,8 +84,7 @@ public class StaticEntityAccess implements EntityAccess {
     private final VirtualMap<ContractKey, IterableContractValue> storage;
     private final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
 
-    public StaticEntityAccess(
-            final StateView view, final ContractAliases aliases, final OptionValidator validator) {
+    public StaticEntityAccess(final StateView view, final ContractAliases aliases, final OptionValidator validator) {
         this.view = view;
         this.aliases = aliases;
         this.validator = validator;
@@ -133,9 +133,7 @@ public class StaticEntityAccess implements EntityAccess {
             return false;
         }
         return validator.expiryStatusGiven(
-                        account.getBalance(),
-                        account.isExpiredAndPendingRemoval(),
-                        account.isSmartContract())
+                        account.getBalance(), account.isExpiredAndPendingRemoval(), account.isSmartContract())
                 == OK;
     }
 
@@ -163,8 +161,7 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     @Override
-    public void flushStorage(
-            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
+    public void flushStorage(final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
         throw new UnsupportedOperationException();
     }
 
@@ -179,16 +176,14 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     @Nullable
-    static Bytes explicitCodeFetch(
-            final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode, final AccountID id) {
+    static Bytes explicitCodeFetch(final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode, final AccountID id) {
         return explicitCodeFetch(bytecode, id.getAccountNum());
     }
 
     @Nullable
     public static Bytes explicitCodeFetch(
             final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode, final long contractNum) {
-        final var key =
-                new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, codeFromNum(contractNum));
+        final var key = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, codeFromNum(contractNum));
         final var value = bytecode.get(key);
         return (value != null) ? Bytes.of(value.getData()) : null;
     }
@@ -319,11 +314,8 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     public Optional<TokenNftInfo> infoForNft(final NftID target) {
-        final var nft =
-                nfts.get(
-                        NftId.withDefaultShardRealm(
-                                EntityNum.fromTokenId(target.getTokenID()).longValue(),
-                                target.getSerialNumber()));
+        final var nft = nfts.get(NftId.withDefaultShardRealm(
+                EntityNum.fromTokenId(target.getTokenID()).longValue(), target.getSerialNumber()));
         validateTrueOrRevert(nft != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
         return view.infoForNft(target);
     }
@@ -340,8 +332,7 @@ public class StaticEntityAccess implements EntityAccess {
      * @param tokenId the token of interest
      * @return the token's supply
      */
-    public long allowanceOf(
-            final AccountID ownerId, final AccountID spenderId, final TokenID tokenId) {
+    public long allowanceOf(final AccountID ownerId, final AccountID spenderId, final TokenID tokenId) {
         final var ownerNum = EntityNum.fromAccountId(ownerId);
         final var owner = accounts.get(ownerNum);
         validateTrueOrRevert(owner != null, INVALID_ALLOWANCE_OWNER_ID);
@@ -371,8 +362,7 @@ public class StaticEntityAccess implements EntityAccess {
      * @param tokenId the token of interest
      * @return the token's supply
      */
-    public boolean isOperator(
-            final AccountID ownerId, final AccountID operatorId, final TokenID tokenId) {
+    public boolean isOperator(final AccountID ownerId, final AccountID operatorId, final TokenID tokenId) {
         final var owner = accounts.get(EntityNum.fromAccountId(ownerId));
         if (owner == null) {
             return false;
@@ -383,8 +373,7 @@ public class StaticEntityAccess implements EntityAccess {
             return false;
         }
         final var approvedForAll = owner.getApproveForAllNfts();
-        return approvedForAll.contains(
-                new FcTokenAllowanceId(EntityNum.fromTokenId(tokenId), operatorNum));
+        return approvedForAll.contains(new FcTokenAllowanceId(EntityNum.fromTokenId(tokenId), operatorNum));
     }
 
     /**
@@ -394,17 +383,15 @@ public class StaticEntityAccess implements EntityAccess {
      * @return the owner address
      */
     public Address ownerOf(final NftId nftId) {
-        return nftPropertyOf(
-                nftId,
-                nft -> {
-                    var owner = nft.getOwner();
-                    if (MISSING_ENTITY_ID.equals(owner)) {
-                        final var token = tokens.get(nftId.asEntityNumPair().getHiOrderAsNum());
-                        validateTrue(token != null, INVALID_TOKEN_ID);
-                        owner = token.treasury();
-                    }
-                    return EntityIdUtils.asTypedEvmAddress(owner);
-                });
+        return nftPropertyOf(nftId, nft -> {
+            var owner = nft.getOwner();
+            if (MISSING_ENTITY_ID.equals(owner)) {
+                final var token = tokens.get(nftId.asEntityNumPair().getHiOrderAsNum());
+                validateTrue(token != null, INVALID_TOKEN_ID);
+                owner = token.treasury();
+            }
+            return EntityIdUtils.asTypedEvmAddress(owner);
+        });
     }
 
     /**

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.validation;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_MAX_LIFETIME;
@@ -99,22 +100,32 @@ class ContextOptionValidatorTest {
     private final MerkleAccount aV = MerkleAccountFactory.newAccount().get();
     private final AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
     private final AccountID d = AccountID.newBuilder().setAccountNum(6_999L).build();
-    private final AccountID missing = AccountID.newBuilder().setAccountNum(1_234L).build();
-    private final AccountID thisNodeAccount = AccountID.newBuilder().setAccountNum(13L).build();
+    private final AccountID missing =
+            AccountID.newBuilder().setAccountNum(1_234L).build();
+    private final AccountID thisNodeAccount =
+            AccountID.newBuilder().setAccountNum(13L).build();
     private final ContractID missingContract =
             ContractID.newBuilder().setContractNum(5_431L).build();
-    private final AccountID deleted = AccountID.newBuilder().setAccountNum(2_234L).build();
-    private final MerkleAccount deletedV = MerkleAccountFactory.newAccount().deleted(true).get();
-    private final ContractID contract = ContractID.newBuilder().setContractNum(5_432L).build();
+    private final AccountID deleted =
+            AccountID.newBuilder().setAccountNum(2_234L).build();
+    private final MerkleAccount deletedV =
+            MerkleAccountFactory.newAccount().deleted(true).get();
+    private final ContractID contract =
+            ContractID.newBuilder().setContractNum(5_432L).build();
     private final MerkleAccount contractV =
             MerkleAccountFactory.newAccount().isSmartContract(true).get();
     private final ContractID deletedContract =
             ContractID.newBuilder().setContractNum(4_432L).build();
-    private final MerkleAccount deletedContractV =
-            MerkleAccountFactory.newAccount().isSmartContract(true).deleted(true).get();
-    private final TopicID missingTopicId = TopicID.newBuilder().setTopicNum(1_234L).build();
-    private final TopicID deletedTopicId = TopicID.newBuilder().setTopicNum(2_345L).build();
-    private final TopicID expiredTopicId = TopicID.newBuilder().setTopicNum(3_456L).build();
+    private final MerkleAccount deletedContractV = MerkleAccountFactory.newAccount()
+            .isSmartContract(true)
+            .deleted(true)
+            .get();
+    private final TopicID missingTopicId =
+            TopicID.newBuilder().setTopicNum(1_234L).build();
+    private final TopicID deletedTopicId =
+            TopicID.newBuilder().setTopicNum(2_345L).build();
+    private final TopicID expiredTopicId =
+            TopicID.newBuilder().setTopicNum(3_456L).build();
     private final TopicID topicId = TopicID.newBuilder().setTopicNum(4_567L).build();
     private final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
     PropertySource properties;
@@ -151,13 +162,13 @@ class ContextOptionValidatorTest {
 
         topics = mock(MerkleMap.class);
         deletedMerkleTopic = TopicFactory.newTopic().deleted(true).get();
-        expiredMerkleTopic =
-                TopicFactory.newTopic().expiry(now.minusSeconds(555L).getEpochSecond()).get();
-        merkleTopic =
-                TopicFactory.newTopic()
-                        .memo("Hi, over here!")
-                        .expiry(now.plusSeconds(555L).getEpochSecond())
-                        .get();
+        expiredMerkleTopic = TopicFactory.newTopic()
+                .expiry(now.minusSeconds(555L).getEpochSecond())
+                .get();
+        merkleTopic = TopicFactory.newTopic()
+                .memo("Hi, over here!")
+                .expiry(now.plusSeconds(555L).getEpochSecond())
+                .get();
         given(topics.get(EntityNum.fromTopicId(topicId))).willReturn(merkleTopic);
         given(topics.get(EntityNum.fromTopicId(missingTopicId))).willReturn(null);
         given(topics.get(EntityNum.fromTopicId(deletedTopicId))).willReturn(deletedMerkleTopic);
@@ -185,8 +196,7 @@ class ContextOptionValidatorTest {
     @Test
     @SuppressWarnings("unchecked")
     void shortCircuitsLedgerExpiryCheckIfNoExpiryEnabled() {
-        final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts =
-                mock(TransactionalLedger.class);
+        final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts = mock(TransactionalLedger.class);
         given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(false);
         assertEquals(OK, subject.expiryStatusGiven(accounts, thisNodeAccount));
     }
@@ -194,8 +204,7 @@ class ContextOptionValidatorTest {
     @Test
     @SuppressWarnings("unchecked")
     void shortCircuitsLedgerExpiryCheckIfBalanceIsNonZero() {
-        final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts =
-                mock(TransactionalLedger.class);
+        final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts = mock(TransactionalLedger.class);
         given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
         given(accounts.get(thisNodeAccount, AccountProperty.BALANCE)).willReturn(1L);
         assertEquals(OK, subject.expiryStatusGiven(accounts, thisNodeAccount));
@@ -204,8 +213,7 @@ class ContextOptionValidatorTest {
     @Test
     @SuppressWarnings("unchecked")
     void shortCircuitsIfBalanceIsZeroButNotDetached() {
-        final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts =
-                mock(TransactionalLedger.class);
+        final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts = mock(TransactionalLedger.class);
         given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
         given(dynamicProperties.shouldAutoRenewContracts()).willReturn(true);
         given(accounts.get(thisNodeAccount, AccountProperty.BALANCE)).willReturn(0L);
@@ -217,8 +225,7 @@ class ContextOptionValidatorTest {
     @Test
     @SuppressWarnings("unchecked")
     void shortCircuitsIfContractExpiryNotEnabled() {
-        final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts =
-                mock(TransactionalLedger.class);
+        final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts = mock(TransactionalLedger.class);
         given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
         given(accounts.get(thisNodeAccount, AccountProperty.BALANCE)).willReturn(0L);
         given(accounts.get(thisNodeAccount, AccountProperty.EXPIRED_AND_PENDING_REMOVAL))
@@ -230,17 +237,14 @@ class ContextOptionValidatorTest {
     @Test
     @SuppressWarnings("unchecked")
     void usesPreciseExpiryCheckIfBalanceIsZero() {
-        final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts =
-                mock(TransactionalLedger.class);
+        final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts = mock(TransactionalLedger.class);
         given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
         given(dynamicProperties.shouldAutoRenewContracts()).willReturn(true);
         given(accounts.get(thisNodeAccount, AccountProperty.BALANCE)).willReturn(0L);
         given(accounts.get(thisNodeAccount, AccountProperty.EXPIRED_AND_PENDING_REMOVAL))
                 .willReturn(true);
         given(accounts.get(thisNodeAccount, AccountProperty.IS_SMART_CONTRACT)).willReturn(true);
-        assertEquals(
-                CONTRACT_EXPIRED_AND_PENDING_REMOVAL,
-                subject.expiryStatusGiven(accounts, thisNodeAccount));
+        assertEquals(CONTRACT_EXPIRED_AND_PENDING_REMOVAL, subject.expiryStatusGiven(accounts, thisNodeAccount));
     }
 
     @Test
@@ -412,9 +416,7 @@ class ContextOptionValidatorTest {
     @Test
     void recognizesOutOfPlaceAccountStatus() {
         // expect:
-        assertEquals(
-                INVALID_ACCOUNT_ID,
-                subject.queryableAccountStatus(IdUtils.asAccount("0.0.5432"), accounts));
+        assertEquals(INVALID_ACCOUNT_ID, subject.queryableAccountStatus(IdUtils.asAccount("0.0.5432"), accounts));
     }
 
     @Test
@@ -426,8 +428,7 @@ class ContextOptionValidatorTest {
     @Test
     void recognizesMissingContractStatus() {
         // expect:
-        assertEquals(
-                INVALID_CONTRACT_ID, subject.queryableContractStatus(missingContract, accounts));
+        assertEquals(INVALID_CONTRACT_ID, subject.queryableContractStatus(missingContract, accounts));
     }
 
     @Test
@@ -435,8 +436,7 @@ class ContextOptionValidatorTest {
         // expect:
         assertEquals(
                 INVALID_CONTRACT_ID,
-                subject.queryableContractStatus(
-                        EntityNum.fromContractId(missingContract), accounts));
+                subject.queryableContractStatus(EntityNum.fromContractId(missingContract), accounts));
     }
 
     @Test
@@ -448,9 +448,7 @@ class ContextOptionValidatorTest {
     @Test
     void recognizesOutOfPlaceContractStatus() {
         // expect:
-        assertEquals(
-                INVALID_CONTRACT_ID,
-                subject.queryableContractStatus(IdUtils.asContract("0.0.9999"), accounts));
+        assertEquals(INVALID_CONTRACT_ID, subject.queryableContractStatus(IdUtils.asContract("0.0.9999"), accounts));
     }
 
     @Test
@@ -558,16 +556,16 @@ class ContextOptionValidatorTest {
     @Test
     void acceptsEmptyKeyList() {
         // expect:
-        assertTrue(
-                subject.hasGoodEncoding(
-                        Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build()));
+        assertTrue(subject.hasGoodEncoding(
+                Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build()));
     }
 
     @Test
     void rejectsFutureExpiryImplyingSuperMaxLifetime() {
         // given:
-        final var excessive =
-                Timestamp.newBuilder().setSeconds(now.getEpochSecond() + maxLifetime + 1L).build();
+        final var excessive = Timestamp.newBuilder()
+                .setSeconds(now.getEpochSecond() + maxLifetime + 1L)
+                .build();
 
         // expect:
         assertFalse(subject.isValidExpiry(excessive));
@@ -578,12 +576,10 @@ class ContextOptionValidatorTest {
     @Test
     void allowsFutureExpiryBeforeMaxLifetime() {
         // expect:
-        assertTrue(
-                subject.isValidExpiry(
-                        Timestamp.newBuilder()
-                                .setSeconds(now.getEpochSecond())
-                                .setNanos(now.getNano() + 1)
-                                .build()));
+        assertTrue(subject.isValidExpiry(Timestamp.newBuilder()
+                .setSeconds(now.getEpochSecond())
+                .setNanos(now.getNano() + 1)
+                .build()));
         // and:
         verify(txnCtx).consensusTime();
     }
@@ -591,12 +587,10 @@ class ContextOptionValidatorTest {
     @Test
     void rejectsAnyNonFutureExpiry() {
         // expect:
-        assertFalse(
-                subject.isValidExpiry(
-                        Timestamp.newBuilder()
-                                .setSeconds(now.getEpochSecond())
-                                .setNanos(now.getNano())
-                                .build()));
+        assertFalse(subject.isValidExpiry(Timestamp.newBuilder()
+                .setSeconds(now.getEpochSecond())
+                .setNanos(now.getNano())
+                .build()));
 
         // and:
         verify(txnCtx).consensusTime();
@@ -609,20 +603,15 @@ class ContextOptionValidatorTest {
         // given:
         long validDuration = 1_000L;
         Instant validStart = Instant.ofEpochSecond(1_234_567L);
-        Instant consensusTime =
-                Instant.ofEpochSecond(validStart.getEpochSecond() + validDuration + 1);
+        Instant consensusTime = Instant.ofEpochSecond(validStart.getEpochSecond() + validDuration + 1);
         // and:
-        TransactionID txnId =
-                TransactionID.newBuilder()
-                        .setTransactionValidStart(
-                                Timestamp.newBuilder().setSeconds(validStart.getEpochSecond()))
-                        .build();
-        TransactionBody txn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(txnId)
-                        .setTransactionValidDuration(
-                                Duration.newBuilder().setSeconds(validDuration))
-                        .build();
+        TransactionID txnId = TransactionID.newBuilder()
+                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(validStart.getEpochSecond()))
+                .build();
+        TransactionBody txn = TransactionBody.newBuilder()
+                .setTransactionID(txnId)
+                .setTransactionValidDuration(Duration.newBuilder().setSeconds(validDuration))
+                .build();
         // and:
         given(accessor.getTxn()).willReturn(txn);
         given(accessor.getTxnId()).willReturn(txnId);
@@ -633,9 +622,7 @@ class ContextOptionValidatorTest {
         // then:
         assertEquals(TRANSACTION_EXPIRED, status);
         // and:
-        assertEquals(
-                TRANSACTION_EXPIRED,
-                subject.chronologyStatusForTxn(validStart, validDuration, consensusTime));
+        assertEquals(TRANSACTION_EXPIRED, subject.chronologyStatusForTxn(validStart, validDuration, consensusTime));
     }
 
     @Test
@@ -647,17 +634,13 @@ class ContextOptionValidatorTest {
         Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
         Instant validStart = Instant.ofEpochSecond(consensusTime.plusSeconds(1L).getEpochSecond());
         // and:
-        TransactionID txnId =
-                TransactionID.newBuilder()
-                        .setTransactionValidStart(
-                                Timestamp.newBuilder().setSeconds(validStart.getEpochSecond()))
-                        .build();
-        TransactionBody txn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(txnId)
-                        .setTransactionValidDuration(
-                                Duration.newBuilder().setSeconds(validDuration))
-                        .build();
+        TransactionID txnId = TransactionID.newBuilder()
+                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(validStart.getEpochSecond()))
+                .build();
+        TransactionBody txn = TransactionBody.newBuilder()
+                .setTransactionID(txnId)
+                .setTransactionValidDuration(Duration.newBuilder().setSeconds(validDuration))
+                .build();
         // and:
         given(accessor.getTxn()).willReturn(txn);
         given(accessor.getTxnId()).willReturn(txnId);
@@ -669,8 +652,7 @@ class ContextOptionValidatorTest {
         assertEquals(INVALID_TRANSACTION_START, status);
         // and:
         assertEquals(
-                INVALID_TRANSACTION_START,
-                subject.chronologyStatusForTxn(validStart, validDuration, consensusTime));
+                INVALID_TRANSACTION_START, subject.chronologyStatusForTxn(validStart, validDuration, consensusTime));
     }
 
     @Test
@@ -680,21 +662,16 @@ class ContextOptionValidatorTest {
         // given:
         long validDuration = 1_000L;
         Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
-        Instant validStart =
-                Instant.ofEpochSecond(
-                        consensusTime.minusSeconds(validDuration - 1).getEpochSecond());
+        Instant validStart = Instant.ofEpochSecond(
+                consensusTime.minusSeconds(validDuration - 1).getEpochSecond());
         // and:
-        TransactionID txnId =
-                TransactionID.newBuilder()
-                        .setTransactionValidStart(
-                                Timestamp.newBuilder().setSeconds(validStart.getEpochSecond()))
-                        .build();
-        TransactionBody txn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(txnId)
-                        .setTransactionValidDuration(
-                                Duration.newBuilder().setSeconds(validDuration))
-                        .build();
+        TransactionID txnId = TransactionID.newBuilder()
+                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(validStart.getEpochSecond()))
+                .build();
+        TransactionBody txn = TransactionBody.newBuilder()
+                .setTransactionID(txnId)
+                .setTransactionValidDuration(Duration.newBuilder().setSeconds(validDuration))
+                .build();
         // and:
         given(accessor.getTxn()).willReturn(txn);
         given(accessor.getTxnId()).willReturn(txnId);
@@ -743,10 +720,9 @@ class ContextOptionValidatorTest {
         final NodeInfo nodeInfo = mock(NodeInfo.class);
 
         given(accounts.get(EntityNum.fromLong(10L))).willReturn(new MerkleAccount());
-        CryptoCreateTransactionBody op =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setStakedAccountId(asAccount("0.0.10"))
-                        .build();
+        CryptoCreateTransactionBody op = CryptoCreateTransactionBody.newBuilder()
+                .setStakedAccountId(asAccount("0.0.10"))
+                .build();
         assertEquals(
                 true,
                 subject.isValidStakedId(
@@ -757,10 +733,9 @@ class ContextOptionValidatorTest {
                         nodeInfo));
 
         given(accounts.get(EntityNum.fromLong(10L))).willReturn(deletedAccount);
-        op =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setStakedAccountId(asAccount("0.0.10"))
-                        .build();
+        op = CryptoCreateTransactionBody.newBuilder()
+                .setStakedAccountId(asAccount("0.0.10"))
+                .build();
         assertEquals(
                 false,
                 subject.isValidStakedId(
@@ -771,10 +746,9 @@ class ContextOptionValidatorTest {
                         nodeInfo));
 
         given(accounts.get(EntityNum.fromLong(10L))).willReturn(null);
-        op =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setStakedAccountId(asAccount("0.0.10"))
-                        .build();
+        op = CryptoCreateTransactionBody.newBuilder()
+                .setStakedAccountId(asAccount("0.0.10"))
+                .build();
         assertEquals(
                 false,
                 subject.isValidStakedId(
@@ -910,8 +884,6 @@ class ContextOptionValidatorTest {
 
     @Test
     void rejectsDecodeEmptyKey() {
-        assertFailsWith(
-                () -> subject.attemptToDecodeOrThrow(Key.getDefaultInstance(), BAD_ENCODING),
-                BAD_ENCODING);
+        assertFailsWith(() -> subject.attemptToDecodeOrThrow(Key.getDefaultInstance(), BAD_ENCODING), BAD_ENCODING);
     }
 }

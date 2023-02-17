@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.*;
@@ -48,8 +49,7 @@ class ContractCreateHandlerParityTest {
         subject.preHandle(context);
 
         assertThat(sanityRestored(context.getPayerKey())).isEqualTo(DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()))
-                .containsExactly(MISC_ACCOUNT_KT.asKey());
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys())).containsExactly(MISC_ACCOUNT_KT.asKey());
     }
 
     @Test
@@ -79,8 +79,7 @@ class ContractCreateHandlerParityTest {
         subject.preHandle(context);
 
         assertThat(sanityRestored(context.getPayerKey())).isEqualTo(DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()))
-                .containsExactly(DEFAULT_ADMIN_KT.asKey());
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys())).containsExactly(DEFAULT_ADMIN_KT.asKey());
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {

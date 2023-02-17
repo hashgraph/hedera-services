@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.file;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
@@ -68,15 +69,14 @@ class GetFileInfoAnswerTest {
 
     @BeforeEach
     void setup() throws Throwable {
-        expected =
-                FileGetInfoResponse.FileInfo.newBuilder()
-                        .setLedgerId(ledgerId)
-                        .setDeleted(false)
-                        .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
-                        .setFileID(asFile(target))
-                        .setSize(size)
-                        .setKeys(TxnHandlingScenario.MISC_FILE_WACL_KT.asKey().getKeyList())
-                        .build();
+        expected = FileGetInfoResponse.FileInfo.newBuilder()
+                .setLedgerId(ledgerId)
+                .setDeleted(false)
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
+                .setFileID(asFile(target))
+                .setSize(size)
+                .setKeys(TxnHandlingScenario.MISC_FILE_WACL_KT.asKey().getKeyList())
+                .build();
 
         view = mock(StateView.class);
         optionValidator = mock(OptionValidator.class);
@@ -126,14 +126,10 @@ class GetFileInfoAnswerTest {
     @Test
     void getsValidity() {
         // given:
-        final Response response =
-                Response.newBuilder()
-                        .setFileGetInfo(
-                                FileGetInfoResponse.newBuilder()
-                                        .setHeader(
-                                                subject.answerOnlyHeader(
-                                                        RESULT_SIZE_LIMIT_EXCEEDED)))
-                        .build();
+        final Response response = Response.newBuilder()
+                .setFileGetInfo(FileGetInfoResponse.newBuilder()
+                        .setHeader(subject.answerOnlyHeader(RESULT_SIZE_LIMIT_EXCEEDED)))
+                .build();
 
         // expect:
         assertEquals(RESULT_SIZE_LIMIT_EXCEEDED, subject.extractValidityFrom(response));
@@ -177,9 +173,7 @@ class GetFileInfoAnswerTest {
 
         // then:
         assertTrue(response.hasFileGetInfo());
-        assertEquals(
-                FAIL_INVALID,
-                response.getFileGetInfo().getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(FAIL_INVALID, response.getFileGetInfo().getHeader().getNodeTransactionPrecheckCode());
         assertEquals(ANSWER_ONLY, response.getFileGetInfo().getHeader().getResponseType());
         assertFalse(response.getFileGetInfo().hasFileInfo());
     }
@@ -209,15 +203,12 @@ class GetFileInfoAnswerTest {
 
         // then:
         assertTrue(response.hasFileGetInfo());
-        assertEquals(
-                FILE_DELETED,
-                response.getFileGetInfo().getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(FILE_DELETED, response.getFileGetInfo().getHeader().getNodeTransactionPrecheckCode());
         assertEquals(COST_ANSWER, response.getFileGetInfo().getHeader().getResponseType());
         assertEquals(fee, response.getFileGetInfo().getHeader().getCost());
     }
 
-    private Query validQuery(final ResponseType type, final long payment, final String idLit)
-            throws Throwable {
+    private Query validQuery(final ResponseType type, final long payment, final String idLit) throws Throwable {
         this.paymentTxn = payerSponsoredTransfer(payer, COMPLEX_KEY_ACCOUNT_KT, node, payment);
         final QueryHeader.Builder header =
                 QueryHeader.newBuilder().setPayment(this.paymentTxn).setResponseType(type);

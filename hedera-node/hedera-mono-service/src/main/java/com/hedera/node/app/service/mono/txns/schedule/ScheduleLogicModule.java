@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.schedule;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
@@ -39,8 +40,7 @@ public final class ScheduleLogicModule {
     @Provides
     @IntoMap
     @FunctionKey(ScheduleSign)
-    public static List<TransitionLogic> provideScheduleSignLogic(
-            final ScheduleSignTransitionLogic scheduleSignLogic) {
+    public static List<TransitionLogic> provideScheduleSignLogic(final ScheduleSignTransitionLogic scheduleSignLogic) {
         return List.of(scheduleSignLogic);
     }
 

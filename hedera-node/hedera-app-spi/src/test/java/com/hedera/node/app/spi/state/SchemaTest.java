@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -126,8 +127,7 @@ class SchemaTest extends StateTestBase {
         final var schema1 = new TestSchema(1);
         final var newStates = new MapWritableStates(Collections.emptyMap());
         //noinspection DataFlowIssue
-        assertThatThrownBy(() -> schema1.migrate(null, newStates))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> schema1.migrate(null, newStates)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -136,7 +136,6 @@ class SchemaTest extends StateTestBase {
         final var schema1 = new TestSchema(1);
         final var prevStates = new MapWritableStates(Collections.emptyMap());
         //noinspection DataFlowIssue
-        assertThatThrownBy(() -> schema1.migrate(prevStates, null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> schema1.migrate(prevStates, null)).isInstanceOf(NullPointerException.class);
     }
 }

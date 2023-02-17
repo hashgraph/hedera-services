@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.migration;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.AUTO_RENEW_GRANT_FREE_RENEWALS;
@@ -64,8 +65,7 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class MigrationRecordsManager {
 
-    static final String AUTO_RENEW_MEMO_TPL =
-            "Contract 0.0.%d was renewed during 0.30.0 upgrade; new expiry is %d";
+    static final String AUTO_RENEW_MEMO_TPL = "Contract 0.0.%d was renewed during 0.30.0 upgrade; new expiry is %d";
     private static final Logger log = LogManager.getLogger(MigrationRecordsManager.class);
     private static final Key immutableKey =
             Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
@@ -116,67 +116,52 @@ public class MigrationRecordsManager {
      */
     public void publishMigrationRecords(final Instant now) {
         final var curNetworkCtx = networkCtx.get();
-        if (!consensusTimeTracker.unlimitedPreceding()
-                || curNetworkCtx.areMigrationRecordsStreamed()) {
+        if (!consensusTimeTracker.unlimitedPreceding() || curNetworkCtx.areMigrationRecordsStreamed()) {
             return;
         }
 
         // We always publish creation records for 0.0.800, and 0.0.801 on a network reset
         if (curNetworkCtx.consensusTimeOfLastHandledTxn() == null) {
             final var implicitAutoRenewPeriod = FUNDING_ACCOUNT_EXPIRY - now.getEpochSecond();
-            final var stakingFundAccounts =
-                    List.of(
-                            EntityNum.fromLong(accountNumbers.stakingRewardAccount()),
-                            EntityNum.fromLong(accountNumbers.nodeRewardAccount()));
-            stakingFundAccounts.forEach(
-                    num -> publishSyntheticCreationForStakingFund(num, implicitAutoRenewPeriod));
+            final var stakingFundAccounts = List.of(
+                    EntityNum.fromLong(accountNumbers.stakingRewardAccount()),
+                    EntityNum.fromLong(accountNumbers.nodeRewardAccount()));
+            stakingFundAccounts.forEach(num -> publishSyntheticCreationForStakingFund(num, implicitAutoRenewPeriod));
         } else if (grantingFreeAutoRenewals()) {
             publishContractFreeAutoRenewalRecords();
         }
 
         // Always publish records for any treasury clones that needed to be created
         publishAccountsCreated(
-                systemAccountsCreator.getTreasuryClonesCreated(),
-                now,
-                TREASURY_CLONE_MEMO,
-                "treasury clone");
+                systemAccountsCreator.getTreasuryClonesCreated(), now, TREASURY_CLONE_MEMO, "treasury clone");
 
         // Always publish records for any system accounts created at genesis start up
         publishAccountsCreated(
-                systemAccountsCreator.getSystemAccountsCreated(),
-                now,
-                SYSTEM_ACCOUNT_CREATION_MEMO,
-                "system creation");
+                systemAccountsCreator.getSystemAccountsCreated(), now, SYSTEM_ACCOUNT_CREATION_MEMO, "system creation");
 
         curNetworkCtx.markMigrationRecordsStreamed();
         systemAccountsCreator.forgetCreations();
     }
 
     private void publishAccountsCreated(
-            final List<HederaAccount> createdAccounts,
-            final Instant now,
-            final String memo,
-            final String description) {
-        createdAccounts.forEach(
-                account ->
-                        publishSyntheticCreation(
-                                EntityNum.fromInt(account.number()),
-                                account.getExpiry() - now.getEpochSecond(),
-                                account.isReceiverSigRequired(),
-                                account.isDeclinedReward(),
-                                asKeyUnchecked(account.getAccountKey()),
-                                account.getMemo(),
-                                memo,
-                                description,
-                                account.getBalance()));
+            final List<HederaAccount> createdAccounts, final Instant now, final String memo, final String description) {
+        createdAccounts.forEach(account -> publishSyntheticCreation(
+                EntityNum.fromInt(account.number()),
+                account.getExpiry() - now.getEpochSecond(),
+                account.isReceiverSigRequired(),
+                account.isDeclinedReward(),
+                asKeyUnchecked(account.getAccountKey()),
+                account.getMemo(),
+                memo,
+                description,
+                account.getBalance()));
     }
 
     private boolean grantingFreeAutoRenewals() {
         return bootstrapProperties.getBooleanProperty(AUTO_RENEW_GRANT_FREE_RENEWALS);
     }
 
-    private void publishSyntheticCreationForStakingFund(
-            final EntityNum num, final long autoRenewPeriod) {
+    private void publishSyntheticCreationForStakingFund(final EntityNum num, final long autoRenewPeriod) {
         publishSyntheticCreation(
                 num,
                 autoRenewPeriod,
@@ -203,29 +188,18 @@ public class MigrationRecordsManager {
         final var tracker = sideEffectsFactory.get();
         tracker.trackAutoCreation(num.toGrpcAccountId());
         final var synthBody =
-                synthCreation(
-                        autoRenewPeriod,
-                        key,
-                        accountMemo,
-                        receiverSigRequired,
-                        declineReward,
-                        balance);
-        final var synthRecord =
-                creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker, recordMemo);
+                synthCreation(autoRenewPeriod, key, accountMemo, receiverSigRequired, declineReward, balance);
+        final var synthRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker, recordMemo);
         // show the balance of any accounts whose balance is not zero for mirror node
         // reconciliation.
         if (balance != 0) {
             synthRecord.setHbarAdjustments(
-                    CurrencyAdjustments.fromChanges(
-                            new long[] {balance}, new long[] {num.longValue()}));
+                    CurrencyAdjustments.fromChanges(new long[] {balance}, new long[] {num.longValue()}));
         }
 
         recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, synthBody, synthRecord);
         sigImpactHistorian.markEntityChanged(num.longValue());
-        log.info(
-                "Published synthetic CryptoCreate for {} account 0.0.{}",
-                description,
-                num.longValue());
+        log.info("Published synthetic CryptoCreate for {} account 0.0.{}", description, num.longValue());
     }
 
     private TransactionBody.Builder synthCreation(
@@ -235,46 +209,34 @@ public class MigrationRecordsManager {
             final boolean receiverSigRequired,
             final boolean declineReward,
             final long balance) {
-        final var txnBody =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setKey(key)
-                        .setMemo(memo)
-                        .setDeclineReward(declineReward)
-                        .setReceiverSigRequired(receiverSigRequired)
-                        .setInitialBalance(balance)
-                        .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
-                        .build();
+        final var txnBody = CryptoCreateTransactionBody.newBuilder()
+                .setKey(key)
+                .setMemo(memo)
+                .setDeclineReward(declineReward)
+                .setReceiverSigRequired(receiverSigRequired)
+                .setInitialBalance(balance)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
+                .build();
         return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody);
     }
 
     private void publishContractFreeAutoRenewalRecords() {
-        accounts.get()
-                .forEach(
-                        (id, account) -> {
-                            if (account.isSmartContract() && !account.isDeleted()) {
-                                final var contractNum = id.toEntityId();
-                                final var newExpiry = account.getExpiry();
+        accounts.get().forEach((id, account) -> {
+            if (account.isSmartContract() && !account.isDeleted()) {
+                final var contractNum = id.toEntityId();
+                final var newExpiry = account.getExpiry();
 
-                                final var syntheticSuccessReceipt =
-                                        TxnReceipt.newBuilder().setStatus(SUCCESS_LITERAL).build();
-                                final var synthBody =
-                                        syntheticTxnFactory.synthContractAutoRenew(
-                                                contractNum.asNum(), newExpiry);
-                                final var memo =
-                                        String.format(
-                                                AUTO_RENEW_MEMO_TPL, contractNum.num(), newExpiry);
-                                final var synthRecord =
-                                        ExpirableTxnRecord.newBuilder()
-                                                .setMemo(memo)
-                                                .setReceipt(syntheticSuccessReceipt);
+                final var syntheticSuccessReceipt =
+                        TxnReceipt.newBuilder().setStatus(SUCCESS_LITERAL).build();
+                final var synthBody = syntheticTxnFactory.synthContractAutoRenew(contractNum.asNum(), newExpiry);
+                final var memo = String.format(AUTO_RENEW_MEMO_TPL, contractNum.num(), newExpiry);
+                final var synthRecord =
+                        ExpirableTxnRecord.newBuilder().setMemo(memo).setReceipt(syntheticSuccessReceipt);
 
-                                recordsHistorian.trackPrecedingChildRecord(
-                                        DEFAULT_SOURCE_ID, synthBody, synthRecord);
-                                log.debug(
-                                        "Published synthetic ContractUpdate for contract 0.0.{}",
-                                        contractNum.num());
-                            }
-                        });
+                recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, synthBody, synthRecord);
+                log.debug("Published synthetic ContractUpdate for contract 0.0.{}", contractNum.num());
+            }
+        });
     }
 
     @VisibleForTesting

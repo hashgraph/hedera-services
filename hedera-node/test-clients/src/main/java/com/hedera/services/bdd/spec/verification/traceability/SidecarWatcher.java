@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.verification.traceability;
 
 import com.google.common.collect.HashMultimap;
@@ -53,63 +54,56 @@ public class SidecarWatcher {
 
     public void watch() throws Exception {
         observer = new FileAlterationObserver(recordStreamFolderPath.toFile());
-        final var listener =
-                new FileAlterationListenerAdaptor() {
-                    @Override
-                    public void onFileCreate(File file) {
-                        final var newFilePath = file.getPath();
-                        if (SIDECAR_FILE_REGEX.matcher(newFilePath).find()) {
-                            log.info("New sidecar file: {}", newFilePath);
-                            var retryCount = 0;
-                            while (true) {
-                                retryCount++;
+        final var listener = new FileAlterationListenerAdaptor() {
+            @Override
+            public void onFileCreate(File file) {
+                final var newFilePath = file.getPath();
+                if (SIDECAR_FILE_REGEX.matcher(newFilePath).find()) {
+                    log.info("New sidecar file: {}", newFilePath);
+                    var retryCount = 0;
+                    while (true) {
+                        retryCount++;
+                        try {
+                            final var sidecarFile = RecordStreamingUtils.readMaybeCompressedSidecarFile(newFilePath);
+                            onNewSidecarFile(sidecarFile);
+                            return;
+                        } catch (IOException e) {
+                            // given that there is a slight chance we poll the
+                            // file system at the exact time the file is being created,
+                            // *but not yet finished*, and we try reading it in this
+                            // unfinished state, which will throw an exception,
+                            // we wait 250ms and try reading the file again
+                            // we wait for a maximum of 1s for the file to be finished
+                            log.warn(
+                                    "Attempt #{} - an error occurred trying to parse" + " sidecar file {} - {}.",
+                                    retryCount,
+                                    newFilePath,
+                                    e);
+                            if (retryCount < 4) {
                                 try {
-                                    final var sidecarFile =
-                                            RecordStreamingUtils.readMaybeCompressedSidecarFile(
-                                                    newFilePath);
-                                    onNewSidecarFile(sidecarFile);
-                                    return;
-                                } catch (IOException e) {
-                                    // given that there is a slight chance we poll the
-                                    // file system at the exact time the file is being created,
-                                    // *but not yet finished*, and we try reading it in this
-                                    // unfinished state, which will throw an exception,
-                                    // we wait 250ms and try reading the file again
-                                    // we wait for a maximum of 1s for the file to be finished
-                                    log.warn(
-                                            "Attempt #{} - an error occurred trying to parse"
-                                                    + " sidecar file {} - {}.",
-                                            retryCount,
-                                            newFilePath,
-                                            e);
-                                    if (retryCount < 4) {
-                                        try {
-                                            Thread.sleep(POLLING_INTERVAL_MS);
-                                        } catch (InterruptedException ignored) {
-                                            Thread.currentThread().interrupt();
-                                        }
-                                    } else {
-                                        log.fatal(
-                                                "Could not read sidecar file {} - {}, exiting now.",
-                                                newFilePath,
-                                                e);
-                                        throw new IllegalStateException();
-                                    }
+                                    Thread.sleep(POLLING_INTERVAL_MS);
+                                } catch (InterruptedException ignored) {
+                                    Thread.currentThread().interrupt();
                                 }
+                            } else {
+                                log.fatal("Could not read sidecar file {} - {}, exiting now.", newFilePath, e);
+                                throw new IllegalStateException();
                             }
                         }
                     }
+                }
+            }
 
-                    @Override
-                    public void onFileDelete(File file) {
-                        // no-op
-                    }
+            @Override
+            public void onFileDelete(File file) {
+                // no-op
+            }
 
-                    @Override
-                    public void onFileChange(File file) {
-                        // no-op
-                    }
-                };
+            @Override
+            public void onFileChange(File file) {
+                // no-op
+            }
+        };
         observer.addListener(listener);
         monitor = new FileAlterationMonitor(POLLING_INTERVAL_MS);
         monitor.addObserver(observer);

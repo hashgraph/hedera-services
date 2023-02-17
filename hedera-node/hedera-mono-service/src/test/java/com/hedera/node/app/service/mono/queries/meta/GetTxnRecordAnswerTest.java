@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.meta;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -67,32 +68,26 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class GetTxnRecordAnswerTest {
-    private static final TransactionID targetTxnId =
-            TransactionID.newBuilder()
-                    .setAccountID(asAccount(payer))
-                    .setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234L))
-                    .build();
-    private static final TransactionID missingTxnId =
-            TransactionID.newBuilder()
-                    .setAccountID(asAccount(payer))
-                    .setTransactionValidStart(Timestamp.newBuilder().setSeconds(4_321L))
-                    .build();
-    private static final TransactionRecord cachedTargetRecord =
-            TransactionRecord.newBuilder()
-                    .setReceipt(
-                            TransactionReceipt.newBuilder()
-                                    .setStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS))
-                    .setTransactionID(targetTxnId)
-                    .setMemo("Dim galleries, dusk winding stairs got past...")
-                    .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(9_999_999_999L))
-                    .setTransactionFee(555L)
-                    .setTransferList(
-                            withAdjustments(
-                                    asAccount("0.0.2"), -2L,
-                                    asAccount("0.0.2"), -2L,
-                                    asAccount("0.0.1001"), 2L,
-                                    asAccount("0.0.1002"), 2L))
-                    .build();
+    private static final TransactionID targetTxnId = TransactionID.newBuilder()
+            .setAccountID(asAccount(payer))
+            .setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234L))
+            .build();
+    private static final TransactionID missingTxnId = TransactionID.newBuilder()
+            .setAccountID(asAccount(payer))
+            .setTransactionValidStart(Timestamp.newBuilder().setSeconds(4_321L))
+            .build();
+    private static final TransactionRecord cachedTargetRecord = TransactionRecord.newBuilder()
+            .setReceipt(TransactionReceipt.newBuilder().setStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS))
+            .setTransactionID(targetTxnId)
+            .setMemo("Dim galleries, dusk winding stairs got past...")
+            .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(9_999_999_999L))
+            .setTransactionFee(555L)
+            .setTransferList(withAdjustments(
+                    asAccount("0.0.2"), -2L,
+                    asAccount("0.0.2"), -2L,
+                    asAccount("0.0.1001"), 2L,
+                    asAccount("0.0.1002"), 2L))
+            .build();
 
     private StateView view;
     private RecordCache recordCache;
@@ -127,14 +122,10 @@ class GetTxnRecordAnswerTest {
 
     @Test
     void getsValidity() {
-        final var response =
-                Response.newBuilder()
-                        .setTransactionGetRecord(
-                                TransactionGetRecordResponse.newBuilder()
-                                        .setHeader(
-                                                subject.answerOnlyHeader(
-                                                        RESULT_SIZE_LIMIT_EXCEEDED)))
-                        .build();
+        final var response = Response.newBuilder()
+                .setTransactionGetRecord(TransactionGetRecordResponse.newBuilder()
+                        .setHeader(subject.answerOnlyHeader(RESULT_SIZE_LIMIT_EXCEEDED)))
+                .build();
 
         assertEquals(RESULT_SIZE_LIMIT_EXCEEDED, subject.extractValidityFrom(response));
     }
@@ -157,8 +148,7 @@ class GetTxnRecordAnswerTest {
     void getsRecordWhenAvailable() {
         final var op = txnRecordQuery(targetTxnId, ANSWER_ONLY, 5L);
         final var sensibleQuery = queryOf(op);
-        given(answerFunctions.txnRecord(recordCache, op))
-                .willReturn(Optional.of(cachedTargetRecord));
+        given(answerFunctions.txnRecord(recordCache, op)).willReturn(Optional.of(cachedTargetRecord));
 
         final var response = subject.responseGiven(sensibleQuery, view, OK, 0L);
 
@@ -220,8 +210,7 @@ class GetTxnRecordAnswerTest {
     void recognizesMissingRecordWhenCtxGiven() {
         final var sensibleQuery = queryOf(txnRecordQuery(targetTxnId, ANSWER_ONLY, 5L));
 
-        final var response =
-                subject.responseGiven(sensibleQuery, view, OK, 0L, Collections.emptyMap());
+        final var response = subject.responseGiven(sensibleQuery, view, OK, 0L, Collections.emptyMap());
 
         final var opResponse = response.getTransactionGetRecord();
         assertTrue(opResponse.hasHeader(), "Missing response header!");
@@ -233,8 +222,7 @@ class GetTxnRecordAnswerTest {
     void getsDuplicateRecordsWhenRequested() {
         final var op = txnRecordQuery(targetTxnId, ANSWER_ONLY, 5L, true);
         final var sensibleQuery = queryOf(op);
-        given(answerFunctions.txnRecord(recordCache, op))
-                .willReturn(Optional.of(cachedTargetRecord));
+        given(answerFunctions.txnRecord(recordCache, op)).willReturn(Optional.of(cachedTargetRecord));
         given(recordCache.getDuplicateRecords(targetTxnId)).willReturn(List.of(cachedTargetRecord));
 
         final var response = subject.responseGiven(sensibleQuery, view, OK, 0L);
@@ -250,8 +238,7 @@ class GetTxnRecordAnswerTest {
     void getsChildRecordsWhenRequested() {
         final var op = txnRecordQuery(targetTxnId, ANSWER_ONLY, 5L, false, true);
         final var sensibleQuery = queryOf(op);
-        given(answerFunctions.txnRecord(recordCache, op))
-                .willReturn(Optional.of(cachedTargetRecord));
+        given(answerFunctions.txnRecord(recordCache, op)).willReturn(Optional.of(cachedTargetRecord));
         given(recordCache.getChildRecords(targetTxnId)).willReturn(List.of(cachedTargetRecord));
 
         final var response = subject.responseGiven(sensibleQuery, view, OK, 0L);
@@ -288,18 +275,14 @@ class GetTxnRecordAnswerTest {
 
     @Test
     void requiresAnswerOnlyPaymentButNotCostAnswer() {
-        assertFalse(
-                subject.requiresNodePayment(queryOf(txnRecordQuery(targetTxnId, COST_ANSWER, 0))));
-        assertTrue(
-                subject.requiresNodePayment(queryOf(txnRecordQuery(targetTxnId, ANSWER_ONLY, 0))));
+        assertFalse(subject.requiresNodePayment(queryOf(txnRecordQuery(targetTxnId, COST_ANSWER, 0))));
+        assertTrue(subject.requiresNodePayment(queryOf(txnRecordQuery(targetTxnId, ANSWER_ONLY, 0))));
     }
 
     @Test
     void requiresAnswerOnlyCostAsExpected() {
-        assertTrue(
-                subject.needsAnswerOnlyCost(queryOf(txnRecordQuery(targetTxnId, COST_ANSWER, 0))));
-        assertFalse(
-                subject.needsAnswerOnlyCost(queryOf(txnRecordQuery(targetTxnId, ANSWER_ONLY, 0))));
+        assertTrue(subject.needsAnswerOnlyCost(queryOf(txnRecordQuery(targetTxnId, COST_ANSWER, 0))));
+        assertFalse(subject.needsAnswerOnlyCost(queryOf(txnRecordQuery(targetTxnId, ANSWER_ONLY, 0))));
     }
 
     @Test
@@ -322,8 +305,7 @@ class GetTxnRecordAnswerTest {
     void syntaxCheckOkForFindableRecord() {
         final var op = txnRecordQuery(missingTxnId, ANSWER_ONLY, 123L);
         final var query = queryOf(op);
-        given(answerFunctions.txnRecord(recordCache, op))
-                .willReturn(Optional.of(cachedTargetRecord));
+        given(answerFunctions.txnRecord(recordCache, op)).willReturn(Optional.of(cachedTargetRecord));
         given(optionValidator.queryableAccountStatus(eq(targetTxnId.getAccountID()), any()))
                 .willReturn(OK);
 

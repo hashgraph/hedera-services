@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle;
 
 import com.hedera.node.app.spi.fixtures.state.TestBase;
@@ -130,21 +131,19 @@ public class MerkleTestBase extends TestBase {
     protected void setupFruitMerkleMap() {
         fruitLabel = StateUtils.computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY);
         fruitMerkleMap = createMerkleMap(fruitLabel);
-        fruitMetadata =
-                new StateMetadata<>(
-                        FIRST_SERVICE,
-                        new TestSchema(1),
-                        StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES));
+        fruitMetadata = new StateMetadata<>(
+                FIRST_SERVICE,
+                new TestSchema(1),
+                StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES));
     }
 
     /** Sets up the "Fruit" virtual map, label, and metadata. */
     protected void setupFruitVirtualMap() {
         fruitVirtualLabel = StateUtils.computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY);
-        fruitVirtualMetadata =
-                new StateMetadata<>(
-                        FIRST_SERVICE,
-                        new TestSchema(1),
-                        StateDefinition.onDisk(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100));
+        fruitVirtualMetadata = new StateMetadata<>(
+                FIRST_SERVICE,
+                new TestSchema(1),
+                StateDefinition.onDisk(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100));
         fruitVirtualMap = createVirtualMap(fruitVirtualLabel, fruitVirtualMetadata);
     }
 
@@ -152,31 +151,26 @@ public class MerkleTestBase extends TestBase {
     protected void setupAnimalMerkleMap() {
         animalLabel = StateUtils.computeLabel(FIRST_SERVICE, ANIMAL_STATE_KEY);
         animalMerkleMap = createMerkleMap(animalLabel);
-        animalMetadata =
-                new StateMetadata<>(
-                        FIRST_SERVICE,
-                        new TestSchema(1),
-                        StateDefinition.inMemory(ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES));
+        animalMetadata = new StateMetadata<>(
+                FIRST_SERVICE,
+                new TestSchema(1),
+                StateDefinition.inMemory(ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES));
     }
 
     /** Sets up the "Space" merkle map, label, and metadata. */
     protected void setupSpaceMerkleMap() {
         spaceLabel = StateUtils.computeLabel(SECOND_SERVICE, SPACE_STATE_KEY);
         spaceMerkleMap = createMerkleMap(spaceLabel);
-        spaceMetadata =
-                new StateMetadata<>(
-                        SECOND_SERVICE,
-                        new TestSchema(1),
-                        StateDefinition.inMemory(SPACE_STATE_KEY, LONG_SERDES, STRING_SERDES));
+        spaceMetadata = new StateMetadata<>(
+                SECOND_SERVICE,
+                new TestSchema(1),
+                StateDefinition.inMemory(SPACE_STATE_KEY, LONG_SERDES, STRING_SERDES));
     }
 
     protected void setupSingletonCountry() {
         countryLabel = StateUtils.computeLabel(FIRST_SERVICE, COUNTRY_STATE_KEY);
-        countryMetadata =
-                new StateMetadata<String, String>(
-                        FIRST_SERVICE,
-                        new TestSchema(1),
-                        StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_SERDES));
+        countryMetadata = new StateMetadata<String, String>(
+                FIRST_SERVICE, new TestSchema(1), StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_SERDES));
         countrySingleton = new SingletonNode<>(countryMetadata, AUSTRALIA);
     }
 
@@ -203,8 +197,8 @@ public class MerkleTestBase extends TestBase {
     }
 
     /** Creates a new arbitrary merkle map with the given label. */
-    protected <K extends Comparable<K>, V>
-            MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> createMerkleMap(String label) {
+    protected <K extends Comparable<K>, V> MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> createMerkleMap(
+            String label) {
         final var map = new MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>>();
         map.setLabel(label);
         return map;
@@ -215,25 +209,23 @@ public class MerkleTestBase extends TestBase {
     protected VirtualMap<OnDiskKey<String>, OnDiskValue<String>> createVirtualMap(
             String label, StateMetadata<String, String> md) {
         final var keySerializer = new OnDiskKeySerializer<>(md);
-        final var builder =
-                new JasperDbBuilder<OnDiskKey<String>, OnDiskValue<String>>()
-                        // Force all hashes to disk, to make sure we're going through all the
-                        // serialization paths we can
-                        .internalHashesRamToDiskThreshold(0)
-                        .maxNumOfKeys(100)
-                        .preferDiskBasedIndexes(true)
-                        .keySerializer(keySerializer)
-                        .virtualLeafRecordSerializer(
-                                new VirtualLeafRecordSerializer<>(
-                                        (short) 1,
-                                        DigestType.SHA_384,
-                                        (short) 1,
-                                        DataFileCommon.VARIABLE_DATA_SIZE,
-                                        keySerializer,
-                                        (short) 1,
-                                        DataFileCommon.VARIABLE_DATA_SIZE,
-                                        new OnDiskValueSerializer<>(md),
-                                        true));
+        final var builder = new JasperDbBuilder<OnDiskKey<String>, OnDiskValue<String>>()
+                // Force all hashes to disk, to make sure we're going through all the
+                // serialization paths we can
+                .internalHashesRamToDiskThreshold(0)
+                .maxNumOfKeys(100)
+                .preferDiskBasedIndexes(true)
+                .keySerializer(keySerializer)
+                .virtualLeafRecordSerializer(new VirtualLeafRecordSerializer<>(
+                        (short) 1,
+                        DigestType.SHA_384,
+                        (short) 1,
+                        DataFileCommon.VARIABLE_DATA_SIZE,
+                        keySerializer,
+                        (short) 1,
+                        DataFileCommon.VARIABLE_DATA_SIZE,
+                        new OnDiskValueSerializer<>(md),
+                        true));
         return new VirtualMap<>(label, builder);
     }
 
@@ -257,7 +249,11 @@ public class MerkleTestBase extends TestBase {
 
     /** A convenience method for creating {@link SemanticVersion}. */
     protected SemanticVersion version(int major, int minor, int patch) {
-        return SemanticVersion.newBuilder().setMajor(major).setMinor(minor).setPatch(patch).build();
+        return SemanticVersion.newBuilder()
+                .setMajor(major)
+                .setMinor(minor)
+                .setPatch(patch)
+                .build();
     }
 
     /** A convenience method for adding a k/v pair to a merkle map */
@@ -282,8 +278,7 @@ public class MerkleTestBase extends TestBase {
     }
 
     /** A convenience method used to serialize a merkle tree */
-    protected byte[] writeTree(@NonNull final MerkleNode tree, @NonNull final Path tempDir)
-            throws IOException {
+    protected byte[] writeTree(@NonNull final MerkleNode tree, @NonNull final Path tempDir) throws IOException {
         final var byteOutputStream = new ByteArrayOutputStream();
         try (final var out = new MerkleDataOutputStream(byteOutputStream)) {
             out.writeMerkleTree(tempDir, tree);
@@ -292,8 +287,8 @@ public class MerkleTestBase extends TestBase {
     }
 
     /** A convenience method used to deserialize a merkle tree */
-    protected <T extends MerkleNode> T parseTree(
-            @NonNull final byte[] state, @NonNull final Path tempDir) throws IOException {
+    protected <T extends MerkleNode> T parseTree(@NonNull final byte[] state, @NonNull final Path tempDir)
+            throws IOException {
         final var byteInputStream = new ByteArrayInputStream(state);
         try (final var in = new MerkleDataInputStream(byteInputStream)) {
             return in.readMerkleTree(tempDir, 100);

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.grpc;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -44,27 +45,21 @@ class GrpcServiceBuilderTest {
     @DisplayName("The ingestWorkflow cannot be null")
     void ingestWorkflowIsNull() {
         //noinspection ConstantConditions
-        assertThrows(
-                NullPointerException.class,
-                () -> new GrpcServiceBuilder("TestService", null, queryWorkflow));
+        assertThrows(NullPointerException.class, () -> new GrpcServiceBuilder("TestService", null, queryWorkflow));
     }
 
     @Test
     @DisplayName("The queryWorkflow cannot be null")
     void queryWorkflowIsNull() {
         //noinspection ConstantConditions
-        assertThrows(
-                NullPointerException.class,
-                () -> new GrpcServiceBuilder("TestService", ingestWorkflow, null));
+        assertThrows(NullPointerException.class, () -> new GrpcServiceBuilder("TestService", ingestWorkflow, null));
     }
 
     @Test
     @DisplayName("The 'service' cannot be null")
     void serviceIsNull() {
         //noinspection ConstantConditions
-        assertThrows(
-                NullPointerException.class,
-                () -> new GrpcServiceBuilder(null, ingestWorkflow, queryWorkflow));
+        assertThrows(NullPointerException.class, () -> new GrpcServiceBuilder(null, ingestWorkflow, queryWorkflow));
     }
 
     @ParameterizedTest()
@@ -72,8 +67,7 @@ class GrpcServiceBuilderTest {
     @DisplayName("The 'service' cannot be blank")
     void serviceIsBlank(final String value) {
         assertThrows(
-                IllegalArgumentException.class,
-                () -> new GrpcServiceBuilder(value, ingestWorkflow, queryWorkflow));
+                IllegalArgumentException.class, () -> new GrpcServiceBuilder(value, ingestWorkflow, queryWorkflow));
     }
 
     @Test
@@ -119,9 +113,7 @@ class GrpcServiceBuilderTest {
      * io.helidon.grpc.server.ServiceDescriptor}.
      */
     @Test
-    @DisplayName(
-            "The built ServiceDescriptor includes a method with the name of the defined"
-                    + " transaction")
+    @DisplayName("The built ServiceDescriptor includes a method with the name of the defined" + " transaction")
     void singleTransaction() {
         final var sd = builder.transaction("txA").build(metrics);
 
@@ -135,15 +127,14 @@ class GrpcServiceBuilderTest {
     @Test
     @DisplayName("The built ServiceDescriptor includes all methods defined by the builder")
     void multipleTransactionsAndQueries() {
-        final var sd =
-                builder.transaction("txA")
-                        .transaction("txB")
-                        .query("qA")
-                        .query("qB")
-                        .transaction("txC")
-                        .query("qC")
-                        .transaction("txD")
-                        .build(metrics);
+        final var sd = builder.transaction("txA")
+                .transaction("txB")
+                .query("qA")
+                .query("qB")
+                .transaction("txC")
+                .query("qC")
+                .transaction("txD")
+                .build(metrics);
 
         assertNotNull(sd.method("txA"));
         assertNotNull(sd.method("txB"));

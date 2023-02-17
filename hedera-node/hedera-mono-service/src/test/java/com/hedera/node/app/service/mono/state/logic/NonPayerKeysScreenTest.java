@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -36,9 +37,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class NonPayerKeysScreenTest {
-    @Mock private TransactionContext txnCtx;
-    @Mock private InHandleActivationHelper activationHelper;
-    @Mock private BiPredicate<JKey, TransactionSignature> validityTest;
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private InHandleActivationHelper activationHelper;
+
+    @Mock
+    private BiPredicate<JKey, TransactionSignature> validityTest;
 
     private NonPayerKeysScreen subject;
 

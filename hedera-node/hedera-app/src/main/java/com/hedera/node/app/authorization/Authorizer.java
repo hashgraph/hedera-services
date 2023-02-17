@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.authorization;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -35,8 +36,7 @@ public class Authorizer {
         this.hapiOpPermissions = requireNonNull(hapiOpPermissions);
     }
 
-    public boolean isAuthorized(
-            @NonNull final AccountID id, @NonNull final HederaFunctionality function) {
+    public boolean isAuthorized(@NonNull final AccountID id, @NonNull final HederaFunctionality function) {
         final var permissionStatus = hapiOpPermissions.permissibilityOf(function, id);
         return permissionStatus == OK;
     }

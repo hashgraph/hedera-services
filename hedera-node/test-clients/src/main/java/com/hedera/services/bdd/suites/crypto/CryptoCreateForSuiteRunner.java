@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -74,83 +75,69 @@ public class CryptoCreateForSuiteRunner extends HapiSuite {
                 .withProperties(Map.of("nodes", nodes, "default.node", "0.0." + defaultNode))
                 .given()
                 .when()
-                .then(
-                        withOpContext(
-                                (spec, log) -> {
-                                    var createdAuditablePayer = false;
-                                    var retryCount = 0;
-                                    while (!createdAuditablePayer && retryCount < maxRetries) {
-                                        try {
-                                            AccountID id =
-                                                    spec.registry().getAccountID(DEFAULT_PAYER);
-                                            var cryptoCreateOp =
-                                                    cryptoCreate("payerAccount")
-                                                            .balance(
-                                                                    id.getAccountNum() == 2L
-                                                                            ? INITIAL_BALANCE
-                                                                            : THOUSAND_HBAR)
-                                                            .withRecharging()
-                                                            .rechargeWindow(3)
-                                                            .key(DEFAULT_PAYER)
-                                                            .payingWith(DEFAULT_PAYER)
-                                                            .hasRetryPrecheckFrom(
-                                                                    NOISY_RETRY_PRECHECKS)
-                                                            .via("txn")
-                                                            .ensuringResolvedStatusIsntFromDuplicate();
-                                            allRunFor(spec, cryptoCreateOp);
-                                            var gotCreationRecord = false;
-                                            while (!gotCreationRecord) {
-                                                try {
-                                                    var getRecordOp =
-                                                            getTxnRecord("txn")
-                                                                    .assertingNothing()
-                                                                    .saveTxnRecordToRegistry(
-                                                                            "savedTxnRcd")
-                                                                    .logged();
-                                                    allRunFor(spec, getRecordOp);
-                                                    gotCreationRecord = true;
-                                                } catch (Exception ignoreAndRetry) {
-                                                    // Intentionally ignored
-                                                }
-                                            }
-                                            createdAuditablePayer = true;
-                                        } catch (Exception ignoreAgainAndRetry) {
-                                            retryCount++;
-                                        }
-                                    }
-                                    var status =
-                                            spec.registry()
-                                                    .getTransactionRecord("savedTxnRcd")
-                                                    .getReceipt()
-                                                    .getStatus();
-                                    Assertions.assertEquals(
-                                            SUCCESS, status, "Failed to create payer account!");
+                .then(withOpContext((spec, log) -> {
+                    var createdAuditablePayer = false;
+                    var retryCount = 0;
+                    while (!createdAuditablePayer && retryCount < maxRetries) {
+                        try {
+                            AccountID id = spec.registry().getAccountID(DEFAULT_PAYER);
+                            var cryptoCreateOp = cryptoCreate("payerAccount")
+                                    .balance(id.getAccountNum() == 2L ? INITIAL_BALANCE : THOUSAND_HBAR)
+                                    .withRecharging()
+                                    .rechargeWindow(3)
+                                    .key(DEFAULT_PAYER)
+                                    .payingWith(DEFAULT_PAYER)
+                                    .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
+                                    .via("txn")
+                                    .ensuringResolvedStatusIsntFromDuplicate();
+                            allRunFor(spec, cryptoCreateOp);
+                            var gotCreationRecord = false;
+                            while (!gotCreationRecord) {
+                                try {
+                                    var getRecordOp = getTxnRecord("txn")
+                                            .assertingNothing()
+                                            .saveTxnRecordToRegistry("savedTxnRcd")
+                                            .logged();
+                                    allRunFor(spec, getRecordOp);
+                                    gotCreationRecord = true;
+                                } catch (Exception ignoreAndRetry) {
+                                    // Intentionally ignored
+                                }
+                            }
+                            createdAuditablePayer = true;
+                        } catch (Exception ignoreAgainAndRetry) {
+                            retryCount++;
+                        }
+                    }
+                    var status = spec.registry()
+                            .getTransactionRecord("savedTxnRcd")
+                            .getReceipt()
+                            .getStatus();
+                    Assertions.assertEquals(SUCCESS, status, "Failed to create payer account!");
 
-                                    var gotPayerInfo = false;
-                                    while (!gotPayerInfo) {
-                                        try {
-                                            var payerAccountInfo =
-                                                    getAccountInfo("payerAccount")
-                                                            .savingSnapshot("payerAccountInfo")
-                                                            .logged();
-                                            allRunFor(spec, payerAccountInfo);
-                                            gotPayerInfo = true;
-                                        } catch (Exception ignoreAndRetry) {
-                                            // Intentionally ignored
-                                        }
-                                    }
+                    var gotPayerInfo = false;
+                    while (!gotPayerInfo) {
+                        try {
+                            var payerAccountInfo = getAccountInfo("payerAccount")
+                                    .savingSnapshot("payerAccountInfo")
+                                    .logged();
+                            allRunFor(spec, payerAccountInfo);
+                            gotPayerInfo = true;
+                        } catch (Exception ignoreAndRetry) {
+                            // Intentionally ignored
+                        }
+                    }
 
-                                    // TODO Should be modified in a different way to avoid setting a
-                                    // static variable of
-                                    // other class
-                                    SuiteRunner.setPayerId(
-                                            String.format(
-                                                    "0.0.%s",
-                                                    spec.registry()
-                                                            .getAccountInfo("payerAccountInfo")
-                                                            .getAccountID()
-                                                            .getAccountNum()));
-                                }));
+                    // TODO Should be modified in a different way to avoid setting a
+                    // static variable of
+                    // other class
+                    SuiteRunner.setPayerId(String.format(
+                            "0.0.%s",
+                            spec.registry()
+                                    .getAccountInfo("payerAccountInfo")
+                                    .getAccountID()
+                                    .getAccountNum()));
+                }));
     }
 
     @Override

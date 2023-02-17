@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runLoadTest;
@@ -65,9 +66,7 @@ public class LoadTest extends HapiSuite {
     public static Optional<Boolean> clientToExportBalances = Optional.empty();
 
     protected final ResponseCodeEnum[] standardPermissiblePrechecks =
-            new ResponseCodeEnum[] {
-                OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED
-            };
+            new ResponseCodeEnum[] {OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED};
 
     public static int parseArgs(String... args) {
         int usedArgs = 0;
@@ -126,27 +125,17 @@ public class LoadTest extends HapiSuite {
         return testTopicId.getAsInt();
     }
 
-    public static RunLoadTest defaultLoadTest(
-            Supplier<HapiSpecOperation[]> opSource, PerfTestLoadSettings settings) {
+    public static RunLoadTest defaultLoadTest(Supplier<HapiSpecOperation[]> opSource, PerfTestLoadSettings settings) {
         return runLoadTest(opSource)
                 .tps(targetTPS.isPresent() ? LoadTest::getTargetTPS : settings::getTps)
                 .tolerance(settings::getTolerancePercentage)
                 .allowedSecsBelow(settings::getAllowedSecsBelow)
                 .setMemoLength(settings::getMemoLength)
-                .setNumberOfThreads(
-                        threadNumber.isPresent() ? threadNumber::getAsInt : settings::getThreads)
+                .setNumberOfThreads(threadNumber.isPresent() ? threadNumber::getAsInt : settings::getThreads)
                 .setTotalTestAccounts(
-                        totalTestAccounts.isPresent()
-                                ? totalTestAccounts::getAsInt
-                                : settings::getTotalAccounts)
-                .setTotalTestTopics(
-                        totalTestTopics.isPresent()
-                                ? totalTestTopics::getAsInt
-                                : settings::getTotalTopics)
-                .setTotalTestTokens(
-                        totalTestTokens.isPresent()
-                                ? totalTestTokens::getAsInt
-                                : settings::getTotalTokens)
+                        totalTestAccounts.isPresent() ? totalTestAccounts::getAsInt : settings::getTotalAccounts)
+                .setTotalTestTopics(totalTestTopics.isPresent() ? totalTestTopics::getAsInt : settings::getTotalTopics)
+                .setTotalTestTokens(totalTestTokens.isPresent() ? totalTestTokens::getAsInt : settings::getTotalTokens)
                 .setDurationCreateTokenAssociation(
                         durationCreateTokenAssociation.isPresent()
                                 ? durationCreateTokenAssociation::getAsInt
@@ -159,14 +148,8 @@ public class LoadTest extends HapiSuite {
                         totalTestTokenAccounts.isPresent()
                                 ? totalTestTokenAccounts::getAsInt
                                 : settings::getTotalTestTokenAccounts)
-                .setTotalTestTopics(
-                        totalTestTopics.isPresent()
-                                ? totalTestTopics::getAsInt
-                                : settings::getTotalTopics)
-                .setTotalScheduled(
-                        totalScheduled.isPresent()
-                                ? totalScheduled::getAsInt
-                                : settings::getTotalScheduled)
+                .setTotalTestTopics(totalTestTopics.isPresent() ? totalTestTopics::getAsInt : settings::getTotalTopics)
+                .setTotalScheduled(totalScheduled.isPresent() ? totalScheduled::getAsInt : settings::getTotalScheduled)
                 .setTotalTokenAssociations(
                         totalTokenAssociations.isPresent()
                                 ? totalTokenAssociations::getAsInt
@@ -175,12 +158,9 @@ public class LoadTest extends HapiSuite {
                         testTreasureStartAccount.isPresent()
                                 ? testTreasureStartAccount::getAsInt
                                 : settings::getTestTreasureStartAccount)
-                .setTestTopicId(
-                        testTopicId.isPresent() ? testTopicId::getAsInt : settings::getTestTopicId)
+                .setTestTopicId(testTopicId.isPresent() ? testTopicId::getAsInt : settings::getTestTopicId)
                 .setHCSSubmitMessageSize(
-                        hcsSubmitMessage.isPresent()
-                                ? hcsSubmitMessage::getAsInt
-                                : settings::getHcsSubmitMessageSize)
+                        hcsSubmitMessage.isPresent() ? hcsSubmitMessage::getAsInt : settings::getHcsSubmitMessageSize)
                 .setHCSSubmitMessageSizeVar(
                         hcsSubmitMessageSizeVar.isPresent()
                                 ? hcsSubmitMessageSizeVar::getAsInt
@@ -195,9 +175,7 @@ public class LoadTest extends HapiSuite {
                                 : settings::getClientToExportBalances)
                 .setInitialBalance(settings::getInitialBalance)
                 .lasting(
-                        (testDurationMinutes.isPresent()
-                                ? LoadTest::getTestDurationMinutes
-                                : settings::getMins),
+                        (testDurationMinutes.isPresent() ? LoadTest::getTestDurationMinutes : settings::getMins),
                         () -> MINUTES);
     }
 

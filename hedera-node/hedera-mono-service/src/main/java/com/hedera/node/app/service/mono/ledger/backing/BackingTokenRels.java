@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.backing;
 
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
@@ -87,7 +88,8 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
     }
 
     private EntityNumPair forMerkleMap(Pair<AccountID, TokenID> key) {
-        return EntityNumPair.fromLongs(key.getLeft().getAccountNum(), key.getRight().getTokenNum());
+        return EntityNumPair.fromLongs(
+                key.getLeft().getAccountNum(), key.getRight().getTokenNum());
     }
 
     /* -- only for unit tests */

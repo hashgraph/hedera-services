@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.init;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_LAST_THROTTLE_EXEMPT;
@@ -56,10 +57,8 @@ public class StateInitializationFlow {
         this.fileUpdateInterceptors = fileUpdateInterceptors;
     }
 
-    public void runWith(
-            final ServicesState activeState, final BootstrapProperties bootstrapProperties) {
-        final var lastThrottleExempt =
-                bootstrapProperties.getLongProperty(ACCOUNTS_LAST_THROTTLE_EXEMPT);
+    public void runWith(final ServicesState activeState, final BootstrapProperties bootstrapProperties) {
+        final var lastThrottleExempt = bootstrapProperties.getLongProperty(ACCOUNTS_LAST_THROTTLE_EXEMPT);
         // The last throttle-exempt account is configurable to make it easy to start dev networks
         // without throttling
         numberConfigurer.configureNumbers(hederaNums, lastThrottleExempt);

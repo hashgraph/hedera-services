@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.schedule.txns;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,11 +41,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ScheduleDeleteResourceUsageTest {
-    TransactionID scheduledTxnId =
-            TransactionID.newBuilder()
-                    .setScheduled(true)
-                    .setAccountID(IdUtils.asAccount("0.0.2"))
-                    .build();
+    TransactionID scheduledTxnId = TransactionID.newBuilder()
+            .setScheduled(true)
+            .setAccountID(IdUtils.asAccount("0.0.2"))
+            .build();
 
     ScheduleDeleteResourceUsage subject;
 
@@ -61,11 +61,10 @@ class ScheduleDeleteResourceUsageTest {
     TransactionBody nonScheduleDeleteTxn;
     TransactionBody scheduleDeleteTxn;
 
-    ScheduleInfo info =
-            ScheduleInfo.newBuilder()
-                    .setScheduledTransactionID(scheduledTxnId)
-                    .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
-                    .build();
+    ScheduleInfo info = ScheduleInfo.newBuilder()
+            .setScheduledTransactionID(scheduledTxnId)
+            .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
+            .build();
 
     @BeforeEach
     void setup() {
@@ -74,8 +73,9 @@ class ScheduleDeleteResourceUsageTest {
         scheduleDeleteTxn = mock(TransactionBody.class);
         given(scheduleDeleteTxn.hasScheduleDelete()).willReturn(true);
         given(scheduleDeleteTxn.getScheduleDelete())
-                .willReturn(
-                        ScheduleDeleteTransactionBody.newBuilder().setScheduleID(target).build());
+                .willReturn(ScheduleDeleteTransactionBody.newBuilder()
+                        .setScheduleID(target)
+                        .build());
 
         nonScheduleDeleteTxn = mock(TransactionBody.class);
         given(nonScheduleDeleteTxn.hasScheduleDelete()).willReturn(false);
@@ -106,10 +106,9 @@ class ScheduleDeleteResourceUsageTest {
     void returnsDefaultIfInfoMissing() throws Exception {
         // setup:
         final long start = 1_234_567L;
-        final TransactionID txnId =
-                TransactionID.newBuilder()
-                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(start))
-                        .build();
+        final TransactionID txnId = TransactionID.newBuilder()
+                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(start))
+                .build();
         given(scheduleDeleteTxn.getTransactionID()).willReturn(txnId);
         given(view.infoForSchedule(target)).willReturn(Optional.empty());
         given(scheduleOpsUsage.scheduleDeleteUsage(scheduleDeleteTxn, sigUsage, start + 1800))

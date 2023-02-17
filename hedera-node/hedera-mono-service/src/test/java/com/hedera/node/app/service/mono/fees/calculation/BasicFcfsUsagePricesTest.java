@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation;
 
 import static com.hedera.node.app.service.mono.fees.calculation.BasicFcfsUsagePrices.DEFAULT_RESOURCE_PRICES;
@@ -65,42 +66,37 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class BasicFcfsUsagePricesTest {
-    public static final String R4_FEE_SCHEDULE_REPR_PATH =
-            "src/test/resources/testfiles/r4FeeSchedule.bin";
+    public static final String R4_FEE_SCHEDULE_REPR_PATH = "src/test/resources/testfiles/r4FeeSchedule.bin";
 
     FileID schedules = IdUtils.asFile("0.0.111");
     long currentExpiry = 1_234_567;
     long nextExpiry = currentExpiry + 1_000;
-    FeeComponents currResourceUsagePrices =
-            FeeComponents.newBuilder()
-                    .setMin(currentExpiry)
-                    .setMax(currentExpiry)
-                    .setBpr(1_000_000L)
-                    .setBpt(2_000_000L)
-                    .setRbh(3_000_000L)
-                    .setSbh(4_000_000L)
-                    .build();
-    FeeComponents nextResourceUsagePrices =
-            FeeComponents.newBuilder()
-                    .setMin(nextExpiry)
-                    .setMax(nextExpiry)
-                    .setBpr(2_000_000L)
-                    .setBpt(3_000_000L)
-                    .setRbh(4_000_000L)
-                    .setSbh(5_000_000L)
-                    .build();
-    FeeData currUsagePrices =
-            FeeData.newBuilder()
-                    .setNetworkdata(currResourceUsagePrices)
-                    .setNodedata(currResourceUsagePrices)
-                    .setServicedata(currResourceUsagePrices)
-                    .build();
-    FeeData nextUsagePrices =
-            FeeData.newBuilder()
-                    .setNetworkdata(nextResourceUsagePrices)
-                    .setNodedata(nextResourceUsagePrices)
-                    .setServicedata(nextResourceUsagePrices)
-                    .build();
+    FeeComponents currResourceUsagePrices = FeeComponents.newBuilder()
+            .setMin(currentExpiry)
+            .setMax(currentExpiry)
+            .setBpr(1_000_000L)
+            .setBpt(2_000_000L)
+            .setRbh(3_000_000L)
+            .setSbh(4_000_000L)
+            .build();
+    FeeComponents nextResourceUsagePrices = FeeComponents.newBuilder()
+            .setMin(nextExpiry)
+            .setMax(nextExpiry)
+            .setBpr(2_000_000L)
+            .setBpt(3_000_000L)
+            .setRbh(4_000_000L)
+            .setSbh(5_000_000L)
+            .build();
+    FeeData currUsagePrices = FeeData.newBuilder()
+            .setNetworkdata(currResourceUsagePrices)
+            .setNodedata(currResourceUsagePrices)
+            .setServicedata(currResourceUsagePrices)
+            .build();
+    FeeData nextUsagePrices = FeeData.newBuilder()
+            .setNetworkdata(nextResourceUsagePrices)
+            .setNodedata(nextResourceUsagePrices)
+            .setServicedata(nextResourceUsagePrices)
+            .build();
 
     Map<SubType, FeeData> currUsagePricesMap = Map.of(DEFAULT, currUsagePrices);
     Map<SubType, FeeData> nextUsagePricesMap = Map.of(DEFAULT, nextUsagePrices);
@@ -113,43 +109,33 @@ class BasicFcfsUsagePricesTest {
 
     BasicFcfsUsagePrices subject;
 
-    TransactionBody contractCallTxn =
-            TransactionBody.newBuilder()
-                    .setTransactionID(
-                            TransactionID.newBuilder()
-                                    .setTransactionValidStart(
-                                            Timestamp.newBuilder().setSeconds(nextExpiry + 1)))
-                    .setContractCall(
-                            ContractCallTransactionBody.newBuilder()
-                                    .setContractID(IdUtils.asContract("1.2.3")))
-                    .build();
+    TransactionBody contractCallTxn = TransactionBody.newBuilder()
+            .setTransactionID(TransactionID.newBuilder()
+                    .setTransactionValidStart(Timestamp.newBuilder().setSeconds(nextExpiry + 1)))
+            .setContractCall(ContractCallTransactionBody.newBuilder().setContractID(IdUtils.asContract("1.2.3")))
+            .build();
 
     HederaFs hfs;
     PlatformTxnAccessor accessor;
 
     @BeforeEach
     void setup() {
-        nextFeeSchedule =
-                FeeSchedule.newBuilder()
-                        .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(nextExpiry))
-                        .addTransactionFeeSchedule(
-                                TransactionFeeSchedule.newBuilder()
-                                        .setHederaFunctionality(ContractCall)
-                                        .addFees(nextContractCallPrices.get(DEFAULT)))
-                        .build();
-        currentFeeSchedule =
-                FeeSchedule.newBuilder()
-                        .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(currentExpiry))
-                        .addTransactionFeeSchedule(
-                                TransactionFeeSchedule.newBuilder()
-                                        .setHederaFunctionality(ContractCall)
-                                        .addFees(currentContractCallPrices.get(DEFAULT)))
-                        .build();
-        feeSchedules =
-                CurrentAndNextFeeSchedule.newBuilder()
-                        .setCurrentFeeSchedule(currentFeeSchedule)
-                        .setNextFeeSchedule(nextFeeSchedule)
-                        .build();
+        nextFeeSchedule = FeeSchedule.newBuilder()
+                .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(nextExpiry))
+                .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
+                        .setHederaFunctionality(ContractCall)
+                        .addFees(nextContractCallPrices.get(DEFAULT)))
+                .build();
+        currentFeeSchedule = FeeSchedule.newBuilder()
+                .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(currentExpiry))
+                .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
+                        .setHederaFunctionality(ContractCall)
+                        .addFees(currentContractCallPrices.get(DEFAULT)))
+                .build();
+        feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
+                .setCurrentFeeSchedule(currentFeeSchedule)
+                .setNextFeeSchedule(nextFeeSchedule)
+                .build();
 
         hfs = mock(HederaFs.class);
         given(hfs.exists(schedules)).willReturn(true);
@@ -173,10 +159,7 @@ class BasicFcfsUsagePricesTest {
 
         // then:
         assertEquals(
-                Triple.of(
-                        currentContractCallPrices,
-                        Instant.ofEpochSecond(currentExpiry),
-                        nextContractCallPrices),
+                Triple.of(currentContractCallPrices, Instant.ofEpochSecond(currentExpiry), nextContractCallPrices),
                 actual);
     }
 
@@ -211,7 +194,8 @@ class BasicFcfsUsagePricesTest {
     void getsTransferUsagePricesAtCurrent() {
         // given:
         subject.loadPriceSchedules();
-        final Timestamp at = Timestamp.newBuilder().setSeconds(currentExpiry - 1).build();
+        final Timestamp at =
+                Timestamp.newBuilder().setSeconds(currentExpiry - 1).build();
 
         // when:
         final Map<SubType, FeeData> actual = subject.pricesGiven(ContractCall, at);
@@ -224,16 +208,15 @@ class BasicFcfsUsagePricesTest {
     void returnsDefaultUsagePricesForUnsupported() {
         // setup:
         final MockAppender mockAppender = new MockAppender();
-        final var log =
-                (org.apache.logging.log4j.core.Logger)
-                        LogManager.getLogger(BasicFcfsUsagePrices.class);
+        final var log = (org.apache.logging.log4j.core.Logger) LogManager.getLogger(BasicFcfsUsagePrices.class);
         log.addAppender(mockAppender);
         final Level levelForReset = log.getLevel();
         log.setLevel(Level.DEBUG);
 
         // given:
         subject.loadPriceSchedules();
-        final Timestamp at = Timestamp.newBuilder().setSeconds(currentExpiry - 1).build();
+        final Timestamp at =
+                Timestamp.newBuilder().setSeconds(currentExpiry - 1).build();
 
         // when:
         final Map<SubType, FeeData> actual = subject.pricesGiven(UNRECOGNIZED, at);
@@ -269,8 +252,7 @@ class BasicFcfsUsagePricesTest {
     void loadsGoodScheduleUneventfully() throws Exception {
         // setup:
         final byte[] bytes = Files.toByteArray(new File(R4_FEE_SCHEDULE_REPR_PATH));
-        final CurrentAndNextFeeSchedule expectedFeeSchedules =
-                CurrentAndNextFeeSchedule.parseFrom(bytes);
+        final CurrentAndNextFeeSchedule expectedFeeSchedules = CurrentAndNextFeeSchedule.parseFrom(bytes);
 
         given(hfs.exists(schedules)).willReturn(true);
         given(hfs.cat(schedules)).willReturn(bytes);
@@ -313,17 +295,17 @@ class BasicFcfsUsagePricesTest {
     @Test
     void translatesFromUntypedFeeSchedule() {
         // setup:
-        final var fcPrices = currUsagePrices.toBuilder().setSubType(TOKEN_FUNGIBLE_COMMON).build();
-        final var fcFeesPrices =
-                currUsagePrices.toBuilder()
-                        .setSubType(TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES)
-                        .build();
-        final var unPrices =
-                currUsagePrices.toBuilder().setSubType(TOKEN_NON_FUNGIBLE_UNIQUE).build();
-        final var unFeesPrices =
-                currUsagePrices.toBuilder()
-                        .setSubType(TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES)
-                        .build();
+        final var fcPrices =
+                currUsagePrices.toBuilder().setSubType(TOKEN_FUNGIBLE_COMMON).build();
+        final var fcFeesPrices = currUsagePrices.toBuilder()
+                .setSubType(TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES)
+                .build();
+        final var unPrices = currUsagePrices.toBuilder()
+                .setSubType(TOKEN_NON_FUNGIBLE_UNIQUE)
+                .build();
+        final var unFeesPrices = currUsagePrices.toBuilder()
+                .setSubType(TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES)
+                .build();
         // given:
         final var inferred = subject.functionUsagePricesFrom(getPreSubTypeFeeSchedule());
         // and:
@@ -340,13 +322,9 @@ class BasicFcfsUsagePricesTest {
         // and:
         assertEquals(currUsagePrices, xferTypedPricesMap.get(DEFAULT));
         assertEquals(fcPrices, xferTypedPricesMap.get(SubType.TOKEN_FUNGIBLE_COMMON));
-        assertEquals(
-                fcFeesPrices,
-                xferTypedPricesMap.get(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
+        assertEquals(fcFeesPrices, xferTypedPricesMap.get(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
         assertEquals(unPrices, xferTypedPricesMap.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE));
-        assertEquals(
-                unFeesPrices,
-                xferTypedPricesMap.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES));
+        assertEquals(unFeesPrices, xferTypedPricesMap.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES));
         assertEquals(fcPrices, mintTypedPricesMap.get(SubType.TOKEN_FUNGIBLE_COMMON));
         assertEquals(unPrices, mintTypedPricesMap.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE));
         assertEquals(fcPrices, burnTypedPricesMap.get(SubType.TOKEN_FUNGIBLE_COMMON));
@@ -358,16 +336,15 @@ class BasicFcfsUsagePricesTest {
     @Test
     void usesNewStylePricesIfAvailable() {
         // setup:
-        final var data =
-                tfsWithOldAndNewPriceData(
-                        currUsagePrices,
-                        nextUsagePrices,
-                        DEFAULT,
-                        TOKEN_FUNGIBLE_COMMON,
-                        TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
-                        TOKEN_NON_FUNGIBLE_UNIQUE,
-                        TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES,
-                        SCHEDULE_CREATE_CONTRACT_CALL);
+        final var data = tfsWithOldAndNewPriceData(
+                currUsagePrices,
+                nextUsagePrices,
+                DEFAULT,
+                TOKEN_FUNGIBLE_COMMON,
+                TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
+                TOKEN_NON_FUNGIBLE_UNIQUE,
+                TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES,
+                SCHEDULE_CREATE_CONTRACT_CALL);
         final Map<SubType, FeeData> pricesMap = new EnumMap<>(SubType.class);
 
         // when:
@@ -385,8 +362,7 @@ class BasicFcfsUsagePricesTest {
         // then:
         for (final var type : SubType.class.getEnumConstants()) {
             if (type != SubType.UNRECOGNIZED) {
-                assertEquals(
-                        nextUsagePrices.toBuilder().setSubType(type).build(), pricesMap.get(type));
+                assertEquals(nextUsagePrices.toBuilder().setSubType(type).build(), pricesMap.get(type));
             }
         }
     }
@@ -432,8 +408,7 @@ class BasicFcfsUsagePricesTest {
                 .build();
     }
 
-    private TransactionFeeSchedule untypedTransactionFeeSchedule(
-            final HederaFunctionality function) {
+    private TransactionFeeSchedule untypedTransactionFeeSchedule(final HederaFunctionality function) {
         return TransactionFeeSchedule.newBuilder()
                 .setHederaFunctionality(function)
                 .setFeeData(currUsagePrices)

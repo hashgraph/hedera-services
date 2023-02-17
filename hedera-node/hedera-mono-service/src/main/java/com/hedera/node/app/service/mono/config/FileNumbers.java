@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.config;
 
 import static com.hedera.node.app.service.mono.config.EntityNumbers.UNKNOWN_NUMBER;
@@ -41,8 +42,7 @@ public class FileNumbers implements HederaFileNumbers {
     private long throttleDefinitions = UNKNOWN_NUMBER;
 
     @Inject
-    public FileNumbers(
-            final HederaNumbers hederaNums, @CompositeProps final PropertySource properties) {
+    public FileNumbers(final HederaNumbers hederaNums, @CompositeProps final PropertySource properties) {
         this.hederaNums = hederaNums;
         this.properties = properties;
     }
@@ -98,7 +98,8 @@ public class FileNumbers implements HederaFileNumbers {
     @Override
     public long firstSoftwareUpdateFile() {
         if (firstUpdateFile == UNKNOWN_NUMBER) {
-            firstUpdateFile = properties.getEntityNumRange("files.softwareUpdateRange").getLeft();
+            firstUpdateFile =
+                    properties.getEntityNumRange("files.softwareUpdateRange").getLeft();
         }
         return firstUpdateFile;
     }
@@ -106,7 +107,8 @@ public class FileNumbers implements HederaFileNumbers {
     @Override
     public long lastSoftwareUpdateFile() {
         if (lastUpdateFile == UNKNOWN_NUMBER) {
-            lastUpdateFile = properties.getEntityNumRange("files.softwareUpdateRange").getRight();
+            lastUpdateFile =
+                    properties.getEntityNumRange("files.softwareUpdateRange").getRight();
         }
         return lastUpdateFile;
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.utils;
 
 import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
@@ -47,6 +48,7 @@ class PrecompileUtilsTest {
                 true,
                 ALTBN128_ADD);
         assertEquals("FAIL_INVALID", childRecord.getContractCallResult().getError());
-        assertEquals(10, Bytes.wrap(childRecord.getContractCallResult().getResult()).toInt());
+        assertEquals(
+                10, Bytes.wrap(childRecord.getContractCallResult().getResult()).toInt());
     }
 }

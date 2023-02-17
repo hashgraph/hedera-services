@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
@@ -37,10 +38,7 @@ public interface EvmGetApprovedPrecompile {
         final var tokenAddress = input.slice(4, 20).toArrayUnsafe();
         final var nestedInput = input.slice(24);
         final Tuple decodedArguments =
-                decodeFunctionCall(
-                        nestedInput,
-                        ERC_GET_APPROVED_FUNCTION_SELECTOR,
-                        ERC_GET_APPROVED_FUNCTION_DECODER);
+                decodeFunctionCall(nestedInput, ERC_GET_APPROVED_FUNCTION_SELECTOR, ERC_GET_APPROVED_FUNCTION_DECODER);
         final var serialNo = (BigInteger) decodedArguments.get(0);
 
         return new GetApprovedWrapper<>(tokenAddress, serialNo.longValueExact());

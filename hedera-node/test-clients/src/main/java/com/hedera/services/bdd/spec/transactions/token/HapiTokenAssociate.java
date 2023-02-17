@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -71,22 +72,14 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         try {
             final long expiry = lookupExpiry(spec);
-            FeeCalculator.ActivityMetrics metricsCalc =
-                    (_txn, svo) -> {
-                        var estimate =
-                                TokenAssociateUsage.newEstimate(
-                                                _txn,
-                                                new TxnUsageEstimator(
-                                                        suFrom(svo), _txn, ESTIMATOR_UTILS))
-                                        .givenCurrentExpiry(expiry);
-                        return estimate.get();
-                    };
+            FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> {
+                var estimate = TokenAssociateUsage.newEstimate(
+                                _txn, new TxnUsageEstimator(suFrom(svo), _txn, ESTIMATOR_UTILS))
+                        .givenCurrentExpiry(expiry);
+                return estimate.get();
+            };
             return spec.fees()
-                    .forActivityBasedOp(
-                            HederaFunctionality.TokenAssociateToAccount,
-                            metricsCalc,
-                            txn,
-                            numPayerKeys);
+                    .forActivityBasedOp(HederaFunctionality.TokenAssociateToAccount, metricsCalc, txn, numPayerKeys);
         } catch (Throwable ignore) {
             return 100_000_000L;
         }
@@ -135,25 +128,21 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         var aId = TxnUtils.asId(account, spec);
-        TokenAssociateTransactionBody opBody =
-                spec.txns()
-                        .<TokenAssociateTransactionBody, TokenAssociateTransactionBody.Builder>body(
-                                TokenAssociateTransactionBody.class,
-                                b -> {
-                                    b.setAccount(aId);
-                                    b.addAllTokens(
-                                            tokens.stream()
-                                                    .map(lit -> TxnUtils.asTokenId(lit, spec))
-                                                    .collect(toList()));
-                                });
+        TokenAssociateTransactionBody opBody = spec.txns()
+                .<TokenAssociateTransactionBody, TokenAssociateTransactionBody.Builder>body(
+                        TokenAssociateTransactionBody.class, b -> {
+                            b.setAccount(aId);
+                            b.addAllTokens(tokens.stream()
+                                    .map(lit -> TxnUtils.asTokenId(lit, spec))
+                                    .collect(toList()));
+                        });
         return b -> b.setTokenAssociate(opBody);
     }
 
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
-        return List.of(
-                spec -> spec.registry().getKey(effectivePayer(spec)),
-                spec -> spec.registry().getKey(account));
+        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
+                .getKey(account));
     }
 
     @Override

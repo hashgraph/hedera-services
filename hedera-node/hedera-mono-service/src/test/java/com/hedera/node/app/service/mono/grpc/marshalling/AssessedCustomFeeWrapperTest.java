@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -28,11 +29,9 @@ class AssessedCustomFeeWrapperTest {
     @Test
     void managesTokenMetaAsExpected() {
         final var hbarSubject =
-                new AssessedCustomFeeWrapper(
-                        AN_ACCOUNT, 1L, new AccountID[] {AN_ACCOUNT.toGrpcAccountId()});
+                new AssessedCustomFeeWrapper(AN_ACCOUNT, 1L, new AccountID[] {AN_ACCOUNT.toGrpcAccountId()});
         final var tokenSubject =
-                new AssessedCustomFeeWrapper(
-                        AN_ACCOUNT, A_TOKEN, 1L, new AccountID[] {AN_ACCOUNT.toGrpcAccountId()});
+                new AssessedCustomFeeWrapper(AN_ACCOUNT, A_TOKEN, 1L, new AccountID[] {AN_ACCOUNT.toGrpcAccountId()});
         assertTrue(hbarSubject.isForHbar());
         assertFalse(tokenSubject.isForHbar());
         assertEquals(A_TOKEN, tokenSubject.token());

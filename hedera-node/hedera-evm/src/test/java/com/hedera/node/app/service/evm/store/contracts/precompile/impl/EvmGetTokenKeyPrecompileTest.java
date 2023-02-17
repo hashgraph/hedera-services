@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,9 +27,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class EvmGetTokenKeyPrecompileTest {
 
-    public static final Bytes GET_TOKEN_KEY_INOUT =
-            Bytes.fromHexString(
-                    "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000003f40000000000000000000000000000000000000000000000000000000000000001");
+    public static final Bytes GET_TOKEN_KEY_INOUT = Bytes.fromHexString(
+            "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000003f40000000000000000000000000000000000000000000000000000000000000001");
 
     @Test
     void decodeGetTokenKey() {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store;
 
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.packedTime;
@@ -91,10 +92,9 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
         for (var tokenRelationship : tokenRelationships) {
             final var key = EntityNumPair.fromModelRel(tokenRelationship);
             if (tokenRelationship.isDestroyed()) {
-                tokenRels.remove(
-                        Pair.of(
-                                tokenRelationship.getAccount().getId().asGrpcAccount(),
-                                tokenRelationship.getToken().getId().asGrpcToken()));
+                tokenRels.remove(Pair.of(
+                        tokenRelationship.getAccount().getId().asGrpcAccount(),
+                        tokenRelationship.getToken().getId().asGrpcToken()));
             } else {
                 persistNonDestroyed(tokenRelationship, key);
             }
@@ -104,8 +104,7 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 
     private void persistNonDestroyed(TokenRelationship modelRel, EntityNumPair key) {
         final var isNewRel = modelRel.isNotYetPersisted();
-        final var mutableTokenRel =
-                isNewRel ? new MerkleTokenRelStatus() : tokenRels.getRef(key.asAccountTokenRel());
+        final var mutableTokenRel = isNewRel ? new MerkleTokenRelStatus() : tokenRels.getRef(key.asAccountTokenRel());
         mutableTokenRel.setBalance(modelRel.getBalance());
         mutableTokenRel.setFrozen(modelRel.isFrozen());
         mutableTokenRel.setKycGranted(modelRel.isKycGranted());
@@ -157,16 +156,15 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
      */
     public void persistNew(final Token modelToken) {
         final var newTokenNum = EntityNum.fromModel(modelToken.getId());
-        final var newToken =
-                new MerkleToken(
-                        modelToken.getExpiry(),
-                        modelToken.getTotalSupply(),
-                        modelToken.getDecimals(),
-                        modelToken.getSymbol(),
-                        modelToken.getName(),
-                        modelToken.isFrozenByDefault(),
-                        !modelToken.hasKycKey(),
-                        modelToken.getTreasury().getId().asEntityId());
+        final var newToken = new MerkleToken(
+                modelToken.getExpiry(),
+                modelToken.getTotalSupply(),
+                modelToken.getDecimals(),
+                modelToken.getSymbol(),
+                modelToken.getName(),
+                modelToken.isFrozenByDefault(),
+                !modelToken.hasKycKey(),
+                modelToken.getTreasury().getId().asEntityId());
         mapModelChanges(modelToken, newToken);
         tokens.put(newTokenNum.toGrpcTokenId(), newToken);
         modelToken.getTreasury().incrementNumTreasuryTitles();
@@ -175,8 +173,7 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 
     public void persistNft(UniqueToken nft) {
         final var tokenId = nft.getTokenId();
-        final var nftId =
-                new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), nft.getSerialNumber());
+        final var nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), nft.getSerialNumber());
         final var mutableNft = uniqueTokens.getRef(nftId);
         mapModelChanges(nft, mutableNft);
         uniqueTokens.put(nftId, mutableNft);
@@ -184,20 +181,15 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 
     private void destroyRemoved(List<UniqueToken> nfts) {
         for (final var nft : nfts) {
-            uniqueTokens.remove(
-                    NftId.withDefaultShardRealm(nft.getTokenId().num(), nft.getSerialNumber()));
+            uniqueTokens.remove(NftId.withDefaultShardRealm(nft.getTokenId().num(), nft.getSerialNumber()));
         }
     }
 
     private void persistMinted(List<UniqueToken> nfts) {
         for (final var nft : nfts) {
-            final var merkleNft =
-                    UniqueTokenAdapter.wrap(
-                            new MerkleUniqueToken(
-                                    MISSING_ENTITY_ID, nft.getMetadata(), nft.getCreationTime()));
-            uniqueTokens.put(
-                    NftId.withDefaultShardRealm(nft.getTokenId().num(), nft.getSerialNumber()),
-                    merkleNft);
+            final var merkleNft = UniqueTokenAdapter.wrap(
+                    new MerkleUniqueToken(MISSING_ENTITY_ID, nft.getMetadata(), nft.getCreationTime()));
+            uniqueTokens.put(NftId.withDefaultShardRealm(nft.getTokenId().num(), nft.getSerialNumber()), merkleNft);
         }
     }
 
@@ -240,8 +232,7 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
             final var creationTime = nft.getCreationTime();
             mutableNft
                     .uniqueTokenValue()
-                    .setPackedCreationTime(
-                            packedTime(creationTime.getSeconds(), creationTime.getNanos()));
+                    .setPackedCreationTime(packedTime(creationTime.getSeconds(), creationTime.getNanos()));
         } else {
             mutableNft.merkleUniqueToken().setOwner(nft.getOwner().asEntityId());
             mutableNft.merkleUniqueToken().setSpender(nft.getSpender().asEntityId());
@@ -249,8 +240,7 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
             final var creationTime = nft.getCreationTime();
             mutableNft
                     .merkleUniqueToken()
-                    .setPackedCreationTime(
-                            packedTime(creationTime.getSeconds(), creationTime.getNanos()));
+                    .setPackedCreationTime(packedTime(creationTime.getSeconds(), creationTime.getNanos()));
         }
     }
 }

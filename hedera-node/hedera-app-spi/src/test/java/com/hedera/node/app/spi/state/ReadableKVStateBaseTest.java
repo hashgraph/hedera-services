@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -83,10 +84,8 @@ class ReadableKVStateBaseTest extends StateTestBase {
     void testReadKeysIsUnmodifiable() {
         state.get(A_KEY);
         final var readKeys = state.readKeys();
-        assertThatThrownBy(() -> readKeys.add(B_KEY))
-                .isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> readKeys.remove(A_KEY))
-                .isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> readKeys.add(B_KEY)).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> readKeys.remove(A_KEY)).isInstanceOf(UnsupportedOperationException.class);
     }
 
     /**

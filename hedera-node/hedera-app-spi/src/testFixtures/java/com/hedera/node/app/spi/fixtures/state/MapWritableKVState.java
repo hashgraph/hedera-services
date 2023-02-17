@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.fixtures.state;
 
 import com.hedera.node.app.spi.state.WritableKVStateBase;
@@ -57,8 +58,7 @@ public class MapWritableKVState<K extends Comparable<K>, V> extends WritableKVSt
      * @param stateKey The state key for this state
      * @param backingStore The backing store to use
      */
-    public MapWritableKVState(
-            @NonNull final String stateKey, @NonNull final Map<K, V> backingStore) {
+    public MapWritableKVState(@NonNull final String stateKey, @NonNull final Map<K, V> backingStore) {
         super(stateKey);
         this.backingStore = Objects.requireNonNull(backingStore);
     }
@@ -98,8 +98,7 @@ public class MapWritableKVState<K extends Comparable<K>, V> extends WritableKVSt
      * @param <K> The key type
      * @param <V> The value type
      */
-    public static <K extends Comparable<K>, V> Builder<K, V> builder(
-            @NonNull final String stateKey) {
+    public static <K extends Comparable<K>, V> Builder<K, V> builder(@NonNull final String stateKey) {
         return new Builder<>(stateKey);
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.token;
 
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenDissociation.explicit;
@@ -32,8 +33,7 @@ public class RandomTokenKycGrant implements OpProvider {
     private final RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels;
 
     private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(
-                    TOKEN_WAS_DELETED, TOKEN_HAS_NO_KYC_KEY, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+            standardOutcomesAnd(TOKEN_WAS_DELETED, TOKEN_HAS_NO_KYC_KEY, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
     public RandomTokenKycGrant(RegistrySourcedNameProvider<TokenAccountRegistryRel> tokenRels) {
         this.tokenRels = tokenRels;
@@ -48,10 +48,9 @@ public class RandomTokenKycGrant implements OpProvider {
 
         var implicitRel = relToGrant.get();
         var rel = explicit(implicitRel);
-        var op =
-                grantTokenKyc(rel.getRight(), rel.getLeft())
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                        .hasKnownStatusFrom(permissibleOutcomes);
+        var op = grantTokenKyc(rel.getRight(), rel.getLeft())
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                .hasKnownStatusFrom(permissibleOutcomes);
         return Optional.of(op);
     }
 }

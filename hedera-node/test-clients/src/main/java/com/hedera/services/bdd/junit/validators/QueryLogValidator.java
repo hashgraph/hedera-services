@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.junit.validators;
 
 import java.io.IOException;
@@ -38,10 +39,7 @@ public class QueryLogValidator {
         final List<String> problemLines = Files.readAllLines(Paths.get(logFileLocation));
         if (!problemLines.isEmpty()) {
             Assertions.fail(
-                    "Found problems in log file '"
-                            + logFileLocation
-                            + "':\n"
-                            + String.join("\n", problemLines));
+                    "Found problems in log file '" + logFileLocation + "':\n" + String.join("\n", problemLines));
         }
     }
 }

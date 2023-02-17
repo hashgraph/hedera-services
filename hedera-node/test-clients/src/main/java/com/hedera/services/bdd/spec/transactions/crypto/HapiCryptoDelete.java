@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.crypto;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
@@ -85,10 +86,7 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
-                        HederaFunctionality.CryptoDelete,
-                        cryptoFees::getCryptoDeleteTxFeeMatrices,
-                        txn,
-                        numPayerKeys);
+                        HederaFunctionality.CryptoDelete, cryptoFees::getCryptoDeleteTxFeeMatrices, txn, numPayerKeys);
     }
 
     @Override
@@ -102,17 +100,13 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
             target = asAccount(account);
         }
 
-        CryptoDeleteTransactionBody opBody =
-                spec.txns()
-                        .<CryptoDeleteTransactionBody, CryptoDeleteTransactionBody.Builder>body(
-                                CryptoDeleteTransactionBody.class,
-                                b -> {
-                                    transferAccount.ifPresent(
-                                            a ->
-                                                    b.setTransferAccountID(
-                                                            spec.registry().getAccountID(a)));
-                                    b.setDeleteAccountID(target);
-                                });
+        CryptoDeleteTransactionBody opBody = spec.txns()
+                .<CryptoDeleteTransactionBody, CryptoDeleteTransactionBody.Builder>body(
+                        CryptoDeleteTransactionBody.class, b -> {
+                            transferAccount.ifPresent(
+                                    a -> b.setTransferAccountID(spec.registry().getAccountID(a)));
+                            b.setDeleteAccountID(target);
+                        });
         return b -> b.setCryptoDelete(opBody);
     }
 
@@ -143,12 +137,8 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
         List<Function<HapiSpec, Key>> deleteSigners = new ArrayList<>();
         deleteSigners.addAll(super.defaultSigners());
         deleteSigners.add(spec -> spec.registry().getKey(account));
-        deleteSigners.add(
-                spec ->
-                        spec.registry()
-                                .getKey(
-                                        transferAccount.orElse(
-                                                spec.setup().defaultTransferName())));
+        deleteSigners.add(spec ->
+                spec.registry().getKey(transferAccount.orElse(spec.setup().defaultTransferName())));
         return deleteSigners;
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -68,22 +69,21 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    happyPathWorks(),
-                    approvedForAllNotAffectedOnDelete(),
-                    noOwnerDefaultsToPayerInDeleteAllowance(),
-                    invalidOwnerFails(),
-                    canDeleteMultipleOwners(),
-                    emptyAllowancesDeleteRejected(),
-                    tokenNotAssociatedToAccountFailsOnDeleteAllowance(),
-                    invalidTokenTypeFailsInDeleteAllowance(),
-                    validatesSerialNums(),
-                    exceedsTransactionLimit(),
-                    succeedsWhenTokenPausedFrozenKycRevoked(),
-                    feesAsExpected(),
-                    duplicateEntriesDoesntThrow()
-                });
+        return List.of(new HapiSpec[] {
+            happyPathWorks(),
+            approvedForAllNotAffectedOnDelete(),
+            noOwnerDefaultsToPayerInDeleteAllowance(),
+            invalidOwnerFails(),
+            canDeleteMultipleOwners(),
+            emptyAllowancesDeleteRejected(),
+            tokenNotAssociatedToAccountFailsOnDeleteAllowance(),
+            invalidTokenTypeFailsInDeleteAllowance(),
+            validatesSerialNums(),
+            exceedsTransactionLimit(),
+            succeedsWhenTokenPausedFrozenKycRevoked(),
+            feesAsExpected(),
+            duplicateEntriesDoesntThrow()
+        });
     }
 
     private HapiSpec duplicateEntriesDoesntThrow() {
@@ -94,9 +94,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
         return defaultHapiSpec("duplicateEntriesDoesntThrow")
                 .given(
                         newKeyNamed("supplyKey"),
-                        cryptoCreate(owner)
-                                .balance(ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
+                        cryptoCreate(owner).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY)
                                 .balance(100 * ONE_HUNDRED_HBARS)
@@ -125,8 +123,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                                 ByteString.copyFromUtf8("c")))
                                 .via("nftTokenMint"),
                         mintToken(token, 500L).via("tokenMint"),
-                        cryptoTransfer(
-                                movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, owner)))
+                        cryptoTransfer(movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, owner)))
                 .when(
                         cryptoApproveAllowance()
                                 .payingWith(owner)
@@ -135,13 +132,12 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                 .addNftAllowance(owner, nft, spender, false, List.of(1L, 2L, 3L)),
                         getAccountDetails(owner)
                                 .payingWith(GENESIS)
-                                .has(
-                                        accountDetailsWith()
-                                                .cryptoAllowancesCount(1)
-                                                .nftApprovedForAllAllowancesCount(0)
-                                                .tokenAllowancesCount(1)
-                                                .cryptoAllowancesContaining(spender, 100L)
-                                                .tokenAllowancesContaining(token, spender, 100L)),
+                                .has(accountDetailsWith()
+                                        .cryptoAllowancesCount(1)
+                                        .nftApprovedForAllAllowancesCount(0)
+                                        .tokenAllowancesCount(1)
+                                        .cryptoAllowancesContaining(spender, 100L)
+                                        .tokenAllowancesContaining(token, spender, 100L)),
                         getTokenNftInfo(nft, 1L).hasSpenderID(spender))
                 .then(
                         cryptoDeleteAllowance()
@@ -174,9 +170,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
         return defaultHapiSpec("invalidOwnerFails")
                 .given(
                         newKeyNamed("supplyKey"),
-                        cryptoCreate(owner)
-                                .balance(ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
+                        cryptoCreate(owner).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate("payer").balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY)
@@ -218,11 +212,10 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                 .via("baseDeleteTxn")
                                 .blankMemo()
                                 .hasPrecheck(INVALID_ALLOWANCE_OWNER_ID))
-                .then(
-                        getAccountDetails(owner)
-                                .payingWith(GENESIS)
-                                .hasCostAnswerPrecheck(ACCOUNT_DELETED)
-                                .hasAnswerOnlyPrecheck(ACCOUNT_DELETED));
+                .then(getAccountDetails(owner)
+                        .payingWith(GENESIS)
+                        .hasCostAnswerPrecheck(ACCOUNT_DELETED)
+                        .hasAnswerOnlyPrecheck(ACCOUNT_DELETED));
     }
 
     private HapiSpec feesAsExpected() {
@@ -234,12 +227,8 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
         return defaultHapiSpec("feesAsExpected")
                 .given(
                         newKeyNamed("supplyKey"),
-                        cryptoCreate(owner)
-                                .balance(ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
-                        cryptoCreate(payer)
-                                .balance(ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
+                        cryptoCreate(owner).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                        cryptoCreate(payer).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate("spender1").balance(ONE_HUNDRED_HBARS),
                         cryptoCreate("spender2").balance(ONE_HUNDRED_HBARS),
@@ -270,15 +259,13 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                                 ByteString.copyFromUtf8("c")))
                                 .via("nftTokenMint"),
                         mintToken(token, 500L).via("tokenMint"),
-                        cryptoTransfer(
-                                movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, owner)))
+                        cryptoTransfer(movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, owner)))
                 .when(
                         cryptoApproveAllowance()
                                 .payingWith(owner)
                                 .addCryptoAllowance(owner, "spender2", 100L)
                                 .addTokenAllowance(owner, token, "spender2", 100L)
-                                .addNftAllowance(
-                                        owner, nft, "spender2", false, List.of(1L, 2L, 3L)),
+                                .addNftAllowance(owner, nft, "spender2", false, List.of(1L, 2L, 3L)),
                         /* without specifying owner */
                         cryptoDeleteAllowance()
                                 .payingWith(owner)
@@ -329,18 +316,15 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         fileUpdate(APP_PROPERTIES)
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
-                                .overridingProps(
-                                        Map.of(
-                                                "hedera.allowances.maxTransactionLimit", "20",
-                                                "hedera.allowances.maxAccountLimit", "100")),
+                                .overridingProps(Map.of(
+                                        "hedera.allowances.maxTransactionLimit", "20",
+                                        "hedera.allowances.maxAccountLimit", "100")),
                         newKeyNamed("supplyKey"),
                         newKeyNamed("adminKey"),
                         newKeyNamed("freezeKey"),
                         newKeyNamed("kycKey"),
                         newKeyNamed("pauseKey"),
-                        cryptoCreate(owner)
-                                .balance(ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
+                        cryptoCreate(owner).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(spender1).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY)
@@ -380,16 +364,13 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         mintToken(token, 500L).via("tokenMint"),
                         grantTokenKyc(token, owner),
                         grantTokenKyc(nft, owner),
-                        cryptoTransfer(
-                                movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, owner)))
+                        cryptoTransfer(movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, owner)))
                 .when(
                         cryptoApproveAllowance()
                                 .payingWith(owner)
                                 .addNftAllowance(owner, nft, spender, false, List.of(1L)),
                         revokeTokenKyc(nft, owner),
-                        cryptoDeleteAllowance()
-                                .payingWith(owner)
-                                .addNftDeleteAllowance(owner, nft, List.of(1L)),
+                        cryptoDeleteAllowance().payingWith(owner).addNftDeleteAllowance(owner, nft, List.of(1L)),
                         getAccountDetails(owner)
                                 .payingWith(GENESIS)
                                 .has(accountDetailsWith().noAllowances()))
@@ -398,9 +379,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                 .payingWith(owner)
                                 .addNftAllowance(owner, nft, spender, false, List.of(3L)),
                         tokenPause(nft),
-                        cryptoDeleteAllowance()
-                                .payingWith(owner)
-                                .addNftDeleteAllowance(owner, nft, List.of(3L)),
+                        cryptoDeleteAllowance().payingWith(owner).addNftDeleteAllowance(owner, nft, List.of(3L)),
                         getAccountDetails(owner)
                                 .payingWith(GENESIS)
                                 .has(accountDetailsWith().noAllowances()),
@@ -409,9 +388,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         cryptoApproveAllowance()
                                 .payingWith(owner)
                                 .addNftAllowance(owner, nft, spender, false, List.of(2L)),
-                        cryptoDeleteAllowance()
-                                .payingWith(owner)
-                                .addNftDeleteAllowance(owner, nft, List.of(2L)),
+                        cryptoDeleteAllowance().payingWith(owner).addNftDeleteAllowance(owner, nft, List.of(2L)),
                         getAccountDetails(owner)
                                 .payingWith(GENESIS)
                                 .has(accountDetailsWith().noAllowances()),
@@ -419,10 +396,9 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         fileUpdate(APP_PROPERTIES)
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
-                                .overridingProps(
-                                        Map.of(
-                                                "hedera.allowances.maxTransactionLimit", "20",
-                                                "hedera.allowances.maxAccountLimit", "100")));
+                                .overridingProps(Map.of(
+                                        "hedera.allowances.maxTransactionLimit", "20",
+                                        "hedera.allowances.maxAccountLimit", "100")));
     }
 
     private HapiSpec exceedsTransactionLimit() {
@@ -438,11 +414,8 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         fileUpdate(APP_PROPERTIES)
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
-                                .overridingProps(
-                                        Map.of("hedera.allowances.maxTransactionLimit", "4")),
-                        cryptoCreate(owner)
-                                .balance(ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
+                                .overridingProps(Map.of("hedera.allowances.maxTransactionLimit", "4")),
+                        cryptoCreate(owner).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(spender1).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(spender2).balance(ONE_HUNDRED_HBARS),
@@ -473,8 +446,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                                 ByteString.copyFromUtf8("c")))
                                 .via("nftTokenMint"),
                         mintToken(token, 500L).via("tokenMint"),
-                        cryptoTransfer(
-                                movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, owner)))
+                        cryptoTransfer(movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, owner)))
                 .when(
                         cryptoApproveAllowance()
                                 .payingWith(owner)
@@ -500,8 +472,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         fileUpdate(APP_PROPERTIES)
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
-                                .overridingProps(
-                                        Map.of("hedera.allowances.maxTransactionLimit", "20")));
+                                .overridingProps(Map.of("hedera.allowances.maxTransactionLimit", "20")));
     }
 
     private HapiSpec validatesSerialNums() {
@@ -511,9 +482,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
         return defaultHapiSpec("validatesSerialNums")
                 .given(
                         newKeyNamed("supplyKey"),
-                        cryptoCreate(owner)
-                                .balance(ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
+                        cryptoCreate(owner).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY)
                                 .balance(100 * ONE_HUNDRED_HBARS)
@@ -538,9 +507,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         cryptoApproveAllowance()
                                 .payingWith(owner)
                                 .addNftAllowance(owner, nft, spender, false, List.of(1L, 2L)),
-                        cryptoDeleteAllowance()
-                                .payingWith(owner)
-                                .addNftDeleteAllowance(owner, nft, List.of(1L)),
+                        cryptoDeleteAllowance().payingWith(owner).addNftDeleteAllowance(owner, nft, List.of(1L)),
                         cryptoDeleteAllowance()
                                 .payingWith(owner)
                                 .addNftDeleteAllowance(owner, nft, List.of(-1L))
@@ -570,9 +537,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
         return defaultHapiSpec("invalidTokenTypeFailsInDeleteAllowance")
                 .given(
                         newKeyNamed("supplyKey"),
-                        cryptoCreate(owner)
-                                .balance(ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
+                        cryptoCreate(owner).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY)
                                 .balance(100 * ONE_HUNDRED_HBARS)
@@ -587,20 +552,16 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         tokenAssociate(owner, token),
                         mintToken(token, 500L).via("tokenMint"))
                 .when()
-                .then(
-                        cryptoDeleteAllowance()
-                                .payingWith(owner)
-                                .addNftDeleteAllowance(owner, token, List.of(1L))
-                                .hasPrecheck(FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES));
+                .then(cryptoDeleteAllowance()
+                        .payingWith(owner)
+                        .addNftDeleteAllowance(owner, token, List.of(1L))
+                        .hasPrecheck(FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES));
     }
 
     private HapiSpec emptyAllowancesDeleteRejected() {
         final String owner = "owner";
         return defaultHapiSpec("emptyAllowancesDeleteRejected")
-                .given(
-                        cryptoCreate(owner)
-                                .balance(ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10))
+                .given(cryptoCreate(owner).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10))
                 .when(cryptoDeleteAllowance().hasPrecheck(EMPTY_ALLOWANCES))
                 .then();
     }
@@ -613,9 +574,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
         return defaultHapiSpec("tokenNotAssociatedToAccountFailsOnDeleteAllowance")
                 .given(
                         newKeyNamed("supplyKey"),
-                        cryptoCreate(owner)
-                                .balance(ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
+                        cryptoCreate(owner).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY)
                                 .balance(100 * ONE_HUNDRED_HBARS)
@@ -642,19 +601,16 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                                 ByteString.copyFromUtf8("c")))
                                 .via("nftTokenMint"),
                         mintToken(token, 500L).via("tokenMint"))
-                .when(
-                        cryptoDeleteAllowance()
-                                .payingWith(owner)
-                                .addNftDeleteAllowance(owner, nft, List.of(1L))
-                                .hasPrecheck(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT))
-                .then(
-                        getAccountDetails(owner)
-                                .payingWith(GENESIS)
-                                .has(
-                                        accountDetailsWith()
-                                                .cryptoAllowancesCount(0)
-                                                .nftApprovedForAllAllowancesCount(0)
-                                                .tokenAllowancesCount(0)));
+                .when(cryptoDeleteAllowance()
+                        .payingWith(owner)
+                        .addNftDeleteAllowance(owner, nft, List.of(1L))
+                        .hasPrecheck(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT))
+                .then(getAccountDetails(owner)
+                        .payingWith(GENESIS)
+                        .has(accountDetailsWith()
+                                .cryptoAllowancesCount(0)
+                                .nftApprovedForAllAllowancesCount(0)
+                                .tokenAllowancesCount(0)));
     }
 
     private HapiSpec canDeleteMultipleOwners() {
@@ -666,12 +622,8 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
         return defaultHapiSpec("canDeleteMultipleOwners")
                 .given(
                         newKeyNamed("supplyKey"),
-                        cryptoCreate(owner1)
-                                .balance(ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
-                        cryptoCreate(owner2)
-                                .balance(ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
+                        cryptoCreate(owner1).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                        cryptoCreate(owner2).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY)
                                 .balance(100 * ONE_HUNDRED_HBARS)
@@ -721,18 +673,16 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                 .via("multiOwnerTxn"),
                         getAccountDetails(owner1)
                                 .payingWith(GENESIS)
-                                .has(
-                                        accountDetailsWith()
-                                                .tokenAllowancesContaining(token, spender, 100L)
-                                                .cryptoAllowancesContaining(spender, ONE_HBAR)
-                                                .nftApprovedForAllAllowancesCount(0)),
+                                .has(accountDetailsWith()
+                                        .tokenAllowancesContaining(token, spender, 100L)
+                                        .cryptoAllowancesContaining(spender, ONE_HBAR)
+                                        .nftApprovedForAllAllowancesCount(0)),
                         getAccountDetails(owner2)
                                 .payingWith(GENESIS)
-                                .has(
-                                        accountDetailsWith()
-                                                .tokenAllowancesContaining(token, spender, 300L)
-                                                .cryptoAllowancesContaining(spender, 2 * ONE_HBAR)
-                                                .nftApprovedForAllAllowancesCount(0)),
+                                .has(accountDetailsWith()
+                                        .tokenAllowancesContaining(token, spender, 300L)
+                                        .cryptoAllowancesContaining(spender, 2 * ONE_HBAR)
+                                        .nftApprovedForAllAllowancesCount(0)),
                         getTokenNftInfo(nft, 1L).hasSpenderID(spender),
                         getTokenNftInfo(nft, 4L).hasSpenderID(spender),
                         getTokenNftInfo(nft, 5L).hasSpenderID(spender))
@@ -763,9 +713,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
         return defaultHapiSpec("noOwnerDefaultsToPayerInDeleteAllowance")
                 .given(
                         newKeyNamed("supplyKey"),
-                        cryptoCreate(payer)
-                                .balance(ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
+                        cryptoCreate(payer).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(spender1).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY)
@@ -795,8 +743,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                                 ByteString.copyFromUtf8("c")))
                                 .via("nftTokenMint"),
                         mintToken(token, 500L).via("tokenMint"),
-                        cryptoTransfer(
-                                movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, payer)))
+                        cryptoTransfer(movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, payer)))
                 .when(
                         cryptoApproveAllowance()
                                 .payingWith(payer)
@@ -827,9 +774,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
         return defaultHapiSpec("approvedForAllNotAffectedOnDelete")
                 .given(
                         newKeyNamed("supplyKey"),
-                        cryptoCreate(owner)
-                                .balance(ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
+                        cryptoCreate(owner).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY)
                                 .balance(100 * ONE_HUNDRED_HBARS)
@@ -858,8 +803,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                                 ByteString.copyFromUtf8("c")))
                                 .via("nftTokenMint"),
                         mintToken(token, 500L).via("tokenMint"),
-                        cryptoTransfer(
-                                movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, owner)))
+                        cryptoTransfer(movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, owner)))
                 .when(
                         cryptoApproveAllowance()
                                 .payingWith(owner)
@@ -869,14 +813,13 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                 .via("otherAdjustTxn"),
                         getAccountDetails(owner)
                                 .payingWith(GENESIS)
-                                .has(
-                                        accountDetailsWith()
-                                                .cryptoAllowancesCount(1)
-                                                .nftApprovedForAllAllowancesCount(1)
-                                                .tokenAllowancesCount(1)
-                                                .cryptoAllowancesContaining(spender, 100L)
-                                                .tokenAllowancesContaining(token, spender, 100L)
-                                                .nftApprovedAllowancesContaining(nft, spender)),
+                                .has(accountDetailsWith()
+                                        .cryptoAllowancesCount(1)
+                                        .nftApprovedForAllAllowancesCount(1)
+                                        .tokenAllowancesCount(1)
+                                        .cryptoAllowancesContaining(spender, 100L)
+                                        .tokenAllowancesContaining(token, spender, 100L)
+                                        .nftApprovedAllowancesContaining(nft, spender)),
                         getTokenNftInfo(nft, 1L).hasSpenderID(spender))
                 .then(
                         cryptoDeleteAllowance()
@@ -888,12 +831,11 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                         getTxnRecord("cryptoDeleteAllowanceTxn").logged(),
                         getAccountDetails(owner)
                                 .payingWith(GENESIS)
-                                .has(
-                                        accountDetailsWith()
-                                                .cryptoAllowancesCount(1)
-                                                .tokenAllowancesCount(1)
-                                                .nftApprovedForAllAllowancesCount(1)
-                                                .nftApprovedAllowancesContaining(nft, spender))
+                                .has(accountDetailsWith()
+                                        .cryptoAllowancesCount(1)
+                                        .tokenAllowancesCount(1)
+                                        .nftApprovedForAllAllowancesCount(1)
+                                        .nftApprovedAllowancesContaining(nft, spender))
                                 .logged(),
                         getTokenNftInfo(nft, 1L).hasNoSpender());
     }
@@ -907,9 +849,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
         return defaultHapiSpec("happyPathWorks")
                 .given(
                         newKeyNamed("supplyKey"),
-                        cryptoCreate(owner)
-                                .balance(ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
+                        cryptoCreate(owner).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(spender1).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY)
@@ -939,8 +879,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                                 ByteString.copyFromUtf8("c")))
                                 .via("nftTokenMint"),
                         mintToken(token, 500L).via("tokenMint"),
-                        cryptoTransfer(
-                                movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, owner)))
+                        cryptoTransfer(movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, owner)))
                 .when(
                         cryptoApproveAllowance()
                                 .payingWith(owner)
@@ -950,13 +889,12 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                 .via("otherAdjustTxn"),
                         getAccountDetails(owner)
                                 .payingWith(GENESIS)
-                                .has(
-                                        accountDetailsWith()
-                                                .cryptoAllowancesCount(1)
-                                                .nftApprovedForAllAllowancesCount(1)
-                                                .tokenAllowancesCount(1)
-                                                .cryptoAllowancesContaining(spender, 100L)
-                                                .tokenAllowancesContaining(token, spender, 100L)),
+                                .has(accountDetailsWith()
+                                        .cryptoAllowancesCount(1)
+                                        .nftApprovedForAllAllowancesCount(1)
+                                        .tokenAllowancesCount(1)
+                                        .cryptoAllowancesContaining(spender, 100L)
+                                        .tokenAllowancesContaining(token, spender, 100L)),
                         getTokenNftInfo(nft, 3L).hasSpenderID(spender1))
                 .then(
                         cryptoDeleteAllowance()

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts;
 
 import static com.hedera.node.app.service.mono.files.EntityExpiryMapFactory.entityExpiryMapFrom;
@@ -117,8 +118,7 @@ public interface ContractsModule {
             final SizeLimitedStorage storage,
             final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
             final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode) {
-        return new MutableEntityAccess(
-                ledger, aliasManager, txnCtx, storage, tokensLedger, bytecode);
+        return new MutableEntityAccess(ledger, aliasManager, txnCtx, storage, tokensLedger, bytecode);
     }
 
     @Binds
@@ -135,8 +135,7 @@ public interface ContractsModule {
     @Singleton
     @IntoMap
     @StringKey(EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS)
-    PrecompiledContract bindExchangeRatePrecompile(
-            ExchangeRatePrecompiledContract exchangeRateContract);
+    PrecompiledContract bindExchangeRatePrecompile(ExchangeRatePrecompiledContract exchangeRateContract);
 
     @Binds
     @Singleton
@@ -174,11 +173,8 @@ public interface ContractsModule {
     @IntoMap
     @StringKey(ContractsV_0_30Module.EVM_VERSION_0_30)
     static ContractCreationProcessor provideV_0_30ContractCreateProcessor(
-            final GasCalculator gasCalculator,
-            final @V_0_30 EVM evm,
-            Set<ContractValidationRule> validationRules) {
-        return new ContractCreationProcessor(
-                gasCalculator, evm, true, List.copyOf(validationRules), 1);
+            final GasCalculator gasCalculator, final @V_0_30 EVM evm, Set<ContractValidationRule> validationRules) {
+        return new ContractCreationProcessor(gasCalculator, evm, true, List.copyOf(validationRules), 1);
     }
 
     @Provides
@@ -190,8 +186,7 @@ public interface ContractsModule {
             final @V_0_34 PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList,
             final InfrastructureFactory infrastructureFactory) {
-        return new HederaMessageCallProcessor(
-                evm, precompiles, hederaPrecompileList, infrastructureFactory);
+        return new HederaMessageCallProcessor(evm, precompiles, hederaPrecompileList, infrastructureFactory);
     }
 
     @Provides
@@ -199,11 +194,8 @@ public interface ContractsModule {
     @IntoMap
     @StringKey(ContractsV_0_34Module.EVM_VERSION_0_34)
     static ContractCreationProcessor provideV_0_34ContractCreateProcessor(
-            final GasCalculator gasCalculator,
-            final @V_0_34 EVM evm,
-            Set<ContractValidationRule> validationRules) {
-        return new ContractCreationProcessor(
-                gasCalculator, evm, true, List.copyOf(validationRules), 1);
+            final GasCalculator gasCalculator, final @V_0_34 EVM evm, Set<ContractValidationRule> validationRules) {
+        return new ContractCreationProcessor(gasCalculator, evm, true, List.copyOf(validationRules), 1);
     }
 
     @Provides
@@ -216,14 +208,7 @@ public interface ContractsModule {
             final Map<String, Provider<MessageCallProcessor>> mcps,
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final AliasManager aliasManager) {
-        return () ->
-                new CallLocalEvmTxProcessor(
-                        codeCache,
-                        livePricesSource,
-                        dynamicProperties,
-                        gasCalculator,
-                        mcps,
-                        ccps,
-                        aliasManager);
+        return () -> new CallLocalEvmTxProcessor(
+                codeCache, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, aliasManager);
     }
 }

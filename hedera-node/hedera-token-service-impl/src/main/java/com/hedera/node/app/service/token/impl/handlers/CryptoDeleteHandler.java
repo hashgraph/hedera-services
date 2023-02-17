@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
@@ -50,8 +51,7 @@ public class CryptoDeleteHandler implements TransactionHandler {
         final var deleteAccountId = op.getDeleteAccountID();
         final var transferAccountId = op.getTransferAccountID();
         context.addNonPayerKey(deleteAccountId)
-                .addNonPayerKeyIfReceiverSigRequired(
-                        transferAccountId, INVALID_TRANSFER_ACCOUNT_ID);
+                .addNonPayerKeyIfReceiverSigRequired(transferAccountId, INVALID_TRANSFER_ACCOUNT_ID);
     }
 
     /**

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.packedTime;
@@ -68,8 +69,7 @@ class ExpirableTxnRecordTest {
     private static final AccountID beneficiary = IdUtils.asAccount("0.0.6");
     private static final AccountID magician = IdUtils.asAccount("0.0.7");
     private static final AccountID spender = IdUtils.asAccount("0.0.8");
-    private static final List<TokenAssociation> newRelationships =
-            List.of(new FcTokenAssociation(10, 11).toGrpc());
+    private static final List<TokenAssociation> newRelationships = List.of(new FcTokenAssociation(10, 11).toGrpc());
 
     private static final EntityId feeCollector = new EntityId(1, 2, 8);
     private static final EntityId token = new EntityId(1, 2, 9);
@@ -79,37 +79,22 @@ class ExpirableTxnRecordTest {
             AccountAmount.newBuilder().setAccountID(sponsor).setAmount(100L).build();
     private static final AccountAmount reward2 =
             AccountAmount.newBuilder().setAccountID(spender).setAmount(1_000L).build();
-    private static final TokenTransferList nftTokenTransfers =
-            TokenTransferList.newBuilder()
-                    .setToken(nft)
-                    .addNftTransfers(
-                            withNftAdjustments(
-                                            nft,
-                                            sponsor,
-                                            beneficiary,
-                                            1L,
-                                            sponsor,
-                                            beneficiary,
-                                            2L,
-                                            sponsor,
-                                            beneficiary,
-                                            3L)
-                                    .getNftTransfers(0))
-                    .build();
-    private static final TokenTransferList aTokenTransfers =
-            TokenTransferList.newBuilder()
-                    .setToken(tokenA)
-                    .addAllTransfers(
-                            withAdjustments(sponsor, -1L, beneficiary, 1L, magician, 1000L)
-                                    .getAccountAmountsList())
-                    .build();
-    private static final TokenTransferList bTokenTransfers =
-            TokenTransferList.newBuilder()
-                    .setToken(tokenB)
-                    .addAllTransfers(
-                            withAdjustments(sponsor, -1L, beneficiary, 1L, magician, 1000L)
-                                    .getAccountAmountsList())
-                    .build();
+    private static final TokenTransferList nftTokenTransfers = TokenTransferList.newBuilder()
+            .setToken(nft)
+            .addNftTransfers(withNftAdjustments(
+                            nft, sponsor, beneficiary, 1L, sponsor, beneficiary, 2L, sponsor, beneficiary, 3L)
+                    .getNftTransfers(0))
+            .build();
+    private static final TokenTransferList aTokenTransfers = TokenTransferList.newBuilder()
+            .setToken(tokenA)
+            .addAllTransfers(withAdjustments(sponsor, -1L, beneficiary, 1L, magician, 1000L)
+                    .getAccountAmountsList())
+            .build();
+    private static final TokenTransferList bTokenTransfers = TokenTransferList.newBuilder()
+            .setToken(tokenB)
+            .addAllTransfers(withAdjustments(sponsor, -1L, beneficiary, 1L, magician, 1000L)
+                    .getAccountAmountsList())
+            .build();
     private static final ScheduleID scheduleID = IdUtils.asSchedule("5.6.7");
     private static final FcAssessedCustomFee balanceChange =
             new FcAssessedCustomFee(feeCollector, token, units, new long[] {234L});
@@ -121,21 +106,19 @@ class ExpirableTxnRecordTest {
         subject = subjectRecordWithTokenTransfersAndScheduleRefCustomFees();
     }
 
-    private static ExpirableTxnRecord
-            subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations() {
+    private static ExpirableTxnRecord subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations() {
         final var source = grpcRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
         final var s = ExpirableTxnRecordTestHelper.fromGprc(source);
         setNonGrpcDefaultsOn(s);
         return s;
     }
 
-    private static TransactionRecord
-            grpcRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations() {
+    private static TransactionRecord grpcRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations() {
         return TxnUtils.recordOne().asGrpc().toBuilder()
                 .setTransactionHash(ByteString.copyFrom(pretendHash))
-                .setContractCreateResult(TxnUtils.recordTwo().getContractCallResult().toGrpc())
-                .addAllTokenTransferLists(
-                        List.of(aTokenTransfers, bTokenTransfers, nftTokenTransfers))
+                .setContractCreateResult(
+                        TxnUtils.recordTwo().getContractCallResult().toGrpc())
+                .addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers, nftTokenTransfers))
                 .setScheduleRef(scheduleID)
                 .addAssessedCustomFees(balanceChange.toGrpc())
                 .addAllAutomaticTokenAssociations(newRelationships)
@@ -149,23 +132,19 @@ class ExpirableTxnRecordTest {
     }
 
     private static ExpirableTxnRecord subjectRecordWithTokenTransfersAndScheduleRefCustomFees() {
-        final var s =
-                fromGprc(
-                        TxnUtils.recordOne().asGrpc().toBuilder()
-                                .setTransactionHash(ByteString.copyFrom(pretendHash))
-                                .setContractCreateResult(
-                                        TxnUtils.recordTwo().getContractCallResult().toGrpc())
-                                .addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers))
-                                .setScheduleRef(scheduleID)
-                                .addAssessedCustomFees(balanceChange.toGrpc())
-                                .addAllPaidStakingRewards(List.of(reward1, reward2))
-                                .setAlias(
-                                        ByteString.copyFrom(
-                                                "test".getBytes(StandardCharsets.UTF_8)))
-                                .setEthereumHash(ByteString.copyFrom(pretendHash))
-                                .setPrngNumber(10)
-                                .setPrngBytes(ByteStringUtils.wrapUnsafely(pseudoRandomBytes))
-                                .build());
+        final var s = fromGprc(TxnUtils.recordOne().asGrpc().toBuilder()
+                .setTransactionHash(ByteString.copyFrom(pretendHash))
+                .setContractCreateResult(
+                        TxnUtils.recordTwo().getContractCallResult().toGrpc())
+                .addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers))
+                .setScheduleRef(scheduleID)
+                .addAssessedCustomFees(balanceChange.toGrpc())
+                .addAllPaidStakingRewards(List.of(reward1, reward2))
+                .setAlias(ByteString.copyFrom("test".getBytes(StandardCharsets.UTF_8)))
+                .setEthereumHash(ByteString.copyFrom(pretendHash))
+                .setPrngNumber(10)
+                .setPrngBytes(ByteStringUtils.wrapUnsafely(pseudoRandomBytes))
+                .build());
         setNonGrpcDefaultsOn(s);
         return s;
     }
@@ -179,10 +158,9 @@ class ExpirableTxnRecordTest {
 
     @Test
     void consensusSecondGetterWorks() {
-        final var tinySubject =
-                ExpirableTxnRecord.newBuilder()
-                        .setConsensusTime(new RichInstant(1_234_567, 890))
-                        .build();
+        final var tinySubject = ExpirableTxnRecord.newBuilder()
+                .setConsensusTime(new RichInstant(1_234_567, 890))
+                .build();
         assertEquals(1_234_567, tinySubject.getConsensusSecond());
     }
 
@@ -210,11 +188,10 @@ class ExpirableTxnRecordTest {
 
     @Test
     void asGrpcWorks() {
-        final var expected =
-                grpcRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations().toBuilder()
-                        .setParentConsensusTimestamp(MiscUtils.asTimestamp(packedParentConsTime))
-                        .setEthereumHash(ByteString.copyFrom(pretendHash))
-                        .build();
+        final var expected = grpcRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations().toBuilder()
+                .setParentConsensusTimestamp(MiscUtils.asTimestamp(packedParentConsTime))
+                .setEthereumHash(ByteString.copyFrom(pretendHash))
+                .build();
 
         subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
         subject.setExpiry(0L);
@@ -231,13 +208,12 @@ class ExpirableTxnRecordTest {
 
     @Test
     void asGrpcWithBothPseudoRandomNumbersSetWorks() {
-        final var expected =
-                grpcRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations().toBuilder()
-                        .setParentConsensusTimestamp(MiscUtils.asTimestamp(packedParentConsTime))
-                        .setEthereumHash(ByteString.copyFrom(pretendHash))
-                        .setPrngBytes(ByteString.copyFrom(MISSING_PSEUDORANDOM_BYTES))
-                        .setPrngNumber(10)
-                        .build();
+        final var expected = grpcRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations().toBuilder()
+                .setParentConsensusTimestamp(MiscUtils.asTimestamp(packedParentConsTime))
+                .setEthereumHash(ByteString.copyFrom(pretendHash))
+                .setPrngBytes(ByteString.copyFrom(MISSING_PSEUDORANDOM_BYTES))
+                .setPrngNumber(10)
+                .build();
 
         subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
         subject.setExpiry(0L);
@@ -255,13 +231,12 @@ class ExpirableTxnRecordTest {
 
     @Test
     void asGrpcWithBothPseudoRandomBytesSetWorks() {
-        final var expected =
-                grpcRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations().toBuilder()
-                        .setParentConsensusTimestamp(MiscUtils.asTimestamp(packedParentConsTime))
-                        .setEthereumHash(ByteString.copyFrom(pretendHash))
-                        .setPrngNumber(-1)
-                        .setPrngBytes(ByteStringUtils.wrapUnsafely(pseudoRandomBytes))
-                        .build();
+        final var expected = grpcRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations().toBuilder()
+                .setParentConsensusTimestamp(MiscUtils.asTimestamp(packedParentConsTime))
+                .setEthereumHash(ByteString.copyFrom(pretendHash))
+                .setPrngNumber(-1)
+                .setPrngBytes(ByteStringUtils.wrapUnsafely(pseudoRandomBytes))
+                .build();
 
         subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
         subject.setPseudoRandomNumber(-1);
@@ -295,17 +270,17 @@ class ExpirableTxnRecordTest {
     @Test
     void equalsDetectsChildRecordsDif() {
         final var a = new ExpirableTxnRecord();
-        final var b = ExpirableTxnRecord.newBuilder().setNumChildRecords((short) 123).build();
+        final var b =
+                ExpirableTxnRecord.newBuilder().setNumChildRecords((short) 123).build();
         assertNotEquals(a, b);
     }
 
     @Test
     void equalsDetectsPackedConsTimeDif() {
         final var a = new ExpirableTxnRecord();
-        final var b =
-                ExpirableTxnRecord.newBuilder()
-                        .setParentConsensusTime(Instant.ofEpochSecond(1_234_567))
-                        .build();
+        final var b = ExpirableTxnRecord.newBuilder()
+                .setParentConsensusTime(Instant.ofEpochSecond(1_234_567))
+                .build();
         assertNotEquals(a, b);
     }
 
@@ -328,14 +303,17 @@ class ExpirableTxnRecordTest {
     @Test
     void equalsDetectsDiffReceipt() {
         final var a = new ExpirableTxnRecord();
-        final var b = ExpirableTxnRecord.newBuilder().setReceipt(new TxnReceipt()).build();
+        final var b =
+                ExpirableTxnRecord.newBuilder().setReceipt(new TxnReceipt()).build();
         assertNotEquals(a, b);
     }
 
     @Test
     void equalsDetectsDiffHash() {
         final var a = new ExpirableTxnRecord();
-        final var b = ExpirableTxnRecord.newBuilder().setTxnHash(new byte[] {(byte) 0xFF}).build();
+        final var b = ExpirableTxnRecord.newBuilder()
+                .setTxnHash(new byte[] {(byte) 0xFF})
+                .build();
         assertNotEquals(a, b);
     }
 
@@ -349,10 +327,9 @@ class ExpirableTxnRecordTest {
     @Test
     void equalsDetectsDiffConsTime() {
         final var a = new ExpirableTxnRecord();
-        final var b =
-                ExpirableTxnRecord.newBuilder()
-                        .setConsensusTime(new RichInstant(1_234_567, 890))
-                        .build();
+        final var b = ExpirableTxnRecord.newBuilder()
+                .setConsensusTime(new RichInstant(1_234_567, 890))
+                .build();
         assertNotEquals(a, b);
     }
 
@@ -366,33 +343,35 @@ class ExpirableTxnRecordTest {
     @Test
     void equalsDetectsDiffCallResult() {
         final var a = new ExpirableTxnRecord();
-        final var b =
-                ExpirableTxnRecord.newBuilder().setContractCallResult(new EvmFnResult()).build();
+        final var b = ExpirableTxnRecord.newBuilder()
+                .setContractCallResult(new EvmFnResult())
+                .build();
         assertNotEquals(a, b);
     }
 
     @Test
     void equalsDetectsDiffCreateResult() {
         final var a = new ExpirableTxnRecord();
-        final var b =
-                ExpirableTxnRecord.newBuilder().setContractCreateResult(new EvmFnResult()).build();
+        final var b = ExpirableTxnRecord.newBuilder()
+                .setContractCreateResult(new EvmFnResult())
+                .build();
         assertNotEquals(a, b);
     }
 
     @Test
     void equalsDetectsDiffHbarAdjusts() {
         final var a = new ExpirableTxnRecord();
-        final var b =
-                ExpirableTxnRecord.newBuilder()
-                        .setHbarAdjustments(new CurrencyAdjustments())
-                        .build();
+        final var b = ExpirableTxnRecord.newBuilder()
+                .setHbarAdjustments(new CurrencyAdjustments())
+                .build();
         assertNotEquals(a, b);
     }
 
     @Test
     void equalsDetectsDiffTokens() {
         final var a = new ExpirableTxnRecord();
-        final var b = ExpirableTxnRecord.newBuilder().setTokens(new ArrayList<>()).build();
+        final var b =
+                ExpirableTxnRecord.newBuilder().setTokens(new ArrayList<>()).build();
         assertNotEquals(a, b);
     }
 
@@ -402,57 +381,63 @@ class ExpirableTxnRecordTest {
         var b = ExpirableTxnRecord.newBuilder().setPseudoRandomNumber(10).build();
         assertNotEquals(a, b);
 
-        b = ExpirableTxnRecord.newBuilder().setPseudoRandomBytes(pseudoRandomBytes).build();
+        b = ExpirableTxnRecord.newBuilder()
+                .setPseudoRandomBytes(pseudoRandomBytes)
+                .build();
         assertNotEquals(a, b);
     }
 
     @Test
     void equalsDetectsDiffTokenAdjusts() {
         final var a = new ExpirableTxnRecord();
-        final var b =
-                ExpirableTxnRecord.newBuilder().setTokenAdjustments(new ArrayList<>()).build();
+        final var b = ExpirableTxnRecord.newBuilder()
+                .setTokenAdjustments(new ArrayList<>())
+                .build();
         assertNotEquals(a, b);
     }
 
     @Test
     void equalsDetectsDiffNftAdjusts() {
         final var a = new ExpirableTxnRecord();
-        final var b =
-                ExpirableTxnRecord.newBuilder().setNftTokenAdjustments(new ArrayList<>()).build();
+        final var b = ExpirableTxnRecord.newBuilder()
+                .setNftTokenAdjustments(new ArrayList<>())
+                .build();
         assertNotEquals(a, b);
     }
 
     @Test
     void equalsDetectsDiffAssessedFees() {
         final var a = new ExpirableTxnRecord();
-        final var b =
-                ExpirableTxnRecord.newBuilder().setAssessedCustomFees(new ArrayList<>()).build();
+        final var b = ExpirableTxnRecord.newBuilder()
+                .setAssessedCustomFees(new ArrayList<>())
+                .build();
         assertNotEquals(a, b);
     }
 
     @Test
     void equalsDetectsDiffTokenAssociations() {
         final var a = new ExpirableTxnRecord();
-        final var b =
-                ExpirableTxnRecord.newBuilder().setNewTokenAssociations(new ArrayList<>()).build();
+        final var b = ExpirableTxnRecord.newBuilder()
+                .setNewTokenAssociations(new ArrayList<>())
+                .build();
         assertNotEquals(a, b);
     }
 
     @Test
     void equalsDetectsDiffAlias() {
         final var a = new ExpirableTxnRecord();
-        final var b =
-                ExpirableTxnRecord.newBuilder().setAlias(ByteString.copyFromUtf8("asdf")).build();
+        final var b = ExpirableTxnRecord.newBuilder()
+                .setAlias(ByteString.copyFromUtf8("asdf"))
+                .build();
         assertNotEquals(a, b);
     }
 
     @Test
     void equalsDetectsDiffEvmAddress() {
         final var a = new ExpirableTxnRecord();
-        final var b =
-                ExpirableTxnRecord.newBuilder()
-                        .setAlias(ByteString.copyFrom(pretendEvmAddress))
-                        .build();
+        final var b = ExpirableTxnRecord.newBuilder()
+                .setAlias(ByteString.copyFrom(pretendEvmAddress))
+                .build();
         assertNotEquals(a, b);
     }
 
@@ -468,34 +453,33 @@ class ExpirableTxnRecordTest {
     @Test
     void toStringWorksWithParentConsTime() {
         subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
-        final var desired =
-                "ExpirableTxnRecord{numChildRecords=2,"
-                    + " receipt=TxnReceipt{status=INVALID_ACCOUNT_ID,"
-                    + " accountCreated=EntityId{shard=0, realm=0, num=3}, newTotalTokenSupply=0},"
-                    + " fee=555, txnHash=6e6f742d7265616c6c792d612d68617368,"
-                    + " txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0},"
-                    + " validStart=RichInstant{seconds=9999999999, nanos=0}, scheduled=false,"
-                    + " nonce=0}, consensusTimestamp=RichInstant{seconds=9999999999, nanos=0},"
-                    + " expiry=1234567, submittingMember=1, memo=Alpha bravo charlie,"
-                    + " contractCreation=EvmFnResult{gasUsed=55, bloom=, result=, error=null,"
-                    + " contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[],"
-                    + " logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null,"
-                    + " topics=[]}], evmAddress=, gas=1000000, amount=0,"
-                    + " functionParameters=53656e7369626c6521, senderId=null},"
-                    + " hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2,"
-                    + " 0.0.1002 <- +2]}, stakingRewardsPaid=CurrencyAdjustments{readable=[0.0.5 <-"
-                    + " +100, 0.0.8 <- +1000]}, scheduleRef=EntityId{shard=5, realm=6, num=7},"
-                    + " alias=test, ethereumHash=6e6f742d7265616c6c792d612d68617368,"
-                    + " pseudoRandomNumber=10, pseudoRandomBytes=,"
-                    + " evmAddress=6e6f742d7265616c6c792d616e2d65766d2d61646472657373,"
-                    + " parentConsensusTime=1970-01-15T06:56:07.000000890Z,"
-                    + " tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <-"
-                    + " +1, 0.0.7 <- +1000]}), 0.0.4(CurrencyAdjustments{readable=[0.0.5 -> -1,"
-                    + " 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.2(NftAdjustments{readable=[1 0.0.5"
-                    + " 0.0.6]}), assessedCustomFees=(FcAssessedCustomFee{token=EntityId{shard=1,"
-                    + " realm=2, num=9}, account=EntityId{shard=1, realm=2, num=8}, units=123,"
-                    + " effective payer accounts=[234]}),"
-                    + " newTokenAssociations=(FcTokenAssociation{token=10, account=11})}";
+        final var desired = "ExpirableTxnRecord{numChildRecords=2,"
+                + " receipt=TxnReceipt{status=INVALID_ACCOUNT_ID,"
+                + " accountCreated=EntityId{shard=0, realm=0, num=3}, newTotalTokenSupply=0},"
+                + " fee=555, txnHash=6e6f742d7265616c6c792d612d68617368,"
+                + " txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0},"
+                + " validStart=RichInstant{seconds=9999999999, nanos=0}, scheduled=false,"
+                + " nonce=0}, consensusTimestamp=RichInstant{seconds=9999999999, nanos=0},"
+                + " expiry=1234567, submittingMember=1, memo=Alpha bravo charlie,"
+                + " contractCreation=EvmFnResult{gasUsed=55, bloom=, result=, error=null,"
+                + " contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[],"
+                + " logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null,"
+                + " topics=[]}], evmAddress=, gas=1000000, amount=0,"
+                + " functionParameters=53656e7369626c6521, senderId=null},"
+                + " hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2,"
+                + " 0.0.1002 <- +2]}, stakingRewardsPaid=CurrencyAdjustments{readable=[0.0.5 <-"
+                + " +100, 0.0.8 <- +1000]}, scheduleRef=EntityId{shard=5, realm=6, num=7},"
+                + " alias=test, ethereumHash=6e6f742d7265616c6c792d612d68617368,"
+                + " pseudoRandomNumber=10, pseudoRandomBytes=,"
+                + " evmAddress=6e6f742d7265616c6c792d616e2d65766d2d61646472657373,"
+                + " parentConsensusTime=1970-01-15T06:56:07.000000890Z,"
+                + " tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <-"
+                + " +1, 0.0.7 <- +1000]}), 0.0.4(CurrencyAdjustments{readable=[0.0.5 -> -1,"
+                + " 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.2(NftAdjustments{readable=[1 0.0.5"
+                + " 0.0.6]}), assessedCustomFees=(FcAssessedCustomFee{token=EntityId{shard=1,"
+                + " realm=2, num=9}, account=EntityId{shard=1, realm=2, num=8}, units=123,"
+                + " effective payer accounts=[234]}),"
+                + " newTokenAssociations=(FcTokenAssociation{token=10, account=11})}";
 
         assertEquals(desired, subject.toString());
     }
@@ -504,33 +488,32 @@ class ExpirableTxnRecordTest {
     void toStringWorksWithoutParentConsTime() {
         subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
         subject.setPackedParentConsensusTime(MISSING_PARENT_CONSENSUS_TIMESTAMP);
-        final var desired =
-                "ExpirableTxnRecord{numChildRecords=2,"
-                    + " receipt=TxnReceipt{status=INVALID_ACCOUNT_ID,"
-                    + " accountCreated=EntityId{shard=0, realm=0, num=3}, newTotalTokenSupply=0},"
-                    + " fee=555, txnHash=6e6f742d7265616c6c792d612d68617368,"
-                    + " txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0},"
-                    + " validStart=RichInstant{seconds=9999999999, nanos=0}, scheduled=false,"
-                    + " nonce=0}, consensusTimestamp=RichInstant{seconds=9999999999, nanos=0},"
-                    + " expiry=1234567, submittingMember=1, memo=Alpha bravo charlie,"
-                    + " contractCreation=EvmFnResult{gasUsed=55, bloom=, result=, error=null,"
-                    + " contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[],"
-                    + " logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null,"
-                    + " topics=[]}], evmAddress=, gas=1000000, amount=0,"
-                    + " functionParameters=53656e7369626c6521, senderId=null},"
-                    + " hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2,"
-                    + " 0.0.1002 <- +2]}, stakingRewardsPaid=CurrencyAdjustments{readable=[0.0.5 <-"
-                    + " +100, 0.0.8 <- +1000]}, scheduleRef=EntityId{shard=5, realm=6, num=7},"
-                    + " alias=test, ethereumHash=6e6f742d7265616c6c792d612d68617368,"
-                    + " pseudoRandomNumber=10, pseudoRandomBytes=,"
-                    + " evmAddress=6e6f742d7265616c6c792d616e2d65766d2d61646472657373,"
-                    + " tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <-"
-                    + " +1, 0.0.7 <- +1000]}), 0.0.4(CurrencyAdjustments{readable=[0.0.5 -> -1,"
-                    + " 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.2(NftAdjustments{readable=[1 0.0.5"
-                    + " 0.0.6]}), assessedCustomFees=(FcAssessedCustomFee{token=EntityId{shard=1,"
-                    + " realm=2, num=9}, account=EntityId{shard=1, realm=2, num=8}, units=123,"
-                    + " effective payer accounts=[234]}),"
-                    + " newTokenAssociations=(FcTokenAssociation{token=10, account=11})}";
+        final var desired = "ExpirableTxnRecord{numChildRecords=2,"
+                + " receipt=TxnReceipt{status=INVALID_ACCOUNT_ID,"
+                + " accountCreated=EntityId{shard=0, realm=0, num=3}, newTotalTokenSupply=0},"
+                + " fee=555, txnHash=6e6f742d7265616c6c792d612d68617368,"
+                + " txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0},"
+                + " validStart=RichInstant{seconds=9999999999, nanos=0}, scheduled=false,"
+                + " nonce=0}, consensusTimestamp=RichInstant{seconds=9999999999, nanos=0},"
+                + " expiry=1234567, submittingMember=1, memo=Alpha bravo charlie,"
+                + " contractCreation=EvmFnResult{gasUsed=55, bloom=, result=, error=null,"
+                + " contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[],"
+                + " logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null,"
+                + " topics=[]}], evmAddress=, gas=1000000, amount=0,"
+                + " functionParameters=53656e7369626c6521, senderId=null},"
+                + " hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2,"
+                + " 0.0.1002 <- +2]}, stakingRewardsPaid=CurrencyAdjustments{readable=[0.0.5 <-"
+                + " +100, 0.0.8 <- +1000]}, scheduleRef=EntityId{shard=5, realm=6, num=7},"
+                + " alias=test, ethereumHash=6e6f742d7265616c6c792d612d68617368,"
+                + " pseudoRandomNumber=10, pseudoRandomBytes=,"
+                + " evmAddress=6e6f742d7265616c6c792d616e2d65766d2d61646472657373,"
+                + " tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <-"
+                + " +1, 0.0.7 <- +1000]}), 0.0.4(CurrencyAdjustments{readable=[0.0.5 -> -1,"
+                + " 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.2(NftAdjustments{readable=[1 0.0.5"
+                + " 0.0.6]}), assessedCustomFees=(FcAssessedCustomFee{token=EntityId{shard=1,"
+                + " realm=2, num=9}, account=EntityId{shard=1, realm=2, num=8}, units=123,"
+                + " effective payer accounts=[234]}),"
+                + " newTokenAssociations=(FcTokenAssociation{token=10, account=11})}";
         assertEquals(desired, subject.toString());
     }
 }

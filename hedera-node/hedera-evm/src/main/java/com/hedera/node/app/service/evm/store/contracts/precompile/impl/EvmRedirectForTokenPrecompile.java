@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
@@ -29,12 +30,10 @@ public interface EvmRedirectForTokenPrecompile {
     Bytes REDIRECT_FOR_TOKEN_SELECTOR = Bytes.wrap(REDIRECT_FOR_TOKEN_FUNCTION.selector());
     ABIType<Tuple> REDIRECT_FOR_TOKEN_DECODER = TypeFactory.create("(bytes32,bytes)");
 
-    static ExplicitRedirectForTokenWrapper<byte[], byte[]> decodeExplicitRedirectForToken(
-            final Bytes input) {
+    static ExplicitRedirectForTokenWrapper<byte[], byte[]> decodeExplicitRedirectForToken(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, REDIRECT_FOR_TOKEN_SELECTOR, REDIRECT_FOR_TOKEN_DECODER);
 
-        return new ExplicitRedirectForTokenWrapper<>(
-                decodedArguments.get(0), decodedArguments.get(1));
+        return new ExplicitRedirectForTokenWrapper<>(decodedArguments.get(0), decodedArguments.get(1));
     }
 }

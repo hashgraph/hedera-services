@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.consensus.impl.handlers.test;
 
 import static com.hedera.node.app.service.consensus.impl.handlers.test.ConsensusCreateTopicHandlerTest.assertOkResponse;
@@ -148,9 +149,7 @@ class ConsensusCreateTopicHandlerParityTest {
     @Test
     void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsPayer() {
         // given:
-        final var txn =
-                txnFrom(
-                        CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO);
+        final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO);
 
         // when:
         final var context = new PreHandleContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
@@ -158,8 +157,7 @@ class ConsensusCreateTopicHandlerParityTest {
 
         // then:
         assertOkResponse(context);
-        Assertions.assertThat(sanityRestored(context.getPayerKey()))
-                .isEqualTo(CUSTOM_PAYER_ACCOUNT_KT.asKey());
+        Assertions.assertThat(sanityRestored(context.getPayerKey())).isEqualTo(CUSTOM_PAYER_ACCOUNT_KT.asKey());
         Assertions.assertThat(sanityRestored(context.getRequiredNonPayerKeys()))
                 .containsExactly(SIMPLE_TOPIC_ADMIN_KEY.asKey());
     }
@@ -167,8 +165,7 @@ class ConsensusCreateTopicHandlerParityTest {
     @Test
     void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsPayerWithCustomPayer() {
         // given:
-        final var txn =
-                txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO);
+        final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO);
 
         // when:
         final var context = new PreHandleContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
@@ -187,9 +184,7 @@ class ConsensusCreateTopicHandlerParityTest {
     @Test
     void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsCustomPayer() {
         // given:
-        final var txn =
-                txnFrom(
-                        CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO);
+        final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO);
 
         // when:
         final var context = new PreHandleContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
@@ -205,9 +200,7 @@ class ConsensusCreateTopicHandlerParityTest {
     @Test
     void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsCustomPayerWithCustomPayer() {
         // given:
-        final var txn =
-                txnFrom(
-                        CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO);
+        final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO);
 
         // when:
         final var result = new PreHandleContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
@@ -231,8 +224,7 @@ class ConsensusCreateTopicHandlerParityTest {
 
         // then:
         Assertions.assertThat(context.failed()).isTrue();
-        Assertions.assertThat(context.getStatus())
-                .isEqualTo(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+        Assertions.assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
     }
 
     @Test
@@ -246,8 +238,7 @@ class ConsensusCreateTopicHandlerParityTest {
 
         // then:
         Assertions.assertThat(context.failed()).isTrue();
-        Assertions.assertThat(context.getStatus())
-                .isEqualTo(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+        Assertions.assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {

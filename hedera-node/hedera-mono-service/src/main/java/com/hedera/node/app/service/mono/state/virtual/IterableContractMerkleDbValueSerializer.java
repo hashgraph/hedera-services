@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -21,8 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public class IterableContractMerkleDbValueSerializer
-        implements ValueSerializer<IterableContractValue> {
+public class IterableContractMerkleDbValueSerializer implements ValueSerializer<IterableContractValue> {
 
     static final long CLASS_ID = 0x2137d0dcac9ab2b3L;
 
@@ -57,8 +57,7 @@ public class IterableContractMerkleDbValueSerializer
     // Value serialization
 
     @Override
-    public int serialize(final IterableContractValue value, final SerializableDataOutputStream out)
-            throws IOException {
+    public int serialize(final IterableContractValue value, final SerializableDataOutputStream out) throws IOException {
         Objects.requireNonNull(value);
         Objects.requireNonNull(out);
         value.serialize(out);
@@ -68,8 +67,7 @@ public class IterableContractMerkleDbValueSerializer
     // Value deserialization
 
     @Override
-    public IterableContractValue deserialize(final ByteBuffer buffer, final long version)
-            throws IOException {
+    public IterableContractValue deserialize(final ByteBuffer buffer, final long version) throws IOException {
         Objects.requireNonNull(buffer);
         final IterableContractValue value = new IterableContractValue();
         value.deserialize(buffer, (int) version);

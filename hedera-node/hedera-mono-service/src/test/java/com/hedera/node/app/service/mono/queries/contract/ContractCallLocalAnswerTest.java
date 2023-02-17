@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.contract;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
@@ -90,34 +91,56 @@ class ContractCallLocalAnswerTest {
     private long gas = 123;
     private Transaction paymentTxn;
 
-    @Mock private StateView view;
-    @Mock private AccountStore accountStore;
-    @Mock private EntityIdSource ids;
-    @Mock private OptionValidator validator;
-    @Mock private EntityAccess entityAccess;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private CallLocalEvmTxProcessor evmTxProcessor;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> contracts;
-    @Mock private NodeLocalProperties nodeLocalProperties;
-    @Mock private AliasManager aliasManager;
-    @Mock private StaticBlockMetaProvider blockMetaProvider;
-    @Mock private BlockMetaSource blockMetaSource;
+    @Mock
+    private StateView view;
+
+    @Mock
+    private AccountStore accountStore;
+
+    @Mock
+    private EntityIdSource ids;
+
+    @Mock
+    private OptionValidator validator;
+
+    @Mock
+    private EntityAccess entityAccess;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private CallLocalEvmTxProcessor evmTxProcessor;
+
+    @Mock
+    private MerkleMap<EntityNum, MerkleAccount> contracts;
+
+    @Mock
+    private NodeLocalProperties nodeLocalProperties;
+
+    @Mock
+    private AliasManager aliasManager;
+
+    @Mock
+    private StaticBlockMetaProvider blockMetaProvider;
+
+    @Mock
+    private BlockMetaSource blockMetaSource;
 
     private ContractCallLocalAnswer subject;
 
     @BeforeEach
     void setup() {
-        subject =
-                new ContractCallLocalAnswer(
-                        ids,
-                        aliasManager,
-                        accountStore,
-                        validator,
-                        entityAccess,
-                        dynamicProperties,
-                        nodeLocalProperties,
-                        () -> evmTxProcessor,
-                        blockMetaProvider);
+        subject = new ContractCallLocalAnswer(
+                ids,
+                aliasManager,
+                accountStore,
+                validator,
+                entityAccess,
+                dynamicProperties,
+                nodeLocalProperties,
+                () -> evmTxProcessor,
+                blockMetaProvider);
     }
 
     @Test
@@ -196,9 +219,7 @@ class ContractCallLocalAnswerTest {
 
         // then:
         assertTrue(response.hasContractCallLocal());
-        assertEquals(
-                FAIL_INVALID,
-                response.getContractCallLocal().getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(FAIL_INVALID, response.getContractCallLocal().getHeader().getNodeTransactionPrecheckCode());
         assertEquals(COST_ANSWER, response.getContractCallLocal().getHeader().getResponseType());
         assertEquals(fee, response.getContractCallLocal().getHeader().getCost());
     }
@@ -246,9 +267,7 @@ class ContractCallLocalAnswerTest {
         // then:
         final var opResponse = response.getContractCallLocal();
         assertTrue(opResponse.hasHeader(), "Missing response header!");
-        assertEquals(
-                CONTRACT_EXECUTION_EXCEPTION,
-                opResponse.getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(CONTRACT_EXECUTION_EXCEPTION, opResponse.getHeader().getNodeTransactionPrecheckCode());
         assertEquals(result, opResponse.getFunctionResult().getContractCallResult());
         assertEquals(target, opResponse.getFunctionResult().getContractID());
         verify(accountStore, never()).loadAccount(any());
@@ -259,15 +278,8 @@ class ContractCallLocalAnswerTest {
         // setup:
         final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
 
-        final var transactionProcessingResult =
-                TransactionProcessingResult.failed(
-                        0,
-                        0,
-                        1,
-                        Optional.empty(),
-                        Optional.empty(),
-                        new TreeMap<>(),
-                        new ArrayList<>());
+        final var transactionProcessingResult = TransactionProcessingResult.failed(
+                0, 0, 1, Optional.empty(), Optional.empty(), new TreeMap<>(), new ArrayList<>());
 
         final Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
 
@@ -282,19 +294,11 @@ class ContractCallLocalAnswerTest {
         // setup:
         final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
 
-        final var transactionProcessingResult =
-                TransactionProcessingResult.failed(
-                        0,
-                        0,
-                        1,
-                        Optional.empty(),
-                        Optional.empty(),
-                        new TreeMap<>(),
-                        new ArrayList<>());
+        final var transactionProcessingResult = TransactionProcessingResult.failed(
+                0, 0, 1, Optional.empty(), Optional.empty(), new TreeMap<>(), new ArrayList<>());
 
         given(accountStore.loadAccount(any())).willReturn(new Account(Id.fromGrpcContract(target)));
-        given(accountStore.loadContract(any()))
-                .willReturn(new Account(Id.fromGrpcContract(target)));
+        given(accountStore.loadContract(any())).willReturn(new Account(Id.fromGrpcContract(target)));
         given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any()))
                 .willReturn(transactionProcessingResult);
         given(blockMetaProvider.getSource()).willReturn(Optional.of(blockMetaSource));
@@ -304,9 +308,7 @@ class ContractCallLocalAnswerTest {
         // then:
         final var opResponse = response.getContractCallLocal();
         assertTrue(opResponse.hasHeader(), "Missing response header!");
-        assertEquals(
-                CONTRACT_EXECUTION_EXCEPTION,
-                opResponse.getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(CONTRACT_EXECUTION_EXCEPTION, opResponse.getHeader().getNodeTransactionPrecheckCode());
         assertEquals(target, opResponse.getFunctionResult().getContractID());
     }
 
@@ -331,8 +333,7 @@ class ContractCallLocalAnswerTest {
         final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
 
         // when:
-        final Response response =
-                subject.responseGiven(sensibleQuery, view, INVALID_TRANSACTION, 0L);
+        final Response response = subject.responseGiven(sensibleQuery, view, INVALID_TRANSACTION, 0L);
 
         // then:
         final var opResponse = response.getContractCallLocal();
@@ -346,19 +347,17 @@ class ContractCallLocalAnswerTest {
 
         final QueryHeader.Builder header =
                 QueryHeader.newBuilder().setPayment(this.paymentTxn).setResponseType(type);
-        final ContractCallLocalQuery.Builder op =
-                ContractCallLocalQuery.newBuilder()
-                        .setHeader(header)
-                        .setContractID(target)
-                        .setGas(gas);
+        final ContractCallLocalQuery.Builder op = ContractCallLocalQuery.newBuilder()
+                .setHeader(header)
+                .setContractID(target)
+                .setGas(gas);
         return Query.newBuilder().setContractCallLocal(op).build();
     }
 
     private ContractCallLocalResponse response(final ResponseCodeEnum status) {
         return ContractCallLocalResponse.newBuilder()
                 .setHeader(ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(status))
-                .setFunctionResult(
-                        ContractFunctionResult.newBuilder().setContractCallResult(result))
+                .setFunctionResult(ContractFunctionResult.newBuilder().setContractCallResult(result))
                 .build();
     }
 }

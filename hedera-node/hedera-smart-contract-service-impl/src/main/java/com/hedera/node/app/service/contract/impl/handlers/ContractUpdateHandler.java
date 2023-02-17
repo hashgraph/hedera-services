@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
@@ -63,8 +64,7 @@ public class ContractUpdateHandler implements TransactionHandler {
             final var key = asHederaKey(op.getAdminKey());
             key.ifPresent(context::addToReqNonPayerKeys);
         }
-        if (op.hasAutoRenewAccountId()
-                && !op.getAutoRenewAccountId().equals(AccountID.getDefaultInstance())) {
+        if (op.hasAutoRenewAccountId() && !op.getAutoRenewAccountId().equals(AccountID.getDefaultInstance())) {
             context.addNonPayerKey(op.getAutoRenewAccountId(), INVALID_AUTORENEW_ACCOUNT);
         }
     }

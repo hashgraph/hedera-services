@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.onset;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
@@ -89,16 +90,16 @@ class WorkflowOnsetTest {
 
         bodyBytes = ByteString.copyFrom("bodyBytes", StandardCharsets.UTF_8);
         signatureMap = SignatureMap.newBuilder().build();
-        signedTx =
-                SignedTransaction.newBuilder()
-                        .setBodyBytes(bodyBytes)
-                        .setSigMap(signatureMap)
-                        .build();
+        signedTx = SignedTransaction.newBuilder()
+                .setBodyBytes(bodyBytes)
+                .setSigMap(signatureMap)
+                .build();
 
-        signedTransactionBytes =
-                ByteString.copyFrom("signedTransactionBytes", StandardCharsets.UTF_8);
+        signedTransactionBytes = ByteString.copyFrom("signedTransactionBytes", StandardCharsets.UTF_8);
 
-        tx = Transaction.newBuilder().setSignedTransactionBytes(signedTransactionBytes).build();
+        tx = Transaction.newBuilder()
+                .setSignedTransactionBytes(signedTransactionBytes)
+                .build();
 
         when(txBodyParser.parseFrom(bodyBytes)).thenReturn(txBody);
         when(signedParser.parseFrom(signedTransactionBytes)).thenReturn(signedTx);
@@ -136,8 +137,7 @@ class WorkflowOnsetTest {
         final var byteArray = new byte[0];
         when(localTxParser.parseFrom(byteArray)).thenReturn(tx);
 
-        final var localCtx =
-                new SessionContext(queryParser, localTxParser, signedParser, txBodyParser);
+        final var localCtx = new SessionContext(queryParser, localTxParser, signedParser, txBodyParser);
         final var result = onset.parseAndCheck(localCtx, byteArray);
 
         // then
@@ -154,15 +154,11 @@ class WorkflowOnsetTest {
         final var byteArray = new byte[0];
 
         // then
-        assertThatThrownBy(() -> onset.parseAndCheck(null, inputBuffer))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> onset.parseAndCheck(ctx, (ByteBuffer) null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> onset.parseAndCheck(null, inputBuffer)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> onset.parseAndCheck(ctx, (ByteBuffer) null)).isInstanceOf(NullPointerException.class);
 
-        assertThatThrownBy(() -> onset.parseAndCheck(null, byteArray))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> onset.parseAndCheck(ctx, (byte[]) null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> onset.parseAndCheck(null, byteArray)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> onset.parseAndCheck(ctx, (byte[]) null)).isInstanceOf(NullPointerException.class);
     }
 
     @SuppressWarnings({"JUnitMalformedDeclaration", "deprecation"})
@@ -179,17 +175,15 @@ class WorkflowOnsetTest {
 
         final var localBodyBytes = ByteString.copyFrom("bodyBytes", StandardCharsets.UTF_8);
 
-        final var localTx =
-                Transaction.newBuilder()
-                        .setBodyBytes(localBodyBytes)
-                        .setSigMap(signatureMap)
-                        .build();
+        final var localTx = Transaction.newBuilder()
+                .setBodyBytes(localBodyBytes)
+                .setSigMap(signatureMap)
+                .build();
 
         when(localBodyParser.parseFrom(localBodyBytes)).thenReturn(localTxBody);
         when(localTxParser.parseFrom(inputBuffer)).thenReturn(localTx);
 
-        final var localCtx =
-                new SessionContext(queryParser, localTxParser, localSignedParser, localBodyParser);
+        final var localCtx = new SessionContext(queryParser, localTxParser, localSignedParser, localBodyParser);
 
         // when
         final var result = onset.parseAndCheck(localCtx, inputBuffer);
@@ -205,10 +199,8 @@ class WorkflowOnsetTest {
     void testParseAndCheckWithTransactionParseFails(@Mock Parser<Transaction> localTxParser)
             throws InvalidProtocolBufferException {
         // given
-        when(localTxParser.parseFrom(inputBuffer))
-                .thenThrow(new InvalidProtocolBufferException("Expected failure"));
-        final var localCtx =
-                new SessionContext(queryParser, localTxParser, signedParser, txBodyParser);
+        when(localTxParser.parseFrom(inputBuffer)).thenThrow(new InvalidProtocolBufferException("Expected failure"));
+        final var localCtx = new SessionContext(queryParser, localTxParser, signedParser, txBodyParser);
 
         // then
         assertThatThrownBy(() -> onset.parseAndCheck(localCtx, inputBuffer))
@@ -217,12 +209,9 @@ class WorkflowOnsetTest {
     }
 
     @Test
-    void testParseAndCheckWithTransactionCheckFails(@Mock OnsetChecker localChecker)
-            throws PreCheckException {
+    void testParseAndCheckWithTransactionCheckFails(@Mock OnsetChecker localChecker) throws PreCheckException {
         // given
-        doThrow(new PreCheckException(TRANSACTION_OVERSIZE))
-                .when(localChecker)
-                .checkTransaction(tx);
+        doThrow(new PreCheckException(TRANSACTION_OVERSIZE)).when(localChecker).checkTransaction(tx);
         final var localOnset = new WorkflowOnset(localChecker);
 
         // then
@@ -232,14 +221,12 @@ class WorkflowOnsetTest {
     }
 
     @Test
-    void testParseAndCheckWithSignedTransactionParseFails(
-            @Mock Parser<SignedTransaction> localSignedParser)
+    void testParseAndCheckWithSignedTransactionParseFails(@Mock Parser<SignedTransaction> localSignedParser)
             throws InvalidProtocolBufferException {
         // given
         when(localSignedParser.parseFrom(signedTransactionBytes))
                 .thenThrow(new InvalidProtocolBufferException("Expected failure"));
-        final var localCtx =
-                new SessionContext(queryParser, txParser, localSignedParser, txBodyParser);
+        final var localCtx = new SessionContext(queryParser, txParser, localSignedParser, txBodyParser);
 
         // then
         assertThatThrownBy(() -> onset.parseAndCheck(localCtx, inputBuffer))
@@ -248,8 +235,7 @@ class WorkflowOnsetTest {
     }
 
     @Test
-    void testParseAndCheckWithSignedTransactionCheckFails(@Mock OnsetChecker localChecker)
-            throws PreCheckException {
+    void testParseAndCheckWithSignedTransactionCheckFails(@Mock OnsetChecker localChecker) throws PreCheckException {
         // given
         doThrow(new PreCheckException(TRANSACTION_HAS_UNKNOWN_FIELDS))
                 .when(localChecker)
@@ -263,13 +249,11 @@ class WorkflowOnsetTest {
     }
 
     @Test
-    void testParseAndCheckWithTransactionBodyParseFails(
-            @Mock Parser<TransactionBody> localTxBodyParser) throws InvalidProtocolBufferException {
+    void testParseAndCheckWithTransactionBodyParseFails(@Mock Parser<TransactionBody> localTxBodyParser)
+            throws InvalidProtocolBufferException {
         // given
-        when(localTxBodyParser.parseFrom(bodyBytes))
-                .thenThrow(new InvalidProtocolBufferException("Expected failure"));
-        final var localCtx =
-                new SessionContext(queryParser, txParser, signedParser, localTxBodyParser);
+        when(localTxBodyParser.parseFrom(bodyBytes)).thenThrow(new InvalidProtocolBufferException("Expected failure"));
+        final var localCtx = new SessionContext(queryParser, txParser, signedParser, localTxBodyParser);
 
         // then
         assertThatThrownBy(() -> onset.parseAndCheck(localCtx, inputBuffer))
@@ -281,8 +265,7 @@ class WorkflowOnsetTest {
     void testParseAndCheckWithTransactionBodyCheckCatastrophicFails(@Mock OnsetChecker localChecker)
             throws PreCheckException {
         // given
-        when(localChecker.checkTransactionBody(txBody))
-                .thenThrow(new PreCheckException(INVALID_TRANSACTION_ID));
+        when(localChecker.checkTransactionBody(txBody)).thenThrow(new PreCheckException(INVALID_TRANSACTION_ID));
         final var localOnset = new WorkflowOnset(localChecker);
 
         // then
@@ -300,8 +283,7 @@ class WorkflowOnsetTest {
         final var localTxBody = TransactionBody.newBuilder().build();
         when(localTxBodyParser.parseFrom(bodyBytes)).thenReturn(localTxBody);
         when(localChecker.checkTransactionBody(localTxBody)).thenReturn(DUPLICATE_TRANSACTION);
-        final var localCtx =
-                new SessionContext(queryParser, txParser, signedParser, localTxBodyParser);
+        final var localCtx = new SessionContext(queryParser, txParser, signedParser, localTxBodyParser);
 
         final var localOnset = new WorkflowOnset(localChecker);
 
@@ -316,14 +298,12 @@ class WorkflowOnsetTest {
     }
 
     @Test
-    void testParseAndCheckWithUnknownHederaFunctionalityFails(
-            @Mock Parser<TransactionBody> localTxBodyParser)
+    void testParseAndCheckWithUnknownHederaFunctionalityFails(@Mock Parser<TransactionBody> localTxBodyParser)
             throws InvalidProtocolBufferException, PreCheckException {
         // given
         final var localTxBody = TransactionBody.newBuilder().build();
         when(localTxBodyParser.parseFrom(bodyBytes)).thenReturn(localTxBody);
-        final var localCtx =
-                new SessionContext(queryParser, txParser, signedParser, localTxBodyParser);
+        final var localCtx = new SessionContext(queryParser, txParser, signedParser, localTxBodyParser);
 
         // when
         final var result = onset.parseAndCheck(localCtx, inputBuffer);

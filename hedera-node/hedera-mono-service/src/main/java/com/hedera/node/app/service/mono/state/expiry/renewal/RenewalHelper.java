@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry.renewal;
 
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.EXPIRED_AND_PENDING_REMOVAL;
@@ -45,8 +46,7 @@ import javax.inject.Singleton;
 @Singleton
 public class RenewalHelper implements RenewalWork {
     static final List<MapAccessType> SELF_RENEWAL_WORK = List.of(ACCOUNTS_GET_FOR_MODIFY);
-    static final List<MapAccessType> SUPPORTED_RENEWAL_WORK =
-            List.of(ACCOUNTS_GET_FOR_MODIFY, ACCOUNTS_GET_FOR_MODIFY);
+    static final List<MapAccessType> SUPPORTED_RENEWAL_WORK = List.of(ACCOUNTS_GET_FOR_MODIFY, ACCOUNTS_GET_FOR_MODIFY);
 
     private final ClassificationWork classifier;
     private final GlobalDynamicProperties dynamicProperties;
@@ -96,8 +96,7 @@ public class RenewalHelper implements RenewalWork {
         return renew(account, cycleTime, false);
     }
 
-    private SystemTaskResult renew(
-            final EntityNum account, final Instant now, final boolean isContract) {
+    private SystemTaskResult renew(final EntityNum account, final Instant now, final boolean isContract) {
         assertHasLastClassifiedAccount();
 
         final var payer = classifier.getPayerForLastClassified();
@@ -151,19 +150,17 @@ public class RenewalHelper implements RenewalWork {
 
     private void assertHasLastClassifiedAccount() {
         if (classifier.getLastClassified() == null) {
-            throw new IllegalStateException(
-                    "Cannot remove a last classified account; none is present!");
+            throw new IllegalStateException("Cannot remove a last classified account; none is present!");
         }
     }
 
     private void assertPayerAccountForRenewalCanAfford(long fee) {
         if (classifier.getPayerForLastClassified().getBalance() < fee) {
-            var msg =
-                    "Cannot charge "
-                            + fee
-                            + " to account "
-                            + classifier.getPayerNumForLastClassified().toIdString()
-                            + "!";
+            var msg = "Cannot charge "
+                    + fee
+                    + " to account "
+                    + classifier.getPayerNumForLastClassified().toIdString()
+                    + "!";
             throw new IllegalStateException(msg);
         }
     }

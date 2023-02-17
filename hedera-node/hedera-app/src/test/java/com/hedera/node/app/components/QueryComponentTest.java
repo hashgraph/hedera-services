@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.components;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -28,7 +29,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class QueryComponentTest {
-    @Mock private Platform platform;
+    @Mock
+    private Platform platform;
 
     @Test
     void objectGraphRootsAreAvailable() {
@@ -36,8 +38,7 @@ class QueryComponentTest {
         BDDMockito.given(platform.getSelfId()).willReturn(selfNodeId);
 
         // given:
-        final QueryComponent subject =
-                DaggerQueryComponent.factory().create(new BootstrapProperties(), 6144, platform);
+        final QueryComponent subject = DaggerQueryComponent.factory().create(new BootstrapProperties(), 6144, platform);
 
         // expect:
         assertNotNull(subject.queryWorkflow());

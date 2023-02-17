@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
@@ -45,30 +46,46 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class PendingRewardsManagementTest {
 
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
-    @Mock private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos;
-    @Mock private MerkleNetworkContext networkCtx;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private EntityCreator creator;
-    @Mock private PropertySource properties;
-    @Mock private MerkleStakingInfo info;
-    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock
+    private MerkleMap<EntityNum, MerkleAccount> accounts;
+
+    @Mock
+    private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos;
+
+    @Mock
+    private MerkleNetworkContext networkCtx;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private EntityCreator creator;
+
+    @Mock
+    private PropertySource properties;
+
+    @Mock
+    private MerkleStakingInfo info;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
 
     private EndOfStakingPeriodCalculator subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new EndOfStakingPeriodCalculator(
-                        () -> AccountStorageAdapter.fromInMemory(accounts),
-                        () -> stakingInfos,
-                        () -> networkCtx,
-                        syntheticTxnFactory,
-                        recordsHistorian,
-                        creator,
-                        properties,
-                        dynamicProperties);
+        subject = new EndOfStakingPeriodCalculator(
+                () -> AccountStorageAdapter.fromInMemory(accounts),
+                () -> stakingInfos,
+                () -> networkCtx,
+                syntheticTxnFactory,
+                recordsHistorian,
+                creator,
+                properties,
+                dynamicProperties);
     }
 
     @Test
@@ -79,14 +96,10 @@ class PendingRewardsManagementTest {
         given(properties.getLongProperty(STAKING_REWARD_RATE)).willReturn(rewardRate);
         given(stakingInfos.keySet()).willReturn(Set.of(onlyNodeNum));
         given(stakingInfos.getForModify(onlyNodeNum)).willReturn(info);
-        given(info.stakeRewardStartMinusUnclaimed())
-                .willReturn(stakeRewardStart - unclaimedStakeRewardStart);
+        given(info.stakeRewardStartMinusUnclaimed()).willReturn(stakeRewardStart - unclaimedStakeRewardStart);
         given(dynamicProperties.requireMinStakeToReward()).willReturn(true);
-        given(
-                        info.updateRewardSumHistory(
-                                rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS),
-                                lastPeriodRewardRate,
-                                true))
+        given(info.updateRewardSumHistory(
+                        rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS), lastPeriodRewardRate, true))
                 .willReturn(lastPeriodRewardRate);
         given(info.reviewElectionsAndRecomputeStakes()).willReturn(updatedStakeRewardStart);
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
@@ -95,9 +108,7 @@ class PendingRewardsManagementTest {
 
         verify(networkCtx)
                 .increasePendingRewards(
-                        (stakeRewardStart - unclaimedStakeRewardStart)
-                                / 100_000_000
-                                * lastPeriodRewardRate);
+                        (stakeRewardStart - unclaimedStakeRewardStart) / 100_000_000 * lastPeriodRewardRate);
     }
 
     @Test

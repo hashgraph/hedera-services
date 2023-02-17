@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -57,46 +58,26 @@ public class CryptoTransferPerfSuite extends HapiSuite {
         final long ENDING_ZERO_ACCOUNT_BALANCE = (2L * NUM_TRANSFERS);
 
         return defaultHapiSpec("CryptoTransferPerf")
-                .given(
-                        inParallel(
-                                asOpArray(
-                                        NUM_ACCOUNTS + 1,
-                                        i ->
-                                                (i == 0)
-                                                        ? cryptoCreate("account0").balance(0L)
-                                                        : cryptoCreate("account" + i)
-                                                                .sendThreshold(1L)
-                                                                .balance(INIT_BALANCE))))
+                .given(inParallel(asOpArray(
+                        NUM_ACCOUNTS + 1,
+                        i -> (i == 0)
+                                ? cryptoCreate("account0").balance(0L)
+                                : cryptoCreate("account" + i).sendThreshold(1L).balance(INIT_BALANCE))))
                 .when(
                         startThroughputObs("transferThroughput").msToSaturateQueues(50L),
-                        inParallel(
-                                asOpArray(
-                                        NUM_TRANSFERS,
-                                        i ->
-                                                cryptoTransfer(
-                                                                tinyBarsFromTo(
-                                                                        "account"
-                                                                                + (i % NUM_ACCOUNTS
-                                                                                        + 1),
-                                                                        "account0",
-                                                                        2L))
-                                                        .deferStatusResolution()
-                                                        .hasAnyStatusAtAll())))
+                        inParallel(asOpArray(NUM_TRANSFERS, i -> cryptoTransfer(
+                                        tinyBarsFromTo("account" + (i % NUM_ACCOUNTS + 1), "account0", 2L))
+                                .deferStatusResolution()
+                                .hasAnyStatusAtAll())))
                 .then(
                         finishThroughputObs("transferThroughput")
-                                .gatedByQuery(
-                                        () ->
-                                                getAccountBalance("account0")
-                                                        .hasTinyBars(ENDING_ZERO_ACCOUNT_BALANCE)
-                                                        .noLogging())
+                                .gatedByQuery(() -> getAccountBalance("account0")
+                                        .hasTinyBars(ENDING_ZERO_ACCOUNT_BALANCE)
+                                        .noLogging())
                                 .sleepMs(1_000L)
                                 .expiryMs(300_000L),
                         getAccountRecords("account1")
-                                .withLogging(
-                                        (log, records) ->
-                                                log.info(
-                                                        String.format(
-                                                                "%d records!", records.size())))
+                                .withLogging((log, records) -> log.info(String.format("%d records!", records.size())))
                                 .savingTo("record-snapshots"));
     }
 

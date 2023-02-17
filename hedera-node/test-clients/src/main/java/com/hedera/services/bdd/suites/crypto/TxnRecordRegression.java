@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -53,15 +54,14 @@ public class TxnRecordRegression extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    returnsInvalidForUnspecifiedTxnId(),
-                    recordNotFoundIfNotInPayerState(),
-                    recordUnavailableIfRejectedInPrecheck(),
-                    recordUnavailableBeforeConsensus(),
-                    recordAvailableInPayerState(),
-                    deletedAccountRecordsUnavailableAfterTtl(),
-                });
+        return List.of(new HapiSpec[] {
+            returnsInvalidForUnspecifiedTxnId(),
+            recordNotFoundIfNotInPayerState(),
+            recordUnavailableIfRejectedInPrecheck(),
+            recordUnavailableBeforeConsensus(),
+            recordAvailableInPayerState(),
+            deletedAccountRecordsUnavailableAfterTtl(),
+        });
     }
 
     private HapiSpec recordAvailableInPayerState() {
@@ -118,11 +118,10 @@ public class TxnRecordRegression extends HapiSuite {
     private HapiSpec recordUnavailableIfRejectedInPrecheck() {
         return defaultHapiSpec("RecordUnavailableIfRejectedInPrecheck")
                 .given(usableTxnIdNamed("failingTxn"), cryptoCreate("misc").balance(1_000L))
-                .when(
-                        cryptoCreate("nope")
-                                .payingWith("misc")
-                                .hasPrecheck(INSUFFICIENT_PAYER_BALANCE)
-                                .txnId("failingTxn"))
+                .when(cryptoCreate("nope")
+                        .payingWith("misc")
+                        .hasPrecheck(INSUFFICIENT_PAYER_BALANCE)
+                        .txnId("failingTxn"))
                 .then(getTxnRecord("failingTxn").hasCostAnswerPrecheck(RECORD_NOT_FOUND));
     }
 }

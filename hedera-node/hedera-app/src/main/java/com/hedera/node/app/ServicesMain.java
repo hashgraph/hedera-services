@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app;
 
 import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
@@ -91,9 +92,7 @@ public class ServicesMain implements SwirldMain {
         if (defaultCharsetIsCorrect() && sha384DigestIsAvailable()) {
             try {
                 Locale.setDefault(Locale.US);
-                consoleLog(
-                        String.format(
-                                "Using context to initialize HederaNode#%s...", app.nodeId()));
+                consoleLog(String.format("Using context to initialize HederaNode#%s...", app.nodeId()));
                 doStagedInit();
             } catch (final Exception e) {
                 log.error("Fatal precondition violated in HederaNode#{}", app.nodeId(), e);
@@ -144,8 +143,7 @@ public class ServicesMain implements SwirldMain {
         final var notifications = app.notificationEngine().get();
         notifications.register(PlatformStatusChangeListener.class, app.statusChangeListener());
         notifications.register(ReconnectCompleteListener.class, app.reconnectListener());
-        notifications.register(
-                StateWriteToDiskCompleteListener.class, app.stateWriteToDiskListener());
+        notifications.register(StateWriteToDiskCompleteListener.class, app.stateWriteToDiskListener());
         notifications.register(NewSignedStateListener.class, app.newSignedStateListener());
         notifications.register(IssListener.class, app.issListener());
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.contract;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
@@ -102,14 +103,10 @@ class GetBytecodeAnswerTest {
     @Test
     void getsValidity() {
         // given:
-        final Response response =
-                Response.newBuilder()
-                        .setContractGetBytecodeResponse(
-                                ContractGetBytecodeResponse.newBuilder()
-                                        .setHeader(
-                                                subject.answerOnlyHeader(
-                                                        RESULT_SIZE_LIMIT_EXCEEDED)))
-                        .build();
+        final Response response = Response.newBuilder()
+                .setContractGetBytecodeResponse(ContractGetBytecodeResponse.newBuilder()
+                        .setHeader(subject.answerOnlyHeader(RESULT_SIZE_LIMIT_EXCEEDED)))
+                .build();
 
         // expect:
         assertEquals(RESULT_SIZE_LIMIT_EXCEEDED, subject.extractValidityFrom(response));
@@ -136,19 +133,15 @@ class GetBytecodeAnswerTest {
 
         // then:
         assertTrue(response.hasContractGetBytecodeResponse());
-        assertTrue(
-                response.getContractGetBytecodeResponse().hasHeader(), "Missing response header!");
-        assertEquals(
-                OK,
-                response.getContractGetBytecodeResponse()
-                        .getHeader()
-                        .getNodeTransactionPrecheckCode());
+        assertTrue(response.getContractGetBytecodeResponse().hasHeader(), "Missing response header!");
+        assertEquals(OK, response.getContractGetBytecodeResponse().getHeader().getNodeTransactionPrecheckCode());
         assertEquals(
                 ANSWER_ONLY,
                 response.getContractGetBytecodeResponse().getHeader().getResponseType());
         assertEquals(fee, response.getContractGetBytecodeResponse().getHeader().getCost());
         // and:
-        final var actual = response.getContractGetBytecodeResponse().getBytecode().toByteArray();
+        final var actual =
+                response.getContractGetBytecodeResponse().getBytecode().toByteArray();
         assertTrue(Arrays.equals(bytecode, actual));
     }
 
@@ -162,11 +155,7 @@ class GetBytecodeAnswerTest {
 
         // then:
         assertTrue(response.hasContractGetBytecodeResponse());
-        assertEquals(
-                OK,
-                response.getContractGetBytecodeResponse()
-                        .getHeader()
-                        .getNodeTransactionPrecheckCode());
+        assertEquals(OK, response.getContractGetBytecodeResponse().getHeader().getNodeTransactionPrecheckCode());
         assertEquals(
                 COST_ANSWER,
                 response.getContractGetBytecodeResponse().getHeader().getResponseType());
@@ -185,9 +174,7 @@ class GetBytecodeAnswerTest {
         assertTrue(response.hasContractGetBytecodeResponse());
         assertEquals(
                 CONTRACT_DELETED,
-                response.getContractGetBytecodeResponse()
-                        .getHeader()
-                        .getNodeTransactionPrecheckCode());
+                response.getContractGetBytecodeResponse().getHeader().getNodeTransactionPrecheckCode());
         assertEquals(
                 COST_ANSWER,
                 response.getContractGetBytecodeResponse().getHeader().getResponseType());
@@ -209,15 +196,12 @@ class GetBytecodeAnswerTest {
         assertEquals(CONTRACT_DELETED, validity);
     }
 
-    private Query validQuery(final ResponseType type, final long payment, final String idLit)
-            throws Throwable {
+    private Query validQuery(final ResponseType type, final long payment, final String idLit) throws Throwable {
         this.paymentTxn = payerSponsoredTransfer(payer, COMPLEX_KEY_ACCOUNT_KT, node, payment);
         final QueryHeader.Builder header =
                 QueryHeader.newBuilder().setPayment(this.paymentTxn).setResponseType(type);
         final ContractGetBytecodeQuery.Builder op =
-                ContractGetBytecodeQuery.newBuilder()
-                        .setHeader(header)
-                        .setContractID(asContract(idLit));
+                ContractGetBytecodeQuery.newBuilder().setHeader(header).setContractID(asContract(idLit));
         return Query.newBuilder().setContractGetBytecode(op).build();
     }
 }

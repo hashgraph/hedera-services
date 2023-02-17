@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.schedule;
 /*
  * ‌
@@ -69,8 +70,7 @@ public class ScheduleSigsVerifier {
 
     @Inject
     public ScheduleSigsVerifier(
-            final @WorkingStateSigReqs SigRequirements workingSigReqs,
-            final CharacteristicsFactory characteristics) {
+            final @WorkingStateSigReqs SigRequirements workingSigReqs, final CharacteristicsFactory characteristics) {
         this.workingSigReqs = workingSigReqs;
         this.characteristics = characteristics;
     }
@@ -82,8 +82,7 @@ public class ScheduleSigsVerifier {
             return false;
         }
 
-        final var reqsResult =
-                workingSigReqs.keysForOtherParties(scheduledTxn, CODE_ORDER_RESULT_FACTORY);
+        final var reqsResult = workingSigReqs.keysForOtherParties(scheduledTxn, CODE_ORDER_RESULT_FACTORY);
 
         if (reqsResult.hasErrorReport()) {
             return false;
@@ -91,16 +90,14 @@ public class ScheduleSigsVerifier {
 
             final var activeCharacter = characteristics.inferredFor(scheduledTxn);
 
-            final Function<byte[], TransactionSignature> ignoredSigsFn =
-                    publicKey -> INVALID_MISSING_SIG;
+            final Function<byte[], TransactionSignature> ignoredSigsFn = publicKey -> INVALID_MISSING_SIG;
 
             final BiPredicate<JKey, TransactionSignature> activationTest =
                     (key, sig) -> schedule.hasValidSignatureFor(key.primitiveKeyIfPresent());
 
             for (final var reqKey : reqsResult.getOrderedKeys()) {
                 if (reqKey.isForScheduledTxn()
-                        && (!activation.test(
-                                reqKey, ignoredSigsFn, activationTest, activeCharacter))) {
+                        && (!activation.test(reqKey, ignoredSigsFn, activationTest, activeCharacter))) {
                     return false;
                 }
             }

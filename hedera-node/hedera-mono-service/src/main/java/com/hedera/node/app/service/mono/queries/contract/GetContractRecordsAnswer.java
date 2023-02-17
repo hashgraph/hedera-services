@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.contract;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetRecords;
@@ -39,19 +40,13 @@ public class GetContractRecordsAnswer extends AbstractAnswer {
                 ContractGetRecords,
                 query -> query.getContractGetRecords().getHeader().getPayment(),
                 query -> query.getContractGetRecords().getHeader().getResponseType(),
-                response ->
-                        response.getContractGetRecordsResponse()
-                                .getHeader()
-                                .getNodeTransactionPrecheckCode(),
+                response -> response.getContractGetRecordsResponse().getHeader().getNodeTransactionPrecheckCode(),
                 (query, view) -> NOT_SUPPORTED);
     }
 
     @Override
     public Response responseGiven(
-            final Query query,
-            @Nullable final StateView view,
-            final ResponseCodeEnum validity,
-            final long cost) {
+            final Query query, @Nullable final StateView view, final ResponseCodeEnum validity, final long cost) {
         final ContractGetRecordsQuery op = query.getContractGetRecords();
         final ContractGetRecordsResponse.Builder response = ContractGetRecordsResponse.newBuilder();
 

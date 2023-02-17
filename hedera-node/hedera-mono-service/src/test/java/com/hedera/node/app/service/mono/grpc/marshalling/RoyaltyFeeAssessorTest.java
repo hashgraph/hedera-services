@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static com.hedera.node.app.service.mono.store.models.Id.MISSING_ID;
@@ -48,28 +49,31 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class RoyaltyFeeAssessorTest {
     private List<AssessedCustomFeeWrapper> accumulator = new ArrayList<>();
 
-    @Mock private FixedFeeAssessor fixedFeeAssessor;
-    @Mock private FungibleAdjuster fungibleAdjuster;
-    @Mock private BalanceChangeManager changeManager;
-    @Mock private CustomFeePayerExemptions customFeePayerExemptions;
+    @Mock
+    private FixedFeeAssessor fixedFeeAssessor;
+
+    @Mock
+    private FungibleAdjuster fungibleAdjuster;
+
+    @Mock
+    private BalanceChangeManager changeManager;
+
+    @Mock
+    private CustomFeePayerExemptions customFeePayerExemptions;
 
     private RoyaltyFeeAssessor subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new RoyaltyFeeAssessor(
-                        fixedFeeAssessor, fungibleAdjuster, customFeePayerExemptions);
+        subject = new RoyaltyFeeAssessor(fixedFeeAssessor, fungibleAdjuster, customFeePayerExemptions);
     }
 
     @Test
     void doesNothingIfNoValueExchangedAndNoFallback() {
         // setup:
-        final CustomFeeMeta feeMeta =
-                newRoyaltyCustomFeeMeta(
-                        List.of(
-                                FcCustomFee.fixedFee(1, null, otherCollector, false),
-                                FcCustomFee.royaltyFee(1, 2, null, targetCollector, false)));
+        final CustomFeeMeta feeMeta = newRoyaltyCustomFeeMeta(List.of(
+                FcCustomFee.fixedFee(1, null, otherCollector, false),
+                FcCustomFee.royaltyFee(1, 2, null, targetCollector, false)));
 
         // when:
         final var result = subject.assessAllRoyalties(trigger, feeMeta, changeManager, accumulator);
@@ -85,11 +89,9 @@ class RoyaltyFeeAssessorTest {
     void chargesHbarFallbackAsExpected() {
         // setup:
         final var fallback = new FixedFeeSpec(33, null);
-        final CustomFeeMeta feeMeta =
-                newRoyaltyCustomFeeMeta(
-                        List.of(
-                                FcCustomFee.fixedFee(1, null, otherCollector, false),
-                                FcCustomFee.royaltyFee(1, 2, fallback, targetCollector, false)));
+        final CustomFeeMeta feeMeta = newRoyaltyCustomFeeMeta(List.of(
+                FcCustomFee.fixedFee(1, null, otherCollector, false),
+                FcCustomFee.royaltyFee(1, 2, fallback, targetCollector, false)));
 
         // when:
         final var result = subject.assessAllRoyalties(trigger, feeMeta, changeManager, accumulator);
@@ -110,11 +112,9 @@ class RoyaltyFeeAssessorTest {
     void abortsWithNecessaryResponseCodeIfNoCounterpartyId() {
         final var fallback = new FixedFeeSpec(33, null);
         final CustomFeeMeta feeMeta =
-                newRoyaltyCustomFeeMeta(
-                        List.of(FcCustomFee.royaltyFee(1, 2, fallback, targetCollector, false)));
+                newRoyaltyCustomFeeMeta(List.of(FcCustomFee.royaltyFee(1, 2, fallback, targetCollector, false)));
 
-        final var result =
-                subject.assessAllRoyalties(htsPayerPlusChange, feeMeta, changeManager, accumulator);
+        final var result = subject.assessAllRoyalties(htsPayerPlusChange, feeMeta, changeManager, accumulator);
 
         assertEquals(ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON, result);
     }
@@ -124,11 +124,9 @@ class RoyaltyFeeAssessorTest {
         // setup:
         final var denom = new EntityId(1, 2, 3);
         final var fallback = new FixedFeeSpec(33, denom);
-        final CustomFeeMeta feeMeta =
-                newRoyaltyCustomFeeMeta(
-                        List.of(
-                                FcCustomFee.fixedFee(1, null, otherCollector, false),
-                                FcCustomFee.royaltyFee(1, 2, fallback, targetCollector, false)));
+        final CustomFeeMeta feeMeta = newRoyaltyCustomFeeMeta(List.of(
+                FcCustomFee.fixedFee(1, null, otherCollector, false),
+                FcCustomFee.royaltyFee(1, 2, fallback, targetCollector, false)));
 
         // when:
         final var result = subject.assessAllRoyalties(trigger, feeMeta, changeManager, accumulator);
@@ -150,16 +148,12 @@ class RoyaltyFeeAssessorTest {
         // setup:
         final var denom = new EntityId(1, 2, 3);
         final var fallback = new FixedFeeSpec(33, denom);
-        final CustomFeeMeta fees =
-                newRoyaltyCustomFeeMeta(
-                        List.of(
-                                FcCustomFee.fixedFee(1, null, otherCollector, false),
-                                FcCustomFee.royaltyFee(1, 2, fallback, targetCollector, false)));
+        final CustomFeeMeta fees = newRoyaltyCustomFeeMeta(List.of(
+                FcCustomFee.fixedFee(1, null, otherCollector, false),
+                FcCustomFee.royaltyFee(1, 2, fallback, targetCollector, false)));
 
         // when:
-        final var result =
-                subject.assessAllRoyalties(
-                        triggerWithAliasTransfer, fees, changeManager, accumulator);
+        final var result = subject.assessAllRoyalties(triggerWithAliasTransfer, fees, changeManager, accumulator);
 
         // then:
         assertEquals(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE, result);
@@ -168,11 +162,9 @@ class RoyaltyFeeAssessorTest {
     @Test
     void skipsIfRoyaltyAlreadyPaid() {
         // setup:
-        final CustomFeeMeta feeMeta =
-                newRoyaltyCustomFeeMeta(
-                        List.of(
-                                FcCustomFee.fixedFee(1, null, otherCollector, false),
-                                FcCustomFee.royaltyFee(1, 2, null, targetCollector, false)));
+        final CustomFeeMeta feeMeta = newRoyaltyCustomFeeMeta(List.of(
+                FcCustomFee.fixedFee(1, null, otherCollector, false),
+                FcCustomFee.royaltyFee(1, 2, null, targetCollector, false)));
         // and:
         final var reclaimable = changesNoLongerWithOriginalUnits();
 
@@ -194,11 +186,9 @@ class RoyaltyFeeAssessorTest {
     @Test
     void reclaimsFromOriginalCreditsWhenAvailable() {
         // setup:
-        final CustomFeeMeta feeMeta =
-                newRoyaltyCustomFeeMeta(
-                        List.of(
-                                FcCustomFee.fixedFee(1, null, otherCollector, false),
-                                FcCustomFee.royaltyFee(1, 2, null, targetCollector, false)));
+        final CustomFeeMeta feeMeta = newRoyaltyCustomFeeMeta(List.of(
+                FcCustomFee.fixedFee(1, null, otherCollector, false),
+                FcCustomFee.royaltyFee(1, 2, null, targetCollector, false)));
         // and:
         final var reclaimable = changesNoLongerWithOriginalUnits();
 
@@ -214,19 +204,10 @@ class RoyaltyFeeAssessorTest {
         assertEquals(0, reclaimable.get(1).getAggregatedUnits());
         // and:
         verify(fungibleAdjuster)
-                .adjustedChange(
-                        targetCollector.asId(),
-                        MISSING_ID,
-                        MISSING_ID,
-                        originalUnits / 2,
-                        changeManager);
+                .adjustedChange(targetCollector.asId(), MISSING_ID, MISSING_ID, originalUnits / 2, changeManager);
         verify(fungibleAdjuster)
                 .adjustedChange(
-                        targetCollector.asId(),
-                        MISSING_ID,
-                        firstFungibleTokenId,
-                        originalUnits / 2,
-                        changeManager);
+                        targetCollector.asId(), MISSING_ID, firstFungibleTokenId, originalUnits / 2, changeManager);
         verify(changeManager).isRoyaltyPaid(nonFungibleTokenId, payer);
         verify(changeManager).markRoyaltyPaid(nonFungibleTokenId, payer);
         // and:
@@ -238,11 +219,9 @@ class RoyaltyFeeAssessorTest {
     @Test
     void doesntCollectRoyaltyIfOriginalPayerIsExempt() {
         // setup:
-        final CustomFeeMeta feeMeta =
-                newRoyaltyCustomFeeMeta(
-                        List.of(
-                                FcCustomFee.fixedFee(1, null, otherCollector, false),
-                                FcCustomFee.royaltyFee(1, 2, null, targetCollector, false)));
+        final CustomFeeMeta feeMeta = newRoyaltyCustomFeeMeta(List.of(
+                FcCustomFee.fixedFee(1, null, otherCollector, false),
+                FcCustomFee.royaltyFee(1, 2, null, targetCollector, false)));
         // and:
         final var reclaimable = changesNoLongerWithOriginalUnits();
 
@@ -265,12 +244,10 @@ class RoyaltyFeeAssessorTest {
     @Test
     void abortsWhenCreditsNotAvailable() {
         // setup:
-        final CustomFeeMeta feeMeta =
-                newRoyaltyCustomFeeMeta(
-                        List.of(
-                                FcCustomFee.fixedFee(1, null, otherCollector, false),
-                                FcCustomFee.royaltyFee(1, 2, null, targetCollector, false),
-                                FcCustomFee.royaltyFee(1, 2, null, targetCollector, false)));
+        final CustomFeeMeta feeMeta = newRoyaltyCustomFeeMeta(List.of(
+                FcCustomFee.fixedFee(1, null, otherCollector, false),
+                FcCustomFee.royaltyFee(1, 2, null, targetCollector, false),
+                FcCustomFee.royaltyFee(1, 2, null, targetCollector, false)));
         // and:
         final var reclaimable = changesNoLongerWithOriginalUnits();
 
@@ -300,53 +277,32 @@ class RoyaltyFeeAssessorTest {
     private final Id funding = new Id(0, 0, 98);
     private final Id firstFungibleTokenId = new Id(1, 2, 3);
     private final Id minter = new Id(4, 5, 6);
-    private final AccountID alias =
-            asAliasAccount(ByteString.copyFromUtf8("01234567890123456789012345678901"));
-    private final AccountAmount payerCredit =
-            AccountAmount.newBuilder()
-                    .setAccountID(payer.asGrpcAccount())
-                    .setAmount(originalUnits)
-                    .build();
-    private final BalanceChange hbarPayerPlusChange =
-            BalanceChange.changingHbar(payerCredit, payer.asGrpcAccount());
-    private final BalanceChange htsPayerPlusChange =
-            BalanceChange.changingFtUnits(
-                    firstFungibleTokenId,
-                    firstFungibleTokenId.asGrpcToken(),
-                    payerCredit,
-                    payer.asGrpcAccount());
-    private final NftTransfer ownershipChange =
-            NftTransfer.newBuilder()
-                    .setSenderAccountID(payer.asGrpcAccount())
-                    .setReceiverAccountID(funding.asGrpcAccount())
-                    .build();
+    private final AccountID alias = asAliasAccount(ByteString.copyFromUtf8("01234567890123456789012345678901"));
+    private final AccountAmount payerCredit = AccountAmount.newBuilder()
+            .setAccountID(payer.asGrpcAccount())
+            .setAmount(originalUnits)
+            .build();
+    private final BalanceChange hbarPayerPlusChange = BalanceChange.changingHbar(payerCredit, payer.asGrpcAccount());
+    private final BalanceChange htsPayerPlusChange = BalanceChange.changingFtUnits(
+            firstFungibleTokenId, firstFungibleTokenId.asGrpcToken(), payerCredit, payer.asGrpcAccount());
+    private final NftTransfer ownershipChange = NftTransfer.newBuilder()
+            .setSenderAccountID(payer.asGrpcAccount())
+            .setReceiverAccountID(funding.asGrpcAccount())
+            .build();
 
-    private final NftTransfer ownershipChangeWithAlias =
-            NftTransfer.newBuilder()
-                    .setSenderAccountID(payer.asGrpcAccount())
-                    .setReceiverAccountID(alias)
-                    .build();
+    private final NftTransfer ownershipChangeWithAlias = NftTransfer.newBuilder()
+            .setSenderAccountID(payer.asGrpcAccount())
+            .setReceiverAccountID(alias)
+            .build();
     private final Id nonFungibleTokenId = new Id(7, 4, 7);
-    private final BalanceChange trigger =
-            BalanceChange.changingNftOwnership(
-                    nonFungibleTokenId,
-                    nonFungibleTokenId.asGrpcToken(),
-                    ownershipChange,
-                    payer.asGrpcAccount());
+    private final BalanceChange trigger = BalanceChange.changingNftOwnership(
+            nonFungibleTokenId, nonFungibleTokenId.asGrpcToken(), ownershipChange, payer.asGrpcAccount());
 
-    private final BalanceChange triggerWithAliasTransfer =
-            BalanceChange.changingNftOwnership(
-                    nonFungibleTokenId,
-                    nonFungibleTokenId.asGrpcToken(),
-                    ownershipChangeWithAlias,
-                    payer.asGrpcAccount());
+    private final BalanceChange triggerWithAliasTransfer = BalanceChange.changingNftOwnership(
+            nonFungibleTokenId, nonFungibleTokenId.asGrpcToken(), ownershipChangeWithAlias, payer.asGrpcAccount());
     private final AccountID[] effPayerNum = new AccountID[] {payer.asGrpcAccount()};
     private final AssessedCustomFeeWrapper hbarAssessed =
             new AssessedCustomFeeWrapper(targetCollector, originalUnits / 2, effPayerNum);
-    private final AssessedCustomFeeWrapper htsAssessed =
-            new AssessedCustomFeeWrapper(
-                    targetCollector,
-                    firstFungibleTokenId.asEntityId(),
-                    originalUnits / 2,
-                    effPayerNum);
+    private final AssessedCustomFeeWrapper htsAssessed = new AssessedCustomFeeWrapper(
+            targetCollector, firstFungibleTokenId.asEntityId(), originalUnits / 2, effPayerNum);
 }

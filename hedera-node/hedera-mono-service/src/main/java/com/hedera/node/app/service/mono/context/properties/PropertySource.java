@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.properties;
 
 import static java.util.stream.Collectors.toMap;
@@ -57,21 +58,16 @@ public interface PropertySource {
     Function<String, Object> AS_PROFILE = v -> Profile.valueOf(v.toUpperCase());
     Function<String, Object> AS_BOOLEAN = Boolean::valueOf;
     Function<String, Object> AS_CS_STRINGS = s -> Arrays.stream(s.split(",")).toList();
-    Function<String, Object> AS_NODE_STAKE_RATIOS =
-            s ->
-                    Arrays.stream(s.split(","))
-                            .map(r -> r.split(":"))
-                            .filter(
-                                    e -> {
-                                        try {
-                                            return e.length == 2
-                                                    && Long.parseLong(e[0]) >= 0
-                                                    && Long.parseLong(e[1]) > 0;
-                                        } catch (Exception ignore) {
-                                            return false;
-                                        }
-                                    })
-                            .collect(toMap(e -> Long.parseLong(e[0]), e -> Long.parseLong(e[1])));
+    Function<String, Object> AS_NODE_STAKE_RATIOS = s -> Arrays.stream(s.split(","))
+            .map(r -> r.split(":"))
+            .filter(e -> {
+                try {
+                    return e.length == 2 && Long.parseLong(e[0]) >= 0 && Long.parseLong(e[1]) > 0;
+                } catch (Exception ignore) {
+                    return false;
+                }
+            })
+            .collect(toMap(e -> Long.parseLong(e[0]), e -> Long.parseLong(e[1])));
     Function<String, Object> AS_FUNCTIONS =
             s -> Arrays.stream(s.split(",")).map(HederaFunctionality::valueOf).collect(toSet());
     Function<String, Object> AS_CONGESTION_MULTIPLIERS = CongestionMultipliers::from;
@@ -83,14 +79,9 @@ public interface PropertySource {
     Function<String, Object> AS_ENTITY_NUM_RANGE = EntityIdUtils::parseEntityNumRange;
     Function<String, Object> AS_ENTITY_TYPES = EntityType::csvTypeSet;
     Function<String, Object> AS_ACCESS_LIST = MapAccessType::csvAccessList;
-    Function<String, Object> AS_SIDECARS =
-            s -> asEnumSet(SidecarType.class, SidecarType::valueOf, s);
+    Function<String, Object> AS_SIDECARS = s -> asEnumSet(SidecarType.class, SidecarType::valueOf, s);
     Function<String, Object> AS_RECOMPUTE_TYPES =
-            s ->
-                    asEnumSet(
-                            StakeStartupHelper.RecomputeType.class,
-                            StakeStartupHelper.RecomputeType::valueOf,
-                            s);
+            s -> asEnumSet(StakeStartupHelper.RecomputeType.class, StakeStartupHelper.RecomputeType::valueOf, s);
 
     static <E extends Enum<E>> Set<E> asEnumSet(
             final Class<E> type, final Function<String, E> valueOf, final String csv) {
@@ -196,7 +187,8 @@ public interface PropertySource {
         String value = "";
         try {
             value = getStringProperty(name);
-            long[] nums = Stream.of(value.split("[.]")).mapToLong(Long::parseLong).toArray();
+            long[] nums =
+                    Stream.of(value.split("[.]")).mapToLong(Long::parseLong).toArray();
             return AccountID.newBuilder()
                     .setShardNum(nums[0])
                     .setRealmNum(nums[1])

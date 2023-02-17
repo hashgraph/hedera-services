@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.utils;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
@@ -35,8 +36,7 @@ public final class QueryUtils {
         return TransactionGetRecordQuery.newBuilder().setTransactionID(txnId).build();
     }
 
-    public static TransactionGetRecordQuery txnRecordQuery(
-            final TransactionID txnId, final ResponseType type) {
+    public static TransactionGetRecordQuery txnRecordQuery(final TransactionID txnId, final ResponseType type) {
         return txnRecordQuery(txnId, type, false);
     }
 
@@ -46,10 +46,7 @@ public final class QueryUtils {
     }
 
     public static TransactionGetRecordQuery txnRecordQuery(
-            final TransactionID txnId,
-            final ResponseType type,
-            final boolean duplicates,
-            final boolean children) {
+            final TransactionID txnId, final ResponseType type, final boolean duplicates, final boolean children) {
         return txnRecordQuery(txnId, type, Transaction.getDefaultInstance(), duplicates, children);
     }
 
@@ -64,10 +61,7 @@ public final class QueryUtils {
     }
 
     public static TransactionGetRecordQuery txnRecordQuery(
-            final TransactionID txnId,
-            final ResponseType type,
-            final long payment,
-            final boolean duplicates) {
+            final TransactionID txnId, final ResponseType type, final long payment, final boolean duplicates) {
         return txnRecordQuery(txnId, type, payment, duplicates, false);
     }
 
@@ -106,8 +100,7 @@ public final class QueryUtils {
         return queryHeaderOf(type, defaultPaymentTxn(payment));
     }
 
-    public static QueryHeader.Builder queryHeaderOf(
-            final ResponseType type, final Transaction paymentTxn) {
+    public static QueryHeader.Builder queryHeaderOf(final ResponseType type, final Transaction paymentTxn) {
         return queryHeaderOf(type).setPayment(paymentTxn);
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle.disk;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,45 +63,39 @@ class OnDiskTest extends MerkleTestBase {
         setupConstructableRegistry();
         storageDir = TemporaryFileBuilder.buildTemporaryDirectory();
 
-        def =
-                StateDefinition.onDisk(
-                        ACCOUNT_STATE_KEY, new AccountIDSerdes(), new AccountSerdes(), 100);
+        def = StateDefinition.onDisk(ACCOUNT_STATE_KEY, new AccountIDSerdes(), new AccountSerdes(), 100);
 
         //noinspection rawtypes
-        schema =
-                new Schema(version(1, 0, 0)) {
-                    @NonNull
-                    @Override
-                    public Set<StateDefinition> statesToCreate() {
-                        return Set.of(def);
-                    }
-                };
+        schema = new Schema(version(1, 0, 0)) {
+            @NonNull
+            @Override
+            public Set<StateDefinition> statesToCreate() {
+                return Set.of(def);
+            }
+        };
 
         md = new StateMetadata<>(SERVICE_NAME, schema, def);
 
-        final var builder =
-                new JasperDbBuilder<OnDiskKey<AccountID>, OnDiskValue<Account>>()
-                        // Force all hashes to disk, to make sure we're going through all the
-                        // serialization paths we can
-                        .internalHashesRamToDiskThreshold(0)
-                        .storageDir(storageDir)
-                        .maxNumOfKeys(100)
-                        .preferDiskBasedIndexes(true)
-                        .keySerializer(new OnDiskKeySerializer<>(md))
-                        .virtualLeafRecordSerializer(
-                                new VirtualLeafRecordSerializer<>(
-                                        (short) 1,
-                                        DigestType.SHA_384,
-                                        (short) 1,
-                                        DataFileCommon.VARIABLE_DATA_SIZE,
-                                        new OnDiskKeySerializer<>(md),
-                                        (short) 1,
-                                        DataFileCommon.VARIABLE_DATA_SIZE,
-                                        new OnDiskValueSerializer<>(md),
-                                        true));
+        final var builder = new JasperDbBuilder<OnDiskKey<AccountID>, OnDiskValue<Account>>()
+                // Force all hashes to disk, to make sure we're going through all the
+                // serialization paths we can
+                .internalHashesRamToDiskThreshold(0)
+                .storageDir(storageDir)
+                .maxNumOfKeys(100)
+                .preferDiskBasedIndexes(true)
+                .keySerializer(new OnDiskKeySerializer<>(md))
+                .virtualLeafRecordSerializer(new VirtualLeafRecordSerializer<>(
+                        (short) 1,
+                        DigestType.SHA_384,
+                        (short) 1,
+                        DataFileCommon.VARIABLE_DATA_SIZE,
+                        new OnDiskKeySerializer<>(md),
+                        (short) 1,
+                        DataFileCommon.VARIABLE_DATA_SIZE,
+                        new OnDiskValueSerializer<>(md),
+                        true));
 
-        virtualMap =
-                new VirtualMap<>(StateUtils.computeLabel(SERVICE_NAME, ACCOUNT_STATE_KEY), builder);
+        virtualMap = new VirtualMap<>(StateUtils.computeLabel(SERVICE_NAME, ACCOUNT_STATE_KEY), builder);
     }
 
     <K extends Comparable<K>, V> VirtualMap<OnDiskKey<K>, OnDiskValue<V>> copyHashAndFlush(
@@ -192,7 +187,6 @@ class OnDiskTest extends MerkleTestBase {
      * include fake objects and serialization methods, emulating what a service
      * would do.
      ****************************************************************************/
-
     private record AccountID(long shard, long realm, long num) implements Comparable<AccountID> {
         @Override
         public int compareTo(AccountID other) {
@@ -212,8 +206,7 @@ class OnDiskTest extends MerkleTestBase {
         }
     }
 
-    private record Account(
-            @NonNull OnDiskTest.AccountID accountID, @NonNull String memo, long balance) {}
+    private record Account(@NonNull OnDiskTest.AccountID accountID, @NonNull String memo, long balance) {}
 
     private static final class AccountIDSerdes implements Serdes<AccountID> {
         @NonNull

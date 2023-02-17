@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
@@ -56,12 +57,23 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class MerkleAccountScopedCheckTest {
-    @Mock private OptionValidator validator;
-    @Mock private BalanceChange balanceChange;
-    @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
-    @Mock private MerkleAccount account;
-    @Mock private Map<AccountProperty, Object> changeSet;
-    @Mock private Function<AccountProperty, Object> extantProps;
+    @Mock
+    private OptionValidator validator;
+
+    @Mock
+    private BalanceChange balanceChange;
+
+    @Mock
+    private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
+
+    @Mock
+    private MerkleAccount account;
+
+    @Mock
+    private Map<AccountProperty, Object> changeSet;
+
+    @Mock
+    private Function<AccountProperty, Object> extantProps;
 
     private MerkleAccountScopedCheck subject;
 
@@ -98,8 +110,7 @@ class MerkleAccountScopedCheckTest {
         when(account.getBalance()).thenReturn(0L);
         when(account.isExpiredAndPendingRemoval()).thenReturn(true);
         when(account.isSmartContract()).thenReturn(false);
-        when(validator.expiryStatusGiven(0L, true, false))
-                .thenReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+        when(validator.expiryStatusGiven(0L, true, false)).thenReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
         assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, subject.checkUsing(account, changeSet));
     }
 
@@ -186,8 +197,7 @@ class MerkleAccountScopedCheckTest {
         when(balanceChange.getPayerID()).thenReturn(payerID);
         when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(nonFungibleTokenID));
         when(balanceChange.nftId()).thenReturn(nftId1);
-        when(nftsLedger.get(nftId1, NftProperty.SPENDER))
-                .thenReturn(EntityId.fromGrpcAccountId(revokedSpender));
+        when(nftsLedger.get(nftId1, NftProperty.SPENDER)).thenReturn(EntityId.fromGrpcAccountId(revokedSpender));
 
         assertEquals(SPENDER_DOES_NOT_HAVE_ALLOWANCE, subject.checkUsing(account, changeSet));
     }
@@ -209,8 +219,7 @@ class MerkleAccountScopedCheckTest {
         when(balanceChange.getPayerID()).thenReturn(payerID);
         when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(nonFungibleTokenID));
         when(balanceChange.nftId()).thenReturn(nftId1);
-        when(nftsLedger.get(nftId1, NftProperty.SPENDER))
-                .thenReturn(EntityId.fromGrpcAccountId(payerID));
+        when(nftsLedger.get(nftId1, NftProperty.SPENDER)).thenReturn(EntityId.fromGrpcAccountId(payerID));
 
         assertEquals(OK, subject.checkUsing(account, changeSet));
     }
@@ -229,48 +238,36 @@ class MerkleAccountScopedCheckTest {
 
     @Test
     void throwsAsExpected() {
-        var iae =
-                assertThrows(
-                        IllegalArgumentException.class,
-                        () -> subject.getEffective(AUTO_RENEW_PERIOD, account, null, changeSet));
+        var iae = assertThrows(
+                IllegalArgumentException.class,
+                () -> subject.getEffective(AUTO_RENEW_PERIOD, account, null, changeSet));
         assertEquals(
-                "Invalid Property " + AUTO_RENEW_PERIOD + " cannot be validated in scoped check",
-                iae.getMessage());
+                "Invalid Property " + AUTO_RENEW_PERIOD + " cannot be validated in scoped check", iae.getMessage());
     }
 
     @Test
     void canGetDetachedFromAccount() {
         given(account.isExpiredAndPendingRemoval()).willReturn(true);
-        assertTrue(
-                (boolean)
-                        subject.getEffective(
-                                EXPIRED_AND_PENDING_REMOVAL,
-                                account,
-                                null,
-                                Collections.emptyMap()));
+        assertTrue((boolean) subject.getEffective(EXPIRED_AND_PENDING_REMOVAL, account, null, Collections.emptyMap()));
     }
 
     @Test
     void canGetDetachedFromExtantProps() {
         given(extantProps.apply(EXPIRED_AND_PENDING_REMOVAL)).willReturn(true);
         assertTrue(
-                (boolean)
-                        subject.getEffective(
-                                EXPIRED_AND_PENDING_REMOVAL,
-                                null,
-                                extantProps,
-                                Collections.emptyMap()));
+                (boolean) subject.getEffective(EXPIRED_AND_PENDING_REMOVAL, null, extantProps, Collections.emptyMap()));
     }
 
     private static final AccountID revokedSpender =
             AccountID.newBuilder().setAccountNum(123L).build();
-    private static final AccountID payerID = AccountID.newBuilder().setAccountNum(12345L).build();
+    private static final AccountID payerID =
+            AccountID.newBuilder().setAccountNum(12345L).build();
     private static final EntityNum payerNum = EntityNum.fromAccountId(payerID);
-    private static final TokenID fungibleTokenID = TokenID.newBuilder().setTokenNum(1234L).build();
+    private static final TokenID fungibleTokenID =
+            TokenID.newBuilder().setTokenNum(1234L).build();
     private static final TokenID nonFungibleTokenID =
             TokenID.newBuilder().setTokenNum(1235L).build();
-    private static final NftId nftId1 =
-            NftId.withDefaultShardRealm(nonFungibleTokenID.getTokenNum(), 1L);
+    private static final NftId nftId1 = NftId.withDefaultShardRealm(nonFungibleTokenID.getTokenNum(), 1L);
     private static final FcTokenAllowanceId fungibleAllowanceId =
             FcTokenAllowanceId.from(EntityNum.fromTokenId(fungibleTokenID), payerNum);
     private static final Map<EntityNum, Long> CRYPTO_ALLOWANCES = new HashMap<>();

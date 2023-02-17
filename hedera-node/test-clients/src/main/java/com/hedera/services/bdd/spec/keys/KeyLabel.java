@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.keys;
 
 import static com.hedera.services.bdd.spec.keys.SigControl.Nature.SIG_OFF;
@@ -57,10 +58,9 @@ public class KeyLabel {
     }
 
     public static KeyLabel complex(Object... objs) {
-        KeyLabel[] constituents =
-                Stream.of(objs)
-                        .map(obj -> (obj instanceof KeyLabel) ? obj : simple((String) obj))
-                        .toArray(n -> new KeyLabel[n]);
+        KeyLabel[] constituents = Stream.of(objs)
+                .map(obj -> (obj instanceof KeyLabel) ? obj : simple((String) obj))
+                .toArray(n -> new KeyLabel[n]);
         return new KeyLabel(Kind.COMPLEX, constituents);
     }
 
@@ -74,7 +74,9 @@ public class KeyLabel {
             return simple("" + idHere);
         } else {
             SigControl[] children = control.getChildControls();
-            return complex(Stream.of(children).map(child -> uniquelyLabeling(child, id)).toArray());
+            return complex(Stream.of(children)
+                    .map(child -> uniquelyLabeling(child, id))
+                    .toArray());
         }
     }
 
@@ -86,10 +88,7 @@ public class KeyLabel {
             case COMPLEX:
                 return new StringBuilder()
                         .append("[")
-                        .append(
-                                Stream.of(constituents)
-                                        .map(KeyLabel::toString)
-                                        .collect(joining(", ")))
+                        .append(Stream.of(constituents).map(KeyLabel::toString).collect(joining(", ")))
                         .append("]")
                         .toString();
         }

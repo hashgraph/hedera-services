@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,7 +33,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CustomSchedulesManagerTest {
-    @Mock private CustomFeeSchedules customFeeSchedules;
+    @Mock
+    private CustomFeeSchedules customFeeSchedules;
 
     private CustomSchedulesManager subject;
 
@@ -54,9 +56,7 @@ class CustomSchedulesManagerTest {
 
     @Test
     void reusesExtantScheduleIfPresent() {
-        given(customFeeSchedules.lookupMetaFor(a))
-                .willReturn(aMeta)
-                .willThrow(AssertionError.class);
+        given(customFeeSchedules.lookupMetaFor(a)).willReturn(aMeta).willThrow(AssertionError.class);
 
         // when:
         final var firstAns = subject.managedSchedulesFor(a);
@@ -90,14 +90,12 @@ class CustomSchedulesManagerTest {
     private final long amountOfHbarFee = 100_000L;
     private final Id hbarFeeCollectorId = new Id(1, 2, 3);
     private final EntityId hbarFeeCollector = hbarFeeCollectorId.asEntityId();
-    private final FcCustomFee hbarFee =
-            FcCustomFee.fixedFee(amountOfHbarFee, null, hbarFeeCollector, false);
+    private final FcCustomFee hbarFee = FcCustomFee.fixedFee(amountOfHbarFee, null, hbarFeeCollector, false);
     private final long amountOfHtsFee = 100_000L;
     private final Id htsFeeCollectorId = new Id(1, 2, 3);
     private final EntityId feeDenom = new EntityId(6, 6, 6);
     private final EntityId htsFeeCollector = htsFeeCollectorId.asEntityId();
-    private final FcCustomFee htsFee =
-            FcCustomFee.fixedFee(amountOfHtsFee, feeDenom, htsFeeCollector, false);
+    private final FcCustomFee htsFee = FcCustomFee.fixedFee(amountOfHtsFee, feeDenom, htsFeeCollector, false);
     final Id a = new Id(1, 2, 3);
     final Id aTreasury = new Id(2, 2, 3);
     final Id b = new Id(2, 3, 4);

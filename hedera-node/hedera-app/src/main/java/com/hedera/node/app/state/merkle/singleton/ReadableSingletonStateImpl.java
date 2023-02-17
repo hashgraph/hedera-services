@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle.singleton;
 
 import com.hedera.node.app.spi.state.ReadableSingletonStateBase;
@@ -20,8 +21,7 @@ import com.hedera.node.app.state.merkle.StateMetadata;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class ReadableSingletonStateImpl<T> extends ReadableSingletonStateBase<T> {
-    public ReadableSingletonStateImpl(
-            @NonNull final StateMetadata<?, ?> md, @NonNull final SingletonNode<T> node) {
+    public ReadableSingletonStateImpl(@NonNull final StateMetadata<?, ?> md, @NonNull final SingletonNode<T> node) {
         super(md.stateDefinition().stateKey(), node::getValue);
     }
 }

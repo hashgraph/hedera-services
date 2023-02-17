@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files;
 
 import static com.hedera.node.app.service.mono.files.TieredHederaFs.IllegalArgumentType.DELETED_FILE;
@@ -249,8 +250,7 @@ public final class TieredHederaFs implements HederaFs {
 
     private Map.Entry<ResponseCodeEnum, Boolean> judge(
             final FileID id,
-            final BiFunction<FileUpdateInterceptor, FileID, Map.Entry<ResponseCodeEnum, Boolean>>
-                    judgment) {
+            final BiFunction<FileUpdateInterceptor, FileID, Map.Entry<ResponseCodeEnum, Boolean>> judgment) {
         var outcome = SUCCESS;
         var should = true;
 
@@ -270,9 +270,8 @@ public final class TieredHederaFs implements HederaFs {
     private List<FileUpdateInterceptor> interceptorsFor(final FileID id) {
         return updateInterceptors.stream()
                 .filter(interceptor -> interceptor.priorityForCandidate(id).isPresent())
-                .sorted(
-                        comparingInt(
-                                interceptor -> interceptor.priorityForCandidate(id).getAsInt()))
+                .sorted(comparingInt(
+                        interceptor -> interceptor.priorityForCandidate(id).getAsInt()))
                 .toList();
     }
 

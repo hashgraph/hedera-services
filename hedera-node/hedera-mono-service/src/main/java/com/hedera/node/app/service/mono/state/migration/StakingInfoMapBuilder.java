@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.migration;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
@@ -33,8 +34,7 @@ public final class StakingInfoMapBuilder {
         final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos = new MerkleMap<>();
 
         final var numberOfNodes = addressBook.getSize();
-        long maxStakePerNode =
-                bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT) / numberOfNodes;
+        long maxStakePerNode = bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT) / numberOfNodes;
         long minStakePerNode = maxStakePerNode / 2;
         for (int i = 0; i < numberOfNodes; i++) {
             final var nodeNum = EntityNum.fromLong(addressBook.getAddress(i).getId());

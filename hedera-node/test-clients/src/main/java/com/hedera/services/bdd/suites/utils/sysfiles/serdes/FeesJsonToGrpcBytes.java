@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.utils.sysfiles.serdes;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -31,9 +32,7 @@ public class FeesJsonToGrpcBytes implements SysFileSerde<String> {
     public static void main(String... args) {
         var subject = new FeesJsonToGrpcBytes();
         try {
-            var grpcBytes =
-                    subject.toRawFile(
-                            Files.readString(Paths.get("src/main/resource/FeeSchedule.json")));
+            var grpcBytes = subject.toRawFile(Files.readString(Paths.get("src/main/resource/FeeSchedule.json")));
             var grpc = CurrentAndNextFeeSchedule.parseFrom(grpcBytes);
             System.out.println(grpc.toString());
             var json = subject.fromRawFile(grpcBytes);
@@ -53,12 +52,10 @@ public class FeesJsonToGrpcBytes implements SysFileSerde<String> {
             var grpc = CurrentAndNextFeeSchedule.parseFrom(bytes);
 
             List<FeeSchedulesListEntry> feeSchedules = new ArrayList<>();
+            feeSchedules.add(FeeSchedulesListEntry.asCurrentFeeSchedule(
+                    FeeSchedulesListEntry.from(grpc.getCurrentFeeSchedule())));
             feeSchedules.add(
-                    FeeSchedulesListEntry.asCurrentFeeSchedule(
-                            FeeSchedulesListEntry.from(grpc.getCurrentFeeSchedule())));
-            feeSchedules.add(
-                    FeeSchedulesListEntry.asNextFeeSchedule(
-                            FeeSchedulesListEntry.from(grpc.getNextFeeSchedule())));
+                    FeeSchedulesListEntry.asNextFeeSchedule(FeeSchedulesListEntry.from(grpc.getNextFeeSchedule())));
 
             return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(feeSchedules);
         } catch (InvalidProtocolBufferException | JsonProcessingException e) {

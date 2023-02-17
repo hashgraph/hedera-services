@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,16 +25,14 @@ class EvmKeyTest {
 
     @Test
     void test() {
-        EvmKey evmKey =
-                new EvmKey(
-                        null,
-                        new byte[] {
-                            -120, -12, 112, 11, 85, 25, -66, 76, -83, -44, 11, -40, 28, -44, -43,
-                            -30, 46, 60, -5, 88, 6, 49, 52, -114, 115, -26, 85, -87, -54, 53, -118,
-                            -116
-                        },
-                        new byte[0],
-                        null);
+        EvmKey evmKey = new EvmKey(
+                null,
+                new byte[] {
+                    -120, -12, 112, 11, 85, 25, -66, 76, -83, -44, 11, -40, 28, -44, -43, -30, 46, 60, -5, 88, 6, 49,
+                    52, -114, 115, -26, 85, -87, -54, 53, -118, -116
+                },
+                new byte[0],
+                null);
 
         EvmKey evmKey2 = new EvmKey();
 

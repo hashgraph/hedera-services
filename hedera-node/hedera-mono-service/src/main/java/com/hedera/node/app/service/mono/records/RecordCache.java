@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.records;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -50,8 +51,7 @@ public class RecordCache {
     private Map<TransactionID, TxnIdRecentHistory> histories;
 
     @Inject
-    public RecordCache(
-            Cache<TransactionID, Boolean> cache, Map<TransactionID, TxnIdRecentHistory> histories) {
+    public RecordCache(Cache<TransactionID, Boolean> cache, Map<TransactionID, TxnIdRecentHistory> histories) {
         this.histories = histories;
         this.timedReceiptCache = cache;
     }
@@ -66,11 +66,8 @@ public class RecordCache {
     }
 
     void setPostConsensus(
-            final TransactionID txnId,
-            final ResponseCodeEnum status,
-            final ExpirableTxnRecord expirableTxnRecord) {
-        final var recentHistory =
-                histories.computeIfAbsent(txnId, ignore -> new TxnIdRecentHistory());
+            final TransactionID txnId, final ResponseCodeEnum status, final ExpirableTxnRecord expirableTxnRecord) {
+        final var recentHistory = histories.computeIfAbsent(txnId, ignore -> new TxnIdRecentHistory());
         recentHistory.observe(expirableTxnRecord, status);
     }
 
@@ -80,15 +77,10 @@ public class RecordCache {
             final Instant consensusTimestamp,
             final long submittingMember) {
         final var recordBuilder = creator.createInvalidFailureRecord(accessor, consensusTimestamp);
-        final var expiringRecord =
-                creator.saveExpiringRecord(
-                        effectivePayer,
-                        recordBuilder.build(),
-                        consensusTimestamp.getEpochSecond(),
-                        submittingMember);
+        final var expiringRecord = creator.saveExpiringRecord(
+                effectivePayer, recordBuilder.build(), consensusTimestamp.getEpochSecond(), submittingMember);
 
-        final var recentHistory =
-                histories.computeIfAbsent(accessor.getTxnId(), ignore -> new TxnIdRecentHistory());
+        final var recentHistory = histories.computeIfAbsent(accessor.getTxnId(), ignore -> new TxnIdRecentHistory());
         recentHistory.observe(expiringRecord, FAIL_INVALID);
     }
 
@@ -113,7 +105,8 @@ public class RecordCache {
     }
 
     public List<TransactionReceipt> getChildReceipts(final TransactionID txnId) {
-        return transformedChildrenOf(txnId, childRecord -> childRecord.getReceipt().toGrpc());
+        return transformedChildrenOf(
+                txnId, childRecord -> childRecord.getReceipt().toGrpc());
     }
 
     public List<TransactionRecord> getChildRecords(final TransactionID txnId) {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.throttles;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.productWouldOverflow;
@@ -93,28 +94,24 @@ public class BucketThrottle {
     private BucketThrottle(final long mtps, final long burstPeriodMs) {
         this.mtps = mtps;
         validateCapacityForRequested(mtps, burstPeriodMs);
-        final long capacity =
-                (mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN) / 1_000 * burstPeriodMs;
+        final long capacity = (mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN) / 1_000 * burstPeriodMs;
         bucket = new DiscreteLeakyBucket(capacity);
         if (bucket.totalCapacity() < CAPACITY_UNITS_PER_TXN) {
-            throw new IllegalArgumentException(
-                    "A throttle with "
-                            + mtps
-                            + " MTPS and "
-                            + burstPeriodMs
-                            + "ms burst period can never allow a transaction");
+            throw new IllegalArgumentException("A throttle with "
+                    + mtps
+                    + " MTPS and "
+                    + burstPeriodMs
+                    + "ms burst period can never allow a transaction");
         }
     }
 
     private void validateCapacityForRequested(final long mtps, final long burstPeriodMs) {
         if (productWouldOverflow(mtps, NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN)) {
-            throw new IllegalArgumentException(
-                    "Base bucket capacity calculation outside numeric range");
+            throw new IllegalArgumentException("Base bucket capacity calculation outside numeric range");
         }
         final var unscaledCapacity = mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN / 1_000;
         if (productWouldOverflow(unscaledCapacity, burstPeriodMs)) {
-            throw new IllegalArgumentException(
-                    "Scaled bucket capacity calculation outside numeric range");
+            throw new IllegalArgumentException("Scaled bucket capacity calculation outside numeric range");
         }
     }
 
@@ -151,15 +148,11 @@ public class BucketThrottle {
      */
     double percentUsed(final long givenElapsedNanos) {
         final var used = bucket.capacityUsed();
-        return 100.0
-                * (used - Math.min(used, effectiveLeak(givenElapsedNanos)))
-                / bucket.totalCapacity();
+        return 100.0 * (used - Math.min(used, effectiveLeak(givenElapsedNanos))) / bucket.totalCapacity();
     }
 
     private long effectiveLeak(final long elapsedNanos) {
-        return productWouldOverflow(elapsedNanos, mtps)
-                ? bucket.totalCapacity()
-                : elapsedNanos * mtps;
+        return productWouldOverflow(elapsedNanos, mtps) ? bucket.totalCapacity() : elapsedNanos * mtps;
     }
 
     void resetLastAllowedUse() {

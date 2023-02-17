@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.charging;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -55,24 +56,33 @@ class NarratedLedgerChargingTest {
     private final EntityNum nodeId = EntityNum.fromLong(3L);
     private final EntityNum payerId = EntityNum.fromLong(1_234L);
 
-    @Mock private NodeInfo nodeInfo;
-    @Mock private TxnAccessor accessor;
-    @Mock private HederaLedger ledger;
-    @Mock private FeeExemptions feeExemptions;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
-    @Mock private FeeDistribution feeDistribution;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
+    @Mock
+    private NodeInfo nodeInfo;
+
+    @Mock
+    private TxnAccessor accessor;
+
+    @Mock
+    private HederaLedger ledger;
+
+    @Mock
+    private FeeExemptions feeExemptions;
+
+    @Mock
+    private MerkleMap<EntityNum, MerkleAccount> accounts;
+
+    @Mock
+    private FeeDistribution feeDistribution;
+
+    @Mock
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
 
     private NarratedLedgerCharging subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new NarratedLedgerCharging(
-                        nodeInfo,
-                        feeDistribution,
-                        feeExemptions,
-                        () -> AccountStorageAdapter.fromInMemory(accounts));
+        subject = new NarratedLedgerCharging(
+                nodeInfo, feeDistribution, feeExemptions, () -> AccountStorageAdapter.fromInMemory(accounts));
         subject.setLedger(ledger);
     }
 
@@ -93,8 +103,7 @@ class NarratedLedgerChargingTest {
 
     @Test
     void chargesExpectedFeesWithStakingRecipientsWhenEnabled() {
-        givenSetupToChargePayer(
-                nodeFee + networkFee + serviceFee, nodeFee + networkFee + serviceFee);
+        givenSetupToChargePayer(nodeFee + networkFee + serviceFee, nodeFee + networkFee + serviceFee);
 
         // expect:
         assertTrue(subject.canPayerAffordAllFees());
@@ -111,8 +120,7 @@ class NarratedLedgerChargingTest {
 
     @Test
     void chargesExpectedFeesWithNoStakingRecipientsWhenNotEnabled() {
-        givenSetupToChargePayer(
-                nodeFee + networkFee + serviceFee, nodeFee + networkFee + serviceFee);
+        givenSetupToChargePayer(nodeFee + networkFee + serviceFee, nodeFee + networkFee + serviceFee);
 
         // expect:
         assertTrue(subject.canPayerAffordAllFees());
@@ -266,7 +274,8 @@ class NarratedLedgerChargingTest {
     }
 
     private void givenSetupToChargePayer(final long payerBalance, final long totalOfferedFee) {
-        final var payerAccount = MerkleAccountFactory.newAccount().balance(payerBalance).get();
+        final var payerAccount =
+                MerkleAccountFactory.newAccount().balance(payerBalance).get();
         given(accounts.get(payerId)).willReturn(payerAccount);
         given(ledger.getAccountsLedger()).willReturn(accountsLedger);
 
@@ -280,7 +289,8 @@ class NarratedLedgerChargingTest {
     }
 
     private void givenSetupToChargeNode(final long nodeBalance) {
-        final var nodeAccount = MerkleAccountFactory.newAccount().balance(nodeBalance).get();
+        final var nodeAccount =
+                MerkleAccountFactory.newAccount().balance(nodeBalance).get();
         given(accounts.get(nodeId)).willReturn(nodeAccount);
         given(ledger.getAccountsLedger()).willReturn(accountsLedger);
 

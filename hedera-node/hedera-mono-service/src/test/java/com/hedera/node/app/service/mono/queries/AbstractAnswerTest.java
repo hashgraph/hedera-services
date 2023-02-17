@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries;
 
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
@@ -59,10 +60,9 @@ class AbstractAnswerTest {
         query = mock(Query.class);
         view = mock(StateView.class);
         response = mock(Response.class);
-        payment =
-                CryptoTransferFactory.newSignedCryptoTransfer()
-                        .transfers(tinyBarsFromTo("0.0.2", "0.0.3", 1_234L))
-                        .get();
+        payment = CryptoTransferFactory.newSignedCryptoTransfer()
+                .transfers(tinyBarsFromTo("0.0.2", "0.0.3", 1_234L))
+                .get();
 
         function = HederaFunctionality.GetVersionInfo;
         statusExtractor = mock(Function.class);
@@ -71,12 +71,7 @@ class AbstractAnswerTest {
         validityCheck = mock(BiFunction.class);
 
         subject =
-                new AbstractAnswer(
-                        function,
-                        paymentExtractor,
-                        responseTypeExtractor,
-                        statusExtractor,
-                        validityCheck) {
+                new AbstractAnswer(function, paymentExtractor, responseTypeExtractor, statusExtractor, validityCheck) {
                     @Override
                     public Response responseGiven(
                             final Query query,

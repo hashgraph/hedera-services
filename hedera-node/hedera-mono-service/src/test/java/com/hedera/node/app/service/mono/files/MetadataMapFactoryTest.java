@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files;
 
 import static com.hedera.node.app.service.mono.files.MetadataMapFactory.metaMapFrom;
@@ -139,21 +140,11 @@ class MetadataMapFactoryTest {
                         Arrays.toString(attr3.serialize()),
                         Arrays.toString(attr0.serialize())),
                 delegate.entrySet().stream()
-                        .sorted(
-                                Comparator.comparingLong(
-                                        entry ->
-                                                Long.parseLong(
-                                                        entry.getKey()
-                                                                .substring(
-                                                                        entry.getKey().indexOf('k')
-                                                                                + 1,
-                                                                        entry.getKey().indexOf('k')
-                                                                                + 2))))
-                        .map(
-                                entry ->
-                                        String.format(
-                                                "%s->%s",
-                                                entry.getKey(), Arrays.toString(entry.getValue())))
+                        .sorted(Comparator.comparingLong(entry -> Long.parseLong(entry.getKey()
+                                .substring(
+                                        entry.getKey().indexOf('k') + 1,
+                                        entry.getKey().indexOf('k') + 2))))
+                        .map(entry -> String.format("%s->%s", entry.getKey(), Arrays.toString(entry.getValue())))
                         .collect(Collectors.joining(", ")));
 
         assertTrue(metaMap.containsKey(fid1));
