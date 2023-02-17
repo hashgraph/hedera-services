@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -77,7 +78,7 @@ class BlockManagerTest {
         given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
         given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
 
-        final var newBlockNo = subject.updateAndGetAlignmentBlockNumber(someTime);
+        final var newBlockNo = subject.updateAndGetAlignmentBlockNumber(someTime).blockNo();
 
         assertEquals(someBlockNo, newBlockNo);
         verify(networkContext, never()).setFirstConsTimeOfCurrentBlock(any());
@@ -101,7 +102,7 @@ class BlockManagerTest {
                 .willReturn(someBlockNo);
         given(runningHashLeaf.currentRunningHash()).willReturn(aFullBlockHash);
 
-        final var newBlockNo = subject.updateAndGetAlignmentBlockNumber(anotherTime);
+        final var newBlockNo = subject.updateAndGetAlignmentBlockNumber(anotherTime).blockNo();
 
         assertEquals(someBlockNo, newBlockNo);
     }
@@ -113,9 +114,11 @@ class BlockManagerTest {
                 .willReturn(someBlockNo);
         given(runningHashLeaf.currentRunningHash()).willReturn(aFullBlockHash);
 
-        final var newBlockNo = subject.updateAndGetAlignmentBlockNumber(anotherTime);
+        final var blockNoMeta = subject.updateAndGetAlignmentBlockNumber(anotherTime);
+        final var newBlockNo = blockNoMeta.blockNo();
 
         assertEquals(someBlockNo, newBlockNo);
+        assertTrue(blockNoMeta.isFirstInBlock());
     }
 
     @Test
@@ -124,7 +127,7 @@ class BlockManagerTest {
         given(runningHashLeaf.currentRunningHash()).willThrow(InterruptedException.class);
         given(networkContext.getAlignmentBlockNo()).willReturn(someBlockNo);
 
-        final var newBlockNo = subject.updateAndGetAlignmentBlockNumber(anotherTime);
+        final var newBlockNo = subject.updateAndGetAlignmentBlockNumber(anotherTime).blockNo();
 
         assertEquals(someBlockNo, newBlockNo);
     }

@@ -59,7 +59,7 @@ include(":hedera-node:hedera-app-spi")
 include(":hedera-node:hedera-evm")
 include(":hedera-node:hedera-evm-impl")
 include(":hedera-node:hedera-mono-service")
-include(":test-clients")
+include(":hedera-node:test-clients")
 
 // Enable Gradle Build Scan
 gradleEnterprise {
@@ -75,7 +75,7 @@ gitRepositories {
         uri.set("https://github.com/hashgraph/hedera-protobufs.git")
         // choose tag or branch of HAPI you would like to test with
         // This version needs to match tha HAPI version below in versionCatalogs
-        tag.set("v0.34.0")
+        tag.set("v0.35.0")
         // do not load project from repo
         autoInclude.set(false)
     }
@@ -89,7 +89,7 @@ dependencyResolutionManagement {
         // distribution. These libs can be depended on during compilation, or bundled as part of runtime.
         create("libs") {
             // The HAPI API version to use, this need to match the tag set on gitRepositories above
-            version("hapi-version", "0.34.0")
+            version("hapi-version", "0.35.0")
 
             // Definition of version numbers for all libraries
             version("pbj-version", "0.3.0")
@@ -116,7 +116,7 @@ dependencyResolutionManagement {
             version("netty-version", "4.1.66.Final")
             version("protobuf-java-version", "3.19.4")
             version("slf4j-version", "2.0.3")
-            version("swirlds-version", "0.35.0")
+            version("swirlds-version", "0.36.0")
             version("tuweni-version", "2.2.0")
             version("jna-version", "5.12.1")
             version("jsr305-version", "3.0.2")

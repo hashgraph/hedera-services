@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ##
+
 name: "Build Application"
 on:
   workflow_dispatch:
@@ -42,13 +43,8 @@ on:
         type: boolean
         required: false
         default: false
-      enable-fossa-scan:
-        description: "FOSSA Scan Enabled"
-        type: boolean
-        required: false
-        default: false
-      enable-fossa-test:
-        description: "FOSSA Test Enabled"
+      enable-spotless-check:
+        description: "Spotless Check Enabled"
         type: boolean
         required: false
         default: false
@@ -89,9 +85,7 @@ jobs:
       enable-sonar-analysis: ${{ github.event_name == 'push' || github.event.inputs.enable-sonar-analysis == 'true' }}
       enable-integration-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-integration-tests == 'true' }}
       enable-e2e-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-e2e-tests == 'true' }}
-      enable-fossa-scan: ${{ github.event_name == 'push' || github.event.inputs.enable-fossa-scan == 'true' }}
-      enable-fossa-test: ${{ github.event.inputs.enable-fossa-test == 'true' }}
+      enable-spotless-check: ${{ github.event.inputs.enable-spotless-check == 'true' }}
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       sonar-token: ${{ secrets.SONAR_TOKEN }}
-      fossa-api-token: ${{ secrets.FOSSA_API_TOKEN }}

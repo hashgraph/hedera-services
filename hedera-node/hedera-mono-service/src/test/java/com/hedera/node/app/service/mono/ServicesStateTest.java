@@ -252,7 +252,9 @@ class ServicesStateTest extends ResponsibleVMapUser {
     @Test
     void getsAccountIdAsExpected() {
         // setup:
-        subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
+        subject.setChild(StateChildIndices.LEGACY_ADDRESS_BOOK, addressBook);
+        subject.setPlatform(platform);
+        given(platform.getAddressBook()).willReturn(addressBook);
 
         given(addressBook.getAddress(selfId.getId())).willReturn(address);
         given(address.getMemo()).willReturn("0.0.3");
@@ -331,20 +333,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
     }
 
     @Test
-    void addressBookCopyWorks() {
-        given(addressBook.copy()).willReturn(addressBook);
-        // and:
-        subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
-
-        // when:
-        final var bookCopy = subject.getAddressBookCopy();
-
-        // then:
-        assertSame(addressBook, bookCopy);
-        verify(addressBook).copy();
-    }
-
-    @Test
     void minimumVersionIsRelease030() {
         // expect:
         assertEquals(StateVersions.RELEASE_030X_VERSION, subject.getMinimumSupportedVersion());
@@ -377,8 +365,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
         APPS.save(selfId.getId(), app);
 
-        assertDoesNotThrow(
-                () -> subject.init(platform, addressBook, null, RESTART, currentVersion));
+        assertDoesNotThrow(() -> subject.init(platform, null, RESTART, currentVersion));
     }
 
     @Test
@@ -402,13 +389,14 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
+        given(platform.getAddressBook()).willReturn(addressBook);
         given(app.sysAccountsCreator()).willReturn(accountsCreator);
         given(app.workingState()).willReturn(workingState);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
 
         // when:
-        subject.init(platform, addressBook, dualState, InitTrigger.GENESIS, null);
+        subject.init(platform, dualState, InitTrigger.GENESIS, null);
 
         // then:
         assertFalse(subject.isImmutable());
@@ -469,13 +457,14 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
+        given(platform.getAddressBook()).willReturn(addressBook);
         given(app.sysAccountsCreator()).willReturn(accountsCreator);
         given(app.workingState()).willReturn(workingState);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
 
         // when:
-        subject.init(platform, addressBook, dualState, InitTrigger.GENESIS, null);
+        subject.init(platform, dualState, InitTrigger.GENESIS, null);
         setAllChildren();
 
         // then:
@@ -495,11 +484,12 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
+        given(platform.getAddressBook()).willReturn(addressBook);
         // and:
         APPS.save(selfId.getId(), app);
 
         // when:
-        subject.init(platform, addressBook, dualState, RECONNECT, currentVersion);
+        subject.init(platform, dualState, RECONNECT, currentVersion);
 
         // then:
         assertSame(addressBook, subject.addressBook());
@@ -524,7 +514,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         APPS.save(selfId.getId(), app);
 
         // when:
-        subject.init(platform, addressBook, dualState, RESTART, futureVersion);
+        subject.init(platform, dualState, RESTART, futureVersion);
 
         verify(mockExit).fail(1);
     }
@@ -549,7 +539,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         APPS.save(selfId.getId(), app);
 
         // when:
-        subject.init(platform, addressBook, dualState, RESTART, currentVersion);
+        subject.init(platform, dualState, RESTART, currentVersion);
 
         verify(networkContext, never()).discardPreparedUpgradeMeta();
         verify(dualState, never()).setFreezeTime(null);
@@ -577,7 +567,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         APPS.save(selfId.getId(), app);
 
         // when:
-        subject.init(platform, addressBook, dualState, RESTART, justPriorVersion);
+        subject.init(platform, dualState, RESTART, justPriorVersion);
 
         verify(networkContext).discardPreparedUpgradeMeta();
         verify(dualState).setFreezeTime(null);
@@ -609,7 +599,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         APPS.save(selfId.getId(), app);
 
         // when:
-        subject.init(platform, addressBook, dualState, RESTART, justPriorVersion);
+        subject.init(platform, dualState, RESTART, justPriorVersion);
 
         verify(networkContext).discardPreparedUpgradeMeta();
         verify(networkContext).markMigrationRecordsNotYetStreamed();
@@ -624,7 +614,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
         assertThrows(
                 IllegalStateException.class,
-                () -> subject.init(platform, addressBook, dualState, RESTART, null));
+                () -> subject.init(platform, dualState, RESTART, null));
     }
 
     @Test
@@ -641,7 +631,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         APPS.save(selfId.getId(), app);
 
         // when:
-        subject.init(platform, addressBook, dualState, RECONNECT, currentVersion);
+        subject.init(platform, dualState, RECONNECT, currentVersion);
 
         verify(networkContext, never()).discardPreparedUpgradeMeta();
     }
@@ -673,13 +663,14 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
+        given(platform.getAddressBook()).willReturn(addressBook);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
         APPS.save(selfId.getId(), app);
 
         // when:
-        subject.init(platform, addressBook, dualState, RESTART, currentVersion);
+        subject.init(platform, dualState, RESTART, currentVersion);
         assertTrue(subject.uniqueTokens().isVirtual());
         verify(mapToDiskMigration)
                 .migrateToDiskAsApropos(
@@ -721,13 +712,14 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
+        given(platform.getAddressBook()).willReturn(addressBook);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
         APPS.save(selfId.getId(), app);
 
         // when:
-        subject.init(platform, addressBook, dualState, RESTART, currentVersion);
+        subject.init(platform, dualState, RESTART, currentVersion);
         verify(mapToDiskMigration)
                 .migrateToDiskAsApropos(
                         INSERTIONS_PER_COPY,
@@ -768,12 +760,14 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     @Test
     void copiesNonNullChildren() {
-        subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
+        subject.setChild(StateChildIndices.LEGACY_ADDRESS_BOOK, addressBook);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
         // and:
         subject.setMetadata(metadata);
         subject.setDeserializedStateVersion(10);
+        subject.setPlatform(platform);
+        given(platform.getAddressBook()).willReturn(addressBook);
 
         given(addressBook.copy()).willReturn(addressBook);
         given(networkContext.copy()).willReturn(networkContext);
@@ -802,10 +796,12 @@ class ServicesStateTest extends ResponsibleVMapUser {
         assertDoesNotThrow(
                 () -> ref.set(loadSignedState(signedStateDir + "v0.30.5/SignedState.swh")));
         final var mockPlatform = createMockPlatformWithCrypto();
-        tracked((ServicesState) ref.get().getSwirldState())
+        given(mockPlatform.getAddressBook()).willReturn(addressBook);
+        ServicesState swirldState = (ServicesState) ref.get().getSwirldState();
+        final var pretendAddressBook = createPretendBookFrom(mockPlatform, false);
+        tracked(swirldState)
                 .init(
                         mockPlatform,
-                        createPretendBookFrom(mockPlatform, false),
                         new DualStateImpl(),
                         RESTART,
                         forHapiAndHedera("0.30.0", "0.30.5"));
@@ -815,22 +811,18 @@ class ServicesStateTest extends ResponsibleVMapUser {
     void testGenesisState() {
         ClassLoaderHelper.loadClassPathDependencies();
         final var servicesState = tracked(new ServicesState());
+        final var platform = createMockPlatformWithCrypto();
+        final var addressBook = createPretendBookFrom(platform, true);
+        given(platform.getAddressBook()).willReturn(addressBook);
         final var recordsRunningHashLeaf = new RecordsRunningHashLeaf();
         recordsRunningHashLeaf.setRunningHash(new RunningHash(EMPTY_HASH));
         servicesState.setChild(
                 StateChildIndices.RECORD_STREAM_RUNNING_HASH, recordsRunningHashLeaf);
-        final var platform = createMockPlatformWithCrypto();
         final var app = createApp(platform);
 
         APPS.save(platform.getSelfId().getId(), app);
         assertDoesNotThrow(
-                () ->
-                        servicesState.init(
-                                platform,
-                                createPretendBookFrom(platform, true),
-                                new DualStateImpl(),
-                                InitTrigger.GENESIS,
-                                null));
+                () -> servicesState.init(platform, new DualStateImpl(), InitTrigger.GENESIS, null));
     }
 
     @Test

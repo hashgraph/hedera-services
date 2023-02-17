@@ -16,43 +16,41 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Optional;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
  * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoCreate}.
  */
+@Singleton
 public class CryptoCreateHandler implements TransactionHandler {
+    @Inject
+    public CryptoCreateHandler() {}
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoCreate}
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *
-     * @param tx the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @param accountStore the {@link ReadableAccountStore} to use for account resolution
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
+     * @param context the {@link PreHandleContext} which collects all information that will be
+     *     passed to {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionMetadata preHandle(
-            @NonNull final TransactionBody tx,
-            @NonNull final AccountID payer,
-            @NonNull final ReadableAccountStore accountStore) {
-        final var op = tx.getCryptoCreateAccount();
+    public void preHandle(@NonNull final PreHandleContext context) {
+        requireNonNull(context);
+        final var op = context.getTxn().getCryptoCreateAccount();
         final var key = asHederaKey(op.getKey());
         final var receiverSigReq = op.getReceiverSigRequired();
-        return createAccountSigningMetadata(tx, key, receiverSigReq, payer, accountStore);
+        if (receiverSigReq && key.isPresent()) {
+            context.addToReqNonPayerKeys(key.get());
+        }
     }
 
     /**
@@ -65,32 +63,7 @@ public class CryptoCreateHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
+        requireNonNull(metadata);
         throw new UnsupportedOperationException("Not implemented");
-    }
-
-    /* --------------- Helper methods --------------- */
-
-    /**
-     * Returns metadata for {@code CryptoCreate} transaction needed to validate signatures needed
-     * for signing the transaction
-     *
-     * @param txn given transaction body
-     * @param key key provided in the transaction body
-     * @param receiverSigReq flag for receiverSigReq on the given transaction body
-     * @param payer payer for the transaction
-     * @return transaction's metadata needed to validate signatures
-     */
-    private TransactionMetadata createAccountSigningMetadata(
-            final TransactionBody txn,
-            final Optional<HederaKey> key,
-            final boolean receiverSigReq,
-            final AccountID payer,
-            @NonNull final ReadableAccountStore accountStore) {
-        final var meta =
-                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
-        if (receiverSigReq && key.isPresent()) {
-            meta.addToReqNonPayerKeys(key.get());
-        }
-        return meta.build();
     }
 }

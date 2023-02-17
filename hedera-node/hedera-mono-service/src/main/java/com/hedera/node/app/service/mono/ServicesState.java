@@ -127,7 +127,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     private boolean enabledVirtualNft;
     private boolean enableVirtualAccounts;
     private boolean enableVirtualTokenRels;
-
+    private Platform platform;
     private final BootstrapProperties bootstrapProperties;
 
     public ServicesState() {
@@ -156,6 +156,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         this.bootstrapProperties = that.bootstrapProperties;
         this.enableVirtualAccounts = that.enableVirtualAccounts;
         this.enableVirtualTokenRels = that.enableVirtualTokenRels;
+        this.platform = that.platform;
     }
 
     /** Log out the sizes the state children. */
@@ -227,21 +228,23 @@ public class ServicesState extends PartialNaryMerkleInternal
     @Override
     public void init(
             final Platform platform,
-            final AddressBook addressBook,
             final SwirldDualState dualState,
             final InitTrigger trigger,
             final SoftwareVersion deserializedVersion) {
+        // first store a reference to the platform
+        this.platform = platform;
+
         if (trigger == GENESIS) {
-            genesisInit(platform, addressBook, dualState);
+            genesisInit(platform, dualState);
         } else {
             if (deserializedVersion == null) {
                 throw new IllegalStateException(
                         "No software version for deserialized state version "
                                 + deserializedStateVersion);
             }
-            // Note this returns the app in case we need to do something with it  after making
+            // Note this returns the app in case we need to do something with it after making
             // final changes to state (e.g. after migrating something from memory to disk)
-            deserializedInit(platform, addressBook, dualState, trigger, deserializedVersion);
+            deserializedInit(platform, dualState, trigger, deserializedVersion);
             final var isUpgrade =
                     SEMANTIC_VERSIONS.deployedSoftwareVersion().isAfter(deserializedVersion);
             if (isUpgrade) {
@@ -281,14 +284,11 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     private ServicesApp deserializedInit(
             final Platform platform,
-            final AddressBook addressBook,
             final SwirldDualState dualState,
             final InitTrigger trigger,
             @NonNull final SoftwareVersion deserializedVersion) {
         log.info("Init called on Services node {} WITH Merkle saved state", platform.getSelfId());
 
-        // Immediately override the address book from the saved state
-        setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
         final var bootstrapProps = getBootstrapProperties();
         enableVirtualAccounts =
                 bootstrapProps.getBooleanProperty(PropertyNames.ACCOUNTS_STORE_ON_DISK);
@@ -299,10 +299,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         return internalInit(platform, bootstrapProps, dualState, trigger, deserializedVersion);
     }
 
-    private void genesisInit(
-            final Platform platform,
-            final AddressBook addressBook,
-            final SwirldDualState dualState) {
+    private void genesisInit(final Platform platform, final SwirldDualState dualState) {
         log.info(
                 "Init called on Services node {} WITHOUT Merkle saved state", platform.getSelfId());
 
@@ -315,7 +312,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                 bootstrapProps.getBooleanProperty(PropertyNames.TOKENS_STORE_RELS_ON_DISK);
         enabledVirtualNft =
                 bootstrapProps.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE);
-        createGenesisChildren(addressBook, seqStart, bootstrapProps);
+        createGenesisChildren(platform.getAddressBook(), seqStart, bootstrapProps);
 
         internalInit(platform, bootstrapProps, dualState, GENESIS, null);
         networkCtx().markPostUpgradeScanStatus();
@@ -327,6 +324,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             SwirldDualState dualState,
             final InitTrigger trigger,
             @Nullable final SoftwareVersion deserializedVersion) {
+        this.platform = platform;
         final var selfId = platform.getSelfId().getId();
 
         final ServicesApp app;
@@ -414,17 +412,13 @@ public class ServicesState extends PartialNaryMerkleInternal
         return app;
     }
 
-    @Override
-    public AddressBook getAddressBookCopy() {
-        return addressBook().copy();
-    }
-
     /* --- FastCopyable --- */
     @Override
     public synchronized ServicesState copy() {
         setImmutable(true);
 
         final var that = new ServicesState(this);
+        this.platform = that.platform;
         if (metadata != null) {
             metadata.app().workingState().updateFrom(that);
         }
@@ -534,7 +528,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     public AddressBook addressBook() {
-        return getChild(StateChildIndices.ADDRESS_BOOK);
+        return platform.getAddressBook();
     }
 
     public MerkleSpecialFiles specialFiles() {
@@ -602,7 +596,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         setChild(StateChildIndices.SPECIAL_FILES, new MerkleSpecialFiles());
         setChild(StateChildIndices.SCHEDULE_TXS, new MerkleScheduledTransactions());
         setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, genesisRunningHashLeaf());
-        setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
+        //        setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
         setChild(
                 StateChildIndices.CONTRACT_STORAGE,
                 virtualMapFactory.newVirtualizedIterableStorage());
@@ -793,6 +787,11 @@ public class ServicesState extends PartialNaryMerkleInternal
     @VisibleForTesting
     void setMetadata(final StateMetadata metadata) {
         this.metadata = metadata;
+    }
+
+    @VisibleForTesting
+    void setPlatform(final Platform platform) {
+        this.platform = platform;
     }
 
     @VisibleForTesting

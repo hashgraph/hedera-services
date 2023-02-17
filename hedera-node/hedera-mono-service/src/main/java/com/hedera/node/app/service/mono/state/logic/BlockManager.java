@@ -44,8 +44,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class BlockManager {
-
-    private static final int UNKNOWN_BLOCK_NO = 0;
+    public static final int UNKNOWN_BLOCK_NO = 0;
     private static final Logger log = LogManager.getLogger(BlockManager.class);
 
     private final long blockPeriodMs;
@@ -99,11 +98,13 @@ public class BlockManager {
      * @param now the latest consensus timestamp of a user transaction
      * @return the new block number, taking this timestamp into account
      */
-    public long updateAndGetAlignmentBlockNumber(@NonNull final Instant now) {
+    public BlockNumberMeta updateAndGetAlignmentBlockNumber(@NonNull final Instant now) {
         ensureProvisionalBlockMeta(now);
-        return provisionalBlockIsNew
-                ? networkCtx.get().finishBlock(provisionalFinishedBlockHash, now)
-                : provisionalBlockNo;
+        final var blockNo =
+                provisionalBlockIsNew
+                        ? networkCtx.get().finishBlock(provisionalFinishedBlockHash, now)
+                        : provisionalBlockNo;
+        return new BlockNumberMeta(blockNo, provisionalBlockIsNew);
     }
 
     /**

@@ -27,10 +27,12 @@ import java.util.ServiceLoader;
  */
 public interface UtilService extends Service {
 
+    String NAME = "UtilService";
+
     @NonNull
     @Override
     default String getServiceName() {
-        return UtilService.class.getSimpleName();
+        return NAME;
     }
 
     /**

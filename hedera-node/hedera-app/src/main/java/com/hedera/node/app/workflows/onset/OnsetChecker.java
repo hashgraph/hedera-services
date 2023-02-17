@@ -31,6 +31,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_HA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.records.RecordCache;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
@@ -47,8 +48,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /** This class preprocess transactions by parsing them and checking for syntax errors. */
+@Singleton
 public class OnsetChecker {
 
     private final int maxSignedTxnSize;
@@ -65,8 +69,9 @@ public class OnsetChecker {
      * @param counters metrics related to workflows
      * @throws NullPointerException if one of the arguments is {@code null}
      */
+    @Inject
     public OnsetChecker(
-            final int maxSignedTxnSize,
+            @MaxSignedTxnSize final int maxSignedTxnSize,
             @NonNull final RecordCache recordCache,
             @NonNull final GlobalDynamicProperties dynamicProperties,
             @NonNull final HapiOpCounters counters) {
