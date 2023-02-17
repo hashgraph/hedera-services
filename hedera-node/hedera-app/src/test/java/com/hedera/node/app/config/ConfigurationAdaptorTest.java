@@ -160,6 +160,7 @@ class ConfigurationAdaptorTest {
 
         // then
         assertFalse(exists);
+        
         verify(propertySource).containsProperty("test");
     }
 
