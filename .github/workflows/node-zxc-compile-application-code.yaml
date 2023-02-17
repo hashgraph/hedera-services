@@ -48,6 +48,11 @@ on:
         type: boolean
         required: false
         default: false
+      enable-snyk-scan:
+        description: "Snyk Scan Enabled"
+        type: boolean
+        required: false
+        default: false
       java-distribution:
         description: "Java JDK Distribution:"
         type: string
@@ -81,7 +86,9 @@ on:
       sonar-token:
         description: "The SonarCloud access token used by the SonarQube agent to report an analysis."
         required: false
-
+      snyk-token:
+        description: "The Snyk access token is used by Snyk to analyze the code for vulnerabilities "
+        required: false
 defaults:
   run:
     shell: bash
@@ -252,3 +259,36 @@ jobs:
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: sonarqube --info --scan
+
+      - name: Setup Snyk
+        env:
+          SNYK_TOKEN: ${{ secrets.snyk-token }}
+        if: ${{ inputs.enable-snyk-scan && steps.gradle-build.conclusion == 'success' && github.event.pull_request.head.repo.full_name == github.repository && !cancelled() }}
+        run: |
+          npm install -g snyk snyk-to-html @wcj/html-to-markdown-cli
+
+      - name: Snyk Scan
+        id: snyk
+        env:
+          SNYK_TOKEN: ${{ secrets.snyk-token }}
+        if: ${{ inputs.enable-snyk-scan && steps.gradle-build.conclusion == 'success' && github.event.pull_request.head.repo.full_name == github.repository && !cancelled() }}
+        run: |
+          snyk test --all-sub-projects --severity-threshold=high --json-file-output=snyk-test.json
+
+      - name: Snyk Code
+        id: snyk-code
+        env:
+          SNYK_TOKEN: ${{ secrets.snyk-token }}
+        if: ${{ inputs.enable-snyk-scan && steps.gradle-build.conclusion == 'success' && github.event.pull_request.head.repo.full_name == github.repository && !cancelled() }}
+        run: |
+          snyk code test --severity-threshold=high --json-file-output=snyk-code.json
+
+      - name: Publish Snyk Results
+        if: ${{ inputs.enable-snyk-scan && steps.gradle-build.conclusion == 'success' && github.event.pull_request.head.repo.full_name == github.repository && !cancelled() }}
+        run: |
+          snyk-to-html -i snyk-test.json -o snyk-test.html --summary
+          html-to-markdown snyk-test.html -o snyk
+          cat snyk/snyk-test.html.md >> $GITHUB_STEP_SUMMARY
+          snyk-to-html -i snyk-code.json -o snyk-code.html --summary
+          html-to-markdown snyk-code.html -o snyk
+          cat snyk/snyk-code.html.md >> $GITHUB_STEP_SUMMARY

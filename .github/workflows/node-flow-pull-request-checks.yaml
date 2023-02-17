@@ -111,3 +111,20 @@ jobs:
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       sonar-token: ${{ secrets.SONAR_TOKEN }}
+
+  snyk-scan:
+    name: Snyk Scan
+    uses: ./.github/workflows/comp-compile-application-code.yaml
+    needs:
+      - unit-label-check
+    with:
+      custom-job-label: Standard
+      enable-javadoc: false
+      enable-unit-tests: false
+      enable-e2e-tests: false
+      enable-integration-tests: false
+      enable-sonar-analysis: false
+      enable-snyk-scan: true
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      snyk-token: ${{ secrets.SNYK_TOKEN }}
