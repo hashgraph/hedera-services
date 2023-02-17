@@ -181,7 +181,6 @@ class CryptoCreateTransitionLogicTest {
                         ledger,
                         sigImpactHistorian,
                         txnCtx,
-                        dynamicProperties,
                         aliasManager,
                         autoCreationLogic,
                         transferLogic,
@@ -1178,6 +1177,47 @@ class CryptoCreateTransitionLogicTest {
                 .willReturn(MISSING_NUM);
         given(ledger.getAccountsLedger()).willReturn(accountsLedger);
         given(dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()).willReturn(false);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
+
+        given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
+        given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
+        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE)).willReturn(BALANCE);
+
+        subject.doStateTransition();
+
+        verify(ledger)
+                .create(argThat(PAYER::equals), longThat(ZERO_BALANCE::equals), captor.capture());
+        verify(txnCtx).setCreated(CREATED);
+        verify(txnCtx).setStatus(SUCCESS);
+        verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
+
+        final var changes = captor.getValue().getChanges();
+        assertEquals(7, changes.size());
+        assertEquals(ECDSA_KEY, JKey.mapJKey((JKey) changes.get(AccountProperty.KEY)));
+        assertEquals(0L, (long) changes.get(AUTO_RENEW_PERIOD));
+        assertEquals(consensusTime.getEpochSecond(), (long) changes.get(EXPIRY));
+        assertNull(changes.get(AccountProperty.ALIAS));
+        assertEquals(false, changes.get(IS_RECEIVER_SIG_REQUIRED));
+        assertEquals(false, changes.get(DECLINE_REWARD));
+        assertEquals("", changes.get(AccountProperty.MEMO));
+        assertEquals(0, changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
+    }
+
+    @Test
+    void followsHappyPathECKeyWithBothFlagsAreEnabled() throws DecoderException {
+        final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+
+        final var opBuilder = CryptoCreateTransactionBody.newBuilder().setKey(ECDSA_KEY);
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
+        given(txnCtx.activePayer()).willReturn(ourAccount());
+        given(txnCtx.accessor()).willReturn(accessor);
+        given(aliasManager.lookupIdBy(ECDSA_KEY.getECDSASecp256K1())).willReturn(MISSING_NUM);
+        given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
+                .willReturn(MISSING_NUM);
+        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
+        given(dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()).willReturn(true);
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
 
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
