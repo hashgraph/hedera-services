@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.streaming;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -30,7 +31,7 @@ import org.apache.logging.log4j.Logger;
 public class RecordStreamValidation extends HapiSuite {
     private static final Logger log = LogManager.getLogger(RecordStreamValidation.class);
 
-    private static final String PATH_TO_LOCAL_STREAMS = "../hedera-node/data/recordstreams";
+    private static final String PATH_TO_LOCAL_STREAMS = "../data/recordstreams";
 
     public static void main(String... args) {
         new RecordStreamValidation().runSuiteSync();
@@ -38,24 +39,21 @@ public class RecordStreamValidation extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    recordStreamSanityChecks(),
-                });
+        return List.of(new HapiSpec[] {
+            recordStreamSanityChecks(),
+        });
     }
 
     private HapiSpec recordStreamSanityChecks() {
         AtomicReference<String> pathToStreams = new AtomicReference<>(PATH_TO_LOCAL_STREAMS);
 
         return defaultHapiSpec("RecordStreamSanityChecks")
-                .given(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    HapiPropertySource ciProps = spec.setup().ciPropertiesMap();
-                                    if (ciProps.has("recordStreamsDir")) {
-                                        pathToStreams.set(ciProps.get("recordStreamsDir"));
-                                    }
-                                }))
+                .given(withOpContext((spec, opLog) -> {
+                    HapiPropertySource ciProps = spec.setup().ciPropertiesMap();
+                    if (ciProps.has("recordStreamsDir")) {
+                        pathToStreams.set(ciProps.get("recordStreamsDir"));
+                    }
+                }))
                 .when()
                 .then(verifyRecordStreams(pathToStreams::get));
     }
