@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.execution.traceability;
 
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
@@ -73,8 +74,7 @@ public class HederaTracer implements HederaOperationTracer {
     }
 
     @Override
-    public void tracePostExecution(
-            final MessageFrame currentFrame, final OperationResult operationResult) {
+    public void tracePostExecution(final MessageFrame currentFrame, final OperationResult operationResult) {
         if (areActionSidecarsEnabled) {
             final var frameState = currentFrame.getState();
             if (frameState != State.CODE_EXECUTING) {
@@ -89,46 +89,35 @@ public class HederaTracer implements HederaOperationTracer {
     }
 
     private void trackTopLevelActionFor(final MessageFrame initialFrame) {
-        trackNewAction(
-                initialFrame,
-                action -> {
-                    action.setCallOperationType(toCallOperationType(initialFrame.getType()));
-                    action.setCallingAccount(
-                            EntityId.fromAddress(
-                                    asMirrorAddress(
-                                            initialFrame.getOriginatorAddress(), initialFrame)));
-                });
+        trackNewAction(initialFrame, action -> {
+            action.setCallOperationType(toCallOperationType(initialFrame.getType()));
+            action.setCallingAccount(
+                    EntityId.fromAddress(asMirrorAddress(initialFrame.getOriginatorAddress(), initialFrame)));
+        });
     }
 
     private void trackInnerActionFor(final MessageFrame nextFrame, final MessageFrame parentFrame) {
-        trackNewAction(
-                nextFrame,
-                action -> {
-                    action.setCallOperationType(
-                            toCallOperationType(parentFrame.getCurrentOperation().getOpcode()));
-                    action.setCallingContract(
-                            EntityId.fromAddress(
-                                    asMirrorAddress(
-                                            parentFrame.getContractAddress(), parentFrame)));
-                });
+        trackNewAction(nextFrame, action -> {
+            action.setCallOperationType(
+                    toCallOperationType(parentFrame.getCurrentOperation().getOpcode()));
+            action.setCallingContract(
+                    EntityId.fromAddress(asMirrorAddress(parentFrame.getContractAddress(), parentFrame)));
+        });
     }
 
-    private void trackNewAction(
-            final MessageFrame messageFrame, final Consumer<SolidityAction> actionConfig) {
-        final var action =
-                new SolidityAction(
-                        toContractActionType(messageFrame.getType()),
-                        messageFrame.getRemainingGas(),
-                        messageFrame.getInputData().toArray(),
-                        messageFrame.getValue().toLong(),
-                        messageFrame.getMessageStackDepth());
+    private void trackNewAction(final MessageFrame messageFrame, final Consumer<SolidityAction> actionConfig) {
+        final var action = new SolidityAction(
+                toContractActionType(messageFrame.getType()),
+                messageFrame.getRemainingGas(),
+                messageFrame.getInputData().toArray(),
+                messageFrame.getValue().toLong(),
+                messageFrame.getMessageStackDepth());
         final var contractAddress = messageFrame.getContractAddress();
         if (messageFrame.getType() != Type.CONTRACT_CREATION
                 && messageFrame.getWorldUpdater().getAccount(contractAddress) == null) {
             action.setTargetedAddress(contractAddress.toArray());
         } else {
-            final var recipient =
-                    EntityId.fromAddress(asMirrorAddress(contractAddress, messageFrame));
+            final var recipient = EntityId.fromAddress(asMirrorAddress(contractAddress, messageFrame));
             if (CodeV0.EMPTY_CODE.equals(messageFrame.getCode())) {
                 // code can be empty when calling precompiles too, but we handle
                 // that in tracePrecompileCall, after precompile execution is completed
@@ -143,8 +132,7 @@ public class HederaTracer implements HederaOperationTracer {
         currentActionsStack.push(action);
     }
 
-    private void finalizeActionFor(
-            final SolidityAction action, final MessageFrame frame, final State frameState) {
+    private void finalizeActionFor(final SolidityAction action, final MessageFrame frame, final State frameState) {
         if (frameState == State.CODE_SUCCESS || frameState == State.COMPLETED_SUCCESS) {
             action.setGasUsed(action.getGas() - frame.getRemainingGas());
             // externalize output for calls only - create output is externalized in bytecode sidecar
@@ -153,12 +141,8 @@ public class HederaTracer implements HederaOperationTracer {
                 if (action.getInvalidSolidityAddress() != null) {
                     // we had a successful lazy create, replace targeted address
                     // with its new Hedera id
-                    final var recipientAsHederaId =
-                            EntityId.fromAddress(
-                                    asMirrorAddress(
-                                            Address.wrap(
-                                                    Bytes.of(action.getInvalidSolidityAddress())),
-                                            frame));
+                    final var recipientAsHederaId = EntityId.fromAddress(
+                            asMirrorAddress(Address.wrap(Bytes.of(action.getInvalidSolidityAddress())), frame));
                     action.setTargetedAddress(null);
                     action.setRecipientAccount(recipientAsHederaId);
                 }
@@ -188,18 +172,11 @@ public class HederaTracer implements HederaOperationTracer {
                 // intended call
                 // (e.g. the targeted invalid address) and sequence of events leading to the failure
                 // are lost
-                if (action.getCallType().equals(CALL)
-                        && exceptionalHaltReason.equals(INVALID_SOLIDITY_ADDRESS)) {
-                    final var syntheticInvalidAction =
-                            new SolidityAction(
-                                    CALL,
-                                    frame.getRemainingGas(),
-                                    null,
-                                    0,
-                                    frame.getMessageStackDepth() + 1);
+                if (action.getCallType().equals(CALL) && exceptionalHaltReason.equals(INVALID_SOLIDITY_ADDRESS)) {
+                    final var syntheticInvalidAction = new SolidityAction(
+                            CALL, frame.getRemainingGas(), null, 0, frame.getMessageStackDepth() + 1);
                     syntheticInvalidAction.setCallingContract(
-                            EntityId.fromAddress(
-                                    asMirrorAddress(frame.getContractAddress(), frame)));
+                            EntityId.fromAddress(asMirrorAddress(frame.getContractAddress(), frame)));
                     syntheticInvalidAction.setTargetedAddress(
                             Words.toAddress(frame.getStackItem(1)).toArray());
                     syntheticInvalidAction.setError(
@@ -230,8 +207,7 @@ public class HederaTracer implements HederaOperationTracer {
     }
 
     @Override
-    public void traceAccountCreationResult(
-            final MessageFrame frame, final Optional<ExceptionalHaltReason> haltReason) {
+    public void traceAccountCreationResult(final MessageFrame frame, final Optional<ExceptionalHaltReason> haltReason) {
         frame.setExceptionalHaltReason(haltReason);
         if (areActionSidecarsEnabled) {
             // we take the last action from the list since there is a chance
@@ -269,8 +245,7 @@ public class HederaTracer implements HederaOperationTracer {
     }
 
     private Address asMirrorAddress(final Address addressOrAlias, final MessageFrame messageFrame) {
-        final var aliases =
-                ((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).aliases();
+        final var aliases = ((HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater()).aliases();
         return aliases.resolveForEvm(addressOrAlias);
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.throttling;
 
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
@@ -68,9 +69,7 @@ public class ThrottleReqsManager {
     }
 
     String asReadableRequirements() {
-        return "min{"
-                + allReqs.stream().map(this::readable).collect(Collectors.joining(", "))
-                + "}";
+        return "min{" + allReqs.stream().map(this::readable).collect(Collectors.joining(", ")) + "}";
     }
 
     private String readable(Pair<DeterministicThrottle, Integer> req) {

@@ -17,8 +17,210 @@
 package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.service.mono.context.properties.PropUtils.loadOverride;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.*;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_ADDRESS_BOOK_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_EXCHANGE_RATES_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_FEE_SCHEDULE_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_FREEZE_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_LAST_THROTTLE_EXEMPT;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_MAX_NUM;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_NODE_REWARD_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_STORE_ON_DISK;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_SYSTEM_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_SYSTEM_DELETE_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_SYSTEM_UNDELETE_ADMIN;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_TREASURY;
+import static com.hedera.node.app.spi.config.PropertyNames.AUTO_CREATION_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_GRACE_PERIOD;
+import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_GRANT_FREE_RENEWALS;
+import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE;
+import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN;
+import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_TARGET_TYPES;
+import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_COMPRESS_ON_CREATION;
+import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_DIR_PATH;
+import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_PERIOD_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_TOKEN_BALANCES;
+import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_HAPI_PERMISSIONS_PATH;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_NETWORK_PROPERTIES_PATH;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_CURRENT_CENT_EQUIV;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_CURRENT_EXPIRY;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_NEXT_CENT_EQUIV;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_NEXT_EXPIRY;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_NEXT_HBAR_EQUIV;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
+import static com.hedera.node.app.spi.config.PropertyNames.CACHE_RECORDS_TTL;
+import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_AUTO_ASSOCIATIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_CREATE2;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_CHAIN_ID;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ENFORCE_CREATION_THROTTLE;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_EVM_VERSION;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_FREE_STORAGE_TIER_LIMIT;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ITEMIZE_STORAGE_FEES;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_KEYS_LEGACY_ACTIVATIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_KNOWN_BLOCK_HASH;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_LOCAL_CALL_EST_RET_BYTES;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_GAS_PER_SEC;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIRS_AGGREGATE;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_NUM;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REDIRECT_TOKEN_CALLS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REFERENCE_SLOT_LIFETIME;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECARS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
+import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
+import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_LIMIT_TOKEN_ASSOCIATIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_MAX_LIFETIME;
+import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_SYSTEM_DELETABLE;
+import static com.hedera.node.app.spi.config.PropertyNames.EXPIRY_MIN_CYCLE_ENTRY_CAPACITY;
+import static com.hedera.node.app.spi.config.PropertyNames.EXPIRY_THROTTLE_RESOURCE;
+import static com.hedera.node.app.spi.config.PropertyNames.FEES_MIN_CONGESTION_PERIOD;
+import static com.hedera.node.app.spi.config.PropertyNames.FEES_PERCENT_CONGESTION_MULTIPLIERS;
+import static com.hedera.node.app.spi.config.PropertyNames.FEES_PERCENT_UTILIZATION_SCALE_FACTORS;
+import static com.hedera.node.app.spi.config.PropertyNames.FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_ADDRESS_BOOK;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_EXCHANGE_RATES;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_FEE_SCHEDULES;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_HAPI_PERMISSIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_MAX_NUM;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_MAX_SIZE_KB;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_NETWORK_PROPERTIES;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_NODE_DETAILS;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_SOFTWARE_UPDATE_RANGE;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_THROTTLE_DEFINITIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_TLS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ACCOUNTS_EXPORT_PATH;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ALLOWANCES_IS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ALLOWANCES_MAX_TXN_LIMIT;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_EXPORT_ACCOUNTS_ON_STARTUP;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_FIRST_USER_ENTITY;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PREFETCH_CODE_CACHE_TTL_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PREFETCH_QUEUE_CAPACITY;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PREFETCH_THREAD_POOL_SIZE;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PROFILES_ACTIVE;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_REALM;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_IS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_PERIOD;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_QUEUE_CAPACITY;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_RECORD_FILE_VERSION;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_SIDE_CAR_DIR;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_SIG_FILE_VERSION;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_SHARD;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_TXN_MAX_MEMO_UTF8_BYTES;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_TXN_MAX_VALID_DURATION;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_TXN_MIN_VALID_DURATION;
+import static com.hedera.node.app.spi.config.PropertyNames.ISS_RESET_PERIOD;
+import static com.hedera.node.app.spi.config.PropertyNames.ISS_ROUNDS_TO_LOG;
+import static com.hedera.node.app.spi.config.PropertyNames.LAZY_CREATION_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_CHANGE_HIST_MEM_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_FUNDING_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_ID;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NFT_TRANSFERS_MAX_LEN;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NUM_SYSTEM_ACCOUNTS;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOKEN_TRANSFERS_MAX_LEN;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TRANSFERS_MAX_LEN;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_XFER_BAL_CHANGES_MAX_LEN;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_MODE;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_FLOW_CONTROL_WINDOW;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_KEEP_ALIVE_TIME;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_KEEP_ALIVE_TIMEOUT;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONCURRENT_CALLS;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE_GRACE;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONNECTION_IDLE;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_START_RETRIES;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_START_RETRY_INTERVAL_MS;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_TLS_CERT_PATH;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_TLS_KEY_PATH;
+import static com.hedera.node.app.spi.config.PropertyNames.QUERIES_BLOB_LOOK_UP_RETRIES;
+import static com.hedera.node.app.spi.config.PropertyNames.RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT;
+import static com.hedera.node.app.spi.config.PropertyNames.RATES_MIDNIGHT_CHECK_INTERVAL;
+import static com.hedera.node.app.spi.config.PropertyNames.SCHEDULING_LONG_TERM_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.SCHEDULING_MAX_EXPIRATION_FUTURE_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.SCHEDULING_MAX_NUM;
+import static com.hedera.node.app.spi.config.PropertyNames.SCHEDULING_MAX_TXN_PER_SEC;
+import static com.hedera.node.app.spi.config.PropertyNames.SCHEDULING_WHITE_LIST;
+import static com.hedera.node.app.spi.config.PropertyNames.SIGS_EXPAND_FROM_IMMUTABLE_STATE;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_FEES_NODE_REWARD_PERCENT;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_FEES_STAKING_REWARD_PERCENT;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_IS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REQUIRE_MIN_STAKE_TO_REWARD;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_RATE;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_START_THRESH;
+import static com.hedera.node.app.spi.config.PropertyNames.STATES_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_CONS_THROTTLES_TO_SAMPLE;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_EXECUTION_TIMES_TO_TRACK;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_HAPI_THROTTLES_TO_SAMPLE;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_RUNNING_AVG_HALF_LIFE_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_SPEEDOMETER_HALF_LIFE_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_AUTO_CREATIONS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_AGGREGATE_RELS;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_CUSTOM_FEES_ALLOWED;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_CUSTOM_FEE_DEPTH;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_NUM;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_PER_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_RELS_PER_INFO_QUERY;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_SYMBOL_UTF8_BYTES;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_TOKEN_NAME_UTF8_BYTES;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_ARE_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_ALLOWED_MINTS;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_BATCH_SIZE_BURN;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_BATCH_SIZE_MINT;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_BATCH_SIZE_WIPE;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_METADATA_BYTES;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_QUERY_RANGE;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILD_CARDS;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_STORE_RELS_ON_DISK;
+import static com.hedera.node.app.spi.config.PropertyNames.TOPICS_MAX_NUM;
+import static com.hedera.node.app.spi.config.PropertyNames.TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC;
+import static com.hedera.node.app.spi.config.PropertyNames.TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO;
+import static com.hedera.node.app.spi.config.PropertyNames.UPGRADE_ARTIFACTS_PATH;
+import static com.hedera.node.app.spi.config.PropertyNames.UTIL_PRNG_IS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB;
+import static com.hedera.node.app.spi.config.PropertyNames.WORKFLOWS_ENABLED;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.Map.entry;
 import static java.util.stream.Collectors.toSet;
@@ -30,6 +232,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Function;
@@ -42,6 +245,7 @@ import org.apache.logging.log4j.Logger;
 
 @Singleton
 public final class BootstrapProperties implements PropertySource {
+
     private static final Map<String, Object> MISSING_PROPS = null;
 
     private static final Function<String, InputStream> nullableResourceStreamProvider =
@@ -60,6 +264,8 @@ public final class BootstrapProperties implements PropertySource {
 
     private final boolean logEnabled;
 
+    private final Properties rawProperties = new Properties();
+
     @Inject
     public BootstrapProperties() {
         this(true);
@@ -75,12 +281,12 @@ public final class BootstrapProperties implements PropertySource {
     Map<String, Object> bootstrapProps = MISSING_PROPS;
 
     private void initPropsFromResource() throws IllegalStateException {
-        final var resourceProps = new Properties();
-        load(bootstrapPropsResource, resourceProps);
-        loadOverride(bootstrapOverridePropsLoc, resourceProps, fileStreamProvider, log);
-        checkForUnrecognizedProps(resourceProps);
-        checkForMissingProps(resourceProps);
-        resolveBootstrapProps(resourceProps);
+        rawProperties.clear();
+        load(bootstrapPropsResource, rawProperties);
+        loadOverride(bootstrapOverridePropsLoc, rawProperties, fileStreamProvider, log);
+        checkForUnrecognizedProps(rawProperties);
+        checkForMissingProps(rawProperties);
+        resolveBootstrapProps(rawProperties);
     }
 
     private void checkForUnrecognizedProps(final Properties resourceProps) throws IllegalStateException {
@@ -122,7 +328,7 @@ public final class BootstrapProperties implements PropertySource {
     private void load(final String resource, final Properties intoProps) throws IllegalStateException {
         try (final var fin = resourceStreamProvider.newInputStream(resource)) {
             intoProps.load(fin);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new IllegalStateException(String.format("'%s' could not be loaded!", resource), e);
         }
     }
@@ -151,6 +357,15 @@ public final class BootstrapProperties implements PropertySource {
     @Override
     public Set<String> allPropertyNames() {
         return BOOTSTRAP_PROP_NAMES;
+    }
+
+    @Override
+    public String getRawValue(final String name) {
+        ensureProps();
+        if (rawProperties.contains(name)) {
+            return rawProperties.getProperty(name);
+        }
+        throw new NoSuchElementException("Property of name '" + name + "' can not be found!");
     }
 
     private static final Set<String> BOOTSTRAP_PROPS = Set.of(
@@ -370,7 +585,7 @@ public final class BootstrapProperties implements PropertySource {
                     .flatMap(Set::stream)
                     .collect(toSet()));
 
-    public static Function<String, Object> transformFor(String prop) {
+    public static Function<String, Object> transformFor(final String prop) {
         return PROP_TRANSFORMS.getOrDefault(prop, AS_STRING);
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -85,7 +86,6 @@ class ChainedSourcesTest {
     @Test
     void getsAllProperties() {
         // expect;
-        assertEquals(
-                Set.of("somethingElse", "anotherThing", "something"), subject.allPropertyNames());
+        assertEquals(Set.of("somethingElse", "anotherThing", "something"), subject.allPropertyNames());
     }
 }

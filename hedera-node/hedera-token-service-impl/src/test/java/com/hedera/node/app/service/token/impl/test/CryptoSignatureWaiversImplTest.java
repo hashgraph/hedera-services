@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -33,7 +34,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CryptoSignatureWaiversImplTest {
-    @Mock HederaAccountNumbers accountNumbers;
+    @Mock
+    HederaAccountNumbers accountNumbers;
+
     private CryptoSignatureWaiversImpl subject;
 
     @BeforeEach
@@ -45,20 +48,15 @@ class CryptoSignatureWaiversImplTest {
     void notImplementedStuffIsntImplemented() {
         final var account = IdUtils.asAccount("0.0.3000");
         final var txn = cryptoUpdateTransaction(account, account);
-        assertThrows(
-                NotImplementedException.class, () -> subject.isNewKeySignatureWaived(txn, account));
-        assertThrows(
-                NotImplementedException.class,
-                () -> subject.isTargetAccountSignatureWaived(txn, account));
+        assertThrows(NotImplementedException.class, () -> subject.isNewKeySignatureWaived(txn, account));
+        assertThrows(NotImplementedException.class, () -> subject.isTargetAccountSignatureWaived(txn, account));
     }
 
-    private TransactionBody cryptoUpdateTransaction(
-            final AccountID payerId, final AccountID accountToUpdate) {
+    private TransactionBody cryptoUpdateTransaction(final AccountID payerId, final AccountID accountToUpdate) {
         final var transactionID = TransactionID.newBuilder().setAccountID(payerId);
-        final var updateTxnBody =
-                CryptoUpdateTransactionBody.newBuilder()
-                        .setAccountIDToUpdate(accountToUpdate)
-                        .build();
+        final var updateTxnBody = CryptoUpdateTransactionBody.newBuilder()
+                .setAccountIDToUpdate(accountToUpdate)
+                .build();
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)
                 .setCryptoUpdateAccount(updateTxnBody)

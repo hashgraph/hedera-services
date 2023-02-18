@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper.RecomputeType.NODE_STAKES;
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper.RecomputeType.PENDING_REWARDS;
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.roundedToHbar;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
@@ -36,6 +35,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.config.PropertyNames;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -59,6 +59,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StakeStartupHelperTest {
+
     private static final long removedNodeId = 2L;
     private static final long addedNodeId = 4L;
     private static final EntityNum removedNum = EntityNum.fromLong(removedNodeId);
@@ -217,7 +218,7 @@ class StakeStartupHelperTest {
         subject = new StakeStartupHelper(stakeInfoManager, properties, rewardCalculator);
     }
 
-    private void givenPostUpgradeSubjectDoing(StakeStartupHelper.RecomputeType... types) {
+    private void givenPostUpgradeSubjectDoing(final StakeStartupHelper.RecomputeType... types) {
         given(properties.getRecomputeTypesProperty(STAKING_STARTUP_HELPER_RECOMPUTE))
                 .willReturn(Set.of(types));
 
@@ -258,12 +259,12 @@ class StakeStartupHelperTest {
         stakingInfos.put(EntityNum.fromLong(addedNodeId), new MerkleStakingInfo());
     }
 
-    private void addPreUpgrade(int index, long nodeId) {
+    private void addPreUpgrade(final int index, final long nodeId) {
         given(addressBook.getId(index)).willReturn(nodeId);
         stakingInfos.put(EntityNum.fromLong(nodeId), new MerkleStakingInfo());
     }
 
-    private void addPostUpgrade(int index, long nodeId) {
+    private void addPostUpgrade(final int index, final long nodeId) {
         given(addressBook.getId(index)).willReturn(nodeId);
     }
 
@@ -284,7 +285,7 @@ class StakeStartupHelperTest {
                     .registerConstructable(new ClassConstructorPair(MerkleAccountState.class, MerkleAccountState::new));
             ConstructableRegistry.getInstance()
                     .registerConstructable(new ClassConstructorPair(FCQueue.class, FCQueue::new));
-        } catch (ConstructableRegistryException e) {
+        } catch (final ConstructableRegistryException e) {
             throw new IllegalStateException(e);
         }
     }

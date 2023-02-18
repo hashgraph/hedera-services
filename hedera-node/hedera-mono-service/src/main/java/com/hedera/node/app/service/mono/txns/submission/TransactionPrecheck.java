@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.submission;
 
 import static com.hedera.node.app.service.mono.txns.submission.PresolvencyFlaws.WELL_KNOWN_FLAWS;
@@ -53,9 +54,7 @@ public final class TransactionPrecheck {
     private static final Set<Characteristic> TOP_LEVEL_CHARACTERISTICS =
             EnumSet.of(Characteristic.MUST_PASS_SYSTEM_SCREEN);
     private static final Set<Characteristic> QUERY_PAYMENT_CHARACTERISTICS =
-            EnumSet.of(
-                    Characteristic.MUST_BE_CRYPTO_TRANSFER,
-                    Characteristic.MUST_BE_SOLVENT_FOR_SVC_FEES);
+            EnumSet.of(Characteristic.MUST_BE_CRYPTO_TRANSFER, Characteristic.MUST_BE_SOLVENT_FOR_SVC_FEES);
 
     @Inject
     public TransactionPrecheck(
@@ -67,13 +66,11 @@ public final class TransactionPrecheck {
         this.currentPlatformStatus = currentPlatformStatus;
     }
 
-    public Pair<TxnValidityAndFeeReq, SignedTxnAccessor> performForTopLevel(
-            final Transaction signedTxn) {
+    public Pair<TxnValidityAndFeeReq, SignedTxnAccessor> performForTopLevel(final Transaction signedTxn) {
         return performance(signedTxn, TOP_LEVEL_CHARACTERISTICS);
     }
 
-    public Pair<TxnValidityAndFeeReq, SignedTxnAccessor> performForQueryPayment(
-            final Transaction signedTxn) {
+    public Pair<TxnValidityAndFeeReq, SignedTxnAccessor> performForQueryPayment(final Transaction signedTxn) {
         final var prelim = performance(signedTxn, QUERY_PAYMENT_CHARACTERISTICS);
         final var accessor = prelim.getRight();
         if (null == accessor) {
@@ -113,10 +110,9 @@ public final class TransactionPrecheck {
             return responseForFlawed(semanticStatus);
         }
 
-        final var solvencyStatus =
-                characteristics.contains(Characteristic.MUST_BE_SOLVENT_FOR_SVC_FEES)
-                        ? stagedPrechecks.assessSolvencyWithSvcFees(accessor)
-                        : stagedPrechecks.assessSolvencySansSvcFees(accessor);
+        final var solvencyStatus = characteristics.contains(Characteristic.MUST_BE_SOLVENT_FOR_SVC_FEES)
+                ? stagedPrechecks.assessSolvencyWithSvcFees(accessor)
+                : stagedPrechecks.assessSolvencySansSvcFees(accessor);
         if (solvencyStatus.getValidity() != OK) {
             return failureFor(solvencyStatus);
         }
@@ -124,25 +120,21 @@ public final class TransactionPrecheck {
         if (characteristics.contains(Characteristic.MUST_PASS_SYSTEM_SCREEN)) {
             final var systemStatus = stagedPrechecks.systemScreen(accessor);
             if (systemStatus != OK) {
-                return failureFor(
-                        new TxnValidityAndFeeReq(systemStatus, solvencyStatus.getRequiredFee()));
+                return failureFor(new TxnValidityAndFeeReq(systemStatus, solvencyStatus.getRequiredFee()));
             }
         }
 
         return Pair.of(solvencyStatus, accessor);
     }
 
-    private Pair<TxnValidityAndFeeReq, SignedTxnAccessor> failureFor(
-            final TxnValidityAndFeeReq feeReqStatus) {
+    private Pair<TxnValidityAndFeeReq, SignedTxnAccessor> failureFor(final TxnValidityAndFeeReq feeReqStatus) {
         return Pair.of(feeReqStatus, null);
     }
 
-    private ResponseCodeEnum checkSemantics(
-            final TxnAccessor accessor, final Set<Characteristic> characteristics) {
+    private ResponseCodeEnum checkSemantics(final TxnAccessor accessor, final Set<Characteristic> characteristics) {
         return characteristics.contains(Characteristic.MUST_BE_CRYPTO_TRANSFER)
                 ? stagedPrechecks.validateSemantics(accessor, CryptoTransfer, INSUFFICIENT_TX_FEE)
-                : stagedPrechecks.validateSemantics(
-                        accessor, accessor.getFunction(), NOT_SUPPORTED);
+                : stagedPrechecks.validateSemantics(accessor, accessor.getFunction(), NOT_SUPPORTED);
     }
 
     private enum Characteristic {

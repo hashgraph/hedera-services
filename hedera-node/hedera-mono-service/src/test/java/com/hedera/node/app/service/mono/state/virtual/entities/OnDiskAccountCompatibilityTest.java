@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.entities;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -126,15 +127,11 @@ class OnDiskAccountCompatibilityTest {
         assertSame(firstSubject.getHbarAllowances(), firstSubject.getCryptoAllowances());
         assertSame(firstSubject.getHbarAllowances(), firstSubject.getCryptoAllowancesUnsafe());
         assertSame(firstSubject.getFungibleAllowances(), firstSubject.getFungibleTokenAllowances());
-        assertSame(
-                firstSubject.getFungibleAllowances(),
-                firstSubject.getFungibleTokenAllowancesUnsafe());
+        assertSame(firstSubject.getFungibleAllowances(), firstSubject.getFungibleTokenAllowancesUnsafe());
         assertSame(firstSubject.getNftOperatorApprovals(), firstSubject.getApproveForAllNfts());
-        assertSame(
-                firstSubject.getNftOperatorApprovals(), firstSubject.getApproveForAllNftsUnsafe());
+        assertSame(firstSubject.getNftOperatorApprovals(), firstSubject.getApproveForAllNftsUnsafe());
 
-        firstSubject.setCryptoAllowances(
-                (SortedMap<EntityNum, Long>) secondSubject.getHbarAllowances());
+        firstSubject.setCryptoAllowances((SortedMap<EntityNum, Long>) secondSubject.getHbarAllowances());
         firstSubject.setCryptoAllowancesUnsafe(secondSubject.getHbarAllowances());
         assertSame(secondSubject.getHbarAllowances(), firstSubject.getCryptoAllowances());
 

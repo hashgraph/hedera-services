@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.execution;
 
 /*
@@ -67,16 +68,14 @@ class TransactionProcessingResultTest {
     private final Account logger = new Account(new Id(0, 0, 1002));
 
     private final Bytes logTopicBytes =
-            Bytes.fromHexString(
-                    "0xce8688f853ffa65c042b72302433c25d7a230c322caba0901587534b6551091d");
+            Bytes.fromHexString("0xce8688f853ffa65c042b72302433c25d7a230c322caba0901587534b6551091d");
 
     private final LogTopic logTopic = LogTopic.create(logTopicBytes);
 
-    private final Log log =
-            new Log(
-                    logger.getId().asEvmAddress(),
-                    Bytes.fromHexString("0x0102"),
-                    List.of(logTopic, logTopic, logTopic, logTopic));
+    private final Log log = new Log(
+            logger.getId().asEvmAddress(),
+            Bytes.fromHexString("0x0102"),
+            List.of(logTopic, logTopic, logTopic, logTopic));
 
     private final Account recipient = new Account(new Id(0, 0, 1002));
 
@@ -86,43 +85,34 @@ class TransactionProcessingResultTest {
         var firstContract = new Account(new Id(0, 0, 1003));
         var secondContract = new Account(new Id(0, 0, 1004));
 
-        var listOfCreatedContracts =
-                List.of(
-                        firstContract.getId().asGrpcContract(),
-                        secondContract.getId().asGrpcContract());
+        var listOfCreatedContracts = List.of(
+                firstContract.getId().asGrpcContract(), secondContract.getId().asGrpcContract());
 
-        var log =
-                new Log(
-                        logger.getId().asEvmAddress(),
-                        Bytes.fromHexString("0x0102"),
-                        List.of(logTopic, logTopic, logTopic, logTopic));
+        var log = new Log(
+                logger.getId().asEvmAddress(),
+                Bytes.fromHexString("0x0102"),
+                List.of(logTopic, logTopic, logTopic, logTopic));
         final var logList = List.of(log);
 
-        final var expect =
-                ContractFunctionResult.newBuilder()
-                        .setGasUsed(GAS_USAGE)
-                        .setBloom(
-                                ByteString.copyFrom(
-                                        LogsBloomFilter.builder()
-                                                .insertLogs(logList)
-                                                .build()
-                                                .toArray()));
+        final var expect = ContractFunctionResult.newBuilder()
+                .setGasUsed(GAS_USAGE)
+                .setBloom(ByteString.copyFrom(
+                        LogsBloomFilter.builder().insertLogs(logList).build().toArray()));
 
         expect.setContractCallResult(ByteString.copyFrom(Bytes.EMPTY.toArray()));
-        expect.setContractID(
-                EntityIdUtils.contractIdFromEvmAddress(recipient.getId().asEvmAddress().toArray()));
+        expect.setContractID(EntityIdUtils.contractIdFromEvmAddress(
+                recipient.getId().asEvmAddress().toArray()));
         expect.addAllCreatedContractIDs(listOfCreatedContracts);
 
-        var result =
-                TransactionProcessingResult.successful(
-                        logList,
-                        GAS_USAGE,
-                        GAS_REFUND,
-                        1234L,
-                        Bytes.EMPTY,
-                        recipient.getId().asEvmAddress(),
-                        Collections.emptyMap(),
-                        Collections.emptyList());
+        var result = TransactionProcessingResult.successful(
+                logList,
+                GAS_USAGE,
+                GAS_REFUND,
+                1234L,
+                Bytes.EMPTY,
+                recipient.getId().asEvmAddress(),
+                Collections.emptyMap(),
+                Collections.emptyList());
         result.setCreatedContracts(listOfCreatedContracts);
         result.setStateChanges(Collections.emptyMap());
         result.setActions(Collections.emptyList());
@@ -141,38 +131,28 @@ class TransactionProcessingResultTest {
     @Test
     void assertCorrectDataOnFailedTransaction() {
 
-        var exception =
-                new ExceptionalHaltReason() {
-                    @Override
-                    public String name() {
-                        return "TestExceptionalHaltReason";
-                    }
+        var exception = new ExceptionalHaltReason() {
+            @Override
+            public String name() {
+                return "TestExceptionalHaltReason";
+            }
 
-                    @Override
-                    public String getDescription() {
-                        return "Exception Halt Reason Test Description";
-                    }
-                };
+            @Override
+            public String getDescription() {
+                return "Exception Halt Reason Test Description";
+            }
+        };
         var revertReason = Optional.of(Bytes.fromHexString("0x43"));
 
         final var expect =
-                ContractFunctionResult.newBuilder()
-                        .setGasUsed(GAS_USAGE)
-                        .setBloom(ByteString.copyFrom(new byte[256]));
+                ContractFunctionResult.newBuilder().setGasUsed(GAS_USAGE).setBloom(ByteString.copyFrom(new byte[256]));
         expect.setContractCallResult(ByteString.copyFrom(Bytes.EMPTY.toArray()));
-        expect.setContractID(
-                EntityIdUtils.contractIdFromEvmAddress(recipient.getId().asEvmAddress().toArray()));
+        expect.setContractID(EntityIdUtils.contractIdFromEvmAddress(
+                recipient.getId().asEvmAddress().toArray()));
         expect.setErrorMessageBytes(ByteString.copyFrom(revertReason.get().toArray()));
 
-        var result =
-                TransactionProcessingResult.failed(
-                        GAS_USAGE,
-                        GAS_REFUND,
-                        GAS_PRICE,
-                        revertReason,
-                        Optional.of(exception),
-                        Map.of(),
-                        List.of());
+        var result = TransactionProcessingResult.failed(
+                GAS_USAGE, GAS_REFUND, GAS_PRICE, revertReason, Optional.of(exception), Map.of(), List.of());
 
         assertEquals(expect.getGasUsed(), result.getGasUsed());
         assertEquals(GAS_PRICE, result.getGasPrice());
@@ -183,64 +163,60 @@ class TransactionProcessingResultTest {
 
     @Test
     void assertGasPrice() {
-        var result =
-                TransactionProcessingResult.successful(
-                        List.of(log),
-                        GAS_USAGE,
-                        GAS_REFUND,
-                        GAS_PRICE,
-                        Bytes.EMPTY,
-                        recipient.getId().asEvmAddress(),
-                        Map.of(),
-                        List.of());
+        var result = TransactionProcessingResult.successful(
+                List.of(log),
+                GAS_USAGE,
+                GAS_REFUND,
+                GAS_PRICE,
+                Bytes.EMPTY,
+                recipient.getId().asEvmAddress(),
+                Map.of(),
+                List.of());
 
         assertEquals(GAS_PRICE, result.getGasPrice());
     }
 
     @Test
     void assertSbhRefund() {
-        var result =
-                TransactionProcessingResult.successful(
-                        List.of(log),
-                        GAS_USAGE,
-                        GAS_REFUND,
-                        GAS_PRICE,
-                        Bytes.EMPTY,
-                        recipient.getId().asEvmAddress(),
-                        Map.of(),
-                        List.of());
+        var result = TransactionProcessingResult.successful(
+                List.of(log),
+                GAS_USAGE,
+                GAS_REFUND,
+                GAS_PRICE,
+                Bytes.EMPTY,
+                recipient.getId().asEvmAddress(),
+                Map.of(),
+                List.of());
 
         assertEquals(GAS_REFUND, result.getSbhRefund());
     }
 
     @Test
     void assertGasUsage() {
-        var result =
-                TransactionProcessingResult.successful(
-                        List.of(log),
-                        GAS_USAGE,
-                        GAS_REFUND,
-                        GAS_PRICE,
-                        Bytes.EMPTY,
-                        recipient.getId().asEvmAddress(),
-                        Map.of(),
-                        List.of());
+        var result = TransactionProcessingResult.successful(
+                List.of(log),
+                GAS_USAGE,
+                GAS_REFUND,
+                GAS_PRICE,
+                Bytes.EMPTY,
+                recipient.getId().asEvmAddress(),
+                Map.of(),
+                List.of());
 
         assertEquals(GAS_USAGE, result.getGasUsed());
     }
 
     @Test
     void assertSuccessfulStatus() {
-        var result =
-                TransactionProcessingResult.successful(
-                        List.of(log),
-                        GAS_USAGE,
-                        GAS_REFUND,
-                        GAS_PRICE,
-                        Bytes.EMPTY,
-                        recipient.getId().asEvmAddress(),
-                        Map.of(),
-                        List.of());
+        var result = TransactionProcessingResult.successful(
+                List.of(log),
+                GAS_USAGE,
+                GAS_REFUND,
+                GAS_PRICE,
+                Bytes.EMPTY,
+                recipient.getId().asEvmAddress(),
+                Map.of(),
+                List.of());
 
         assertTrue(result.isSuccessful());
     }

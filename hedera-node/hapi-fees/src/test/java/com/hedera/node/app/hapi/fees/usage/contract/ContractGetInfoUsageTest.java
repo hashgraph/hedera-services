@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.contract;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -32,10 +33,9 @@ import com.hederahashgraph.api.proto.java.Query;
 import org.junit.jupiter.api.Test;
 
 class ContractGetInfoUsageTest {
-    private final Query query =
-            Query.newBuilder()
-                    .setContractGetInfo(ContractGetInfoQuery.getDefaultInstance())
-                    .build();
+    private final Query query = Query.newBuilder()
+            .setContractGetInfo(ContractGetInfoQuery.getDefaultInstance())
+            .build();
 
     private static final int NUM_TOKEN_ASSOCS = 3;
     private static final Key KEY = KeyUtils.A_CONTRACT_KEY;
@@ -46,22 +46,21 @@ class ContractGetInfoUsageTest {
     @Test
     void getsExpectedUsage() {
         final var expectedTb = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
-        final var expectedRb =
-                BASIC_QUERY_RES_HEADER
-                        + NUM_TOKEN_ASSOCS * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr()
-                        + CONTRACT_ENTITY_SIZES.fixedBytesInContractRepr()
-                        + getAccountKeyStorageSize(KEY)
-                        + MEMO.length();
-        final var usage = FeeComponents.newBuilder().setBpt(expectedTb).setBpr(expectedRb).build();
+        final var expectedRb = BASIC_QUERY_RES_HEADER
+                + NUM_TOKEN_ASSOCS * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr()
+                + CONTRACT_ENTITY_SIZES.fixedBytesInContractRepr()
+                + getAccountKeyStorageSize(KEY)
+                + MEMO.length();
+        final var usage =
+                FeeComponents.newBuilder().setBpt(expectedTb).setBpr(expectedRb).build();
         final var expected = ESTIMATOR_UTILS.withDefaultQueryPartitioning(usage);
 
         subject = ContractGetInfoUsage.newEstimate(query);
 
-        final var actual =
-                subject.givenCurrentKey(KEY)
-                        .givenCurrentMemo(MEMO)
-                        .givenCurrentTokenAssocs(NUM_TOKEN_ASSOCS)
-                        .get();
+        final var actual = subject.givenCurrentKey(KEY)
+                .givenCurrentMemo(MEMO)
+                .givenCurrentTokenAssocs(NUM_TOKEN_ASSOCS)
+                .get();
 
         assertEquals(expected, actual);
     }

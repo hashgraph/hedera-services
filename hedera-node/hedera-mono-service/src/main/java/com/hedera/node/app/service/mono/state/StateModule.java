@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.state;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
@@ -102,7 +102,9 @@ import javax.inject.Singleton;
 
 @Module(includes = HandleLogicModule.class)
 public interface StateModule {
+
     interface ConsoleCreator {
+
         @Nullable
         Console createConsole(Platform platform, boolean visible);
     }

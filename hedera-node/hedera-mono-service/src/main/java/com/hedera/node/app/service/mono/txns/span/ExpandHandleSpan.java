@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.span;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -56,15 +57,13 @@ public class ExpandHandleSpan {
         this.factory = factory;
     }
 
-    public SwirldsTxnAccessor track(final Transaction transaction)
-            throws InvalidProtocolBufferException {
+    public SwirldsTxnAccessor track(final Transaction transaction) throws InvalidProtocolBufferException {
         final var accessor = spanAccessorFor(transaction.getContents());
         transaction.setMetadata(accessor);
         return accessor;
     }
 
-    public SwirldsTxnAccessor accessorFor(final Transaction transaction)
-            throws InvalidProtocolBufferException {
+    public SwirldsTxnAccessor accessorFor(final Transaction transaction) throws InvalidProtocolBufferException {
         final SwirldsTxnAccessor cachedAccessor = transaction.getMetadata();
         if (cachedAccessor != null) {
             spanMapManager.rationalizeSpan(cachedAccessor);
@@ -75,8 +74,7 @@ public class ExpandHandleSpan {
         }
     }
 
-    SwirldsTxnAccessor spanAccessorFor(final byte[] contents)
-            throws InvalidProtocolBufferException {
+    SwirldsTxnAccessor spanAccessorFor(final byte[] contents) throws InvalidProtocolBufferException {
         final var accessor = factory.nonTriggeredTxn(contents);
         spanMapManager.expandSpan(accessor);
         return PlatformTxnAccessor.from(accessor);

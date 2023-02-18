@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.sysfiles.serdes;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
@@ -82,8 +83,7 @@ class ThrottlesJsonToProtoSerdeTest {
         return ThrottleBucket.newBuilder()
                 .setName("D")
                 .setBurstPeriodMs(4_000)
-                .addThrottleGroups(
-                        from(1_000_000, List.of(CryptoGetAccountBalance, TransactionGetReceipt)))
+                .addThrottleGroups(from(1_000_000, List.of(CryptoGetAccountBalance, TransactionGetReceipt)))
                 .build();
     }
 

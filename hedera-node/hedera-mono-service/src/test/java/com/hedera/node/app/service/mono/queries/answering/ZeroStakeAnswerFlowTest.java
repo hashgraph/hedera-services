@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.answering;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetStakers;
@@ -42,10 +43,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ZeroStakeAnswerFlowTest {
     private final HederaFunctionality function = HederaFunctionality.ConsensusGetTopicInfo;
 
-    @Mock private QueryHeaderValidity queryHeaderValidity;
-    @Mock private StateView view;
-    @Mock private FunctionalityThrottling throttles;
-    @Mock private AnswerService service;
+    @Mock
+    private QueryHeaderValidity queryHeaderValidity;
+
+    @Mock
+    private StateView view;
+
+    @Mock
+    private FunctionalityThrottling throttles;
+
+    @Mock
+    private AnswerService service;
 
     private final Query query = Query.getDefaultInstance();
     private final Response response = Response.getDefaultInstance();

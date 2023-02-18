@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc;
 
 import static com.hedera.node.app.service.mono.utils.SleepingPause.SLEEPING_PAUSE;
@@ -77,8 +78,7 @@ public class NettyGrpcServerManager implements GrpcServerManager {
         }
     }
 
-    Server startOneNettyServer(boolean sslEnabled, int port, Consumer<String> println, Pause pause)
-            throws IOException {
+    Server startOneNettyServer(boolean sslEnabled, int port, Consumer<String> println, Pause pause) throws IOException {
         println.accept(nettyAction("Starting", sslEnabled, port, true));
 
         NettyServerBuilder builder = nettyBuilder.builderFor(port, sslEnabled);
@@ -111,8 +111,7 @@ public class NettyGrpcServerManager implements GrpcServerManager {
         terminateOneNettyServer(tlsServer, true, tlsPort, println);
     }
 
-    private void terminateOneNettyServer(
-            Server server, boolean tlsSupport, int port, Consumer<String> println) {
+    private void terminateOneNettyServer(Server server, boolean tlsSupport, int port, Consumer<String> println) {
         if (null == server) {
             return;
         }

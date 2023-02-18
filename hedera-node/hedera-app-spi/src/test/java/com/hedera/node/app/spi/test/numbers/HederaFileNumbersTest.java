@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.test.numbers;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -27,53 +28,52 @@ class HederaFileNumbersTest {
 
     @BeforeEach
     void setUp() {
-        subject =
-                new HederaFileNumbers() {
-                    @Override
-                    public long addressBook() {
-                        throw new IllegalCallerException("Should not be called here");
-                    }
+        subject = new HederaFileNumbers() {
+            @Override
+            public long addressBook() {
+                throw new IllegalCallerException("Should not be called here");
+            }
 
-                    @Override
-                    public long nodeDetails() {
-                        throw new IllegalCallerException("Should not be called here");
-                    }
+            @Override
+            public long nodeDetails() {
+                throw new IllegalCallerException("Should not be called here");
+            }
 
-                    @Override
-                    public long feeSchedules() {
-                        throw new IllegalCallerException("Should not be called here");
-                    }
+            @Override
+            public long feeSchedules() {
+                throw new IllegalCallerException("Should not be called here");
+            }
 
-                    @Override
-                    public long exchangeRates() {
-                        throw new IllegalCallerException("Should not be called here");
-                    }
+            @Override
+            public long exchangeRates() {
+                throw new IllegalCallerException("Should not be called here");
+            }
 
-                    @Override
-                    public long applicationProperties() {
-                        throw new IllegalCallerException("Should not be called here");
-                    }
+            @Override
+            public long applicationProperties() {
+                throw new IllegalCallerException("Should not be called here");
+            }
 
-                    @Override
-                    public long apiPermissions() {
-                        throw new IllegalCallerException("Should not be called here");
-                    }
+            @Override
+            public long apiPermissions() {
+                throw new IllegalCallerException("Should not be called here");
+            }
 
-                    @Override
-                    public long firstSoftwareUpdateFile() {
-                        return 150L;
-                    }
+            @Override
+            public long firstSoftwareUpdateFile() {
+                return 150L;
+            }
 
-                    @Override
-                    public long lastSoftwareUpdateFile() {
-                        return 159L;
-                    }
+            @Override
+            public long lastSoftwareUpdateFile() {
+                return 159L;
+            }
 
-                    @Override
-                    public long throttleDefinitions() {
-                        throw new IllegalCallerException("Should not be called here");
-                    }
-                };
+            @Override
+            public long throttleDefinitions() {
+                throw new IllegalCallerException("Should not be called here");
+            }
+        };
     }
 
     @Test

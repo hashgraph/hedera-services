@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.domain.topic;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -64,9 +65,7 @@ class MerkleTopicTest {
 
     @Test
     void constructorWithEmptyValuesTestingAccessors() {
-        final var topic =
-                new MerkleTopic(
-                        "", new JKeyList(), new JKeyList(), 0L, new EntityId(), new RichInstant());
+        final var topic = new MerkleTopic("", new JKeyList(), new JKeyList(), 0L, new EntityId(), new RichInstant());
 
         assertDefaultTopicAccessors(topic);
     }
@@ -86,23 +85,11 @@ class MerkleTopicTest {
             final @ConvertWith(EntityIdConverter.class) EntityId autoRenewAccountId,
             final @ConvertWith(RichInstantConverter.class) RichInstant expirationTimestamp)
             throws IOException {
-        final var topic =
-                new MerkleTopic(
-                        memo,
-                        adminKey,
-                        submitKey,
-                        autoRenewDurationSeconds,
-                        autoRenewAccountId,
-                        expirationTimestamp);
+        final var topic = new MerkleTopic(
+                memo, adminKey, submitKey, autoRenewDurationSeconds, autoRenewAccountId, expirationTimestamp);
 
         assertPostConstructorAccessors(
-                topic,
-                memo,
-                adminKey,
-                submitKey,
-                autoRenewDurationSeconds,
-                autoRenewAccountId,
-                expirationTimestamp);
+                topic, memo, adminKey, submitKey, autoRenewDurationSeconds, autoRenewAccountId, expirationTimestamp);
         assertEquals(0L, topic.getSequenceNumber());
         assertFalse(topic.hasRunningHash());
         assertArrayEquals(new byte[48], topic.getRunningHash());
@@ -123,25 +110,13 @@ class MerkleTopicTest {
         final var autoRenewDurationSeconds = 4L;
         final var autoRenewAccountId = new EntityId(1L, 2L, 3L);
         final var expirationTimestamp = new RichInstant(111L, 222);
-        final var from =
-                new MerkleTopic(
-                        memo,
-                        adminKey,
-                        submitKey,
-                        autoRenewDurationSeconds,
-                        autoRenewAccountId,
-                        expirationTimestamp);
+        final var from = new MerkleTopic(
+                memo, adminKey, submitKey, autoRenewDurationSeconds, autoRenewAccountId, expirationTimestamp);
         from.setRunningHash(new byte[48]);
         final var topic = new MerkleTopic(from);
 
         assertPostConstructorAccessors(
-                topic,
-                memo,
-                adminKey,
-                submitKey,
-                autoRenewDurationSeconds,
-                autoRenewAccountId,
-                expirationTimestamp);
+                topic, memo, adminKey, submitKey, autoRenewDurationSeconds, autoRenewAccountId, expirationTimestamp);
         assertEquals(0L, topic.getSequenceNumber());
         assertTrue(topic.hasRunningHash());
         assertArrayEquals(from.getRunningHash(), topic.getRunningHash());
@@ -191,14 +166,8 @@ class MerkleTopicTest {
             final long autoRenewDurationSeconds,
             final @ConvertWith(EntityIdConverter.class) EntityId autoRenewAccountId,
             final @ConvertWith(RichInstantConverter.class) RichInstant expirationTimestamp) {
-        final var topic =
-                new MerkleTopic(
-                        memo,
-                        adminKey,
-                        submitKey,
-                        autoRenewDurationSeconds,
-                        autoRenewAccountId,
-                        expirationTimestamp);
+        final var topic = new MerkleTopic(
+                memo, adminKey, submitKey, autoRenewDurationSeconds, autoRenewAccountId, expirationTimestamp);
 
         assertEquals(topic, new MerkleTopic(topic));
     }
@@ -245,25 +214,13 @@ class MerkleTopicTest {
             final boolean bDeleted,
             final long bSequenceNumber,
             final @ConvertWith(ByteArrayConverter.class) byte[] bRunningHash) {
-        final var a =
-                new MerkleTopic(
-                        aMemo,
-                        aAdminKey,
-                        aSubmitKey,
-                        aAutoRenewDurationSeconds,
-                        aAutoRenewAccountId,
-                        aExpirationTimestamp);
+        final var a = new MerkleTopic(
+                aMemo, aAdminKey, aSubmitKey, aAutoRenewDurationSeconds, aAutoRenewAccountId, aExpirationTimestamp);
         a.setDeleted(aDeleted);
         a.setSequenceNumber(aSequenceNumber);
         a.setRunningHash(aRunningHash);
-        final var b =
-                new MerkleTopic(
-                        bMemo,
-                        bAdminKey,
-                        bSubmitKey,
-                        bAutoRenewDurationSeconds,
-                        bAutoRenewAccountId,
-                        bExpirationTimestamp);
+        final var b = new MerkleTopic(
+                bMemo, bAdminKey, bSubmitKey, bAutoRenewDurationSeconds, bAutoRenewAccountId, bExpirationTimestamp);
         b.setDeleted(bDeleted);
         b.setSequenceNumber(bSequenceNumber);
         b.setRunningHash(bRunningHash);
@@ -290,16 +247,9 @@ class MerkleTopicTest {
             final long autoRenewDurationSeconds,
             final @ConvertWith(EntityIdConverter.class) EntityId autoRenewAccountId,
             final @ConvertWith(RichInstantConverter.class) RichInstant expirationTimestamp) {
-        assertDoesNotThrow(
-                () ->
-                        new MerkleTopic(
-                                        memo,
-                                        adminKey,
-                                        submitKey,
-                                        autoRenewDurationSeconds,
-                                        autoRenewAccountId,
-                                        expirationTimestamp)
-                                .hashCode());
+        assertDoesNotThrow(() -> new MerkleTopic(
+                        memo, adminKey, submitKey, autoRenewDurationSeconds, autoRenewAccountId, expirationTimestamp)
+                .hashCode());
     }
 
     @Test
@@ -323,11 +273,11 @@ class MerkleTopicTest {
     @ParameterizedTest
     @CsvSource({
         "0, message, 4.5.6, 1.2.3, 0000, 1577401723000000000, "
-            + "46d4ef0126b7be6c1c11ea854d5732a50aa0d7fb17b325c6977cec284c76814f969234d67c0b8cc414b9c84ff3e2bcb3",
+                + "46d4ef0126b7be6c1c11ea854d5732a50aa0d7fb17b325c6977cec284c76814f969234d67c0b8cc414b9c84ff3e2bcb3",
         "1, '', 7.8.9, 0.0.0, , 1577401723987654321, "
-            + "7547461ccf9bc8b598006f84c86bedee16967ba661da6f0c59c33476f8010932969b85aae59aff067e01e0fac6d45bda",
+                + "7547461ccf9bc8b598006f84c86bedee16967ba661da6f0c59c33476f8010932969b85aae59aff067e01e0fac6d45bda",
         "0, , 10.11.12, , , , "
-            + "79200c525a751761dc25356d3dd01a34cf2a517e9c78e4b359ffd792f98f33f1ac1440dcd5e282abe73f6b265356218b"
+                + "79200c525a751761dc25356d3dd01a34cf2a517e9c78e4b359ffd792f98f33f1ac1440dcd5e282abe73f6b265356218b"
     })
     void updateRunningHash(
             final long initialSequenceNumber,

@@ -4,6 +4,7 @@ module com.hedera.node.app.spi {
     requires com.swirlds.virtualmap;
     requires com.swirlds.jasperdb;
     requires com.swirlds.common;
+    requires com.swirlds.config;
 
     exports com.hedera.node.app.spi;
     exports com.hedera.node.app.spi.state;
@@ -17,4 +18,5 @@ module com.hedera.node.app.spi {
             com.hedera.node.app.service.mono.testFixtures;
 
     exports com.hedera.node.app.spi.state.serdes;
+    exports com.hedera.node.app.spi.config;
 }

@@ -18,11 +18,11 @@ package com.hedera.node.app.service.mono.state.exports;
 
 import static com.hedera.node.app.hapi.utils.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
 import static com.hedera.node.app.hapi.utils.exports.FileCompressionUtils.readUncompressedFileBytes;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.node.app.service.mono.state.exports.SignedStateBalancesExporter.SINGLE_ACCOUNT_BALANCES_COMPARATOR;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromTokenId;
 import static com.hedera.node.app.service.mono.utils.EntityNumPair.fromAccountTokenRel;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -92,6 +92,7 @@ import org.mockito.ArgumentCaptor;
 
 @ExtendWith(LogCaptureExtension.class)
 class SignedStateBalancesExporterTest {
+
     private static final NodeId nodeId = new NodeId(false, 1);
     private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
     private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();

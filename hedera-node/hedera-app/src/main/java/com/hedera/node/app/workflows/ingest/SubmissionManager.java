@@ -22,9 +22,9 @@ import static java.util.Objects.requireNonNull;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.node.app.service.mono.context.properties.Profile;
 import com.hedera.node.app.service.mono.records.RecordCache;
 import com.hedera.node.app.service.mono.stats.MiscSpeedometers;
+import com.hedera.node.app.spi.config.Profile;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.system.Platform;
@@ -97,7 +97,7 @@ public class SubmissionManager {
             try {
                 payload = parser.parseFrom(txBody.getUncheckedSubmit().getTransactionBytes())
                         .toByteArray();
-            } catch (InvalidProtocolBufferException e) {
+            } catch (final InvalidProtocolBufferException e) {
                 LOG.warn("Transaction bytes from UncheckedSubmit not a valid gRPC transaction!", e);
                 throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);
             }

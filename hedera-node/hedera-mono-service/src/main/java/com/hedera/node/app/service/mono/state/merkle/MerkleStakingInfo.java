@@ -38,8 +38,8 @@ package com.hedera.node.app.service.mono.state.merkle;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.node.app.service.mono.state.merkle.internals.ByteUtils.getHashBytes;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
@@ -64,6 +64,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<EntityNum>, MerkleLeaf {
+
     private static final Logger log = LogManager.getLogger(MerkleStakingInfo.class);
 
     static final int RELEASE_0270_VERSION = 1;

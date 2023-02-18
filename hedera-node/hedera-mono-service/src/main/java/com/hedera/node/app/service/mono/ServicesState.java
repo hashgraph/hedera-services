@@ -31,7 +31,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
@@ -70,6 +69,7 @@ import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.node.app.spi.config.PropertyNames;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.DigestType;
@@ -736,12 +736,14 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     @FunctionalInterface
     interface StakingInfoBuilder {
+
         MerkleMap<EntityNum, MerkleStakingInfo> buildStakingInfoMap(
                 AddressBook addressBook, BootstrapProperties bootstrapProperties);
     }
 
     @FunctionalInterface
     interface MapToDiskMigration {
+
         void migrateToDiskAsApropos(
                 final int insertionsPerCopy,
                 final ServicesState mutableState,

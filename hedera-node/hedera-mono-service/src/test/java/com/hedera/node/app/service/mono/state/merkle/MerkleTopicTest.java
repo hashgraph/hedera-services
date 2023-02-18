@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,24 +33,19 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class MerkleTopicTest {
-    String[] memos =
-            new String[] {
-                "First memo", "Second memo", "Third memo",
-            };
-    JKey[] adminKeys =
-            new JKey[] {
-                null,
-                new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes()),
-                new JKeyList(
-                        List.of(new JEd25519Key("ABCDEFGHIJKLMNOPQRSTUVWXYZ543210".getBytes())))
-            };
-    JKey[] submitKeys =
-            new JKey[] {
-                null,
-                new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes()),
-                new JKeyList(
-                        List.of(new JEd25519Key("AbCdEfGhIjKlMnOpQrStUvWxYz012345".getBytes())))
-            };
+    String[] memos = new String[] {
+        "First memo", "Second memo", "Third memo",
+    };
+    JKey[] adminKeys = new JKey[] {
+        null,
+        new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes()),
+        new JKeyList(List.of(new JEd25519Key("ABCDEFGHIJKLMNOPQRSTUVWXYZ543210".getBytes())))
+    };
+    JKey[] submitKeys = new JKey[] {
+        null,
+        new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes()),
+        new JKeyList(List.of(new JEd25519Key("AbCdEfGhIjKlMnOpQrStUvWxYz012345".getBytes())))
+    };
 
     @Test
     void toStringWorks() throws IOException {
@@ -115,17 +111,10 @@ class MerkleTopicTest {
         long t = s + 1;
         AccountID payer = AccountID.newBuilder().setAccountNum(123).build();
         TopicID id = TopicID.newBuilder().setTopicNum(s).build();
-        var topic =
-                new MerkleTopic(
-                        memos[s],
-                        adminKeys[s],
-                        submitKeys[s],
-                        v,
-                        new EntityId(t, t * 2, t * 3),
-                        new RichInstant(v, s));
+        var topic = new MerkleTopic(
+                memos[s], adminKeys[s], submitKeys[s], v, new EntityId(t, t * 2, t * 3), new RichInstant(v, s));
         for (int i = 0; i < s; i++) {
-            topic.updateRunningHashAndSequenceNumber(
-                    payer, "Hello world!".getBytes(), id, Instant.ofEpochSecond(v, i));
+            topic.updateRunningHashAndSequenceNumber(payer, "Hello world!".getBytes(), id, Instant.ofEpochSecond(v, i));
         }
         topic.setKey(EntityNum.fromInt(s));
         return topic;

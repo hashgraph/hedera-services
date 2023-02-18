@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.token.txns;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -32,8 +33,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class TokenDeleteResourceUsage extends AbstractTokenResourceUsage
-        implements TxnResourceUsageEstimator {
+public class TokenDeleteResourceUsage extends AbstractTokenResourceUsage implements TxnResourceUsageEstimator {
     private static final BiFunction<TransactionBody, TxnUsageEstimator, TokenDeleteUsage> factory =
             TokenDeleteUsage::newEstimate;
 
@@ -48,14 +48,10 @@ public class TokenDeleteResourceUsage extends AbstractTokenResourceUsage
     }
 
     @Override
-    public FeeData usageGiven(
-            final TransactionBody txn, final SigValueObj svo, final StateView view)
+    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final StateView view)
             throws InvalidTxBodyException {
-        final var sigUsage =
-                new SigUsage(
-                        svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
-        final var estimate =
-                factory.apply(txn, estimatorFactory.get(sigUsage, txn, ESTIMATOR_UTILS));
+        final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+        final var estimate = factory.apply(txn, estimatorFactory.get(sigUsage, txn, ESTIMATOR_UTILS));
         return estimate.get();
     }
 }

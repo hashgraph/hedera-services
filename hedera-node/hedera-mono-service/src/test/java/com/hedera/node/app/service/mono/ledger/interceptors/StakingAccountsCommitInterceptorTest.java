@@ -17,14 +17,14 @@
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.NA;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder.buildStakingInfoMap;
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -82,6 +82,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StakingAccountsCommitInterceptorTest {
+
     @Mock
     private AccountUsageTracking usageTracking;
 
@@ -976,7 +977,7 @@ class StakingAccountsCommitInterceptorTest {
         map.put(AccountProperty.STAKED_ID, 123L);
         map.put(AccountProperty.DECLINE_REWARD, false);
 
-        var pendingChanges = new EntityChangeSet<AccountID, HederaAccount, AccountProperty>();
+        final var pendingChanges = new EntityChangeSet<AccountID, HederaAccount, AccountProperty>();
         pendingChanges.include(partyId, party, stakingFundChanges);
         pendingChanges.include(stakingFundId, stakingFund, new HashMap<>(stakingFundChanges));
         pendingChanges.include(counterpartyId, counterparty, map);
@@ -1042,14 +1043,14 @@ class StakingAccountsCommitInterceptorTest {
     public EntityChangeSet<AccountID, HederaAccount, AccountProperty> changesWithNoStakingMetaUpdates() {
         final var changes = new HashMap<AccountProperty, Object>();
         changes.put(AccountProperty.BALANCE, 10L);
-        var pendingChanges = new EntityChangeSet<AccountID, HederaAccount, AccountProperty>();
+        final var pendingChanges = new EntityChangeSet<AccountID, HederaAccount, AccountProperty>();
         pendingChanges.include(counterpartyId, counterparty, changes);
         return pendingChanges;
     }
 
     public EntityChangeSet<AccountID, HederaAccount, AccountProperty> buildPendingNodeStakeChanges() {
-        var changes = randomStakedNodeChanges(0L);
-        var pendingChanges = new EntityChangeSet<AccountID, HederaAccount, AccountProperty>();
+        final var changes = randomStakedNodeChanges(0L);
+        final var pendingChanges = new EntityChangeSet<AccountID, HederaAccount, AccountProperty>();
         pendingChanges.include(counterpartyId, counterparty, changes);
         return pendingChanges;
     }
@@ -1060,8 +1061,8 @@ class StakingAccountsCommitInterceptorTest {
 
     public EntityChangeSet<AccountID, HederaAccount, AccountProperty> buildPendingAccountStakeChanges(
             final long newBalance) {
-        var changes = randomStakeAccountChanges(newBalance);
-        var pendingChanges = new EntityChangeSet<AccountID, HederaAccount, AccountProperty>();
+        final var changes = randomStakeAccountChanges(newBalance);
+        final var pendingChanges = new EntityChangeSet<AccountID, HederaAccount, AccountProperty>();
         pendingChanges.include(counterpartyId, counterparty, changes);
         return pendingChanges;
     }

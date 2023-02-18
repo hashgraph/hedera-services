@@ -33,6 +33,7 @@ module com.hedera.node.app {
     requires javax.inject;
     requires com.swirlds.platform;
     requires com.swirlds.fchashmap;
+    requires com.swirlds.config;
     requires org.apache.logging.log4j;
     requires org.apache.commons.lang3;
     requires com.google.common;

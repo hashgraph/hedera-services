@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
@@ -128,8 +129,7 @@ class TokenWipeTransitionLogicTest {
     void rejectsUniqueWhenNftsNotEnabled() throws InvalidProtocolBufferException {
         givenValidUniqueTxnCtx();
         given(dynamicProperties.areNftsEnabled()).willReturn(false);
-        accessor =
-                new TokenWipeAccessor(tokenWipeTxn.toByteArray(), tokenWipeTxn, dynamicProperties);
+        accessor = new TokenWipeAccessor(tokenWipeTxn.toByteArray(), tokenWipeTxn, dynamicProperties);
 
         // expect:
         assertEquals(NOT_SUPPORTED, subject.validateSemantics(accessor));
@@ -146,8 +146,7 @@ class TokenWipeTransitionLogicTest {
         given(token.getTreasury()).willReturn(treasury);
         given(accountStore.loadAccount(any())).willReturn(acc);
         given(typedTokenStore.loadTokenRelationship(token, acc)).willReturn(accRel);
-        given(typedTokenStore.loadTokenRelationship(token, token.getTreasury()))
-                .willReturn(treasuryRel);
+        given(typedTokenStore.loadTokenRelationship(token, token.getTreasury())).willReturn(treasuryRel);
 
         // when:
         subject.doStateTransition();
@@ -225,15 +224,13 @@ class TokenWipeTransitionLogicTest {
 
     @Test
     void rejectsBothAmountAndSerialNumbers() throws InvalidProtocolBufferException {
-        tokenWipeTxnBody =
-                TransactionBody.newBuilder()
-                        .setTokenWipe(
-                                TokenWipeAccountTransactionBody.newBuilder()
-                                        .setToken(id)
-                                        .setAccount(accountID)
-                                        .setAmount(10)
-                                        .addAllSerialNumbers(List.of(1L, 2L)))
-                        .build();
+        tokenWipeTxnBody = TransactionBody.newBuilder()
+                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+                        .setToken(id)
+                        .setAccount(accountID)
+                        .setAmount(10)
+                        .addAllSerialNumbers(List.of(1L, 2L)))
+                .build();
         addToTxn();
 
         assertEquals(INVALID_TRANSACTION_BODY, subject.validateSemantics(accessor));
@@ -241,14 +238,12 @@ class TokenWipeTransitionLogicTest {
 
     @Test
     void rejectsInvalidNftId() throws InvalidProtocolBufferException {
-        tokenWipeTxnBody =
-                TransactionBody.newBuilder()
-                        .setTokenWipe(
-                                TokenWipeAccountTransactionBody.newBuilder()
-                                        .setToken(id)
-                                        .setAccount(accountID)
-                                        .addAllSerialNumbers(List.of(-1L)))
-                        .build();
+        tokenWipeTxnBody = TransactionBody.newBuilder()
+                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+                        .setToken(id)
+                        .setAccount(accountID)
+                        .addAllSerialNumbers(List.of(-1L)))
+                .build();
         addToTxn();
 
         assertEquals(INVALID_NFT_ID, subject.validateSemantics(accessor));
@@ -258,21 +253,18 @@ class TokenWipeTransitionLogicTest {
     void propagatesErrorOnInvalidBatch() throws InvalidProtocolBufferException {
         givenValidUniqueTxnCtx();
         given(dynamicProperties.maxBatchSizeWipe()).willReturn(1);
-        accessor =
-                new TokenWipeAccessor(tokenWipeTxn.toByteArray(), tokenWipeTxn, dynamicProperties);
+        accessor = new TokenWipeAccessor(tokenWipeTxn.toByteArray(), tokenWipeTxn, dynamicProperties);
 
         assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.validateSemantics(accessor));
     }
 
     private void givenValidCommonTxnCtx() throws InvalidProtocolBufferException {
-        tokenWipeTxnBody =
-                TransactionBody.newBuilder()
-                        .setTokenWipe(
-                                TokenWipeAccountTransactionBody.newBuilder()
-                                        .setToken(id)
-                                        .setAccount(accountID)
-                                        .setAmount(totalAmount))
-                        .build();
+        tokenWipeTxnBody = TransactionBody.newBuilder()
+                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+                        .setToken(id)
+                        .setAccount(accountID)
+                        .setAmount(totalAmount))
+                .build();
         addToTxn();
         given(txnCtx.accessor()).willReturn(accessor);
         given(merkleToken.totalSupply()).willReturn(totalAmount);
@@ -280,19 +272,16 @@ class TokenWipeTransitionLogicTest {
         given(typedTokenStore.loadToken(any())).willReturn(token);
         given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
         given(accountStore.loadAccount(any())).willReturn(account);
-        given(typedTokenStore.loadTokenRelationship(token, account))
-                .willReturn(new TokenRelationship(token, account));
+        given(typedTokenStore.loadTokenRelationship(token, account)).willReturn(new TokenRelationship(token, account));
     }
 
     private void givenValidUniqueTxnCtx() throws InvalidProtocolBufferException {
-        tokenWipeTxnBody =
-                TransactionBody.newBuilder()
-                        .setTokenWipe(
-                                TokenWipeAccountTransactionBody.newBuilder()
-                                        .setToken(id)
-                                        .setAccount(accountID)
-                                        .addAllSerialNumbers(List.of(1L, 2L, 3L)))
-                        .build();
+        tokenWipeTxnBody = TransactionBody.newBuilder()
+                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+                        .setToken(id)
+                        .setAccount(accountID)
+                        .addAllSerialNumbers(List.of(1L, 2L, 3L)))
+                .build();
         addToTxn();
         given(txnCtx.accessor()).willReturn(accessor);
         given(merkleToken.totalSupply()).willReturn(totalAmount);
@@ -302,52 +291,46 @@ class TokenWipeTransitionLogicTest {
     }
 
     private void givenMissingToken() throws InvalidProtocolBufferException {
-        tokenWipeTxnBody =
-                TransactionBody.newBuilder()
-                        .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder())
-                        .build();
+        tokenWipeTxnBody = TransactionBody.newBuilder()
+                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder())
+                .build();
         addToTxn();
     }
 
     private void givenMissingAccount() throws InvalidProtocolBufferException {
-        tokenWipeTxnBody =
-                TransactionBody.newBuilder()
-                        .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder().setToken(id))
-                        .build();
+        tokenWipeTxnBody = TransactionBody.newBuilder()
+                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder().setToken(id))
+                .build();
         addToTxn();
     }
 
     private void addToTxn() throws InvalidProtocolBufferException {
-        tokenWipeTxn =
-                Transaction.newBuilder().setBodyBytes(tokenWipeTxnBody.toByteString()).build();
+        tokenWipeTxn = Transaction.newBuilder()
+                .setBodyBytes(tokenWipeTxnBody.toByteString())
+                .build();
         given(dynamicProperties.areNftsEnabled()).willReturn(true);
         given(dynamicProperties.maxBatchSizeWipe()).willReturn(10);
-        accessor =
-                new TokenWipeAccessor(tokenWipeTxn.toByteArray(), tokenWipeTxn, dynamicProperties);
+        accessor = new TokenWipeAccessor(tokenWipeTxn.toByteArray(), tokenWipeTxn, dynamicProperties);
         given(swirldsTxnAccessor.getDelegate()).willReturn(accessor);
     }
 
     private void givenZeroWipeAmount() throws InvalidProtocolBufferException {
-        tokenWipeTxnBody =
-                TransactionBody.newBuilder()
-                        .setTokenWipe(
-                                TokenWipeAccountTransactionBody.newBuilder()
-                                        .setToken(id)
-                                        .setAccount(accountID)
-                                        .setAmount(0))
-                        .build();
+        tokenWipeTxnBody = TransactionBody.newBuilder()
+                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+                        .setToken(id)
+                        .setAccount(accountID)
+                        .setAmount(0))
+                .build();
         addToTxn();
     }
 
     private void givenInvalidNegativeWipeAmount() throws InvalidProtocolBufferException {
-        tokenWipeTxnBody =
-                TransactionBody.newBuilder()
-                        .setTokenWipe(
-                                TokenWipeAccountTransactionBody.newBuilder()
-                                        .setToken(id)
-                                        .setAccount(accountID)
-                                        .setAmount(-1))
-                        .build();
+        tokenWipeTxnBody = TransactionBody.newBuilder()
+                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+                        .setToken(id)
+                        .setAccount(accountID)
+                        .setAmount(-1))
+                .build();
         addToTxn();
     }
 }

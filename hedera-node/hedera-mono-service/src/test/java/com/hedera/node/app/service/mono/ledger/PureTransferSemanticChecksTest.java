@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -64,17 +65,16 @@ class PureTransferSemanticChecksTest {
     private final boolean autoCreationEnabled = true;
     private final boolean lazyCreationEnabled = true;
     private final boolean areAllowancesAllowed = true;
-    final ImpliedTransfersMeta.ValidationProps validationProps =
-            new ImpliedTransfersMeta.ValidationProps(
-                    maxHbarAdjusts,
-                    maxTokenAdjusts,
-                    maxOwnershipChanges,
-                    maxFeeNesting,
-                    maxBalanceChanges,
-                    areNftsEnabled,
-                    autoCreationEnabled,
-                    lazyCreationEnabled,
-                    areAllowancesAllowed);
+    final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
+            maxHbarAdjusts,
+            maxTokenAdjusts,
+            maxOwnershipChanges,
+            maxFeeNesting,
+            maxBalanceChanges,
+            areNftsEnabled,
+            autoCreationEnabled,
+            lazyCreationEnabled,
+            areAllowancesAllowed);
     private final AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
     private final AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
     private final AccountID c = AccountID.newBuilder().setAccountNum(7_999L).build();
@@ -88,179 +88,149 @@ class PureTransferSemanticChecksTest {
 
     @Test
     void failsWhenAllowanceTxnsNotSupported() {
-        final var validationProps =
-                new ImpliedTransfersMeta.ValidationProps(
-                        maxHbarAdjusts,
-                        maxTokenAdjusts,
-                        maxOwnershipChanges,
-                        maxFeeNesting,
-                        maxBalanceChanges,
-                        areNftsEnabled,
-                        autoCreationEnabled,
-                        lazyCreationEnabled,
-                        false);
-        var adjusts =
-                withAllowanceAdjustments(
-                        asAccount("0.0.1001"),
-                        -10L,
-                        true,
-                        asAccount("0.0.1002"),
-                        +10L,
-                        true,
-                        asAccount("0.0.1003"),
-                        -10L,
-                        false,
-                        asAccount("0.0.1004"),
-                        +10L,
-                        false);
+        final var validationProps = new ImpliedTransfersMeta.ValidationProps(
+                maxHbarAdjusts,
+                maxTokenAdjusts,
+                maxOwnershipChanges,
+                maxFeeNesting,
+                maxBalanceChanges,
+                areNftsEnabled,
+                autoCreationEnabled,
+                lazyCreationEnabled,
+                false);
+        var adjusts = withAllowanceAdjustments(
+                asAccount("0.0.1001"),
+                -10L,
+                true,
+                asAccount("0.0.1002"),
+                +10L,
+                true,
+                asAccount("0.0.1003"),
+                -10L,
+                false,
+                asAccount("0.0.1004"),
+                +10L,
+                false);
         var validity = subject.fullPureValidation(adjusts, List.of(), validationProps);
         assertEquals(NOT_SUPPORTED, validity);
 
-        adjusts =
-                withAllowanceAdjustments(
-                        asAccount("0.0.1001"),
-                        -10L,
-                        false,
-                        asAccount("0.0.1002"),
-                        +10L,
-                        false,
-                        asAccount("0.0.1003"),
-                        -10L,
-                        false,
-                        asAccount("0.0.1004"),
-                        +10L,
-                        false);
+        adjusts = withAllowanceAdjustments(
+                asAccount("0.0.1001"),
+                -10L,
+                false,
+                asAccount("0.0.1002"),
+                +10L,
+                false,
+                asAccount("0.0.1003"),
+                -10L,
+                false,
+                asAccount("0.0.1004"),
+                +10L,
+                false);
         validity = subject.fullPureValidation(adjusts, List.of(), validationProps);
         assertEquals(OK, validity);
 
-        var tokenAdjusts =
-                List.of(
-                        TokenTransferList.newBuilder()
-                                .setToken(asToken("0.0.2000"))
-                                .addTransfers(
-                                        AccountAmount.newBuilder()
-                                                .setAccountID(asAccount("0.0.1000"))
-                                                .setAmount(10L)
-                                                .setIsApproval(true)
-                                                .build())
-                                .build());
-        validity =
-                subject.fullPureValidation(
-                        TransferList.newBuilder().build(), tokenAdjusts, validationProps);
+        var tokenAdjusts = List.of(TokenTransferList.newBuilder()
+                .setToken(asToken("0.0.2000"))
+                .addTransfers(AccountAmount.newBuilder()
+                        .setAccountID(asAccount("0.0.1000"))
+                        .setAmount(10L)
+                        .setIsApproval(true)
+                        .build())
+                .build());
+        validity = subject.fullPureValidation(TransferList.newBuilder().build(), tokenAdjusts, validationProps);
         assertEquals(NOT_SUPPORTED, validity);
 
-        tokenAdjusts =
-                List.of(
-                        TokenTransferList.newBuilder()
-                                .setToken(asToken("0.0.2000"))
-                                .addTransfers(
-                                        AccountAmount.newBuilder()
-                                                .setAccountID(asAccount("0.0.1000"))
-                                                .setAmount(10L)
-                                                .build())
-                                .addTransfers(
-                                        AccountAmount.newBuilder()
-                                                .setAccountID(asAccount("0.0.2000"))
-                                                .setAmount(-10L)
-                                                .build())
-                                .build());
-        validity =
-                subject.fullPureValidation(
-                        TransferList.newBuilder().build(), tokenAdjusts, validationProps);
+        tokenAdjusts = List.of(TokenTransferList.newBuilder()
+                .setToken(asToken("0.0.2000"))
+                .addTransfers(AccountAmount.newBuilder()
+                        .setAccountID(asAccount("0.0.1000"))
+                        .setAmount(10L)
+                        .build())
+                .addTransfers(AccountAmount.newBuilder()
+                        .setAccountID(asAccount("0.0.2000"))
+                        .setAmount(-10L)
+                        .build())
+                .build());
+        validity = subject.fullPureValidation(TransferList.newBuilder().build(), tokenAdjusts, validationProps);
         assertEquals(OK, validity);
 
-        var nftAdjusts =
-                List.of(
-                        TokenTransferList.newBuilder()
-                                .setToken(asToken("0.0.2000"))
-                                .addNftTransfers(
-                                        NftTransfer.newBuilder()
-                                                .setSenderAccountID(asAccount("0.0.1000"))
-                                                .setReceiverAccountID(asAccount("0.0.2000"))
-                                                .setSerialNumber(1L)
-                                                .setIsApproval(true)
-                                                .build())
-                                .build());
-        validity =
-                subject.fullPureValidation(
-                        TransferList.newBuilder().build(), nftAdjusts, validationProps);
+        var nftAdjusts = List.of(TokenTransferList.newBuilder()
+                .setToken(asToken("0.0.2000"))
+                .addNftTransfers(NftTransfer.newBuilder()
+                        .setSenderAccountID(asAccount("0.0.1000"))
+                        .setReceiverAccountID(asAccount("0.0.2000"))
+                        .setSerialNumber(1L)
+                        .setIsApproval(true)
+                        .build())
+                .build());
+        validity = subject.fullPureValidation(TransferList.newBuilder().build(), nftAdjusts, validationProps);
         assertEquals(NOT_SUPPORTED, validity);
 
-        nftAdjusts =
-                List.of(
-                        TokenTransferList.newBuilder()
-                                .setToken(asToken("0.0.2000"))
-                                .addNftTransfers(
-                                        NftTransfer.newBuilder()
-                                                .setSenderAccountID(asAccount("0.0.1000"))
-                                                .setReceiverAccountID(asAccount("0.0.2000"))
-                                                .setSerialNumber(1L)
-                                                .build())
-                                .build());
-        validity =
-                subject.fullPureValidation(
-                        TransferList.getDefaultInstance(), nftAdjusts, validationProps);
+        nftAdjusts = List.of(TokenTransferList.newBuilder()
+                .setToken(asToken("0.0.2000"))
+                .addNftTransfers(NftTransfer.newBuilder()
+                        .setSenderAccountID(asAccount("0.0.1000"))
+                        .setReceiverAccountID(asAccount("0.0.2000"))
+                        .setSerialNumber(1L)
+                        .build())
+                .build());
+        validity = subject.fullPureValidation(TransferList.getDefaultInstance(), nftAdjusts, validationProps);
         assertEquals(OK, validity);
     }
 
     @Test
     void countsAllowanceTransfersCorrectly() {
-        var adjusts =
-                withAllowanceAdjustments(
-                        asAccount("0.0.1001"),
-                        -10L,
-                        false,
-                        asAccount("0.0.1002"),
-                        +10L,
-                        false,
-                        asAccount("0.0.1003"),
-                        -10L,
-                        false,
-                        asAccount("0.0.1004"),
-                        +10L,
-                        false);
+        var adjusts = withAllowanceAdjustments(
+                asAccount("0.0.1001"),
+                -10L,
+                false,
+                asAccount("0.0.1002"),
+                +10L,
+                false,
+                asAccount("0.0.1003"),
+                -10L,
+                false,
+                asAccount("0.0.1004"),
+                +10L,
+                false);
         assertFalse(subject.hasAllowanceTransfers(adjusts.getAccountAmountsList()));
 
-        adjusts =
-                withAllowanceAdjustments(
-                        asAccount("0.0.1001"),
-                        -10L,
-                        true,
-                        asAccount("0.0.1002"),
-                        +10L,
-                        true,
-                        asAccount("0.0.1003"),
-                        -10L,
-                        false,
-                        asAccount("0.0.1004"),
-                        +10L,
-                        false);
+        adjusts = withAllowanceAdjustments(
+                asAccount("0.0.1001"),
+                -10L,
+                true,
+                asAccount("0.0.1002"),
+                +10L,
+                true,
+                asAccount("0.0.1003"),
+                -10L,
+                false,
+                asAccount("0.0.1004"),
+                +10L,
+                false);
         assertTrue(subject.hasAllowanceTransfers(adjusts.getAccountAmountsList()));
 
-        final var tokenAdjusts =
-                TokenTransferList.newBuilder()
-                        .setToken(asToken("0.0.2000"))
-                        .addTransfers(
-                                AccountAmount.newBuilder()
-                                        .setAccountID(asAccount("0.0.1000"))
-                                        .setAmount(10L)
-                                        .setIsApproval(true)
-                                        .build())
-                        .build();
+        final var tokenAdjusts = TokenTransferList.newBuilder()
+                .setToken(asToken("0.0.2000"))
+                .addTransfers(AccountAmount.newBuilder()
+                        .setAccountID(asAccount("0.0.1000"))
+                        .setAmount(10L)
+                        .setIsApproval(true)
+                        .build())
+                .build();
 
         assertTrue(subject.hasAllowanceTransfers(tokenAdjusts.getTransfersList()));
 
-        final var nftAdjusts =
-                TokenTransferList.newBuilder()
-                        .setToken(asToken("0.0.2000"))
-                        .addNftTransfers(
-                                NftTransfer.newBuilder()
-                                        .setSenderAccountID(asAccount("0.0.1000"))
-                                        .setReceiverAccountID(asAccount("0.0.2000"))
-                                        .setSerialNumber(1L)
-                                        .setIsApproval(true)
-                                        .build())
-                        .build();
+        final var nftAdjusts = TokenTransferList.newBuilder()
+                .setToken(asToken("0.0.2000"))
+                .addNftTransfers(NftTransfer.newBuilder()
+                        .setSenderAccountID(asAccount("0.0.1000"))
+                        .setReceiverAccountID(asAccount("0.0.2000"))
+                        .setSerialNumber(1L)
+                        .setIsApproval(true)
+                        .build())
+                .build();
         assertTrue(subject.hasAllowanceNftTransfers(nftAdjusts.getNftTransfersList()));
     }
 
@@ -276,15 +246,11 @@ class PureTransferSemanticChecksTest {
         given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
         given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts))
                 .willReturn(true);
-        given(
-                        subject.validateTokenTransferSyntax(
-                                tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true, true))
+        given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true, true))
                 .willReturn(OK);
         given(subject.validateTokenTransferSemantics(tokenAdjusts)).willReturn(OK);
         // and:
-        doCallRealMethod()
-                .when(subject)
-                .fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
+        doCallRealMethod().when(subject).fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
 
         // when:
         final var result = subject.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
@@ -292,11 +258,9 @@ class PureTransferSemanticChecksTest {
         // then:
         inOrder.verify(subject).hasRepeatedAccount(hbarAdjusts.getAccountAmountsList());
         inOrder.verify(subject).isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList());
+        inOrder.verify(subject).isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts);
         inOrder.verify(subject)
-                .isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts);
-        inOrder.verify(subject)
-                .validateTokenTransferSyntax(
-                        tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true, true);
+                .validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true, true);
         inOrder.verify(subject).validateTokenTransferSemantics(tokenAdjusts);
         // and:
         assertEquals(OK, result);
@@ -313,14 +277,10 @@ class PureTransferSemanticChecksTest {
         given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
         given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts))
                 .willReturn(true);
-        given(
-                        subject.validateTokenTransferSyntax(
-                                tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true, true))
+        given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true, true))
                 .willReturn(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
         // and:
-        doCallRealMethod()
-                .when(subject)
-                .fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
+        doCallRealMethod().when(subject).fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
 
         // when:
         final var result = subject.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
@@ -337,31 +297,25 @@ class PureTransferSemanticChecksTest {
         // and:
         subject = mock(PureTransferSemanticChecks.class);
 
-        final var validationProps =
-                new ImpliedTransfersMeta.ValidationProps(
-                        maxHbarAdjusts,
-                        maxTokenAdjusts,
-                        maxOwnershipChanges,
-                        maxFeeNesting,
-                        maxBalanceChanges,
-                        areNftsEnabled,
-                        autoCreationEnabled,
-                        lazyCreationEnabled,
-                        areAllowancesAllowed);
+        final var validationProps = new ImpliedTransfersMeta.ValidationProps(
+                maxHbarAdjusts,
+                maxTokenAdjusts,
+                maxOwnershipChanges,
+                maxFeeNesting,
+                maxBalanceChanges,
+                areNftsEnabled,
+                autoCreationEnabled,
+                lazyCreationEnabled,
+                areAllowancesAllowed);
         // and:
         given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
         given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts))
                 .willReturn(true);
-        given(
-                        subject.validateTokenTransferSyntax(
-                                tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true, true))
+        given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true, true))
                 .willReturn(OK);
-        given(subject.validateTokenTransferSemantics(tokenAdjusts))
-                .willReturn(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
+        given(subject.validateTokenTransferSemantics(tokenAdjusts)).willReturn(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
         // and:
-        doCallRealMethod()
-                .when(subject)
-                .fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
+        doCallRealMethod().when(subject).fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
 
         // when:
         final var result = subject.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
@@ -377,9 +331,7 @@ class PureTransferSemanticChecksTest {
         final var tokenAdjusts = withTokenAdjustments(aTid, a, -1, bTid, b, 2, cTid, c, 3);
 
         // expect:
-        assertEquals(
-                INVALID_ACCOUNT_AMOUNTS,
-                subject.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps));
+        assertEquals(INVALID_ACCOUNT_AMOUNTS, subject.fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps));
     }
 
     @Test
@@ -400,17 +352,8 @@ class PureTransferSemanticChecksTest {
         final var hbarAdjusts = withAdjustments(a, -4L, b, +2L, c, +2L);
         final var tokenAdjusts = withTokenAdjustments(aTid, a, -1, bTid, b, 2, cTid, c, 3);
         // and:
-        final var strictValProps =
-                new ImpliedTransfersMeta.ValidationProps(
-                        1,
-                        1,
-                        1,
-                        1,
-                        1,
-                        areNftsEnabled,
-                        autoCreationEnabled,
-                        lazyCreationEnabled,
-                        areAllowancesAllowed);
+        final var strictValProps = new ImpliedTransfersMeta.ValidationProps(
+                1, 1, 1, 1, 1, areNftsEnabled, autoCreationEnabled, lazyCreationEnabled, areAllowancesAllowed);
 
         // expect:
         assertEquals(
@@ -420,29 +363,24 @@ class PureTransferSemanticChecksTest {
 
     @Test
     void rejectsRepeatedSerialNumbers() {
-        final var tokenAdjusts =
-                List.of(
-                        TokenTransferList.newBuilder()
-                                .setToken(aTid)
-                                .addNftTransfers(nftXfer(a, b, 1L))
-                                .addNftTransfers(nftXfer(b, c, 1L))
-                                .addNftTransfers(nftXfer(c, d, 1L))
-                                .build());
+        final var tokenAdjusts = List.of(TokenTransferList.newBuilder()
+                .setToken(aTid)
+                .addNftTransfers(nftXfer(a, b, 1L))
+                .addNftTransfers(nftXfer(b, c, 1L))
+                .addNftTransfers(nftXfer(c, d, 1L))
+                .build());
         assertEquals(
                 INVALID_ACCOUNT_AMOUNTS,
-                subject.fullPureValidation(
-                        TransferList.getDefaultInstance(), tokenAdjusts, validationProps));
+                subject.fullPureValidation(TransferList.getDefaultInstance(), tokenAdjusts, validationProps));
     }
 
     @Test
     void recognizesNetZeroAdjusts() {
         // expect:
-        assertTrue(
-                subject.isNetZeroAdjustment(
-                        withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList()));
-        assertFalse(
-                subject.isNetZeroAdjustment(
-                        withAdjustments(a, -5L, b, +2L, c, +2L).getAccountAmountsList()));
+        assertTrue(subject.isNetZeroAdjustment(
+                withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList()));
+        assertFalse(subject.isNetZeroAdjustment(
+                withAdjustments(a, -5L, b, +2L, c, +2L).getAccountAmountsList()));
     }
 
     @Test
@@ -460,8 +398,7 @@ class PureTransferSemanticChecksTest {
     @Test
     void acceptsNoTokenTransfers() {
         // given:
-        final var result =
-                subject.validateTokenTransferSyntax(Collections.emptyList(), 10, 2, true, true);
+        final var result = subject.validateTokenTransferSyntax(Collections.emptyList(), 10, 2, true, true);
 
         // expect:
         assertEquals(OK, result);
@@ -479,22 +416,14 @@ class PureTransferSemanticChecksTest {
         // expect:
         assertEquals(
                 INVALID_TOKEN_ID,
-                subject.validateTokenTransferSemantics(
-                        List.of(
-                                TokenTransferList.newBuilder()
-                                        .addAllTransfers(
-                                                withAdjustments(a, -4L, b, +2L, c, +2L)
-                                                        .getAccountAmountsList())
-                                        .build())));
+                subject.validateTokenTransferSemantics(List.of(TokenTransferList.newBuilder()
+                        .addAllTransfers(withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
+                        .build())));
         assertEquals(
                 INVALID_TOKEN_ID,
-                subject.validateTokenTransferSemantics(
-                        List.of(
-                                TokenTransferList.newBuilder()
-                                        .addAllTransfers(
-                                                withAdjustments(a, -4L, b, +2L, c, +2L)
-                                                        .getAccountAmountsList())
-                                        .build())));
+                subject.validateTokenTransferSemantics(List.of(TokenTransferList.newBuilder()
+                        .addAllTransfers(withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
+                        .build())));
     }
 
     @Test
@@ -502,22 +431,16 @@ class PureTransferSemanticChecksTest {
         // expect:
         assertEquals(
                 INVALID_ACCOUNT_ID,
-                subject.validateTokenTransferSemantics(
-                        List.of(
-                                TokenTransferList.newBuilder()
-                                        .setToken(aTid)
-                                        .addTransfers(
-                                                AccountAmount.newBuilder().setAmount(123).build())
-                                        .build())));
+                subject.validateTokenTransferSemantics(List.of(TokenTransferList.newBuilder()
+                        .setToken(aTid)
+                        .addTransfers(AccountAmount.newBuilder().setAmount(123).build())
+                        .build())));
         assertEquals(
                 INVALID_ACCOUNT_ID,
-                subject.validateTokenTransferSemantics(
-                        List.of(
-                                TokenTransferList.newBuilder()
-                                        .setToken(aTid)
-                                        .addTransfers(
-                                                AccountAmount.newBuilder().setAmount(123).build())
-                                        .build())));
+                subject.validateTokenTransferSemantics(List.of(TokenTransferList.newBuilder()
+                        .setToken(aTid)
+                        .addTransfers(AccountAmount.newBuilder().setAmount(123).build())
+                        .build())));
     }
 
     @Test
@@ -525,16 +448,13 @@ class PureTransferSemanticChecksTest {
         // expect:
         assertEquals(
                 OK,
-                subject.validateTokenTransferSemantics(
-                        List.of(
-                                TokenTransferList.newBuilder()
-                                        .setToken(aTid)
-                                        .addTransfers(
-                                                AccountAmount.newBuilder()
-                                                        .setAccountID(a)
-                                                        .setAmount(0)
-                                                        .build())
-                                        .build())));
+                subject.validateTokenTransferSemantics(List.of(TokenTransferList.newBuilder()
+                        .setToken(aTid)
+                        .addTransfers(AccountAmount.newBuilder()
+                                .setAccountID(a)
+                                .setAmount(0)
+                                .build())
+                        .build())));
     }
 
     @Test
@@ -542,38 +462,30 @@ class PureTransferSemanticChecksTest {
         // expect:
         assertEquals(
                 TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN,
-                subject.validateTokenTransferSemantics(
-                        List.of(
-                                TokenTransferList.newBuilder()
-                                        .setToken(aTid)
-                                        .addTransfers(
-                                                AccountAmount.newBuilder()
-                                                        .setAccountID(a)
-                                                        .setAmount(-1)
-                                                        .build())
-                                        .addTransfers(
-                                                AccountAmount.newBuilder()
-                                                        .setAccountID(b)
-                                                        .setAmount(2)
-                                                        .build())
-                                        .build())));
+                subject.validateTokenTransferSemantics(List.of(TokenTransferList.newBuilder()
+                        .setToken(aTid)
+                        .addTransfers(AccountAmount.newBuilder()
+                                .setAccountID(a)
+                                .setAmount(-1)
+                                .build())
+                        .addTransfers(AccountAmount.newBuilder()
+                                .setAccountID(b)
+                                .setAmount(2)
+                                .build())
+                        .build())));
         assertEquals(
                 TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN,
-                subject.validateTokenTransferSemantics(
-                        List.of(
-                                TokenTransferList.newBuilder()
-                                        .setToken(aTid)
-                                        .addTransfers(
-                                                AccountAmount.newBuilder()
-                                                        .setAccountID(a)
-                                                        .setAmount(-1)
-                                                        .build())
-                                        .addTransfers(
-                                                AccountAmount.newBuilder()
-                                                        .setAccountID(b)
-                                                        .setAmount(2)
-                                                        .build())
-                                        .build())));
+                subject.validateTokenTransferSemantics(List.of(TokenTransferList.newBuilder()
+                        .setToken(aTid)
+                        .addTransfers(AccountAmount.newBuilder()
+                                .setAccountID(a)
+                                .setAmount(-1)
+                                .build())
+                        .addTransfers(AccountAmount.newBuilder()
+                                .setAccountID(b)
+                                .setAmount(2)
+                                .build())
+                        .build())));
     }
 
     @Test
@@ -581,38 +493,30 @@ class PureTransferSemanticChecksTest {
         // expect:
         assertEquals(
                 ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS,
-                subject.validateTokenTransferSemantics(
-                        List.of(
-                                TokenTransferList.newBuilder()
-                                        .setToken(aTid)
-                                        .addTransfers(
-                                                AccountAmount.newBuilder()
-                                                        .setAccountID(a)
-                                                        .setAmount(-1)
-                                                        .build())
-                                        .addTransfers(
-                                                AccountAmount.newBuilder()
-                                                        .setAccountID(a)
-                                                        .setAmount(1)
-                                                        .build())
-                                        .build())));
+                subject.validateTokenTransferSemantics(List.of(TokenTransferList.newBuilder()
+                        .setToken(aTid)
+                        .addTransfers(AccountAmount.newBuilder()
+                                .setAccountID(a)
+                                .setAmount(-1)
+                                .build())
+                        .addTransfers(AccountAmount.newBuilder()
+                                .setAccountID(a)
+                                .setAmount(1)
+                                .build())
+                        .build())));
         assertEquals(
                 ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS,
-                subject.validateTokenTransferSemantics(
-                        List.of(
-                                TokenTransferList.newBuilder()
-                                        .setToken(aTid)
-                                        .addTransfers(
-                                                AccountAmount.newBuilder()
-                                                        .setAccountID(a)
-                                                        .setAmount(-1)
-                                                        .build())
-                                        .addTransfers(
-                                                AccountAmount.newBuilder()
-                                                        .setAccountID(a)
-                                                        .setAmount(1)
-                                                        .build())
-                                        .build())));
+                subject.validateTokenTransferSemantics(List.of(TokenTransferList.newBuilder()
+                        .setToken(aTid)
+                        .addTransfers(AccountAmount.newBuilder()
+                                .setAccountID(a)
+                                .setAmount(-1)
+                                .build())
+                        .addTransfers(AccountAmount.newBuilder()
+                                .setAccountID(a)
+                                .setAmount(1)
+                                .build())
+                        .build())));
     }
 
     @Test
@@ -621,25 +525,21 @@ class PureTransferSemanticChecksTest {
         assertEquals(
                 INVALID_ACCOUNT_AMOUNTS,
                 subject.validateTokenTransferSyntax(
-                        List.of(
-                                TokenTransferList.newBuilder()
-                                        .setToken(aTid)
-                                        .addTransfers(
-                                                AccountAmount.newBuilder()
-                                                        .setAccountID(a)
-                                                        .setAmount(-1)
-                                                        .build())
-                                        .addTransfers(
-                                                AccountAmount.newBuilder()
-                                                        .setAccountID(b)
-                                                        .setAmount(1)
-                                                        .build())
-                                        .addNftTransfers(
-                                                NftTransfer.newBuilder()
-                                                        .setSenderAccountID(a)
-                                                        .setReceiverAccountID(b)
-                                                        .setSerialNumber(123L))
-                                        .build()),
+                        List.of(TokenTransferList.newBuilder()
+                                .setToken(aTid)
+                                .addTransfers(AccountAmount.newBuilder()
+                                        .setAccountID(a)
+                                        .setAmount(-1)
+                                        .build())
+                                .addTransfers(AccountAmount.newBuilder()
+                                        .setAccountID(b)
+                                        .setAmount(1)
+                                        .build())
+                                .addNftTransfers(NftTransfer.newBuilder()
+                                        .setSenderAccountID(a)
+                                        .setReceiverAccountID(b)
+                                        .setSerialNumber(123L))
+                                .build()),
                         20,
                         1,
                         true,
@@ -651,28 +551,22 @@ class PureTransferSemanticChecksTest {
         // expect:
         assertEquals(
                 ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS,
-                subject.validateTokenTransferSemantics(
-                        List.of(
-                                TokenTransferList.newBuilder()
-                                        .setToken(aTid)
-                                        .addNftTransfers(
-                                                NftTransfer.newBuilder()
-                                                        .setSenderAccountID(a)
-                                                        .setReceiverAccountID(a)
-                                                        .setSerialNumber(123L))
-                                        .build())));
+                subject.validateTokenTransferSemantics(List.of(TokenTransferList.newBuilder()
+                        .setToken(aTid)
+                        .addNftTransfers(NftTransfer.newBuilder()
+                                .setSenderAccountID(a)
+                                .setReceiverAccountID(a)
+                                .setSerialNumber(123L))
+                        .build())));
         assertEquals(
                 ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS,
-                subject.validateTokenTransferSemantics(
-                        List.of(
-                                TokenTransferList.newBuilder()
-                                        .setToken(aTid)
-                                        .addNftTransfers(
-                                                NftTransfer.newBuilder()
-                                                        .setSenderAccountID(a)
-                                                        .setReceiverAccountID(a)
-                                                        .setSerialNumber(123L))
-                                        .build())));
+                subject.validateTokenTransferSemantics(List.of(TokenTransferList.newBuilder()
+                        .setToken(aTid)
+                        .addNftTransfers(NftTransfer.newBuilder()
+                                .setSenderAccountID(a)
+                                .setReceiverAccountID(a)
+                                .setSerialNumber(123L))
+                        .build())));
     }
 
     @Test
@@ -680,20 +574,17 @@ class PureTransferSemanticChecksTest {
         // expect:
         assertEquals(
                 TOKEN_ID_REPEATED_IN_TOKEN_LIST,
-                subject.validateTokenTransferSemantics(
-                        List.of(
-                                TokenTransferList.newBuilder()
-                                        .setToken(aTid)
-                                        .addAllTransfers(
-                                                withAdjustments(a, -4L, b, +2L, c, +2L)
-                                                        .getAccountAmountsList())
-                                        .build(),
-                                TokenTransferList.newBuilder()
-                                        .setToken(aTid)
-                                        .addAllTransfers(
-                                                withAdjustments(a, -4L, b, +2L, c, +2L)
-                                                        .getAccountAmountsList())
-                                        .build())));
+                subject.validateTokenTransferSemantics(List.of(
+                        TokenTransferList.newBuilder()
+                                .setToken(aTid)
+                                .addAllTransfers(
+                                        withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
+                                .build(),
+                        TokenTransferList.newBuilder()
+                                .setToken(aTid)
+                                .addAllTransfers(
+                                        withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
+                                .build())));
     }
 
     @Test
@@ -701,59 +592,50 @@ class PureTransferSemanticChecksTest {
         // expect:
         assertEquals(
                 OK,
-                subject.validateTokenTransferSemantics(
-                        List.of(
-                                TokenTransferList.newBuilder()
-                                        .setToken(aTid)
-                                        .addAllTransfers(
-                                                withAdjustments(a, -4L, b, +2L, c, +2L)
-                                                        .getAccountAmountsList())
-                                        .build(),
-                                TokenTransferList.newBuilder()
-                                        .setToken(bTid)
-                                        .addAllTransfers(
-                                                withAdjustments(a, -4L, b, +2L, c, +2L)
-                                                        .getAccountAmountsList())
-                                        .build(),
-                                TokenTransferList.newBuilder()
-                                        .setToken(cTid)
-                                        .addNftTransfers(
-                                                NftTransfer.newBuilder()
-                                                        .setSenderAccountID(a)
-                                                        .setReceiverAccountID(b)
-                                                        .setSerialNumber(123L))
-                                        .build())));
+                subject.validateTokenTransferSemantics(List.of(
+                        TokenTransferList.newBuilder()
+                                .setToken(aTid)
+                                .addAllTransfers(
+                                        withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
+                                .build(),
+                        TokenTransferList.newBuilder()
+                                .setToken(bTid)
+                                .addAllTransfers(
+                                        withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
+                                .build(),
+                        TokenTransferList.newBuilder()
+                                .setToken(cTid)
+                                .addNftTransfers(NftTransfer.newBuilder()
+                                        .setSenderAccountID(a)
+                                        .setReceiverAccountID(b)
+                                        .setSerialNumber(123L))
+                                .build())));
         assertEquals(
                 OK,
-                subject.validateTokenTransferSemantics(
-                        List.of(
-                                TokenTransferList.newBuilder()
-                                        .setToken(aTid)
-                                        .addAllTransfers(
-                                                withAdjustments(a, -4L, b, +2L, c, +2L)
-                                                        .getAccountAmountsList())
-                                        .build(),
-                                TokenTransferList.newBuilder()
-                                        .setToken(bTid)
-                                        .addAllTransfers(
-                                                withAdjustments(a, -4L, b, +2L, c, +2L)
-                                                        .getAccountAmountsList())
-                                        .build(),
-                                TokenTransferList.newBuilder()
-                                        .setToken(cTid)
-                                        .addNftTransfers(
-                                                NftTransfer.newBuilder()
-                                                        .setSenderAccountID(a)
-                                                        .setReceiverAccountID(b)
-                                                        .setSerialNumber(123L))
-                                        .build())));
+                subject.validateTokenTransferSemantics(List.of(
+                        TokenTransferList.newBuilder()
+                                .setToken(aTid)
+                                .addAllTransfers(
+                                        withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
+                                .build(),
+                        TokenTransferList.newBuilder()
+                                .setToken(bTid)
+                                .addAllTransfers(
+                                        withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
+                                .build(),
+                        TokenTransferList.newBuilder()
+                                .setToken(cTid)
+                                .addNftTransfers(NftTransfer.newBuilder()
+                                        .setSenderAccountID(a)
+                                        .setReceiverAccountID(b)
+                                        .setSerialNumber(123L))
+                                .build())));
     }
 
     @Test
     void rejectsOwnershipChangesIfNftsNotEnabled() {
         // given:
-        List<TokenTransferList> wrapper =
-                withOwnershipChanges(aTid, a, a, 123, bTid, b, c, 234, cTid, c, a, 345);
+        List<TokenTransferList> wrapper = withOwnershipChanges(aTid, a, a, 123, bTid, b, c, 234, cTid, c, a, 345);
 
         // when:
         final var result = subject.validateTokenTransferSyntax(wrapper, 20, 1, false, true);
@@ -765,8 +647,7 @@ class PureTransferSemanticChecksTest {
     @Test
     void rejectsExceedingMaxOwnershipChanges() {
         // given:
-        List<TokenTransferList> wrapper =
-                withOwnershipChanges(aTid, a, a, 123, bTid, b, c, 234, cTid, c, a, 345);
+        List<TokenTransferList> wrapper = withOwnershipChanges(aTid, a, a, 123, bTid, b, c, 234, cTid, c, a, 345);
 
         // when:
         final var result = subject.validateTokenTransferSyntax(wrapper, 20, 1, true, true);
@@ -778,8 +659,7 @@ class PureTransferSemanticChecksTest {
     @Test
     void rejectsExceedingTokenTransfersAccountAmountsLength() {
         // given:
-        List<TokenTransferList> wrapper =
-                withTokenAdjustments(aTid, a, -1, bTid, b, 2, cTid, c, 3, dTid, d, -4);
+        List<TokenTransferList> wrapper = withTokenAdjustments(aTid, a, -1, bTid, b, 2, cTid, c, 3, dTid, d, -4);
 
         // when:
         final var result = subject.validateTokenTransferSyntax(wrapper, 4, 2, true, true);
@@ -805,68 +685,53 @@ class PureTransferSemanticChecksTest {
     void acceptsDegenerateCases() {
         // expect:
         assertFalse(subject.hasRepeatedAccount(Collections.emptyList()));
-        assertFalse(
-                subject.hasRepeatedAccount(
-                        List.of(
-                                AccountAmount.newBuilder()
-                                        .setAccountID(a)
-                                        .setAmount(123)
-                                        .build())));
+        assertFalse(subject.hasRepeatedAccount(List.of(
+                AccountAmount.newBuilder().setAccountID(a).setAmount(123).build())));
     }
 
     @Test
     void distinguishesRepeated() {
         // expect:
-        assertFalse(
-                subject.hasRepeatedAccount(
-                        withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList()));
-        assertTrue(
-                subject.hasRepeatedAccount(
-                        withAdjustments(a, -4L, b, +2L, a, +2L).getAccountAmountsList()));
-        assertTrue(
-                subject.hasRepeatedAccount(
-                        withAdjustments(a, -4L, b, +2L, b, +2L).getAccountAmountsList()));
-        assertTrue(
-                subject.hasRepeatedAccount(
-                        withAdjustments(a, -4L, a, +2L, b, +2L).getAccountAmountsList()));
+        assertFalse(subject.hasRepeatedAccount(
+                withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList()));
+        assertTrue(subject.hasRepeatedAccount(
+                withAdjustments(a, -4L, b, +2L, a, +2L).getAccountAmountsList()));
+        assertTrue(subject.hasRepeatedAccount(
+                withAdjustments(a, -4L, b, +2L, b, +2L).getAccountAmountsList()));
+        assertTrue(subject.hasRepeatedAccount(
+                withAdjustments(a, -4L, a, +2L, b, +2L).getAccountAmountsList()));
     }
 
     @Test
     void distinguishesAllowance() {
-        var aa1 =
-                AccountAmount.newBuilder()
-                        .setAccountID(asAccount("0.0.1001"))
-                        .setAmount(-10L)
-                        .build();
-        var aa2 =
-                AccountAmount.newBuilder()
-                        .setAccountID(asAccount("0.0.1002"))
-                        .setAmount(+10L)
-                        .build();
-        var aa3 =
-                AccountAmount.newBuilder()
-                        .setAccountID(asAccount("0.0.1001"))
-                        .setIsApproval(true)
-                        .setAmount(-10L)
-                        .build();
-        var aa4 =
-                AccountAmount.newBuilder()
-                        .setAccountID(asAccount("0.0.1002"))
-                        .setIsApproval(true)
-                        .setAmount(+10L)
-                        .build();
-        var aa5 =
-                AccountAmount.newBuilder()
-                        .setAccountID(asAccount("0.0.1001"))
-                        .setIsApproval(true)
-                        .setAmount(-10L)
-                        .build();
-        var aa6 =
-                AccountAmount.newBuilder()
-                        .setAccountID(asAccount("0.0.1002"))
-                        .setIsApproval(true)
-                        .setAmount(+10L)
-                        .build();
+        var aa1 = AccountAmount.newBuilder()
+                .setAccountID(asAccount("0.0.1001"))
+                .setAmount(-10L)
+                .build();
+        var aa2 = AccountAmount.newBuilder()
+                .setAccountID(asAccount("0.0.1002"))
+                .setAmount(+10L)
+                .build();
+        var aa3 = AccountAmount.newBuilder()
+                .setAccountID(asAccount("0.0.1001"))
+                .setIsApproval(true)
+                .setAmount(-10L)
+                .build();
+        var aa4 = AccountAmount.newBuilder()
+                .setAccountID(asAccount("0.0.1002"))
+                .setIsApproval(true)
+                .setAmount(+10L)
+                .build();
+        var aa5 = AccountAmount.newBuilder()
+                .setAccountID(asAccount("0.0.1001"))
+                .setIsApproval(true)
+                .setAmount(-10L)
+                .build();
+        var aa6 = AccountAmount.newBuilder()
+                .setAccountID(asAccount("0.0.1002"))
+                .setIsApproval(true)
+                .setAmount(+10L)
+                .build();
 
         assertFalse(subject.hasRepeatedAccount(List.of(aa1, aa2, aa3, aa4)));
         assertTrue(subject.hasRepeatedAccount(List.of(aa1, aa2, aa3, aa4, aa5, aa6)));

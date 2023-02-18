@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -40,8 +41,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /* --- Constructor functional interfaces for mocking --- */
 public abstract class AbstractAssociatePrecompile implements Precompile {
-    private static final String ASSOCIATE_FAILURE_MESSAGE =
-            "Invalid full prefix for associate precompile!";
+    private static final String ASSOCIATE_FAILURE_MESSAGE = "Invalid full prefix for associate precompile!";
     private final WorldLedgers ledgers;
     private final ContractAliases aliases;
     private final EvmSigsVerifier sigsVerifier;
@@ -75,32 +75,19 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
     @Override
     public void run(final MessageFrame frame) {
         // --- Check required signatures ---
-        final var accountId = Id.fromGrpcAccount(Objects.requireNonNull(associateOp).accountId());
-        final var hasRequiredSigs =
-                KeyActivationUtils.validateKey(
-                        frame,
-                        accountId.asEvmAddress(),
-                        sigsVerifier::hasActiveKey,
-                        ledgers,
-                        aliases);
-        validateTrue(
-                hasRequiredSigs,
-                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE,
-                ASSOCIATE_FAILURE_MESSAGE);
+        final var accountId =
+                Id.fromGrpcAccount(Objects.requireNonNull(associateOp).accountId());
+        final var hasRequiredSigs = KeyActivationUtils.validateKey(
+                frame, accountId.asEvmAddress(), sigsVerifier::hasActiveKey, ledgers, aliases);
+        validateTrue(hasRequiredSigs, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, ASSOCIATE_FAILURE_MESSAGE);
 
         // --- Build the necessary infrastructure to execute the transaction ---
         final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
-        final var tokenStore =
-                infrastructureFactory.newTokenStore(
-                        accountStore,
-                        sideEffects,
-                        ledgers.tokens(),
-                        ledgers.nfts(),
-                        ledgers.tokenRels());
+        final var tokenStore = infrastructureFactory.newTokenStore(
+                accountStore, sideEffects, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels());
 
         // --- Execute the transaction and capture its results ---
-        final var associateLogic =
-                infrastructureFactory.newAssociateLogic(accountStore, tokenStore);
+        final var associateLogic = infrastructureFactory.newAssociateLogic(accountStore, tokenStore);
         final var validity = associateLogic.validateSyntax(transactionBody.build());
         validateTrue(validity == OK, validity);
         associateLogic.associate(accountId, associateOp.tokenIds());

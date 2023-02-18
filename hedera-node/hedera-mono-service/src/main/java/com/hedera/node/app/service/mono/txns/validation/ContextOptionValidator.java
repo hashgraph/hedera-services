@@ -16,11 +16,11 @@
 
 package com.hedera.node.app.service.mono.txns.validation;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_MAX_LIFETIME;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.mapKey;
+import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_MAX_LIFETIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
@@ -56,6 +56,8 @@ import java.time.Instant;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.StringUtils;
 import org.bouncycastle.util.Arrays;
@@ -66,6 +68,7 @@ import org.bouncycastle.util.Arrays;
  */
 @Singleton
 public class ContextOptionValidator implements OptionValidator {
+
     private final long maxEntityLifetime;
     private final NodeInfo nodeInfo;
     private final TransactionContext txnCtx;
@@ -112,7 +115,7 @@ public class ContextOptionValidator implements OptionValidator {
     }
 
     @Override
-    public boolean isPermissibleTotalNfts(long proposedTotal) {
+    public boolean isPermissibleTotalNfts(final long proposedTotal) {
         return proposedTotal <= dynamicProperties.maxNftMints();
     }
 
@@ -122,22 +125,22 @@ public class ContextOptionValidator implements OptionValidator {
     }
 
     @Override
-    public boolean hasGoodEncoding(Key key) {
+    public boolean hasGoodEncoding(final Key key) {
         try {
             mapKey(key);
             return true;
-        } catch (DecoderException ignore) {
+        } catch (final DecoderException ignore) {
             return false;
         }
     }
 
     @Override
-    public boolean isValidTxnDuration(long duration) {
+    public boolean isValidTxnDuration(final long duration) {
         return duration >= dynamicProperties.minTxnDuration() && duration <= dynamicProperties.maxTxnDuration();
     }
 
     @Override
-    public boolean isValidExpiry(Timestamp expiry) {
+    public boolean isValidExpiry(final Timestamp expiry) {
         final var consensusNow = txnCtx.consensusTime();
         final var expiryGivenMaxLifetime = consensusNow.plusSeconds(maxEntityLifetime);
         final var then = Instant.ofEpochSecond(expiry.getSeconds(), expiry.getNanos());
@@ -145,15 +148,15 @@ public class ContextOptionValidator implements OptionValidator {
     }
 
     @Override
-    public boolean isValidAutoRenewPeriod(Duration autoRenewPeriod) {
-        long duration = autoRenewPeriod.getSeconds();
+    public boolean isValidAutoRenewPeriod(final Duration autoRenewPeriod) {
+        final long duration = autoRenewPeriod.getSeconds();
 
         return duration >= dynamicProperties.minAutoRenewDuration()
                 && duration <= dynamicProperties.maxAutoRenewDuration();
     }
 
     @Override
-    public boolean isAcceptableTransfersLength(TransferList accountAmounts) {
+    public boolean isAcceptableTransfersLength(final TransferList accountAmounts) {
         return accountAmounts.getAccountAmountsCount() <= dynamicProperties.maxTransferListSize();
     }
 
@@ -161,47 +164,47 @@ public class ContextOptionValidator implements OptionValidator {
     public JKey attemptDecodeOrThrow(final Key k) {
         try {
             return JKey.mapKey(k);
-        } catch (DecoderException e) {
+        } catch (final DecoderException e) {
             throw new InvalidTransactionException(ResponseCodeEnum.BAD_ENCODING);
         }
     }
 
     @Override
-    public ResponseCodeEnum nftMetadataCheck(byte[] metadata) {
+    public ResponseCodeEnum nftMetadataCheck(final byte[] metadata) {
         return lengthCheck(
                 metadata.length, dynamicProperties.maxNftMetadataBytes(), ResponseCodeEnum.METADATA_TOO_LONG);
     }
 
     @Override
-    public ResponseCodeEnum maxBatchSizeMintCheck(int length) {
+    public ResponseCodeEnum maxBatchSizeMintCheck(final int length) {
         return batchSizeCheck(length, dynamicProperties.maxBatchSizeMint());
     }
 
     @Override
-    public ResponseCodeEnum maxBatchSizeBurnCheck(int length) {
+    public ResponseCodeEnum maxBatchSizeBurnCheck(final int length) {
         return batchSizeCheck(length, dynamicProperties.maxBatchSizeBurn());
     }
 
     @Override
-    public ResponseCodeEnum maxNftTransfersLenCheck(int length) {
+    public ResponseCodeEnum maxNftTransfersLenCheck(final int length) {
         return batchSizeCheck(length, dynamicProperties.maxNftTransfersLen());
     }
 
     @Override
-    public ResponseCodeEnum maxBatchSizeWipeCheck(int length) {
+    public ResponseCodeEnum maxBatchSizeWipeCheck(final int length) {
         return batchSizeCheck(length, dynamicProperties.maxBatchSizeWipe());
     }
 
     @Override
-    public ResponseCodeEnum nftMaxQueryRangeCheck(long start, long end) {
+    public ResponseCodeEnum nftMaxQueryRangeCheck(final long start, final long end) {
         return lengthCheck(end - start, dynamicProperties.maxNftQueryRange(), ResponseCodeEnum.INVALID_QUERY_RANGE);
     }
 
-    public static ResponseCodeEnum batchSizeCheck(int length, int limit) {
+    public static ResponseCodeEnum batchSizeCheck(final int length, final int limit) {
         return lengthCheck(length, limit, ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED);
     }
 
-    private static ResponseCodeEnum lengthCheck(long length, long limit, ResponseCodeEnum onFailure) {
+    private static ResponseCodeEnum lengthCheck(final long length, final long limit, final ResponseCodeEnum onFailure) {
         if (length > limit) {
             return onFailure;
         }
@@ -209,8 +212,10 @@ public class ContextOptionValidator implements OptionValidator {
     }
 
     @Override
-    public ResponseCodeEnum queryableTopicStatus(TopicID id, MerkleMapLike<EntityNum, MerkleTopic> topics) {
-        MerkleTopic merkleTopic = topics.get(EntityNum.fromTopicId(id));
+    public ResponseCodeEnum queryableTopicStatus(
+            final TopicID id,
+            final MerkleMapLike<EntityNum, MerkleTopic> topics) {
+        final MerkleTopic merkleTopic = topics.get(EntityNum.fromTopicId(id));
 
         return Optional.ofNullable(merkleTopic)
                 .map(t -> t.isDeleted() ? INVALID_TOPIC_ID : OK)
@@ -218,29 +223,29 @@ public class ContextOptionValidator implements OptionValidator {
     }
 
     @Override
-    public JKey attemptToDecodeOrThrow(Key key, ResponseCodeEnum code) {
+    public JKey attemptToDecodeOrThrow(final Key key, final ResponseCodeEnum code) {
         try {
             return JKey.mapKey(key);
-        } catch (DecoderException e) {
+        } catch (final DecoderException e) {
             throw new InvalidTransactionException(code);
         }
     }
 
     @Override
-    public ResponseCodeEnum tokenSymbolCheck(String symbol) {
+    public ResponseCodeEnum tokenSymbolCheck(final String symbol) {
         return tokenStringCheck(
                 symbol, dynamicProperties.maxTokenSymbolUtf8Bytes(), MISSING_TOKEN_SYMBOL, TOKEN_SYMBOL_TOO_LONG);
     }
 
     @Override
-    public ResponseCodeEnum tokenNameCheck(String name) {
+    public ResponseCodeEnum tokenNameCheck(final String name) {
         return tokenStringCheck(
                 name, dynamicProperties.maxTokenNameUtf8Bytes(), MISSING_TOKEN_NAME, TOKEN_NAME_TOO_LONG);
     }
 
     private ResponseCodeEnum tokenStringCheck(
-            String s, int maxLen, ResponseCodeEnum onMissing, ResponseCodeEnum onTooLong) {
-        int numUtf8Bytes = StringUtils.getBytesUtf8(s).length;
+            final String s, final int maxLen, final ResponseCodeEnum onMissing, final ResponseCodeEnum onTooLong) {
+        final int numUtf8Bytes = StringUtils.getBytesUtf8(s).length;
         if (numUtf8Bytes == 0) {
             return onMissing;
         }
@@ -254,17 +259,17 @@ public class ContextOptionValidator implements OptionValidator {
     }
 
     @Override
-    public ResponseCodeEnum memoCheck(String cand) {
+    public ResponseCodeEnum memoCheck(final String cand) {
         return rawMemoCheck(StringUtils.getBytesUtf8(cand));
     }
 
     @Override
-    public ResponseCodeEnum rawMemoCheck(byte[] utf8Cand) {
+    public ResponseCodeEnum rawMemoCheck(final byte[] utf8Cand) {
         return rawMemoCheck(utf8Cand, Arrays.contains(utf8Cand, (byte) 0));
     }
 
     @Override
-    public ResponseCodeEnum rawMemoCheck(byte[] utf8Cand, boolean hasZeroByte) {
+    public ResponseCodeEnum rawMemoCheck(final byte[] utf8Cand, final boolean hasZeroByte) {
         if (utf8Cand.length > dynamicProperties.maxMemoUtf8Bytes()) {
             return MEMO_TOO_LONG;
         } else if (hasZeroByte) {
@@ -281,8 +286,8 @@ public class ContextOptionValidator implements OptionValidator {
     }
 
     /* Not applicable until auto-renew is implemented. */
-    boolean isExpired(MerkleTopic merkleTopic) {
-        Instant expiry = Instant.ofEpochSecond(
+    boolean isExpired(final MerkleTopic merkleTopic) {
+        final Instant expiry = Instant.ofEpochSecond(
                 merkleTopic.getExpirationTimestamp().getSeconds(),
                 merkleTopic.getExpirationTimestamp().getNanos());
         return txnCtx.consensusTime().isAfter(expiry);

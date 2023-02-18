@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.models;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -65,8 +66,11 @@ class IdTest {
         final var entityId = new EntityId(1, 2, 3);
         final var grpcAccount = IdUtils.asAccount("1.2.3");
         final var grpcToken = IdUtils.asToken("1.2.3");
-        final var contractId =
-                ContractID.newBuilder().setShardNum(1).setRealmNum(2).setContractNum(3).build();
+        final var contractId = ContractID.newBuilder()
+                .setShardNum(1)
+                .setRealmNum(2)
+                .setContractNum(3)
+                .build();
         final var address = Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(contractId)));
         final var grpcTopic = IdUtils.asTopic("1.2.3");
 

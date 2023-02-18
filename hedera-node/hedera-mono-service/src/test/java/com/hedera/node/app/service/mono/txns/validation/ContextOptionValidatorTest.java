@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.service.mono.txns.validation;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_MAX_LIFETIME;
 import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromContractId;
+import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_MAX_LIFETIME;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
@@ -95,6 +95,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ContextOptionValidatorTest {
+
     private final Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
     private final Instant now = Instant.now();
     private final AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
@@ -142,9 +143,9 @@ class ContextOptionValidatorTest {
     private HFileMeta attr;
     private HFileMeta deletedAttr;
     private StateView view;
-    private long expiry = 2_000_000L;
-    private long maxLifetime = 3_000_000L;
-    private FileID target = asFile("0.0.123");
+    private final long expiry = 2_000_000L;
+    private final long maxLifetime = 3_000_000L;
+    private final FileID target = asFile("0.0.123");
 
     @BeforeEach
     void setup() throws Exception {
@@ -175,7 +176,7 @@ class ContextOptionValidatorTest {
         given(topics.get(EntityNum.fromTopicId(deletedTopicId))).willReturn(deletedMerkleTopic);
         given(topics.get(EntityNum.fromTopicId(expiredTopicId))).willReturn(expiredMerkleTopic);
 
-        NodeInfo nodeInfo = mock(NodeInfo.class);
+        final NodeInfo nodeInfo = mock(NodeInfo.class);
         given(nodeInfo.selfAccount()).willReturn(thisNodeAccount);
 
         wacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
@@ -186,7 +187,7 @@ class ContextOptionValidatorTest {
         subject = new ContextOptionValidator(nodeInfo, properties, txnCtx, dynamicProperties);
     }
 
-    private FileGetInfoResponse.FileInfo asMinimalInfo(HFileMeta meta) throws Exception {
+    private FileGetInfoResponse.FileInfo asMinimalInfo(final HFileMeta meta) throws Exception {
         return FileGetInfoResponse.FileInfo.newBuilder()
                 .setLedgerId(ledgerId)
                 .setDeleted(meta.isDeleted())
@@ -342,7 +343,7 @@ class ContextOptionValidatorTest {
         given(view.infoForFile(target)).willReturn(Optional.of(asMinimalInfo(attr)));
 
         // when:
-        var status = subject.queryableFileStatus(target, view);
+        final var status = subject.queryableFileStatus(target, view);
 
         // then:
         assertEquals(OK, status);
@@ -353,7 +354,7 @@ class ContextOptionValidatorTest {
         given(view.infoForFile(target)).willReturn(Optional.of(asMinimalInfo(deletedAttr)));
 
         // when:
-        var status = subject.queryableFileStatus(target, view);
+        final var status = subject.queryableFileStatus(target, view);
 
         // then:
         assertEquals(OK, status);
@@ -365,7 +366,7 @@ class ContextOptionValidatorTest {
         given(view.infoForFile(target)).willReturn(Optional.empty());
 
         // when:
-        var status = subject.queryableFileStatus(target, view);
+        final var status = subject.queryableFileStatus(target, view);
 
         // then:
         assertEquals(INVALID_FILE_ID, status);
@@ -479,7 +480,7 @@ class ContextOptionValidatorTest {
     @Test
     void rejectsBriefAutoRenewPeriod() {
         // setup:
-        Duration autoRenewPeriod = Duration.newBuilder().setSeconds(55L).build();
+        final Duration autoRenewPeriod = Duration.newBuilder().setSeconds(55L).build();
 
         given(dynamicProperties.minAutoRenewDuration()).willReturn(1_000L);
         given(dynamicProperties.maxAutoRenewDuration()).willReturn(1_000_000L);
@@ -493,7 +494,8 @@ class ContextOptionValidatorTest {
     @Test
     void acceptsReasonablePeriod() {
         // setup:
-        Duration autoRenewPeriod = Duration.newBuilder().setSeconds(500_000L).build();
+        final Duration autoRenewPeriod =
+                Duration.newBuilder().setSeconds(500_000L).build();
 
         given(dynamicProperties.minAutoRenewDuration()).willReturn(1_000L);
         given(dynamicProperties.maxAutoRenewDuration()).willReturn(1_000_000L);
@@ -508,7 +510,8 @@ class ContextOptionValidatorTest {
     @Test
     void rejectsProlongedAutoRenewPeriod() {
         // setup:
-        Duration autoRenewPeriod = Duration.newBuilder().setSeconds(5_555_555L).build();
+        final Duration autoRenewPeriod =
+                Duration.newBuilder().setSeconds(5_555_555L).build();
 
         given(dynamicProperties.minAutoRenewDuration()).willReturn(1_000L);
         given(dynamicProperties.maxAutoRenewDuration()).willReturn(1_000_000L);
@@ -523,7 +526,7 @@ class ContextOptionValidatorTest {
     @Test
     void allowsReasonableLength() {
         // setup:
-        TransferList wrapper = withAdjustments(a, 2L, b, -3L, d, 1L);
+        final TransferList wrapper = withAdjustments(a, 2L, b, -3L, d, 1L);
 
         given(dynamicProperties.maxTransferListSize()).willReturn(3);
 
@@ -534,7 +537,7 @@ class ContextOptionValidatorTest {
     @Test
     void rejectsUnreasonableLength() {
         // setup:
-        TransferList wrapper = withAdjustments(a, 2L, b, -3L, d, 1L);
+        final TransferList wrapper = withAdjustments(a, 2L, b, -3L, d, 1L);
 
         given(dynamicProperties.maxTransferListSize()).willReturn(2);
 
@@ -599,17 +602,17 @@ class ContextOptionValidatorTest {
 
     @Test
     void recognizesExpiredCondition() {
-        SignedTxnAccessor accessor = mock(SignedTxnAccessor.class);
+        final SignedTxnAccessor accessor = mock(SignedTxnAccessor.class);
 
         // given:
-        long validDuration = 1_000L;
-        Instant validStart = Instant.ofEpochSecond(1_234_567L);
-        Instant consensusTime = Instant.ofEpochSecond(validStart.getEpochSecond() + validDuration + 1);
+        final long validDuration = 1_000L;
+        final Instant validStart = Instant.ofEpochSecond(1_234_567L);
+        final Instant consensusTime = Instant.ofEpochSecond(validStart.getEpochSecond() + validDuration + 1);
         // and:
-        TransactionID txnId = TransactionID.newBuilder()
+        final TransactionID txnId = TransactionID.newBuilder()
                 .setTransactionValidStart(Timestamp.newBuilder().setSeconds(validStart.getEpochSecond()))
                 .build();
-        TransactionBody txn = TransactionBody.newBuilder()
+        final TransactionBody txn = TransactionBody.newBuilder()
                 .setTransactionID(txnId)
                 .setTransactionValidDuration(Duration.newBuilder().setSeconds(validDuration))
                 .build();
@@ -618,7 +621,7 @@ class ContextOptionValidatorTest {
         given(accessor.getTxnId()).willReturn(txnId);
 
         // when:
-        ResponseCodeEnum status = subject.chronologyStatus(accessor, consensusTime);
+        final ResponseCodeEnum status = subject.chronologyStatus(accessor, consensusTime);
 
         // then:
         assertEquals(TRANSACTION_EXPIRED, status);
@@ -628,17 +631,18 @@ class ContextOptionValidatorTest {
 
     @Test
     void recognizesFutureValidStartStart() {
-        SignedTxnAccessor accessor = mock(SignedTxnAccessor.class);
+        final SignedTxnAccessor accessor = mock(SignedTxnAccessor.class);
 
         // given:
-        long validDuration = 1_000L;
-        Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
-        Instant validStart = Instant.ofEpochSecond(consensusTime.plusSeconds(1L).getEpochSecond());
+        final long validDuration = 1_000L;
+        final Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
+        final Instant validStart =
+                Instant.ofEpochSecond(consensusTime.plusSeconds(1L).getEpochSecond());
         // and:
-        TransactionID txnId = TransactionID.newBuilder()
+        final TransactionID txnId = TransactionID.newBuilder()
                 .setTransactionValidStart(Timestamp.newBuilder().setSeconds(validStart.getEpochSecond()))
                 .build();
-        TransactionBody txn = TransactionBody.newBuilder()
+        final TransactionBody txn = TransactionBody.newBuilder()
                 .setTransactionID(txnId)
                 .setTransactionValidDuration(Duration.newBuilder().setSeconds(validDuration))
                 .build();
@@ -647,7 +651,7 @@ class ContextOptionValidatorTest {
         given(accessor.getTxnId()).willReturn(txnId);
 
         // when:
-        ResponseCodeEnum status = subject.chronologyStatus(accessor, consensusTime);
+        final ResponseCodeEnum status = subject.chronologyStatus(accessor, consensusTime);
 
         // then:
         assertEquals(INVALID_TRANSACTION_START, status);
@@ -658,18 +662,18 @@ class ContextOptionValidatorTest {
 
     @Test
     void acceptsOk() {
-        SignedTxnAccessor accessor = mock(SignedTxnAccessor.class);
+        final SignedTxnAccessor accessor = mock(SignedTxnAccessor.class);
 
         // given:
-        long validDuration = 1_000L;
-        Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
-        Instant validStart = Instant.ofEpochSecond(
+        final long validDuration = 1_000L;
+        final Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
+        final Instant validStart = Instant.ofEpochSecond(
                 consensusTime.minusSeconds(validDuration - 1).getEpochSecond());
         // and:
-        TransactionID txnId = TransactionID.newBuilder()
+        final TransactionID txnId = TransactionID.newBuilder()
                 .setTransactionValidStart(Timestamp.newBuilder().setSeconds(validStart.getEpochSecond()))
                 .build();
-        TransactionBody txn = TransactionBody.newBuilder()
+        final TransactionBody txn = TransactionBody.newBuilder()
                 .setTransactionID(txnId)
                 .setTransactionValidDuration(Duration.newBuilder().setSeconds(validDuration))
                 .build();
@@ -678,7 +682,7 @@ class ContextOptionValidatorTest {
         given(accessor.getTxnId()).willReturn(txnId);
 
         // when:
-        ResponseCodeEnum status = subject.chronologyStatus(accessor, consensusTime);
+        final ResponseCodeEnum status = subject.chronologyStatus(accessor, consensusTime);
 
         // then:
         assertEquals(OK, status);
@@ -763,10 +767,10 @@ class ContextOptionValidatorTest {
     @Test
     void rejectsImplausibleAccounts() {
         // given:
-        var implausibleShard = AccountID.newBuilder().setShardNum(-1).build();
-        var implausibleRealm = AccountID.newBuilder().setRealmNum(-1).build();
-        var implausibleAccount = AccountID.newBuilder().setAccountNum(0).build();
-        var plausibleAccount = IdUtils.asAccount("0.0.13257");
+        final var implausibleShard = AccountID.newBuilder().setShardNum(-1).build();
+        final var implausibleRealm = AccountID.newBuilder().setRealmNum(-1).build();
+        final var implausibleAccount = AccountID.newBuilder().setAccountNum(0).build();
+        final var plausibleAccount = IdUtils.asAccount("0.0.13257");
 
         // expect:
         assertFalse(subject.isPlausibleAccount(implausibleShard));
@@ -832,7 +836,7 @@ class ContextOptionValidatorTest {
 
     @Test
     void memoCheckWorks() {
-        char[] aaa = new char[101];
+        final char[] aaa = new char[101];
         Arrays.fill(aaa, 'a');
 
         // expect:

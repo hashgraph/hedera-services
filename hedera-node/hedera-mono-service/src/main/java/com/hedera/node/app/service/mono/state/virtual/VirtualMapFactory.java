@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccountSupplier;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
@@ -34,6 +33,7 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualVa
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKeySerializer;
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKeySupplier;
+import com.hedera.node.app.spi.config.PropertyNames;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.jasperdb.JasperDbBuilder;
@@ -49,6 +49,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 
 public class VirtualMapFactory {
+
     private static final short CURRENT_SERIALIZATION_VERSION = 1;
 
     private static final long MAX_BLOBS = 50_000_000;
@@ -349,8 +350,8 @@ public class VirtualMapFactory {
             tableConfig.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
             dsBuilder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
         } else {
-            var storageKeySerializer = new UniqueTokenKeySerializer();
-            VirtualLeafRecordSerializer<UniqueTokenKey, UniqueTokenValue> storageLeafRecordSerializer =
+            final var storageKeySerializer = new UniqueTokenKeySerializer();
+            final VirtualLeafRecordSerializer<UniqueTokenKey, UniqueTokenValue> storageLeafRecordSerializer =
                     new VirtualLeafRecordSerializer<>(
                             CURRENT_SERIALIZATION_VERSION,
                             DigestType.SHA_384,

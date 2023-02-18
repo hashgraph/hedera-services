@@ -16,7 +16,9 @@
 
 package com.hedera.node.app.service.mono.files.sysfiles;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.*;
+import static com.hedera.node.app.spi.config.PropertyNames.EXPIRY_MIN_CYCLE_ENTRY_CAPACITY;
+import static com.hedera.node.app.spi.config.PropertyNames.EXPIRY_THROTTLE_RESOURCE;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 
 import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
@@ -46,6 +48,7 @@ import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class ConfigCallbacks {
+
     private static final Logger log = LogManager.getLogger(ConfigCallbacks.class);
     private static final long DEFAULT_MAX_TO_MIN_STAKE_RATIO = 4L;
     private final PropertySource properties;

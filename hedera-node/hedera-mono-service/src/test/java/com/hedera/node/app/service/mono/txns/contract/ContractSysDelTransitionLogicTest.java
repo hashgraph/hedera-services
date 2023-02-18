@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.txns.contract;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_SYSTEM_DELETABLE;
+import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_SYSTEM_DELETABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
@@ -57,6 +57,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ContractSysDelTransitionLogicTest {
+
     private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
     private final ContractID target =
             ContractID.newBuilder().setContractNum(9_999L).build();
@@ -125,7 +126,7 @@ class ContractSysDelTransitionLogicTest {
     @Test
     void capturesBadDelete() {
         // setup:
-        TransactionRecord sysDelRec = TransactionRecord.newBuilder()
+        final TransactionRecord sysDelRec = TransactionRecord.newBuilder()
                 .setReceipt(TransactionReceipt.newBuilder()
                         .setStatus(INVALID_CONTRACT_ID)
                         .build())
@@ -145,7 +146,7 @@ class ContractSysDelTransitionLogicTest {
     @Test
     void followsHappyPathWithOverrides() {
         // setup:
-        TransactionRecord updateRec = TransactionRecord.newBuilder()
+        final TransactionRecord updateRec = TransactionRecord.newBuilder()
                 .setReceipt(TransactionReceipt.newBuilder().setStatus(SUCCESS).build())
                 .build();
 
@@ -203,7 +204,7 @@ class ContractSysDelTransitionLogicTest {
     }
 
     private void givenValidTxnCtx() {
-        var op = TransactionBody.newBuilder()
+        final var op = TransactionBody.newBuilder()
                 .setTransactionID(ourTxnId())
                 .setSystemDelete(SystemDeleteTransactionBody.newBuilder().setContractID(target));
         contractSysDelTxn = op.build();

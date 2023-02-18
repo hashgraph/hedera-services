@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.mono.context.properties;
+package com.hedera.node.app.spi.config;
 
 public class PropertyNames {
+
     private PropertyNames() {
         /* No-Op */
     }

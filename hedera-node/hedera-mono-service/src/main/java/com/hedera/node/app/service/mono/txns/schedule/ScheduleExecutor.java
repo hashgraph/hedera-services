@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.schedule;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -46,9 +47,7 @@ public final class ScheduleExecutor {
      * transaction.
      */
     ResponseCodeEnum processImmediateExecution(
-            @NonNull final ScheduleID id,
-            @NonNull final ScheduleStore store,
-            @NonNull final TransactionContext txnCtx)
+            @NonNull final ScheduleID id, @NonNull final ScheduleStore store, @NonNull final TransactionContext txnCtx)
             throws InvalidProtocolBufferException {
         Objects.requireNonNull(txnCtx, "The active transaction context cannot be null");
 
@@ -65,9 +64,7 @@ public final class ScheduleExecutor {
      * Signatures must be checked before using it.
      */
     Pair<ResponseCodeEnum, TxnAccessor> getTriggeredTxnAccessor(
-            @NonNull final ScheduleID id,
-            @NonNull final ScheduleStore store,
-            final boolean isImmediate)
+            @NonNull final ScheduleID id, @NonNull final ScheduleStore store, final boolean isImmediate)
             throws InvalidProtocolBufferException {
 
         Objects.requireNonNull(id, "The id of the scheduled transaction cannot be null");

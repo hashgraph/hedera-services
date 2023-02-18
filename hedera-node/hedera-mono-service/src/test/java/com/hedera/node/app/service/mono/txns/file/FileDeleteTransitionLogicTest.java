@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.file;
 
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
@@ -60,14 +61,11 @@ class FileDeleteTransitionLogicTest {
     private static final JKey wacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKeyUnchecked();
     private static final HFileMeta attr = new HFileMeta(false, wacl, 2_000_000L);
     private static final HFileMeta deletedAttr = new HFileMeta(true, wacl, 2_000_000L);
-    private static final HFileMeta immutableAttr =
-            new HFileMeta(false, StateView.EMPTY_WACL, 2_000_000L);
-    private static final TransactionID txnId =
-            TransactionID.newBuilder()
-                    .setTransactionValidStart(
-                            MiscUtils.asTimestamp(
-                                    Instant.ofEpochSecond(Instant.now().getEpochSecond())))
-                    .build();
+    private static final HFileMeta immutableAttr = new HFileMeta(false, StateView.EMPTY_WACL, 2_000_000L);
+    private static final TransactionID txnId = TransactionID.newBuilder()
+            .setTransactionValidStart(
+                    MiscUtils.asTimestamp(Instant.ofEpochSecond(Instant.now().getEpochSecond())))
+            .build();
 
     private TransactionBody fileDeleteTxn;
     private SignedTxnAccessor accessor;
@@ -180,12 +178,11 @@ class FileDeleteTransitionLogicTest {
                 break;
         }
 
-        fileDeleteTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(txnId)
-                        .setTransactionValidDuration(Duration.newBuilder().setSeconds(180))
-                        .setFileDelete(op)
-                        .build();
+        fileDeleteTxn = TransactionBody.newBuilder()
+                .setTransactionID(txnId)
+                .setTransactionValidDuration(Duration.newBuilder().setSeconds(180))
+                .setFileDelete(op)
+                .build();
         given(accessor.getTxn()).willReturn(fileDeleteTxn);
         given(txnCtx.accessor()).willReturn(accessor);
     }

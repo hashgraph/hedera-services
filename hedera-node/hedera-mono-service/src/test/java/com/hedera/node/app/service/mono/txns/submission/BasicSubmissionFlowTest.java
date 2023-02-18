@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.submission;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -39,17 +40,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class BasicSubmissionFlowTest {
     private static final long someReqFee = 1_234L;
-    private static final TxnValidityAndFeeReq someFailure =
-            new TxnValidityAndFeeReq(INSUFFICIENT_TX_FEE, someReqFee);
-    private static final TxnValidityAndFeeReq someSuccess =
-            new TxnValidityAndFeeReq(OK, someReqFee);
+    private static final TxnValidityAndFeeReq someFailure = new TxnValidityAndFeeReq(INSUFFICIENT_TX_FEE, someReqFee);
+    private static final TxnValidityAndFeeReq someSuccess = new TxnValidityAndFeeReq(OK, someReqFee);
 
     private static final Transaction someTxn = Transaction.getDefaultInstance();
     private static final SignedTxnAccessor someAccessor = SignedTxnAccessor.uncheckedFrom(someTxn);
 
-    @Mock private NodeInfo nodeInfo;
-    @Mock private TransactionPrecheck precheck;
-    @Mock private PlatformSubmissionManager submissionManager;
+    @Mock
+    private NodeInfo nodeInfo;
+
+    @Mock
+    private TransactionPrecheck precheck;
+
+    @Mock
+    private PlatformSubmissionManager submissionManager;
 
     private BasicSubmissionFlow subject;
 

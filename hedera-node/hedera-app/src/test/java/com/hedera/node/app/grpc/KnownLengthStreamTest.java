@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.grpc;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -39,11 +40,7 @@ class KnownLengthStreamTest {
     }
 
     private static Stream<Arguments> provideBuffers() {
-        return Stream.of(
-                Arguments.of(0, 0),
-                Arguments.of(100, 0),
-                Arguments.of(100, 80),
-                Arguments.of(100, 100));
+        return Stream.of(Arguments.of(0, 0), Arguments.of(100, 0), Arguments.of(100, 80), Arguments.of(100, 100));
     }
 
     @ParameterizedTest(name = "A buffer with capacity {0} and position {1}")
@@ -173,14 +170,7 @@ class KnownLengthStreamTest {
                 numBytesRead = stream.read(chunk);
 
                 assertTrue(numBytesRead > 0);
-                assertTrue(
-                        Arrays.equals(
-                                arr,
-                                position + i,
-                                position + i + numBytesRead,
-                                chunk,
-                                0,
-                                numBytesRead));
+                assertTrue(Arrays.equals(arr, position + i, position + i + numBytesRead, chunk, 0, numBytesRead));
             }
 
             assertEquals(-1, stream.read(new byte[capacity]));
@@ -219,14 +209,7 @@ class KnownLengthStreamTest {
                 numBytesRead = stream.read(chunk, 0, chunkSize);
 
                 assertTrue(numBytesRead > 0);
-                assertTrue(
-                        Arrays.equals(
-                                arr,
-                                position + i,
-                                position + i + numBytesRead,
-                                chunk,
-                                0,
-                                numBytesRead));
+                assertTrue(Arrays.equals(arr, position + i, position + i + numBytesRead, chunk, 0, numBytesRead));
             }
 
             assertEquals(-1, stream.read(new byte[capacity]));
@@ -272,9 +255,7 @@ class KnownLengthStreamTest {
         try (final var stream = new KnownLengthStream(buf)) {
             // The first time, there will be bytes
             final var allBytes = stream.readAllBytes();
-            assertTrue(
-                    Arrays.equals(
-                            arr, position, position + remaining, allBytes, 0, allBytes.length));
+            assertTrue(Arrays.equals(arr, position, position + remaining, allBytes, 0, allBytes.length));
 
             // Now we're at the end of the stream, so there will be no bytes
             assertEquals(0, stream.readAllBytes().length);
@@ -313,14 +294,7 @@ class KnownLengthStreamTest {
                 numBytesRead = chunk.length;
 
                 assertTrue(numBytesRead > 0);
-                assertTrue(
-                        Arrays.equals(
-                                arr,
-                                position + i,
-                                position + i + numBytesRead,
-                                chunk,
-                                0,
-                                numBytesRead));
+                assertTrue(Arrays.equals(arr, position + i, position + i + numBytesRead, chunk, 0, numBytesRead));
             }
 
             assertEquals(0, stream.readNBytes(1).length);
@@ -359,14 +333,7 @@ class KnownLengthStreamTest {
                 numBytesRead = stream.readNBytes(chunk, 0, chunkSize);
 
                 assertTrue(numBytesRead > 0);
-                assertTrue(
-                        Arrays.equals(
-                                arr,
-                                position + i,
-                                position + i + numBytesRead,
-                                chunk,
-                                0,
-                                numBytesRead));
+                assertTrue(Arrays.equals(arr, position + i, position + i + numBytesRead, chunk, 0, numBytesRead));
             }
 
             assertEquals(0, stream.readNBytes(new byte[1], 0, 1));

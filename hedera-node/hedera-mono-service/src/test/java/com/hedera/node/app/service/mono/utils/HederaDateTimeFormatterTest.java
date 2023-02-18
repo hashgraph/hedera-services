@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,13 +25,12 @@ import org.junit.jupiter.api.Test;
 class HederaDateTimeFormatterTest {
     @Test
     void shouldFormatInstantCorrectly() {
-        final var instant =
-                Instant.EPOCH
-                        .plus(18500, ChronoUnit.DAYS)
-                        .plus(12, ChronoUnit.HOURS)
-                        .plus(34, ChronoUnit.MINUTES)
-                        .plus(56, ChronoUnit.SECONDS)
-                        .plusNanos(78900);
+        final var instant = Instant.EPOCH
+                .plus(18500, ChronoUnit.DAYS)
+                .plus(12, ChronoUnit.HOURS)
+                .plus(34, ChronoUnit.MINUTES)
+                .plus(56, ChronoUnit.SECONDS)
+                .plusNanos(78900);
         assertEquals("2020-08-26T12_34_56.000078900Z", HederaDateTimeFormatter.format(instant));
     }
 }

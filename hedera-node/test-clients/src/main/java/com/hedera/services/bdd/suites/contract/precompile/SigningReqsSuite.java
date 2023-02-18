@@ -36,6 +36,7 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.*;
 import com.hedera.services.bdd.spec.assertions.*;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.*;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -95,12 +96,8 @@ public class SigningReqsSuite extends HapiSuite {
                         newKeyNamed(arKey).shape(SECP256K1),
                         newKeyNamed(fcKey).shape(SECP256K1),
                         cryptoCreate(CIVILIAN).balance(10L * ONE_HUNDRED_HBARS),
-                        cryptoCreate(autoRenew)
-                                .exposingEvmAddressTo(autoRenewAlias::set)
-                                .key(arKey),
-                        cryptoCreate(feeCollector)
-                                .exposingEvmAddressTo(feeCollectorAlias::set)
-                                .key(fcKey),
+                        cryptoCreateWithExposingId(autoRenew, arKey, autoRenewAlias),
+                        cryptoCreateWithExposingId(feeCollector, fcKey, feeCollectorAlias),
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
                         contractCreate(MINIMAL_CREATIONS_CONTRACT)
                                 .gas(GAS_TO_OFFER)
@@ -166,12 +163,8 @@ public class SigningReqsSuite extends HapiSuite {
                         newKeyNamed(arKey).shape(SECP256K1),
                         newKeyNamed(fcKey).shape(SECP256K1),
                         cryptoCreate(CIVILIAN).balance(10L * ONE_HUNDRED_HBARS),
-                        cryptoCreate(autoRenew)
-                                .exposingEvmAddressTo(autoRenewAlias::set)
-                                .key(arKey),
-                        cryptoCreate(feeCollector)
-                                .exposingEvmAddressTo(feeCollectorAlias::set)
-                                .key(fcKey),
+                        cryptoCreateWithExposingId(autoRenew, arKey, autoRenewAlias),
+                        cryptoCreateWithExposingId(feeCollector, fcKey, feeCollectorAlias),
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
                         contractCreate(MINIMAL_CREATIONS_CONTRACT)
                                 .gas(GAS_TO_OFFER)
@@ -295,9 +288,7 @@ public class SigningReqsSuite extends HapiSuite {
                 .given(
                         newKeyNamed(arKey).shape(SECP256K1),
                         cryptoCreate(CIVILIAN).balance(10L * ONE_HUNDRED_HBARS),
-                        cryptoCreate(autoRenew)
-                                .exposingEvmAddressTo(autoRenewAlias::set)
-                                .key(arKey),
+                        cryptoCreateWithExposingId(autoRenew, arKey, autoRenewAlias),
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
                         contractCreate(MINIMAL_CREATIONS_CONTRACT)
                                 .exposingNumTo(contractId::set)
@@ -359,7 +350,7 @@ public class SigningReqsSuite extends HapiSuite {
                                 // HAPI behavior, so we should be consistent for now
                                 .maxAutomaticTokenAssociations(1)
                                 .key(ntKey)
-                                .exposingEvmAddressTo(newTreasuryAliasAddr::set),
+                                .exposingCreatedIdTo(id -> newTreasuryAliasAddr.set(idAsHeadlongAddress(id))),
                         cryptoCreate(CIVILIAN).balance(10L * ONE_HUNDRED_HBARS),
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
                         contractCreate(MINIMAL_CREATIONS_CONTRACT).gas(GAS_TO_OFFER),
@@ -405,7 +396,7 @@ public class SigningReqsSuite extends HapiSuite {
                         cryptoCreate(newAutoRenewAccount)
                                 .maxAutomaticTokenAssociations(2)
                                 .key(narKey)
-                                .exposingEvmAddressTo(newAutoRenewAliasAddr::set),
+                                .exposingCreatedIdTo(id -> newAutoRenewAliasAddr.set(idAsHeadlongAddress(id))),
                         cryptoCreate(CIVILIAN).balance(10L * ONE_HUNDRED_HBARS),
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
                         contractCreate(MINIMAL_CREATIONS_CONTRACT).gas(GAS_TO_OFFER),
@@ -435,6 +426,13 @@ public class SigningReqsSuite extends HapiSuite {
                                         .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)),
                         // Auto-renew account is unchanged
                         getTokenInfo(ft).hasAutoRenewAccount(TOKEN_TREASURY));
+    }
+
+    private static HapiCryptoCreate cryptoCreateWithExposingId(
+            String accountName, String keyName, AtomicReference<Address> addressReference) {
+        return cryptoCreate(accountName)
+                .key(keyName)
+                .exposingCreatedIdTo(id -> addressReference.set(idAsHeadlongAddress(id)));
     }
 
     @Override

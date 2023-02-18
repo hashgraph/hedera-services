@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils.accessors;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -42,21 +43,20 @@ class AccessorFactoryTest {
     private static final AccountID payerId = IdUtils.asAccount("0.0.456");
     private static final ScheduleID scheduleId = IdUtils.asSchedule("0.0.333333");
 
-    @Mock private GlobalDynamicProperties properties;
+    @Mock
+    private GlobalDynamicProperties properties;
 
     AccessorFactory subject;
 
-    TransactionBody someTxn =
-            TransactionBody.newBuilder()
-                    .setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
-                    .setMemo("Hi!")
-                    .build();
-    TransactionBody tokenWipeTxn =
-            TransactionBody.newBuilder()
-                    .setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
-                    .setTokenWipe(TokenWipeAccountTransactionBody.getDefaultInstance())
-                    .setMemo("Hi!")
-                    .build();
+    TransactionBody someTxn = TransactionBody.newBuilder()
+            .setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
+            .setMemo("Hi!")
+            .build();
+    TransactionBody tokenWipeTxn = TransactionBody.newBuilder()
+            .setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
+            .setTokenWipe(TokenWipeAccountTransactionBody.getDefaultInstance())
+            .setMemo("Hi!")
+            .build();
 
     @BeforeEach
     void setUp() {
@@ -65,24 +65,26 @@ class AccessorFactoryTest {
 
     @Test
     void constructsCorrectly() throws InvalidProtocolBufferException {
-        final var someContents =
-                Transaction.newBuilder().setBodyBytes(someTxn.toByteString()).build().toByteArray();
+        final var someContents = Transaction.newBuilder()
+                .setBodyBytes(someTxn.toByteString())
+                .build()
+                .toByteArray();
         final var someAccessor = subject.nonTriggeredTxn(someContents);
         assertInstanceOf(SignedTxnAccessor.class, someAccessor);
 
-        final var wipeContents =
-                Transaction.newBuilder()
-                        .setBodyBytes(tokenWipeTxn.toByteString())
-                        .build()
-                        .toByteArray();
+        final var wipeContents = Transaction.newBuilder()
+                .setBodyBytes(tokenWipeTxn.toByteString())
+                .build()
+                .toByteArray();
         final var wipeAccessor = subject.nonTriggeredTxn(wipeContents);
         assertInstanceOf(TokenWipeAccessor.class, wipeAccessor);
     }
 
     @Test
     void constructsTriggeredCorrectly() throws InvalidProtocolBufferException {
-        final var grpcWipeTxn =
-                Transaction.newBuilder().setBodyBytes(tokenWipeTxn.toByteString()).build();
+        final var grpcWipeTxn = Transaction.newBuilder()
+                .setBodyBytes(tokenWipeTxn.toByteString())
+                .build();
 
         var triggered = subject.triggeredTxn(grpcWipeTxn, payerId, scheduleId, true, true);
 
@@ -95,11 +97,9 @@ class AccessorFactoryTest {
     @Test
     void uncheckedSpecializedAccessorThrows() {
         final var invalidTxnBytes = "InvalidTxnBytes".getBytes();
-        final var txn =
-                Transaction.newBuilder()
-                        .setSignedTransactionBytes(ByteString.copyFrom(invalidTxnBytes))
-                        .build();
-        assertThrows(
-                IllegalArgumentException.class, () -> subject.uncheckedSpecializedAccessor(txn));
+        final var txn = Transaction.newBuilder()
+                .setSignedTransactionBytes(ByteString.copyFrom(invalidTxnBytes))
+                .build();
+        assertThrows(IllegalArgumentException.class, () -> subject.uncheckedSpecializedAccessor(txn));
     }
 }

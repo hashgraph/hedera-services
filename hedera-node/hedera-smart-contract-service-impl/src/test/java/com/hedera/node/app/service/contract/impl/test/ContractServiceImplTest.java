@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.contract.impl.test;
 
 import com.hedera.node.app.service.contract.ContractService;
@@ -32,7 +33,6 @@ class ContractServiceImplTest {
         Assertions.assertEquals(
                 ContractServiceImpl.class,
                 service.getClass(),
-                "We must always receive an instance of type "
-                        + ContractServiceImpl.class.getName());
+                "We must always receive an instance of type " + ContractServiceImpl.class.getName());
     }
 }

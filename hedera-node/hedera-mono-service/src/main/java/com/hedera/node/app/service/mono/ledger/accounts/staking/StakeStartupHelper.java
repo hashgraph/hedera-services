@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.withLoggedDuration;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
 
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
@@ -56,6 +56,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class StakeStartupHelper {
+
     private static final Logger log = LogManager.getLogger(StakeStartupHelper.class);
 
     public enum RecomputeType {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stats;
 
 import static com.hedera.node.app.service.mono.stats.ServicesStatsManager.GAUGE_FORMAT;
@@ -37,52 +38,31 @@ public class EntityUtilGauges {
 
     @Inject
     public EntityUtilGauges(final UsageLimits usageLimits) {
-        utils =
-                List.of(
-                        new UtilGauge(
-                                usageLimits::percentAccountsUsed,
-                                gaugeConfigFor("accounts"),
-                                new NonAtomicReference<>()),
-                        new UtilGauge(
-                                usageLimits::percentContractsUsed,
-                                gaugeConfigFor("contracts"),
-                                new NonAtomicReference<>()),
-                        new UtilGauge(
-                                usageLimits::percentFilesUsed,
-                                gaugeConfigFor("files"),
-                                new NonAtomicReference<>()),
-                        new UtilGauge(
-                                usageLimits::percentNftsUsed,
-                                gaugeConfigFor("nfts"),
-                                new NonAtomicReference<>()),
-                        new UtilGauge(
-                                usageLimits::percentSchedulesUsed,
-                                gaugeConfigFor("schedules"),
-                                new NonAtomicReference<>()),
-                        new UtilGauge(
-                                usageLimits::percentStorageSlotsUsed,
-                                gaugeConfigFor("storageSlots", "storage slots"),
-                                new NonAtomicReference<>()),
-                        new UtilGauge(
-                                usageLimits::percentTokensUsed,
-                                gaugeConfigFor("tokens"),
-                                new NonAtomicReference<>()),
-                        new UtilGauge(
-                                usageLimits::percentTokenRelsUsed,
-                                gaugeConfigFor("tokenAssociations", "token associations"),
-                                new NonAtomicReference<>()),
-                        new UtilGauge(
-                                usageLimits::percentTopicsUsed,
-                                gaugeConfigFor("topics"),
-                                new NonAtomicReference<>()));
+        utils = List.of(
+                new UtilGauge(usageLimits::percentAccountsUsed, gaugeConfigFor("accounts"), new NonAtomicReference<>()),
+                new UtilGauge(
+                        usageLimits::percentContractsUsed, gaugeConfigFor("contracts"), new NonAtomicReference<>()),
+                new UtilGauge(usageLimits::percentFilesUsed, gaugeConfigFor("files"), new NonAtomicReference<>()),
+                new UtilGauge(usageLimits::percentNftsUsed, gaugeConfigFor("nfts"), new NonAtomicReference<>()),
+                new UtilGauge(
+                        usageLimits::percentSchedulesUsed, gaugeConfigFor("schedules"), new NonAtomicReference<>()),
+                new UtilGauge(
+                        usageLimits::percentStorageSlotsUsed,
+                        gaugeConfigFor("storageSlots", "storage slots"),
+                        new NonAtomicReference<>()),
+                new UtilGauge(usageLimits::percentTokensUsed, gaugeConfigFor("tokens"), new NonAtomicReference<>()),
+                new UtilGauge(
+                        usageLimits::percentTokenRelsUsed,
+                        gaugeConfigFor("tokenAssociations", "token associations"),
+                        new NonAtomicReference<>()),
+                new UtilGauge(usageLimits::percentTopicsUsed, gaugeConfigFor("topics"), new NonAtomicReference<>()));
     }
 
     public void registerWith(final Platform platform) {
-        utils.forEach(
-                util -> {
-                    final var gauge = platform.getMetrics().getOrCreate(util.config());
-                    util.gauge().set(gauge);
-                });
+        utils.forEach(util -> {
+            final var gauge = platform.getMetrics().getOrCreate(util.config());
+            util.gauge().set(gauge);
+        });
     }
 
     public void updateAll() {
@@ -93,13 +73,10 @@ public class EntityUtilGauges {
         return gaugeConfigFor(utilType, null);
     }
 
-    private static DoubleGauge.Config gaugeConfigFor(
-            final String utilType, @Nullable final String forDesc) {
+    private static DoubleGauge.Config gaugeConfigFor(final String utilType, @Nullable final String forDesc) {
         return new DoubleGauge.Config(STAT_CATEGORY, String.format(UTIL_NAME_TPL, utilType))
-                .withDescription(
-                        String.format(
-                                UTIL_DESCRIPTION_TPL,
-                                Optional.ofNullable(forDesc).orElse(utilType)))
+                .withDescription(String.format(
+                        UTIL_DESCRIPTION_TPL, Optional.ofNullable(forDesc).orElse(utilType)))
                 .withFormat(GAUGE_FORMAT);
     }
 }

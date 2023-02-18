@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.schedule.queries;
 
 import static com.hedera.node.app.service.mono.queries.schedule.GetScheduleInfoAnswer.SCHEDULE_INFO_CTX_KEY;
@@ -44,19 +45,17 @@ public final class GetScheduleInfoResourceUsage implements QueryResourceUsageEst
     }
 
     @Override
-    public FeeData usageGiven(
-            final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
+    public FeeData usageGiven(final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
         final var op = query.getScheduleGetInfo();
         final var optionalInfo = view.infoForSchedule(op.getScheduleID());
         if (optionalInfo.isPresent()) {
             final var info = optionalInfo.get();
             putIfNotNull(queryCtx, SCHEDULE_INFO_CTX_KEY, info);
-            final var scheduleCtxBuilder =
-                    ExtantScheduleContext.newBuilder()
-                            .setScheduledTxn(info.getScheduledTransactionBody())
-                            .setMemo(info.getMemo())
-                            .setNumSigners(info.getSigners().getKeysCount())
-                            .setResolved(info.hasExecutionTime() || info.hasDeletionTime());
+            final var scheduleCtxBuilder = ExtantScheduleContext.newBuilder()
+                    .setScheduledTxn(info.getScheduledTransactionBody())
+                    .setMemo(info.getMemo())
+                    .setNumSigners(info.getSigners().getKeysCount())
+                    .setResolved(info.hasExecutionTime() || info.hasDeletionTime());
             if (info.hasAdminKey()) {
                 scheduleCtxBuilder.setAdminKey(info.getAdminKey());
             } else {

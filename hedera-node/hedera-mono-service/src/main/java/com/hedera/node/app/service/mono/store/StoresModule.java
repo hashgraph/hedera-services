@@ -16,7 +16,10 @@
 
 package com.hedera.node.app.service.mono.store;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.*;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_STORE_ON_DISK;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILD_CARDS;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_STORE_RELS_ON_DISK;
 
 import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -76,6 +79,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 @Module
 public interface StoresModule {
+
     @Binds
     @Singleton
     TokenStore bindTokenStore(HederaTokenStore hederaTokenStore);

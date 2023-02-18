@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context;
 
 import static com.hedera.node.app.service.mono.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
@@ -143,18 +144,16 @@ public class SideEffectsTracker {
             final var tokenId = id.asGrpcToken();
             final List<NftTransfer> transfers = new ArrayList<>();
             for (final var change : changes.get(id)) {
-                transfers.add(
-                        NftTransfer.newBuilder()
-                                .setSenderAccountID(change.getPreviousOwner().asGrpcAccount())
-                                .setReceiverAccountID(change.getNewOwner().asGrpcAccount())
-                                .setSerialNumber(change.getSerialNumber())
-                                .build());
+                transfers.add(NftTransfer.newBuilder()
+                        .setSenderAccountID(change.getPreviousOwner().asGrpcAccount())
+                        .setReceiverAccountID(change.getNewOwner().asGrpcAccount())
+                        .setSerialNumber(change.getSerialNumber())
+                        .build());
             }
-            explicitNetTokenUnitOrOwnershipChanges.add(
-                    TokenTransferList.newBuilder()
-                            .setToken(tokenId)
-                            .addAllNftTransfers(transfers)
-                            .build());
+            explicitNetTokenUnitOrOwnershipChanges.add(TokenTransferList.newBuilder()
+                    .setToken(tokenId)
+                    .addAllNftTransfers(transfers)
+                    .build());
         }
     }
 
@@ -173,23 +172,19 @@ public class SideEffectsTracker {
 
             final var tokenId = tokenRel.getToken().getId();
             final var accountId = tokenRel.getAccount().getId();
-            final var scopedChanges =
-                    changesById.computeIfAbsent(
-                            tokenId,
-                            ignore ->
-                                    TokenTransferList.newBuilder().setToken(tokenId.asGrpcToken()));
-            scopedChanges.addTransfers(
-                    AccountAmount.newBuilder()
-                            .setAccountID(accountId.asGrpcAccount())
-                            .setAmount(tokenRel.getBalanceChange()));
+            final var scopedChanges = changesById.computeIfAbsent(
+                    tokenId, ignore -> TokenTransferList.newBuilder().setToken(tokenId.asGrpcToken()));
+            scopedChanges.addTransfers(AccountAmount.newBuilder()
+                    .setAccountID(accountId.asGrpcAccount())
+                    .setAmount(tokenRel.getBalanceChange()));
         }
 
         if (!changesById.isEmpty()) {
             explicitNetTokenUnitOrOwnershipChanges = new ArrayList<>();
             final List<Id> tokenIds = new ArrayList<>(changesById.keySet());
             tokenIds.sort(Id.ID_COMPARATOR);
-            tokenIds.forEach(
-                    id -> explicitNetTokenUnitOrOwnershipChanges.add(changesById.get(id).build()));
+            tokenIds.forEach(id -> explicitNetTokenUnitOrOwnershipChanges.add(
+                    changesById.get(id).build()));
         }
     }
 
@@ -284,8 +279,7 @@ public class SideEffectsTracker {
      * @param account the account involved in the auto-association
      */
     public void trackAutoAssociation(final TokenID token, final AccountID account) {
-        final var association =
-                new FcTokenAssociation(token.getTokenNum(), account.getAccountNum());
+        final var association = new FcTokenAssociation(token.getTokenNum(), account.getAccountNum());
         autoAssociations.add(association);
     }
 
@@ -297,13 +291,8 @@ public class SideEffectsTracker {
      */
     public void trackRewardPayment(final long accountNum, final long amount) {
         if (amount != 0) {
-            numRewardedAccounts =
-                    includeOrderedFungibleChange(
-                            rewardedAccounts,
-                            rewardAmounts,
-                            numRewardedAccounts,
-                            accountNum,
-                            amount);
+            numRewardedAccounts = includeOrderedFungibleChange(
+                    rewardedAccounts, rewardAmounts, numRewardedAccounts, accountNum, amount);
         }
     }
 
@@ -314,9 +303,7 @@ public class SideEffectsTracker {
      * @return the created auto-associations
      */
     public List<FcTokenAssociation> getTrackedAutoAssociations() {
-        return autoAssociations.isEmpty()
-                ? Collections.emptyList()
-                : new ArrayList<>(autoAssociations);
+        return autoAssociations.isEmpty() ? Collections.emptyList() : new ArrayList<>(autoAssociations);
     }
 
     /**
@@ -331,8 +318,7 @@ public class SideEffectsTracker {
     public void trackHbarChange(final long account, final long amount) {
         netHbarChange += amount;
         numHbarChangesSoFar =
-                includeOrderedFungibleChange(
-                        changedAccounts, balanceChanges, numHbarChangesSoFar, account, amount);
+                includeOrderedFungibleChange(changedAccounts, balanceChanges, numHbarChangesSoFar, account, amount);
     }
 
     /**
@@ -346,11 +332,9 @@ public class SideEffectsTracker {
      * @param account the changed account
      * @param amount the incremental unit change to track
      */
-    public void trackTokenUnitsChange(
-            final TokenID token, final AccountID account, final long amount) {
+    public void trackTokenUnitsChange(final TokenID token, final AccountID account, final long amount) {
         tokensTouched[numTokenChangesSoFar++] = token;
-        final var unitChanges =
-                netTokenChanges.computeIfAbsent(token, ignore -> TransferList.newBuilder());
+        final var unitChanges = netTokenChanges.computeIfAbsent(token, ignore -> TransferList.newBuilder());
         updateFungibleChanges(account, amount, unitChanges);
     }
 
@@ -369,8 +353,7 @@ public class SideEffectsTracker {
     public void trackNftOwnerChange(final NftId nftId, final AccountID from, AccountID to) {
         final var token = nftId.tokenId();
         tokensTouched[numTokenChangesSoFar++] = token;
-        var xfers =
-                nftOwnerChanges.computeIfAbsent(token, ignore -> TokenTransferList.newBuilder());
+        var xfers = nftOwnerChanges.computeIfAbsent(token, ignore -> TokenTransferList.newBuilder());
         xfers.addNftTransfers(nftTransferBuilderWith(from, to, nftId.serialNo()));
     }
 
@@ -382,13 +365,11 @@ public class SideEffectsTracker {
      * @return the ordered net balance changes
      */
     public CurrencyAdjustments getNetTrackedHbarChanges() {
-        numHbarChangesSoFar =
-                purgeZeroChanges(changedAccounts, balanceChanges, numHbarChangesSoFar);
+        numHbarChangesSoFar = purgeZeroChanges(changedAccounts, balanceChanges, numHbarChangesSoFar);
 
         // copy the range of elements that are modified from balance changes and account numbers
         final long[] changedBalances = Arrays.copyOfRange(balanceChanges, 0, numHbarChangesSoFar);
-        final long[] changedAccountNums =
-                Arrays.copyOfRange(changedAccounts, 0, numHbarChangesSoFar);
+        final long[] changedAccountNums = Arrays.copyOfRange(changedAccounts, 0, numHbarChangesSoFar);
         return CurrencyAdjustments.fromChanges(changedBalances, changedAccountNums);
     }
 
@@ -428,21 +409,18 @@ public class SideEffectsTracker {
             if (i == 0 || !token.equals(tokensTouched[i - 1])) {
                 final var uniqueTransfersHere = nftOwnerChanges.get(token);
                 if (uniqueTransfersHere != null) {
-                    all.add(
-                            TokenTransferList.newBuilder()
-                                    .setToken(token)
-                                    .addAllNftTransfers(uniqueTransfersHere.getNftTransfersList())
-                                    .build());
+                    all.add(TokenTransferList.newBuilder()
+                            .setToken(token)
+                            .addAllNftTransfers(uniqueTransfersHere.getNftTransfersList())
+                            .build());
                 } else {
                     final var fungibleTransfersHere = netTokenChanges.get(token);
                     if (fungibleTransfersHere != null) {
                         purgeZeroAdjustments(fungibleTransfersHere);
-                        all.add(
-                                TokenTransferList.newBuilder()
-                                        .setToken(token)
-                                        .addAllTransfers(
-                                                fungibleTransfersHere.getAccountAmountsList())
-                                        .build());
+                        all.add(TokenTransferList.newBuilder()
+                                .setToken(token)
+                                .addAllTransfers(fungibleTransfersHere.getAccountAmountsList())
+                                .build());
                     }
                 }
             }
@@ -467,8 +445,7 @@ public class SideEffectsTracker {
     }
 
     public boolean hasTrackedRandomData() {
-        return pseudorandomNumber >= 0
-                || (pseudorandomBytes != null && pseudorandomBytes.length > 0);
+        return pseudorandomNumber >= 0 || (pseudorandomBytes != null && pseudorandomBytes.length > 0);
     }
 
     /** Clears all side effects tracked since the last call to this method. */
@@ -514,8 +491,7 @@ public class SideEffectsTracker {
     }
 
     /* --- Internal helpers --- */
-    private void updateFungibleChanges(
-            final AccountID account, final long amount, final TransferList.Builder builder) {
+    private void updateFungibleChanges(final AccountID account, final long amount, final TransferList.Builder builder) {
         int loc = 0;
         int diff = -1;
         final var changes = builder.getAccountAmountsBuilderList();
@@ -624,8 +600,7 @@ public class SideEffectsTracker {
      * @return how many slots in the accountNums array are now actually touched
      */
     @VisibleForTesting
-    static int purgeZeroChanges(
-            final long[] accountNums, final long[] balanceChanges, final int touchedSoFar) {
+    static int purgeZeroChanges(final long[] accountNums, final long[] balanceChanges, final int touchedSoFar) {
         var zerosSkippedSoFar = 0;
         var retracedI = 0;
         for (int i = 0; i < touchedSoFar; i++, retracedI++) {

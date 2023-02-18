@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_RATE;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 

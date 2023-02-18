@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.spi.state.WritableKVState;
@@ -30,8 +31,7 @@ import java.util.Objects;
  * @param <K> The type of key for the state
  * @param <V> The type of value for the state
  */
-public final class OnDiskWritableKVState<K extends Comparable<K>, V>
-        extends WritableKVStateBase<K, V> {
+public final class OnDiskWritableKVState<K extends Comparable<K>, V> extends WritableKVStateBase<K, V> {
     /** The backing merkle data structure */
     private final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap;
 
@@ -44,8 +44,7 @@ public final class OnDiskWritableKVState<K extends Comparable<K>, V>
      * @param virtualMap the backing merkle data structure to use
      */
     public OnDiskWritableKVState(
-            @NonNull final StateMetadata<K, V> md,
-            @NonNull final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap) {
+            @NonNull final StateMetadata<K, V> md, @NonNull final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap) {
         super(md.stateDefinition().stateKey());
         this.md = md;
         this.virtualMap = Objects.requireNonNull(virtualMap);

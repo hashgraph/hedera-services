@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ package com.hedera.node.app.state.merkle;
 
 import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
 import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_FIRST_USER_ENTITY;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_FIRST_USER_ENTITY;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.swirlds.common.system.InitTrigger.GENESIS;
 import static com.swirlds.common.system.InitTrigger.RECONNECT;
 import static com.swirlds.common.system.InitTrigger.RESTART;
@@ -477,7 +477,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         return this;
     }
 
-    void putServiceStateIfAbsent(@NonNull final StateMetadata<?, ?> md) {
+    <K extends Comparable<K>, V> void putServiceStateIfAbsent(@NonNull final StateMetadata<K, V> md) {
         throwIfImmutable();
         Objects.requireNonNull(md);
         final var stateMetadata = services.computeIfAbsent(md.serviceName(), k -> new HashMap<>());

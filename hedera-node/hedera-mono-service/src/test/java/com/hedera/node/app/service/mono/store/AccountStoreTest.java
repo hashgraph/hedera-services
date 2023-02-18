@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
@@ -55,10 +56,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AccountStoreTest {
-    @Mock private OptionValidator validator;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private BackingStore<AccountID, HederaAccount> accounts;
-    @Mock private TypedTokenStore tokenStore;
+    @Mock
+    private OptionValidator validator;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private BackingStore<AccountID, HederaAccount> accounts;
+
+    @Mock
+    private TypedTokenStore tokenStore;
 
     private AccountStore subject;
 
@@ -117,8 +125,7 @@ class AccountStoreTest {
         setupWithAccount(miscMerkleId, miscMerkleAccount);
         miscMerkleAccount.setBalance(0L);
         miscMerkleAccount.setExpiredAndPendingRemoval(true);
-        given(validator.expiryStatusGiven(0L, true, false))
-                .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+        given(validator.expiryStatusGiven(0L, true, false)).willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
         assertMiscAccountLoadFailsWith(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
     }
@@ -165,14 +172,13 @@ class AccountStoreTest {
         // and:
         final var aThirdToken = new Token(new Id(0, 0, 888));
         // and:
-        final var expectedReplacement =
-                MerkleAccountFactory.newAccount()
-                        .balance(balance)
-                        .expirationTime(expiry)
-                        .maxAutomaticAssociations(maxAutoAssociations)
-                        .alreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations)
-                        .proxy(proxy.asGrpcAccount())
-                        .get();
+        final var expectedReplacement = MerkleAccountFactory.newAccount()
+                .balance(balance)
+                .expirationTime(expiry)
+                .maxAutomaticAssociations(maxAutoAssociations)
+                .alreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations)
+                .proxy(proxy.asGrpcAccount())
+                .get();
         expectedReplacement.setKey(miscMerkleId);
         expectedReplacement.setNumPositiveBalances(numPositiveBalances);
         expectedReplacement.setNumAssociations(associatedTokensCount + 1);
@@ -193,24 +199,18 @@ class AccountStoreTest {
         setupWithAccount(miscMerkleId, miscMerkleAccount);
         miscMerkleAccount.setDeleted(true);
 
-        var ex =
-                assertThrows(
-                        InvalidTransactionException.class,
-                        () -> subject.loadAccountOrFailWith(miscId, FAIL_INVALID));
+        var ex = assertThrows(
+                InvalidTransactionException.class, () -> subject.loadAccountOrFailWith(miscId, FAIL_INVALID));
         assertEquals(FAIL_INVALID, ex.getResponseCode());
 
         miscMerkleAccount.setDeleted(false);
         miscMerkleAccount.setBalance(0L);
         miscMerkleAccount.setExpiredAndPendingRemoval(true);
-        given(validator.expiryStatusGiven(0L, true, false))
-                .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+        given(validator.expiryStatusGiven(0L, true, false)).willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
-        var ex2 =
-                assertThrows(
-                        InvalidTransactionException.class,
-                        () ->
-                                subject.loadAccountOrFailWith(
-                                        miscId, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
+        var ex2 = assertThrows(
+                InvalidTransactionException.class,
+                () -> subject.loadAccountOrFailWith(miscId, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
         assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, ex2.getResponseCode());
     }
 
@@ -224,14 +224,13 @@ class AccountStoreTest {
         var newMax = maxAutoAssociations + 5;
         var newUsedCount = alreadyUsedAutoAssociations - 10;
         // and:
-        final var expectedReplacement =
-                MerkleAccountFactory.newAccount()
-                        .balance(balance)
-                        .expirationTime(expiry)
-                        .maxAutomaticAssociations(newMax)
-                        .alreadyUsedAutomaticAssociations(newUsedCount)
-                        .proxy(proxy.asGrpcAccount())
-                        .get();
+        final var expectedReplacement = MerkleAccountFactory.newAccount()
+                .balance(balance)
+                .expirationTime(expiry)
+                .maxAutomaticAssociations(newMax)
+                .alreadyUsedAutomaticAssociations(newUsedCount)
+                .proxy(proxy.asGrpcAccount())
+                .get();
         expectedReplacement.setNumPositiveBalances(numPositiveBalances);
         expectedReplacement.setNumAssociations(associatedTokensCount);
         expectedReplacement.setHeadTokenId(firstAssocTokenNum);
@@ -260,12 +259,14 @@ class AccountStoreTest {
 
     private void setupWithUnexpiredAccount(EntityNum anId, MerkleAccount anAccount) {
         given(accounts.getImmutableRef(anId.toGrpcAccountId())).willReturn(anAccount);
-        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean()))
+                .willReturn(OK);
     }
 
     private void setupWithMutableAccount(EntityNum anId, MerkleAccount anAccount) {
         given(accounts.getRef(anId.toGrpcAccountId())).willReturn(anAccount);
-        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean()))
+                .willReturn(OK);
     }
 
     private void assertMiscAccountLoadFailsWith(ResponseCodeEnum status) {
@@ -274,14 +275,13 @@ class AccountStoreTest {
     }
 
     private void setupAccounts() {
-        miscMerkleAccount =
-                MerkleAccountFactory.newAccount()
-                        .balance(balance)
-                        .expirationTime(expiry)
-                        .maxAutomaticAssociations(maxAutoAssociations)
-                        .alreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations)
-                        .proxy(proxy.asGrpcAccount())
-                        .get();
+        miscMerkleAccount = MerkleAccountFactory.newAccount()
+                .balance(balance)
+                .expirationTime(expiry)
+                .maxAutomaticAssociations(maxAutoAssociations)
+                .alreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations)
+                .proxy(proxy.asGrpcAccount())
+                .get();
 
         miscAccount.setExpiry(expiry);
         miscAccount.initBalance(balance);

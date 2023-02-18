@@ -35,7 +35,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import com.hedera.node.app.service.mono.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -53,6 +52,7 @@ import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.node.app.spi.config.PropertyNames;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -85,6 +85,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class MigrationRecordsManagerTest {
+
     private static final long fundingExpiry = 33197904000L;
     private static final long stakingRewardAccount = 800;
     private static final long nodeRewardAccount = 801;
@@ -511,7 +512,7 @@ class MigrationRecordsManagerTest {
                             new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
             ConstructableRegistry.getInstance()
                     .registerConstructable(new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
-        } catch (ConstructableRegistryException e) {
+        } catch (final ConstructableRegistryException e) {
             throw new IllegalStateException(e);
         }
     }

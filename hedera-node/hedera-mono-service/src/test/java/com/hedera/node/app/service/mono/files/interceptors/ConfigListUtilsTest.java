@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.interceptors;
 
 import static com.hedera.node.app.service.mono.files.interceptors.ConfigListUtils.isConfigList;
@@ -27,10 +28,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class ConfigListUtilsTest {
-    private final ServicesConfigurationList example =
-            ServicesConfigurationList.newBuilder()
-                    .addNameValue(Setting.newBuilder().setName("key").setValue("value"))
-                    .build();
+    private final ServicesConfigurationList example = ServicesConfigurationList.newBuilder()
+            .addNameValue(Setting.newBuilder().setName("key").setValue("value"))
+            .build();
 
     @Test
     void recognizesParseable() {
@@ -50,9 +50,7 @@ class ConfigListUtilsTest {
     @Test
     void parsesToDefaultIfInvalid() {
         // expect:
-        Assertions.assertEquals(
-                ServicesConfigurationList.getDefaultInstance(),
-                uncheckedParse("NONSENSE".getBytes()));
+        Assertions.assertEquals(ServicesConfigurationList.getDefaultInstance(), uncheckedParse("NONSENSE".getBytes()));
     }
 
     @Test

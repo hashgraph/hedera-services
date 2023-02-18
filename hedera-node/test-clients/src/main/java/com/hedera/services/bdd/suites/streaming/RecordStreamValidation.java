@@ -31,7 +31,7 @@ import org.apache.logging.log4j.Logger;
 public class RecordStreamValidation extends HapiSuite {
     private static final Logger log = LogManager.getLogger(RecordStreamValidation.class);
 
-    private static final String PATH_TO_LOCAL_STREAMS = "../hedera-node/data/recordstreams";
+    private static final String PATH_TO_LOCAL_STREAMS = "../data/recordstreams";
 
     public static void main(String... args) {
         new RecordStreamValidation().runSuiteSync();

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.sources;
 
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asEvmAddress;
@@ -44,17 +45,14 @@ public final class AddressKeyedMapFactory {
     }
 
     private static Map<byte[], byte[]> mapFrom(
-            final Map<String, byte[]> store,
-            final Pattern legacyPathPattern,
-            final String legacyPathTemplate) {
-        final var storageMap =
-                new BytesStoreAdapter<>(
-                        byte[].class,
-                        Function.identity(),
-                        Function.identity(),
-                        toAddressMapping(legacyPathPattern),
-                        toKeyMapping(legacyPathTemplate),
-                        store);
+            final Map<String, byte[]> store, final Pattern legacyPathPattern, final String legacyPathTemplate) {
+        final var storageMap = new BytesStoreAdapter<>(
+                byte[].class,
+                Function.identity(),
+                Function.identity(),
+                toAddressMapping(legacyPathPattern),
+                toKeyMapping(legacyPathTemplate),
+                store);
         storageMap.setDelegateEntryFilter(toRelevancyPredicate(legacyPathPattern));
         return storageMap;
     }

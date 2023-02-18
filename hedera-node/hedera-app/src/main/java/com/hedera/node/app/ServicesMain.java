@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 package com.hedera.node.app;
 
 import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STATES_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.STATES_ENABLED;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.hedera.node.app.service.mono.ServicesApp;

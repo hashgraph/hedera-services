@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.txns;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -32,18 +33,12 @@ public class TinyBarsFromTo {
         this(payer, payee, amount, false, false, false);
     }
 
-    private TinyBarsFromTo(
-            String payer, String payee, long amount, boolean payerIsAlias, boolean payeeIsAlias) {
+    private TinyBarsFromTo(String payer, String payee, long amount, boolean payerIsAlias, boolean payeeIsAlias) {
         this(payer, payee, amount, payerIsAlias, payeeIsAlias, false);
     }
 
     private TinyBarsFromTo(
-            String payer,
-            String payee,
-            long amount,
-            boolean payerIsAlias,
-            boolean payeeIsAlias,
-            boolean isApproval) {
+            String payer, String payee, long amount, boolean payerIsAlias, boolean payeeIsAlias, boolean isApproval) {
         this.payer = payer;
         this.payee = payee;
         this.amount = amount;
@@ -56,8 +51,7 @@ public class TinyBarsFromTo {
         return new TinyBarsFromTo(payer, payee, amount);
     }
 
-    public static TinyBarsFromTo tinyBarsFromAccountToAlias(
-            String payer, String payee, long amount) {
+    public static TinyBarsFromTo tinyBarsFromAccountToAlias(String payer, String payee, long amount) {
         return new TinyBarsFromTo(payer, payee, amount, false, true);
     }
 
@@ -87,13 +81,17 @@ public class TinyBarsFromTo {
 
     public AccountID payerId() {
         return payerIsAlias
-                ? AccountID.newBuilder().setAlias(ByteString.copyFromUtf8(payer)).build()
+                ? AccountID.newBuilder()
+                        .setAlias(ByteString.copyFromUtf8(payer))
+                        .build()
                 : asAccount(payer);
     }
 
     public AccountID payeeId() {
         return payeeIsAlias
-                ? AccountID.newBuilder().setAlias(ByteString.copyFromUtf8(payee)).build()
+                ? AccountID.newBuilder()
+                        .setAlias(ByteString.copyFromUtf8(payee))
+                        .build()
                 : asAccount(payee);
     }
 }

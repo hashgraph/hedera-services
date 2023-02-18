@@ -16,11 +16,11 @@
 
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.node.app.service.mono.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_RATE;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;

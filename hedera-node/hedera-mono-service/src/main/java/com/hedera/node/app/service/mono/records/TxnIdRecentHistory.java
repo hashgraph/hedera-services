@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.records;
 
 import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
@@ -122,8 +123,7 @@ public class TxnIdRecentHistory {
      * @param expirableTxnRecord a record belonging to this history
      * @param status the final status of the associated transaction
      */
-    public void observe(
-            final ExpirableTxnRecord expirableTxnRecord, final ResponseCodeEnum status) {
+    public void observe(final ExpirableTxnRecord expirableTxnRecord, final ResponseCodeEnum status) {
         if (UNCLASSIFIABLE_STATUSES.contains(status)) {
             addUnclassifiable(expirableTxnRecord);
         } else {
@@ -153,12 +153,9 @@ public class TxnIdRecentHistory {
      */
     public void observeStaged() {
         memory.sort(CONSENSUS_TIME_COMPARATOR);
-        memory.forEach(
-                expirableTxnRecord ->
-                        this.observe(
-                                expirableTxnRecord,
-                                ResponseCodeEnum.valueOf(
-                                        expirableTxnRecord.getReceipt().getStatus())));
+        memory.forEach(expirableTxnRecord -> this.observe(
+                expirableTxnRecord,
+                ResponseCodeEnum.valueOf(expirableTxnRecord.getReceipt().getStatus())));
         memory = null;
     }
 
@@ -252,8 +249,7 @@ public class TxnIdRecentHistory {
     private void forgetFromUnclassifiableList(final long now) {
         final var size = unclassifiableRecords.size();
         if (size > 1) {
-            unclassifiableRecords.removeIf(
-                    expirableTxnRecord -> expirableTxnRecord.getExpiry() <= now);
+            unclassifiableRecords.removeIf(expirableTxnRecord -> expirableTxnRecord.getExpiry() <= now);
         } else if (size == 1) {
             final var onlyRecord = unclassifiableRecords.get(0);
             if (onlyRecord.getExpiry() <= now) {

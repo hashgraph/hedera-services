@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
@@ -38,6 +37,7 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
+import com.hedera.node.app.spi.config.PropertyNames;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -52,6 +52,7 @@ import org.mockito.Mockito;
 
 @ExtendWith(LogCaptureExtension.class)
 class UniqueTokensLinkManagerTest extends ResponsibleVMapUser {
+
     private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
     private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
     private final UniqueTokenMapAdapter uniqueTokens = UniqueTokenMapAdapter.wrap(new MerkleMap<>());

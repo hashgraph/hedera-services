@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.mono.txns.contract;
 
 import static com.hedera.node.app.service.mono.context.properties.EntityType.CONTRACT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_SYSTEM_DELETABLE;
+import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_SYSTEM_DELETABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
@@ -58,6 +58,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ContractSysUndelTransitionLogicTest {
+
     private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
     private final ContractID target =
             ContractID.newBuilder().setContractNum(9_999L).build();
@@ -125,7 +126,7 @@ class ContractSysUndelTransitionLogicTest {
     @Test
     void capturesBadUndelete() {
         // setup:
-        TransactionRecord sysUndelRec = TransactionRecord.newBuilder()
+        final TransactionRecord sysUndelRec = TransactionRecord.newBuilder()
                 .setReceipt(TransactionReceipt.newBuilder()
                         .setStatus(INVALID_CONTRACT_ID)
                         .build())
@@ -145,7 +146,7 @@ class ContractSysUndelTransitionLogicTest {
     @Test
     void followsHappyPathWithOverrides() {
         // setup:
-        TransactionRecord sysUndelRec = TransactionRecord.newBuilder()
+        final TransactionRecord sysUndelRec = TransactionRecord.newBuilder()
                 .setReceipt(TransactionReceipt.newBuilder().setStatus(SUCCESS).build())
                 .build();
 
@@ -203,7 +204,7 @@ class ContractSysUndelTransitionLogicTest {
     }
 
     private void givenValidTxnCtx() {
-        var op = TransactionBody.newBuilder()
+        final var op = TransactionBody.newBuilder()
                 .setTransactionID(ourTxnId())
                 .setSystemUndelete(SystemUndeleteTransactionBody.newBuilder().setContractID(target));
         contractSysUndelTxn = op.build();

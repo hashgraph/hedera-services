@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -186,6 +187,8 @@ public class ContractCallSuite extends HapiSuite {
     private static final String RECEIVER_1_INFO = "receiver1Info";
     private static final String RECEIVER_2_INFO = "receiver2Info";
     private static final String RECEIVER_3_INFO = "receiver3Info";
+    public static final String STATE_MUTABILITY_NONPAYABLE_TYPE_FUNCTION =
+            " \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
     public static void main(String... args) {
         new ContractCallSuite().runSuiteAsync();
@@ -520,7 +523,6 @@ public class ContractCallSuite extends HapiSuite {
                         burnToken(ticketToken, List.of(1L)).via(burn),
                         uploadInitCode(contract))
                 .when(
-                        getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
                         withOpContext((spec, opLog) -> {
                             final var registry = spec.registry();
                             final var tokenId = registry.getTokenID(ticketToken);
@@ -1126,7 +1128,7 @@ public class ContractCallSuite extends HapiSuite {
                         cryptoCreate(spender)
                                 .balance(123 * ONE_HUNDRED_HBARS)
                                 .keyShape(SigControl.SECP256K1_ON)
-                                .exposingEvmAddressTo(spenderAddress::set),
+                                .exposingCreatedIdTo(id -> spenderAddress.set(idAsHeadlongAddress(id))),
                         tokenCreate(token).initialSupply(1000).treasury(spender).exposingAddressTo(tokenAddress::set))
                 .when(uploadInitCode(TEST_APPROVER), sourcing(() -> contractCreate(
                                 TEST_APPROVER, tokenAddress.get(), spenderAddress.get())
@@ -2027,13 +2029,13 @@ public class ContractCallSuite extends HapiSuite {
         final var withdrawAbi = "{ \"inputs\": [ { \"internalType\": \"uint256\", \"name\": \"_pid\", \"type\":"
                 + " \"uint256\" }, { \"internalType\": \"uint256\", \"name\": \"_amount\","
                 + " \"type\": \"uint256\" } ], \"name\": \"withdraw\", \"outputs\": [],"
-                + " \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+                + STATE_MUTABILITY_NONPAYABLE_TYPE_FUNCTION;
         final var setSauceAbi = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"_sauce\", \"type\":"
                 + " \"address\" } ], \"name\": \"setSauceAddress\", \"outputs\": [],"
-                + " \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+                + STATE_MUTABILITY_NONPAYABLE_TYPE_FUNCTION;
         final var transferAbi = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"newOwner\", \"type\":"
                 + " \"address\" } ], \"name\": \"transferOwnership\", \"outputs\": [],"
-                + " \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+                + STATE_MUTABILITY_NONPAYABLE_TYPE_FUNCTION;
         final var initcode = "farmInitcode";
         final var farm = "farm";
         final var dev = "dev";
@@ -2156,7 +2158,9 @@ public class ContractCallSuite extends HapiSuite {
 
     private ByteString bookInterpolated(final byte[] jurisdictionInitcode, final String addressBookMirror) {
         return ByteString.copyFrom(new String(jurisdictionInitcode)
-                .replaceAll("_+AddressBook.sol:AddressBook_+", addressBookMirror)
+                .replaceAll( // NOSONAR
+                        "_+AddressBook.sol:AddressBook_+", // NOSONAR
+                        addressBookMirror) // NOSONAR ignoring security hotspot in tests
                 .getBytes());
     }
 

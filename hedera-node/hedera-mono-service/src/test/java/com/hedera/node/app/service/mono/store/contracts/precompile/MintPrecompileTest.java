@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
@@ -127,42 +128,101 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class MintPrecompileTest {
-    @Mock private AccountStore accountStore;
-    @Mock private TypedTokenStore tokenStore;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private GasCalculator gasCalculator;
-    @Mock private MessageFrame frame;
-    @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private EncodingFacade encoder;
-    @Mock private EvmEncodingFacade evmEncoder;
-    @Mock private MintLogic mintLogic;
-    @Mock private SideEffectsTracker sideEffects;
-    @Mock private TransactionBody.Builder mockSynthBodyBuilder;
-    @Mock private ExpirableTxnRecord.Builder mockRecordBuilder;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private HederaStackedWorldStateUpdater worldUpdater;
-    @Mock private WorldLedgers wrappedLedgers;
-    @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
+    @Mock
+    private AccountStore accountStore;
 
     @Mock
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-            tokenRels;
+    private TypedTokenStore tokenStore;
 
-    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
-    @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
-    @Mock private ExpiringCreations creator;
-    @Mock private FeeCalculator feeCalculator;
-    @Mock private FeeObject mockFeeObject;
-    @Mock private StateView stateView;
-    @Mock private ContractAliases aliases;
-    @Mock private UsagePricesProvider resourceCosts;
-    @Mock private InfrastructureFactory infrastructureFactory;
-    @Mock private AssetsLoader assetLoader;
-    @Mock private HbarCentExchange exchange;
-    @Mock private ExchangeRate exchangeRate;
-    @Mock private AccessorFactory accessorFactory;
-    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private GasCalculator gasCalculator;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private TxnAwareEvmSigsVerifier sigsVerifier;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private EncodingFacade encoder;
+
+    @Mock
+    private EvmEncodingFacade evmEncoder;
+
+    @Mock
+    private MintLogic mintLogic;
+
+    @Mock
+    private SideEffectsTracker sideEffects;
+
+    @Mock
+    private TransactionBody.Builder mockSynthBodyBuilder;
+
+    @Mock
+    private ExpirableTxnRecord.Builder mockRecordBuilder;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private HederaStackedWorldStateUpdater worldUpdater;
+
+    @Mock
+    private WorldLedgers wrappedLedgers;
+
+    @Mock
+    private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
+
+    @Mock
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRels;
+
+    @Mock
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
+
+    @Mock
+    private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
+
+    @Mock
+    private ExpiringCreations creator;
+
+    @Mock
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private FeeObject mockFeeObject;
+
+    @Mock
+    private StateView stateView;
+
+    @Mock
+    private ContractAliases aliases;
+
+    @Mock
+    private UsagePricesProvider resourceCosts;
+
+    @Mock
+    private InfrastructureFactory infrastructureFactory;
+
+    @Mock
+    private AssetsLoader assetLoader;
+
+    @Mock
+    private HbarCentExchange exchange;
+
+    @Mock
+    private ExchangeRate exchangeRate;
+
+    @Mock
+    private AccessorFactory accessorFactory;
+
+    @Mock
+    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     private static final long TEST_SERVICE_FEE = 5_000_000;
     private static final long TEST_NETWORK_FEE = 400_000;
@@ -171,28 +231,21 @@ class MintPrecompileTest {
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
             (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
-    private static final Bytes ZERO_FUNGIBLE_MINT_INPUT =
-            Bytes.fromHexString(
-                    "0x278e0b88000000000000000000000000000000000000000000000000000000000000043e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
+    private static final Bytes ZERO_FUNGIBLE_MINT_INPUT = Bytes.fromHexString(
+            "0x278e0b88000000000000000000000000000000000000000000000000000000000000043e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
 
-    private static final Bytes FUNGIBLE_MINT_INPUT =
-            Bytes.fromHexString(
-                    "0x278e0b88000000000000000000000000000000000000000000000000000000000000043e000000000000000000000000000000000000000000000000000000000000000f00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
-    private static final Bytes FUNGIBLE_MINT_INPUT_V2 =
-            Bytes.fromHexString(
-                    "0xe0f4059a000000000000000000000000000000000000000000000000000000000000043e000000000000000000000000000000000000000000000000000000000000000f00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
-    private static final Bytes ZERO_FUNGIBLE_MINT_INPUT_V2 =
-            Bytes.fromHexString(
-                    "0xe0f4059a000000000000000000000000000000000000000000000000000000000000043e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
-    private static final Bytes NON_FUNGIBLE_MINT_INPUT =
-            Bytes.fromHexString(
-                    "0x278e0b88000000000000000000000000000000000000000000000000000000000000042e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000124e4654206d65746164617461207465737431000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000124e4654206d657461646174612074657374320000000000000000000000000000");
-    private static final Bytes NON_FUNGIBLE_MINT_INPUT_V2 =
-            Bytes.fromHexString(
-                    "0xe0f4059a000000000000000000000000000000000000000000000000000000000000042e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000124e4654206d65746164617461207465737431000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000124e4654206d657461646174612074657374320000000000000000000000000000");
-    private static final Bytes BOTH_INPUTS_INPUT_V2 =
-            Bytes.fromHexString(
-                    "0xe0f4059a000000000000000000000000000000000000000000000000000000000000042e0000000000000000000000000000000000000000000000000000000000000000f00000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000124e4654206d65746164617461207465737431000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000124e4654206d657461646174612074657374320000000000000000000000000000");
+    private static final Bytes FUNGIBLE_MINT_INPUT = Bytes.fromHexString(
+            "0x278e0b88000000000000000000000000000000000000000000000000000000000000043e000000000000000000000000000000000000000000000000000000000000000f00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
+    private static final Bytes FUNGIBLE_MINT_INPUT_V2 = Bytes.fromHexString(
+            "0xe0f4059a000000000000000000000000000000000000000000000000000000000000043e000000000000000000000000000000000000000000000000000000000000000f00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
+    private static final Bytes ZERO_FUNGIBLE_MINT_INPUT_V2 = Bytes.fromHexString(
+            "0xe0f4059a000000000000000000000000000000000000000000000000000000000000043e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
+    private static final Bytes NON_FUNGIBLE_MINT_INPUT = Bytes.fromHexString(
+            "0x278e0b88000000000000000000000000000000000000000000000000000000000000042e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000124e4654206d65746164617461207465737431000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000124e4654206d657461646174612074657374320000000000000000000000000000");
+    private static final Bytes NON_FUNGIBLE_MINT_INPUT_V2 = Bytes.fromHexString(
+            "0xe0f4059a000000000000000000000000000000000000000000000000000000000000042e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000124e4654206d65746164617461207465737431000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000124e4654206d657461646174612074657374320000000000000000000000000000");
+    private static final Bytes BOTH_INPUTS_INPUT_V2 = Bytes.fromHexString(
+            "0xe0f4059a000000000000000000000000000000000000000000000000000000000000042e0000000000000000000000000000000000000000000000000000000000000000f00000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000124e4654206d65746164617461207465737431000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000124e4654206d657461646174612074657374320000000000000000000000000000");
 
     private HTSPrecompiledContract subject;
     private MockedStatic<MintPrecompile> mintPrecompile;
@@ -201,32 +254,24 @@ class MintPrecompileTest {
     void setUp() throws IOException {
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(
-                HederaFunctionality.TokenMint,
-                Map.of(SubType.TOKEN_FUNGIBLE_COMMON, BigDecimal.valueOf(0)));
+                HederaFunctionality.TokenMint, Map.of(SubType.TOKEN_FUNGIBLE_COMMON, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-        final PrecompilePricingUtils precompilePricingUtils =
-                new PrecompilePricingUtils(
-                        assetLoader,
-                        exchange,
-                        () -> feeCalculator,
-                        resourceCosts,
-                        stateView,
-                        accessorFactory);
-        subject =
-                new HTSPrecompiledContract(
-                        dynamicProperties,
-                        gasCalculator,
-                        recordsHistorian,
-                        sigsVerifier,
-                        encoder,
-                        evmEncoder,
-                        syntheticTxnFactory,
-                        creator,
-                        () -> feeCalculator,
-                        stateView,
-                        precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
+                assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
+        subject = new HTSPrecompiledContract(
+                dynamicProperties,
+                gasCalculator,
+                recordsHistorian,
+                sigsVerifier,
+                encoder,
+                evmEncoder,
+                syntheticTxnFactory,
+                creator,
+                () -> feeCalculator,
+                stateView,
+                precompilePricingUtils,
+                infrastructureFactory,
+                evmHTSPrecompiledContract);
 
         mintPrecompile = Mockito.mockStatic(MintPrecompile.class);
     }
@@ -246,25 +291,19 @@ class MintPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        given(
-                        sigsVerifier.hasActiveSupplyKey(
-                                true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveSupplyKey(true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers))
                 .willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
-        given(
-                        feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, timestamp))
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
-        given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
-        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE))
-                .willReturn(mockRecordBuilder);
+        given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
         given(encoder.encodeMintFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
         given(worldUpdater.aliases()).willReturn(aliases);
-        given(aliases.resolveForEvm(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         // when:
         subject.prepareFields(frame);
@@ -275,8 +314,7 @@ class MintPrecompileTest {
         // then:
         assertEquals(invalidSigResult, result);
 
-        verify(worldUpdater)
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -289,21 +327,17 @@ class MintPrecompileTest {
 
         given(sigsVerifier.hasActiveSupplyKey(Mockito.anyBoolean(), any(), any(), any()))
                 .willThrow(new IllegalArgumentException("random error"));
-        given(
-                        feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, timestamp))
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
-        given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
-        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(creator.createUnsuccessfulSyntheticRecord(FAIL_INVALID))
-                .willReturn(mockRecordBuilder);
+        given(creator.createUnsuccessfulSyntheticRecord(FAIL_INVALID)).willReturn(mockRecordBuilder);
         given(encoder.encodeMintFailure(FAIL_INVALID)).willReturn(failInvalidResult);
         given(worldUpdater.aliases()).willReturn(aliases);
-        given(aliases.resolveForEvm(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         // when:
         subject.prepareFields(frame);
@@ -324,40 +358,30 @@ class MintPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        given(
-                        sigsVerifier.hasActiveSupplyKey(
-                                true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveSupplyKey(true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
-        given(
-                        infrastructureFactory.newTokenStore(
-                                accountStore, sideEffects, tokens, nfts, tokenRels))
+        given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
                 .willReturn(tokenStore);
         given(infrastructureFactory.newMintLogic(accountStore, tokenStore)).willReturn(mintLogic);
-        given(
-                        feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, timestamp))
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
-        given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
-        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(
-                        creator.createSuccessfulSyntheticRecord(
-                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
+        given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
-        final var mints =
-                new long[] {
-                    1L, 2L,
-                };
+        final var mints = new long[] {
+            1L, 2L,
+        };
         given(mockRecordBuilder.getReceiptBuilder())
                 .willReturn(TxnReceipt.newBuilder().setSerialNumbers(mints));
         given(encoder.encodeMintSuccess(0L, mints)).willReturn(successResult);
         given(recordsHistorian.nextFollowingChildConsensusTime()).willReturn(pendingChildConsTime);
         given(worldUpdater.aliases()).willReturn(aliases);
-        given(aliases.resolveForEvm(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(mintLogic.validateSyntax(any())).willReturn(OK);
 
         // when:
@@ -371,8 +395,7 @@ class MintPrecompileTest {
         // and:
         verify(mintLogic).mint(nonFungibleId, 3, 0, newMetadata, pendingChildConsTime);
         verify(wrappedLedgers).commit();
-        verify(worldUpdater)
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -384,31 +407,23 @@ class MintPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        given(
-                        sigsVerifier.hasActiveSupplyKey(
-                                true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveSupplyKey(true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
-        given(
-                        infrastructureFactory.newTokenStore(
-                                accountStore, sideEffects, tokens, nfts, tokenRels))
+        given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
                 .willReturn(tokenStore);
         given(infrastructureFactory.newMintLogic(accountStore, tokenStore)).willReturn(mintLogic);
-        given(
-                        feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, timestamp))
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
-        given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
-        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
         given(worldUpdater.aliases()).willReturn(aliases);
-        given(aliases.resolveForEvm(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(mintLogic.validateSyntax(any())).willReturn(INVALID_TOKEN_ID);
-        given(creator.createUnsuccessfulSyntheticRecord(INVALID_TOKEN_ID))
-                .willReturn(mockRecordBuilder);
+        given(creator.createUnsuccessfulSyntheticRecord(INVALID_TOKEN_ID)).willReturn(mockRecordBuilder);
 
         // when:
         subject.prepareFields(frame);
@@ -429,18 +444,14 @@ class MintPrecompileTest {
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(encoder.encodeMintSuccess(anyLong(), any()))
-                .willReturn(fungibleSuccessResultWith10Supply);
+        given(encoder.encodeMintSuccess(anyLong(), any())).willReturn(fungibleSuccessResultWith10Supply);
         given(worldUpdater.aliases()).willReturn(aliases);
-        given(aliases.resolveForEvm(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(
-                        feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, timestamp))
+        given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
-        given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
-        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
         given(mintLogic.validateSyntax(any())).willReturn(OK);
@@ -455,9 +466,7 @@ class MintPrecompileTest {
         // and:
         verify(mintLogic).mint(fungibleId, 0, AMOUNT, Collections.emptyList(), Instant.EPOCH);
         verify(wrappedLedgers).commit();
-        verify(worldUpdater)
-                .manageInProgressRecord(
-                        recordsHistorian, expirableTxnRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, expirableTxnRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -469,19 +478,15 @@ class MintPrecompileTest {
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(encoder.encodeMintSuccess(anyLong(), any()))
-                .willReturn(fungibleSuccessResultWith10Supply);
+        given(encoder.encodeMintSuccess(anyLong(), any())).willReturn(fungibleSuccessResultWith10Supply);
         given(worldUpdater.parentUpdater()).willReturn(Optional.empty());
         given(worldUpdater.aliases()).willReturn(aliases);
-        given(aliases.resolveForEvm(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(
-                        feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, timestamp))
+        given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
-        given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
-        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
         given(mintLogic.validateSyntax(any())).willReturn(OK);
@@ -503,19 +508,15 @@ class MintPrecompileTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         doCallRealMethod().when(frame).setExceptionalHaltReason(any());
-        mintPrecompile
-                .when(() -> decodeMint(pretendArguments))
-                .thenReturn(fungibleMintAmountOversize);
+        mintPrecompile.when(() -> decodeMint(pretendArguments)).thenReturn(fungibleMintAmountOversize);
         // when:
         final var result = subject.computePrecompile(pretendArguments, frame);
         // then:
         assertNull(result.getOutput());
         verify(frame)
-                .setExceptionalHaltReason(
-                        Optional.of(HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT));
+                .setExceptionalHaltReason(Optional.of(HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT));
         verify(wrappedLedgers, never()).commit();
-        verify(worldUpdater, never())
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater, never()).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -529,20 +530,15 @@ class MintPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         mintPrecompile.when(() -> decodeMint(pretendArguments)).thenReturn(fungibleMintMaxAmount);
-        given(syntheticTxnFactory.createMint(fungibleMintMaxAmount))
-                .willReturn(mockSynthBodyBuilder);
-        given(encoder.encodeMintSuccess(anyLong(), any()))
-                .willReturn(fungibleSuccessResultWithLongMaxValueSupply);
+        given(syntheticTxnFactory.createMint(fungibleMintMaxAmount)).willReturn(mockSynthBodyBuilder);
+        given(encoder.encodeMintSuccess(anyLong(), any())).willReturn(fungibleSuccessResultWithLongMaxValueSupply);
         given(worldUpdater.aliases()).willReturn(aliases);
-        given(aliases.resolveForEvm(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(
-                        feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, timestamp))
+        given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
-        given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
-        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
         given(mintLogic.validateSyntax(any())).willReturn(OK);
@@ -555,12 +551,9 @@ class MintPrecompileTest {
         // then:
         assertEquals(fungibleSuccessResultWithLongMaxValueSupply, result);
         // and:
-        verify(mintLogic)
-                .mint(fungibleId, 0, Long.MAX_VALUE, Collections.emptyList(), Instant.EPOCH);
+        verify(mintLogic).mint(fungibleId, 0, Long.MAX_VALUE, Collections.emptyList(), Instant.EPOCH);
         verify(wrappedLedgers).commit();
-        verify(worldUpdater)
-                .manageInProgressRecord(
-                        recordsHistorian, expirableTxnRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, expirableTxnRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -574,13 +567,10 @@ class MintPrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         mintPrecompile.when(() -> decodeMint(any())).thenReturn(fungibleMint);
         given(syntheticTxnFactory.createMint(any()))
-                .willReturn(
-                        TransactionBody.newBuilder()
-                                .setTokenMint(TokenMintTransactionBody.newBuilder()));
+                .willReturn(TransactionBody.newBuilder().setTokenMint(TokenMintTransactionBody.newBuilder()));
         given(feeCalculator.computeFee(any(), any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
-        given(feeCalculator.estimatedGasPriceInTinybars(any(), any()))
-                .willReturn(DEFAULT_GAS_PRICE);
+        given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -695,19 +685,13 @@ class MintPrecompileTest {
     }
 
     private void givenFungibleCollaborators() {
-        given(
-                        sigsVerifier.hasActiveSupplyKey(
-                                true, fungibleTokenAddr, recipientAddr, wrappedLedgers))
+        given(sigsVerifier.hasActiveSupplyKey(true, fungibleTokenAddr, recipientAddr, wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
-        given(
-                        infrastructureFactory.newTokenStore(
-                                accountStore, sideEffects, tokens, nfts, tokenRels))
+        given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
                 .willReturn(tokenStore);
         given(infrastructureFactory.newMintLogic(accountStore, tokenStore)).willReturn(mintLogic);
-        given(
-                        creator.createSuccessfulSyntheticRecord(
-                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
+        given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(expirableTxnRecordBuilder);
     }
 

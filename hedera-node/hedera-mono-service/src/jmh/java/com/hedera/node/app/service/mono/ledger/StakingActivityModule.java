@@ -16,17 +16,20 @@
 
 package com.hedera.node.app.service.mono.ledger;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STORE_ON_DISK;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.mocks.MockDynamicProperties.mockPropertiesWith;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_STORE_ON_DISK;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_RATE;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
-import com.hedera.node.app.service.mono.context.properties.*;
+import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.context.properties.SupplierMapPropertySource;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeChangeManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeInfoManager;
@@ -69,6 +72,7 @@ import javax.inject.Singleton;
 
 @Module
 public interface StakingActivityModule {
+
     @Binds
     @Singleton
     EntityCreator bindEntityCreator(MockEntityCreator entityCreator);

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils.forensics;
 
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readMaybeCompressedRecordStreamFile;
@@ -54,25 +55,20 @@ public class RecordParsers {
      * @throws IOException if the files cannot be read or parsed
      */
     @SuppressWarnings("java:S3655")
-    public static List<RecordStreamEntry> parseV6RecordStreamEntriesIn(final String streamDir)
-            throws IOException {
+    public static List<RecordStreamEntry> parseV6RecordStreamEntriesIn(final String streamDir) throws IOException {
         final var recordFiles = RecordStreamingUtils.orderedRecordFilesFrom(streamDir);
         final List<RecordStreamEntry> entries = new ArrayList<>();
         for (final var recordFile : recordFiles) {
             final var readResult = readMaybeCompressedRecordStreamFile(recordFile);
             assert readResult.getRight().isPresent();
             final var records = readResult.getRight().get();
-            records.getRecordStreamItemsList()
-                    .forEach(
-                            item -> {
-                                final var itemRecord = item.getRecord();
-                                entries.add(
-                                        new RecordStreamEntry(
-                                                uncheckedFrom(item.getTransaction()),
-                                                itemRecord,
-                                                timestampToInstant(
-                                                        itemRecord.getConsensusTimestamp())));
-                            });
+            records.getRecordStreamItemsList().forEach(item -> {
+                final var itemRecord = item.getRecord();
+                entries.add(new RecordStreamEntry(
+                        uncheckedFrom(item.getTransaction()),
+                        itemRecord,
+                        timestampToInstant(itemRecord.getConsensusTimestamp())));
+            });
         }
         return entries;
     }
@@ -89,21 +85,16 @@ public class RecordParsers {
      * @throws IOException if the files cannot be read or parsed
      */
     @SuppressWarnings("java:S3655")
-    public static Map<Instant, List<TransactionSidecarRecord>> parseV6SidecarRecordsByConsTimeIn(
-            final String streamDir) throws IOException {
+    public static Map<Instant, List<TransactionSidecarRecord>> parseV6SidecarRecordsByConsTimeIn(final String streamDir)
+            throws IOException {
         final var sidecarFiles = RecordStreamingUtils.orderedSidecarFilesFrom(streamDir);
         final Map<Instant, List<TransactionSidecarRecord>> sidecarRecords = new HashMap<>();
         for (final var sidecarFile : sidecarFiles) {
             final var data = readSidecarFile(sidecarFile);
-            data.getSidecarRecordsList()
-                    .forEach(
-                            sidecarRecord ->
-                                    sidecarRecords
-                                            .computeIfAbsent(
-                                                    timestampToInstant(
-                                                            sidecarRecord.getConsensusTimestamp()),
-                                                    ignore -> new ArrayList<>())
-                                            .add(sidecarRecord));
+            data.getSidecarRecordsList().forEach(sidecarRecord -> sidecarRecords
+                    .computeIfAbsent(
+                            timestampToInstant(sidecarRecord.getConsensusTimestamp()), ignore -> new ArrayList<>())
+                    .add(sidecarRecord));
         }
         return sidecarRecords;
     }
@@ -112,11 +103,7 @@ public class RecordParsers {
             final List<RecordStreamEntry> entries,
             final Map<Instant, List<TransactionSidecarRecord>> sidecarRecords,
             final BiConsumer<RecordStreamEntry, List<TransactionSidecarRecord>> observer) {
-        entries.forEach(
-                entry ->
-                        observer.accept(
-                                entry,
-                                sidecarRecords.getOrDefault(
-                                        entry.consensusTime(), Collections.emptyList())));
+        entries.forEach(entry ->
+                observer.accept(entry, sidecarRecords.getOrDefault(entry.consensusTime(), Collections.emptyList())));
     }
 }

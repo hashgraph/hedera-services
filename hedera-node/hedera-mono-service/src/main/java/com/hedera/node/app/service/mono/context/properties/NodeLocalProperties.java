@@ -13,54 +13,57 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.properties;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.GRPC_PORT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.GRPC_TLS_PORT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_ACCOUNTS_EXPORT_PATH;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_EXPORT_ACCOUNTS_ON_STARTUP;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_PREFETCH_CODE_CACHE_TTL_SECS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_PREFETCH_QUEUE_CAPACITY;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_PREFETCH_THREAD_POOL_SIZE;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_PROFILES_ACTIVE;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_IS_ENABLED;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_PERIOD;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_QUEUE_CAPACITY;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_SIDE_CAR_DIR;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ISS_RESET_PERIOD;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ISS_ROUNDS_TO_LOG;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.NETTY_MODE;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.NETTY_PROD_FLOW_CONTROL_WINDOW;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.NETTY_PROD_KEEP_ALIVE_TIME;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.NETTY_PROD_KEEP_ALIVE_TIMEOUT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.NETTY_PROD_MAX_CONCURRENT_CALLS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE_GRACE;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.NETTY_PROD_MAX_CONNECTION_IDLE;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.NETTY_START_RETRIES;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.NETTY_START_RETRY_INTERVAL_MS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.NETTY_TLS_CERT_PATH;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.NETTY_TLS_KEY_PATH;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.QUERIES_BLOB_LOOK_UP_RETRIES;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STATS_CONS_THROTTLES_TO_SAMPLE;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STATS_EXECUTION_TIMES_TO_TRACK;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STATS_HAPI_THROTTLES_TO_SAMPLE;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STATS_RUNNING_AVG_HALF_LIFE_SECS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STATS_SPEEDOMETER_HALF_LIFE_SECS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS;
+import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_TLS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ACCOUNTS_EXPORT_PATH;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_EXPORT_ACCOUNTS_ON_STARTUP;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PREFETCH_CODE_CACHE_TTL_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PREFETCH_QUEUE_CAPACITY;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PREFETCH_THREAD_POOL_SIZE;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PROFILES_ACTIVE;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_IS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_PERIOD;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_QUEUE_CAPACITY;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_SIDE_CAR_DIR;
+import static com.hedera.node.app.spi.config.PropertyNames.ISS_RESET_PERIOD;
+import static com.hedera.node.app.spi.config.PropertyNames.ISS_ROUNDS_TO_LOG;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_MODE;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_FLOW_CONTROL_WINDOW;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_KEEP_ALIVE_TIME;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_KEEP_ALIVE_TIMEOUT;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONCURRENT_CALLS;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE_GRACE;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONNECTION_IDLE;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_START_RETRIES;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_START_RETRY_INTERVAL_MS;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_TLS_CERT_PATH;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_TLS_KEY_PATH;
+import static com.hedera.node.app.spi.config.PropertyNames.QUERIES_BLOB_LOOK_UP_RETRIES;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_CONS_THROTTLES_TO_SAMPLE;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_EXECUTION_TIMES_TO_TRACK;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_HAPI_THROTTLES_TO_SAMPLE;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_RUNNING_AVG_HALF_LIFE_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_SPEEDOMETER_HALF_LIFE_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS;
 
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
+import com.hedera.node.app.spi.config.Profile;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
 public class NodeLocalProperties {
+
     private final PropertySource properties;
 
     private int port;
@@ -103,7 +106,7 @@ public class NodeLocalProperties {
     private String sidecarDir;
 
     @Inject
-    public NodeLocalProperties(@CompositeProps PropertySource properties) {
+    public NodeLocalProperties(@CompositeProps final PropertySource properties) {
         this.properties = properties;
 
         reload();
@@ -113,12 +116,9 @@ public class NodeLocalProperties {
         port = properties.getIntProperty(GRPC_PORT);
         tlsPort = properties.getIntProperty(GRPC_TLS_PORT);
         activeProfile = properties.getProfileProperty(HEDERA_PROFILES_ACTIVE);
-        hapiOpStatsUpdateIntervalMs =
-                properties.getLongProperty(STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS);
-        statsSpeedometerHalfLifeSecs =
-                properties.getDoubleProperty(STATS_SPEEDOMETER_HALF_LIFE_SECS);
-        statsRunningAvgHalfLifeSecs =
-                properties.getDoubleProperty(STATS_RUNNING_AVG_HALF_LIFE_SECS);
+        hapiOpStatsUpdateIntervalMs = properties.getLongProperty(STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS);
+        statsSpeedometerHalfLifeSecs = properties.getDoubleProperty(STATS_SPEEDOMETER_HALF_LIFE_SECS);
+        statsRunningAvgHalfLifeSecs = properties.getDoubleProperty(STATS_RUNNING_AVG_HALF_LIFE_SECS);
         recordLogDir = properties.getStringProperty(HEDERA_RECORD_STREAM_LOG_DIR);
         sidecarDir = properties.getStringProperty(HEDERA_RECORD_STREAM_SIDE_CAR_DIR);
         recordLogPeriod = properties.getLongProperty(HEDERA_RECORD_STREAM_LOG_PERIOD);
@@ -130,8 +130,7 @@ public class NodeLocalProperties {
         nettyTlsKeyPath = properties.getStringProperty(NETTY_TLS_KEY_PATH);
         nettyProdKeepAliveTimeout = properties.getLongProperty(NETTY_PROD_KEEP_ALIVE_TIMEOUT);
         nettyMaxConnectionAge = properties.getLongProperty(NETTY_PROD_MAX_CONNECTION_AGE);
-        nettyMaxConnectionAgeGrace =
-                properties.getLongProperty(NETTY_PROD_MAX_CONNECTION_AGE_GRACE);
+        nettyMaxConnectionAgeGrace = properties.getLongProperty(NETTY_PROD_MAX_CONNECTION_AGE_GRACE);
         nettyMaxConnectionIdle = properties.getLongProperty(NETTY_PROD_MAX_CONNECTION_IDLE);
         nettyMaxConcurrentCalls = properties.getIntProperty(NETTY_PROD_MAX_CONCURRENT_CALLS);
         nettyFlowControlWindow = properties.getIntProperty(NETTY_PROD_FLOW_CONTROL_WINDOW);
@@ -150,10 +149,8 @@ public class NodeLocalProperties {
         prefetchCodeCacheTtlSecs = properties.getIntProperty(HEDERA_PREFETCH_CODE_CACHE_TTL_SECS);
         consThrottlesToSample = properties.getStringsProperty(STATS_CONS_THROTTLES_TO_SAMPLE);
         hapiThrottlesToSample = properties.getStringsProperty(STATS_HAPI_THROTTLES_TO_SAMPLE);
-        entityUtilStatsUpdateIntervalMs =
-                properties.getLongProperty(STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS);
-        throttleUtilStatsUpdateIntervalMs =
-                properties.getLongProperty(STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS);
+        entityUtilStatsUpdateIntervalMs = properties.getLongProperty(STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS);
+        throttleUtilStatsUpdateIntervalMs = properties.getLongProperty(STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS);
     }
 
     public int port() {
