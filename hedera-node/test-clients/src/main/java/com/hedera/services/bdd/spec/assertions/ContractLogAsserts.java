@@ -91,11 +91,9 @@ public class ContractLogAsserts extends BaseErroringAssertsProvider<ContractLogi
     }
 
     public ContractLogAsserts noTopics() {
-        registerProvider((spec, o) -> {
-            Assertions.assertTrue(
-                    ((ContractLoginfo) o).getTopicList().isEmpty(),
-                    "Bad topics value in Topics array. " + "No topics expected");
-        });
+        registerProvider((spec, o) -> Assertions.assertTrue(
+                ((ContractLoginfo) o).getTopicList().isEmpty(),
+                "Bad topics value in Topics array. " + "No topics expected"));
         return this;
     }
 
@@ -105,9 +103,8 @@ public class ContractLogAsserts extends BaseErroringAssertsProvider<ContractLogi
     }
 
     public ContractLogAsserts noData() {
-        registerProvider((spec, o) -> {
-            Assertions.assertTrue(((ContractLoginfo) o).getData().isEmpty(), "Bad data value. " + "No data expected");
-        });
+        registerProvider((spec, o) -> Assertions.assertTrue(
+                ((ContractLoginfo) o).getData().isEmpty(), "Bad data value. " + "No data expected"));
         return this;
     }
 

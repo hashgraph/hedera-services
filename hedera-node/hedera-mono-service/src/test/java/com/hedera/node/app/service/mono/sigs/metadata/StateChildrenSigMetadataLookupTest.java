@@ -126,7 +126,7 @@ class StateChildrenSigMetadataLookupTest {
     private MerkleScheduledTransactions schedules;
 
     @Mock
-    private MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> schedulesById;
+    private MerkleMapLike<EntityNumVirtualKey, ScheduleVirtualValue> schedulesById;
 
     @Mock
     private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;

@@ -32,7 +32,7 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 public class MerkleMapLikeAdapter {
-    public static <K extends Comparable<K>, V extends MerkleNode & Keyed<K>> MerkleMapLike<K, V> unwrapping(
+    public static <K extends Comparable<? super K>, V extends MerkleNode & Keyed<K>> MerkleMapLike<K, V> unwrapping(
             final StateMetadata<K, V> md, final MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> real) {
         return new MerkleMapLike<>() {
             @Override

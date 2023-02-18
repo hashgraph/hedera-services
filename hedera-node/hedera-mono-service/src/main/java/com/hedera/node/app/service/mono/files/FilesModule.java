@@ -61,7 +61,8 @@ public interface FilesModule {
 
     @Provides
     @Singleton
-    static Map<String, byte[]> provideBlobStore(final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> storage) {
+    static Map<String, byte[]> provideBlobStore(
+            final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> storage) {
         return new FcBlobsBytesStore(storage);
     }
 

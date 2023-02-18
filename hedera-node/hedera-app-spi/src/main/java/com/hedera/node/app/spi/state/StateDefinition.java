@@ -67,7 +67,7 @@ public record StateDefinition<K extends Comparable<? super K>, V>(
      * @param <K> The key type
      * @param <V> The value type
      */
-    public static <K extends Comparable<K>, V> StateDefinition<K, V> inMemory(
+    public static <K extends Comparable<? super K>, V> StateDefinition<K, V> inMemory(
             @NonNull final String stateKey, @NonNull final Serdes<K> keySerdes, @NonNull final Serdes<V> valueSerdes) {
         return new StateDefinition<>(stateKey, keySerdes, valueSerdes, NO_MAX, false, false);
     }

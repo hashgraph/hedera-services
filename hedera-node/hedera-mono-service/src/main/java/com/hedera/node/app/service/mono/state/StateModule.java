@@ -45,10 +45,10 @@ import com.hedera.node.app.service.mono.state.initialization.SystemAccountsCreat
 import com.hedera.node.app.service.mono.state.initialization.SystemFilesManager;
 import com.hedera.node.app.service.mono.state.logic.HandleLogicModule;
 import com.hedera.node.app.service.mono.state.logic.ReconnectListener;
+import com.hedera.node.app.service.mono.state.logic.ScheduledTransactions;
 import com.hedera.node.app.service.mono.state.logic.StateWriteToDiskListener;
 import com.hedera.node.app.service.mono.state.logic.StatusChangeListener;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
-import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
@@ -289,7 +289,7 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Supplier<MerkleScheduledTransactions> provideWorkingSchedules(final MutableStateChildren workingState) {
+    static Supplier<ScheduledTransactions> provideWorkingSchedules(final MutableStateChildren workingState) {
         return workingState::schedules;
     }
 

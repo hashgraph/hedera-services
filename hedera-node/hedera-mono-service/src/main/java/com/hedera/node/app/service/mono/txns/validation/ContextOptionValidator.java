@@ -56,8 +56,6 @@ import java.time.Instant;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.StringUtils;
 import org.bouncycastle.util.Arrays;
@@ -212,9 +210,7 @@ public class ContextOptionValidator implements OptionValidator {
     }
 
     @Override
-    public ResponseCodeEnum queryableTopicStatus(
-            final TopicID id,
-            final MerkleMapLike<EntityNum, MerkleTopic> topics) {
+    public ResponseCodeEnum queryableTopicStatus(final TopicID id, final MerkleMapLike<EntityNum, MerkleTopic> topics) {
         final MerkleTopic merkleTopic = topics.get(EntityNum.fromTopicId(id));
 
         return Optional.ofNullable(merkleTopic)

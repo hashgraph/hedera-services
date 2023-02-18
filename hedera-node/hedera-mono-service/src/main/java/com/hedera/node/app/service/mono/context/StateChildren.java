@@ -19,8 +19,8 @@ package com.hedera.node.app.service.mono.context;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.hedera.node.app.service.mono.state.logic.ScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
-import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
@@ -48,7 +48,7 @@ public interface StateChildren {
 
     MerkleMapLike<EntityNum, MerkleToken> tokens();
 
-    MerkleScheduledTransactions schedules();
+    ScheduledTransactions schedules();
 
     VirtualMapLike<VirtualBlobKey, VirtualBlobValue> storage();
 

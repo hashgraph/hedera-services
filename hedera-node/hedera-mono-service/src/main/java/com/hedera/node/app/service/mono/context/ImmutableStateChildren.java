@@ -20,8 +20,8 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.hedera.node.app.service.mono.state.logic.ScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
-import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
@@ -55,7 +55,7 @@ public class ImmutableStateChildren implements StateChildren {
     // UniqueTokenMapAdapter is constructed on demand, so a strong reference needs to be held.
     private final NonAtomicReference<UniqueTokenMapAdapter> uniqueTokens;
     private final NonAtomicReference<RecordsStorageAdapter> payerRecords;
-    private final NonAtomicReference<MerkleScheduledTransactions> schedules;
+    private final NonAtomicReference<ScheduledTransactions> schedules;
     private final NonAtomicReference<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> storage;
     private final NonAtomicReference<VirtualMapLike<ContractKey, IterableContractValue>> contractStorage;
     private final NonAtomicReference<TokenRelStorageAdapter> tokenAssociations;
@@ -118,7 +118,7 @@ public class ImmutableStateChildren implements StateChildren {
     }
 
     @Override
-    public MerkleScheduledTransactions schedules() {
+    public ScheduledTransactions schedules() {
         return Objects.requireNonNull(schedules.get());
     }
 

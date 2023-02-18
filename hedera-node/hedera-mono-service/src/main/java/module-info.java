@@ -48,7 +48,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.network.impl,
             com.hedera.node.app.service.consensus.impl,
             com.hedera.node.app.service.file.impl,
-            com.hedera.node.app;
+            com.hedera.node.app,
+            com.hedera.node.app.service.schedule.impl;
     exports com.hedera.node.app.service.mono.state.validation to
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.utils.accessors;
@@ -61,7 +62,8 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.state.virtual.schedule to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app.service.schedule.impl,
-            com.hedera.node.app.service.schedule.impl.test;
+            com.hedera.node.app.service.schedule.impl.test,
+            com.hedera.node.app;
     exports com.hedera.node.app.service.mono.store.schedule to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app;
@@ -133,6 +135,8 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.txns.auth;
     exports com.hedera.node.app.service.mono.state.expiry;
     exports com.hedera.node.app.service.mono.throttling.annotations;
+    exports com.hedera.node.app.service.mono.state.virtual.temporal;
+    exports com.hedera.node.app.service.mono.state.logic;
 
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.swirlds.common;
@@ -170,4 +174,5 @@ module com.hedera.node.app.service.mono {
     requires org.apache.commons.io;
     requires io.grpc;
     requires grpc.stub;
+    requires org.eclipse.collections.api;
 }
