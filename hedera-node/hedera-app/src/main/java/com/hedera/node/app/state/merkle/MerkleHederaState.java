@@ -242,9 +242,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     }
 
     private void createSpecialGenesisChildren(
-            final AddressBook addressBook,
-            final long seqStart,
-            final BootstrapProperties bootstrapProperties) {
+            final AddressBook addressBook, final long seqStart, final BootstrapProperties bootstrapProperties) {
         final var writableNetworkStates = createWritableStates("NetworkService");
         writableNetworkStates.getSingleton("CONTEXT").put(genesisNetworkCtxWith(seqStart));
         writableNetworkStates.getSingleton("RUNNING_HASHES").put(genesisRunningHashLeaf());

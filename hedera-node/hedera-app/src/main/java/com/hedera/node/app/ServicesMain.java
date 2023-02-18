@@ -84,8 +84,7 @@ public class ServicesMain implements SwirldMain {
 
     @Override
     public SwirldState2 newState() {
-        final var statesEnabled = new BootstrapProperties(false)
-                .getBooleanProperty(STATES_ENABLED);
+        final var statesEnabled = new BootstrapProperties(false).getBooleanProperty(STATES_ENABLED);
         if (!statesEnabled) {
             return new ServicesState();
         } else {

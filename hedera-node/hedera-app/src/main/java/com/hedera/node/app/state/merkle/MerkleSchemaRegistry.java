@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.state.merkle;
 
-import com.hedera.node.app.ServicesMain;
 import com.hedera.node.app.spi.SemanticVersionComparator;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.*;
@@ -42,11 +41,10 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.nio.file.Path;
 import java.util.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An implementation of {@link SchemaRegistry}.
@@ -170,7 +168,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             // expand the set of states that the migration code will see
             final var statesToCreate = schema.statesToCreate();
             statesToCreate.forEach(def -> {
-                final var stateKey  = def.stateKey();
+                final var stateKey = def.stateKey();
                 log.info("Creating state {} for {}", stateKey, serviceName);
                 final var md = new StateMetadata<>(serviceName, schema, def);
                 if (def.singleton()) {
