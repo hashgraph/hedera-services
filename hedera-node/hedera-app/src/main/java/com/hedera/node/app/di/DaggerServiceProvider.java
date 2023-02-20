@@ -19,29 +19,36 @@ package com.hedera.node.app.di;
 
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.handlers.CryptoApproveAllowanceHandlerI;
+import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.ServiceProvider;
 import com.hedera.node.app.spi.workflows.FreeQueryHandler;
+import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
 import java.util.Set;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-public class DaggerServiceProvider {
+@Module
+public interface DaggerServiceProvider {
 
-    private static final ServiceProvider serviceEntryPoint = new ServiceProvider(null);
+    @Provides
+    @Singleton
+    static ServiceProvider provideServiceProvider() {
+        return new ServiceProvider(null);
+    }
 
     @Provides
     @ElementsIntoSet
-    static Set<Service> provideAllServices() {
-        return serviceEntryPoint.getAllServices();
+    static Set<Service> provideAllServices(final ServiceProvider serviceProvider) {
+        return serviceProvider.getAllServices();
     }
 
     @Provides
     @Singleton
-    static CryptoService provideCryptoService() {
-        return serviceEntryPoint.getServiceByType(CryptoService.class)
+    static CryptoService provideCryptoService(final ServiceProvider serviceProvider) {
+        return serviceProvider.getServiceByType(CryptoService.class)
                 .orElseThrow(
                         () -> new IllegalStateException("No service of type '" + CryptoService.class + "' provided"));
     }
@@ -49,14 +56,20 @@ public class DaggerServiceProvider {
     @Provides
     @Singleton
     @Named("CryptoGetAccountBalanceHandler")
-    static FreeQueryHandler provideCryptoGetAccountBalanceHandler() {
-        return provideCryptoService().getCryptoGetAccountBalanceHandler();
+    static FreeQueryHandler provideCryptoGetAccountBalanceHandler(final CryptoService cryptoService) {
+        return cryptoService.getCryptoGetAccountBalanceHandler();
     }
 
     @Provides
     @Singleton
-    static CryptoApproveAllowanceHandlerI provideCryptoApproveAllowanceHandler() {
-        return provideCryptoService().getCryptoApproveAllowanceHandler();
+    static CryptoApproveAllowanceHandlerI provideCryptoApproveAllowanceHandler(final CryptoService cryptoService) {
+        return cryptoService.getCryptoApproveAllowanceHandler();
+    }
+
+    @Provides
+    @Singleton
+    static CryptoTransferHandler provideCryptoTransferHandler(final CryptoService cryptoService) {
+        return (CryptoTransferHandler) cryptoService.getCryptoTransferHandler();
     }
 
 }

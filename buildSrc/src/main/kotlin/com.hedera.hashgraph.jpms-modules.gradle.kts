@@ -115,4 +115,7 @@ extraJavaModuleInfo {
     automaticModule("hamcrest-core-1.3.jar", "hamcrest.core")
     automaticModule("org.awaitility:awaitility", "awaitility")
     automaticModule("org.testcontainers:testcontainers", "org.testcontainers")
+    automaticModule("com.google.auto:auto-common", "com.google.auto.common")
+    automaticModule("com.google.auto.service:auto-service", "com.google.auto.service.processor")
+
 }

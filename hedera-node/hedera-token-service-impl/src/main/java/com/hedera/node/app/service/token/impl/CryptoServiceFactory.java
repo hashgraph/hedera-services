@@ -17,12 +17,14 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import com.google.auto.service.AutoService;
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.spi.FacilityFacade;
 import com.hedera.node.app.spi.ServiceFactory;
 import com.hedera.node.app.spi.ServiceProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+@AutoService(ServiceFactory.class)
 public final class CryptoServiceFactory implements ServiceFactory<CryptoService> {
 
     @NonNull

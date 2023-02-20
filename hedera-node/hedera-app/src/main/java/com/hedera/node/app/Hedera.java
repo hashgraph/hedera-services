@@ -38,7 +38,7 @@ public final class Hedera {
 
     public Hedera() {}
 
-    public void start(ServicesApp app, int port) {
+    public void start(final ServicesApp app, final int port) {
         final var metrics = createMetrics(app.nodeId());
 
         // Create the Ingest workflow. While we are in transition, some required facilities come
@@ -67,9 +67,9 @@ public final class Hedera {
                         GrpcRouting.builder()
                                 .register(
                                         new GrpcServiceBuilder(
-                                                        "proto.ConsensusService",
-                                                        ingestWorkflow,
-                                                        queryWorkflow)
+                                                "proto.ConsensusService",
+                                                ingestWorkflow,
+                                                queryWorkflow)
                                                 .transaction("createTopic")
                                                 .transaction("updateTopic")
                                                 .transaction("deleteTopic")
@@ -83,7 +83,7 @@ public final class Hedera {
         // Block this main thread until the server terminates.
         try {
             shutdownLatch.await();
-        } catch (InterruptedException ignored) {
+        } catch (final InterruptedException ignored) {
             // An interrupt on this thread means we want to shut down the server.
             shutdown();
             Thread.currentThread().interrupt();
@@ -94,7 +94,7 @@ public final class Hedera {
         shutdownLatch.countDown();
     }
 
-    private static Metrics createMetrics(NodeId nodeId) {
+    private static Metrics createMetrics(final NodeId nodeId) {
         // This is a stub implementation, to be replaced by a real implementation in #4293
         final var metricService =
                 Executors.newSingleThreadScheduledExecutor(

@@ -1,4 +1,5 @@
-import com.hedera.node.app.service.token.impl.CryptoServiceImpl;
+import com.hedera.node.app.service.token.impl.CryptoServiceFactory;
+import com.hedera.node.app.spi.ServiceFactory;
 
 module com.hedera.node.app.service.token.impl {
     requires com.hedera.node.app.service.token;
@@ -9,11 +10,9 @@ module com.hedera.node.app.service.token.impl {
     requires com.google.protobuf;
     requires com.hedera.node.app.service.evm;
     requires com.hedera.node.app.spi;
+    requires static com.google.auto.service;
 
-    provides com.hedera.node.app.service.token.TokenService with
-            com.hedera.node.app.service.token.impl.TokenServiceImpl;
-    provides com.hedera.node.app.service.token.CryptoService with
-            CryptoServiceImpl;
+    provides ServiceFactory with CryptoServiceFactory;
 
     exports com.hedera.node.app.service.token.impl to
             com.hedera.node.app.service.token.impl.test,
