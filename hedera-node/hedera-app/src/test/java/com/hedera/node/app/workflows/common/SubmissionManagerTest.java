@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.common;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
@@ -26,9 +27,9 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.node.app.service.mono.context.properties.Profile;
 import com.hedera.node.app.service.mono.records.RecordCache;
 import com.hedera.node.app.service.mono.stats.MiscSpeedometers;
+import com.hedera.node.app.spi.config.Profile;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -44,11 +45,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class SubmissionManagerTest {
 
-    @Mock private Platform platform;
-    @Mock private RecordCache recordCache;
-    @Mock private NodeLocalProperties nodeLocalProperties;
-    @Mock private MiscSpeedometers speedometers;
-    @Mock private Parser<TransactionBody> parser;
+    @Mock
+    private Platform platform;
+
+    @Mock
+    private RecordCache recordCache;
+
+    @Mock
+    private NodeLocalProperties nodeLocalProperties;
+
+    @Mock
+    private MiscSpeedometers speedometers;
+
+    @Mock
+    private Parser<TransactionBody> parser;
 
     private byte[] bytes;
 
@@ -57,29 +67,19 @@ class SubmissionManagerTest {
     @BeforeEach
     void setup() {
         bytes = new byte[] {1, 2, 3};
-        submissionManager =
-                new SubmissionManager(platform, recordCache, nodeLocalProperties, speedometers);
+        submissionManager = new SubmissionManager(platform, recordCache, nodeLocalProperties, speedometers);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(
-                        () ->
-                                new SubmissionManager(
-                                        null, recordCache, nodeLocalProperties, speedometers))
+        assertThatThrownBy(() -> new SubmissionManager(null, recordCache, nodeLocalProperties, speedometers))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () ->
-                                new SubmissionManager(
-                                        platform, null, nodeLocalProperties, speedometers))
+        assertThatThrownBy(() -> new SubmissionManager(platform, null, nodeLocalProperties, speedometers))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new SubmissionManager(platform, recordCache, null, speedometers))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () ->
-                                new SubmissionManager(
-                                        platform, recordCache, nodeLocalProperties, null))
+        assertThatThrownBy(() -> new SubmissionManager(platform, recordCache, nodeLocalProperties, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -137,13 +137,13 @@ class SubmissionManagerTest {
         final ByteString payload = ByteString.copyFrom(new byte[] {0, 1, 2, 3});
         final UncheckedSubmitBody uncheckedSubmit =
                 UncheckedSubmitBody.newBuilder().setTransactionBytes(payload).build();
-        final TransactionBody uncheckedSubmitParsed = TransactionBody.newBuilder().build();
+        final TransactionBody uncheckedSubmitParsed =
+                TransactionBody.newBuilder().build();
         final TransactionID transactionID = TransactionID.newBuilder().build();
-        final TransactionBody txBody =
-                TransactionBody.newBuilder()
-                        .setTransactionID(transactionID)
-                        .setUncheckedSubmit(uncheckedSubmit)
-                        .build();
+        final TransactionBody txBody = TransactionBody.newBuilder()
+                .setTransactionID(transactionID)
+                .setUncheckedSubmit(uncheckedSubmit)
+                .build();
         when(nodeLocalProperties.activeProfile()).thenReturn(Profile.TEST);
         when(parser.parseFrom(payload)).thenReturn(uncheckedSubmitParsed);
         when(platform.createTransaction(uncheckedSubmitParsed.toByteArray())).thenReturn(true);
@@ -163,11 +163,10 @@ class SubmissionManagerTest {
         final UncheckedSubmitBody uncheckedSubmit =
                 UncheckedSubmitBody.newBuilder().setTransactionBytes(payload).build();
         final TransactionID transactionID = TransactionID.newBuilder().build();
-        final TransactionBody txBody =
-                TransactionBody.newBuilder()
-                        .setTransactionID(transactionID)
-                        .setUncheckedSubmit(uncheckedSubmit)
-                        .build();
+        final TransactionBody txBody = TransactionBody.newBuilder()
+                .setTransactionID(transactionID)
+                .setUncheckedSubmit(uncheckedSubmit)
+                .build();
         when(nodeLocalProperties.activeProfile()).thenReturn(Profile.PROD);
 
         // when
@@ -187,14 +186,12 @@ class SubmissionManagerTest {
         final UncheckedSubmitBody uncheckedSubmit =
                 UncheckedSubmitBody.newBuilder().setTransactionBytes(payload).build();
         final TransactionID transactionID = TransactionID.newBuilder().build();
-        final TransactionBody txBody =
-                TransactionBody.newBuilder()
-                        .setTransactionID(transactionID)
-                        .setUncheckedSubmit(uncheckedSubmit)
-                        .build();
+        final TransactionBody txBody = TransactionBody.newBuilder()
+                .setTransactionID(transactionID)
+                .setUncheckedSubmit(uncheckedSubmit)
+                .build();
         when(nodeLocalProperties.activeProfile()).thenReturn(Profile.TEST);
-        when(parser.parseFrom(payload))
-                .thenThrow(new InvalidProtocolBufferException("Expected exception"));
+        when(parser.parseFrom(payload)).thenThrow(new InvalidProtocolBufferException("Expected exception"));
 
         // when
         assertThatThrownBy(() -> submissionManager.submit(txBody, bytes, parser))

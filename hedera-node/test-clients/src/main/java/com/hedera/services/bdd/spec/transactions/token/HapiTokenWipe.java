@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
@@ -77,22 +78,17 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
-            throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
-                        HederaFunctionality.TokenAccountWipe,
-                        subType,
-                        this::usageEstimate,
-                        txn,
-                        numPayerKeys);
+                        HederaFunctionality.TokenAccountWipe, subType, this::usageEstimate, txn, numPayerKeys);
     }
 
     private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
         final UsageAccumulator accumulator = new UsageAccumulator();
-        final var tokenWipeMeta =
-                TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn.getTokenWipe(), subType);
-        final var baseTransactionMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
+        final var tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn.getTokenWipe(), subType);
+        final var baseTransactionMeta =
+                new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
         final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
         tokenOpsUsage.tokenWipeUsage(suFrom(svo), baseTransactionMeta, tokenWipeMeta, accumulator);
         return AdapterUtils.feeDataFrom(accumulator);
@@ -102,25 +98,21 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final var tId = TxnUtils.asTokenId(token, spec);
         final var aId = TxnUtils.asId(account, spec);
-        final TokenWipeAccountTransactionBody opBody =
-                spec.txns()
-                        .<TokenWipeAccountTransactionBody, TokenWipeAccountTransactionBody.Builder>
-                                body(
-                                        TokenWipeAccountTransactionBody.class,
-                                        b -> {
-                                            b.setToken(tId);
-                                            b.setAccount(aId);
-                                            b.setAmount(amount);
-                                            b.addAllSerialNumbers(serialNumbers);
-                                        });
+        final TokenWipeAccountTransactionBody opBody = spec.txns()
+                .<TokenWipeAccountTransactionBody, TokenWipeAccountTransactionBody.Builder>body(
+                        TokenWipeAccountTransactionBody.class, b -> {
+                            b.setToken(tId);
+                            b.setAccount(aId);
+                            b.setAmount(amount);
+                            b.addAllSerialNumbers(serialNumbers);
+                        });
         return b -> b.setTokenWipe(opBody);
     }
 
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
-        return List.of(
-                spec -> spec.registry().getKey(effectivePayer(spec)),
-                spec -> spec.registry().getWipeKey(token));
+        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
+                .getWipeKey(token));
     }
 
     @Override

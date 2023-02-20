@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts;
 
 /*
@@ -61,8 +62,7 @@ import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
-public class HederaStackedWorldStateUpdater
-        extends AbstractStackedLedgerUpdater<HederaMutableWorldState, Account>
+public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater<HederaMutableWorldState, Account>
         implements HederaWorldUpdater {
 
     // Returned when a client tries to un-alias a mirror address that has an EIP-1014 address
@@ -211,9 +211,7 @@ public class HederaStackedWorldStateUpdater
         final var address = aliases().resolveForEvm(addressOrAlias);
         if (isTokenRedirect(address)) {
             final var proxyAccount = new HederaEvmWorldStateTokenAccount(address);
-            final var newMutable =
-                    new UpdateTrackingAccount<>(
-                            proxyAccount, new UpdatedAccountTrackerImpl(trackingAccounts()));
+            final var newMutable = new UpdateTrackingAccount<>(proxyAccount, new UpdatedAccountTrackerImpl(trackingAccounts()));
             return new WrappedEvmAccount(newMutable);
         }
         return super.getAccount(address);
@@ -260,10 +258,7 @@ public class HederaStackedWorldStateUpdater
     @SuppressWarnings({"unchecked", "rawtypes"})
     public WorldUpdater updater() {
         return new HederaStackedWorldStateUpdater(
-                (AbstractLedgerWorldUpdater) this,
-                worldState,
-                trackingLedgers().wrapped(),
-                dynamicProperties);
+                (AbstractLedgerWorldUpdater) this, worldState, trackingLedgers().wrapped(), dynamicProperties);
     }
 
     // --- Internal helpers
@@ -279,9 +274,7 @@ public class HederaStackedWorldStateUpdater
 
     @FunctionalInterface
     interface CustomizerFactory {
-        ContractCustomizer apply(
-                AccountID id,
-                TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger);
+        ContractCustomizer apply(AccountID id, TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger);
     }
 
     // --- Only used by unit tests

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token;
 
 import com.hedera.node.app.spi.Service;
@@ -36,10 +37,12 @@ import java.util.ServiceLoader;
  */
 public interface CryptoService extends Service {
 
+    String NAME = "CryptoService";
+
     @NonNull
     @Override
     default String getServiceName() {
-        return CryptoService.class.getSimpleName();
+        return NAME;
     }
 
     /**
@@ -49,7 +52,6 @@ public interface CryptoService extends Service {
      */
     @NonNull
     static CryptoService getInstance() {
-        return ServiceFactory.loadService(
-                CryptoService.class, ServiceLoader.load(CryptoService.class));
+        return ServiceFactory.loadService(CryptoService.class, ServiceLoader.load(CryptoService.class));
     }
 }

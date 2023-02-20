@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -52,10 +53,7 @@ public class ContractGetBytecodeSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                getByteCodeWorks(),
-                invalidContractFromCostAnswer(),
-                invalidContractFromAnswerOnly());
+        return List.of(getByteCodeWorks(), invalidContractFromCostAnswer(), invalidContractFromAnswerOnly());
     }
 
     @Override
@@ -68,47 +66,34 @@ public class ContractGetBytecodeSuite extends HapiSuite {
         return HapiSpec.defaultHapiSpec("GetByteCodeWorks")
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when()
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var getBytecode =
-                                            getContractBytecode(contract)
-                                                    .saveResultTo("contractByteCode");
-                                    allRunFor(spec, getBytecode);
+                .then(withOpContext((spec, opLog) -> {
+                    final var getBytecode = getContractBytecode(contract).saveResultTo("contractByteCode");
+                    allRunFor(spec, getBytecode);
 
-                                    @SuppressWarnings("UnstableApiUsage")
-                                    final var originalBytecode =
-                                            Hex.decode(
-                                                    Files.toByteArray(
-                                                            new File(
-                                                                    getResourcePath(
-                                                                            contract, ".bin"))));
-                                    final var actualBytecode =
-                                            spec.registry().getBytes("contractByteCode");
-                                    // The original bytecode is modified on deployment
-                                    final var expectedBytecode =
-                                            Arrays.copyOfRange(
-                                                    originalBytecode, 29, originalBytecode.length);
-                                    Assertions.assertArrayEquals(expectedBytecode, actualBytecode);
-                                }));
+                    @SuppressWarnings("UnstableApiUsage")
+                    final var originalBytecode =
+                            Hex.decode(Files.toByteArray(new File(getResourcePath(contract, ".bin"))));
+                    final var actualBytecode = spec.registry().getBytes("contractByteCode");
+                    // The original bytecode is modified on deployment
+                    final var expectedBytecode = Arrays.copyOfRange(originalBytecode, 29, originalBytecode.length);
+                    Assertions.assertArrayEquals(expectedBytecode, actualBytecode);
+                }));
     }
 
     private HapiSpec invalidContractFromCostAnswer() {
         return defaultHapiSpec("InvalidContractFromCostAnswer")
                 .given()
                 .when()
-                .then(
-                        getContractBytecode(NON_EXISTING_CONTRACT)
-                                .hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_CONTRACT_ID));
+                .then(getContractBytecode(NON_EXISTING_CONTRACT)
+                        .hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_CONTRACT_ID));
     }
 
     private HapiSpec invalidContractFromAnswerOnly() {
         return defaultHapiSpec("InvalidContractFromAnswerOnly")
                 .given()
                 .when()
-                .then(
-                        getContractBytecode(NON_EXISTING_CONTRACT)
-                                .nodePayment(27_159_182L)
-                                .hasAnswerOnlyPrecheck(ResponseCodeEnum.INVALID_CONTRACT_ID));
+                .then(getContractBytecode(NON_EXISTING_CONTRACT)
+                        .nodePayment(27_159_182L)
+                        .hasAnswerOnlyPrecheck(ResponseCodeEnum.INVALID_CONTRACT_ID));
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -56,18 +57,17 @@ public interface LedgerModule {
             final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger,
             final AutoCreationLogic autoCreationLogic,
             final TransferLogic transferLogic) {
-        final var ledger =
-                new HederaLedger(
-                        tokenStore,
-                        ids,
-                        creator,
-                        validator,
-                        sideEffectsTracker,
-                        recordsHistorian,
-                        tokensLedger,
-                        accountsLedger,
-                        transferLogic,
-                        autoCreationLogic);
+        final var ledger = new HederaLedger(
+                tokenStore,
+                ids,
+                creator,
+                validator,
+                sideEffectsTracker,
+                recordsHistorian,
+                tokensLedger,
+                accountsLedger,
+                transferLogic,
+                autoCreationLogic);
         scheduleStore.setAccountsLedger(accountsLedger);
         scheduleStore.setHederaLedger(ledger);
         return ledger;

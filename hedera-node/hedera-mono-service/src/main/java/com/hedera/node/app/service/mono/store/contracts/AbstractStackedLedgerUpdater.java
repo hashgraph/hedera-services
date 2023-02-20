@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts;
 
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
@@ -96,9 +97,7 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
                 if (mutable == null) {
                     /* We created this account, so create a new tracker for our parent. */
                     mutable =
-                            new UpdateTrackingAccount<>(
-                                    updatedAccount.getAddress(),
-                                    new UpdatedAccountTrackerImpl(wrapped.trackingAccounts()));
+                            new UpdateTrackingAccount<>(updatedAccount.getAddress(), new UpdatedAccountTrackerImpl(wrapped.trackingAccounts()));
                 } else {
                     /* This tracker is reusable, just update its tracking accounts to our parent's. */
                     final var tracker = (UpdatedAccountTrackerImpl) mutable.getAccountTracker();
@@ -123,8 +122,7 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
             wrapped.addCommittedRecordSourceId(thisRecordSourceId, recordsHistorian);
         }
         if (!committedRecordSourceIds.isEmpty()) {
-            committedRecordSourceIds.forEach(
-                    id -> wrapped.addCommittedRecordSourceId(id, recordsHistorian));
+            committedRecordSourceIds.forEach(id -> wrapped.addCommittedRecordSourceId(id, recordsHistorian));
         }
     }
 }

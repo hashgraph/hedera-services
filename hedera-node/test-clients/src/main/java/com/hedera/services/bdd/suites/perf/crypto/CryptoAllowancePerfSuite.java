@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -49,77 +50,60 @@ public class CryptoAllowancePerfSuite extends LoadTest {
         return defaultHapiSpec("runCryptoCreatesAndTokenCreates")
                 .given()
                 .when(
-                        inParallel(
-                                asOpArray(
-                                        NUM_CREATES,
-                                        i ->
-                                                (i == (NUM_CREATES - 1))
-                                                        ? cryptoCreate(OWNER + i)
-                                                                .balance(100_000_000_000L)
-                                                                .key(GENESIS)
-                                                                .withRecharging()
-                                                                .rechargeWindow(30)
-                                                                .payingWith(GENESIS)
-                                                        : cryptoCreate(OWNER + i)
-                                                                .balance(100_000_000_000L)
-                                                                .key(GENESIS)
-                                                                .withRecharging()
-                                                                .rechargeWindow(30)
-                                                                .payingWith(GENESIS)
-                                                                .deferStatusResolution())),
-                        inParallel(
-                                asOpArray(
-                                        NUM_CREATES,
-                                        i ->
-                                                (i == (NUM_CREATES - 1))
-                                                        ? cryptoCreate(SPENDER + i)
-                                                                .balance(100_000_000_000L)
-                                                                .key(GENESIS)
-                                                                .withRecharging()
-                                                                .rechargeWindow(30)
-                                                                .payingWith(GENESIS)
-                                                        : cryptoCreate(SPENDER + i)
-                                                                .balance(100_000_000_000L)
-                                                                .key(GENESIS)
-                                                                .withRecharging()
-                                                                .rechargeWindow(30)
-                                                                .payingWith(GENESIS)
-                                                                .deferStatusResolution())))
-                .then(
-                        inParallel(
-                                asOpArray(
-                                        NUM_CREATES,
-                                        i ->
-                                                (i == (NUM_CREATES - 1))
-                                                        ? tokenCreate(TOKEN + i)
-                                                                .payingWith(GENESIS)
-                                                                .initialSupply(100_000_000_000L)
-                                                                .signedBy(GENESIS)
-                                                        : tokenCreate(TOKEN + i)
-                                                                .payingWith(GENESIS)
-                                                                .signedBy(GENESIS)
-                                                                .initialSupply(100_000_000_000L)
-                                                                .deferStatusResolution())));
+                        inParallel(asOpArray(
+                                NUM_CREATES,
+                                i -> (i == (NUM_CREATES - 1))
+                                        ? cryptoCreate(OWNER + i)
+                                                .balance(100_000_000_000L)
+                                                .key(GENESIS)
+                                                .withRecharging()
+                                                .rechargeWindow(30)
+                                                .payingWith(GENESIS)
+                                        : cryptoCreate(OWNER + i)
+                                                .balance(100_000_000_000L)
+                                                .key(GENESIS)
+                                                .withRecharging()
+                                                .rechargeWindow(30)
+                                                .payingWith(GENESIS)
+                                                .deferStatusResolution())),
+                        inParallel(asOpArray(
+                                NUM_CREATES,
+                                i -> (i == (NUM_CREATES - 1))
+                                        ? cryptoCreate(SPENDER + i)
+                                                .balance(100_000_000_000L)
+                                                .key(GENESIS)
+                                                .withRecharging()
+                                                .rechargeWindow(30)
+                                                .payingWith(GENESIS)
+                                        : cryptoCreate(SPENDER + i)
+                                                .balance(100_000_000_000L)
+                                                .key(GENESIS)
+                                                .withRecharging()
+                                                .rechargeWindow(30)
+                                                .payingWith(GENESIS)
+                                                .deferStatusResolution())))
+                .then(inParallel(asOpArray(
+                        NUM_CREATES,
+                        i -> (i == (NUM_CREATES - 1))
+                                ? tokenCreate(TOKEN + i)
+                                        .payingWith(GENESIS)
+                                        .initialSupply(100_000_000_000L)
+                                        .signedBy(GENESIS)
+                                : tokenCreate(TOKEN + i)
+                                        .payingWith(GENESIS)
+                                        .signedBy(GENESIS)
+                                        .initialSupply(100_000_000_000L)
+                                        .deferStatusResolution())));
     }
 
     private HapiSpec runCryptoAllowances() {
         final int NUM_ALLOWANCES = 5000;
         return defaultHapiSpec("runCryptoAllowances")
                 .given()
-                .when(
-                        inParallel(
-                                asOpArray(
-                                        NUM_ALLOWANCES,
-                                        i ->
-                                                cryptoApproveAllowance()
-                                                        .payingWith(OWNER + i)
-                                                        .addCryptoAllowance(
-                                                                OWNER + i, SPENDER + i, 1L)
-                                                        .addTokenAllowance(
-                                                                OWNER + i,
-                                                                TOKEN + i,
-                                                                SPENDER + i,
-                                                                1L))))
+                .when(inParallel(asOpArray(NUM_ALLOWANCES, i -> cryptoApproveAllowance()
+                        .payingWith(OWNER + i)
+                        .addCryptoAllowance(OWNER + i, SPENDER + i, 1L)
+                        .addTokenAllowance(OWNER + i, TOKEN + i, SPENDER + i, 1L))))
                 .then();
     }
 

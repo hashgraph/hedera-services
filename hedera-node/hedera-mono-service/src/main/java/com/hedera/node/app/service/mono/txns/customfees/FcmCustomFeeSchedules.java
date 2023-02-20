@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.customfees;
 
 import com.hedera.node.app.service.mono.grpc.marshalling.CustomFeeMeta;
@@ -44,8 +45,7 @@ public class FcmCustomFeeSchedules implements CustomFeeSchedules {
             return CustomFeeMeta.forMissingLookupOf(tokenId);
         }
         final var merkleToken = currentTokens.get(key);
-        return new CustomFeeMeta(
-                tokenId, merkleToken.treasury().asId(), merkleToken.customFeeSchedule());
+        return new CustomFeeMeta(tokenId, merkleToken.treasury().asId(), merkleToken.customFeeSchedule());
     }
 
     public Supplier<MerkleMap<EntityNum, MerkleToken>> getTokens() {

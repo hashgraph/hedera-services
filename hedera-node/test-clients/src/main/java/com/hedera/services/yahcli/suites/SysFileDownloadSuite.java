@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.suites;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
@@ -38,8 +39,7 @@ public class SysFileDownloadSuite extends HapiSuite {
     private final Map<String, String> specConfig;
     private final String[] sysFilesToDownload;
 
-    public SysFileDownloadSuite(
-            String destDir, Map<String, String> specConfig, String[] sysFilesToDownload) {
+    public SysFileDownloadSuite(String destDir, Map<String, String> specConfig, String[] sysFilesToDownload) {
         this.destDir = destDir;
         this.specConfig = specConfig;
         this.sysFilesToDownload = sysFilesToDownload;
@@ -47,10 +47,9 @@ public class SysFileDownloadSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    downloadSysFiles(),
-                });
+        return List.of(new HapiSpec[] {
+            downloadSysFiles(),
+        });
     }
 
     private HapiSpec downloadSysFiles() {
@@ -60,10 +59,7 @@ public class SysFileDownloadSuite extends HapiSuite {
                 .withProperties(specConfig)
                 .given()
                 .when()
-                .then(
-                        Arrays.stream(targets)
-                                .mapToObj(this::appropriateQuery)
-                                .toArray(HapiSpecOperation[]::new));
+                .then(Arrays.stream(targets).mapToObj(this::appropriateQuery).toArray(HapiSpecOperation[]::new));
     }
 
     private HapiGetFileContents appropriateQuery(final long fileNum) {

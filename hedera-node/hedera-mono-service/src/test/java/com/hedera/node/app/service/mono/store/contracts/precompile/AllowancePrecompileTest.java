@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.AllowancePrecompile.decodeTokenAllowance;
@@ -27,18 +28,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AllowancePrecompileTest {
-    public static final Bytes ALLOWANCE_INPUT_ERC =
-            Bytes.fromHexString(
-                    "0x618dc65e00000000000000000000000000000000000003ecdd62ed3e00000000000000000000000000000000000000000000000000000000000003e900000000000000000000000000000000000000000000000000000000000003ea");
-    public static final Bytes ALLOWANCE_INPUT_HAPI =
-            Bytes.fromHexString(
-                    "0x927da105000000000000000000000000000000000000000000000000000000000000123400000000000000000000000000000000000000000000000000000000000006010000000000000000000000000000000000000000000000000000000000000602");
+    public static final Bytes ALLOWANCE_INPUT_ERC = Bytes.fromHexString(
+            "0x618dc65e00000000000000000000000000000000000003ecdd62ed3e00000000000000000000000000000000000000000000000000000000000003e900000000000000000000000000000000000000000000000000000000000003ea");
+    public static final Bytes ALLOWANCE_INPUT_HAPI = Bytes.fromHexString(
+            "0x927da105000000000000000000000000000000000000000000000000000000000000123400000000000000000000000000000000000000000000000000000000000006010000000000000000000000000000000000000000000000000000000000000602");
     private static final long TOKEN_NUM_HAPI_TOKEN = 0x1234;
     private static final long ACCOUNT_NUM_ALLOWANCE_OWNER = 0x601;
     private static final long ACCOUNT_NUM_ALLOWANCE_SPENDER = 0x602;
     private static final long ACCOUNT_NUM_ALLOWANCE_OWNER2 = 1001;
     private static final long ACCOUNT_NUM_ALLOWANCE_SPENDER2 = 1002;
-    private static final TokenID TOKEN_ID = TokenID.newBuilder().setTokenNum(1004).build();
+    private static final TokenID TOKEN_ID =
+            TokenID.newBuilder().setTokenNum(1004).build();
 
     @Test
     void decodeAllowanceInputERC() {

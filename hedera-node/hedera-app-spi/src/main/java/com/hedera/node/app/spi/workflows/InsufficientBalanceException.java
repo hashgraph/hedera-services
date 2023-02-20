@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.workflows;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -33,8 +34,7 @@ public class InsufficientBalanceException extends PreCheckException {
      * @param estimatedFee the estimated fee
      * @throws NullPointerException if {@code responseCode} is {@code null}
      */
-    public InsufficientBalanceException(
-            @NonNull final ResponseCodeEnum responseCode, final long estimatedFee) {
+    public InsufficientBalanceException(@NonNull final ResponseCodeEnum responseCode, final long estimatedFee) {
         super(responseCode);
         this.estimatedFee = estimatedFee;
     }

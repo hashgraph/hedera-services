@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.query;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetAccountDetails;
@@ -37,6 +38,7 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.workflows.dispatcher.StoreFactory;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -54,6 +56,7 @@ import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Function;
+import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,6 +93,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      * @param opCounters the {@link HapiOpCounters} with workflow-specific metrics
      * @throws NullPointerException if one of the arguments is {@code null}
      */
+    @Inject
     public QueryWorkflowImpl(
             @NonNull final NodeInfo nodeInfo,
             @NonNull final CurrentPlatformStatus currentPlatformStatus,
@@ -130,9 +134,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             LOGGER.debug("Received query: {}", query);
         }
 
-        final var functionality =
-                MiscUtils.functionalityOfQuery(query)
-                        .orElseThrow(() -> new StatusRuntimeException(Status.INVALID_ARGUMENT));
+        final var functionality = MiscUtils.functionalityOfQuery(query)
+                .orElseThrow(() -> new StatusRuntimeException(Status.INVALID_ARGUMENT));
         opCounters.countReceived(functionality);
 
         final var handler = dispatcher.getHandler(query);
@@ -158,7 +161,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 2. Check query throttles
-            if (throttleAccumulator.shouldThrottle(functionality)) {
+            if (throttleAccumulator.shouldThrottleQuery(functionality, query)) {
                 throw new PreCheckException(BUSY);
             }
 
@@ -188,12 +191,12 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 4. Check validity
-            dispatcher.validate(state, query);
+            final var storeFactory = new StoreFactory(state);
+            dispatcher.validate(storeFactory, query);
 
             // 5. Submit payment to platform
             if (paymentRequired) {
-                submissionManager.submit(
-                        txBody, allegedPayment.toByteArray(), session.txBodyParser());
+                submissionManager.submit(txBody, allegedPayment.toByteArray(), session.txBodyParser());
             }
 
             if (handler.needsAnswerOnlyCost(responseType)) {
@@ -205,14 +208,13 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             } else {
                 // 6.ii Find response
                 final var header = createResponseHeader(responseType, OK, fee);
-                response = dispatcher.getResponse(state, query, header);
+                response = dispatcher.getResponse(storeFactory, query, header);
             }
 
             opCounters.countAnswered(functionality);
 
         } catch (InsufficientBalanceException e) {
-            final var header =
-                    createResponseHeader(responseType, e.responseCode(), e.getEstimatedFee());
+            final var header = createResponseHeader(responseType, e.responseCode(), e.getEstimatedFee());
             response = handler.createEmptyResponse(header);
         } catch (PreCheckException e) {
             final var header = createResponseHeader(responseType, e.responseCode(), fee);
@@ -223,9 +225,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     }
 
     private static ResponseHeader createResponseHeader(
-            @NonNull final ResponseType type,
-            @NonNull final ResponseCodeEnum responseCode,
-            final long fee) {
+            @NonNull final ResponseType type, @NonNull final ResponseCodeEnum responseCode, final long fee) {
         return ResponseHeader.newBuilder()
                 .setResponseType(type)
                 .setNodeTransactionPrecheckCode(responseCode)

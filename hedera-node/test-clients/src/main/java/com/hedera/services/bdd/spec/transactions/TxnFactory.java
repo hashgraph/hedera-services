@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions;
 
 import static com.hedera.services.bdd.spec.HapiSpec.UTF8Mode.TRUE;
@@ -90,21 +91,18 @@ public class TxnFactory {
     private static final int BANNER_BOUNDARY_THICKNESS = 2;
     private static final double TXN_ID_SAMPLE_PROBABILITY = 1.0 / 500;
 
-    AtomicReference<TransactionID> sampleTxnId =
-            new AtomicReference<>(TransactionID.getDefaultInstance());
+    AtomicReference<TransactionID> sampleTxnId = new AtomicReference<>(TransactionID.getDefaultInstance());
     SplittableRandom r = new SplittableRandom();
 
     public static String bannerWith(String... msgs) {
         var sb = new StringBuilder();
-        var partial =
-                IntStream.range(0, BANNER_BOUNDARY_THICKNESS)
-                        .mapToObj(ignore -> "*")
-                        .collect(joining());
+        var partial = IntStream.range(0, BANNER_BOUNDARY_THICKNESS)
+                .mapToObj(ignore -> "*")
+                .collect(joining());
         int printableWidth = BANNER_WIDTH - 2 * (partial.length() + 1);
         addFullBoundary(sb);
-        List<String> allMsgs =
-                Stream.concat(Stream.of(""), Stream.concat(Arrays.stream(msgs), Stream.of("")))
-                        .collect(toList());
+        List<String> allMsgs = Stream.concat(Stream.of(""), Stream.concat(Arrays.stream(msgs), Stream.of("")))
+                .collect(toList());
         for (String msg : allMsgs) {
             int rightPaddingLen = printableWidth - msg.length();
             var rightPadding =
@@ -156,15 +154,13 @@ public class TxnFactory {
             sampleTxnId.set(defaultTxnId);
         }
 
-        final var memoToUse =
-                (setup.isMemoUTF8() == TRUE) ? setup.defaultUTF8memo() : setup.defaultMemo();
+        final var memoToUse = (setup.isMemoUTF8() == TRUE) ? setup.defaultUTF8memo() : setup.defaultMemo();
 
-        return builder ->
-                builder.setTransactionID(defaultTxnId)
-                        .setMemo(memoToUse)
-                        .setTransactionFee(setup.defaultFee())
-                        .setTransactionValidDuration(setup.defaultValidDuration())
-                        .setNodeAccountID(setup.defaultNode());
+        return builder -> builder.setTransactionID(defaultTxnId)
+                .setMemo(memoToUse)
+                .setTransactionFee(setup.defaultFee())
+                .setTransactionValidDuration(setup.defaultValidDuration())
+                .setNodeAccountID(setup.defaultNode());
     }
 
     public <T, B extends Message.Builder> T body(Class<T> tClass, Consumer<B> def)
@@ -177,23 +173,19 @@ public class TxnFactory {
         return (T) opBuilder.build();
     }
 
-    public Consumer<TokenAssociateTransactionBody.Builder>
-            defaultDefTokenAssociateTransactionBody() {
+    public Consumer<TokenAssociateTransactionBody.Builder> defaultDefTokenAssociateTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<TokenDissociateTransactionBody.Builder>
-            defaultDefTokenDissociateTransactionBody() {
+    public Consumer<TokenDissociateTransactionBody.Builder> defaultDefTokenDissociateTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<TokenWipeAccountTransactionBody.Builder>
-            defaultDefTokenWipeAccountTransactionBody() {
+    public Consumer<TokenWipeAccountTransactionBody.Builder> defaultDefTokenWipeAccountTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<TokenRevokeKycTransactionBody.Builder>
-            defaultDefTokenRevokeKycTransactionBody() {
+    public Consumer<TokenRevokeKycTransactionBody.Builder> defaultDefTokenRevokeKycTransactionBody() {
         return builder -> {};
     }
 
@@ -213,13 +205,11 @@ public class TxnFactory {
         return builder -> {};
     }
 
-    public Consumer<TokenFreezeAccountTransactionBody.Builder>
-            defaultDefTokenFreezeAccountTransactionBody() {
+    public Consumer<TokenFreezeAccountTransactionBody.Builder> defaultDefTokenFreezeAccountTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<TokenUnfreezeAccountTransactionBody.Builder>
-            defaultDefTokenUnfreezeAccountTransactionBody() {
+    public Consumer<TokenUnfreezeAccountTransactionBody.Builder> defaultDefTokenUnfreezeAccountTransactionBody() {
         return builder -> {};
     }
 
@@ -249,27 +239,24 @@ public class TxnFactory {
         return builder -> {};
     }
 
-    public Consumer<ConsensusSubmitMessageTransactionBody.Builder>
-            defaultDefConsensusSubmitMessageTransactionBody() {
+    public Consumer<ConsensusSubmitMessageTransactionBody.Builder> defaultDefConsensusSubmitMessageTransactionBody() {
         return builder -> {
-            builder.setMessage(ByteString.copyFrom(setup.defaultConsensusMessage().getBytes()));
+            builder.setMessage(
+                    ByteString.copyFrom(setup.defaultConsensusMessage().getBytes()));
         };
     }
 
-    public Consumer<ConsensusUpdateTopicTransactionBody.Builder>
-            defaultDefConsensusUpdateTopicTransactionBody() {
+    public Consumer<ConsensusUpdateTopicTransactionBody.Builder> defaultDefConsensusUpdateTopicTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<ConsensusCreateTopicTransactionBody.Builder>
-            defaultDefConsensusCreateTopicTransactionBody() {
+    public Consumer<ConsensusCreateTopicTransactionBody.Builder> defaultDefConsensusCreateTopicTransactionBody() {
         return builder -> {
             builder.setAutoRenewPeriod(setup.defaultAutoRenewPeriod());
         };
     }
 
-    public Consumer<ConsensusDeleteTopicTransactionBody.Builder>
-            defaultDefConsensusDeleteTopicTransactionBody() {
+    public Consumer<ConsensusDeleteTopicTransactionBody.Builder> defaultDefConsensusDeleteTopicTransactionBody() {
         return builder -> {};
     }
 
@@ -281,15 +268,13 @@ public class TxnFactory {
         return builder -> {};
     }
 
-    public Consumer<ContractDeleteTransactionBody.Builder>
-            defaultDefContractDeleteTransactionBody() {
+    public Consumer<ContractDeleteTransactionBody.Builder> defaultDefContractDeleteTransactionBody() {
         return builder -> {
             builder.setTransferAccountID(setup.defaultTransfer());
         };
     }
 
-    public Consumer<ContractUpdateTransactionBody.Builder>
-            defaultDefContractUpdateTransactionBody() {
+    public Consumer<ContractUpdateTransactionBody.Builder> defaultDefContractUpdateTransactionBody() {
         return builder -> {};
     }
 
@@ -301,23 +286,20 @@ public class TxnFactory {
         return builder -> builder.setMaxGasAllowance(setup.defaultCallGas());
     }
 
-    public Consumer<ContractCreateTransactionBody.Builder>
-            defaultDefContractCreateTransactionBody() {
-        return builder ->
-                builder.setAutoRenewPeriod(setup.defaultAutoRenewPeriod())
-                        .setGas(setup.defaultCreateGas())
-                        .setInitialBalance(setup.defaultContractBalance())
-                        .setMemo(setup.defaultMemo())
-                        .setShardID(setup.defaultShard())
-                        .setRealmID(setup.defaultRealm());
+    public Consumer<ContractCreateTransactionBody.Builder> defaultDefContractCreateTransactionBody() {
+        return builder -> builder.setAutoRenewPeriod(setup.defaultAutoRenewPeriod())
+                .setGas(setup.defaultCreateGas())
+                .setInitialBalance(setup.defaultContractBalance())
+                .setMemo(setup.defaultMemo())
+                .setShardID(setup.defaultShard())
+                .setRealmID(setup.defaultRealm());
     }
 
     public Consumer<FileCreateTransactionBody.Builder> defaultDefFileCreateTransactionBody() {
-        return builder ->
-                builder.setRealmID(setup.defaultRealm())
-                        .setShardID(setup.defaultShard())
-                        .setContents(ByteString.copyFrom(setup.defaultFileContents()))
-                        .setExpirationTime(defaultExpiry());
+        return builder -> builder.setRealmID(setup.defaultRealm())
+                .setShardID(setup.defaultShard())
+                .setContents(ByteString.copyFrom(setup.defaultFileContents()))
+                .setExpirationTime(defaultExpiry());
     }
 
     public Consumer<FileAppendTransactionBody.Builder> defaultDefFileAppendTransactionBody() {
@@ -348,39 +330,33 @@ public class TxnFactory {
         return builder -> {};
     }
 
-    public Consumer<SystemUndeleteTransactionBody.Builder>
-            defaultDefSystemUndeleteTransactionBody() {
+    public Consumer<SystemUndeleteTransactionBody.Builder> defaultDefSystemUndeleteTransactionBody() {
         return builder -> {};
     }
 
     public Consumer<CryptoCreateTransactionBody.Builder> defaultDefCryptoCreateTransactionBody() {
-        return builder ->
-                builder.setInitialBalance(setup.defaultBalance())
-                        .setAutoRenewPeriod(setup.defaultAutoRenewPeriod())
-                        .setReceiverSigRequired(setup.defaultReceiverSigRequired());
+        return builder -> builder.setInitialBalance(setup.defaultBalance())
+                .setAutoRenewPeriod(setup.defaultAutoRenewPeriod())
+                .setReceiverSigRequired(setup.defaultReceiverSigRequired());
     }
 
     public Consumer<CryptoUpdateTransactionBody.Builder> defaultDefCryptoUpdateTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<CryptoTransferTransactionBody.Builder>
-            defaultDefCryptoTransferTransactionBody() {
+    public Consumer<CryptoTransferTransactionBody.Builder> defaultDefCryptoTransferTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<CryptoApproveAllowanceTransactionBody.Builder>
-            defaultDefCryptoApproveAllowanceTransactionBody() {
+    public Consumer<CryptoApproveAllowanceTransactionBody.Builder> defaultDefCryptoApproveAllowanceTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<CryptoDeleteAllowanceTransactionBody.Builder>
-            defaultDefCryptoDeleteAllowanceTransactionBody() {
+    public Consumer<CryptoDeleteAllowanceTransactionBody.Builder> defaultDefCryptoDeleteAllowanceTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<ScheduleCreateTransactionBody.Builder>
-            defaultDefScheduleCreateTransactionBody() {
+    public Consumer<ScheduleCreateTransactionBody.Builder> defaultDefScheduleCreateTransactionBody() {
         return builder -> {};
     }
 
@@ -388,13 +364,11 @@ public class TxnFactory {
         return builder -> {};
     }
 
-    public Consumer<ScheduleDeleteTransactionBody.Builder>
-            defaultDefScheduleDeleteTransactionBody() {
+    public Consumer<ScheduleDeleteTransactionBody.Builder> defaultDefScheduleDeleteTransactionBody() {
         return builder -> {};
     }
 
-    public Consumer<TokenFeeScheduleUpdateTransactionBody.Builder>
-            defaultDefTokenFeeScheduleUpdateTransactionBody() {
+    public Consumer<TokenFeeScheduleUpdateTransactionBody.Builder> defaultDefTokenFeeScheduleUpdateTransactionBody() {
         return builder -> {};
     }
 

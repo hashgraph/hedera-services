@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -56,14 +57,12 @@ public class EntityNumVirtualKeySerializer implements KeySerializer<EntityNumVir
     }
 
     @Override
-    public boolean equals(ByteBuffer buffer, int version, EntityNumVirtualKey key)
-            throws IOException {
+    public boolean equals(ByteBuffer buffer, int version, EntityNumVirtualKey key) throws IOException {
         return key.equals(buffer, version);
     }
 
     @Override
-    public int serialize(EntityNumVirtualKey key, SerializableDataOutputStream out)
-            throws IOException {
+    public int serialize(EntityNumVirtualKey key, SerializableDataOutputStream out) throws IOException {
         key.serialize(out);
         return EntityNumVirtualKey.sizeInBytes();
     }

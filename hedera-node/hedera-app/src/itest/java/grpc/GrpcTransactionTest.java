@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package grpc;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -56,62 +57,55 @@ class GrpcTransactionTest extends GrpcTestBase {
     void setUp() throws InterruptedException, UnknownHostException {
         super.setUp();
 
-        final var channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
+        final var channel =
+                ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 
-        consensusClient =
-                GrpcServiceClient.create(
-                        channel,
-                        ClientServiceDescriptor.builder(ConsensusServiceGrpc.getServiceDescriptor())
-                                .build());
-        networkClient =
-                GrpcServiceClient.create(
-                        channel,
-                        ClientServiceDescriptor.builder(NetworkServiceGrpc.getServiceDescriptor())
-                                .build());
-        cryptoClient =
-                GrpcServiceClient.create(
-                        channel,
-                        ClientServiceDescriptor.builder(CryptoServiceGrpc.getServiceDescriptor())
-                                .build());
+        consensusClient = GrpcServiceClient.create(
+                channel,
+                ClientServiceDescriptor.builder(ConsensusServiceGrpc.getServiceDescriptor())
+                        .build());
+        networkClient = GrpcServiceClient.create(
+                channel,
+                ClientServiceDescriptor.builder(NetworkServiceGrpc.getServiceDescriptor())
+                        .build());
+        cryptoClient = GrpcServiceClient.create(
+                channel,
+                ClientServiceDescriptor.builder(CryptoServiceGrpc.getServiceDescriptor())
+                        .build());
     }
 
     @Override
     protected void configureRouting(GrpcRouting.Builder rb) {
-        final var iw =
-                new IngestWorkflow() {
-                    @Override
-                    public void submitTransaction(
-                            @NonNull SessionContext session,
-                            @NonNull ByteBuffer requestBuffer,
-                            @NonNull ByteBuffer responseBuffer) {
-                        if (ingestWorkflow != null) {
-                            ingestWorkflow.submitTransaction(
-                                    session, requestBuffer, responseBuffer);
-                        }
-                    }
-                };
+        final var iw = new IngestWorkflow() {
+            @Override
+            public void submitTransaction(
+                    @NonNull SessionContext session,
+                    @NonNull ByteBuffer requestBuffer,
+                    @NonNull ByteBuffer responseBuffer) {
+                if (ingestWorkflow != null) {
+                    ingestWorkflow.submitTransaction(session, requestBuffer, responseBuffer);
+                }
+            }
+        };
 
-        final var qw =
-                new QueryWorkflow() {
-                    @Override
-                    public void handleQuery(
-                            @NonNull SessionContext session,
-                            @NonNull ByteBuffer requestBuffer,
-                            @NonNull ByteBuffer responseBuffer) {
-                        if (queryWorkflow != null) {
-                            queryWorkflow.handleQuery(session, requestBuffer, responseBuffer);
-                        }
-                    }
-                };
+        final var qw = new QueryWorkflow() {
+            @Override
+            public void handleQuery(
+                    @NonNull SessionContext session,
+                    @NonNull ByteBuffer requestBuffer,
+                    @NonNull ByteBuffer responseBuffer) {
+                if (queryWorkflow != null) {
+                    queryWorkflow.handleQuery(session, requestBuffer, responseBuffer);
+                }
+            }
+        };
 
-        var serviceBuilder =
-                new GrpcServiceBuilder("proto.ConsensusService", iw, qw)
-                        .query("getTopicInfo")
-                        .transaction("submitMessage");
+        var serviceBuilder = new GrpcServiceBuilder("proto.ConsensusService", iw, qw)
+                .query("getTopicInfo")
+                .transaction("submitMessage");
         rb.register(serviceBuilder.build(metrics));
 
-        serviceBuilder =
-                new GrpcServiceBuilder("proto.CryptoService", iw, qw).query("getAccountRecords");
+        serviceBuilder = new GrpcServiceBuilder("proto.CryptoService", iw, qw).query("getAccountRecords");
         rb.register(serviceBuilder.build(metrics));
     }
 
@@ -126,38 +120,28 @@ class GrpcTransactionTest extends GrpcTestBase {
     @Test
     @DisplayName("Send a transaction to a missing account and receive an error code")
     void sendBadTransaction() {
-        ingestWorkflow =
-                (session, requestBuffer, responseBuffer) -> {
-                    final var response =
-                            TransactionResponse.newBuilder()
-                                    .setNodeTransactionPrecheckCode(
-                                            ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST)
-                                    .build();
-                    responseBuffer.put(response.toByteArray());
-                };
+        ingestWorkflow = (session, requestBuffer, responseBuffer) -> {
+            final var response = TransactionResponse.newBuilder()
+                    .setNodeTransactionPrecheckCode(ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST)
+                    .build();
+            responseBuffer.put(response.toByteArray());
+        };
 
         final var tx = createSubmitMessageTransaction(5000, "sendBadTransaction");
         final TransactionResponse response = consensusClient.blockingUnary("submitMessage", tx);
-        assertEquals(
-                ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST,
-                response.getNodeTransactionPrecheckCode());
+        assertEquals(ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST, response.getNodeTransactionPrecheckCode());
     }
 
     @Test
     @DisplayName("Send a valid transaction but the server fails unexpectedly")
     void sendTransactionAndServerFails() {
-        ingestWorkflow =
-                (session, requestBuffer, responseBuffer) -> {
-                    throw new RuntimeException(
-                            "Something really unexpected and bad happened that should never"
-                                    + " happen");
-                };
+        ingestWorkflow = (session, requestBuffer, responseBuffer) -> {
+            throw new RuntimeException("Something really unexpected and bad happened that should never" + " happen");
+        };
 
         final var tx = createSubmitMessageTransaction(1001, "sendTransactionAndServerFails");
         final var e =
-                assertThrows(
-                        StatusRuntimeException.class,
-                        () -> consensusClient.blockingUnary("submitMessage", tx));
+                assertThrows(StatusRuntimeException.class, () -> consensusClient.blockingUnary("submitMessage", tx));
         assertEquals(Status.UNKNOWN, e.getStatus());
     }
 
@@ -173,9 +157,7 @@ class GrpcTransactionTest extends GrpcTestBase {
 
         final var tx = createCreateTopicTransaction("sendTransactionToUnknownEndpoint");
         final var e =
-                assertThrows(
-                        StatusRuntimeException.class,
-                        () -> consensusClient.blockingUnary("createTopic", tx));
+                assertThrows(StatusRuntimeException.class, () -> consensusClient.blockingUnary("createTopic", tx));
         assertEquals(Status.UNIMPLEMENTED.getCode(), e.getStatus().getCode());
     }
 
@@ -189,31 +171,25 @@ class GrpcTransactionTest extends GrpcTestBase {
         // verify the behavior should a client call a service that the server doesn't know about
         final var tx = createUncheckedSubmitTransaction();
         final var e =
-                assertThrows(
-                        StatusRuntimeException.class,
-                        () -> networkClient.blockingUnary("uncheckedSubmit", tx));
+                assertThrows(StatusRuntimeException.class, () -> networkClient.blockingUnary("uncheckedSubmit", tx));
         assertEquals(Status.UNIMPLEMENTED.getCode(), e.getStatus().getCode());
     }
 
     @Test
     @DisplayName("Send a valid query and receive a good response")
     void sendGoodQuery() {
-        queryWorkflow =
-                (session, requestBuffer, responseBuffer) -> {
-                    final var topicId = TopicID.newBuilder().setTopicNum(1001).build();
-                    final var response =
-                            Response.newBuilder()
-                                    .setConsensusGetTopicInfo(
-                                            ConsensusGetTopicInfoResponse.newBuilder()
-                                                    .setTopicID(topicId)
-                                                    .setTopicInfo(
-                                                            ConsensusTopicInfo.newBuilder()
-                                                                    .setMemo("Topic memo")
-                                                                    .setSequenceNumber(1234))
-                                                    .build())
-                                    .build();
-                    responseBuffer.put(response.toByteArray());
-                };
+        queryWorkflow = (session, requestBuffer, responseBuffer) -> {
+            final var topicId = TopicID.newBuilder().setTopicNum(1001).build();
+            final var response = Response.newBuilder()
+                    .setConsensusGetTopicInfo(ConsensusGetTopicInfoResponse.newBuilder()
+                            .setTopicID(topicId)
+                            .setTopicInfo(ConsensusTopicInfo.newBuilder()
+                                    .setMemo("Topic memo")
+                                    .setSequenceNumber(1234))
+                            .build())
+                    .build();
+            responseBuffer.put(response.toByteArray());
+        };
 
         final var q = createGetTopicInfoQuery(1001);
         final Response response = consensusClient.blockingUnary("getTopicInfo", q);
@@ -228,18 +204,13 @@ class GrpcTransactionTest extends GrpcTestBase {
     @Test
     @DisplayName("Send a valid query but the server fails unexpectedly")
     void sendQueryAndServerFails() {
-        queryWorkflow =
-                (session, requestBuffer, responseBuffer) -> {
-                    throw new RuntimeException(
-                            "Something really unexpected and bad happened that should never"
-                                    + " happen");
-                };
+        queryWorkflow = (session, requestBuffer, responseBuffer) -> {
+            throw new RuntimeException("Something really unexpected and bad happened that should never" + " happen");
+        };
 
         final var q = createGetTopicInfoQuery(1001);
         final var e =
-                assertThrows(
-                        StatusRuntimeException.class,
-                        () -> consensusClient.blockingUnary("getTopicInfo", q));
+                assertThrows(StatusRuntimeException.class, () -> consensusClient.blockingUnary("getTopicInfo", q));
         assertEquals(Status.UNKNOWN, e.getStatus());
     }
 
@@ -253,10 +224,7 @@ class GrpcTransactionTest extends GrpcTestBase {
         // I can verify the behavior should a client call a method on a service that the server
         // doesn't know about
         final var q = createGetLiveHashQuery();
-        final var e =
-                assertThrows(
-                        StatusRuntimeException.class,
-                        () -> cryptoClient.blockingUnary("getLiveHash", q));
+        final var e = assertThrows(StatusRuntimeException.class, () -> cryptoClient.blockingUnary("getLiveHash", q));
         assertEquals(Status.UNIMPLEMENTED.getCode(), e.getStatus().getCode());
     }
 
@@ -270,9 +238,7 @@ class GrpcTransactionTest extends GrpcTestBase {
         // verify the behavior should a client call a service that the server doesn't know about
         final var q = createGetExecutionTimeQuery();
         final var e =
-                assertThrows(
-                        StatusRuntimeException.class,
-                        () -> networkClient.blockingUnary("getExecutionTime", q));
+                assertThrows(StatusRuntimeException.class, () -> networkClient.blockingUnary("getExecutionTime", q));
         assertEquals(Status.UNIMPLEMENTED.getCode(), e.getStatus().getCode());
     }
 }

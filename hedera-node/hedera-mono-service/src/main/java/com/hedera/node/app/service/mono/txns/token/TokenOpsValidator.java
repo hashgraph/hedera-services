@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
@@ -51,12 +52,7 @@ public final class TokenOpsValidator {
             final IntFunction<ResponseCodeEnum> batchSizeCheck,
             Function<byte[], ResponseCodeEnum> nftMetaDataCheck) {
         var validity =
-                validateCounts(
-                        nftCount,
-                        fungibleCount,
-                        areNftEnabled,
-                        invalidTokenAmountResponse,
-                        batchSizeCheck);
+                validateCounts(nftCount, fungibleCount, areNftEnabled, invalidTokenAmountResponse, batchSizeCheck);
 
         if (validity != OK) {
             return validity;
@@ -90,12 +86,7 @@ public final class TokenOpsValidator {
             final List<Long> serialNos,
             final IntFunction<ResponseCodeEnum> batchSizeCheck) {
         var validity =
-                validateCounts(
-                        nftCount,
-                        fungibleCount,
-                        areNftEnabled,
-                        invalidTokenAmountResponse,
-                        batchSizeCheck);
+                validateCounts(nftCount, fungibleCount, areNftEnabled, invalidTokenAmountResponse, batchSizeCheck);
 
         if (validity != OK) {
             return validity;
@@ -133,8 +124,7 @@ public final class TokenOpsValidator {
     }
 
     private static ResponseCodeEnum validateMetaData(
-            final List<ByteString> metaDataList,
-            Function<byte[], ResponseCodeEnum> nftMetaDataCheck) {
+            final List<ByteString> metaDataList, Function<byte[], ResponseCodeEnum> nftMetaDataCheck) {
         for (var bytes : metaDataList) {
             var validity = nftMetaDataCheck.apply(bytes.toByteArray());
             if (validity != OK) {

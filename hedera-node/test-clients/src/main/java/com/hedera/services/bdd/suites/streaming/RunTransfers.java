@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.streaming;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -54,55 +55,42 @@ public class RunTransfers extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    runTransfers(),
-                });
+        return List.of(new HapiSpec[] {
+            runTransfers(),
+        });
     }
 
     private HapiSpec runTransfers() {
         return defaultHapiSpec("RunTransfers")
                 .given()
                 .when()
-                .then(
-                        runWithProvider(transfersProvider())
-                                .lasting(duration::get, unit::get)
-                                .maxOpsPerSec(maxOpsPerSec::get));
+                .then(runWithProvider(transfersProvider())
+                        .lasting(duration::get, unit::get)
+                        .maxOpsPerSec(maxOpsPerSec::get));
     }
 
     private Function<HapiSpec, OpProvider> transfersProvider() {
         final AtomicInteger donor = new AtomicInteger(0);
 
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        return List.of(
-                                inParallel(
-                                        IntStream.range(0, TOTAL_ACCOUNTS)
-                                                .mapToObj(
-                                                        i ->
-                                                                cryptoCreate(
-                                                                        String.format(
-                                                                                "account%d", i)))
-                                                .toArray(HapiSpecOperation[]::new)));
-                    }
+        return spec -> new OpProvider() {
+            @Override
+            public List<HapiSpecOperation> suggestedInitializers() {
+                return List.of(inParallel(IntStream.range(0, TOTAL_ACCOUNTS)
+                        .mapToObj(i -> cryptoCreate(String.format("account%d", i)))
+                        .toArray(HapiSpecOperation[]::new)));
+            }
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        var op =
-                                cryptoTransfer(
-                                                tinyBarsFromTo(
-                                                        "account" + donor.getAndIncrement(),
-                                                        "account" + donor.getAndIncrement(),
-                                                        1))
-                                        .deferStatusResolution();
-                        if (donor.get() > ACCOUNTS_IN_TRANSFER_ROTATION) {
-                            donor.set(0);
-                        }
-                        return Optional.of(op);
-                    }
-                };
+            @Override
+            public Optional<HapiSpecOperation> get() {
+                var op = cryptoTransfer(tinyBarsFromTo(
+                                "account" + donor.getAndIncrement(), "account" + donor.getAndIncrement(), 1))
+                        .deferStatusResolution();
+                if (donor.get() > ACCOUNTS_IN_TRANSFER_ROTATION) {
+                    donor.set(0);
+                }
+                return Optional.of(op);
+            }
+        };
     }
 
     @Override

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs;
 
 import com.hedera.node.app.service.mono.ServicesState;
@@ -49,8 +50,7 @@ public final class HederaToPlatformSigOps {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    private static final Expansion.CryptoSigsCreation cryptoSigsFunction =
-            PlatformSigOps::createCryptoSigsFrom;
+    private static final Expansion.CryptoSigsCreation cryptoSigsFunction = PlatformSigOps::createCryptoSigsFrom;
 
     /**
      * Try to set the {@link Signature} list on the accessible platform txn to exactly the
@@ -71,12 +71,9 @@ public final class HederaToPlatformSigOps {
      * @param pkToSigFn source of crypto sigs for the simple keys in the Hedera key leaves
      */
     public static void expandIn(
-            final SwirldsTxnAccessor txnAccessor,
-            final SigRequirements sigReqs,
-            final PubKeyToSigBytes pkToSigFn) {
+            final SwirldsTxnAccessor txnAccessor, final SigRequirements sigReqs, final PubKeyToSigBytes pkToSigFn) {
         txnAccessor.clearCryptoSigs();
         final var scopedSigFactory = new ReusableBodySigningFactory(txnAccessor);
-        new Expansion(txnAccessor, sigReqs, pkToSigFn, cryptoSigsFunction, scopedSigFactory)
-                .execute();
+        new Expansion(txnAccessor, sigReqs, pkToSigFn, cryptoSigsFunction, scopedSigFactory).execute();
     }
 }

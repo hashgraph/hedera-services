@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.commands.keys;
 
 import static com.hedera.services.yahcli.commands.keys.ExtractDetailsCommand.DER_EDDSA_PREFIX;
@@ -37,7 +38,8 @@ import picocli.CommandLine;
         subcommands = {picocli.CommandLine.HelpCommand.class},
         description = "Generates a new key")
 public class NewPemCommand implements Callable<Integer> {
-    @CommandLine.ParentCommand private KeysCommand keysCommand;
+    @CommandLine.ParentCommand
+    private KeysCommand keysCommand;
 
     @CommandLine.Option(
             names = {"-p", "--path"},

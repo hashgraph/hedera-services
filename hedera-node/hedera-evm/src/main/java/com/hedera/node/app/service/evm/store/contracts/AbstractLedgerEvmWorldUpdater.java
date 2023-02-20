@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts;
 
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
@@ -32,8 +33,7 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.evm.worldstate.WorldView;
 import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
-public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A extends Account>
-        implements WorldUpdater {
+public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A extends Account> implements WorldUpdater {
 
     protected final W world;
     protected final AccountAccessor accountAccessor;
@@ -48,9 +48,7 @@ public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A exten
     }
 
     protected AbstractLedgerEvmWorldUpdater(
-            final W world,
-            final AccountAccessor accountAccessor,
-            final HederaEvmEntityAccess hederaEvmEntityAccess) {
+            final W world, final AccountAccessor accountAccessor, final HederaEvmEntityAccess hederaEvmEntityAccess) {
         this(world, accountAccessor);
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,10 +39,9 @@ class TokenRelsLinkManagerTest {
 
     @BeforeEach
     void setUp() {
-        subject =
-                new TokenRelsLinkManager(
-                        () -> AccountStorageAdapter.fromInMemory(accounts),
-                        () -> TokenRelStorageAdapter.fromInMemory(tokenRels));
+        subject = new TokenRelsLinkManager(
+                () -> AccountStorageAdapter.fromInMemory(accounts),
+                () -> TokenRelStorageAdapter.fromInMemory(tokenRels));
     }
 
     @Test

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.file.negative;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -51,12 +52,8 @@ public class QueryFailuresSpec extends HapiSuite {
                 .given(fileCreate("tbd"), fileDelete("tbd"))
                 .when()
                 .then(
-                        getFileInfo("1.2.3")
-                                .nodePayment(1_234L)
-                                .hasAnswerOnlyPrecheck(INVALID_FILE_ID),
-                        getFileContents("1.2.3")
-                                .nodePayment(1_234L)
-                                .hasAnswerOnlyPrecheck(INVALID_FILE_ID),
+                        getFileInfo("1.2.3").nodePayment(1_234L).hasAnswerOnlyPrecheck(INVALID_FILE_ID),
+                        getFileContents("1.2.3").nodePayment(1_234L).hasAnswerOnlyPrecheck(INVALID_FILE_ID),
                         getFileContents("tbd")
                                 .nodePayment(1_234L)
                                 .hasAnswerOnlyPrecheck(OK)

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.verification;
 
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -96,10 +97,7 @@ public class RecordFileParser {
 
                             break;
                         default:
-                            log.warn(
-                                    "Record file '{}' contained unrecognized delimiter |{}|",
-                                    file,
-                                    typeDelimiter);
+                            log.warn("Record file '{}' contained unrecognized delimiter |{}|", file, typeDelimiter);
                     }
                 } catch (Exception e) {
                     log.warn("Problem parsing record file '{}'", file);
@@ -111,8 +109,7 @@ public class RecordFileParser {
             contentDigest.reset();
             byte[] everything = Files.readAllBytes(file.toPath());
             byte[] preface = Arrays.copyOfRange(everything, 0, 57);
-            byte[] bodyHash =
-                    contentDigest.digest(Arrays.copyOfRange(everything, 57, everything.length));
+            byte[] bodyHash = contentDigest.digest(Arrays.copyOfRange(everything, 57, everything.length));
             metaDigest.update(ArrayUtils.addAll(preface, bodyHash));
         } catch (FileNotFoundException e) {
             throw new IllegalStateException();

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.fees;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -74,19 +75,17 @@ public class AllBaseOpFeesSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return allOf(
-                List.of(
-                        baseNftFreezeUnfreezeChargedAsExpected(),
-                        baseCommonFreezeUnfreezeChargedAsExpected(),
-                        baseNftMintOperationIsChargedExpectedFee(),
-                        baseNftWipeOperationIsChargedExpectedFee(),
-                        baseNftBurnOperationIsChargedExpectedFee()));
+        return allOf(List.of(
+                baseNftFreezeUnfreezeChargedAsExpected(),
+                baseCommonFreezeUnfreezeChargedAsExpected(),
+                baseNftMintOperationIsChargedExpectedFee(),
+                baseNftWipeOperationIsChargedExpectedFee(),
+                baseNftBurnOperationIsChargedExpectedFee()));
     }
 
     private HapiSpec baseNftMintOperationIsChargedExpectedFee() {
-        final var standard100ByteMetadata =
-                ByteString.copyFromUtf8(
-                        "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
+        final var standard100ByteMetadata = ByteString.copyFromUtf8(
+                "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
 
         return defaultHapiSpec("BaseUniqueMintOperationIsChargedExpectedFee")
                 .given(
@@ -97,17 +96,12 @@ public class AllBaseOpFeesSuite extends HapiSuite {
                                 .expiry(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
                                 .supplyKey(SUPPLY_KEY)
                                 .tokenType(NON_FUNGIBLE_UNIQUE))
-                .when(
-                        mintToken(UNIQUE_TOKEN, List.of(standard100ByteMetadata))
-                                .payingWith(CIVILIAN_ACCT)
-                                .signedBy(SUPPLY_KEY)
-                                .blankMemo()
-                                .via(BASE_TXN))
-                .then(
-                        validateChargedUsdWithin(
-                                BASE_TXN,
-                                EXPECTED_NFT_MINT_PRICE_USD,
-                                ALLOWED_DIFFERENCE_PERCENTAGE));
+                .when(mintToken(UNIQUE_TOKEN, List.of(standard100ByteMetadata))
+                        .payingWith(CIVILIAN_ACCT)
+                        .signedBy(SUPPLY_KEY)
+                        .blankMemo()
+                        .via(BASE_TXN))
+                .then(validateChargedUsdWithin(BASE_TXN, EXPECTED_NFT_MINT_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE));
     }
 
     private HapiSpec baseNftWipeOperationIsChargedExpectedFee() {
@@ -126,15 +120,12 @@ public class AllBaseOpFeesSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY),
                         tokenAssociate(CIVILIAN_ACCT, UNIQUE_TOKEN),
                         mintToken(UNIQUE_TOKEN, List.of(ByteString.copyFromUtf8("token_to_wipe"))),
-                        cryptoTransfer(
-                                movingUnique(UNIQUE_TOKEN, 1L)
-                                        .between(TOKEN_TREASURY, CIVILIAN_ACCT)))
-                .when(
-                        wipeTokenAccount(UNIQUE_TOKEN, CIVILIAN_ACCT, List.of(1L))
-                                .payingWith(TOKEN_TREASURY)
-                                .fee(ONE_HBAR)
-                                .blankMemo()
-                                .via(BASE_TXN))
+                        cryptoTransfer(movingUnique(UNIQUE_TOKEN, 1L).between(TOKEN_TREASURY, CIVILIAN_ACCT)))
+                .when(wipeTokenAccount(UNIQUE_TOKEN, CIVILIAN_ACCT, List.of(1L))
+                        .payingWith(TOKEN_TREASURY)
+                        .fee(ONE_HBAR)
+                        .blankMemo()
+                        .via(BASE_TXN))
                 .then(validateChargedUsdWithin(BASE_TXN, EXPECTED_NFT_WIPE_PRICE_USD, 0.01));
     }
 
@@ -150,12 +141,11 @@ public class AllBaseOpFeesSuite extends HapiSuite {
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY),
                         mintToken(UNIQUE_TOKEN, List.of(metadata("memo"))))
-                .when(
-                        burnToken(UNIQUE_TOKEN, List.of(1L))
-                                .fee(ONE_HBAR)
-                                .payingWith(CIVILIAN_ACCT)
-                                .blankMemo()
-                                .via(BASE_TXN))
+                .when(burnToken(UNIQUE_TOKEN, List.of(1L))
+                        .fee(ONE_HBAR)
+                        .payingWith(CIVILIAN_ACCT)
+                        .blankMemo()
+                        .via(BASE_TXN))
                 .then(validateChargedUsdWithin(BASE_TXN, EXPECTED_NFT_BURN_PRICE_USD, 0.01));
     }
 
@@ -192,12 +182,8 @@ public class AllBaseOpFeesSuite extends HapiSuite {
                                 .signedBy(TOKEN_TREASURY)
                                 .via(UNFREEZE))
                 .then(
-                        validateChargedUsdWithin(
-                                "freeze", EXPECTED_FREEZE_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE),
-                        validateChargedUsdWithin(
-                                UNFREEZE,
-                                EXPECTED_UNFREEZE_PRICE_USD,
-                                ALLOWED_DIFFERENCE_PERCENTAGE));
+                        validateChargedUsdWithin("freeze", EXPECTED_FREEZE_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE),
+                        validateChargedUsdWithin(UNFREEZE, EXPECTED_UNFREEZE_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE));
     }
 
     private HapiSpec baseCommonFreezeUnfreezeChargedAsExpected() {
@@ -231,12 +217,8 @@ public class AllBaseOpFeesSuite extends HapiSuite {
                                 .signedBy(TOKEN_TREASURY)
                                 .via(UNFREEZE))
                 .then(
-                        validateChargedUsdWithin(
-                                "freeze", EXPECTED_FREEZE_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE),
-                        validateChargedUsdWithin(
-                                UNFREEZE,
-                                EXPECTED_UNFREEZE_PRICE_USD,
-                                ALLOWED_DIFFERENCE_PERCENTAGE));
+                        validateChargedUsdWithin("freeze", EXPECTED_FREEZE_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE),
+                        validateChargedUsdWithin(UNFREEZE, EXPECTED_UNFREEZE_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE));
     }
 
     @Override

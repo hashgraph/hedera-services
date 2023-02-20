@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.suites;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -60,10 +61,7 @@ public class SysFileUploadSuite extends HapiSuite {
     private ByteString uploadData;
 
     public SysFileUploadSuite(
-            final String srcDir,
-            final Map<String, String> specConfig,
-            final String sysFile,
-            final boolean isDryRun) {
+            final String srcDir, final Map<String, String> specConfig, final String sysFile, final boolean isDryRun) {
         this(NOT_APPLICABLE, NOT_APPLICABLE, false, srcDir, specConfig, sysFile, isDryRun);
     }
 
@@ -103,56 +101,35 @@ public class SysFileUploadSuite extends HapiSuite {
 
         return customHapiSpec(name)
                 .withProperties(specConfig)
-                .given(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    if (!restartFromFailure) {
-                                        return;
-                                    }
-                                    final var lookup = getFileInfo("0.0." + sysFileId);
-                                    allRunFor(spec, lookup);
-                                    final var currentHash =
-                                            lookup.getResponse()
-                                                    .getFileGetInfo()
-                                                    .getFileInfo()
-                                                    .getMemo();
-                                    wrappedAppendsToSkip.set(skippedAppendsFor(currentHash));
-                                }))
+                .given(withOpContext((spec, opLog) -> {
+                    if (!restartFromFailure) {
+                        return;
+                    }
+                    final var lookup = getFileInfo("0.0." + sysFileId);
+                    allRunFor(spec, lookup);
+                    final var currentHash =
+                            lookup.getResponse().getFileGetInfo().getFileInfo().getMemo();
+                    wrappedAppendsToSkip.set(skippedAppendsFor(currentHash));
+                }))
                 .when()
-                .then(
-                        sourcing(
-                                () ->
-                                        isSpecial
-                                                ? updateSpecialFile(
-                                                        DEFAULT_PAYER,
-                                                        fileId,
-                                                        uploadData,
-                                                        bytesPerOp,
-                                                        appendsPerBurst,
-                                                        wrappedAppendsToSkip.get())
-                                                : updateLargeFile(
-                                                        DEFAULT_PAYER,
-                                                        fileId,
-                                                        uploadData,
-                                                        true,
-                                                        OptionalLong.of(10_000_000_000L),
-                                                        updateOp ->
-                                                                updateOp.alertingPre(
-                                                                                COMMON_MESSAGES
-                                                                                        ::uploadBeginning)
-                                                                        .alertingPost(
-                                                                                COMMON_MESSAGES
-                                                                                        ::uploadEnding),
-                                                        (appendOp, appendsLeft) ->
-                                                                appendOp.alertingPre(
-                                                                                COMMON_MESSAGES
-                                                                                        ::appendBeginning)
-                                                                        .alertingPost(
-                                                                                code ->
-                                                                                        COMMON_MESSAGES
-                                                                                                .appendEnding(
-                                                                                                        code,
-                                                                                                        appendsLeft)))));
+                .then(sourcing(() -> isSpecial
+                        ? updateSpecialFile(
+                                DEFAULT_PAYER,
+                                fileId,
+                                uploadData,
+                                bytesPerOp,
+                                appendsPerBurst,
+                                wrappedAppendsToSkip.get())
+                        : updateLargeFile(
+                                DEFAULT_PAYER,
+                                fileId,
+                                uploadData,
+                                true,
+                                OptionalLong.of(10_000_000_000L),
+                                updateOp -> updateOp.alertingPre(COMMON_MESSAGES::uploadBeginning)
+                                        .alertingPost(COMMON_MESSAGES::uploadEnding),
+                                (appendOp, appendsLeft) -> appendOp.alertingPre(COMMON_MESSAGES::appendBeginning)
+                                        .alertingPost(code -> COMMON_MESSAGES.appendEnding(code, appendsLeft)))));
     }
 
     private ByteString appropriateContents(final Long fileNum) {
@@ -186,10 +163,7 @@ public class SysFileUploadSuite extends HapiSuite {
         do {
             i++;
             if (i % numBetweenLogs == 0) {
-                log.info(
-                        "Considering skipping appends ending at {} (consideration #{})",
-                        position,
-                        i);
+                log.info("Considering skipping appends ending at {} (consideration #{})", position, i);
             }
             final var hashSoFar = hexedPrefixHash(position);
             if (hashSoFar.equals(hexedCurrentHash)) {
@@ -204,10 +178,8 @@ public class SysFileUploadSuite extends HapiSuite {
     }
 
     private String hexedPrefixHash(final int prefixLen) {
-        final byte[] hashSoFar =
-                com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf(
-                        ByteStringUtils.unwrapUnsafelyIfPossible(
-                                uploadData.substring(0, prefixLen)));
+        final byte[] hashSoFar = com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf(
+                ByteStringUtils.unwrapUnsafelyIfPossible(uploadData.substring(0, prefixLen)));
         return CommonUtils.hex(hashSoFar);
     }
 

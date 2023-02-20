@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.schedule;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
@@ -28,10 +29,8 @@ import java.util.Optional;
 public class RandomScheduleInfo implements OpProvider {
     private final RegistrySourcedNameProvider<ScheduleID> schedules;
 
-    private final ResponseCodeEnum[] permissibleCostAnswerPrechecks =
-            standardQueryPrechecksAnd(INVALID_SCHEDULE_ID);
-    private final ResponseCodeEnum[] permissibleAnswerOnlyPrechecks =
-            standardQueryPrechecksAnd(INVALID_SCHEDULE_ID);
+    private final ResponseCodeEnum[] permissibleCostAnswerPrechecks = standardQueryPrechecksAnd(INVALID_SCHEDULE_ID);
+    private final ResponseCodeEnum[] permissibleAnswerOnlyPrechecks = standardQueryPrechecksAnd(INVALID_SCHEDULE_ID);
 
     public RandomScheduleInfo(RegistrySourcedNameProvider<ScheduleID> schedules) {
         this.schedules = schedules;
@@ -44,10 +43,9 @@ public class RandomScheduleInfo implements OpProvider {
             return Optional.empty();
         }
 
-        var op =
-                getScheduleInfo(schedule.get())
-                        .hasCostAnswerPrecheckFrom(permissibleCostAnswerPrechecks)
-                        .hasAnswerOnlyPrecheckFrom(permissibleAnswerOnlyPrechecks);
+        var op = getScheduleInfo(schedule.get())
+                .hasCostAnswerPrecheckFrom(permissibleCostAnswerPrechecks)
+                .hasAnswerOnlyPrecheckFrom(permissibleAnswerOnlyPrechecks);
 
         return Optional.of(op);
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
@@ -88,10 +89,7 @@ public class TokenMovement {
     }
 
     TokenMovement(
-            String token,
-            Function<HapiSpec, String> senderFn,
-            long amount,
-            Function<HapiSpec, String> receiverFn) {
+            String token, Function<HapiSpec, String> senderFn, long amount, Function<HapiSpec, String> receiverFn) {
         this.token = token;
         this.senderFn = Optional.of(senderFn);
         this.amount = amount;
@@ -161,23 +159,17 @@ public class TokenMovement {
 
     public List<Map.Entry<String, Long>> generallyInvolved() {
         if (sender.isPresent()) {
-            Map.Entry<String, Long> senderEntry =
-                    new AbstractMap.SimpleEntry<>(token + "|" + sender.get(), -amount);
+            Map.Entry<String, Long> senderEntry = new AbstractMap.SimpleEntry<>(token + "|" + sender.get(), -amount);
             if (receiver.isPresent()) {
-                return List.of(
-                        senderEntry,
-                        new AbstractMap.SimpleEntry<>(token + "|" + receiver.get(), +amount));
+                return List.of(senderEntry, new AbstractMap.SimpleEntry<>(token + "|" + receiver.get(), +amount));
             }
 
-            return (receivers.isPresent()
-                    ? involvedInDistribution(senderEntry)
-                    : List.of(senderEntry));
+            return (receivers.isPresent() ? involvedInDistribution(senderEntry) : List.of(senderEntry));
         }
         return Collections.emptyList();
     }
 
-    private List<Map.Entry<String, Long>> involvedInDistribution(
-            Map.Entry<String, Long> senderEntry) {
+    private List<Map.Entry<String, Long>> involvedInDistribution(Map.Entry<String, Long> senderEntry) {
         List<Map.Entry<String, Long>> all = new ArrayList<>();
         all.add(senderEntry);
         var targets = receivers.get();
@@ -226,13 +218,11 @@ public class TokenMovement {
         scopedTransfers.setToken(id);
         if (sender.isPresent() && receiver.isPresent()) {
             for (long serialNum : serialNums) {
-                scopedTransfers.addNftTransfers(
-                        adjustment(sender.get(), receiver.get(), serialNum, spec));
+                scopedTransfers.addNftTransfers(adjustment(sender.get(), receiver.get(), serialNum, spec));
             }
         } else if (sender.isPresent() && evmAddressReceiver.isPresent()) {
             for (long serialNum : serialNums) {
-                scopedTransfers.addNftTransfers(
-                        adjustment(sender.get(), evmAddressReceiver.get(), serialNum, spec));
+                scopedTransfers.addNftTransfers(adjustment(sender.get(), evmAddressReceiver.get(), serialNum, spec));
             }
         }
 
@@ -255,8 +245,7 @@ public class TokenMovement {
                 .build();
     }
 
-    private NftTransfer adjustment(
-            String senderName, String receiverName, long value, HapiSpec spec) {
+    private NftTransfer adjustment(String senderName, String receiverName, long value, HapiSpec spec) {
         return NftTransfer.newBuilder()
                 .setSenderAccountID(asIdForKeyLookUp(senderName, spec))
                 .setReceiverAccountID(asIdForKeyLookUp(receiverName, spec))
@@ -265,8 +254,7 @@ public class TokenMovement {
                 .build();
     }
 
-    private NftTransfer adjustment(
-            String senderName, ByteString evmAddress, long value, HapiSpec spec) {
+    private NftTransfer adjustment(String senderName, ByteString evmAddress, long value, HapiSpec spec) {
         return NftTransfer.newBuilder()
                 .setSenderAccountID(asIdForKeyLookUp(senderName, spec))
                 .setReceiverAccountID(asIdWithAlias(evmAddress))
@@ -324,8 +312,7 @@ public class TokenMovement {
         }
 
         public TokenMovement between(String sender, ByteString receiver) {
-            return new TokenMovement(
-                    token, Optional.of(sender), amount, serialNums, Optional.of(receiver));
+            return new TokenMovement(token, Optional.of(sender), amount, serialNums, Optional.of(receiver));
         }
 
         public TokenMovement betweenWithDecimals(String sender, String receiver) {
@@ -339,33 +326,25 @@ public class TokenMovement {
                     isAllowance);
         }
 
-        public TokenMovement between(
-                Function<HapiSpec, String> senderFn, Function<HapiSpec, String> receiverFn) {
+        public TokenMovement between(Function<HapiSpec, String> senderFn, Function<HapiSpec, String> receiverFn) {
             return new TokenMovement(token, senderFn, amount, receiverFn);
         }
 
         public TokenMovement distributing(String sender, String... receivers) {
             return new TokenMovement(
-                    token,
-                    Optional.of(sender),
-                    amount,
-                    Optional.empty(),
-                    Optional.of(List.of(receivers)));
+                    token, Optional.of(sender), amount, Optional.empty(), Optional.of(List.of(receivers)));
         }
 
         public TokenMovement from(String magician) {
-            return new TokenMovement(
-                    token, Optional.of(magician), amount, Optional.empty(), Optional.empty());
+            return new TokenMovement(token, Optional.of(magician), amount, Optional.empty(), Optional.empty());
         }
 
         public TokenMovement to(String receiver) {
-            return new TokenMovement(
-                    token, Optional.empty(), amount, Optional.of(receiver), Optional.empty());
+            return new TokenMovement(token, Optional.empty(), amount, Optional.of(receiver), Optional.empty());
         }
 
         public TokenMovement empty() {
-            return new TokenMovement(
-                    token, Optional.empty(), amount, Optional.empty(), Optional.empty());
+            return new TokenMovement(token, Optional.empty(), amount, Optional.empty(), Optional.empty());
         }
     }
 

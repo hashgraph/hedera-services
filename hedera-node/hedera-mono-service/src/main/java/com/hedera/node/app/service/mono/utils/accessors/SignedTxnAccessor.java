@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils.accessors;
 
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
@@ -91,8 +92,7 @@ public class SignedTxnAccessor implements TxnAccessor {
     private static final String ACCESSOR_LITERAL = " accessor";
 
     private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
-    private static final ExpandHandleSpanMapAccessor SPAN_MAP_ACCESSOR =
-            new ExpandHandleSpanMapAccessor();
+    private static final ExpandHandleSpanMapAccessor SPAN_MAP_ACCESSOR = new ExpandHandleSpanMapAccessor();
 
     private Map<String, Object> spanMap = new HashMap<>();
 
@@ -128,24 +128,20 @@ public class SignedTxnAccessor implements TxnAccessor {
             return SignedTxnAccessor.from(validSignedTxn.toByteArray());
         } catch (final Exception illegal) {
             log.warn("Unexpected use of factory with invalid gRPC transaction", illegal);
-            throw new IllegalArgumentException(
-                    "Argument 'validSignedTxn' must be a valid signed txn");
+            throw new IllegalArgumentException("Argument 'validSignedTxn' must be a valid signed txn");
         }
     }
 
-    public static SignedTxnAccessor from(final byte[] signedTxnWrapperBytes)
-            throws InvalidProtocolBufferException {
+    public static SignedTxnAccessor from(final byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
         return new SignedTxnAccessor(signedTxnWrapperBytes, null);
     }
 
-    public static SignedTxnAccessor from(
-            final byte[] signedTxnWrapperBytes, final Transaction signedTxnWrapper)
+    public static SignedTxnAccessor from(final byte[] signedTxnWrapperBytes, final Transaction signedTxnWrapper)
             throws InvalidProtocolBufferException {
         return new SignedTxnAccessor(signedTxnWrapperBytes, signedTxnWrapper);
     }
 
-    protected SignedTxnAccessor(
-            final byte[] signedTxnWrapperBytes, @Nullable final Transaction transaction)
+    protected SignedTxnAccessor(final byte[] signedTxnWrapperBytes, @Nullable final Transaction transaction)
             throws InvalidProtocolBufferException {
         this.signedTxnWrapperBytes = signedTxnWrapperBytes;
 
@@ -209,8 +205,7 @@ public class SignedTxnAccessor implements TxnAccessor {
         } else {
             resolver.resolve(txn.getCryptoTransfer(), aliasManager);
         }
-        numImplicitCreations =
-                resolver.perceivedAutoCreations() + resolver.perceivedLazyCreations();
+        numImplicitCreations = resolver.perceivedAutoCreations() + resolver.perceivedLazyCreations();
     }
 
     @Override
@@ -401,8 +396,7 @@ public class SignedTxnAccessor implements TxnAccessor {
     @Override
     public CryptoTransferMeta availXferUsageMeta() {
         if (function != CryptoTransfer) {
-            throw new IllegalStateException(
-                    "Cannot get CryptoTransfer metadata for a " + function + ACCESSOR_LITERAL);
+            throw new IllegalStateException("Cannot get CryptoTransfer metadata for a " + function + ACCESSOR_LITERAL);
         }
         return xferUsageMeta;
     }
@@ -411,9 +405,7 @@ public class SignedTxnAccessor implements TxnAccessor {
     public SubmitMessageMeta availSubmitUsageMeta() {
         if (function != ConsensusSubmitMessage) {
             throw new IllegalStateException(
-                    "Cannot get ConsensusSubmitMessage metadata for a "
-                            + function
-                            + ACCESSOR_LITERAL);
+                    "Cannot get ConsensusSubmitMessage metadata for a " + function + ACCESSOR_LITERAL);
         }
         return submitMessageMeta;
     }
@@ -463,10 +455,8 @@ public class SignedTxnAccessor implements TxnAccessor {
 
     private void setBaseUsageMeta() {
         if (function == CryptoTransfer) {
-            txnUsageMeta =
-                    new BaseTransactionMeta(
-                            utf8MemoBytes.length,
-                            txn.getCryptoTransfer().getTransfers().getAccountAmountsCount());
+            txnUsageMeta = new BaseTransactionMeta(
+                    utf8MemoBytes.length, txn.getCryptoTransfer().getTransfers().getAccountAmountsCount());
         } else {
             txnUsageMeta = new BaseTransactionMeta(utf8MemoBytes.length, 0);
         }
@@ -517,14 +507,12 @@ public class SignedTxnAccessor implements TxnAccessor {
             totalTokenTransfers += tokenTransfers.getTransfersCount();
             numNftOwnershipChanges += tokenTransfers.getNftTransfersCount();
         }
-        xferUsageMeta =
-                new CryptoTransferMeta(
-                        1, totalTokensInvolved, totalTokenTransfers, numNftOwnershipChanges);
+        xferUsageMeta = new CryptoTransferMeta(1, totalTokensInvolved, totalTokenTransfers, numNftOwnershipChanges);
     }
 
     private void setSubmitUsageMeta() {
-        submitMessageMeta =
-                new SubmitMessageMeta(txn.getConsensusSubmitMessage().getMessage().size());
+        submitMessageMeta = new SubmitMessageMeta(
+                txn.getConsensusSubmitMessage().getMessage().size());
     }
 
     private void setFeeScheduleUpdateMeta() {
@@ -572,26 +560,23 @@ public class SignedTxnAccessor implements TxnAccessor {
     }
 
     private void setCryptoUpdateUsageMeta() {
-        final var cryptoUpdateMeta =
-                new CryptoUpdateMeta(
-                        txn.getCryptoUpdateAccount(),
-                        txn.getTransactionID().getTransactionValidStart().getSeconds());
+        final var cryptoUpdateMeta = new CryptoUpdateMeta(
+                txn.getCryptoUpdateAccount(),
+                txn.getTransactionID().getTransactionValidStart().getSeconds());
         SPAN_MAP_ACCESSOR.setCryptoUpdate(this, cryptoUpdateMeta);
     }
 
     private void setCryptoApproveUsageMeta() {
-        final var cryptoApproveMeta =
-                new CryptoApproveAllowanceMeta(
-                        txn.getCryptoApproveAllowance(),
-                        txn.getTransactionID().getTransactionValidStart().getSeconds());
+        final var cryptoApproveMeta = new CryptoApproveAllowanceMeta(
+                txn.getCryptoApproveAllowance(),
+                txn.getTransactionID().getTransactionValidStart().getSeconds());
         SPAN_MAP_ACCESSOR.setCryptoApproveMeta(this, cryptoApproveMeta);
     }
 
     private void setCryptoDeleteAllowanceUsageMeta() {
-        final var cryptoDeleteAllowanceMeta =
-                new CryptoDeleteAllowanceMeta(
-                        txn.getCryptoDeleteAllowance(),
-                        txn.getTransactionID().getTransactionValidStart().getSeconds());
+        final var cryptoDeleteAllowanceMeta = new CryptoDeleteAllowanceMeta(
+                txn.getCryptoDeleteAllowance(),
+                txn.getTransactionID().getTransactionValidStart().getSeconds());
         SPAN_MAP_ACCESSOR.setCryptoDeleteAllowanceMeta(this, cryptoDeleteAllowanceMeta);
     }
 

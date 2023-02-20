@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.contract.queries;
 
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.unaliased;
@@ -36,8 +37,7 @@ public final class GetBytecodeResourceUsage implements QueryResourceUsageEstimat
     private final SmartContractFeeBuilder usageEstimator;
 
     @Inject
-    public GetBytecodeResourceUsage(
-            final AliasManager aliasManager, final SmartContractFeeBuilder usageEstimator) {
+    public GetBytecodeResourceUsage(final AliasManager aliasManager, final SmartContractFeeBuilder usageEstimator) {
         this.aliasManager = aliasManager;
         this.usageEstimator = usageEstimator;
     }
@@ -48,15 +48,13 @@ public final class GetBytecodeResourceUsage implements QueryResourceUsageEstimat
     }
 
     @Override
-    public FeeData usageGiven(
-            final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
+    public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
         return usageGivenType(
                 query, view, query.getContractGetBytecode().getHeader().getResponseType());
     }
 
     @Override
-    public FeeData usageGivenType(
-            final Query query, final StateView view, final ResponseType type) {
+    public FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
         final var op = query.getContractGetBytecode();
         final var target = unaliased(op.getContractID(), aliasManager);
         final var bytecode = view.bytecodeOf(target).orElse(EMPTY_BYTECODE);

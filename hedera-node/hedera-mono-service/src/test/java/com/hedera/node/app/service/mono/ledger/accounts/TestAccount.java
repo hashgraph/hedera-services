@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.accounts;
 
 import com.google.common.base.MoreObjects;
@@ -39,14 +40,7 @@ public class TestAccount {
     }
 
     public TestAccount(long value, Object thing, boolean flag, long tokenThing) {
-        this(
-                value,
-                thing,
-                flag,
-                tokenThing,
-                Allowance.MISSING,
-                Allowance.MISSING,
-                Allowance.MISSING);
+        this(value, thing, flag, tokenThing, Allowance.MISSING, Allowance.MISSING, Allowance.MISSING);
     }
 
     public TestAccount(
@@ -67,14 +61,7 @@ public class TestAccount {
     }
 
     public TestAccount(long value, Object thing, boolean flag) {
-        this(
-                value,
-                thing,
-                flag,
-                DEFAULT_TOKEN_THING,
-                Allowance.MISSING,
-                Allowance.MISSING,
-                Allowance.MISSING);
+        this(value, thing, flag, DEFAULT_TOKEN_THING, Allowance.MISSING, Allowance.MISSING, Allowance.MISSING);
     }
 
     public Object getThing() {

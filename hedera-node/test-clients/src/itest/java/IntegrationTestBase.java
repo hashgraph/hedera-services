@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import com.hedera.services.bdd.junit.HederaContainer;
 import com.hedera.services.bdd.junit.TestBase;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -42,14 +43,13 @@ public abstract class IntegrationTestBase extends TestBase {
      * image has been created out-of-band. The docker image name is supplied as TAG.
      */
     @Container
-    private static final HederaContainer NODE_0 =
-            new HederaContainer(IMAGE, 0)
-                    .withClasspathResourceMappingDir("network/config")
-                    .withWorkspace(WORKSPACE)
-                    .withNetwork(NETWORK)
-                    .withRecordStreamFolderBinding(
-                            WORKSPACE,
-                            Path.of("network", "itest", "data", "recordStreams").toString());
+    private static final HederaContainer NODE_0 = new HederaContainer(IMAGE, 0)
+            .withClasspathResourceMappingDir("network/config")
+            .withWorkspace(WORKSPACE)
+            .withNetwork(NETWORK)
+            .withRecordStreamFolderBinding(
+                    WORKSPACE,
+                    Path.of("network", "itest", "data", "recordStreams").toString());
 
     /** Before any test runs, configure HapiApiSpec to use the Testcontainer we created */
     @BeforeAll

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.token;
 
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenDissociation.explicit;
@@ -42,13 +43,12 @@ public class RandomTokenTransfer implements OpProvider {
         this.tokenRels = tokenRels;
     }
 
-    private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(
-                    INSUFFICIENT_TOKEN_BALANCE,
-                    ACCOUNT_FROZEN_FOR_TOKEN,
-                    ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN,
-                    TOKEN_NOT_ASSOCIATED_TO_ACCOUNT,
-                    TOKEN_WAS_DELETED);
+    private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
+            INSUFFICIENT_TOKEN_BALANCE,
+            ACCOUNT_FROZEN_FOR_TOKEN,
+            ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN,
+            TOKEN_NOT_ASSOCIATED_TO_ACCOUNT,
+            TOKEN_WAS_DELETED);
 
     @Override
     public Optional<HapiSpecOperation> get() {
@@ -61,24 +61,16 @@ public class RandomTokenTransfer implements OpProvider {
         var rel = explicit(xferRel.get());
         var token = rel.getRight();
         if (BASE_RANDOM.nextBoolean()) {
-            op =
-                    cryptoTransfer(
-                                    moving(1, token)
-                                            .between(
-                                                    spec -> spec.registry().getTreasury(token),
-                                                    ignore -> rel.getLeft()))
-                            .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                            .hasKnownStatusFrom(permissibleOutcomes);
+            op = cryptoTransfer(moving(1, token)
+                            .between(spec -> spec.registry().getTreasury(token), ignore -> rel.getLeft()))
+                    .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                    .hasKnownStatusFrom(permissibleOutcomes);
         } else {
-            op =
-                    cryptoTransfer(
-                                    moving(1, token)
-                                            .between(
-                                                    ignore -> rel.getLeft(),
-                                                    spec -> spec.registry().getTreasury(token)))
-                            .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                            .hasKnownStatusFrom(permissibleOutcomes)
-                            .showingResolvedStatus();
+            op = cryptoTransfer(moving(1, token).between(ignore -> rel.getLeft(), spec -> spec.registry()
+                            .getTreasury(token)))
+                    .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                    .hasKnownStatusFrom(permissibleOutcomes)
+                    .showingResolvedStatus();
         }
 
         return Optional.of(op);

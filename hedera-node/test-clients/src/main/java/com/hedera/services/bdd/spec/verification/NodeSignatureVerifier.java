@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.verification;
 
 import static java.util.stream.Collectors.toList;
@@ -54,8 +55,7 @@ public class NodeSignatureVerifier {
     private static final Marker MARKER = MarkerManager.getMarker("NodeSignatureVerifier");
 
     static final byte TYPE_SIGNATURE = 3; // the file content signature, should not be hashed
-    static final byte TYPE_FILE_HASH =
-            4; // next 48 bytes are hash384 of content of corresponding RecordFile
+    static final byte TYPE_FILE_HASH = 4; // next 48 bytes are hash384 of content of corresponding RecordFile
 
     Map<String, PublicKey> accountKeys = new HashMap<>();
 
@@ -70,10 +70,7 @@ public class NodeSignatureVerifier {
                 accountKeys.put(account, loadPublicKey(nodeAddress.getRSAPubKey()));
                 log.info("Discovered node " + account);
             } catch (IllegalArgumentException ex) {
-                log.warn(
-                        "Malformed address key {} for node {}",
-                        nodeAddress.getRSAPubKey(),
-                        account);
+                log.warn("Malformed address key {} for node {}", nodeAddress.getRSAPubKey(), account);
                 throw new IllegalArgumentException("Malformed public key!");
             }
         }
@@ -108,16 +105,11 @@ public class NodeSignatureVerifier {
             if (verifySignatureFile(sigFile)) {
                 byte[] hash = extractHashAndSigFromFile(sigFile).getLeft();
                 String hashString = CommonUtils.hex(hash);
-                Set<String> nodeAccountIDs =
-                        hashToNodeAccountIDs.getOrDefault(hashString, new HashSet<>());
+                Set<String> nodeAccountIDs = hashToNodeAccountIDs.getOrDefault(hashString, new HashSet<>());
                 nodeAccountIDs.add(nodeAccountID);
                 hashToNodeAccountIDs.put(hashString, nodeAccountIDs);
             } else {
-                log.info(
-                        MARKER,
-                        "Node{} has invalid signature file {}",
-                        nodeAccountID,
-                        sigFile.getName());
+                log.info(MARKER, "Node{} has invalid signature file {}", nodeAccountID, sigFile.getName());
             }
         }
 
@@ -208,10 +200,7 @@ public class NodeSignatureVerifier {
             sig.initVerify(key);
             sig.update(data);
             return sig.verify(signature);
-        } catch (NoSuchAlgorithmException
-                | NoSuchProviderException
-                | InvalidKeyException
-                | SignatureException e) {
+        } catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | SignatureException e) {
             log.warn(
                     " Problem verifying signature {}, PublicKey: {}, NodeID: {}, Exception: {}",
                     signature,

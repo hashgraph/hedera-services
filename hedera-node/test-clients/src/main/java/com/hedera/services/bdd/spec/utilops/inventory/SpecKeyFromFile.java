@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops.inventory;
 
 import static com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey.exportWithPass;
@@ -84,11 +85,7 @@ public class SpecKeyFromFile extends UtilOp {
                 try {
                     finalPassphrase = Optional.of(Files.readString(pf.toPath()).trim());
                 } catch (IOException e) {
-                    log.warn(
-                            "Password file {} inaccessible for PEM {}",
-                            pf.getAbsolutePath(),
-                            name,
-                            e);
+                    log.warn("Password file {} inaccessible for PEM {}", pf.getAbsolutePath(), name, e);
                 }
             }
             if (!isValid(f, finalPassphrase)) {
@@ -96,8 +93,7 @@ public class SpecKeyFromFile extends UtilOp {
                 finalPassphrase = promptForPassphrase(loc, prompt, 3);
             }
             if (finalPassphrase.isEmpty() || !isValid(f, finalPassphrase)) {
-                Assertions.fail(
-                        String.format("No valid passphrase could be obtained for PEM %s", loc));
+                Assertions.fail(String.format("No valid passphrase could be obtained for PEM %s", loc));
             }
             incorporatePem(
                     spec,

@@ -1,0 +1,91 @@
+##
+# Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+name: "Node: Build Application"
+on:
+  workflow_dispatch:
+    inputs:
+      enable-javadoc:
+        description: "Javadoc Enabled"
+        type: boolean
+        required: false
+        default: true
+      enable-unit-tests:
+        description: "Unit Testing Enabled"
+        type: boolean
+        required: false
+        default: true
+      enable-sonar-analysis:
+        description: "Sonar Analysis Enabled"
+        type: boolean
+        required: false
+        default: true
+      enable-integration-tests:
+        description: "Integration Testing Enabled"
+        type: boolean
+        required: false
+        default: false
+      enable-e2e-tests:
+        description: "E2E Testing Enabled"
+        type: boolean
+        required: false
+        default: false
+      enable-spotless-check:
+        description: "Spotless Check Enabled"
+        type: boolean
+        required: false
+        default: false
+      java-version:
+        description: "Java JDK Version:"
+        type: string
+        required: false
+        default: "17.0.3"
+      java-distribution:
+        description: "Java JDK Distribution:"
+        type: string
+        required: false
+        default: "temurin"
+      gradle-version:
+        description: "Gradle Version:"
+        type: string
+        required: false
+        default: "wrapper"
+  push:
+    branches:
+      - develop
+      - main
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  code:
+    name: Code
+    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
+    with:
+      java-version: ${{ github.event.inputs.java-version || '17.0.3' }}
+      java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
+      gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
+      enable-javadoc: ${{ github.event_name == 'push' || github.event.inputs.enable-javadoc == 'true' }}
+      enable-unit-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-unit-tests == 'true' }}
+      enable-sonar-analysis: ${{ github.event_name == 'push' || github.event.inputs.enable-sonar-analysis == 'true' }}
+      enable-integration-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-integration-tests == 'true' }}
+      enable-e2e-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-e2e-tests == 'true' }}
+      enable-spotless-check: ${{ github.event.inputs.enable-spotless-check == 'true' }}
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      sonar-token: ${{ secrets.SONAR_TOKEN }}

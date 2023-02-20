@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.contract;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -67,46 +68,21 @@ public class ContractCallPerfSuite extends HapiSuite {
                         getContractInfo(verboseDeposit).hasExpectedInfo().logged(),
                         UtilVerbs.startThroughputObs("contractCall").msToSaturateQueues(50L))
                 .then(
-                        UtilVerbs.inParallel(
-                                asOpArray(
-                                        NUM_CALLS,
-                                        i ->
-                                                contractCall(
-                                                                verboseDeposit,
-                                                                "deposit",
-                                                                i + 1,
-                                                                0,
-                                                                DEPOSIT_MEMO)
-                                                        .sending(i + 1)
-                                                        .deferStatusResolution())),
-                        UtilVerbs.finishThroughputObs("contractCall")
-                                .gatedByQuery(
-                                        () ->
-                                                contractCallLocal(
-                                                                balanceLookup,
-                                                                "lookup",
-                                                                spec ->
-                                                                        new Object[] {
-                                                                            spec.registry()
-                                                                                    .getContractId(
-                                                                                            verboseDeposit)
-                                                                                    .getContractNum()
-                                                                        })
-                                                        .has(
-                                                                resultWith()
-                                                                        .resultThruAbi(
-                                                                                getABIFor(
-                                                                                        FUNCTION,
-                                                                                        "lookup",
-                                                                                        balanceLookup),
-                                                                                isLiteralResult(
-                                                                                        new Object
-                                                                                                [] {
-                                                                                            BigInteger
-                                                                                                    .valueOf(
-                                                                                                            ENDING_BALANCE)
-                                                                                        })))
-                                                        .noLogging()));
+                        UtilVerbs.inParallel(asOpArray(
+                                NUM_CALLS, i -> contractCall(verboseDeposit, "deposit", i + 1, 0, DEPOSIT_MEMO)
+                                        .sending(i + 1)
+                                        .deferStatusResolution())),
+                        UtilVerbs.finishThroughputObs("contractCall").gatedByQuery(() -> contractCallLocal(
+                                        balanceLookup, "lookup", spec -> new Object[] {
+                                            spec.registry()
+                                                    .getContractId(verboseDeposit)
+                                                    .getContractNum()
+                                        })
+                                .has(resultWith()
+                                        .resultThruAbi(
+                                                getABIFor(FUNCTION, "lookup", balanceLookup),
+                                                isLiteralResult(new Object[] {BigInteger.valueOf(ENDING_BALANCE)})))
+                                .noLogging()));
     }
 
     @Override

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.gascalculator;
 
 /*
@@ -67,17 +68,23 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class GasCalculatorHederaV18Test {
 
-    @Mock private GlobalDynamicProperties properties;
-    @Mock private HbarCentExchange hbarCentExchange;
-    @Mock private UsagePricesProvider usagePricesProvider;
-    @Mock private MerkleNetworkContext merkleNetworkContext;
+    @Mock
+    private GlobalDynamicProperties properties;
+
+    @Mock
+    private HbarCentExchange hbarCentExchange;
+
+    @Mock
+    private UsagePricesProvider usagePricesProvider;
+
+    @Mock
+    private MerkleNetworkContext merkleNetworkContext;
 
     private GasCalculatorHederaV18 gasCalculatorHedera;
 
     @BeforeEach
     void setup() {
-        gasCalculatorHedera =
-                new GasCalculatorHederaV18(properties, usagePricesProvider, hbarCentExchange);
+        gasCalculatorHedera = new GasCalculatorHederaV18(properties, usagePricesProvider, hbarCentExchange);
     }
 
     @Test
@@ -96,14 +103,16 @@ class GasCalculatorHederaV18Test {
         final var blockNo = 123L;
 
         given(messageFrame.getGasPrice()).willReturn(Wei.of(2000L));
-        given(messageFrame.getBlockValues())
-                .willReturn(new HederaBlockValues(10L, blockNo, blockConsTime));
+        given(messageFrame.getBlockValues()).willReturn(new HederaBlockValues(10L, blockNo, blockConsTime));
         given(messageFrame.getContextVariable("HederaFunctionality")).willReturn(functionality);
         given(messageFrame.getMessageFrameStack()).willReturn(returningDeque);
 
         given(usagePricesProvider.defaultPricesGiven(functionality, timestamp)).willReturn(feeData);
         given(hbarCentExchange.rate(timestamp))
-                .willReturn(ExchangeRate.newBuilder().setHbarEquiv(2000).setCentEquiv(200).build());
+                .willReturn(ExchangeRate.newBuilder()
+                        .setHbarEquiv(2000)
+                        .setCentEquiv(200)
+                        .build());
         given(properties.cacheRecordsTtl()).willReturn(1000000);
         assertEquals(28L, gasCalculatorHedera.logOperationGasCost(messageFrame, 1L, 2L, 3));
         verify(messageFrame).getGasPrice();

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -45,21 +46,17 @@ public class UtilStateChange {
     public static final KeyShape secp256k1Shape = KeyShape.SECP256K1;
     private static final Map<String, Boolean> specToInitializedEthereumAccount = new HashMap<>();
 
-    public static List<ContractStateChange> stateChangesToGrpc(
-            List<StateChange> stateChanges, HapiSpec spec) {
+    public static List<ContractStateChange> stateChangesToGrpc(List<StateChange> stateChanges, HapiSpec spec) {
         final List<ContractStateChange> additions = new ArrayList<>();
 
         for (StateChange stateChange : stateChanges) {
-            final var addition =
-                    ContractStateChange.newBuilder()
-                            .setContractId(
-                                    TxnUtils.asContractId(stateChange.getContractID(), spec));
+            final var addition = ContractStateChange.newBuilder()
+                    .setContractId(TxnUtils.asContractId(stateChange.getContractID(), spec));
 
             for (StorageChange storageChange : stateChange.getStorageChanges()) {
-                var newStorageChange =
-                        com.hedera.services.stream.proto.StorageChange.newBuilder()
-                                .setSlot(storageChange.getSlot())
-                                .setValueRead(storageChange.getValueRead());
+                var newStorageChange = com.hedera.services.stream.proto.StorageChange.newBuilder()
+                        .setSlot(storageChange.getSlot())
+                        .setValueRead(storageChange.getValueRead());
 
                 if (storageChange.getValueWritten() != null) {
                     newStorageChange.setValueWritten(storageChange.getValueWritten());
@@ -75,27 +72,17 @@ public class UtilStateChange {
     }
 
     public static void initializeEthereumAccountForSpec(final HapiSpec spec) {
-        createEthereumAccount(
-                spec, SECP_256K1_SOURCE_KEY, DEFAULT_CONTRACT_SENDER, "senderCreation");
-        createEthereumAccount(
-                spec,
-                SECP_256K1_RECEIVER_SOURCE_KEY,
-                DEFAULT_CONTRACT_RECEIVER,
-                "receiverCreation");
+        createEthereumAccount(spec, SECP_256K1_SOURCE_KEY, DEFAULT_CONTRACT_SENDER, "senderCreation");
+        createEthereumAccount(spec, SECP_256K1_RECEIVER_SOURCE_KEY, DEFAULT_CONTRACT_RECEIVER, "receiverCreation");
         specToInitializedEthereumAccount.putIfAbsent(spec.getSuitePrefix() + spec.getName(), true);
     }
 
     private static void createEthereumAccount(
-            final HapiSpec spec,
-            final String secp256k1Key,
-            final String accountName,
-            final String txnName) {
+            final HapiSpec spec, final String secp256k1Key, final String accountName, final String txnName) {
         final var newSpecKey = new NewSpecKey(secp256k1Key).shape(secp256k1Shape);
-        final var cryptoTransfer =
-                new HapiCryptoTransfer(
-                                tinyBarsFromAccountToAlias(
-                                        GENESIS, secp256k1Key, 20 * ONE_MILLION_HBARS))
-                        .via(txnName);
+        final var cryptoTransfer = new HapiCryptoTransfer(
+                        tinyBarsFromAccountToAlias(GENESIS, secp256k1Key, 20 * ONE_MILLION_HBARS))
+                .via(txnName);
         final var idLookup = getTxnRecord(txnName).andAllChildRecords().assertingNothing();
 
         newSpecKey.execFor(spec);

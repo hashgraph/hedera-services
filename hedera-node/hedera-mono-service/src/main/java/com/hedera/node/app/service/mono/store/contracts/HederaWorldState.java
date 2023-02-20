@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -32,6 +33,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
+import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
 import com.hedera.node.app.service.mono.throttling.annotations.HandleThrottle;
@@ -49,6 +51,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -57,6 +61,8 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 @Singleton
 public class HederaWorldState extends HederaEvmWorldState implements HederaMutableWorldState {
+    private static final Logger log = LogManager.getLogger(HederaWorldState.class);
+
     private final UsageLimits usageLimits;
     private final EntityIdSource ids;
     private final EntityAccess entityAccess;
@@ -109,6 +115,12 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
 
     /** {@inheritDoc} */
     @Override
+    public void clearProvisionalContractCreations() {
+        provisionalContractCreations.clear();
+    }
+
+    /** {@inheritDoc} */
+    @Override
     public void setHapiSenderCustomizer(final ContractCustomizer customizer) {
         hapiSenderCustomizer = customizer;
     }
@@ -121,8 +133,11 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
 
     @Override
     public List<ContractID> getCreatedContractIds() {
+        // We MUST return a copy of the list, and not the list itself,
+        // because we might immediately clear the list after returning
+        // it for use in the transaction record (in case the next
+        // transaction we handle is also a contract operation)
         final var copy = new ArrayList<>(provisionalContractCreations);
-        provisionalContractCreations.clear();
         copy.sort(CONTRACT_ID_COMPARATOR);
         return copy;
     }
@@ -182,9 +197,7 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
                         UInt256 key = entry.getKey();
                         UInt256 originalStorageValue = uta.getOriginalStorageValue(key);
                         UInt256 updatedStorageValue = uta.getStorageValue(key);
-                        accountChanges.put(
-                                key,
-                                new ImmutablePair<>(originalStorageValue, updatedStorageValue));
+                        accountChanges.put(key, new ImmutablePair<>(originalStorageValue, updatedStorageValue));
                     }
                 }
             }
@@ -197,8 +210,7 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
             // was a CONTRACT_CREATION; so we must have details from a HAPI ContractCreate
             final var hapiCustomizer = wrappedWorldView().hapiSenderCustomizer();
             if (hapiCustomizer == null) {
-                throw new IllegalStateException(
-                        "Base updater asked for customizer, but no details from HAPI are set");
+                throw new IllegalStateException("Base updater asked for customizer, but no details from HAPI are set");
             }
             return hapiCustomizer;
         }
@@ -258,9 +270,8 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
                 final var n = wrapped.provisionalContractCreations.size();
                 Objects.requireNonNull(wrapped.usageLimits).assertCreatableContracts(n);
                 if (dynamicProperties.shouldEnforceAccountCreationThrottleForContracts()) {
-                    final var creationCapacity =
-                            !Objects.requireNonNull(wrapped.handleThrottling)
-                                    .shouldThrottleNOfUnscaled(n, HederaFunctionality.CryptoCreate);
+                    final var creationCapacity = !Objects.requireNonNull(wrapped.handleThrottling)
+                            .shouldThrottleNOfUnscaled(n, HederaFunctionality.CryptoCreate);
                     validateResourceLimit(creationCapacity, CONSENSUS_GAS_EXHAUSTED);
                 }
             }
@@ -288,20 +299,26 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
                         trackIfNewlyCreated(accountId, entityAccess, provisionalCreations);
                     });
             for (final var updatedAccount : updatedAccounts) {
-                if (updatedAccount.getNonce()
-                        == HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE) {
+                if (updatedAccount.getNonce() == HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE) {
                     continue;
                 }
+
                 final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
                 trackIfNewlyCreated(accountId, entityAccess, provisionalCreations);
             }
         }
 
-        private void trackIfNewlyCreated(
+        void trackIfNewlyCreated(
                 final AccountID accountId,
                 final EntityAccess entityAccess,
                 final List<ContractID> provisionalContractCreations) {
-            if (!entityAccess.isExtant(asTypedEvmAddress(accountId))) {
+            final var accounts = trackingAccounts();
+            if (!accounts.contains(accountId)) {
+                log.error("Account {} missing in tracking ledgers", accountId);
+                return;
+            }
+            final var isSmartContract = (Boolean) trackingAccounts().get(accountId, AccountProperty.IS_SMART_CONTRACT);
+            if (Boolean.TRUE.equals(isSmartContract) && !entityAccess.isExtant(asTypedEvmAddress(accountId))) {
                 provisionalContractCreations.add(asContract(accountId));
             }
         }
@@ -316,8 +333,7 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
                 final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
                 final var kvUpdates = updatedAccount.getUpdatedStorage();
                 if (!kvUpdates.isEmpty()) {
-                    kvUpdates.forEach(
-                            (key, value) -> entityAccess.putStorage(accountId, key, value));
+                    kvUpdates.forEach((key, value) -> entityAccess.putStorage(accountId, key, value));
                 }
             }
             entityAccess.flushStorage(trackingAccounts());

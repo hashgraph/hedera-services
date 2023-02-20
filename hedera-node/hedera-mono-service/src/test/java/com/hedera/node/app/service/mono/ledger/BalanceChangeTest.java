@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static com.hedera.node.app.service.mono.ledger.BalanceChange.NO_TOKEN_FOR_HBAR_ADJUST;
@@ -52,16 +53,12 @@ class BalanceChangeTest {
         // given:
         final var hbarChange = IdUtils.hbarChange(a, delta);
         final var tokenChange = IdUtils.tokenChange(t, a, delta);
-        final var nftChange =
-                changingNftOwnership(t, t.asGrpcToken(), nftXfer(a, b, serialNo), payer);
+        final var nftChange = changingNftOwnership(t, t.asGrpcToken(), nftXfer(a, b, serialNo), payer);
         // and:
-        final var hbarRepr =
-                "BalanceChange{token=ℏ, account=1.2.3, alias=, units=-1234, expectedDecimals=-1}";
+        final var hbarRepr = "BalanceChange{token=ℏ, account=1.2.3, alias=, units=-1234, expectedDecimals=-1}";
         final var tokenRepr =
-                "BalanceChange{token=1.2.3, account=1.2.3, alias=, units=-1234,"
-                        + " expectedDecimals=-1}";
-        final var nftRepr =
-                "BalanceChange{nft=1.2.3, serialNo=1234, from=1.2.3, to=2.3.4, counterPartyAlias=}";
+                "BalanceChange{token=1.2.3, account=1.2.3, alias=, units=-1234," + " expectedDecimals=-1}";
+        final var nftRepr = "BalanceChange{nft=1.2.3, serialNo=1234, from=1.2.3, to=2.3.4, counterPartyAlias=}";
 
         // expect:
         assertFalse(nftChange.isApprovedAllowance());
@@ -124,13 +121,7 @@ class BalanceChangeTest {
     @Test
     void tokenAdjust() {
         final var tokenAdjust =
-                BalanceChange.tokenAdjust(
-                        IdUtils.asModelId("1.2.3"),
-                        IdUtils.asModelId("3.2.1"),
-                        10,
-                        null,
-                        true,
-                        true);
+                BalanceChange.tokenAdjust(IdUtils.asModelId("1.2.3"), IdUtils.asModelId("3.2.1"), 10, null, true, true);
         assertEquals(10, tokenAdjust.getAggregatedUnits());
         assertEquals(0, tokenAdjust.getAllowanceUnits());
         assertEquals(new Id(1, 2, 3), tokenAdjust.getAccount());
@@ -140,13 +131,12 @@ class BalanceChangeTest {
     @Test
     void ownershipChangeFactoryWorks() {
         // setup:
-        final var xfer =
-                NftTransfer.newBuilder()
-                        .setSenderAccountID(a)
-                        .setReceiverAccountID(b)
-                        .setSerialNumber(serialNo)
-                        .setIsApproval(true)
-                        .build();
+        final var xfer = NftTransfer.newBuilder()
+                .setSenderAccountID(a)
+                .setReceiverAccountID(b)
+                .setSerialNumber(serialNo)
+                .setIsApproval(true)
+                .build();
 
         // given:
         final var nftChange = changingNftOwnership(t, t.asGrpcToken(), xfer, payer);
@@ -166,26 +156,24 @@ class BalanceChangeTest {
 
     @Test
     void checksCounterPartyAliasExists() {
-        var xfer =
-                NftTransfer.newBuilder()
-                        .setSenderAccountID(a)
-                        .setReceiverAccountID(asAliasAccount(ByteString.copyFromUtf8("somebody")))
-                        .setSerialNumber(serialNo)
-                        .setIsApproval(true)
-                        .build();
+        var xfer = NftTransfer.newBuilder()
+                .setSenderAccountID(a)
+                .setReceiverAccountID(asAliasAccount(ByteString.copyFromUtf8("somebody")))
+                .setSerialNumber(serialNo)
+                .setIsApproval(true)
+                .build();
 
         var nftChange = changingNftOwnership(t, t.asGrpcToken(), xfer, payer);
         assertTrue(nftChange.isForNft());
         assertTrue(nftChange.isForToken());
         assertTrue(nftChange.hasNonEmptyCounterPartyAlias());
 
-        xfer =
-                NftTransfer.newBuilder()
-                        .setSenderAccountID(asAliasAccount(ByteString.copyFromUtf8("somebody")))
-                        .setReceiverAccountID(a)
-                        .setSerialNumber(serialNo)
-                        .setIsApproval(true)
-                        .build();
+        xfer = NftTransfer.newBuilder()
+                .setSenderAccountID(asAliasAccount(ByteString.copyFromUtf8("somebody")))
+                .setReceiverAccountID(a)
+                .setSerialNumber(serialNo)
+                .setIsApproval(true)
+                .build();
 
         nftChange = changingNftOwnership(t, t.asGrpcToken(), xfer, payer);
         assertTrue(nftChange.isForNft());
@@ -197,13 +185,12 @@ class BalanceChangeTest {
     void canReplaceAlias() {
         final var created = IdUtils.asAccount("0.0.1234");
         final var anAlias = ByteString.copyFromUtf8("abcdefg");
-        final var subject =
-                BalanceChange.changingHbar(
-                        AccountAmount.newBuilder()
-                                .setAmount(1234)
-                                .setAccountID(AccountID.newBuilder().setAlias(anAlias))
-                                .build(),
-                        payer);
+        final var subject = BalanceChange.changingHbar(
+                AccountAmount.newBuilder()
+                        .setAmount(1234)
+                        .setAccountID(AccountID.newBuilder().setAlias(anAlias))
+                        .build(),
+                payer);
 
         subject.replaceNonEmptyAliasWith(EntityNum.fromAccountId(created));
         assertFalse(subject.hasAlias());
@@ -216,13 +203,12 @@ class BalanceChangeTest {
     void replacedAlias() {
         final var created = IdUtils.asAccount("0.0.1234");
         final var anAlias = ByteString.copyFromUtf8("abcdefg");
-        final var subject =
-                BalanceChange.changingHbar(
-                        AccountAmount.newBuilder()
-                                .setAmount(1234)
-                                .setAccountID(AccountID.newBuilder().setAlias(anAlias))
-                                .build(),
-                        payer);
+        final var subject = BalanceChange.changingHbar(
+                AccountAmount.newBuilder()
+                        .setAmount(1234)
+                        .setAccountID(AccountID.newBuilder().setAlias(anAlias))
+                        .build(),
+                payer);
 
         subject.replaceNonEmptyAliasWith(EntityNum.fromAccountId(created));
         assertFalse(subject.hasAlias());
@@ -234,13 +220,12 @@ class BalanceChangeTest {
     void canReplaceCounterpartyAlias() {
         final var created = IdUtils.asAccount("0.0.1234");
         final var anAlias = ByteString.copyFromUtf8("abcdefg");
-        final var xfer =
-                NftTransfer.newBuilder()
-                        .setSenderAccountID(asAccount("0.0.2000"))
-                        .setReceiverAccountID(asAccountWithAlias(String.valueOf(anAlias)))
-                        .setSerialNumber(serialNo)
-                        .setIsApproval(true)
-                        .build();
+        final var xfer = NftTransfer.newBuilder()
+                .setSenderAccountID(asAccount("0.0.2000"))
+                .setReceiverAccountID(asAccountWithAlias(String.valueOf(anAlias)))
+                .setSerialNumber(serialNo)
+                .setIsApproval(true)
+                .build();
         final var subject = changingNftOwnership(t, t.asGrpcToken(), xfer, payer);
         assertTrue(subject.hasNonEmptyCounterPartyAlias());
         assertFalse(subject.counterPartyAlias().isEmpty());
@@ -250,24 +235,21 @@ class BalanceChangeTest {
         assertEquals(created, subject.counterPartyAccountId());
         assertNotEquals(0, subject.counterPartyAccountId().getAccountNum());
         assertTrue(subject.isForNft());
-        assertEquals(
-                Pair.of(ByteString.copyFromUtf8(String.valueOf(anAlias)), created),
-                subject.getAliasToNewId());
+        assertEquals(Pair.of(ByteString.copyFromUtf8(String.valueOf(anAlias)), created), subject.getAliasToNewId());
     }
 
     @Test
     void settersAndGettersOfDecimalsWorks() {
         final var created = new Id(1, 2, 3);
         final var token = new Id(4, 5, 6);
-        final var subject =
-                BalanceChange.changingFtUnits(
-                        token,
-                        token.asGrpcToken(),
-                        AccountAmount.newBuilder()
-                                .setAmount(1234)
-                                .setAccountID(created.asGrpcAccount())
-                                .build(),
-                        payer);
+        final var subject = BalanceChange.changingFtUnits(
+                token,
+                token.asGrpcToken(),
+                AccountAmount.newBuilder()
+                        .setAmount(1234)
+                        .setAccountID(created.asGrpcAccount())
+                        .build(),
+                payer);
         assertEquals(-1, subject.getExpectedDecimals());
         assertFalse(subject.hasExpectedDecimals());
 

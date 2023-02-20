@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto;
 
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount.INITIAL_BALANCE;
@@ -81,14 +82,12 @@ public class RandomTransfer implements OpProvider {
     @Override
     public List<HapiSpecOperation> suggestedInitializers() {
         return stableAccounts(numStableAccounts).stream()
-                .map(
-                        account ->
-                                cryptoCreate(my(account))
-                                        .noLogging()
-                                        .balance(INITIAL_BALANCE)
-                                        .deferStatusResolution()
-                                        .payingWith(UNIQUE_PAYER_ACCOUNT)
-                                        .rechargeWindow(3))
+                .map(account -> cryptoCreate(my(account))
+                        .noLogging()
+                        .balance(INITIAL_BALANCE)
+                        .deferStatusResolution()
+                        .payingWith(UNIQUE_PAYER_ACCOUNT)
+                        .rechargeWindow(3))
                 .collect(toList());
     }
 
@@ -103,11 +102,10 @@ public class RandomTransfer implements OpProvider {
         long amount = shouldCreateRecord ? (SEND_THRESHOLD + 1) : 1;
         String from = involved.get().getKey(), to = involved.get().getValue();
 
-        HapiCryptoTransfer op =
-                cryptoTransfer(tinyBarsFromTo(from, to, amount))
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                        .hasKnownStatusFrom(permissibleOutcomes)
-                        .payingWith(UNIQUE_PAYER_ACCOUNT);
+        HapiCryptoTransfer op = cryptoTransfer(tinyBarsFromTo(from, to, amount))
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                .hasKnownStatusFrom(permissibleOutcomes)
+                .payingWith(UNIQUE_PAYER_ACCOUNT);
 
         return Optional.of(op);
     }

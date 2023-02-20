@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.accounts;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
@@ -49,8 +50,7 @@ public class ContractCustomizer {
         this(null, accountCustomizer);
     }
 
-    public ContractCustomizer(
-            final @Nullable JKey cryptoAdminKey, final HederaAccountCustomizer accountCustomizer) {
+    public ContractCustomizer(final @Nullable JKey cryptoAdminKey, final HederaAccountCustomizer accountCustomizer) {
         this.cryptoAdminKey = cryptoAdminKey;
         this.accountCustomizer = accountCustomizer;
     }
@@ -65,30 +65,24 @@ public class ContractCustomizer {
      * @return an appropriate top-level customizer
      */
     public static ContractCustomizer fromHapiCreation(
-            final JKey decodedKey,
-            final Instant consensusTime,
-            final ContractCreateTransactionBody op) {
+            final JKey decodedKey, final Instant consensusTime, final ContractCreateTransactionBody op) {
         final var autoRenewPeriod = op.getAutoRenewPeriod().getSeconds();
         final var expiry = consensusTime.getEpochSecond() + autoRenewPeriod;
 
         final var key = (decodedKey instanceof JContractIDKey) ? null : decodedKey;
         final var autoRenewAccount =
-                op.hasAutoRenewAccountId()
-                        ? EntityId.fromGrpcAccountId(op.getAutoRenewAccountId())
-                        : MISSING_ENTITY_ID;
-        final var customizer =
-                new HederaAccountCustomizer()
-                        .memo(op.getMemo())
-                        .expiry(expiry)
-                        .autoRenewPeriod(op.getAutoRenewPeriod().getSeconds())
-                        .isDeclinedReward(op.getDeclineReward())
-                        .autoRenewAccount(autoRenewAccount)
-                        .maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations())
-                        .isSmartContract(true);
+                op.hasAutoRenewAccountId() ? EntityId.fromGrpcAccountId(op.getAutoRenewAccountId()) : MISSING_ENTITY_ID;
+        final var customizer = new HederaAccountCustomizer()
+                .memo(op.getMemo())
+                .expiry(expiry)
+                .autoRenewPeriod(op.getAutoRenewPeriod().getSeconds())
+                .isDeclinedReward(op.getDeclineReward())
+                .autoRenewAccount(autoRenewAccount)
+                .maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations())
+                .isSmartContract(true);
 
         if (hasStakedId(op.getStakedIdCase().name())) {
-            customizer.customizeStakedId(
-                    op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId());
+            customizer.customizeStakedId(op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId());
         }
 
         return new ContractCustomizer(key, customizer);
@@ -104,8 +98,7 @@ public class ContractCustomizer {
      * @return an appropriate child customizer
      */
     public static ContractCustomizer fromSponsorContract(
-            final AccountID sponsor,
-            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger) {
+            final AccountID sponsor, final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger) {
         var key = (JKey) ledger.get(sponsor, KEY);
         if (key instanceof JContractIDKey) {
             key = null;
@@ -115,22 +108,19 @@ public class ContractCustomizer {
     }
 
     public static ContractCustomizer fromSponsorContractWithoutKey(
-            final AccountID sponsor,
-            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger) {
+            final AccountID sponsor, final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger) {
         final var customizer = getAccountCustomizer(sponsor, ledger);
         return new ContractCustomizer(customizer);
     }
 
     private static HederaAccountCustomizer getAccountCustomizer(
-            final AccountID sponsor,
-            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger) {
+            final AccountID sponsor, final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger) {
         return new HederaAccountCustomizer()
                 .memo((String) ledger.get(sponsor, MEMO))
                 .expiry((long) ledger.get(sponsor, EXPIRY))
                 .autoRenewPeriod((long) ledger.get(sponsor, AUTO_RENEW_PERIOD))
                 .autoRenewAccount((EntityId) ledger.get(sponsor, AUTO_RENEW_ACCOUNT_ID))
-                .maxAutomaticAssociations(
-                        (int) ledger.get(sponsor, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS))
+                .maxAutomaticAssociations((int) ledger.get(sponsor, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS))
                 .stakedId((long) ledger.get(sponsor, AccountProperty.STAKED_ID))
                 .isDeclinedReward((boolean) ledger.get(sponsor, AccountProperty.DECLINE_REWARD))
                 .isSmartContract(true);
@@ -144,13 +134,11 @@ public class ContractCustomizer {
      * @param ledger its containing ledger
      */
     public void customize(
-            final AccountID id,
-            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger) {
+            final AccountID id, final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger) {
         accountCustomizer.customize(id, ledger);
-        final var newKey =
-                (cryptoAdminKey == null)
-                        ? new JContractIDKey(id.getShardNum(), id.getRealmNum(), id.getAccountNum())
-                        : cryptoAdminKey;
+        final var newKey = (cryptoAdminKey == null)
+                ? new JContractIDKey(id.getShardNum(), id.getRealmNum(), id.getAccountNum())
+                : cryptoAdminKey;
         ledger.set(id, KEY, newKey);
     }
 

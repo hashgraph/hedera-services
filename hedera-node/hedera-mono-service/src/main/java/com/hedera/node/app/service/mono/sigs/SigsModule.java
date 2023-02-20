@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs;
 
 import com.hedera.node.app.service.mono.config.FileNumbers;
@@ -73,9 +74,8 @@ public interface SigsModule {
             final SignatureWaivers signatureWaivers,
             final MutableStateChildren workingState,
             final GlobalDynamicProperties properties) {
-        final var sigMetaLookup =
-                new StateChildrenSigMetadataLookup(
-                        fileNumbers, workingState, TokenMetaUtils::signingMetaFrom, properties);
+        final var sigMetaLookup = new StateChildrenSigMetadataLookup(
+                fileNumbers, workingState, TokenMetaUtils::signingMetaFrom, properties);
         return new SigRequirements(sigMetaLookup, signatureWaivers);
     }
 

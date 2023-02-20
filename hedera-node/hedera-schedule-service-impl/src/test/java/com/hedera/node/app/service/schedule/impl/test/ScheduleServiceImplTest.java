@@ -13,34 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.schedule.impl.test;
 
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
-import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.PreHandleContext;
-import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
-import com.hedera.node.app.spi.numbers.HederaFileNumbers;
-import com.hedera.node.app.spi.state.ReadableStates;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleServiceImplTest {
-    @Mock private ReadableStates states;
-    @Mock private HederaAccountNumbers numbers;
-    @Mock private HederaFileNumbers fileNumbers;
-    @Mock private AccountKeyLookup keyLookup;
-    public PreHandleContext preHandleCtx;
-
-    @BeforeEach
-    void setUp() {
-        preHandleCtx = new PreHandleContext(numbers, fileNumbers, keyLookup);
-    }
 
     @Test
     void testsSpi() {
@@ -49,8 +33,7 @@ class ScheduleServiceImplTest {
         Assertions.assertEquals(
                 ScheduleServiceImpl.class,
                 service.getClass(),
-                "We must always receive an instance of type "
-                        + ScheduleServiceImpl.class.getName());
+                "We must always receive an instance of type " + ScheduleServiceImpl.class.getName());
         Assertions.assertEquals("ScheduleService", service.getServiceName());
     }
 }

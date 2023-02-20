@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -35,13 +36,14 @@ import org.apache.commons.lang3.tuple.Pair;
 /** Interceptor that externalizes any auto-associations created during a transaction. */
 public class AutoAssocTokenRelsCommitInterceptor
         implements CommitInterceptor<Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty> {
-    private static final Set<HederaFunctionality> AUTO_ASSOCIATING_OPS =
-            EnumSet.of(CryptoTransfer, TokenCreate);
+    private static final Set<HederaFunctionality> AUTO_ASSOCIATING_OPS = EnumSet.of(CryptoTransfer, TokenCreate);
 
     // If null, every new association is interpreted as an auto-association; if non-null,
     // associations
     // are only auto-associations if the active transaction type is in AUTO_ASSOCIATING_OPS
-    @Nullable private final TransactionContext txnCtx;
+    @Nullable
+    private final TransactionContext txnCtx;
+
     protected final SideEffectsTracker sideEffectsTracker;
 
     public static AutoAssocTokenRelsCommitInterceptor forKnownAutoAssociatingOp(
@@ -50,8 +52,7 @@ public class AutoAssocTokenRelsCommitInterceptor
     }
 
     public AutoAssocTokenRelsCommitInterceptor(
-            final @Nullable TransactionContext txnCtx,
-            final SideEffectsTracker sideEffectsTracker) {
+            final @Nullable TransactionContext txnCtx, final SideEffectsTracker sideEffectsTracker) {
         this.txnCtx = txnCtx;
         this.sideEffectsTracker = sideEffectsTracker;
     }
@@ -59,8 +60,7 @@ public class AutoAssocTokenRelsCommitInterceptor
     /** {@inheritDoc} */
     @Override
     public void preview(
-            final EntityChangeSet<Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty>
-                    pendingChanges) {
+            final EntityChangeSet<Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty> pendingChanges) {
         if (txnCtx != null && activeOpIsNotAutoAssociating()) {
             return;
         }

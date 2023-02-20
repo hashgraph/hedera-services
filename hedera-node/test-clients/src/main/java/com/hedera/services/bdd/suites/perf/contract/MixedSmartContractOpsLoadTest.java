@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.contract;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -71,39 +72,30 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
         final String CIVILIAN_ACCOUNT = "civilian";
         final BigInteger depositAmount = BigInteger.ONE;
 
-        Supplier<HapiSpecOperation[]> mixedOpsBurst =
-                () ->
-                        new HapiSpecOperation[] {
-                            /* create a contract */
-                            contractCreate(CONTRACT_NAME_PREFIX + createdSoFar.getAndIncrement())
-                                    .bytecode(SOME_BYTE_CODE)
-                                    .hasAnyPrecheck()
-                                    .deferStatusResolution(),
+        Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[] {
+            /* create a contract */
+            contractCreate(CONTRACT_NAME_PREFIX + createdSoFar.getAndIncrement())
+                    .bytecode(SOME_BYTE_CODE)
+                    .hasAnyPrecheck()
+                    .deferStatusResolution(),
 
-                            /* update the memo and  do get info on the contract that needs to be updated */
-                            contractUpdate(UPDATABLE_CONTRACT)
-                                    .newMemo(new String(randomUtf8Bytes(memoLength.getAsInt())))
-                                    .hasAnyPrecheck()
-                                    .deferStatusResolution(),
+            /* update the memo and  do get info on the contract that needs to be updated */
+            contractUpdate(UPDATABLE_CONTRACT)
+                    .newMemo(new String(randomUtf8Bytes(memoLength.getAsInt())))
+                    .hasAnyPrecheck()
+                    .deferStatusResolution(),
 
-                            /* call balance lookup contract and contract to deposit funds*/
-                            contractCallLocal(
-                                            LOOKUP_CONTRACT,
-                                            "lookup",
-                                            spec ->
-                                                    new Object[] {
-                                                        BigInteger.valueOf(
-                                                                spec.registry()
-                                                                        .getAccountID(
-                                                                                CIVILIAN_ACCOUNT)
-                                                                        .getAccountNum())
-                                                    })
-                                    .payingWith(GENESIS),
-                            contractCall(PAYABLE_CONTRACT, "deposit", depositAmount)
-                                    .sending(depositAmount.longValueExact())
-                                    .suppressStats(true)
-                                    .deferStatusResolution()
-                        };
+            /* call balance lookup contract and contract to deposit funds*/
+            contractCallLocal(LOOKUP_CONTRACT, "lookup", spec -> new Object[] {
+                        BigInteger.valueOf(
+                                spec.registry().getAccountID(CIVILIAN_ACCOUNT).getAccountNum())
+                    })
+                    .payingWith(GENESIS),
+            contractCall(PAYABLE_CONTRACT, "deposit", depositAmount)
+                    .sending(depositAmount.longValueExact())
+                    .suppressStats(true)
+                    .deferStatusResolution()
+        };
         return defaultHapiSpec("RunMixedSmartContractOps")
                 .given(
                         withOpContext(

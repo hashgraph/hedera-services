@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry.removal;
 
 import static com.hedera.node.app.service.mono.state.expiry.removal.ContractGC.ROOT_KEY_UPDATE_WORK;
@@ -70,11 +71,7 @@ public class TreasuryReturns {
     static final List<MapAccessType> ONLY_REL_REMOVAL_WORK =
             List.of(TOKENS_GET, TOKEN_ASSOCIATIONS_GET, TOKEN_ASSOCIATIONS_REMOVE);
     static final List<MapAccessType> NEXT_REL_REMOVAL_WORK =
-            List.of(
-                    TOKENS_GET,
-                    TOKEN_ASSOCIATIONS_GET,
-                    TOKEN_ASSOCIATIONS_REMOVE,
-                    TOKEN_ASSOCIATIONS_GET_FOR_MODIFY);
+            List.of(TOKENS_GET, TOKEN_ASSOCIATIONS_GET, TOKEN_ASSOCIATIONS_REMOVE, TOKEN_ASSOCIATIONS_GET_FOR_MODIFY);
     static final List<MapAccessType> NFT_BURN_WORK = List.of(NFTS_GET, NFTS_REMOVE);
     static final List<MapAccessType> NFT_RETURN_WORK = List.of(NFTS_GET_FOR_MODIFY);
     static final List<MapAccessType> ROOT_META_UPDATE_WORK = List.of(ACCOUNTS_GET_FOR_MODIFY);
@@ -152,8 +149,7 @@ public class TreasuryReturns {
         }
     }
 
-    private NftReturnOutcome tryNftReturns(
-            final EntityNum expiredNum, final HederaAccount expired) {
+    private NftReturnOutcome tryNftReturns(final EntityNum expiredNum, final HederaAccount expired) {
         final var curNfts = nfts.get();
         final var expectedNfts = expired.getNftsOwned();
 
@@ -164,10 +160,7 @@ public class TreasuryReturns {
         final List<EntityId> tokenTypes = new ArrayList<>();
         final List<NftAdjustments> returnExchanges = new ArrayList<>();
         if (MISSING_NUM_PAIR.equals(nftKey) && i > 0) {
-            log.warn(
-                    "Account 0.0.{} claimed to own {} NFTs, but head key is missing",
-                    expiredNum.longValue(),
-                    i);
+            log.warn("Account 0.0.{} claimed to own {} NFTs, but head key is missing", expiredNum.longValue(), i);
             nftKey = null;
         }
         while (nftKey != null && expiryThrottle.allow(TOKEN_DELETION_CHECK) && i-- > 0) {
@@ -182,9 +175,8 @@ public class TreasuryReturns {
             }
             try {
                 final var returnedSerialNo = nftKey.getLowOrderAsLong();
-                nftKey =
-                        returnHelper.burnOrReturnNft(
-                                expectedBurn, nftKey.asNftNumPair().nftId(), curNfts);
+                nftKey = returnHelper.burnOrReturnNft(
+                        expectedBurn, nftKey.asNftNumPair().nftId(), curNfts);
                 returnHelper.updateNftReturns(
                         expiredNum, tokenNum, token, returnedSerialNo, tokenTypes, returnExchanges);
                 n++;
@@ -201,14 +193,11 @@ public class TreasuryReturns {
 
         final var numLeft = (nftKey == null) ? 0 : (expectedNfts - n);
         return new NftReturnOutcome(
-                new NonFungibleTreasuryReturns(tokenTypes, returnExchanges, numLeft == 0),
-                nftKey,
-                numLeft);
+                new NonFungibleTreasuryReturns(tokenTypes, returnExchanges, numLeft == 0), nftKey, numLeft);
     }
 
     @SuppressWarnings("java:S3776")
-    private FungibleReturnOutcome tryFungibleReturns(
-            final EntityNum expiredNum, final HederaAccount expired) {
+    private FungibleReturnOutcome tryFungibleReturns(final EntityNum expiredNum, final HederaAccount expired) {
         final var curRels = tokenRels.get();
         final var listRemoval = new TokenRelsListMutation(expiredNum.longValue(), curRels);
         final var expectedRels = expired.getNumAssociations();
@@ -226,18 +215,12 @@ public class TreasuryReturns {
                     final var rel = curRels.get(relKey);
                     final var tokenBalance = rel.getBalance();
                     if (tokenBalance > 0) {
-                        if (!token.isDeleted()
-                                && !expiryThrottle.allow(TREASURY_BALANCE_INCREMENT)) {
+                        if (!token.isDeleted() && !expiryThrottle.allow(TREASURY_BALANCE_INCREMENT)) {
                             break;
                         }
                         tokenTypes.add(tokenNum.toEntityId());
                         returnHelper.updateFungibleReturns(
-                                expiredNum,
-                                tokenNum,
-                                token,
-                                tokenBalance,
-                                returnTransfers,
-                                curRels);
+                                expiredNum, tokenNum, token, tokenBalance, returnTransfers, curRels);
                     }
                 }
                 relKey = relRemover.removeNext(relKey, relKey, listRemoval);
@@ -252,9 +235,7 @@ public class TreasuryReturns {
         }
         final var numLeft = (relKey == null) ? 0 : (expectedRels - n);
         return new FungibleReturnOutcome(
-                new FungibleTreasuryReturns(tokenTypes, returnTransfers, numLeft == 0),
-                relKey,
-                numLeft);
+                new FungibleTreasuryReturns(tokenTypes, returnTransfers, numLeft == 0), relKey, numLeft);
     }
 
     private boolean hasCapacityForRelRemovalAt(final int n) {
@@ -267,8 +248,7 @@ public class TreasuryReturns {
 
     @FunctionalInterface
     interface RelRemover {
-        EntityNumPair removeNext(
-                EntityNumPair key, EntityNumPair root, TokenRelsListMutation listRemoval);
+        EntityNumPair removeNext(EntityNumPair key, EntityNumPair root, TokenRelsListMutation listRemoval);
     }
 
     @VisibleForTesting

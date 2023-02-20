@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils.forensics;
 
 import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.parseV6RecordStreamEntriesIn;
@@ -54,38 +55,32 @@ public class OrderedComparison {
 
     @VisibleForTesting
     static List<DifferingEntries> diff(
-            final List<RecordStreamEntry> firstEntries,
-            final List<RecordStreamEntry> secondEntries) {
+            final List<RecordStreamEntry> firstEntries, final List<RecordStreamEntry> secondEntries) {
         final List<DifferingEntries> diffs = new ArrayList<>();
         if (firstEntries.size() != secondEntries.size()) {
             throw new IllegalArgumentException(
-                    "Cannot diff entries of different lengths "
-                            + firstEntries.size()
-                            + " and "
-                            + secondEntries.size());
+                    "Cannot diff entries of different lengths " + firstEntries.size() + " and " + secondEntries.size());
         }
         for (int i = 0, n = firstEntries.size(); i < n; i++) {
             final var firstEntry = firstEntries.get(i);
             final var secondEntry = secondEntries.get(i);
             if (!firstEntry.consensusTime().equals(secondEntry.consensusTime())) {
-                throw new IllegalArgumentException(
-                        "Entries at position "
-                                + i
-                                + " had different consensus times ("
-                                + firstEntry.consensusTime()
-                                + " vs "
-                                + secondEntry.consensusTime()
-                                + ")");
+                throw new IllegalArgumentException("Entries at position "
+                        + i
+                        + " had different consensus times ("
+                        + firstEntry.consensusTime()
+                        + " vs "
+                        + secondEntry.consensusTime()
+                        + ")");
             }
             if (!firstEntry.submittedTransaction().equals(secondEntry.submittedTransaction())) {
-                throw new IllegalArgumentException(
-                        "Entries at position "
-                                + i
-                                + " had different transactions ("
-                                + firstEntry.submittedTransaction()
-                                + " vs "
-                                + secondEntry.submittedTransaction()
-                                + ")");
+                throw new IllegalArgumentException("Entries at position "
+                        + i
+                        + " had different transactions ("
+                        + firstEntry.submittedTransaction()
+                        + " vs "
+                        + secondEntry.submittedTransaction()
+                        + ")");
             }
             if (!firstEntry.txnRecord().equals(secondEntry.txnRecord())) {
                 diffs.add(new DifferingEntries(firstEntry, secondEntry));

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.persistence;
 
 import static com.hedera.services.bdd.spec.persistence.Account.UNSPECIFIED_MEMO;
@@ -80,15 +81,14 @@ public class Token {
         if (pauseKey != UNUSED_KEY) {
             pauseKey.registerWith(spec, asPauseKeyFor(name));
         }
-        entityId.ifPresent(
-                id -> {
-                    spec.registry().saveName(name, this.tokenName);
-                    spec.registry().saveSymbol(name, symbol);
-                    spec.registry().saveTokenId(name, id.asToken());
-                    if (treasury != UNSPECIFIED_TREASURY) {
-                        spec.registry().saveTreasury(name, treasury);
-                    }
-                });
+        entityId.ifPresent(id -> {
+            spec.registry().saveName(name, this.tokenName);
+            spec.registry().saveSymbol(name, symbol);
+            spec.registry().saveTokenId(name, id.asToken());
+            if (treasury != UNSPECIFIED_TREASURY) {
+                spec.registry().saveTreasury(name, treasury);
+            }
+        });
     }
 
     public HapiQueryOp<?> existenceCheck(String name) {

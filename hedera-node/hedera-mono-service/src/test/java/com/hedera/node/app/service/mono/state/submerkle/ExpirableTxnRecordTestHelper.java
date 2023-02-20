@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.fromGrpcScheduleId;
@@ -41,10 +42,8 @@ public class ExpirableTxnRecordTestHelper {
             nftTokenAdjustments = new ArrayList<>();
             for (TokenTransferList tokenTransfers : record.getTokenTransferListsList()) {
                 tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
-                tokenAdjustments.add(
-                        CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
-                nftTokenAdjustments.add(
-                        NftAdjustments.fromGrpc(tokenTransfers.getNftTransfersList()));
+                tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
+                nftTokenAdjustments.add(NftAdjustments.fromGrpc(tokenTransfers.getNftTransfersList()));
             }
         }
 
@@ -57,51 +56,40 @@ public class ExpirableTxnRecordTestHelper {
             final List<CurrencyAdjustments> tokenAdjustments,
             final List<NftAdjustments> nftTokenAdjustments) {
 
-        final var fcAssessedFees =
-                record.getAssessedCustomFeesCount() > 0
-                        ? record.getAssessedCustomFeesList().stream()
-                                .map(FcAssessedCustomFee::fromGrpc)
-                                .collect(toList())
-                        : null;
-        final var newTokenAssociations =
-                record.getAutomaticTokenAssociationsList().stream()
-                        .map(FcTokenAssociation::fromGrpc)
-                        .collect(toList());
-        final var builder =
-                ExpirableTxnRecord.newBuilder()
-                        .setReceipt(fromGrpc(record.getReceipt()))
-                        .setTxnHash(record.getTransactionHash().toByteArray())
-                        .setTxnId(TxnId.fromGrpc(record.getTransactionID()))
-                        .setConsensusTime(RichInstant.fromGrpc(record.getConsensusTimestamp()))
-                        .setMemo(record.getMemo())
-                        .setFee(record.getTransactionFee())
-                        .setHbarAdjustments(
-                                record.hasTransferList()
-                                        ? CurrencyAdjustments.fromGrpc(
-                                                record.getTransferList().getAccountAmountsList())
-                                        : null)
-                        .setStakingRewardsPaid(
-                                CurrencyAdjustments.fromGrpc(record.getPaidStakingRewardsList()))
-                        .setContractCallResult(
-                                record.hasContractCallResult()
-                                        ? SerdeUtils.fromGrpc(record.getContractCallResult())
-                                        : null)
-                        .setContractCreateResult(
-                                record.hasContractCreateResult()
-                                        ? SerdeUtils.fromGrpc(record.getContractCreateResult())
-                                        : null)
-                        .setTokens(tokens)
-                        .setTokenAdjustments(tokenAdjustments)
-                        .setNftTokenAdjustments(nftTokenAdjustments)
-                        .setScheduleRef(
-                                record.hasScheduleRef()
-                                        ? fromGrpcScheduleId(record.getScheduleRef())
-                                        : null)
-                        .setAssessedCustomFees(fcAssessedFees)
-                        .setNewTokenAssociations(newTokenAssociations)
-                        .setAlias(record.getAlias())
-                        .setEthereumHash(record.getEthereumHash().toByteArray())
-                        .setEvmAddress(record.getEvmAddress().toByteArray());
+        final var fcAssessedFees = record.getAssessedCustomFeesCount() > 0
+                ? record.getAssessedCustomFeesList().stream()
+                        .map(FcAssessedCustomFee::fromGrpc)
+                        .collect(toList())
+                : null;
+        final var newTokenAssociations = record.getAutomaticTokenAssociationsList().stream()
+                .map(FcTokenAssociation::fromGrpc)
+                .collect(toList());
+        final var builder = ExpirableTxnRecord.newBuilder()
+                .setReceipt(fromGrpc(record.getReceipt()))
+                .setTxnHash(record.getTransactionHash().toByteArray())
+                .setTxnId(TxnId.fromGrpc(record.getTransactionID()))
+                .setConsensusTime(RichInstant.fromGrpc(record.getConsensusTimestamp()))
+                .setMemo(record.getMemo())
+                .setFee(record.getTransactionFee())
+                .setHbarAdjustments(
+                        record.hasTransferList()
+                                ? CurrencyAdjustments.fromGrpc(
+                                        record.getTransferList().getAccountAmountsList())
+                                : null)
+                .setStakingRewardsPaid(CurrencyAdjustments.fromGrpc(record.getPaidStakingRewardsList()))
+                .setContractCallResult(
+                        record.hasContractCallResult() ? SerdeUtils.fromGrpc(record.getContractCallResult()) : null)
+                .setContractCreateResult(
+                        record.hasContractCreateResult() ? SerdeUtils.fromGrpc(record.getContractCreateResult()) : null)
+                .setTokens(tokens)
+                .setTokenAdjustments(tokenAdjustments)
+                .setNftTokenAdjustments(nftTokenAdjustments)
+                .setScheduleRef(record.hasScheduleRef() ? fromGrpcScheduleId(record.getScheduleRef()) : null)
+                .setAssessedCustomFees(fcAssessedFees)
+                .setNewTokenAssociations(newTokenAssociations)
+                .setAlias(record.getAlias())
+                .setEthereumHash(record.getEthereumHash().toByteArray())
+                .setEvmAddress(record.getEvmAddress().toByteArray());
         if (!record.getPrngBytes().isEmpty()) {
             builder.setPseudoRandomBytes(record.getPrngBytes().toByteArray());
         }
@@ -109,35 +97,27 @@ public class ExpirableTxnRecordTestHelper {
             builder.setPseudoRandomNumber(record.getPrngNumber());
         }
         if (record.hasParentConsensusTimestamp()) {
-            builder.setParentConsensusTime(
-                    MiscUtils.timestampToInstant(record.getParentConsensusTimestamp()));
+            builder.setParentConsensusTime(MiscUtils.timestampToInstant(record.getParentConsensusTimestamp()));
         }
         return builder.build();
     }
 
     /* ---  Helpers --- */
     public static TxnReceipt fromGrpc(TransactionReceipt grpc) {
-        final var effRates =
-                grpc.hasExchangeRate() ? ExchangeRates.fromGrpc(grpc.getExchangeRate()) : null;
+        final var effRates = grpc.hasExchangeRate() ? ExchangeRates.fromGrpc(grpc.getExchangeRate()) : null;
         String status = grpc.getStatus() != null ? grpc.getStatus().name() : null;
-        EntityId accountId =
-                grpc.hasAccountID() ? EntityId.fromGrpcAccountId(grpc.getAccountID()) : null;
+        EntityId accountId = grpc.hasAccountID() ? EntityId.fromGrpcAccountId(grpc.getAccountID()) : null;
         EntityId jFileID = grpc.hasFileID() ? EntityId.fromGrpcFileId(grpc.getFileID()) : null;
-        EntityId jContractID =
-                grpc.hasContractID() ? EntityId.fromGrpcContractId(grpc.getContractID()) : null;
+        EntityId jContractID = grpc.hasContractID() ? EntityId.fromGrpcContractId(grpc.getContractID()) : null;
         EntityId topicId = grpc.hasTopicID() ? EntityId.fromGrpcTopicId(grpc.getTopicID()) : null;
         EntityId tokenId = grpc.hasTokenID() ? EntityId.fromGrpcTokenId(grpc.getTokenID()) : null;
-        EntityId scheduleId =
-                grpc.hasScheduleID() ? fromGrpcScheduleId(grpc.getScheduleID()) : null;
-        long runningHashVersion =
-                Math.max(
-                        TxnReceipt.MISSING_RUNNING_HASH_VERSION, grpc.getTopicRunningHashVersion());
+        EntityId scheduleId = grpc.hasScheduleID() ? fromGrpcScheduleId(grpc.getScheduleID()) : null;
+        long runningHashVersion = Math.max(TxnReceipt.MISSING_RUNNING_HASH_VERSION, grpc.getTopicRunningHashVersion());
         long newTotalSupply = grpc.getNewTotalSupply();
-        long[] serialNumbers = grpc.getSerialNumbersList().stream().mapToLong(l -> l).toArray();
+        long[] serialNumbers =
+                grpc.getSerialNumbersList().stream().mapToLong(l -> l).toArray();
         TxnId scheduledTxnId =
-                grpc.hasScheduledTransactionID()
-                        ? TxnId.fromGrpc(grpc.getScheduledTransactionID())
-                        : null;
+                grpc.hasScheduledTransactionID() ? TxnId.fromGrpc(grpc.getScheduledTransactionID()) : null;
         return TxnReceipt.newBuilder()
                 .setStatus(status)
                 .setAccountId(accountId)

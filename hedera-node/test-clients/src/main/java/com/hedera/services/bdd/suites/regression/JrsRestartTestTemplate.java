@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.regression;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -74,8 +75,7 @@ import org.apache.logging.log4j.Logger;
 public class JrsRestartTestTemplate extends HapiSuite {
     private static final Logger log = LogManager.getLogger(JrsRestartTestTemplate.class);
 
-    private static final String ENTITIES_DIR =
-            "src/main/resource/jrs/entities/JrsRestartTestTemplate";
+    private static final String ENTITIES_DIR = "src/main/resource/jrs/entities/JrsRestartTestTemplate";
 
     private static final String SENDER = "sender";
     private static final String MULTIPURPOSE = "Multipurpose";
@@ -94,10 +94,9 @@ public class JrsRestartTestTemplate extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    enableHSS(), jrsRestartTemplate(),
-                });
+        return List.of(new HapiSpec[] {
+            enableHSS(), jrsRestartTemplate(),
+        });
     }
 
     private HapiSpec enableHSS() {
@@ -115,32 +114,23 @@ public class JrsRestartTestTemplate extends HapiSuite {
                 .withProperties(Map.of("persistentEntities.dir.path", ENTITIES_DIR))
                 .given(expectedEntitiesExist())
                 .when()
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    boolean isPostRestart =
-                                            spec.setup()
-                                                    .ciPropertiesMap()
-                                                    .getBoolean("postRestart");
-                                    if (isPostRestart) {
-                                        opLog.info(
-                                                "\n\n"
-                                                        + bannerWith(
-                                                                "POST-RESTART VALIDATION PHASE"));
-                                        allRunFor(spec, postRestartValidation());
-                                    } else {
-                                        opLog.info("\n\n" + bannerWith("PRE-RESTART SETUP PHASE"));
-                                        allRunFor(spec, preRestartSetup());
-                                    }
-                                }));
+                .then(withOpContext((spec, opLog) -> {
+                    boolean isPostRestart = spec.setup().ciPropertiesMap().getBoolean("postRestart");
+                    if (isPostRestart) {
+                        opLog.info("\n\n" + bannerWith("POST-RESTART VALIDATION PHASE"));
+                        allRunFor(spec, postRestartValidation());
+                    } else {
+                        opLog.info("\n\n" + bannerWith("PRE-RESTART SETUP PHASE"));
+                        allRunFor(spec, preRestartSetup());
+                    }
+                }));
     }
 
     private HapiSpecOperation[] preRestartSetup() {
         return new HapiSpecOperation[] {
-            assertionsHold(
-                    (spec, opLog) -> {
-                        /* For this template, nothing to setup beyond the entity auto-creation. */
-                    })
+            assertionsHold((spec, opLog) -> {
+                /* For this template, nothing to setup beyond the entity auto-creation. */
+            })
         };
     }
 
@@ -161,12 +151,10 @@ public class JrsRestartTestTemplate extends HapiSuite {
         return new HapiSpecOperation[] {
             contractCall(MULTIPURPOSE, "believeIn", 256),
             contractCallLocal(MULTIPURPOSE, "pick")
-                    .has(
-                            resultWith()
-                                    .resultThruAbi(
-                                            getABIFor(FUNCTION, "pick", MULTIPURPOSE),
-                                            isLiteralResult(
-                                                    new Object[] {BigInteger.valueOf(256)}))),
+                    .has(resultWith()
+                            .resultThruAbi(
+                                    getABIFor(FUNCTION, "pick", MULTIPURPOSE),
+                                    isLiteralResult(new Object[] {BigInteger.valueOf(256)}))),
         };
     }
 
@@ -179,16 +167,13 @@ public class JrsRestartTestTemplate extends HapiSuite {
     }
 
     private HapiSpecOperation[] postRestartTopicValidation() {
-        return new HapiSpecOperation[] {
-            submitMessageTo("ofGeneralInterest").message("Brave new world, isn't it?")
-        };
+        return new HapiSpecOperation[] {submitMessageTo("ofGeneralInterest").message("Brave new world, isn't it?")};
     }
 
     private HapiSpecOperation[] postRestartTokenValidation() {
         return new HapiSpecOperation[] {
             tokenAssociate(SENDER, JRS_TOKEN),
-            cryptoTransfer(moving(1, JRS_TOKEN).between(TREASURY, SENDER))
-                    .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
+            cryptoTransfer(moving(1, JRS_TOKEN).between(TREASURY, SENDER)).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
             tokenUnfreeze(JRS_TOKEN, SENDER),
             cryptoTransfer(moving(1, JRS_TOKEN).between(TREASURY, SENDER))
                     .hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),

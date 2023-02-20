@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.suites;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeUpgrade;
@@ -40,9 +41,7 @@ public class UpgradeHelperSuite extends HapiSuite {
     private final boolean isTelemetryUpgrade;
 
     public UpgradeHelperSuite(
-            final Map<String, String> specConfig,
-            final byte[] upgradeFileHash,
-            final String upgradeFile) {
+            final Map<String, String> specConfig, final byte[] upgradeFileHash, final String upgradeFile) {
         this(specConfig, upgradeFileHash, upgradeFile, null, false);
     }
 
@@ -76,25 +75,19 @@ public class UpgradeHelperSuite extends HapiSuite {
         final HapiSpecOperation op;
 
         if (startTime == null) {
-            op =
-                    prepareUpgrade()
-                            .noLogging()
-                            .withUpdateFile(upgradeFile)
-                            .havingHash(upgradeFileHash);
+            op = prepareUpgrade().noLogging().withUpdateFile(upgradeFile).havingHash(upgradeFileHash);
         } else if (isTelemetryUpgrade) {
-            op =
-                    telemetryUpgrade()
-                            .noLogging()
-                            .startingAt(startTime)
-                            .withUpdateFile(upgradeFile)
-                            .havingHash(upgradeFileHash);
+            op = telemetryUpgrade()
+                    .noLogging()
+                    .startingAt(startTime)
+                    .withUpdateFile(upgradeFile)
+                    .havingHash(upgradeFileHash);
         } else {
-            op =
-                    freezeUpgrade()
-                            .noLogging()
-                            .startingAt(startTime)
-                            .withUpdateFile(upgradeFile)
-                            .havingHash(upgradeFileHash);
+            op = freezeUpgrade()
+                    .noLogging()
+                    .startingAt(startTime)
+                    .withUpdateFile(upgradeFile)
+                    .havingHash(upgradeFileHash);
         }
 
         return HapiSpec.customHapiSpec("DoStagingAction")

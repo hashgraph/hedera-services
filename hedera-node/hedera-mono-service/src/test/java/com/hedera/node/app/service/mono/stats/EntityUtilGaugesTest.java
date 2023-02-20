@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stats;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -33,10 +34,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class EntityUtilGaugesTest {
 
-    @Mock private UsageLimits usageLimits;
-    @Mock private Platform platform;
-    @Mock private DoubleGauge pretendGauge;
-    @Mock private Metrics metrics;
+    @Mock
+    private UsageLimits usageLimits;
+
+    @Mock
+    private Platform platform;
+
+    @Mock
+    private DoubleGauge pretendGauge;
+
+    @Mock
+    private Metrics metrics;
 
     private EntityUtilGauges subject;
 

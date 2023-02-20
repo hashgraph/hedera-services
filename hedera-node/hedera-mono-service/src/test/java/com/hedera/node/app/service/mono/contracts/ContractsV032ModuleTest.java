@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -33,8 +34,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ContractsV032ModuleTest {
 
-    @Mock MessageFrame frame;
-    @Mock WorldUpdater worldUpdater;
+    @Mock
+    MessageFrame frame;
+
+    @Mock
+    WorldUpdater worldUpdater;
 
     @Test
     void provideAddressValidator() {
@@ -45,9 +49,8 @@ class ContractsV032ModuleTest {
         given(worldUpdater.get(nonExistingAddress)).willReturn(null);
 
         final var precompileAddress = "0x5";
-        final var addressValidator =
-                ContractsV_0_34Module.provideAddressValidator(
-                        Map.of(precompileAddress, new SHA256PrecompiledContract(null)));
+        final var addressValidator = ContractsV_0_34Module.provideAddressValidator(
+                Map.of(precompileAddress, new SHA256PrecompiledContract(null)));
 
         assertFalse(addressValidator.test(nonExistingAddress, frame));
         assertTrue(addressValidator.test(Address.fromHexString(precompileAddress), frame));

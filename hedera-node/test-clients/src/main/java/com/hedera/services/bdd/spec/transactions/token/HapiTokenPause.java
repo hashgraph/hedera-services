@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
@@ -62,13 +63,11 @@ public class HapiTokenPause extends HapiTxnOp<HapiTokenPause> {
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final var tId = TxnUtils.asTokenId(token, spec);
-        final TokenPauseTransactionBody opBody =
-                spec.txns()
-                        .<TokenPauseTransactionBody, TokenPauseTransactionBody.Builder>body(
-                                TokenPauseTransactionBody.class,
-                                b -> {
-                                    b.setToken(tId);
-                                });
+        final TokenPauseTransactionBody opBody = spec.txns()
+                .<TokenPauseTransactionBody, TokenPauseTransactionBody.Builder>body(
+                        TokenPauseTransactionBody.class, b -> {
+                            b.setToken(tId);
+                        });
         return b -> b.setTokenPause(opBody);
     }
 
@@ -79,26 +78,22 @@ public class HapiTokenPause extends HapiTxnOp<HapiTokenPause> {
 
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
-        return List.of(
-                spec -> spec.registry().getKey(effectivePayer(spec)),
-                spec -> spec.registry().getPauseKey(token));
+        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
+                .getPauseKey(token));
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
-            throws Throwable {
-        return spec.fees()
-                .forActivityBasedOp(
-                        HederaFunctionality.TokenPause, this::usageEstimate, txn, numPayerKeys);
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+        return spec.fees().forActivityBasedOp(HederaFunctionality.TokenPause, this::usageEstimate, txn, numPayerKeys);
     }
 
     private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
         final UsageAccumulator accumulator = new UsageAccumulator();
         final var tokenPauseMeta = TOKEN_OPS_USAGE_UTILS.tokenPauseUsageFrom();
-        final var baseTransactionMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
+        final var baseTransactionMeta =
+                new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
         final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
-        tokenOpsUsage.tokenPauseUsage(
-                suFrom(svo), baseTransactionMeta, tokenPauseMeta, accumulator);
+        tokenOpsUsage.tokenPauseUsage(suFrom(svo), baseTransactionMeta, tokenPauseMeta, accumulator);
         return AdapterUtils.feeDataFrom(accumulator);
     }
 

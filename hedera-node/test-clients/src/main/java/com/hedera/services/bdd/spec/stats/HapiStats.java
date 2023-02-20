@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.stats;
 
 import static java.util.stream.Collectors.counting;
@@ -46,21 +47,19 @@ public class HapiStats {
     }
 
     public Stats txnResponseLatencyStatsFor(HederaFunctionality txnType) {
-        return Stats.of(
-                txnObs().stream()
-                        .filter(obs -> obs.functionality().equals(txnType))
-                        .map(TxnObs::getResponseLatency)
-                        .collect(toList()));
+        return Stats.of(txnObs().stream()
+                .filter(obs -> obs.functionality().equals(txnType))
+                .map(TxnObs::getResponseLatency)
+                .collect(toList()));
     }
 
     public <T extends OpObs> Stats statsProjectedFor(
             Class<T> tClass, Predicate<T> relevancy, Function<T, Long> projection) {
-        return Stats.of(
-                (tClass.equals(TxnObs.class) ? txnObs() : queryObs())
-                        .stream()
-                                .filter(obs -> relevancy.test(tClass.cast(obs)))
-                                .map(obs -> projection.apply(tClass.cast(obs)))
-                                .collect(toList()));
+        return Stats.of((tClass.equals(TxnObs.class) ? txnObs() : queryObs())
+                .stream()
+                        .filter(obs -> relevancy.test(tClass.cast(obs)))
+                        .map(obs -> projection.apply(tClass.cast(obs)))
+                        .collect(toList()));
     }
 
     public Map<HederaFunctionality, Long> countDetails() {

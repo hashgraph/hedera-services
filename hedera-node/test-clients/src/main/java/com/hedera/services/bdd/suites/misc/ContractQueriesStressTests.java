@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.misc;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -63,13 +64,9 @@ public class ContractQueriesStressTests extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    contractCallLocalStress(),
-                    getContractRecordsStress(),
-                    getContractBytecodeStress(),
-                    getContractInfoStress(),
-                });
+        return List.of(new HapiSpec[] {
+            contractCallLocalStress(), getContractRecordsStress(), getContractBytecodeStress(), getContractInfoStress(),
+        });
     }
 
     private HapiSpec getContractInfoStress() {
@@ -117,96 +114,77 @@ public class ContractQueriesStressTests extends HapiSuite {
     }
 
     private Function<HapiSpec, OpProvider> getContractRecordsFactory() {
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        return List.of(
-                                uploadInitCode("ChildStorage"),
-                                contractCreate("ChildStorage"),
-                                contractCall("ChildStorage", "growChild", 0, 1, 1),
-                                contractCall("ChildStorage", "growChild", 1, 1, 3),
-                                contractCall("ChildStorage", "setZeroReadOne", 23).via("first"),
-                                contractCall("ChildStorage", "setZeroReadOne", 23).via("second"),
-                                contractCall("ChildStorage", "setZeroReadOne", 23).via("third"));
-                    }
+        return spec -> new OpProvider() {
+            @Override
+            public List<HapiSpecOperation> suggestedInitializers() {
+                return List.of(
+                        uploadInitCode("ChildStorage"),
+                        contractCreate("ChildStorage"),
+                        contractCall("ChildStorage", "growChild", 0, 1, 1),
+                        contractCall("ChildStorage", "growChild", 1, 1, 3),
+                        contractCall("ChildStorage", "setZeroReadOne", 23).via("first"),
+                        contractCall("ChildStorage", "setZeroReadOne", 23).via("second"),
+                        contractCall("ChildStorage", "setZeroReadOne", 23).via("third"));
+            }
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        return Optional.of(
-                                getAccountRecords("somebody")
-                                        .has(
-                                                inOrder(
-                                                        recordWith().txnId("first"),
-                                                        recordWith().txnId("second"),
-                                                        recordWith().txnId("third")))
-                                        .noLogging());
-                    }
-                };
+            @Override
+            public Optional<HapiSpecOperation> get() {
+                return Optional.of(getAccountRecords("somebody")
+                        .has(inOrder(
+                                recordWith().txnId("first"),
+                                recordWith().txnId("second"),
+                                recordWith().txnId("third")))
+                        .noLogging());
+            }
+        };
     }
 
     private Function<HapiSpec, OpProvider> getContractInfoFactory() {
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        return List.of(
-                                uploadInitCode("ChildStorage"), contractCreate("ChildStorage"));
-                    }
+        return spec -> new OpProvider() {
+            @Override
+            public List<HapiSpecOperation> suggestedInitializers() {
+                return List.of(uploadInitCode("ChildStorage"), contractCreate("ChildStorage"));
+            }
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        return Optional.of(getContractInfo("ChildStorage").noLogging());
-                    }
-                };
+            @Override
+            public Optional<HapiSpecOperation> get() {
+                return Optional.of(getContractInfo("ChildStorage").noLogging());
+            }
+        };
     }
 
     private Function<HapiSpec, OpProvider> getContractBytecodeFactory() {
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        return List.of(
-                                uploadInitCode("ChildStorage"), contractCreate("ChildStorage"));
-                    }
+        return spec -> new OpProvider() {
+            @Override
+            public List<HapiSpecOperation> suggestedInitializers() {
+                return List.of(uploadInitCode("ChildStorage"), contractCreate("ChildStorage"));
+            }
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        return Optional.of(getContractBytecode("ChildStorage").noLogging());
-                    }
-                };
+            @Override
+            public Optional<HapiSpecOperation> get() {
+                return Optional.of(getContractBytecode("ChildStorage").noLogging());
+            }
+        };
     }
 
     private Function<HapiSpec, OpProvider> contractCallLocalFactory() {
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        return List.of(
-                                uploadInitCode("ChildStorage"), contractCreate("ChildStorage"));
-                    }
+        return spec -> new OpProvider() {
+            @Override
+            public List<HapiSpecOperation> suggestedInitializers() {
+                return List.of(uploadInitCode("ChildStorage"), contractCreate("ChildStorage"));
+            }
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        var op =
-                                contractCallLocal(
-                                                "ChildStorage",
-                                                getABIFor(FUNCTION, "getMyValue", "ChildStorage"))
-                                        .noLogging()
-                                        .has(
-                                                resultWith()
-                                                        .resultThruAbi(
-                                                                getABIFor(
-                                                                        FUNCTION,
-                                                                        "getMyValue",
-                                                                        "ChildStorage"),
-                                                                isLiteralResult(
-                                                                        new Object[] {
-                                                                            BigInteger.valueOf(73)
-                                                                        })));
-                        return Optional.of(op);
-                    }
-                };
+            @Override
+            public Optional<HapiSpecOperation> get() {
+                var op = contractCallLocal("ChildStorage", getABIFor(FUNCTION, "getMyValue", "ChildStorage"))
+                        .noLogging()
+                        .has(resultWith()
+                                .resultThruAbi(
+                                        getABIFor(FUNCTION, "getMyValue", "ChildStorage"),
+                                        isLiteralResult(new Object[] {BigInteger.valueOf(73)})));
+                return Optional.of(op);
+            }
+        };
     }
 
     private void configureFromCi(HapiSpec spec) {
@@ -217,10 +195,7 @@ public class ContractQueriesStressTests extends HapiSuite {
     }
 
     private <T> void configure(
-            String name,
-            Consumer<T> configurer,
-            HapiPropertySource ciProps,
-            Function<String, T> getter) {
+            String name, Consumer<T> configurer, HapiPropertySource ciProps, Function<String, T> getter) {
         if (ciProps.has(name)) {
             configurer.accept(getter.apply(name));
         }

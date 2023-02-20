@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.regression;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
@@ -79,8 +80,7 @@ public class UmbrellaReduxWithCustomNodes extends HapiSuite {
             topic_running_hash_version = Integer.parseInt(args[3]);
         }
 
-        UmbrellaReduxWithCustomNodes umbrellaReduxWithCustomNodes =
-                new UmbrellaReduxWithCustomNodes();
+        UmbrellaReduxWithCustomNodes umbrellaReduxWithCustomNodes = new UmbrellaReduxWithCustomNodes();
         umbrellaReduxWithCustomNodes.runSuiteSync();
     }
 
@@ -91,15 +91,12 @@ public class UmbrellaReduxWithCustomNodes extends HapiSuite {
 
     private HapiSpec messageSubmissionSimple() {
         return HapiSpec.customHapiSpec(MESSAGE_SUBMISSION_SIMPLE)
-                .withProperties(
-                        Map.of(
-                                "default.topic.runningHash.version", topic_running_hash_version,
-                                "default.node", nodeId,
-                                "default.payer", payer,
-                                "nodes", nodeAddress + ":" + nodeId))
-                .given(
-                        newKeyNamed("submitKey"),
-                        createTopic("testTopic").submitKeyName("submitKey"))
+                .withProperties(Map.of(
+                        "default.topic.runningHash.version", topic_running_hash_version,
+                        "default.node", nodeId,
+                        "default.payer", payer,
+                        "nodes", nodeAddress + ":" + nodeId))
+                .given(newKeyNamed("submitKey"), createTopic("testTopic").submitKeyName("submitKey"))
                 .when(cryptoCreate("civilian").sendThreshold(1L))
                 .then(
                         submitMessageTo("testTopic")
@@ -109,24 +106,21 @@ public class UmbrellaReduxWithCustomNodes extends HapiSuite {
                                 .via(MESSAGE_SUBMISSION_SIMPLE),
                         QueryVerbs.getTxnRecord(MESSAGE_SUBMISSION_SIMPLE)
                                 .logged()
-                                .hasPriority(
-                                        TransactionRecordAsserts.recordWith()
-                                                .checkTopicRunningHashVersion(
-                                                        topic_running_hash_version)));
+                                .hasPriority(TransactionRecordAsserts.recordWith()
+                                        .checkTopicRunningHashVersion(topic_running_hash_version)));
     }
 
     private HapiSpec runUmbrellaReduxWithCustomNodes() {
         return HapiSpec.customHapiSpec("RunUmbrellaReduxWithCustomNodes")
-                .withProperties(
-                        Map.of(
-                                "status.wait.timeout.ms",
-                                Integer.toString(1_000 * statusTimeoutSecs.get()),
-                                "default.node",
-                                nodeId,
-                                "default.payer",
-                                payer,
-                                "nodes",
-                                nodeAddress + ":" + nodeId))
+                .withProperties(Map.of(
+                        "status.wait.timeout.ms",
+                        Integer.toString(1_000 * statusTimeoutSecs.get()),
+                        "default.node",
+                        nodeId,
+                        "default.payer",
+                        payer,
+                        "nodes",
+                        nodeAddress + ":" + nodeId))
                 .given()
                 .when()
                 .then(

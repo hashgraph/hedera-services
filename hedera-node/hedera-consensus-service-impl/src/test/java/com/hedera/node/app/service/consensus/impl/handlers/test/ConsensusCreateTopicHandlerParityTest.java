@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.consensus.impl.handlers.test;
 
 import static com.hedera.node.app.service.consensus.impl.handlers.test.ConsensusCreateTopicHandlerTest.assertOkResponse;
@@ -33,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -57,7 +58,7 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_NO_ADDITIONAL_KEYS_SCENARIO);
 
         // when:
-        final var context = new PrehandleHandlerContext(keyLookup, txn);
+        final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context);
 
         // then:
@@ -72,7 +73,7 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_NO_ADDITIONAL_KEYS_SCENARIO);
 
         // when:
-        final var context = new PrehandleHandlerContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
+        final var context = new PreHandleContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
         subject.preHandle(context);
 
         // then:
@@ -87,7 +88,7 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_SCENARIO);
 
         // when:
-        final var context = new PrehandleHandlerContext(keyLookup, txn, DEFAULT_PAYER);
+        final var context = new PreHandleContext(keyLookup, txn, DEFAULT_PAYER);
         subject.preHandle(context);
 
         // then:
@@ -103,7 +104,7 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_SCENARIO);
 
         // when:
-        final var context = new PrehandleHandlerContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
+        final var context = new PreHandleContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
         subject.preHandle(context);
 
         // then:
@@ -119,7 +120,7 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO);
 
         // when:
-        final var context = new PrehandleHandlerContext(keyLookup, txn, DEFAULT_PAYER);
+        final var context = new PreHandleContext(keyLookup, txn, DEFAULT_PAYER);
         subject.preHandle(context);
 
         // then:
@@ -135,7 +136,7 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO);
 
         // when:
-        final var context = new PrehandleHandlerContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
+        final var context = new PreHandleContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
         subject.preHandle(context);
 
         // then:
@@ -148,18 +149,15 @@ class ConsensusCreateTopicHandlerParityTest {
     @Test
     void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsPayer() {
         // given:
-        final var txn =
-                txnFrom(
-                        CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO);
+        final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO);
 
         // when:
-        final var context = new PrehandleHandlerContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
+        final var context = new PreHandleContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
         subject.preHandle(context);
 
         // then:
         assertOkResponse(context);
-        Assertions.assertThat(sanityRestored(context.getPayerKey()))
-                .isEqualTo(CUSTOM_PAYER_ACCOUNT_KT.asKey());
+        Assertions.assertThat(sanityRestored(context.getPayerKey())).isEqualTo(CUSTOM_PAYER_ACCOUNT_KT.asKey());
         Assertions.assertThat(sanityRestored(context.getRequiredNonPayerKeys()))
                 .containsExactly(SIMPLE_TOPIC_ADMIN_KEY.asKey());
     }
@@ -167,11 +165,10 @@ class ConsensusCreateTopicHandlerParityTest {
     @Test
     void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsPayerWithCustomPayer() {
         // given:
-        final var txn =
-                txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO);
+        final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO);
 
         // when:
-        final var context = new PrehandleHandlerContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
+        final var context = new PreHandleContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
         subject.preHandle(context);
 
         // then:
@@ -187,12 +184,10 @@ class ConsensusCreateTopicHandlerParityTest {
     @Test
     void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsCustomPayer() {
         // given:
-        final var txn =
-                txnFrom(
-                        CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO);
+        final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO);
 
         // when:
-        final var context = new PrehandleHandlerContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
+        final var context = new PreHandleContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
         subject.preHandle(context);
 
         // then:
@@ -205,12 +200,10 @@ class ConsensusCreateTopicHandlerParityTest {
     @Test
     void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsCustomPayerWithCustomPayer() {
         // given:
-        final var txn =
-                txnFrom(
-                        CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO);
+        final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO);
 
         // when:
-        final var result = new PrehandleHandlerContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
+        final var result = new PreHandleContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
         subject.preHandle(result);
 
         // then:
@@ -226,13 +219,12 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO);
 
         // when:
-        final var context = new PrehandleHandlerContext(keyLookup, txn, DEFAULT_PAYER);
+        final var context = new PreHandleContext(keyLookup, txn, DEFAULT_PAYER);
         subject.preHandle(context);
 
         // then:
         Assertions.assertThat(context.failed()).isTrue();
-        Assertions.assertThat(context.getStatus())
-                .isEqualTo(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+        Assertions.assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
     }
 
     @Test
@@ -241,13 +233,12 @@ class ConsensusCreateTopicHandlerParityTest {
         final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO);
 
         // when:
-        final var context = new PrehandleHandlerContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
+        final var context = new PreHandleContext(keyLookup, txn, CUSTOM_PAYER_ACCOUNT);
         subject.preHandle(context);
 
         // then:
         Assertions.assertThat(context.failed()).isTrue();
-        Assertions.assertThat(context.getStatus())
-                .isEqualTo(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+        Assertions.assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {
@@ -258,15 +249,15 @@ class ConsensusCreateTopicHandlerParityTest {
         }
     }
 
-    private void assertDefaultPayer(PrehandleHandlerContext context) {
+    private void assertDefaultPayer(PreHandleContext context) {
         assertPayer(DEFAULT_PAYER_KT.asKey(), context);
     }
 
-    private void assertCustomPayer(PrehandleHandlerContext context) {
+    private void assertCustomPayer(PreHandleContext context) {
         assertPayer(CUSTOM_PAYER_ACCOUNT_KT.asKey(), context);
     }
 
-    private void assertPayer(Key expected, PrehandleHandlerContext context) {
+    private void assertPayer(Key expected, PreHandleContext context) {
         Assertions.assertThat(sanityRestored(context.getPayerKey())).isEqualTo(expected);
     }
 }

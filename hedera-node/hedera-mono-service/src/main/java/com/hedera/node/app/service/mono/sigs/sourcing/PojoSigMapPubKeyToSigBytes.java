@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.sourcing;
 
 import com.google.common.base.MoreObjects;
@@ -51,12 +52,11 @@ public class PojoSigMapPubKeyToSigBytes implements PubKeyToSigBytes {
             final byte[] pubKeyPrefix = pojoSigMap.pubKeyPrefix(i);
             if (beginsWith(pubKey, pubKeyPrefix)) {
                 if (sigBytes != EMPTY_SIG) {
-                    throw new KeyPrefixMismatchException(
-                            "Source signature map with prefix "
-                                    + CommonUtils.hex(pubKeyPrefix)
-                                    + " is ambiguous for given public key! ("
-                                    + CommonUtils.hex(pubKey)
-                                    + ")");
+                    throw new KeyPrefixMismatchException("Source signature map with prefix "
+                            + CommonUtils.hex(pubKeyPrefix)
+                            + " is ambiguous for given public key! ("
+                            + CommonUtils.hex(pubKey)
+                            + ")");
                 }
                 sigBytes = pojoSigMap.primitiveSignature(i);
                 chosenSigBytesIndex = i;
@@ -72,10 +72,7 @@ public class PojoSigMapPubKeyToSigBytes implements PubKeyToSigBytes {
     public void forEachUnusedSigWithFullPrefix(final SigObserver observer) {
         for (int i = 0, n = pojoSigMap.numSigsPairs(); i < n; i++) {
             if (!used[i] && pojoSigMap.isFullPrefixAt(i)) {
-                observer.accept(
-                        pojoSigMap.keyType(i),
-                        pojoSigMap.pubKeyPrefix(i),
-                        pojoSigMap.primitiveSignature(i));
+                observer.accept(pojoSigMap.keyType(i), pojoSigMap.pubKeyPrefix(i), pojoSigMap.primitiveSignature(i));
             }
         }
     }

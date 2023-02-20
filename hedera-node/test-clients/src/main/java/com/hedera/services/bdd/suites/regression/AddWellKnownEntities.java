@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.regression;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.expectedEntitiesExist;
@@ -37,19 +38,17 @@ public class AddWellKnownEntities extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    instantiateEntities(),
-                });
+        return List.of(new HapiSpec[] {
+            instantiateEntities(),
+        });
     }
 
     private HapiSpec instantiateEntities() {
         return HapiSpec.customHapiSpec("AddWellKnownEntities")
-                .withProperties(
-                        Map.of(
-                                "fees.useFixedOffer", "true",
-                                "fees.fixedOffer", "" + ONE_HUNDRED_HBARS,
-                                "persistentEntities.dir.path", "src/main/resource/jrs-creations"))
+                .withProperties(Map.of(
+                        "fees.useFixedOffer", "true",
+                        "fees.fixedOffer", "" + ONE_HUNDRED_HBARS,
+                        "persistentEntities.dir.path", "src/main/resource/jrs-creations"))
                 .given(expectedEntitiesExist())
                 .when()
                 .then(sleepFor(10_000L), freezeOnly().startingIn(60).seconds().payingWith(GENESIS));

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -37,8 +38,7 @@ import org.apache.logging.log4j.Logger;
 public class ServicesTxnManager {
     private static final Logger log = LogManager.getLogger(ServicesTxnManager.class);
 
-    private static final String ERROR_LOG_TPL =
-            "Possibly CATASTROPHIC failure in {} :: {} ==>> {} ==>>";
+    private static final String ERROR_LOG_TPL = "Possibly CATASTROPHIC failure in {} :: {} ==>> {} ==>>";
 
     private final Runnable scopedProcessing;
     private final Runnable scopedTriggeredProcessing;
@@ -139,11 +139,9 @@ public class ServicesTxnManager {
         }
     }
 
-    private void attemptRollback(
-            TxnAccessor accessor, Instant consensusTime, long submittingMember) {
+    private void attemptRollback(TxnAccessor accessor, Instant consensusTime, long submittingMember) {
         try {
-            recordCache.setFailInvalid(
-                    txnCtx.effectivePayer(), accessor, consensusTime, submittingMember);
+            recordCache.setFailInvalid(txnCtx.effectivePayer(), accessor, consensusTime, submittingMember);
         } catch (Exception e) {
             logContextualizedError(e, "failure record creation");
         }
@@ -157,12 +155,7 @@ public class ServicesTxnManager {
     private void logContextualizedError(Exception e, String context) {
         try {
             final var accessor = txnCtx.accessor();
-            log.error(
-                    ERROR_LOG_TPL,
-                    context,
-                    accessor.getSignedTxnWrapper(),
-                    ledger.currentChangeSet(),
-                    e);
+            log.error(ERROR_LOG_TPL, context, accessor.getSignedTxnWrapper(), ledger.currentChangeSet(), e);
         } catch (Exception f) {
             log.error("Possibly CATASTROPHIC failure in {}", context, e);
             log.error("Full details could not be logged", f);

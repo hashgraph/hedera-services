@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.contract;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
@@ -31,10 +32,8 @@ import java.util.Optional;
 public class RandomCallLocal implements OpProvider {
     private final EntityNameProvider<ActionableContractCallLocal> localCalls;
 
-    private final ResponseCodeEnum[] permissibleCostAnswerPrechecks =
-            standardPrechecksAnd(CONTRACT_DELETED);
-    private final ResponseCodeEnum[] permissibleAnswerOnlyPrechecks =
-            standardPrechecksAnd(CONTRACT_DELETED);
+    private final ResponseCodeEnum[] permissibleCostAnswerPrechecks = standardPrechecksAnd(CONTRACT_DELETED);
+    private final ResponseCodeEnum[] permissibleAnswerOnlyPrechecks = standardPrechecksAnd(CONTRACT_DELETED);
 
     public RandomCallLocal(EntityNameProvider<ActionableContractCallLocal> localCalls) {
         this.localCalls = localCalls;
@@ -52,10 +51,9 @@ public class RandomCallLocal implements OpProvider {
             return Optional.empty();
         }
 
-        HapiContractCallLocal op =
-                QueryVerbs.contractCallLocalFrom(localCall.get())
-                        .hasCostAnswerPrecheckFrom(permissibleCostAnswerPrechecks)
-                        .hasAnswerOnlyPrecheckFrom(permissibleAnswerOnlyPrechecks);
+        HapiContractCallLocal op = QueryVerbs.contractCallLocalFrom(localCall.get())
+                .hasCostAnswerPrecheckFrom(permissibleCostAnswerPrechecks)
+                .hasAnswerOnlyPrecheckFrom(permissibleAnswerOnlyPrechecks);
 
         return Optional.of(op);
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -105,8 +106,7 @@ class MerkleEntityIdTest {
     @Test
     void toStringWorks() {
         assertEquals(
-                "MerkleEntityId{shard=" + shard + ", realm=" + realm + ", entity=" + num + "}",
-                subject.toString());
+                "MerkleEntityId{shard=" + shard + ", realm=" + realm + ", entity=" + num + "}", subject.toString());
     }
 
     @Test

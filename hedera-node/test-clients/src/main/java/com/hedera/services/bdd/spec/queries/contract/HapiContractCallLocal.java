@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.queries.contract;
 
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
@@ -121,7 +122,8 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
         if (expectations.isPresent()) {
             ContractFunctionResult actual = response.getContractCallLocal().getFunctionResult();
             if (!loggingOff) {
-                final String hex = CommonUtils.hex(actual.getContractCallResult().toByteArray());
+                final String hex =
+                        CommonUtils.hex(actual.getContractCallResult().toByteArray());
                 LOG.info(hex);
             }
             ErroringAsserts<ContractFunctionResult> asserts = expectations.get().assertsFor(spec);
@@ -138,10 +140,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getContractCallLocal(spec, payment, false);
-        response =
-                spec.clients()
-                        .getScSvcStub(targetNodeFor(spec), useTls)
-                        .contractCallLocalMethod(query);
+        response = spec.clients().getScSvcStub(targetNodeFor(spec), useTls).contractCallLocalMethod(query);
         if (verboseLoggingOn) {
             LOG.info(
                     "{}{} result = {}",
@@ -168,16 +167,13 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getContractCallLocal(spec, payment, true);
         Response response =
-                spec.clients()
-                        .getScSvcStub(targetNodeFor(spec), useTls)
-                        .contractCallLocalMethod(query);
+                spec.clients().getScSvcStub(targetNodeFor(spec), useTls).contractCallLocalMethod(query);
         return costFrom(response);
     }
 
     private Query getContractCallLocal(HapiSpec spec, Transaction payment, boolean costOnly) {
         if (details.isPresent()) {
-            ActionableContractCallLocal actionable =
-                    spec.registry().getActionableLocalCall(details.get());
+            ActionableContractCallLocal actionable = spec.registry().getActionableLocalCall(details.get());
             contract = actionable.getContract();
             abi = actionable.getDetails().getAbi();
             params = actionable.getDetails().getExampleArgs();
@@ -188,18 +184,15 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
         byte[] callData = encodeParametersForCall(params, abi);
 
         @SuppressWarnings("java:S1874")
-        final var opBuilder =
-                ContractCallLocalQuery.newBuilder()
-                        .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
-                        .setFunctionParameters(ByteString.copyFrom(callData))
-                        .setGas(gas.orElse(spec.setup().defaultCallGas()))
-                        .setMaxResultSize(
-                                maxResultSize.orElse(spec.setup().defaultMaxLocalCallRetBytes()));
+        final var opBuilder = ContractCallLocalQuery.newBuilder()
+                .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
+                .setFunctionParameters(ByteString.copyFrom(callData))
+                .setGas(gas.orElse(spec.setup().defaultCallGas()))
+                .setMaxResultSize(maxResultSize.orElse(spec.setup().defaultMaxLocalCallRetBytes()));
 
         if (contract.length() == HEXED_EVM_ADDRESS_LEN) {
             opBuilder.setContractID(
-                    ContractID.newBuilder()
-                            .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(contract))));
+                    ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(contract))));
         } else {
             opBuilder.setContractID(TxnUtils.asContractId(contract, spec));
         }
@@ -208,8 +201,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 
     @Override
     protected long costOnlyNodePayment(HapiSpec spec) throws Throwable {
-        return spec.fees()
-                .forOp(HederaFunctionality.ContractCallLocal, FeeBuilder.getCostForQueryByIDOnly());
+        return spec.fees().forOp(HederaFunctionality.ContractCallLocal, FeeBuilder.getCostForQueryByIDOnly());
     }
 
     @Override
@@ -220,10 +212,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
         MoreObjects.ToStringHelper helper =
-                super.toStringHelper()
-                        .add("contract", contract)
-                        .add("abi", abi)
-                        .add("params", Arrays.toString(params));
+                super.toStringHelper().add("contract", contract).add("abi", abi).add("params", Arrays.toString(params));
         gas.ifPresent(a -> helper.add("gas", a));
         maxResultSize.ifPresent(s -> helper.add("maxResultSize", s));
         return helper;

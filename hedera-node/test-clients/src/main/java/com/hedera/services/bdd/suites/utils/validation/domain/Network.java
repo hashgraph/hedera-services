@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.utils.validation.domain;
 
 import com.hedera.services.bdd.suites.utils.validation.ValidationScenarios;

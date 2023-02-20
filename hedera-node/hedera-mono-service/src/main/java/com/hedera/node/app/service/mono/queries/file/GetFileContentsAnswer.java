@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.file;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetContents;
@@ -60,10 +61,7 @@ public class GetFileContentsAnswer implements AnswerService {
 
     @Override
     public Response responseGiven(
-            final Query query,
-            @Nullable final StateView view,
-            final ResponseCodeEnum validity,
-            final long cost) {
+            final Query query, @Nullable final StateView view, final ResponseCodeEnum validity, final long cost) {
         final var op = query.getFileGetContents();
         final var target = op.getFileID();
 
@@ -86,8 +84,7 @@ public class GetFileContentsAnswer implements AnswerService {
         return Response.newBuilder().setFileGetContents(response).build();
     }
 
-    private FileGetContentsResponse.FileContents from(
-            final FileID id, final Optional<byte[]> contents) {
+    private FileGetContentsResponse.FileContents from(final FileID id, final Optional<byte[]> contents) {
         final FileGetContentsResponse.FileContents.Builder wrapper =
                 FileGetContentsResponse.FileContents.newBuilder().setFileID(id);
         contents.ifPresent(d -> wrapper.setContents(ByteString.copyFrom(d)));

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.models;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,8 +38,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaEvmStackedWorldStateUpdaterTest {
-    private final Address address =
-            Address.fromHexString("0x000000000000000000000000000000000000077e");
+    private final Address address = Address.fromHexString("0x000000000000000000000000000000000000077e");
     private final MockAccountAccessor accountAccessor = new MockAccountAccessor();
     private final MockTokenAccessor tokenAccessor = new MockTokenAccessor();
     private final MockEntityAccess entityAccess = new MockEntityAccess();
@@ -50,9 +50,8 @@ class HederaEvmStackedWorldStateUpdaterTest {
 
     @BeforeEach
     void setUp() {
-        subject =
-                new HederaEvmStackedWorldStateUpdater(
-                        updater, accountAccessor, entityAccess, tokenAccessor, properties);
+        subject = new HederaEvmStackedWorldStateUpdater(
+                updater, accountAccessor, entityAccess, tokenAccessor, properties);
     }
 
     @Test
@@ -97,16 +96,14 @@ class HederaEvmStackedWorldStateUpdaterTest {
     @Test
     void getAccount() {
         given(updater.getForMutation(address)).willReturn(updatedHederaEvmAccount);
-        assertEquals(
-                updatedHederaEvmAccount.getAddress(), subject.getAccount(address).getAddress());
+        assertEquals(updatedHederaEvmAccount.getAddress(), subject.getAccount(address).getAddress());
     }
 
     @Test
     void getAccountWithTrack() {
         given(updater.getForMutation(address)).willReturn(updatedHederaEvmAccount);
         subject.getAccount(address);
-        assertEquals(
-                updatedHederaEvmAccount.getAddress(), subject.getAccount(address).getAddress());
+        assertEquals(updatedHederaEvmAccount.getAddress(), subject.getAccount(address).getAddress());
     }
 
     @Test

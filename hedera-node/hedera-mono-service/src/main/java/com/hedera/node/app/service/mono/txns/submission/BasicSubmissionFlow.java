@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.submission;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -70,8 +71,7 @@ public final class BasicSubmissionFlow implements SubmissionFlow {
         return responseWith(validity, 0);
     }
 
-    private TransactionResponse responseWith(
-            final ResponseCodeEnum validity, final long feeRequired) {
+    private TransactionResponse responseWith(final ResponseCodeEnum validity, final long feeRequired) {
         return TransactionResponse.newBuilder()
                 .setNodeTransactionPrecheckCode(validity)
                 .setCost(feeRequired)

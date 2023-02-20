@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.IMPERMISSIBLE;
@@ -39,21 +40,32 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RequestedTransitionTest {
-    @Mock private TransitionRunner transitionRunner;
-    @Mock private SystemOpPolicies opPolicies;
-    @Mock private TransactionContext txnCtx;
-    @Mock private NetworkCtxManager networkCtxManager;
-    @Mock private AccountID payer;
-    @Mock private TxnAccessor accessor;
-    @Mock private HapiOpPermissions hapiOpPermissions;
+    @Mock
+    private TransitionRunner transitionRunner;
+
+    @Mock
+    private SystemOpPolicies opPolicies;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private NetworkCtxManager networkCtxManager;
+
+    @Mock
+    private AccountID payer;
+
+    @Mock
+    private TxnAccessor accessor;
+
+    @Mock
+    private HapiOpPermissions hapiOpPermissions;
 
     private RequestedTransition subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new RequestedTransition(
-                        transitionRunner, opPolicies, txnCtx, networkCtxManager, hapiOpPermissions);
+        subject = new RequestedTransition(transitionRunner, opPolicies, txnCtx, networkCtxManager, hapiOpPermissions);
     }
 
     @Test

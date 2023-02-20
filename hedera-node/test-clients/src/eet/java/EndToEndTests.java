@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import com.hedera.services.bdd.suites.autorenew.GracePeriodRestrictionsSuite;
 import com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSSuite;
@@ -56,9 +57,7 @@ class EndToEndTests extends E2ETestBase {
     @Tag("setup")
     @TestFactory
     Collection<DynamicContainer> networkSetup() {
-        return List.of(
-                extractSpecsFromSuite(TargetNetworkPrep::new),
-                extractSpecsFromSuite(FeatureFlagSuite::new));
+        return List.of(extractSpecsFromSuite(TargetNetworkPrep::new), extractSpecsFromSuite(FeatureFlagSuite::new));
     }
 
     // These tests need to run first since they are hyper-sensitive to the tests in the
@@ -140,17 +139,16 @@ class EndToEndTests extends E2ETestBase {
     @Order(1)
     @TestFactory
     List<DynamicTest> contractPrecompileEth() {
-        return List.of(
-                concurrentEthSpecsFrom(
-                        AssociatePrecompileSuite::new,
-                        ContractBurnHTSSuite::new,
-                        ContractHTSSuite::new,
-                        ContractKeysHTSSuite::new,
-                        ContractMintHTSSuite::new,
-                        CreatePrecompileSuite::new,
-                        DissociatePrecompileSuite::new,
-                        CryptoTransferHTSSuite::new,
-                        DelegatePrecompileSuite::new));
+        return List.of(concurrentEthSpecsFrom(
+                AssociatePrecompileSuite::new,
+                ContractBurnHTSSuite::new,
+                ContractHTSSuite::new,
+                ContractKeysHTSSuite::new,
+                ContractMintHTSSuite::new,
+                CreatePrecompileSuite::new,
+                DissociatePrecompileSuite::new,
+                CryptoTransferHTSSuite::new,
+                DelegatePrecompileSuite::new));
     }
 
     @Tag("contract")

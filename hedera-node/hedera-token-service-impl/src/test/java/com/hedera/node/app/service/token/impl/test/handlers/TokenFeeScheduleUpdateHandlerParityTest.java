@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenarios.NO_RECEIVER_SIG_KT;
@@ -38,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.token.impl.handlers.TokenFeeScheduleUpdateHandler;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -50,7 +51,7 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenFeeScheduleUpdateNonExistingToken() {
         final var txn = txnFrom(UPDATE_TOKEN_FEE_SCHEDULE_BUT_TOKEN_DOESNT_EXIST);
-        final var context = new PrehandleHandlerContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertTrue(context.failed());
@@ -62,7 +63,7 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenFeeScheduleUpdateTokenWithoutFeeScheduleKey() {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_NO_FEE_SCHEDULE_KEY);
-        final var context = new PrehandleHandlerContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         // may look odd, but is intentional --- we fail in the handle(), not in preHandle()
@@ -75,7 +76,7 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenFeeScheduleUpdateWithFeeScheduleKeySigReqFeeCollector() {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_SIG_REQ);
-        final var context = new PrehandleHandlerContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
@@ -90,23 +91,20 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     @Test
     void tokenFeeScheduleUpdateWithFeeScheduleKeySigNotReqFeeCollector() {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_NO_SIG_REQ);
-        final var context = new PrehandleHandlerContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
     }
 
     @Test
-    void
-            tokenFeeScheduleUpdateWithFeeScheduleKeyAndOneSigReqFeeCollectorAndAnotherSigNonReqFeeCollector() {
+    void tokenFeeScheduleUpdateWithFeeScheduleKeyAndOneSigReqFeeCollectorAndAnotherSigNonReqFeeCollector() {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ);
-        final var context = new PrehandleHandlerContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
@@ -120,43 +118,34 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
 
     @Test
     void tokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorAsPayerAndSigReq() {
-        final var txn =
-                txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER);
-        final var context = new PrehandleHandlerContext(keyLookup, txn);
+        final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
         assertEquals(sanityRestored(context.getPayerKey()), RECEIVER_SIG_KT.asKey());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
     }
 
     @Test
     void tokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorAsPayer() {
-        final var txn =
-                txnFrom(
-                        UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_NO_SIG_REQ_AND_AS_PAYER);
-        final var context = new PrehandleHandlerContext(keyLookup, txn);
+        final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_NO_SIG_REQ_AND_AS_PAYER);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
-        assertEquals(
-                List.of(NO_RECEIVER_SIG_KT.asKey()),
-                sanityRestored(List.of(context.getPayerKey())));
+        assertEquals(List.of(NO_RECEIVER_SIG_KT.asKey()), sanityRestored(List.of(context.getPayerKey())));
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
     }
 
     @Test
     void tokenFeeScheduleUpdateWithFeeScheduleKeyAndInvalidFeeCollector() {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_MISSING_FEE_COLLECTOR);
-        final var context = new PrehandleHandlerContext(keyLookup, txn);
+        final var context = new PreHandleContext(readableAccountStore, txn);
         subject.preHandle(context, readableTokenStore);
 
         assertTrue(context.failed());

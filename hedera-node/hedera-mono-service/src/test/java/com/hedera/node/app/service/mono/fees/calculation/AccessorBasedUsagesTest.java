@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation;
 
 import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.fixedFee;
@@ -107,27 +108,39 @@ class AccessorBasedUsagesTest {
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private SignedTxnAccessor txnAccessor;
 
-    @Mock private OpUsageCtxHelper opUsageCtxHelper;
-    @Mock private FileOpsUsage fileOpsUsage;
-    @Mock private TokenOpsUsage tokenOpsUsage;
-    @Mock private CryptoOpsUsage cryptoOpsUsage;
-    @Mock private ConsensusOpsUsage consensusOpsUsage;
-    @Mock private UtilOpsUsage utilOpsUsage;
-    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock
+    private OpUsageCtxHelper opUsageCtxHelper;
+
+    @Mock
+    private FileOpsUsage fileOpsUsage;
+
+    @Mock
+    private TokenOpsUsage tokenOpsUsage;
+
+    @Mock
+    private CryptoOpsUsage cryptoOpsUsage;
+
+    @Mock
+    private ConsensusOpsUsage consensusOpsUsage;
+
+    @Mock
+    private UtilOpsUsage utilOpsUsage;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
 
     private AccessorBasedUsages subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new AccessorBasedUsages(
-                        fileOpsUsage,
-                        tokenOpsUsage,
-                        cryptoOpsUsage,
-                        opUsageCtxHelper,
-                        consensusOpsUsage,
-                        utilOpsUsage,
-                        dynamicProperties);
+        subject = new AccessorBasedUsages(
+                fileOpsUsage,
+                tokenOpsUsage,
+                cryptoOpsUsage,
+                opUsageCtxHelper,
+                consensusOpsUsage,
+                utilOpsUsage,
+                dynamicProperties);
     }
 
     @Test
@@ -136,9 +149,7 @@ class AccessorBasedUsagesTest {
 
         given(txnAccessor.getFunction()).willReturn(ContractCreate);
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.assess(sigUsage, txnAccessor, accumulator));
+        assertThrows(IllegalArgumentException.class, () -> subject.assess(sigUsage, txnAccessor, accumulator));
     }
 
     @Test
@@ -188,8 +199,7 @@ class AccessorBasedUsagesTest {
 
         subject.assess(sigUsage, txnAccessor, usageAccumulator);
 
-        verify(consensusOpsUsage)
-                .submitMessageUsage(sigUsage, submitMeta, baseMeta, usageAccumulator);
+        verify(consensusOpsUsage).submitMessageUsage(sigUsage, submitMeta, baseMeta, usageAccumulator);
     }
 
     @Test
@@ -207,23 +217,21 @@ class AccessorBasedUsagesTest {
         final var accum = new UsageAccumulator();
         subject.assess(sigUsage, realAccessor, accum);
 
-        verify(tokenOpsUsage)
-                .feeScheduleUpdateUsage(sigUsage, baseMeta, opMeta, feeScheduleCtx, accum);
+        verify(tokenOpsUsage).feeScheduleUpdateUsage(sigUsage, baseMeta, opMeta, feeScheduleCtx, accum);
     }
 
     @Test
     void worksAsExpectedForTokenCreate() {
         final var baseMeta = new BaseTransactionMeta(100, 2);
-        final var opMeta =
-                new TokenCreateMeta.Builder()
-                        .baseSize(1_234)
-                        .customFeeScheleSize(0)
-                        .lifeTime(1_234_567L)
-                        .fungibleNumTransfers(0)
-                        .nftsTranfers(0)
-                        .nftsTranfers(1000)
-                        .nftsTranfers(1)
-                        .build();
+        final var opMeta = new TokenCreateMeta.Builder()
+                .baseSize(1_234)
+                .customFeeScheleSize(0)
+                .lifeTime(1_234_567L)
+                .fungibleNumTransfers(0)
+                .nftsTranfers(0)
+                .nftsTranfers(1000)
+                .nftsTranfers(1)
+                .build();
         final var accumulator = new UsageAccumulator();
 
         given(txnAccessor.getFunction()).willReturn(TokenCreate);
@@ -253,8 +261,7 @@ class AccessorBasedUsagesTest {
     @Test
     void worksAsExpectedForTokenWipe() {
         final var baseMeta = new BaseTransactionMeta(100, 2);
-        final var tokenWipeMeta =
-                new TokenWipeMeta(1000, SubType.TOKEN_NON_FUNGIBLE_UNIQUE, 2345L, 2);
+        final var tokenWipeMeta = new TokenWipeMeta(1000, SubType.TOKEN_NON_FUNGIBLE_UNIQUE, 2345L, 2);
         final var accumulator = new UsageAccumulator();
         given(txnAccessor.getFunction()).willReturn(TokenAccountWipe);
         given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
@@ -268,8 +275,7 @@ class AccessorBasedUsagesTest {
     @Test
     void worksAsExpectedForTokenMint() {
         final var baseMeta = new BaseTransactionMeta(100, 2);
-        final var tokenMintMeta =
-                new TokenMintMeta(1000, SubType.TOKEN_NON_FUNGIBLE_UNIQUE, 2345L, 20000);
+        final var tokenMintMeta = new TokenMintMeta(1000, SubType.TOKEN_NON_FUNGIBLE_UNIQUE, 2345L, 20000);
         final var accumulator = new UsageAccumulator();
         given(txnAccessor.getFunction()).willReturn(TokenMint);
         given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
@@ -287,8 +293,7 @@ class AccessorBasedUsagesTest {
         final var accumulator = new UsageAccumulator();
         given(txnAccessor.getFunction()).willReturn(TokenFreezeAccount);
         given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
-        given(txnAccessor.getSpanMapAccessor().getTokenFreezeMeta(any()))
-                .willReturn(tokenFreezeMeta);
+        given(txnAccessor.getSpanMapAccessor().getTokenFreezeMeta(any())).willReturn(tokenFreezeMeta);
 
         subject.assess(sigUsage, txnAccessor, accumulator);
 
@@ -302,13 +307,11 @@ class AccessorBasedUsagesTest {
         final var accumulator = new UsageAccumulator();
         given(txnAccessor.getFunction()).willReturn(TokenUnfreezeAccount);
         given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
-        given(txnAccessor.getSpanMapAccessor().getTokenUnfreezeMeta(any()))
-                .willReturn(tokenUnfreezeMeta);
+        given(txnAccessor.getSpanMapAccessor().getTokenUnfreezeMeta(any())).willReturn(tokenUnfreezeMeta);
 
         subject.assess(sigUsage, txnAccessor, accumulator);
 
-        verify(tokenOpsUsage)
-                .tokenUnfreezeUsage(sigUsage, baseMeta, tokenUnfreezeMeta, accumulator);
+        verify(tokenOpsUsage).tokenUnfreezeUsage(sigUsage, baseMeta, tokenUnfreezeMeta, accumulator);
     }
 
     @Test
@@ -332,8 +335,7 @@ class AccessorBasedUsagesTest {
         final var accumulator = new UsageAccumulator();
         given(txnAccessor.getFunction()).willReturn(TokenUnpause);
         given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
-        given(txnAccessor.getSpanMapAccessor().getTokenUnpauseMeta(any()))
-                .willReturn(tokenUnpauseMeta);
+        given(txnAccessor.getSpanMapAccessor().getTokenUnpauseMeta(any())).willReturn(tokenUnpauseMeta);
 
         subject.assess(sigUsage, txnAccessor, accumulator);
 
@@ -343,12 +345,11 @@ class AccessorBasedUsagesTest {
     @Test
     void worksAsExpectedForCryptoCreate() {
         final var baseMeta = new BaseTransactionMeta(100, 0);
-        final var opMeta =
-                new CryptoCreateMeta.Builder()
-                        .baseSize(1_234)
-                        .lifeTime(1_234_567L)
-                        .maxAutomaticAssociations(3)
-                        .build();
+        final var opMeta = new CryptoCreateMeta.Builder()
+                .baseSize(1_234)
+                .lifeTime(1_234_567L)
+                .maxAutomaticAssociations(3)
+                .build();
         final var accumulator = new UsageAccumulator();
 
         given(txnAccessor.getFunction()).willReturn(CryptoCreate);
@@ -364,29 +365,27 @@ class AccessorBasedUsagesTest {
     @Test
     void worksAsExpectedForCryptoUpdate() {
         final var baseMeta = new BaseTransactionMeta(100, 0);
-        final var opMeta =
-                new CryptoUpdateMeta.Builder()
-                        .keyBytesUsed(123)
-                        .msgBytesUsed(1_234)
-                        .memoSize(100)
-                        .effectiveNow(now)
-                        .expiry(1_234_567L)
-                        .hasProxy(false)
-                        .maxAutomaticAssociations(3)
-                        .hasMaxAutomaticAssociations(true)
-                        .build();
-        final var cryptoContext =
-                ExtantCryptoContext.newBuilder()
-                        .setCurrentKey(Key.getDefaultInstance())
-                        .setCurrentMemo(memo)
-                        .setCurrentExpiry(now)
-                        .setCurrentlyHasProxy(false)
-                        .setCurrentNumTokenRels(0)
-                        .setCurrentMaxAutomaticAssociations(0)
-                        .setCurrentCryptoAllowances(Collections.emptyMap())
-                        .setCurrentTokenAllowances(Collections.emptyMap())
-                        .setCurrentApproveForAllNftAllowances(Collections.emptySet())
-                        .build();
+        final var opMeta = new CryptoUpdateMeta.Builder()
+                .keyBytesUsed(123)
+                .msgBytesUsed(1_234)
+                .memoSize(100)
+                .effectiveNow(now)
+                .expiry(1_234_567L)
+                .hasProxy(false)
+                .maxAutomaticAssociations(3)
+                .hasMaxAutomaticAssociations(true)
+                .build();
+        final var cryptoContext = ExtantCryptoContext.newBuilder()
+                .setCurrentKey(Key.getDefaultInstance())
+                .setCurrentMemo(memo)
+                .setCurrentExpiry(now)
+                .setCurrentlyHasProxy(false)
+                .setCurrentNumTokenRels(0)
+                .setCurrentMaxAutomaticAssociations(0)
+                .setCurrentCryptoAllowances(Collections.emptyMap())
+                .setCurrentTokenAllowances(Collections.emptyMap())
+                .setCurrentApproveForAllNftAllowances(Collections.emptySet())
+                .build();
         final var accumulator = new UsageAccumulator();
 
         given(txnAccessor.getFunction()).willReturn(CryptoUpdate);
@@ -397,29 +396,26 @@ class AccessorBasedUsagesTest {
 
         subject.assess(sigUsage, txnAccessor, accumulator);
 
-        verify(cryptoOpsUsage)
-                .cryptoUpdateUsage(sigUsage, baseMeta, opMeta, cryptoContext, accumulator);
+        verify(cryptoOpsUsage).cryptoUpdateUsage(sigUsage, baseMeta, opMeta, cryptoContext, accumulator);
     }
 
     @Test
     void worksAsExpectedForCryptoApprove() {
         final var baseMeta = new BaseTransactionMeta(100, 0);
-        final var opMeta =
-                CryptoApproveAllowanceMeta.newBuilder()
-                        .effectiveNow(Instant.now().getEpochSecond())
-                        .build();
-        final var cryptoContext =
-                ExtantCryptoContext.newBuilder()
-                        .setCurrentKey(Key.getDefaultInstance())
-                        .setCurrentMemo(memo)
-                        .setCurrentExpiry(now)
-                        .setCurrentlyHasProxy(false)
-                        .setCurrentNumTokenRels(0)
-                        .setCurrentMaxAutomaticAssociations(0)
-                        .setCurrentCryptoAllowances(Collections.emptyMap())
-                        .setCurrentTokenAllowances(Collections.emptyMap())
-                        .setCurrentApproveForAllNftAllowances(Collections.emptySet())
-                        .build();
+        final var opMeta = CryptoApproveAllowanceMeta.newBuilder()
+                .effectiveNow(Instant.now().getEpochSecond())
+                .build();
+        final var cryptoContext = ExtantCryptoContext.newBuilder()
+                .setCurrentKey(Key.getDefaultInstance())
+                .setCurrentMemo(memo)
+                .setCurrentExpiry(now)
+                .setCurrentlyHasProxy(false)
+                .setCurrentNumTokenRels(0)
+                .setCurrentMaxAutomaticAssociations(0)
+                .setCurrentCryptoAllowances(Collections.emptyMap())
+                .setCurrentTokenAllowances(Collections.emptyMap())
+                .setCurrentApproveForAllNftAllowances(Collections.emptySet())
+                .build();
         final var accumulator = new UsageAccumulator();
 
         given(txnAccessor.getFunction()).willReturn(CryptoApproveAllowance);
@@ -430,19 +426,16 @@ class AccessorBasedUsagesTest {
 
         subject.assess(sigUsage, txnAccessor, accumulator);
 
-        verify(cryptoOpsUsage)
-                .cryptoApproveAllowanceUsage(
-                        sigUsage, baseMeta, opMeta, cryptoContext, accumulator);
+        verify(cryptoOpsUsage).cryptoApproveAllowanceUsage(sigUsage, baseMeta, opMeta, cryptoContext, accumulator);
     }
 
     @Test
     void worksAsExpectedForCryptoDeleteAllowance() {
         final var baseMeta = new BaseTransactionMeta(100, 0);
-        final var opMeta =
-                CryptoDeleteAllowanceMeta.newBuilder()
-                        .msgBytesUsed(112)
-                        .effectiveNow(Instant.now().getEpochSecond())
-                        .build();
+        final var opMeta = CryptoDeleteAllowanceMeta.newBuilder()
+                .msgBytesUsed(112)
+                .effectiveNow(Instant.now().getEpochSecond())
+                .build();
         final var accumulator = new UsageAccumulator();
 
         given(txnAccessor.getFunction()).willReturn(CryptoDeleteAllowance);
@@ -484,20 +477,18 @@ class AccessorBasedUsagesTest {
 
     private Transaction signedFeeScheduleUpdateTxn() {
         return Transaction.newBuilder()
-                .setSignedTransactionBytes(
-                        SignedTransaction.newBuilder()
-                                .setBodyBytes(feeScheduleUpdateTxn().toByteString())
-                                .build()
-                                .toByteString())
+                .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                        .setBodyBytes(feeScheduleUpdateTxn().toByteString())
+                        .build()
+                        .toByteString())
                 .build();
     }
 
     private TransactionBody feeScheduleUpdateTxn() {
         return TransactionBody.newBuilder()
                 .setMemo(memo)
-                .setTransactionID(
-                        TransactionID.newBuilder()
-                                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                .setTransactionID(TransactionID.newBuilder()
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
                 .setTokenFeeScheduleUpdate(
                         TokenFeeScheduleUpdateTransactionBody.newBuilder().addAllCustomFees(fees()))
                 .build();

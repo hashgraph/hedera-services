@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops.checks;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
@@ -32,12 +33,9 @@ public class VerifyGetAccountNftInfosNotSupported extends UtilOp {
                 TokenGetAccountNftInfosQuery.newBuilder().setAccountID(asAccount("0.0.2"));
         Query query = Query.newBuilder().setTokenGetAccountNftInfos(op).build();
         Response response =
-                spec.clients()
-                        .getTokenSvcStub(targetNodeFor(spec), useTls)
-                        .getAccountNftInfos(query);
+                spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getAccountNftInfos(query);
         Assertions.assertEquals(
-                NOT_SUPPORTED,
-                response.getTokenGetAccountNftInfos().getHeader().getNodeTransactionPrecheckCode());
+                NOT_SUPPORTED, response.getTokenGetAccountNftInfos().getHeader().getNodeTransactionPrecheckCode());
         return false;
     }
 }

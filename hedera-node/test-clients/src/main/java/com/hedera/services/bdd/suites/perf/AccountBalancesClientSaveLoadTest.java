@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -91,23 +92,16 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
     private static final String ACCT_NAME_PREFIX = "acct-";
     private static final String TOKEN_NAME_PREFIX = "token-";
 
-    private static final String ACCOUNT_FILE_EXPORT_DIR =
-            "src/main/resource/accountBalancesClient.pb";
+    private static final String ACCOUNT_FILE_EXPORT_DIR = "src/main/resource/accountBalancesClient.pb";
 
     private int totalTestTokens = TOTAL_TEST_TOKENS;
     private int totalAccounts = TOTAL_ACCOUNT;
 
     List<Pair<Integer, Integer>> tokenAcctAssociations = new ArrayList<>();
 
-    private final ResponseCodeEnum[] permissiblePrechecks =
-            new ResponseCodeEnum[] {
-                OK,
-                BUSY,
-                DUPLICATE_TRANSACTION,
-                PLATFORM_TRANSACTION_NOT_CREATED,
-                ACCOUNT_ID_DOES_NOT_EXIST,
-                ACCOUNT_DELETED
-            };
+    private final ResponseCodeEnum[] permissiblePrechecks = new ResponseCodeEnum[] {
+        OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, ACCOUNT_ID_DOES_NOT_EXIST, ACCOUNT_DELETED
+    };
 
     public static void main(String... args) {
         parseArgs(args);
@@ -122,299 +116,235 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
 
     private HapiSpec runAccountBalancesClientSaveLoadTest() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
-        var throttlesForJRS =
-                protoDefsFromResource("testSystemFiles/throttles-for-acct-balances-tests.json");
+        var throttlesForJRS = protoDefsFromResource("testSystemFiles/throttles-for-acct-balances-tests.json");
         return defaultHapiSpec("AccountBalancesClientSaveLoadTest")
                 .given(
                         tokenOpsEnablement(),
                         withOpContext(
                                 (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
                         logIt(ignore -> settings.toString()),
-                        sourcing(
-                                () ->
-                                        fileUpdate(APP_PROPERTIES)
-                                                .payingWith(GENESIS)
-                                                .overridingProps(
-                                                        Map.of(
-                                                                "balances.exportPeriodSecs",
-                                                                String.format(
-                                                                        "%d",
-                                                                        settings
-                                                                                .getBalancesExportPeriodSecs())))
-                                                .erasingProps(
-                                                        Set.of(
-                                                                "accountBalanceExportPeriodMinutes"))),
-                        fileUpdate(THROTTLE_DEFS)
+                        sourcing(() -> fileUpdate(APP_PROPERTIES)
                                 .payingWith(GENESIS)
-                                .contents(throttlesForJRS.toByteArray()))
+                                .overridingProps(Map.of(
+                                        "balances.exportPeriodSecs",
+                                        String.format("%d", settings.getBalancesExportPeriodSecs())))
+                                .erasingProps(Set.of("accountBalanceExportPeriodMinutes"))),
+                        fileUpdate(THROTTLE_DEFS).payingWith(GENESIS).contents(throttlesForJRS.toByteArray()))
                 .when(
-                        sourcing(
-                                () ->
-                                        runWithProvider(accountsCreate(settings))
-                                                .lasting(
-                                                        () ->
-                                                                totalAccounts
-                                                                                / ESTIMATED_CRYPTO_CREATION_RATE
-                                                                        + 10,
-                                                        () -> TimeUnit.SECONDS)
-                                                .totalOpsToSumbit(() -> totalAccounts)
-                                                .maxOpsPerSec(settings::getTps)
-                                                .maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)),
+                        sourcing(() -> runWithProvider(accountsCreate(settings))
+                                .lasting(
+                                        () -> totalAccounts / ESTIMATED_CRYPTO_CREATION_RATE + 10,
+                                        () -> TimeUnit.SECONDS)
+                                .totalOpsToSumbit(() -> totalAccounts)
+                                .maxOpsPerSec(settings::getTps)
+                                .maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)),
                         sleepFor(10L * SECOND),
-                        sourcing(
-                                () ->
-                                        runWithProvider(tokensCreate())
-                                                .lasting(
-                                                        () ->
-                                                                totalTestTokens
-                                                                                / ESTIMATED_TOKEN_CREATION_RATE
-                                                                        + 10,
-                                                        () -> TimeUnit.SECONDS)
-                                                .totalOpsToSumbit(() -> totalTestTokens)
-                                                .maxOpsPerSec(settings::getTps)
-                                                .maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)),
+                        sourcing(() -> runWithProvider(tokensCreate())
+                                .lasting(
+                                        () -> totalTestTokens / ESTIMATED_TOKEN_CREATION_RATE + 10,
+                                        () -> TimeUnit.SECONDS)
+                                .totalOpsToSumbit(() -> totalTestTokens)
+                                .maxOpsPerSec(settings::getTps)
+                                .maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)),
                         sleepFor(10L * SECOND),
-                        sourcing(
-                                () ->
-                                        runWithProvider(randomTokenAssociate())
-                                                .lasting(
-                                                        settings::getDurationCreateTokenAssociation,
-                                                        () -> TimeUnit.SECONDS)
-                                                .maxOpsPerSec(settings::getTps)
-                                                .maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)),
+                        sourcing(() -> runWithProvider(randomTokenAssociate())
+                                .lasting(settings::getDurationCreateTokenAssociation, () -> TimeUnit.SECONDS)
+                                .maxOpsPerSec(settings::getTps)
+                                .maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)),
                         sleepFor(15L * SECOND),
-                        sourcing(
-                                () ->
-                                        runWithProvider(randomTransfer())
-                                                .lasting(
-                                                        settings::getDurationTokenTransfer,
-                                                        () -> TimeUnit.SECONDS)
-                                                .maxOpsPerSec(settings::getTps)
-                                                .maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)))
+                        sourcing(() -> runWithProvider(randomTransfer())
+                                .lasting(settings::getDurationTokenTransfer, () -> TimeUnit.SECONDS)
+                                .maxOpsPerSec(settings::getTps)
+                                .maxPendingOps(() -> MAX_PENDING_OPS_FOR_SETUP)))
                 .then(
                         sleepFor(10L * SECOND),
-                        withOpContext(
-                                (spec, log) -> {
-                                    if (settings.getBooleanProperty(
-                                            "clientToExportBalances", false)) {
-                                        log.info(
-                                                "Now get all {} accounts created and save them",
-                                                totalAccounts);
-                                        AccountID acctID;
-                                        String lastGoodAcct = null;
-                                        int acctProcessed = 0;
-                                        int batchSize = 10000;
-                                        while (acctProcessed <= totalAccounts) {
-                                            List<HapiSpecOperation> ops = new ArrayList<>();
-                                            String acctName = null;
-                                            for (int i = acctProcessed + 1;
-                                                    i <= acctProcessed + batchSize
-                                                            && i <= totalAccounts;
-                                                    i++) {
-                                                acctName = ACCT_NAME_PREFIX + i;
-                                                // Make sure the named account was created before
-                                                // query its balances.
-                                                try {
-                                                    acctID = spec.registry().getAccountID(acctName);
-                                                } catch (RegistryNotFound e) {
-                                                    log.info(
-                                                            "{} was not created successfully.",
-                                                            acctName);
-                                                    continue;
-                                                }
-                                                var op =
-                                                        getAccountBalance(
-                                                                        HapiPropertySource
-                                                                                .asAccountString(
-                                                                                        acctID))
-                                                                .hasAnswerOnlyPrecheckFrom(
-                                                                        permissiblePrechecks)
-                                                                .persists(true)
-                                                                .noLogging();
-                                                ops.add(op);
-                                                lastGoodAcct = acctName;
-                                            }
-                                            ops.add(getAccountInfo(lastGoodAcct).fee(ONE_HBAR));
-                                            allRunFor(spec, ops);
-                                            acctProcessed += batchSize;
+                        withOpContext((spec, log) -> {
+                            if (settings.getBooleanProperty("clientToExportBalances", false)) {
+                                log.info("Now get all {} accounts created and save them", totalAccounts);
+                                AccountID acctID;
+                                String lastGoodAcct = null;
+                                int acctProcessed = 0;
+                                int batchSize = 10000;
+                                while (acctProcessed <= totalAccounts) {
+                                    List<HapiSpecOperation> ops = new ArrayList<>();
+                                    String acctName = null;
+                                    for (int i = acctProcessed + 1;
+                                            i <= acctProcessed + batchSize && i <= totalAccounts;
+                                            i++) {
+                                        acctName = ACCT_NAME_PREFIX + i;
+                                        // Make sure the named account was created before
+                                        // query its balances.
+                                        try {
+                                            acctID = spec.registry().getAccountID(acctName);
+                                        } catch (RegistryNotFound e) {
+                                            log.info("{} was not created successfully.", acctName);
+                                            continue;
                                         }
-                                    } else { // debug
-                                        log.info("Don't dump account balances from client side.");
+                                        var op = getAccountBalance(HapiPropertySource.asAccountString(acctID))
+                                                .hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
+                                                .persists(true)
+                                                .noLogging();
+                                        ops.add(op);
+                                        lastGoodAcct = acctName;
                                     }
-                                }),
+                                    ops.add(getAccountInfo(lastGoodAcct).fee(ONE_HBAR));
+                                    allRunFor(spec, ops);
+                                    acctProcessed += batchSize;
+                                }
+                            } else { // debug
+                                log.info("Don't dump account balances from client side.");
+                            }
+                        }),
                         sleepFor(10L * SECOND),
                         exportAccountBalances(() -> ACCOUNT_FILE_EXPORT_DIR),
                         freezeOnly().payingWith(GENESIS).startingIn(10).seconds());
     }
 
     private Function<HapiSpec, OpProvider> accountsCreate(PerfTestLoadSettings settings) {
-        totalTestTokens =
-                settings.getTotalTokens() > 10 ? settings.getTotalTokens() : TOTAL_TEST_TOKENS;
-        totalAccounts =
-                settings.getTotalAccounts() > 100 ? settings.getTotalAccounts() : TOTAL_ACCOUNT;
+        totalTestTokens = settings.getTotalTokens() > 10 ? settings.getTotalTokens() : TOTAL_TEST_TOKENS;
+        totalAccounts = settings.getTotalAccounts() > 100 ? settings.getTotalAccounts() : TOTAL_ACCOUNT;
 
         LOG.info("Total accounts: {}", totalAccounts);
         LOG.info("Total tokens: {}", totalTestTokens);
 
         AtomicInteger moreToCreate = new AtomicInteger(totalAccounts);
 
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        LOG.info("Now running accountsCreate initializer");
-                        return Collections.emptyList();
-                    }
+        return spec -> new OpProvider() {
+            @Override
+            public List<HapiSpecOperation> suggestedInitializers() {
+                LOG.info("Now running accountsCreate initializer");
+                return Collections.emptyList();
+            }
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        int next;
-                        next = moreToCreate.getAndDecrement();
-                        if (next <= 0) {
-                            return Optional.empty();
-                        }
+            @Override
+            public Optional<HapiSpecOperation> get() {
+                int next;
+                next = moreToCreate.getAndDecrement();
+                if (next <= 0) {
+                    return Optional.empty();
+                }
 
-                        var op =
-                                cryptoCreate(String.format("%s%d", ACCT_NAME_PREFIX, next))
-                                        .balance(
-                                                (RANDOM.nextInt((int) ONE_HBAR)
-                                                        + MIN_ACCOUNT_BALANCE))
-                                        .key(GENESIS)
-                                        .fee(ONE_HUNDRED_HBARS)
-                                        .withRecharging()
-                                        .rechargeWindow(30)
-                                        .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
-                                        .hasPrecheckFrom(
-                                                DUPLICATE_TRANSACTION, OK, INSUFFICIENT_TX_FEE)
-                                        .hasKnownStatusFrom(SUCCESS, INVALID_SIGNATURE)
-                                        .noLogging()
-                                        .deferStatusResolution();
+                var op = cryptoCreate(String.format("%s%d", ACCT_NAME_PREFIX, next))
+                        .balance((RANDOM.nextInt((int) ONE_HBAR) + MIN_ACCOUNT_BALANCE))
+                        .key(GENESIS)
+                        .fee(ONE_HUNDRED_HBARS)
+                        .withRecharging()
+                        .rechargeWindow(30)
+                        .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
+                        .hasPrecheckFrom(DUPLICATE_TRANSACTION, OK, INSUFFICIENT_TX_FEE)
+                        .hasKnownStatusFrom(SUCCESS, INVALID_SIGNATURE)
+                        .noLogging()
+                        .deferStatusResolution();
 
-                        return Optional.of(op);
-                    }
-                };
+                return Optional.of(op);
+            }
+        };
     }
 
     private Function<HapiSpec, OpProvider> tokensCreate() {
         AtomicInteger createdSofar = new AtomicInteger(0);
 
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        LOG.info("Now running tokensCreate initializer");
-                        return Collections.emptyList();
-                    }
+        return spec -> new OpProvider() {
+            @Override
+            public List<HapiSpecOperation> suggestedInitializers() {
+                LOG.info("Now running tokensCreate initializer");
+                return Collections.emptyList();
+            }
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        int next;
-                        next = createdSofar.getAndIncrement();
-                        if (next >= totalTestTokens) {
-                            return Optional.empty();
-                        }
-                        var payingTreasury = String.format("%s%s", ACCT_NAME_PREFIX, next);
-                        var op =
-                                tokenCreate(TOKEN_NAME_PREFIX + next)
-                                        .signedBy(GENESIS)
-                                        .fee(ONE_HUNDRED_HBARS)
-                                        .initialSupply(
-                                                (long) MIN_TOKEN_SUPPLY
-                                                        + RANDOM.nextInt(MAX_TOKEN_SUPPLY))
-                                        .treasury(payingTreasury)
-                                        .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
-                                        .hasPrecheckFrom(DUPLICATE_TRANSACTION, OK)
-                                        .hasKnownStatusFrom(
-                                                SUCCESS, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)
-                                        .suppressStats(true)
-                                        .noLogging();
-                        if (next > 0) {
-                            op.deferStatusResolution();
-                        }
-                        return Optional.of(op);
-                    }
-                };
+            @Override
+            public Optional<HapiSpecOperation> get() {
+                int next;
+                next = createdSofar.getAndIncrement();
+                if (next >= totalTestTokens) {
+                    return Optional.empty();
+                }
+                var payingTreasury = String.format("%s%s", ACCT_NAME_PREFIX, next);
+                var op = tokenCreate(TOKEN_NAME_PREFIX + next)
+                        .signedBy(GENESIS)
+                        .fee(ONE_HUNDRED_HBARS)
+                        .initialSupply((long) MIN_TOKEN_SUPPLY + RANDOM.nextInt(MAX_TOKEN_SUPPLY))
+                        .treasury(payingTreasury)
+                        .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
+                        .hasPrecheckFrom(DUPLICATE_TRANSACTION, OK)
+                        .hasKnownStatusFrom(SUCCESS, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)
+                        .suppressStats(true)
+                        .noLogging();
+                if (next > 0) {
+                    op.deferStatusResolution();
+                }
+                return Optional.of(op);
+            }
+        };
     }
 
     private Function<HapiSpec, OpProvider> randomTokenAssociate() {
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        LOG.info("Now running tokenAssociatesFactory initializer");
-                        return Collections.emptyList();
-                    }
+        return spec -> new OpProvider() {
+            @Override
+            public List<HapiSpecOperation> suggestedInitializers() {
+                LOG.info("Now running tokenAssociatesFactory initializer");
+                return Collections.emptyList();
+            }
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        int tokenNum = RANDOM.nextInt(totalTestTokens - 1);
-                        int acctNum = RANDOM.nextInt(totalAccounts - 1);
-                        String tokenName = TOKEN_NAME_PREFIX + tokenNum;
-                        String accountName = ACCT_NAME_PREFIX + acctNum;
-                        tokenAcctAssociations.add(Pair.of(tokenNum, acctNum));
+            @Override
+            public Optional<HapiSpecOperation> get() {
+                int tokenNum = RANDOM.nextInt(totalTestTokens - 1);
+                int acctNum = RANDOM.nextInt(totalAccounts - 1);
+                String tokenName = TOKEN_NAME_PREFIX + tokenNum;
+                String accountName = ACCT_NAME_PREFIX + acctNum;
+                tokenAcctAssociations.add(Pair.of(tokenNum, acctNum));
 
-                        var op =
-                                tokenAssociate(accountName, tokenName)
-                                        .signedBy(GENESIS)
-                                        .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
-                                        .hasPrecheckFrom(DUPLICATE_TRANSACTION, OK)
-                                        .hasKnownStatusFrom(
-                                                SUCCESS,
-                                                TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT,
-                                                INVALID_SIGNATURE,
-                                                TRANSACTION_EXPIRED)
-                                        .fee(ONE_HUNDRED_HBARS)
-                                        .noLogging()
-                                        .suppressStats(true)
-                                        .deferStatusResolution();
+                var op = tokenAssociate(accountName, tokenName)
+                        .signedBy(GENESIS)
+                        .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
+                        .hasPrecheckFrom(DUPLICATE_TRANSACTION, OK)
+                        .hasKnownStatusFrom(
+                                SUCCESS, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, INVALID_SIGNATURE, TRANSACTION_EXPIRED)
+                        .fee(ONE_HUNDRED_HBARS)
+                        .noLogging()
+                        .suppressStats(true)
+                        .deferStatusResolution();
 
-                        return Optional.of(op);
-                    }
-                };
+                return Optional.of(op);
+            }
+        };
     }
 
     private Function<HapiSpec, OpProvider> randomTransfer() {
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        LOG.info("Now running tokenTransferFactory initializer");
-                        return Collections.emptyList();
-                    }
+        return spec -> new OpProvider() {
+            @Override
+            public List<HapiSpecOperation> suggestedInitializers() {
+                LOG.info("Now running tokenTransferFactory initializer");
+                return Collections.emptyList();
+            }
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        int nextTransfer = RANDOM.nextInt(tokenAcctAssociations.size());
-                        int tokenAndSenderOrd = tokenAcctAssociations.get(nextTransfer).getLeft();
-                        int receiverOrd = tokenAcctAssociations.get(nextTransfer).getRight();
-                        String tokenName = TOKEN_NAME_PREFIX + tokenAndSenderOrd;
-                        String senderAcctName = ACCT_NAME_PREFIX + tokenAndSenderOrd;
-                        String receivedAcctName = ACCT_NAME_PREFIX + receiverOrd;
-                        var op =
-                                cryptoTransfer(
-                                                moving(
-                                                                RANDOM.nextInt(MAX_TOKEN_TRANSFER)
-                                                                        + 1L,
-                                                                tokenName)
-                                                        .between(senderAcctName, receivedAcctName))
-                                        .hasKnownStatusFrom(
-                                                OK,
-                                                SUCCESS,
-                                                DUPLICATE_TRANSACTION,
-                                                INVALID_SIGNATURE,
-                                                TOKEN_NOT_ASSOCIATED_TO_ACCOUNT,
-                                                INSUFFICIENT_TOKEN_BALANCE)
-                                        .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
-                                        .hasPrecheckFrom(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS, OK)
-                                        .noLogging()
-                                        .signedBy(GENESIS)
-                                        .suppressStats(true)
-                                        .fee(ONE_HUNDRED_HBARS)
-                                        .deferStatusResolution();
+            @Override
+            public Optional<HapiSpecOperation> get() {
+                int nextTransfer = RANDOM.nextInt(tokenAcctAssociations.size());
+                int tokenAndSenderOrd = tokenAcctAssociations.get(nextTransfer).getLeft();
+                int receiverOrd = tokenAcctAssociations.get(nextTransfer).getRight();
+                String tokenName = TOKEN_NAME_PREFIX + tokenAndSenderOrd;
+                String senderAcctName = ACCT_NAME_PREFIX + tokenAndSenderOrd;
+                String receivedAcctName = ACCT_NAME_PREFIX + receiverOrd;
+                var op = cryptoTransfer(moving(RANDOM.nextInt(MAX_TOKEN_TRANSFER) + 1L, tokenName)
+                                .between(senderAcctName, receivedAcctName))
+                        .hasKnownStatusFrom(
+                                OK,
+                                SUCCESS,
+                                DUPLICATE_TRANSACTION,
+                                INVALID_SIGNATURE,
+                                TOKEN_NOT_ASSOCIATED_TO_ACCOUNT,
+                                INSUFFICIENT_TOKEN_BALANCE)
+                        .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
+                        .hasPrecheckFrom(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS, OK)
+                        .noLogging()
+                        .signedBy(GENESIS)
+                        .suppressStats(true)
+                        .fee(ONE_HUNDRED_HBARS)
+                        .deferStatusResolution();
 
-                        return Optional.of(op);
-                    }
-                };
+                return Optional.of(op);
+            }
+        };
     }
 
     @Override

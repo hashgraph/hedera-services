@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.scenarios;
 
 import static com.hedera.test.factories.txns.SystemUndeleteFactory.newSignedSystemUndelete;
@@ -22,7 +23,8 @@ import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 public enum SystemUndeleteScenarios implements TxnHandlingScenario {
     SYSTEM_UNDELETE_FILE_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedSystemUndelete().file(MISC_FILE_ID).get());
+            return PlatformTxnAccessor.from(
+                    newSignedSystemUndelete().file(MISC_FILE_ID).get());
         }
     }
 }
