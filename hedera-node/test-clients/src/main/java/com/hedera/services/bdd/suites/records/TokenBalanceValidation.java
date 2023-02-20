@@ -18,9 +18,9 @@ package com.hedera.services.bdd.suites.records;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+
 import com.hedera.services.bdd.junit.utils.AccountClassifier;
 import com.hedera.services.bdd.junit.validators.AccountNumTokenId;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -35,20 +35,20 @@ public class TokenBalanceValidation extends HapiSuite {
     private final Map<AccountNumTokenId, Long> expectedTokenBalances;
     private final AccountClassifier accountClassifier;
     private static final String aFungibleToken = "aFT";
-    private static final Long aFungibleTokenId = 12L;
+    //    private static final Long aFungibleTokenId = 12L;
     private static final Long aFungibleAmount = 1_000L;
     private static final Long TOKEN_TREASURY = 123L;
 
-    public TokenBalanceValidation(      //NetworkConfig targetInfo,
-            final Map<AccountNumTokenId, Long> expectedTokenBalances,
-            final AccountClassifier accountClassifier) {
+    public TokenBalanceValidation( // NetworkConfig targetInfo,
+            final Map<AccountNumTokenId, Long> expectedTokenBalances, final AccountClassifier accountClassifier) {
         this.expectedTokenBalances = expectedTokenBalances;
         this.accountClassifier = accountClassifier;
     }
 
     public static void main(String... args) {
-        //var tokenId = asTokenId(tokenBalance.getKey(), spec);
-        Map<AccountNumTokenId, Long> expectedTokenBalances = Map.of(new AccountNumTokenId(TOKEN_TREASURY, 12l), aFungibleAmount);
+        // var tokenId = asTokenId(tokenBalance.getKey(), spec);
+        Map<AccountNumTokenId, Long> expectedTokenBalances =
+                Map.of(new AccountNumTokenId(TOKEN_TREASURY, 12l), aFungibleAmount);
         new TokenBalanceValidation(expectedTokenBalances, new AccountClassifier()).runSuiteSync();
     }
 
@@ -59,7 +59,7 @@ public class TokenBalanceValidation extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(validateTokenBalances() );
+        return List.of(validateTokenBalances());
     }
 
     private HapiSpec validateTokenBalances() {
@@ -73,12 +73,9 @@ public class TokenBalanceValidation extends HapiSuite {
                         cryptoCreate(TOKEN_TREASURY.toString()).balance(initBalance),
                         tokenCreate(aFungibleToken)
                                 .initialSupply(aFungibleAmount)
-                                .treasury(TOKEN_TREASURY.toString())
-                        )
+                                .treasury(TOKEN_TREASURY.toString()))
                 .when()
-                .then(
-                        getAccountBalance(TOKEN_TREASURY.toString())
-                                .hasTokenBalance(aFungibleToken, aFungibleAmount));
+                .then(getAccountBalance(TOKEN_TREASURY.toString()).hasTokenBalance(aFungibleToken, aFungibleAmount));
     }
 
     @Override
