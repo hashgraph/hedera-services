@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.contracts.execution;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
@@ -81,17 +82,14 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
     }
 
     protected void executeHederaPrecompile(
-            final PrecompiledContract contract,
-            final MessageFrame frame,
-            final OperationTracer operationTracer) {
+            final PrecompiledContract contract, final MessageFrame frame, final OperationTracer operationTracer) {
         if (contract instanceof EvmHTSPrecompiledContract htsPrecompile) {
             var updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
-            final var costedResult =
-                    htsPrecompile.computeCosted(
-                            frame.getInputData(),
-                            frame,
-                            (now, minimumTinybarCost) -> minimumTinybarCost,
-                            updater.tokenAccessor());
+            final var costedResult = htsPrecompile.computeCosted(
+                    frame.getInputData(),
+                    frame,
+                    (now, minimumTinybarCost) -> minimumTinybarCost,
+                    updater.tokenAccessor());
             output = costedResult.getValue();
             gasRequirement = costedResult.getKey();
         }
@@ -117,8 +115,7 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
         }
     }
 
-    protected void executeLazyCreate(
-            final MessageFrame frame, final OperationTracer operationTracer) {
+    protected void executeLazyCreate(final MessageFrame frame, final OperationTracer operationTracer) {
         // no-op
     }
 }

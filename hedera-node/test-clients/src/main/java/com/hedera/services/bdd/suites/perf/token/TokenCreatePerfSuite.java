@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.token;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -45,21 +46,18 @@ public class TokenCreatePerfSuite extends LoadTest {
         final int NUM_CREATES = 100000;
         return defaultHapiSpec("tokenCreatePerf")
                 .given()
-                .when(
-                        inParallel(
-                                asOpArray(
-                                        NUM_CREATES,
-                                        i ->
-                                                (i == (NUM_CREATES - 1))
-                                                        ? tokenCreate("testToken" + i)
-                                                                .payingWith(GENESIS)
-                                                                .initialSupply(100_000_000_000L)
-                                                                .signedBy(GENESIS)
-                                                        : tokenCreate("testToken" + i)
-                                                                .payingWith(GENESIS)
-                                                                .signedBy(GENESIS)
-                                                                .initialSupply(100_000_000_000L)
-                                                                .deferStatusResolution())))
+                .when(inParallel(asOpArray(
+                        NUM_CREATES,
+                        i -> (i == (NUM_CREATES - 1))
+                                ? tokenCreate("testToken" + i)
+                                        .payingWith(GENESIS)
+                                        .initialSupply(100_000_000_000L)
+                                        .signedBy(GENESIS)
+                                : tokenCreate("testToken" + i)
+                                        .payingWith(GENESIS)
+                                        .signedBy(GENESIS)
+                                        .initialSupply(100_000_000_000L)
+                                        .deferStatusResolution())))
                 .then(
                         UtilVerbs.sleepFor(200000),
                         freezeOnly().payingWith(GENESIS).startingIn(60).seconds());

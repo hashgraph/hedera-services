@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.freeze;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -78,13 +79,12 @@ public class FreezeSuite extends HapiSuite {
         final var fileIDString = "UPDATE_FEATURE";
         return defaultHapiSpec("uploadFileAndUpdate")
                 .given(fileUpdate(fileIDString).path(uploadFile).payingWith(GENESIS))
-                .when(
-                        freezeOnly()
-                                .withUpdateFile(fileIDString)
-                                .havingHash(hash)
-                                .payingWith(GENESIS)
-                                .startingIn(60)
-                                .seconds())
+                .when(freezeOnly()
+                        .withUpdateFile(fileIDString)
+                        .havingHash(hash)
+                        .payingWith(GENESIS)
+                        .startingIn(60)
+                        .seconds())
                 .then();
     }
 }

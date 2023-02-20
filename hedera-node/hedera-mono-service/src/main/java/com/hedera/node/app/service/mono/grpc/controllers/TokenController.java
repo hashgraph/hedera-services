@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.controllers;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
@@ -54,10 +55,7 @@ public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
     private final QueryResponseHelper queryHelper;
 
     @Inject
-    public TokenController(
-            TokenAnswers tokenAnswers,
-            TxnResponseHelper txnHelper,
-            QueryResponseHelper queryHelper) {
+    public TokenController(TokenAnswers tokenAnswers, TxnResponseHelper txnHelper, QueryResponseHelper queryHelper) {
         this.txnHelper = txnHelper;
         this.queryHelper = queryHelper;
         this.tokenAnswers = tokenAnswers;
@@ -89,20 +87,17 @@ public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
     }
 
     @Override
-    public void wipeTokenAccount(
-            Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    public void wipeTokenAccount(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
         txnHelper.submit(signedTxn, observer, TokenAccountWipe);
     }
 
     @Override
-    public void freezeTokenAccount(
-            Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    public void freezeTokenAccount(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
         txnHelper.submit(signedTxn, observer, TokenFreezeAccount);
     }
 
     @Override
-    public void unfreezeTokenAccount(
-            Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    public void unfreezeTokenAccount(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
         txnHelper.submit(signedTxn, observer, TokenUnfreezeAccount);
     }
 
@@ -117,26 +112,22 @@ public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
     }
 
     @Override
-    public void grantKycToTokenAccount(
-            Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    public void grantKycToTokenAccount(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
         txnHelper.submit(signedTxn, observer, TokenGrantKycToAccount);
     }
 
     @Override
-    public void revokeKycFromTokenAccount(
-            Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    public void revokeKycFromTokenAccount(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
         txnHelper.submit(signedTxn, observer, TokenRevokeKycFromAccount);
     }
 
     @Override
-    public void associateTokens(
-            Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    public void associateTokens(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
         txnHelper.submit(signedTxn, observer, TokenAssociateToAccount);
     }
 
     @Override
-    public void dissociateTokens(
-            Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    public void dissociateTokens(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
         txnHelper.submit(signedTxn, observer, TokenDissociateFromAccount);
     }
 
@@ -152,19 +143,16 @@ public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
 
     @Override
     public void getAccountNftInfos(Query query, StreamObserver<Response> observer) {
-        queryHelper.answer(
-                query, observer, tokenAnswers.getAccountNftInfosAnswer(), TokenGetAccountNftInfos);
+        queryHelper.answer(query, observer, tokenAnswers.getAccountNftInfosAnswer(), TokenGetAccountNftInfos);
     }
 
     @Override
-    public void updateTokenFeeSchedule(
-            Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    public void updateTokenFeeSchedule(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
         txnHelper.submit(signedTxn, observer, TokenFeeScheduleUpdate);
     }
 
     @Override
     public void getTokenNftInfos(Query query, StreamObserver<Response> observer) {
-        queryHelper.answer(
-                query, observer, tokenAnswers.getTokenNftInfosAnswer(), TokenGetNftInfos);
+        queryHelper.answer(query, observer, tokenAnswers.getTokenNftInfosAnswer(), TokenGetNftInfos);
     }
 }

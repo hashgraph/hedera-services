@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.files;
 
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -41,20 +42,11 @@ public class RandomFile implements OpProvider {
     private final AtomicInteger opNo = new AtomicInteger();
     private final RegistrySourcedNameProvider<FileID> files;
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(INVALID_FILE_ID);
-    static byte[][] contentChoices =
-            new byte[][] {
-                paddedTo(
-                        BYTES_1K,
-                        "I turn the page and read / I dream of silent verses...".getBytes()),
-                paddedTo(
-                        BYTES_2K,
-                        "In Manchua territory half is slough / Half pine tree forest..."
-                                .getBytes()),
-                paddedTo(
-                        BYTES_4K,
-                        "Twas brillig, and the slithy toves / Did gyre and gimble in the wabe..."
-                                .getBytes()),
-            };
+    static byte[][] contentChoices = new byte[][] {
+        paddedTo(BYTES_1K, "I turn the page and read / I dream of silent verses...".getBytes()),
+        paddedTo(BYTES_2K, "In Manchua territory half is slough / Half pine tree forest...".getBytes()),
+        paddedTo(BYTES_4K, "Twas brillig, and the slithy toves / Did gyre and gimble in the wabe...".getBytes()),
+    };
 
     public RandomFile(RegistrySourcedNameProvider<FileID> files) {
         this.files = files;
@@ -73,12 +65,11 @@ public class RandomFile implements OpProvider {
 
         int n = opNo.getAndIncrement();
         final String tentativeFile = my("file" + n);
-        var op =
-                fileCreate(tentativeFile)
-                        .key(String.format("WACL-%d", (n % 5) + 1))
-                        .contents(contentChoices[n % contentChoices.length])
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                        .hasKnownStatusFrom(permissibleOutcomes);
+        var op = fileCreate(tentativeFile)
+                .key(String.format("WACL-%d", (n % 5) + 1))
+                .contents(contentChoices[n % contentChoices.length])
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                .hasKnownStatusFrom(permissibleOutcomes);
 
         return Optional.of(op);
     }

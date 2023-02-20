@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,8 +32,7 @@ class VirtualMapFactoryTest {
 
         map.put(
                 new UniqueTokenKey(123L, 456L),
-                new UniqueTokenValue(
-                        789L, 123L, "hello world".getBytes(), RichInstant.MISSING_INSTANT));
+                new UniqueTokenValue(789L, 123L, "hello world".getBytes(), RichInstant.MISSING_INSTANT));
 
         assertThat(map.get(new UniqueTokenKey(123L, 111L))).isNull();
         final var value = map.get(new UniqueTokenKey(123L, 456L));

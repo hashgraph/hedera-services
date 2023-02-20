@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,8 +44,11 @@ class UniqueTokenMapAdapterTest {
     private UniqueTokenMapAdapter merkleMapAdapter;
     private UniqueTokenMapAdapter virtualMapAdapter;
 
-    @Mock public MerkleMap<EntityNumPair, MerkleUniqueToken> merkleMap;
-    @Mock public VirtualMap<UniqueTokenKey, UniqueTokenValue> virtualMap;
+    @Mock
+    public MerkleMap<EntityNumPair, MerkleUniqueToken> merkleMap;
+
+    @Mock
+    public VirtualMap<UniqueTokenKey, UniqueTokenValue> virtualMap;
 
     @BeforeEach
     void setUp() {
@@ -85,11 +89,15 @@ class UniqueTokenMapAdapterTest {
         when(virtualMap.containsKey(UniqueTokenKey.from(NftId.withDefaultShardRealm(0, 3))))
                 .thenReturn(true);
 
-        assertThat(merkleMapAdapter.containsKey(NftId.withDefaultShardRealm(1, 2))).isTrue();
-        assertThat(merkleMapAdapter.containsKey(NftId.withDefaultShardRealm(0, 3))).isFalse();
+        assertThat(merkleMapAdapter.containsKey(NftId.withDefaultShardRealm(1, 2)))
+                .isTrue();
+        assertThat(merkleMapAdapter.containsKey(NftId.withDefaultShardRealm(0, 3)))
+                .isFalse();
 
-        assertThat(virtualMapAdapter.containsKey(NftId.withDefaultShardRealm(0, 3))).isTrue();
-        assertThat(virtualMapAdapter.containsKey(NftId.withDefaultShardRealm(1, 2))).isFalse();
+        assertThat(virtualMapAdapter.containsKey(NftId.withDefaultShardRealm(0, 3)))
+                .isTrue();
+        assertThat(virtualMapAdapter.containsKey(NftId.withDefaultShardRealm(1, 2)))
+                .isFalse();
     }
 
     @Test
@@ -102,10 +110,8 @@ class UniqueTokenMapAdapterTest {
         merkleMapAdapter.put(merkleKey, merkleValue);
         virtualMapAdapter.put(virtualKey, virtualValue);
 
-        verify(merkleMap, times(1))
-                .put(EntityNumPair.fromNftId(merkleKey), merkleValue.merkleUniqueToken());
-        verify(virtualMap, times(1))
-                .put(UniqueTokenKey.from(virtualKey), virtualValue.uniqueTokenValue());
+        verify(merkleMap, times(1)).put(EntityNumPair.fromNftId(merkleKey), merkleValue.merkleUniqueToken());
+        verify(virtualMap, times(1)).put(UniqueTokenKey.from(virtualKey), virtualValue.uniqueTokenValue());
     }
 
     @Test
@@ -115,12 +121,8 @@ class UniqueTokenMapAdapterTest {
         final var merkleValue = UniqueTokenAdapter.wrap(mock(MerkleUniqueToken.class));
         final var virtualValue = UniqueTokenAdapter.wrap(mock(UniqueTokenValue.class));
 
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> merkleMapAdapter.put(merkleKey, virtualValue));
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> virtualMapAdapter.put(virtualKey, merkleValue));
+        assertThrows(UnsupportedOperationException.class, () -> merkleMapAdapter.put(merkleKey, virtualValue));
+        assertThrows(UnsupportedOperationException.class, () -> virtualMapAdapter.put(virtualKey, merkleValue));
     }
 
     @Test
@@ -130,10 +132,8 @@ class UniqueTokenMapAdapterTest {
         final var merkleValue = UniqueTokenAdapter.wrap(mock(MerkleUniqueToken.class));
         final var virtualValue = UniqueTokenAdapter.wrap(mock(UniqueTokenValue.class));
 
-        when(merkleMap.get(EntityNumPair.fromNftId(merkleKey)))
-                .thenReturn(merkleValue.merkleUniqueToken());
-        when(virtualMap.get(UniqueTokenKey.from(virtualKey)))
-                .thenReturn(virtualValue.uniqueTokenValue());
+        when(merkleMap.get(EntityNumPair.fromNftId(merkleKey))).thenReturn(merkleValue.merkleUniqueToken());
+        when(virtualMap.get(UniqueTokenKey.from(virtualKey))).thenReturn(virtualValue.uniqueTokenValue());
         final var merkleResult = merkleMapAdapter.get(merkleKey);
         assertThat(merkleResult).isEqualTo(merkleValue);
         assertThat(merkleResult.merkleUniqueToken()).isSameAs(merkleValue.merkleUniqueToken());
@@ -150,10 +150,8 @@ class UniqueTokenMapAdapterTest {
         final var merkleValue = UniqueTokenAdapter.wrap(mock(MerkleUniqueToken.class));
         final var virtualValue = UniqueTokenAdapter.wrap(mock(UniqueTokenValue.class));
 
-        when(merkleMap.getForModify(EntityNumPair.fromNftId(merkleKey)))
-                .thenReturn(merkleValue.merkleUniqueToken());
-        when(virtualMap.getForModify(UniqueTokenKey.from(virtualKey)))
-                .thenReturn(virtualValue.uniqueTokenValue());
+        when(merkleMap.getForModify(EntityNumPair.fromNftId(merkleKey))).thenReturn(merkleValue.merkleUniqueToken());
+        when(virtualMap.getForModify(UniqueTokenKey.from(virtualKey))).thenReturn(virtualValue.uniqueTokenValue());
         final var merkleResult = merkleMapAdapter.getForModify(merkleKey);
         assertThat(merkleResult).isEqualTo(merkleValue);
         assertThat(merkleResult.merkleUniqueToken()).isSameAs(merkleValue.merkleUniqueToken());

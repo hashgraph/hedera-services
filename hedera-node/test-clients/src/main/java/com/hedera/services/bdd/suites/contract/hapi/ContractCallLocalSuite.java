@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -63,16 +64,15 @@ public class ContractCallLocalSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    deletedContract(),
-                    invalidContractID(),
-                    impureCallFails(),
-                    insufficientFeeFails(),
-                    lowBalanceFails(),
-                    erc20Query(),
-                    vanillaSuccess()
-                });
+        return List.of(new HapiSpec[] {
+            deletedContract(),
+            invalidContractID(),
+            impureCallFails(),
+            insufficientFeeFails(),
+            lowBalanceFails(),
+            erc20Query(),
+            vanillaSuccess()
+        });
     }
 
     private HapiSpec vanillaSuccess() {
@@ -82,15 +82,10 @@ public class ContractCallLocalSuite extends HapiSuite {
                 .then(
                         sleepFor(3_000L),
                         contractCallLocal(CONTRACT, "getIndirect")
-                                .has(
-                                        resultWith()
-                                                .resultViaFunctionName(
-                                                        "getIndirect",
-                                                        CONTRACT,
-                                                        isLiteralResult(
-                                                                new Object[] {
-                                                                    BigInteger.valueOf(7L)
-                                                                }))));
+                                .has(resultWith()
+                                        .resultViaFunctionName("getIndirect", CONTRACT, isLiteralResult(new Object[] {
+                                            BigInteger.valueOf(7L)
+                                        }))));
     }
 
     private HapiSpec impureCallFails() {
@@ -101,18 +96,16 @@ public class ContractCallLocalSuite extends HapiSuite {
                         sleepFor(3_000L),
                         contractCallLocal(CONTRACT, "create")
                                 .nodePayment(1_234_567)
-                                .hasAnswerOnlyPrecheck(
-                                        ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION));
+                                .hasAnswerOnlyPrecheck(ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION));
     }
 
     private HapiSpec deletedContract() {
         return defaultHapiSpec("InvalidDeletedContract")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractDelete(CONTRACT))
-                .then(
-                        contractCallLocal(CONTRACT, "create")
-                                .nodePayment(1_234_567)
-                                .hasAnswerOnlyPrecheck(CONTRACT_DELETED));
+                .then(contractCallLocal(CONTRACT, "create")
+                        .nodePayment(1_234_567)
+                        .hasAnswerOnlyPrecheck(CONTRACT_DELETED));
     }
 
     private HapiSpec invalidContractID() {
@@ -168,21 +161,15 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     private HapiSpec erc20Query() {
-        final var decimalsABI =
-                "{\"constant\": true,\"inputs\": [],\"name\": \"decimals\","
-                        + "\"outputs\": [{\"name\": \"\",\"type\": \"uint8\"}],\"payable\": false,"
-                        + "\"type\": \"function\"}";
+        final var decimalsABI = "{\"constant\": true,\"inputs\": [],\"name\": \"decimals\","
+                + "\"outputs\": [{\"name\": \"\",\"type\": \"uint8\"}],\"payable\": false,"
+                + "\"type\": \"function\"}";
 
         return defaultHapiSpec("erc20Queries")
                 .given(tokenCreate(TOKEN).decimals(DECIMALS).symbol(SYMBOL).asCallableContract())
                 .when()
-                .then(
-                        contractCallLocalWithFunctionAbi(TOKEN, decimalsABI)
-                                .has(
-                                        resultWith()
-                                                .resultThruAbi(
-                                                        decimalsABI,
-                                                        isLiteralResult(new Object[] {DECIMALS}))));
+                .then(contractCallLocalWithFunctionAbi(TOKEN, decimalsABI)
+                        .has(resultWith().resultThruAbi(decimalsABI, isLiteralResult(new Object[] {DECIMALS}))));
     }
 
     @Override

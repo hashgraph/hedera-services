@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
 import static com.hedera.node.app.service.mono.state.StateModule.provideStateViews;
+import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,16 +39,27 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StateModuleTest {
-    @Mock private ScheduleStore scheduleStore;
-    @Mock private MutableStateChildren workingState;
-    @Mock private PropertySource properties;
-    @Mock private NetworkInfo networkInfo;
-    @Mock private StateModule.ConsoleCreator consoleCreator;
+
+    @Mock
+    private ScheduleStore scheduleStore;
+
+    @Mock
+    private MutableStateChildren workingState;
+
+    @Mock
+    private PropertySource properties;
+
+    @Mock
+    private NetworkInfo networkInfo;
+
+    @Mock
+    private StateModule.ConsoleCreator consoleCreator;
 
     @Test
     void providesDefaultCharset() {
         // expect:
-        assertEquals(Charset.defaultCharset(), StateModule.provideNativeCharset().get());
+        assertEquals(
+                Charset.defaultCharset(), StateModule.provideNativeCharset().get());
     }
 
     @Test
@@ -59,7 +71,8 @@ class StateModuleTest {
     @Test
     void notificationEngineAvail() {
         // expect:
-        assertDoesNotThrow(() -> StateModule.provideNotificationEngine(mock(Platform.class)).get());
+        assertDoesNotThrow(() ->
+                StateModule.provideNotificationEngine(mock(Platform.class)).get());
     }
 
     @Test

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.file.txns;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -59,9 +60,7 @@ class FileCreateResourceUsageTest {
 
     @Test
     void delegatesToCorrectEstimate() throws Exception {
-        final var sigUsage =
-                new SigUsage(
-                        svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+        final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
 
         // when:
         subject.usageGiven(fileCreateTxn, svo, null);

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.mocks;
 
 import java.util.ArrayList;
@@ -30,8 +31,7 @@ public class MockAppender extends AbstractAppender {
     @Override
     public void append(LogEvent event) {
         messages.add(
-                String.format(
-                        "%s - %s", event.getLevel(), event.getMessage().getFormattedMessage()));
+                String.format("%s - %s", event.getLevel(), event.getMessage().getFormattedMessage()));
     }
 
     public int size() {

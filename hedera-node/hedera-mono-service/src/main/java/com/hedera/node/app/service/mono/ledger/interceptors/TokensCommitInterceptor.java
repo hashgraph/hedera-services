@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
 import com.hedera.node.app.service.mono.ledger.CommitInterceptor;
@@ -26,8 +27,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
  * Minimal interceptor to update token utilization statistics when a token is created. (Expired
  * tokens are removed directly from the backing map, not as part of a ledger transaction.)
  */
-public class TokensCommitInterceptor
-        implements CommitInterceptor<TokenID, MerkleToken, TokenProperty> {
+public class TokensCommitInterceptor implements CommitInterceptor<TokenID, MerkleToken, TokenProperty> {
     private final UsageLimits usageLimits;
     private boolean creation;
 

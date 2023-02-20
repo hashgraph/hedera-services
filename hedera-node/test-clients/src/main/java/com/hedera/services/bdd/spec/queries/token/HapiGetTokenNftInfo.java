@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.queries.token;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
@@ -106,10 +107,7 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
         var actualInfo = response.getTokenGetNftInfo().getNft();
 
         if (expectedSerialNum.isPresent()) {
-            assertEquals(
-                    expectedSerialNum.getAsLong(),
-                    actualInfo.getNftID().getSerialNumber(),
-                    "Wrong serial num!");
+            assertEquals(expectedSerialNum.getAsLong(), actualInfo.getNftID().getSerialNumber(), "Wrong serial num!");
         }
 
         if (expectedAccountID.isPresent()) {
@@ -119,16 +117,14 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 
         if (expectedSpenderID.isPresent()) {
             if (expectedSpenderID.get().equals(MISSING_SPENDER)) {
-                Assertions.assertEquals(
-                        0, actualInfo.getSpenderId().getAccountNum(), "Wrong account ID account!");
+                Assertions.assertEquals(0, actualInfo.getSpenderId().getAccountNum(), "Wrong account ID account!");
             } else {
                 var id = TxnUtils.asId(expectedSpenderID.get(), spec);
                 Assertions.assertEquals(id, actualInfo.getSpenderId(), "Wrong spender ID account!");
             }
         }
 
-        expectedMetadata.ifPresent(
-                bytes -> assertEquals(bytes, actualInfo.getMetadata(), "Wrong metadata!"));
+        expectedMetadata.ifPresent(bytes -> assertEquals(bytes, actualInfo.getMetadata(), "Wrong metadata!"));
 
         assertFor(
                 actualInfo.getCreationTime(),
@@ -164,10 +160,10 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) {
         Query query = getTokenNftInfoQuery(spec, payment, false);
-        response =
-                spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getTokenNftInfo(query);
+        response = spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getTokenNftInfo(query);
         if (verboseLoggingOn) {
-            log.info("Info for '" + token + "': " + response.getTokenGetNftInfo().getNft());
+            log.info(
+                    "Info for '" + token + "': " + response.getTokenGetNftInfo().getNft());
         }
     }
 
@@ -181,15 +177,13 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 
     private Query getTokenNftInfoQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         var id = TxnUtils.asTokenId(token, spec);
-        TokenGetNftInfoQuery getTokenNftQuery =
-                TokenGetNftInfoQuery.newBuilder()
-                        .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
-                        .setNftID(
-                                NftID.newBuilder()
-                                        .setTokenID(id)
-                                        .setSerialNumber(serialNum)
-                                        .build())
-                        .build();
+        TokenGetNftInfoQuery getTokenNftQuery = TokenGetNftInfoQuery.newBuilder()
+                .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
+                .setNftID(NftID.newBuilder()
+                        .setTokenID(id)
+                        .setSerialNumber(serialNum)
+                        .build())
+                .build();
         return Query.newBuilder().setTokenGetNftInfo(getTokenNftQuery).build();
     }
 

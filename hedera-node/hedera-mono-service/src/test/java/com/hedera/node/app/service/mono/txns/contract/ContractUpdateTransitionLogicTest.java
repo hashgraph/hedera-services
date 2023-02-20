@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.contract;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -77,8 +78,10 @@ class ContractUpdateTransitionLogicTest {
     private static final ByteString pretendAlias = ByteString.copyFromUtf8("abcd");
     private final AccountID proxy = AccountID.newBuilder().setAccountNum(4_321L).build();
     private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
-    private final ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
-    private final AccountID targetId = AccountID.newBuilder().setAccountNum(9_999L).build();
+    private final ContractID target =
+            ContractID.newBuilder().setContractNum(9_999L).build();
+    private final AccountID targetId =
+            AccountID.newBuilder().setAccountNum(9_999L).build();
     private final String memo = "Who, me?";
     private final int maxAutoAssociations = NEW_MAX_AUTOMATIC_ASSOCIATIONS;
     private static final int CUR_MAX_AUTOMATIC_ASSOCIATIONS = 10;
@@ -120,17 +123,16 @@ class ContractUpdateTransitionLogicTest {
 
         nodeInfo = mock(NodeInfo.class);
 
-        subject =
-                new ContractUpdateTransitionLogic(
-                        ledger,
-                        aliasManager,
-                        validator,
-                        sigImpactHistorian,
-                        txnCtx,
-                        customizerFactory,
-                        () -> AccountStorageAdapter.fromInMemory(contracts),
-                        dynamicProperties,
-                        nodeInfo);
+        subject = new ContractUpdateTransitionLogic(
+                ledger,
+                aliasManager,
+                validator,
+                sigImpactHistorian,
+                txnCtx,
+                customizerFactory,
+                () -> AccountStorageAdapter.fromInMemory(contracts),
+                dynamicProperties,
+                nodeInfo);
     }
 
     @Test
@@ -139,9 +141,7 @@ class ContractUpdateTransitionLogicTest {
         customizer = mock(HederaAccountCustomizer.class);
 
         givenValidTxnCtx();
-        given(
-                        customizerFactory.customizerFor(
-                                contract, validator, contractUpdateTxn.getContractUpdateInstance()))
+        given(customizerFactory.customizerFor(contract, validator, contractUpdateTxn.getContractUpdateInstance()))
                 .willReturn(Pair.of(Optional.empty(), MODIFYING_IMMUTABLE_CONTRACT));
 
         // when:
@@ -158,9 +158,7 @@ class ContractUpdateTransitionLogicTest {
         customizer = mock(HederaAccountCustomizer.class);
 
         givenValidTxnCtx();
-        given(
-                        customizerFactory.customizerFor(
-                                contract, validator, contractUpdateTxn.getContractUpdateInstance()))
+        given(customizerFactory.customizerFor(contract, validator, contractUpdateTxn.getContractUpdateInstance()))
                 .willReturn(Pair.of(Optional.of(customizer), OK));
 
         // when:
@@ -179,9 +177,7 @@ class ContractUpdateTransitionLogicTest {
         customizer = mock(HederaAccountCustomizer.class);
 
         givenValidTxnCtx();
-        given(
-                        customizerFactory.customizerFor(
-                                contract, validator, contractUpdateTxn.getContractUpdateInstance()))
+        given(customizerFactory.customizerFor(contract, validator, contractUpdateTxn.getContractUpdateInstance()))
                 .willReturn(Pair.of(Optional.of(customizer), OK));
         contract.setAlias(pretendAlias);
 
@@ -261,8 +257,7 @@ class ContractUpdateTransitionLogicTest {
         given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
 
         // expect:
-        assertEquals(
-                AUTORENEW_DURATION_NOT_IN_RANGE, subject.semanticCheck().apply(contractUpdateTxn));
+        assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.semanticCheck().apply(contractUpdateTxn));
     }
 
     @Test
@@ -282,63 +277,53 @@ class ContractUpdateTransitionLogicTest {
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
         assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(contractUpdateTxn));
 
-        contractUpdateTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(ourTxnId())
-                        .setContractUpdateInstance(
-                                ContractUpdateTransactionBody.newBuilder()
-                                        .setMemo(memo)
-                                        .setContractID(target)
-                                        .setStakedAccountId(asAccount("0.0.0")))
-                        .build();
+        contractUpdateTxn = TransactionBody.newBuilder()
+                .setTransactionID(ourTxnId())
+                .setContractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
+                        .setMemo(memo)
+                        .setContractID(target)
+                        .setStakedAccountId(asAccount("0.0.0")))
+                .build();
         assertEquals(OK, subject.semanticCheck().apply(contractUpdateTxn));
 
-        contractUpdateTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(ourTxnId())
-                        .setContractUpdateInstance(
-                                ContractUpdateTransactionBody.newBuilder()
-                                        .setMemo(memo)
-                                        .setContractID(target)
-                                        .setStakedNodeId(-1L))
-                        .build();
+        contractUpdateTxn = TransactionBody.newBuilder()
+                .setTransactionID(ourTxnId())
+                .setContractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
+                        .setMemo(memo)
+                        .setContractID(target)
+                        .setStakedNodeId(-1L))
+                .build();
         assertEquals(OK, subject.semanticCheck().apply(contractUpdateTxn));
 
-        contractUpdateTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(ourTxnId())
-                        .setContractUpdateInstance(
-                                ContractUpdateTransactionBody.newBuilder()
-                                        .setMemo(memo)
-                                        .setContractID(target)
-                                        .setStakedAccountId(asAccount("0.0.-1")))
-                        .build();
+        contractUpdateTxn = TransactionBody.newBuilder()
+                .setTransactionID(ourTxnId())
+                .setContractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
+                        .setMemo(memo)
+                        .setContractID(target)
+                        .setStakedAccountId(asAccount("0.0.-1")))
+                .build();
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
         assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(contractUpdateTxn));
 
-        contractUpdateTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(ourTxnId())
-                        .setContractUpdateInstance(
-                                ContractUpdateTransactionBody.newBuilder()
-                                        .setMemo(memo)
-                                        .setContractID(target)
-                                        .setStakedNodeId(-3L))
-                        .build();
+        contractUpdateTxn = TransactionBody.newBuilder()
+                .setTransactionID(ourTxnId())
+                .setContractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
+                        .setMemo(memo)
+                        .setContractID(target)
+                        .setStakedNodeId(-3L))
+                .build();
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(false);
         assertEquals(INVALID_STAKING_ID, subject.semanticCheck().apply(contractUpdateTxn));
     }
 
     @Test
     void failsForProxyId() {
-        var op =
-                TransactionBody.newBuilder()
-                        .setTransactionID(ourTxnId())
-                        .setContractUpdateInstance(
-                                ContractUpdateTransactionBody.newBuilder()
-                                        .setMemo(memo)
-                                        .setContractID(target)
-                                        .setProxyAccountID(proxy));
+        var op = TransactionBody.newBuilder()
+                .setTransactionID(ourTxnId())
+                .setContractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
+                        .setMemo(memo)
+                        .setContractID(target)
+                        .setProxyAccountID(proxy));
 
         contractUpdateTxn = op.build();
         given(accessor.getTxn()).willReturn(contractUpdateTxn);
@@ -346,8 +331,7 @@ class ContractUpdateTransitionLogicTest {
         given(contracts.get(EntityNum.fromContractId(target))).willReturn(contract);
 
         assertEquals(
-                PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED,
-                subject.semanticCheck().apply(contractUpdateTxn));
+                PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, subject.semanticCheck().apply(contractUpdateTxn));
     }
 
     private void givenValidTxnCtx() {
@@ -359,27 +343,20 @@ class ContractUpdateTransitionLogicTest {
     }
 
     private void givenValidTxnCtx(
-            boolean useAutoRenew,
-            boolean useMaxAutoAssociations,
-            boolean stakingIdSet,
-            boolean declineReward) {
+            boolean useAutoRenew, boolean useMaxAutoAssociations, boolean stakingIdSet, boolean declineReward) {
         Duration autoRenewDuration =
                 Duration.newBuilder().setSeconds(customAutoRenewPeriod).build();
-        var op =
-                TransactionBody.newBuilder()
-                        .setTransactionID(ourTxnId())
-                        .setContractUpdateInstance(
-                                ContractUpdateTransactionBody.newBuilder()
-                                        .setMemo(memo)
-                                        .setContractID(target));
+        var op = TransactionBody.newBuilder()
+                .setTransactionID(ourTxnId())
+                .setContractUpdateInstance(
+                        ContractUpdateTransactionBody.newBuilder().setMemo(memo).setContractID(target));
         if (useAutoRenew) {
             op.getContractUpdateInstanceBuilder().setAutoRenewPeriod(autoRenewDuration);
             op.getContractUpdateInstanceBuilder()
                     .setMemoWrapper(StringValue.newBuilder().setValue(memo));
         }
         if (useMaxAutoAssociations) {
-            op.getContractUpdateInstanceBuilder()
-                    .setMaxAutomaticTokenAssociations(Int32Value.of(maxAutoAssociations));
+            op.getContractUpdateInstanceBuilder().setMaxAutomaticTokenAssociations(Int32Value.of(maxAutoAssociations));
         }
         if (stakingIdSet) {
             op.getContractUpdateInstanceBuilder().setStakedNodeId(10L);
@@ -419,17 +396,11 @@ class ContractUpdateTransitionLogicTest {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
         givenValidTxnCtxWithMaxAssociations();
         customizer = mock(HederaAccountCustomizer.class);
-        given(
-                        customizerFactory.customizerFor(
-                                contract, validator, contractUpdateTxn.getContractUpdateInstance()))
+        given(customizerFactory.customizerFor(contract, validator, contractUpdateTxn.getContractUpdateInstance()))
                 .willReturn(Pair.of(Optional.of(customizer), OK));
         given(customizer.getChanges())
-                .willReturn(
-                        Map.of(
-                                AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS,
-                                NEW_MAX_AUTOMATIC_ASSOCIATIONS));
-        given(ledger.alreadyUsedAutomaticAssociations(targetId))
-                .willReturn(NEW_MAX_AUTOMATIC_ASSOCIATIONS + 1);
+                .willReturn(Map.of(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, NEW_MAX_AUTOMATIC_ASSOCIATIONS));
+        given(ledger.alreadyUsedAutomaticAssociations(targetId)).willReturn(NEW_MAX_AUTOMATIC_ASSOCIATIONS + 1);
         given(dynamicProperties.areContractAutoAssociationsEnabled()).willReturn(true);
 
         subject.doStateTransition();
@@ -442,21 +413,14 @@ class ContractUpdateTransitionLogicTest {
     void updateMaxAutomaticAssociationsFailWithMaxMoreThanAllowedTokenAssociations() {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
         givenValidTxnCtxWithMaxAssociations();
-        given(ledger.alreadyUsedAutomaticAssociations(targetId))
-                .willReturn(CUR_MAX_AUTOMATIC_ASSOCIATIONS);
+        given(ledger.alreadyUsedAutomaticAssociations(targetId)).willReturn(CUR_MAX_AUTOMATIC_ASSOCIATIONS);
         given(dynamicProperties.areTokenAssociationsLimited()).willReturn(true);
-        given(dynamicProperties.maxTokensPerAccount())
-                .willReturn(NEW_MAX_AUTOMATIC_ASSOCIATIONS - 1);
+        given(dynamicProperties.maxTokensPerAccount()).willReturn(NEW_MAX_AUTOMATIC_ASSOCIATIONS - 1);
         customizer = mock(HederaAccountCustomizer.class);
-        given(
-                        customizerFactory.customizerFor(
-                                contract, validator, contractUpdateTxn.getContractUpdateInstance()))
+        given(customizerFactory.customizerFor(contract, validator, contractUpdateTxn.getContractUpdateInstance()))
                 .willReturn(Pair.of(Optional.of(customizer), OK));
         given(customizer.getChanges())
-                .willReturn(
-                        Map.of(
-                                AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS,
-                                NEW_MAX_AUTOMATIC_ASSOCIATIONS));
+                .willReturn(Map.of(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, NEW_MAX_AUTOMATIC_ASSOCIATIONS));
         given(dynamicProperties.areContractAutoAssociationsEnabled()).willReturn(true);
 
         subject.doStateTransition();
@@ -468,8 +432,7 @@ class ContractUpdateTransitionLogicTest {
     private TransactionID ourTxnId() {
         return TransactionID.newBuilder()
                 .setAccountID(payer)
-                .setTransactionValidStart(
-                        Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
+                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
                 .build();
     }
 

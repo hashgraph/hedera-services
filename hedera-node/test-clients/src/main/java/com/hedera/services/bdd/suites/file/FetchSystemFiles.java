@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.file;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -48,50 +49,38 @@ public class FetchSystemFiles extends HapiSuite {
     /** Fetches the system files from a running network and saves them to the local file system. */
     private HapiSpec fetchFiles() {
         return customHapiSpec("FetchFiles")
-                .withProperties(
-                        Map.of(
-                                "fees.useFixedOffer", "true",
-                                "fees.fixedOffer", "100000000"))
+                .withProperties(Map.of(
+                        "fees.useFixedOffer", "true",
+                        "fees.fixedOffer", "100000000"))
                 .given()
                 .when()
                 .then(
                         getFileContents(NODE_DETAILS)
                                 .saveTo(path("nodeDetails.bin"))
-                                .saveReadableTo(
-                                        unchecked(NodeAddressBook::parseFrom),
-                                        path("nodeDetails.txt")),
+                                .saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("nodeDetails.txt")),
                         getFileContents(ADDRESS_BOOK)
                                 .saveTo(path("addressBook.bin"))
-                                .saveReadableTo(
-                                        unchecked(NodeAddressBook::parseFrom),
-                                        path("addressBook.txt")),
+                                .saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("addressBook.txt")),
                         getFileContents(NODE_DETAILS)
                                 .saveTo(path("nodeDetails.bin"))
-                                .saveReadableTo(
-                                        unchecked(NodeAddressBook::parseFrom),
-                                        path("nodeDetails.txt")),
+                                .saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("nodeDetails.txt")),
                         getFileContents(EXCHANGE_RATES)
                                 .saveTo(path("exchangeRates.bin"))
-                                .saveReadableTo(
-                                        unchecked(ExchangeRateSet::parseFrom),
-                                        path("exchangeRates.txt")),
+                                .saveReadableTo(unchecked(ExchangeRateSet::parseFrom), path("exchangeRates.txt")),
                         getFileContents(APP_PROPERTIES)
                                 .saveTo(path("appProperties.bin"))
                                 .saveReadableTo(
-                                        unchecked(ServicesConfigurationList::parseFrom),
-                                        path("appProperties.txt")),
+                                        unchecked(ServicesConfigurationList::parseFrom), path("appProperties.txt")),
                         getFileContents(API_PERMISSIONS)
                                 .saveTo(path("apiPermissions.bin"))
                                 .saveReadableTo(
-                                        unchecked(ServicesConfigurationList::parseFrom),
-                                        path("appPermissions.txt")),
+                                        unchecked(ServicesConfigurationList::parseFrom), path("appPermissions.txt")),
                         getFileContents(FEE_SCHEDULE)
                                 .saveTo(path("feeSchedule.bin"))
                                 .fee(300_000L)
                                 .nodePayment(40L)
                                 .saveReadableTo(
-                                        unchecked(CurrentAndNextFeeSchedule::parseFrom),
-                                        path("feeSchedule.txt")));
+                                        unchecked(CurrentAndNextFeeSchedule::parseFrom), path("feeSchedule.txt")));
     }
 
     @FunctionalInterface

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,8 +34,7 @@ class WorldStateAccountTest {
 
     HederaEvmEntityAccess entityAccess = new MockEntityAccess();
     MockAbstractCodeCache codeCache = new MockAbstractCodeCache(100, entityAccess);
-    private final Address address =
-            Address.fromHexString("0x000000000000000000000000000000000000077e");
+    private final Address address = Address.fromHexString("0x000000000000000000000000000000000000077e");
 
     WorldStateAccount subject = new WorldStateAccount(address, Wei.ONE, codeCache, entityAccess);
 
@@ -60,28 +60,26 @@ class WorldStateAccountTest {
 
     @Test
     void storageEntriesFrom() {
-        assertThrows(
-                UnsupportedOperationException.class, () -> subject.storageEntriesFrom(null, 10));
+        assertThrows(UnsupportedOperationException.class, () -> subject.storageEntriesFrom(null, 10));
     }
 
     @Test
     void stringified() {
-        var stringified =
-                "AccountState"
-                        + "{"
-                        + "address="
-                        + subject.getAddress()
-                        + ", "
-                        + "nonce="
-                        + subject.getNonce()
-                        + ", "
-                        + "balance="
-                        + subject.getBalance()
-                        + ", "
-                        + "codeHash="
-                        + subject.getCodeHash()
-                        + ", "
-                        + "}";
+        var stringified = "AccountState"
+                + "{"
+                + "address="
+                + subject.getAddress()
+                + ", "
+                + "nonce="
+                + subject.getNonce()
+                + ", "
+                + "balance="
+                + subject.getBalance()
+                + ", "
+                + "codeHash="
+                + subject.getCodeHash()
+                + ", "
+                + "}";
 
         assertEquals(stringified, subject.toString());
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.queries.meta;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
@@ -52,8 +53,7 @@ public class HapiGetExecTime extends HapiQueryOp<HapiGetExecTime> {
         this.txnsOfInterest = txnsOfInterest;
     }
 
-    public HapiGetExecTime assertingNoneLongerThan(
-            long unsafeExecDuration, TemporalUnit unsafeExecUnit) {
+    public HapiGetExecTime assertingNoneLongerThan(long unsafeExecDuration, TemporalUnit unsafeExecUnit) {
         this.unsafeExecUnit = unsafeExecUnit;
         this.unsafeExecDuration = unsafeExecDuration;
         return this;
@@ -89,10 +89,7 @@ public class HapiGetExecTime extends HapiQueryOp<HapiGetExecTime> {
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) {
         Query query = getExecTimesQuery(spec, payment, false);
-        response =
-                spec.clients()
-                        .getNetworkSvcStub(targetNodeFor(spec), useTls)
-                        .getExecutionTime(query);
+        response = spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls).getExecutionTime(query);
         timesResponse = response.getNetworkGetExecutionTime();
         if (verboseLoggingOn) {
             log.info("Exec times :: {}", asReadable(timesResponse.getExecutionTimesList()));
@@ -145,24 +142,20 @@ public class HapiGetExecTime extends HapiQueryOp<HapiGetExecTime> {
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getExecTimesQuery(spec, payment, true);
         Response response =
-                spec.clients()
-                        .getNetworkSvcStub(targetNodeFor(spec), useTls)
-                        .getExecutionTime(query);
+                spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls).getExecutionTime(query);
         return costFrom(response);
     }
 
     private Query getExecTimesQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         if (txnIdsOfInterest == null) {
-            txnIdsOfInterest =
-                    txnsOfInterest.stream()
-                            .map(txn -> spec.registry().getTxnId(txn))
-                            .collect(toList());
+            txnIdsOfInterest = txnsOfInterest.stream()
+                    .map(txn -> spec.registry().getTxnId(txn))
+                    .collect(toList());
         }
-        final var getExecTime =
-                NetworkGetExecutionTimeQuery.newBuilder()
-                        .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
-                        .addAllTransactionIds(txnIdsOfInterest)
-                        .build();
+        final var getExecTime = NetworkGetExecutionTimeQuery.newBuilder()
+                .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
+                .addAllTransactionIds(txnIdsOfInterest)
+                .build();
         return Query.newBuilder().setNetworkGetExecutionTime(getExecTime).build();
     }
 

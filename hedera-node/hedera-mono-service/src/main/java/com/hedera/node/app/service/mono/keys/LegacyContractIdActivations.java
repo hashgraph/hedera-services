@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.keys;
 
 import static com.hedera.node.app.hapi.utils.sysfiles.ParsingUtils.fromTwoPartDelimited;
@@ -45,19 +46,16 @@ public record LegacyContractIdActivations(Map<Address, Set<Address>> privilegedC
      * @return the representative instance
      */
     public static LegacyContractIdActivations from(final String spec) {
-        final var privilegedContracts =
-                Arrays.stream(spec.split(","))
-                        .filter(s -> !s.isBlank())
-                        .map(
-                                literal ->
-                                        fromTwoPartDelimited(
-                                                literal,
-                                                "by",
-                                                (account, contracts) -> {},
-                                                LegacyContractIdActivations::parsedMirrorAddressOf,
-                                                LegacyContractIdActivations::contracts,
-                                                Pair::of))
-                        .collect(toMap(Pair::getKey, Pair::getValue));
+        final var privilegedContracts = Arrays.stream(spec.split(","))
+                .filter(s -> !s.isBlank())
+                .map(literal -> fromTwoPartDelimited(
+                        literal,
+                        "by",
+                        (account, contracts) -> {},
+                        LegacyContractIdActivations::parsedMirrorAddressOf,
+                        LegacyContractIdActivations::contracts,
+                        Pair::of))
+                .collect(toMap(Pair::getKey, Pair::getValue));
         return new LegacyContractIdActivations(privilegedContracts);
     }
 

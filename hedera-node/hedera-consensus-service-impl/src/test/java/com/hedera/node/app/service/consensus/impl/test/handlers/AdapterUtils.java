@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.consensus.impl.test.handlers;
+package com.hedera.node.app.service.consensus.impl.handlers.test;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;

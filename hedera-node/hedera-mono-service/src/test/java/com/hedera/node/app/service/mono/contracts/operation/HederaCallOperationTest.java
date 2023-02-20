@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.operation;
 
 import static com.hedera.node.app.service.mono.contracts.operation.CommonCallSetup.commonSetup;
@@ -45,33 +46,44 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaCallOperationTest {
-    @Mock private GasCalculator calc;
-    @Mock private MessageFrame evmMsgFrame;
-    @Mock private EVM evm;
-    @Mock private HederaStackedWorldStateUpdater worldUpdater;
-    @Mock private Account acc;
-    @Mock private EvmSigsVerifier sigsVerifier;
-    @Mock private BiPredicate<Address, MessageFrame> addressValidator;
-    @Mock private Map<String, PrecompiledContract> precompiledContractMap;
+    @Mock
+    private GasCalculator calc;
+
+    @Mock
+    private MessageFrame evmMsgFrame;
+
+    @Mock
+    private EVM evm;
+
+    @Mock
+    private HederaStackedWorldStateUpdater worldUpdater;
+
+    @Mock
+    private Account acc;
+
+    @Mock
+    private EvmSigsVerifier sigsVerifier;
+
+    @Mock
+    private BiPredicate<Address, MessageFrame> addressValidator;
+
+    @Mock
+    private Map<String, PrecompiledContract> precompiledContractMap;
 
     private final long cost = 100L;
     private HederaCallOperation subject;
 
     @BeforeEach
     void setup() {
-        subject =
-                new HederaCallOperation(
-                        sigsVerifier, calc, addressValidator, precompiledContractMap);
+        subject = new HederaCallOperation(sigsVerifier, calc, addressValidator, precompiledContractMap);
     }
 
     @Test
     void haltWithInvalidAddr() {
         commonSetup(evmMsgFrame, worldUpdater, acc);
         given(worldUpdater.get(any())).willReturn(null);
-        given(
-                        calc.callOperationGasCost(
-                                any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(),
-                                any(), any()))
+        given(calc.callOperationGasCost(
+                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
                 .willReturn(cost);
         given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
         given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.EMPTY);
@@ -91,10 +103,8 @@ class HederaCallOperationTest {
     @Test
     void executesAsExpected() {
         commonSetup(evmMsgFrame, worldUpdater, acc);
-        given(
-                        calc.callOperationGasCost(
-                                any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(),
-                                any(), any()))
+        given(calc.callOperationGasCost(
+                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
                 .willReturn(cost);
         // and:
         given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
@@ -116,9 +126,7 @@ class HederaCallOperationTest {
         given(acc.getBalance()).willReturn(Wei.of(100));
         given(calc.gasAvailableForChildCall(any(), anyLong(), anyBoolean())).willReturn(10L);
         given(acc.getAddress()).willReturn(Address.ZERO);
-        given(
-                        sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any()))
                 .willReturn(true);
         given(addressValidator.test(any(), any())).willReturn(true);
 
@@ -126,13 +134,9 @@ class HederaCallOperationTest {
         assertNull(opRes.getHaltReason());
         assertEquals(opRes.getGasCost(), cost);
 
-        given(
-                        sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                                Mockito.anyBoolean(), any(), any(), any()))
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any()))
                 .willReturn(false);
         var invalidSignaturesRes = subject.execute(evmMsgFrame, evm);
-        assertEquals(
-                HederaExceptionalHaltReason.INVALID_SIGNATURE,
-                invalidSignaturesRes.getHaltReason());
+        assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, invalidSignaturesRes.getHaltReason());
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import com.google.common.base.MoreObjects;
@@ -104,8 +105,7 @@ public class MerkleScheduledTransactionsState extends PartialMerkleLeaf implemen
 
     public void setCurrentMinSecond(long currentMinSecond) {
         throwIfImmutable(
-                "Cannot change this MerkleScheduledTransactionsState's currentMinSecond if it's"
-                        + " immutable.");
+                "Cannot change this MerkleScheduledTransactionsState's currentMinSecond if it's" + " immutable.");
         this.currentMinSecond = currentMinSecond;
     }
 }

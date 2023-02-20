@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.submission;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -34,8 +35,9 @@ import org.apache.logging.log4j.Logger;
 public final class TxnResponseHelper {
     private static final Logger log = LogManager.getLogger(TxnResponseHelper.class);
 
-    static final TransactionResponse FAIL_INVALID_RESPONSE =
-            TransactionResponse.newBuilder().setNodeTransactionPrecheckCode(FAIL_INVALID).build();
+    static final TransactionResponse FAIL_INVALID_RESPONSE = TransactionResponse.newBuilder()
+            .setNodeTransactionPrecheckCode(FAIL_INVALID)
+            .build();
 
     private final SubmissionFlow submissionFlow;
     private final HapiOpCounters opCounters;
@@ -69,10 +71,7 @@ public final class TxnResponseHelper {
             response = submissionFlow.submit(signedTxn);
         } catch (final Exception surprising) {
             final var accessor = SignedTxnAccessor.uncheckedFrom(signedTxn);
-            log.warn(
-                    "Submission flow unable to submit {}!",
-                    accessor.getSignedTxnWrapper(),
-                    surprising);
+            log.warn("Submission flow unable to submit {}!", accessor.getSignedTxnWrapper(), surprising);
             response = FAIL_INVALID_RESPONSE;
         }
 

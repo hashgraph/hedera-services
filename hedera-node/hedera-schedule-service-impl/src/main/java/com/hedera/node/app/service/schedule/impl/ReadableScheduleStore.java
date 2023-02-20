@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.schedule.impl;
 
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
@@ -57,14 +58,12 @@ public class ReadableScheduleStore {
     public Optional<ScheduleMetadata> get(final ScheduleID id) {
         final var schedule = schedulesById.get(id.getScheduleNum());
         return Optional.ofNullable(schedule)
-                .map(
-                        s ->
-                                new ScheduleMetadata(
-                                        schedule.adminKey(),
-                                        schedule.ordinaryViewOfScheduledTxn(),
-                                        schedule.hasExplicitPayer()
-                                                ? Optional.of(schedule.payer().toGrpcAccountId())
-                                                : Optional.empty()));
+                .map(s -> new ScheduleMetadata(
+                        schedule.adminKey(),
+                        schedule.ordinaryViewOfScheduledTxn(),
+                        schedule.hasExplicitPayer()
+                                ? Optional.of(schedule.payer().toGrpcAccountId())
+                                : Optional.empty()));
     }
 
     /**

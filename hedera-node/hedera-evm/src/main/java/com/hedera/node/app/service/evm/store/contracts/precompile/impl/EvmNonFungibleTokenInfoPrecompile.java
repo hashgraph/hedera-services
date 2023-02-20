@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
@@ -26,20 +27,14 @@ import org.apache.tuweni.bytes.Bytes;
 
 public interface EvmNonFungibleTokenInfoPrecompile {
 
-    Function GET_NON_FUNGIBLE_TOKEN_INFO_FUNCTION =
-            new Function("getNonFungibleTokenInfo(address,int64)");
-    Bytes GET_NON_FUNGIBLE_TOKEN_INFO_SELECTOR =
-            Bytes.wrap(GET_NON_FUNGIBLE_TOKEN_INFO_FUNCTION.selector());
+    Function GET_NON_FUNGIBLE_TOKEN_INFO_FUNCTION = new Function("getNonFungibleTokenInfo(address,int64)");
+    Bytes GET_NON_FUNGIBLE_TOKEN_INFO_SELECTOR = Bytes.wrap(GET_NON_FUNGIBLE_TOKEN_INFO_FUNCTION.selector());
     ABIType<Tuple> GET_NON_FUNGIBLE_TOKEN_INFO_DECODER = TypeFactory.create("(bytes32,int64)");
 
     public static TokenInfoWrapper<byte[]> decodeGetNonFungibleTokenInfo(final Bytes input) {
         final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input,
-                        GET_NON_FUNGIBLE_TOKEN_INFO_SELECTOR,
-                        GET_NON_FUNGIBLE_TOKEN_INFO_DECODER);
+                decodeFunctionCall(input, GET_NON_FUNGIBLE_TOKEN_INFO_SELECTOR, GET_NON_FUNGIBLE_TOKEN_INFO_DECODER);
 
-        return TokenInfoWrapper.forNonFungibleToken(
-                decodedArguments.get(0), decodedArguments.get(1));
+        return TokenInfoWrapper.forNonFungibleToken(decodedArguments.get(0), decodedArguments.get(1));
     }
 }

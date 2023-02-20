@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.throttling;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -48,19 +49,17 @@ public final class ResetThrottleSuite extends HapiSuite {
                 .given()
                 .when(
                         // only allow the first client to update throttle file with the first node
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    HapiSpecOperation subOp;
-                                    if (spec.setup().defaultNode().equals(asAccount("0.0.3"))) {
-                                        subOp =
-                                                fileUpdate(THROTTLE_DEFS)
-                                                        .payingWith(GENESIS)
-                                                        .contents(devThrottles.toByteArray());
-                                    } else {
-                                        subOp = sleepFor(20000);
-                                    }
-                                    allRunFor(spec, subOp);
-                                }))
+                        withOpContext((spec, opLog) -> {
+                            HapiSpecOperation subOp;
+                            if (spec.setup().defaultNode().equals(asAccount("0.0.3"))) {
+                                subOp = fileUpdate(THROTTLE_DEFS)
+                                        .payingWith(GENESIS)
+                                        .contents(devThrottles.toByteArray());
+                            } else {
+                                subOp = sleepFor(20000);
+                            }
+                            allRunFor(spec, subOp);
+                        }))
                 .then();
     }
 

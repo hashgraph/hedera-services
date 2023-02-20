@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.utils;
 
 import com.hedera.node.app.service.mono.context.NodeInfo;
@@ -36,15 +37,12 @@ public final class PrecheckUtils {
      * @return a predicate testing if a txn is a query payment for the given node
      */
     public static Predicate<TransactionBody> queryPaymentTestFor(final NodeInfo nodeInfo) {
-        return txn ->
-                txn.hasCryptoTransfer()
-                        && includesCredit(
-                                txn.getCryptoTransfer().getTransfers().getAccountAmountsList(),
-                                nodeInfo.selfAccount());
+        return txn -> txn.hasCryptoTransfer()
+                && includesCredit(
+                        txn.getCryptoTransfer().getTransfers().getAccountAmountsList(), nodeInfo.selfAccount());
     }
 
-    private static boolean includesCredit(
-            final List<AccountAmount> adjusts, final AccountID beneficiary) {
+    private static boolean includesCredit(final List<AccountAmount> adjusts, final AccountID beneficiary) {
         for (final var adjust : adjusts) {
             if (adjust.getAmount() > 0 && adjust.getAccountID().equals(beneficiary)) {
                 return true;

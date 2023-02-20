@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.backing.pure;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -42,7 +43,8 @@ class PureBackingAccountsTest {
     private final AccountID b = asAccount("0.0.1");
     private final EntityNum aKey = EntityNum.fromAccountId(a);
     private final EntityNum bKey = EntityNum.fromAccountId(b);
-    private final MerkleAccount aValue = MerkleAccountFactory.newAccount().balance(123L).get();
+    private final MerkleAccount aValue =
+            MerkleAccountFactory.newAccount().balance(123L).get();
 
     private MerkleMap<EntityNum, MerkleAccount> map;
     private PureBackingAccounts subject;

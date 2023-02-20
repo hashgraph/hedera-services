@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.file;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -119,9 +120,7 @@ class FileAppendTransitionLogicTest {
         given(hfs.getattr(deleted)).willReturn(deletedAttr);
         given(hfs.getattr(immutable)).willReturn(immutableAttr);
 
-        subject =
-                new FileAppendTransitionLogic(
-                        hfs, numbers, txnCtx, sigImpactHistorian, () -> networkCtx);
+        subject = new FileAppendTransitionLogic(hfs, numbers, txnCtx, sigImpactHistorian, () -> networkCtx);
     }
 
     @Test
@@ -154,8 +153,7 @@ class FileAppendTransitionLogicTest {
         givenTxnCtxAppending(TargetType.VALID);
         given(hfs.append(any(), any()))
                 .willThrow(
-                        new IllegalArgumentException(
-                                TieredHederaFs.IllegalArgumentType.OVERSIZE_CONTENTS.toString()));
+                        new IllegalArgumentException(TieredHederaFs.IllegalArgumentType.OVERSIZE_CONTENTS.toString()));
 
         // when:
         subject.doStateTransition();
@@ -222,10 +220,7 @@ class FileAppendTransitionLogicTest {
         subject.doStateTransition();
 
         // then:
-        inOrder.verify(hfs)
-                .append(
-                        argThat(target::equals),
-                        argThat(bytes -> Arrays.equals(moreContents, bytes)));
+        inOrder.verify(hfs).append(argThat(target::equals), argThat(bytes -> Arrays.equals(moreContents, bytes)));
         inOrder.verify(txnCtx).setStatus(SUCCESS);
     }
 
@@ -243,10 +238,7 @@ class FileAppendTransitionLogicTest {
 
         // then:
         inOrder.verify(sigImpactHistorian).markEntityChanged(special.getFileNum());
-        inOrder.verify(hfs)
-                .append(
-                        argThat(special::equals),
-                        argThat(bytes -> Arrays.equals(moreContents, bytes)));
+        inOrder.verify(hfs).append(argThat(special::equals), argThat(bytes -> Arrays.equals(moreContents, bytes)));
         inOrder.verify(txnCtx).setStatus(SUCCESS);
     }
 
@@ -290,18 +282,15 @@ class FileAppendTransitionLogicTest {
         }
         op.setContents(ByteString.copyFrom(moreContents));
 
-        txnId =
-                TransactionID.newBuilder()
-                        .setTransactionValidStart(
-                                MiscUtils.asTimestamp(
-                                        Instant.ofEpochSecond(Instant.now().getEpochSecond())))
-                        .build();
-        fileAppendTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(txnId)
-                        .setTransactionValidDuration(Duration.newBuilder().setSeconds(180))
-                        .setFileAppend(op)
-                        .build();
+        txnId = TransactionID.newBuilder()
+                .setTransactionValidStart(MiscUtils.asTimestamp(
+                        Instant.ofEpochSecond(Instant.now().getEpochSecond())))
+                .build();
+        fileAppendTxn = TransactionBody.newBuilder()
+                .setTransactionID(txnId)
+                .setTransactionValidDuration(Duration.newBuilder().setSeconds(180))
+                .setFileAppend(op)
+                .build();
         given(accessor.getTxn()).willReturn(fileAppendTxn);
         given(txnCtx.accessor()).willReturn(accessor);
     }

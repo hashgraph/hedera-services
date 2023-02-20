@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.file;
 
 import static com.hedera.node.app.service.mono.txns.file.FileUpdateTransitionLogic.mapToStatus;
@@ -45,8 +46,7 @@ import org.apache.logging.log4j.Logger;
 public class FileAppendTransitionLogic implements TransitionLogic {
     private static final Logger log = LogManager.getLogger(FileAppendTransitionLogic.class);
 
-    private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP =
-            ignore -> OK;
+    private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP = ignore -> OK;
 
     private final HederaFs hfs;
     private final HederaFileNumbers fileNumbers;
@@ -101,10 +101,7 @@ public class FileAppendTransitionLogic implements TransitionLogic {
         } catch (final IllegalArgumentException iae) {
             mapToStatus(iae, txnCtx);
         } catch (final Exception unknown) {
-            log.warn(
-                    "Unrecognized failure handling {}!",
-                    txnCtx.accessor().getSignedTxnWrapper(),
-                    unknown);
+            log.warn("Unrecognized failure handling {}!", txnCtx.accessor().getSignedTxnWrapper(), unknown);
             txnCtx.setStatus(FAIL_INVALID);
         }
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,8 +34,7 @@ import org.apache.commons.lang3.NotImplementedException;
 
 /** Utility class for different key types generation used for tests */
 public class JKeyUtils {
-    public static JKey getSpecificJKeysMade(
-            final String action, final int numKeys, final int depth) {
+    public static JKey getSpecificJKeysMade(final String action, final int numKeys, final int depth) {
         final List<JKey> keyList = new ArrayList<>();
         final List<PrivateKey> privKeyList = new ArrayList<>();
         final var totalKeys = (int) Math.pow(numKeys, depth - 1);
@@ -65,8 +65,7 @@ public class JKeyUtils {
      * @param keyList
      * @return
      */
-    private static JKey genThresholdKeyRecursive(
-            final int numKeys, final int threshold, final List<JKey> keyList) {
+    private static JKey genThresholdKeyRecursive(final int numKeys, final int threshold, final List<JKey> keyList) {
         if (keyList.size() == 1) {
             return keyList.get(0);
         }
@@ -126,7 +125,8 @@ public class JKeyUtils {
     public static Key genSingleECDSASecp256k1Key(final Map<String, PrivateKey> pubKey2privKeyMap) {
         final var pair = new KeyPairGenerator().generateKeyPair();
         final var pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
-        final var key = Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(pubKey)).build();
+        final var key =
+                Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(pubKey)).build();
         final var pubKeyHex = CommonUtils.hex(pubKey);
         pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
         return key;
@@ -138,8 +138,7 @@ public class JKeyUtils {
      * @param depth of the generated key
      * @return generated key
      */
-    public static Key genSampleComplexKey(
-            final int depth, final Map<String, PrivateKey> pubKey2privKeyMap) {
+    public static Key genSampleComplexKey(final int depth, final Map<String, PrivateKey> pubKey2privKeyMap) {
         Key rv;
         final int numKeys = 3;
         final int threshold = 2;
@@ -176,17 +175,15 @@ public class JKeyUtils {
      * @param counter keeps track the number of keys
      * @return number of expanded keys
      */
-    private static int computeNumOfExpandedKeys(
-            final Key key, int depth, final AtomicInteger counter) {
+    private static int computeNumOfExpandedKeys(final Key key, int depth, final AtomicInteger counter) {
         if (!(key.hasThresholdKey() || key.hasKeyList())) {
             counter.incrementAndGet();
             return counter.get();
         }
 
-        final var tKeys =
-                key.hasThresholdKey()
-                        ? key.getThresholdKey().getKeys().getKeysList()
-                        : key.getKeyList().getKeysList();
+        final var tKeys = key.hasThresholdKey()
+                ? key.getThresholdKey().getKeys().getKeysList()
+                : key.getKeyList().getKeysList();
 
         if (depth <= 100) {
             depth++;
@@ -205,8 +202,7 @@ public class JKeyUtils {
      * @param pubKey2privKeyMap map of public key hex string as key and the private key as value
      * @return generated key list
      */
-    private static Key genKeyListInstance(
-            final int numKeys, final Map<String, PrivateKey> pubKey2privKeyMap) {
+    private static Key genKeyListInstance(final int numKeys, final Map<String, PrivateKey> pubKey2privKeyMap) {
         final var keys = genEd25519Keys(numKeys, pubKey2privKeyMap);
         return genKeyList(keys);
     }
@@ -220,9 +216,7 @@ public class JKeyUtils {
      * @return generated threshold key
      */
     private static Key genThresholdKeyInstance(
-            final int numKeys,
-            final int threshold,
-            final Map<String, PrivateKey> pubKey2privKeyMap) {
+            final int numKeys, final int threshold, final Map<String, PrivateKey> pubKey2privKeyMap) {
         final var keys = genEd25519Keys(numKeys, pubKey2privKeyMap);
         return genThresholdKey(keys, threshold);
     }
@@ -233,13 +227,13 @@ public class JKeyUtils {
      * @param pubKey2privKeyMap map of public key hex string as key and the private key as value
      * @return a list of generated Ed25519 keys
      */
-    private static List<Key> genEd25519Keys(
-            final int numKeys, final Map<String, PrivateKey> pubKey2privKeyMap) {
+    private static List<Key> genEd25519Keys(final int numKeys, final Map<String, PrivateKey> pubKey2privKeyMap) {
         final List<Key> rv = new ArrayList<>();
         for (int i = 0; i < numKeys; i++) {
             final var pair = new KeyPairGenerator().generateKeyPair();
             final var pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
-            final var key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
+            final var key =
+                    Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
             final var pubKeyHex = CommonUtils.hex(pubKey);
             pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
             rv.add(key);
@@ -254,10 +248,9 @@ public class JKeyUtils {
      * @return generated threshold key
      */
     private static Key genThresholdKey(final List<Key> keys, final int threshold) {
-        final var thresholdKey =
-                ThresholdKey.newBuilder()
-                        .setKeys(KeyList.newBuilder().addAllKeys(keys))
-                        .setThreshold(threshold);
+        final var thresholdKey = ThresholdKey.newBuilder()
+                .setKeys(KeyList.newBuilder().addAllKeys(keys))
+                .setThreshold(threshold);
         return Key.newBuilder().setThresholdKey(thresholdKey).build();
     }
 

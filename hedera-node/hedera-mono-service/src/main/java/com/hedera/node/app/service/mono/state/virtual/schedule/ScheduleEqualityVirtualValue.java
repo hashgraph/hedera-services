@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.schedule;
 
 import com.google.common.base.MoreObjects;
@@ -63,8 +64,7 @@ public class ScheduleEqualityVirtualValue extends PartialMerkleLeaf
         this(() -> new TreeMap<>(ids), key);
     }
 
-    private ScheduleEqualityVirtualValue(
-            Supplier<SortedMap<String, Long>> ids, ScheduleEqualityVirtualKey key) {
+    private ScheduleEqualityVirtualValue(Supplier<SortedMap<String, Long>> ids, ScheduleEqualityVirtualKey key) {
         this.ids = ids.get();
         this.number = key == null ? -1 : key.getKeyAsLong();
     }
@@ -89,10 +89,9 @@ public class ScheduleEqualityVirtualValue extends PartialMerkleLeaf
 
     @Override
     public String toString() {
-        var helper =
-                MoreObjects.toStringHelper(ScheduleEqualityVirtualValue.class)
-                        .add("ids", ids)
-                        .add("number", number);
+        var helper = MoreObjects.toStringHelper(ScheduleEqualityVirtualValue.class)
+                .add("ids", ids)
+                .add("number", number);
         return helper.toString();
     }
 
@@ -171,8 +170,7 @@ public class ScheduleEqualityVirtualValue extends PartialMerkleLeaf
         var cur = ids.get(hash);
 
         if (cur != null && cur != id) {
-            throw new IllegalStateException(
-                    "multiple ids with same hash during add! " + cur + " and " + id);
+            throw new IllegalStateException("multiple ids with same hash during add! " + cur + " and " + id);
         }
 
         ids.put(hash, id);
@@ -184,8 +182,7 @@ public class ScheduleEqualityVirtualValue extends PartialMerkleLeaf
         var cur = ids.get(hash);
 
         if (cur != null && cur != id) {
-            throw new IllegalStateException(
-                    "multiple ids with same hash during remove! " + cur + " and " + id);
+            throw new IllegalStateException("multiple ids with same hash during remove! " + cur + " and " + id);
         }
 
         ids.remove(hash);
@@ -198,9 +195,7 @@ public class ScheduleEqualityVirtualValue extends PartialMerkleLeaf
     /** {@inheritDoc} */
     @Override
     public ScheduleEqualityVirtualValue asReadOnly() {
-        var c =
-                new ScheduleEqualityVirtualValue(
-                        this::getIds, new ScheduleEqualityVirtualKey(number));
+        var c = new ScheduleEqualityVirtualValue(this::getIds, new ScheduleEqualityVirtualKey(number));
         c.setImmutable(true);
         return c;
     }

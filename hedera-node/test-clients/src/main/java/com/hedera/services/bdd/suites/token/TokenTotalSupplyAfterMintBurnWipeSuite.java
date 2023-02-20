@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -38,8 +39,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
-    private static final Logger log =
-            LogManager.getLogger(TokenTotalSupplyAfterMintBurnWipeSuite.class);
+    private static final Logger log = LogManager.getLogger(TokenTotalSupplyAfterMintBurnWipeSuite.class);
 
     private static String TOKEN_TREASURY = "treasury";
 
@@ -49,8 +49,7 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {checkTokenTotalSupplyAfterMintAndBurn(), totalSupplyAfterWipe()});
+        return List.of(new HapiSpec[] {checkTokenTotalSupplyAfterMintAndBurn(), totalSupplyAfterWipe()});
     }
 
     public HapiSpec checkTokenTotalSupplyAfterMintAndBurn() {
@@ -61,14 +60,13 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
                         cryptoCreate("tokenReceiver").balance(0L),
                         newKeyNamed("adminKey"),
                         newKeyNamed("supplyKey"))
-                .when(
-                        tokenCreate(tokenName)
-                                .treasury(TOKEN_TREASURY)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(1000)
-                                .decimals(1)
-                                .supplyKey("supplyKey")
-                                .via("createTxn"))
+                .when(tokenCreate(tokenName)
+                        .treasury(TOKEN_TREASURY)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .initialSupply(1000)
+                        .decimals(1)
+                        .supplyKey("supplyKey")
+                        .via("createTxn"))
                 .then(
                         getTxnRecord("createTxn").logged(),
                         mintToken(tokenName, 1000).via("mintToken"),
@@ -104,11 +102,18 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
                         getAccountBalance("assoc1").hasTokenBalance(tokenToWipe, 500),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(tokenToWipe, 300),
                         getAccountInfo("assoc1").logged(),
-                        wipeTokenAccount(tokenToWipe, "assoc1", 200).via("wipeTxn1").logged(),
-                        wipeTokenAccount(tokenToWipe, "assoc2", 200).via("wipeTxn2").logged())
+                        wipeTokenAccount(tokenToWipe, "assoc1", 200)
+                                .via("wipeTxn1")
+                                .logged(),
+                        wipeTokenAccount(tokenToWipe, "assoc2", 200)
+                                .via("wipeTxn2")
+                                .logged())
                 .then(
                         getAccountBalance("assoc2").hasTokenBalance(tokenToWipe, 0),
-                        getTokenInfo(tokenToWipe).hasTotalSupply(600).hasName(tokenToWipe).logged(),
+                        getTokenInfo(tokenToWipe)
+                                .hasTotalSupply(600)
+                                .hasName(tokenToWipe)
+                                .logged(),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(tokenToWipe, 300));
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.queries;
 
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
@@ -44,27 +45,31 @@ public class QueryUtils {
     }
 
     public static QueryHeader answerHeader(Transaction txn) {
-        return QueryHeader.newBuilder().setResponseType(ANSWER_ONLY).setPayment(txn).build();
+        return QueryHeader.newBuilder()
+                .setResponseType(ANSWER_ONLY)
+                .setPayment(txn)
+                .build();
     }
 
     public static QueryHeader answerCostHeader(Transaction txn) {
-        return QueryHeader.newBuilder().setResponseType(COST_ANSWER).setPayment(txn).build();
+        return QueryHeader.newBuilder()
+                .setResponseType(COST_ANSWER)
+                .setPayment(txn)
+                .build();
     }
 
     public static Query txnReceiptQueryFor(TransactionID txnId) {
         return txnReceiptQueryFor(txnId, false, false);
     }
 
-    public static Query txnReceiptQueryFor(
-            TransactionID txnId, boolean includeDuplicates, boolean getChildReceipts) {
+    public static Query txnReceiptQueryFor(TransactionID txnId, boolean includeDuplicates, boolean getChildReceipts) {
         return Query.newBuilder()
-                .setTransactionGetReceipt(
-                        TransactionGetReceiptQuery.newBuilder()
-                                .setHeader(answerHeader(Transaction.getDefaultInstance()))
-                                .setTransactionID(txnId)
-                                .setIncludeDuplicates(includeDuplicates)
-                                .setIncludeChildReceipts(getChildReceipts)
-                                .build())
+                .setTransactionGetReceipt(TransactionGetReceiptQuery.newBuilder()
+                        .setHeader(answerHeader(Transaction.getDefaultInstance()))
+                        .setTransactionID(txnId)
+                        .setIncludeDuplicates(includeDuplicates)
+                        .setIncludeChildReceipts(getChildReceipts)
+                        .build())
                 .build();
     }
 
@@ -80,23 +85,20 @@ public class QueryUtils {
 
     private static Object reflectForHeaderField(Response response, String field)
             throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        final String getterName =
-                Arrays.stream(Response.class.getDeclaredMethods())
-                        .map(Method::getName)
-                        .filter(name -> !"hashCode".equals(name) && name.startsWith("has"))
-                        .filter(
-                                name -> {
-                                    try {
-                                        return (Boolean)
-                                                Response.class.getMethod(name).invoke(response);
-                                    } catch (Exception ignored) {
-                                        // Intentionally ignored
-                                    }
-                                    return false;
-                                })
-                        .map(name -> name.replace("has", "get"))
-                        .findAny()
-                        .orElseThrow();
+        final String getterName = Arrays.stream(Response.class.getDeclaredMethods())
+                .map(Method::getName)
+                .filter(name -> !"hashCode".equals(name) && name.startsWith("has"))
+                .filter(name -> {
+                    try {
+                        return (Boolean) Response.class.getMethod(name).invoke(response);
+                    } catch (Exception ignored) {
+                        // Intentionally ignored
+                    }
+                    return false;
+                })
+                .map(name -> name.replace("has", "get"))
+                .findAny()
+                .orElseThrow();
 
         Method getter = Response.class.getMethod(getterName);
         Class<?> getterClass = getter.getReturnType();

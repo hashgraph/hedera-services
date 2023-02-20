@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.system;
 
 import static com.hederahashgraph.api.proto.java.FreezeType.UNKNOWN_FREEZE_TYPE;
@@ -125,38 +126,32 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
-        final var opBody =
-                spec.txns()
-                        .<FreezeTransactionBody, FreezeTransactionBody.Builder>body(
-                                FreezeTransactionBody.class,
-                                b -> {
-                                    b.setFreezeType(action);
-                                    if (needsFreezeTimeCalc) {
-                                        freezeStartTime =
-                                                Optional.of(Instant.now().plus(delay, delayUnit));
-                                    }
-                                    freezeStartTime
-                                            .map(TxnUtils::asTimestamp)
-                                            .ifPresent(b::setStartTime);
-                                    if (updateFile != null) {
-                                        final var updateId = TxnUtils.asFileId(updateFile, spec);
-                                        b.setUpdateFile(updateId);
-                                    }
-                                    fileHash.ifPresent(h -> b.setFileHash(ByteString.copyFrom(h)));
+        final var opBody = spec.txns()
+                .<FreezeTransactionBody, FreezeTransactionBody.Builder>body(FreezeTransactionBody.class, b -> {
+                    b.setFreezeType(action);
+                    if (needsFreezeTimeCalc) {
+                        freezeStartTime = Optional.of(Instant.now().plus(delay, delayUnit));
+                    }
+                    freezeStartTime.map(TxnUtils::asTimestamp).ifPresent(b::setStartTime);
+                    if (updateFile != null) {
+                        final var updateId = TxnUtils.asFileId(updateFile, spec);
+                        b.setUpdateFile(updateId);
+                    }
+                    fileHash.ifPresent(h -> b.setFileHash(ByteString.copyFrom(h)));
 
-                                    if (useRejectedStartHr) {
-                                        b.setStartHour(1);
-                                    }
-                                    if (useRejectedStartMin) {
-                                        b.setStartMin(2);
-                                    }
-                                    if (useRejectedEndHr) {
-                                        b.setEndHour(3);
-                                    }
-                                    if (useRejectedEndMin) {
-                                        b.setEndMin(4);
-                                    }
-                                });
+                    if (useRejectedStartHr) {
+                        b.setStartHour(1);
+                    }
+                    if (useRejectedStartMin) {
+                        b.setStartMin(2);
+                    }
+                    if (useRejectedEndHr) {
+                        b.setEndHour(3);
+                    }
+                    if (useRejectedEndMin) {
+                        b.setEndMin(4);
+                    }
+                });
         return b -> b.setFreeze(opBody);
     }
 

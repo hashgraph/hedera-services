@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.config;
 
 import static com.hedera.services.bdd.spec.persistence.SpecKey.readFirstKpFromPem;
@@ -96,14 +97,12 @@ public class ConfigUtils {
         File f = new File(loc);
         if (!f.exists()) {
             if (!f.mkdirs()) {
-                throw new IllegalStateException(
-                        "Failed to create directory: " + f.getAbsolutePath());
+                throw new IllegalStateException("Failed to create directory: " + f.getAbsolutePath());
             }
         }
     }
 
-    public static Optional<String> promptForPassphrase(
-            String pemLoc, String prompt, int maxAttempts) {
+    public static Optional<String> promptForPassphrase(String pemLoc, String prompt, int maxAttempts) {
         var pemFile = new File(pemLoc);
         String fullPrompt = prompt + ": ";
         char[] passphrase;
@@ -115,9 +114,7 @@ public class ConfigUtils {
             } else {
                 if (maxAttempts > 0) {
                     System.out.println(
-                            "Sorry, that isn't it! (Don't worry, still "
-                                    + maxAttempts
-                                    + " attempts remaining.)");
+                            "Sorry, that isn't it! (Don't worry, still " + maxAttempts + " attempts remaining.)");
                 } else {
                     return Optional.empty();
                 }

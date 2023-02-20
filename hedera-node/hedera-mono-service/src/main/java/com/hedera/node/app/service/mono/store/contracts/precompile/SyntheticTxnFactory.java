@@ -17,14 +17,14 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ID;
 import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.LAZY_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.BoolValue;
@@ -116,6 +116,7 @@ import org.apache.tuweni.bytes.Bytes;
 
 @Singleton
 public class SyntheticTxnFactory {
+
     protected static final byte[] MOCK_INITCODE = new byte[32];
     public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
 
@@ -430,27 +431,46 @@ public class SyntheticTxnFactory {
                 tokenCreateWrapper.isSupplyTypeFinite() ? TokenSupplyType.FINITE : TokenSupplyType.INFINITE);
         txnBodyBuilder.setMaxSupply(tokenCreateWrapper.getMaxSupply());
         txnBodyBuilder.setInitialSupply(tokenCreateWrapper.getInitSupply().longValueExact());
-        if (tokenCreateWrapper.getTreasury() != null) txnBodyBuilder.setTreasury(tokenCreateWrapper.getTreasury());
+        if (tokenCreateWrapper.getTreasury() != null) {
+            txnBodyBuilder.setTreasury(tokenCreateWrapper.getTreasury());
+        }
         txnBodyBuilder.setFreezeDefault(tokenCreateWrapper.isFreezeDefault());
         txnBodyBuilder.setMemo(tokenCreateWrapper.getMemo());
-        if (tokenCreateWrapper.getExpiry().second() != 0)
+        if (tokenCreateWrapper.getExpiry().second() != 0) {
             txnBodyBuilder.setExpiry(Timestamp.newBuilder()
                     .setSeconds(tokenCreateWrapper.getExpiry().second())
                     .build());
-        if (tokenCreateWrapper.getExpiry().autoRenewAccount() != null)
+        }
+        if (tokenCreateWrapper.getExpiry().autoRenewAccount() != null) {
             txnBodyBuilder.setAutoRenewAccount(tokenCreateWrapper.getExpiry().autoRenewAccount());
-        if (tokenCreateWrapper.getExpiry().autoRenewPeriod() != 0)
+        }
+        if (tokenCreateWrapper.getExpiry().autoRenewPeriod() != 0) {
             txnBodyBuilder.setAutoRenewPeriod(Duration.newBuilder()
                     .setSeconds(tokenCreateWrapper.getExpiry().autoRenewPeriod()));
+        }
         tokenCreateWrapper.getTokenKeys().forEach(tokenKeyWrapper -> {
             final var key = tokenKeyWrapper.key().asGrpc();
-            if (tokenKeyWrapper.isUsedForAdminKey()) txnBodyBuilder.setAdminKey(key);
-            if (tokenKeyWrapper.isUsedForKycKey()) txnBodyBuilder.setKycKey(key);
-            if (tokenKeyWrapper.isUsedForFreezeKey()) txnBodyBuilder.setFreezeKey(key);
-            if (tokenKeyWrapper.isUsedForWipeKey()) txnBodyBuilder.setWipeKey(key);
-            if (tokenKeyWrapper.isUsedForSupplyKey()) txnBodyBuilder.setSupplyKey(key);
-            if (tokenKeyWrapper.isUsedForFeeScheduleKey()) txnBodyBuilder.setFeeScheduleKey(key);
-            if (tokenKeyWrapper.isUsedForPauseKey()) txnBodyBuilder.setPauseKey(key);
+            if (tokenKeyWrapper.isUsedForAdminKey()) {
+                txnBodyBuilder.setAdminKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForKycKey()) {
+                txnBodyBuilder.setKycKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForFreezeKey()) {
+                txnBodyBuilder.setFreezeKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForWipeKey()) {
+                txnBodyBuilder.setWipeKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForSupplyKey()) {
+                txnBodyBuilder.setSupplyKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForFeeScheduleKey()) {
+                txnBodyBuilder.setFeeScheduleKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForPauseKey()) {
+                txnBodyBuilder.setPauseKey(key);
+            }
         });
         txnBodyBuilder.addAllCustomFees(tokenCreateWrapper.getFixedFees().stream()
                 .map(TokenCreateWrapper.FixedFeeWrapper::asGrpc)
@@ -596,18 +616,27 @@ public class SyntheticTxnFactory {
         final var builder = TokenUpdateTransactionBody.newBuilder();
         builder.setToken(updateWrapper.tokenID());
 
-        if (updateWrapper.name() != null) builder.setName(updateWrapper.name());
-        if (updateWrapper.symbol() != null) builder.setSymbol(updateWrapper.symbol());
-        if (updateWrapper.memo() != null) builder.setMemo(StringValue.of(updateWrapper.memo()));
-        if (updateWrapper.treasury() != null) builder.setTreasury(updateWrapper.treasury());
+        if (updateWrapper.name() != null) {
+            builder.setName(updateWrapper.name());
+        }
+        if (updateWrapper.symbol() != null) {
+            builder.setSymbol(updateWrapper.symbol());
+        }
+        if (updateWrapper.memo() != null) {
+            builder.setMemo(StringValue.of(updateWrapper.memo()));
+        }
+        if (updateWrapper.treasury() != null) {
+            builder.setTreasury(updateWrapper.treasury());
+        }
 
         if (updateWrapper.expiry().second() != 0) {
             builder.setExpiry(Timestamp.newBuilder()
                     .setSeconds(updateWrapper.expiry().second())
                     .build());
         }
-        if (updateWrapper.expiry().autoRenewAccount() != null)
+        if (updateWrapper.expiry().autoRenewAccount() != null) {
             builder.setAutoRenewAccount(updateWrapper.expiry().autoRenewAccount());
+        }
         if (updateWrapper.expiry().autoRenewPeriod() != 0) {
             builder.setAutoRenewPeriod(
                     Duration.newBuilder().setSeconds(updateWrapper.expiry().autoRenewPeriod()));
@@ -631,13 +660,27 @@ public class SyntheticTxnFactory {
             final List<TokenKeyWrapper> tokenKeys, final TokenUpdateTransactionBody.Builder builder) {
         tokenKeys.forEach(tokenKeyWrapper -> {
             final var key = tokenKeyWrapper.key().asGrpc();
-            if (tokenKeyWrapper.isUsedForAdminKey()) builder.setAdminKey(key);
-            if (tokenKeyWrapper.isUsedForKycKey()) builder.setKycKey(key);
-            if (tokenKeyWrapper.isUsedForFreezeKey()) builder.setFreezeKey(key);
-            if (tokenKeyWrapper.isUsedForWipeKey()) builder.setWipeKey(key);
-            if (tokenKeyWrapper.isUsedForSupplyKey()) builder.setSupplyKey(key);
-            if (tokenKeyWrapper.isUsedForFeeScheduleKey()) builder.setFeeScheduleKey(key);
-            if (tokenKeyWrapper.isUsedForPauseKey()) builder.setPauseKey(key);
+            if (tokenKeyWrapper.isUsedForAdminKey()) {
+                builder.setAdminKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForKycKey()) {
+                builder.setKycKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForFreezeKey()) {
+                builder.setFreezeKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForWipeKey()) {
+                builder.setWipeKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForSupplyKey()) {
+                builder.setSupplyKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForFeeScheduleKey()) {
+                builder.setFeeScheduleKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForPauseKey()) {
+                builder.setPauseKey(key);
+            }
         });
 
         return TransactionBody.newBuilder().setTokenUpdate(builder);
@@ -652,8 +695,9 @@ public class SyntheticTxnFactory {
                     .setSeconds(expiryInfoWrapper.expiry().second())
                     .build());
         }
-        if (expiryInfoWrapper.expiry().autoRenewAccount() != null)
+        if (expiryInfoWrapper.expiry().autoRenewAccount() != null) {
             builder.setAutoRenewAccount(expiryInfoWrapper.expiry().autoRenewAccount());
+        }
         if (expiryInfoWrapper.expiry().autoRenewPeriod() != 0) {
             builder.setAutoRenewPeriod(
                     Duration.newBuilder().setSeconds(expiryInfoWrapper.expiry().autoRenewPeriod()));
@@ -663,6 +707,7 @@ public class SyntheticTxnFactory {
     }
 
     public static class HbarTransfer {
+
         protected final long amount;
         protected final AccountID sender;
         protected final AccountID receiver;
@@ -710,6 +755,7 @@ public class SyntheticTxnFactory {
     }
 
     public static class FungibleTokenTransfer extends HbarTransfer {
+
         private final TokenID denomination;
 
         public FungibleTokenTransfer(
@@ -728,6 +774,7 @@ public class SyntheticTxnFactory {
     }
 
     public static class NftExchange {
+
         private final long serialNo;
 
         private final TokenID tokenType;

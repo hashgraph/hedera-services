@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.issues;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
@@ -70,15 +71,11 @@ public class Issue1765Suite extends HapiSuite {
         final String INVALID_ACCOUNT = "imaginary";
 
         return defaultHapiSpec("RecordOfInvalidAccountTransferSanityChecks")
-                .given(
-                        flattened(
-                                withOpContext(
-                                        (spec, ctxLog) -> {
-                                            spec.registry()
-                                                    .saveAccountId(
-                                                            INVALID_ACCOUNT, asAccount("1.1.1"));
-                                        }),
-                                takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
+                .given(flattened(
+                        withOpContext((spec, ctxLog) -> {
+                            spec.registry().saveAccountId(INVALID_ACCOUNT, asAccount("1.1.1"));
+                        }),
+                        takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
                 .when(cryptoTransfer(tinyBarsFromTo(GENESIS, INVALID_ACCOUNT, 1L)))
                 .then();
     }
@@ -87,17 +84,13 @@ public class Issue1765Suite extends HapiSuite {
         final String INVALID_ACCOUNT = "imaginary";
 
         return defaultHapiSpec("RecordOfInvalidAccountSanityChecks")
-                .given(
-                        flattened(
-                                withOpContext(
-                                        (spec, ctxLog) -> {
-                                            spec.registry()
-                                                    .saveAccountId(
-                                                            INVALID_ACCOUNT, asAccount("1.1.1"));
-                                        }),
-                                newKeyNamed(INVALID_ACCOUNT),
-                                newKeyNamed("irrelevant"),
-                                takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
+                .given(flattened(
+                        withOpContext((spec, ctxLog) -> {
+                            spec.registry().saveAccountId(INVALID_ACCOUNT, asAccount("1.1.1"));
+                        }),
+                        newKeyNamed(INVALID_ACCOUNT),
+                        newKeyNamed("irrelevant"),
+                        takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
                 .when(cryptoUpdate(INVALID_ACCOUNT).key("irrelevant"))
                 .then();
     }
@@ -108,25 +101,19 @@ public class Issue1765Suite extends HapiSuite {
         final String THE_MEMO_IS = "Turning and turning in the widening gyre";
 
         return defaultHapiSpec("RecordOfInvalidContractUpdateSanityChecks")
-                .given(
-                        flattened(
-                                withOpContext(
-                                        (spec, ctxLog) -> {
-                                            spec.registry()
-                                                    .saveContractId(
-                                                            INVALID_CONTRACT, asContract("1.1.1"));
-                                        }),
-                                newKeyNamed(INVALID_CONTRACT),
-                                takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
-                .when(
-                        contractUpdate(INVALID_CONTRACT)
-                                .memo(THE_MEMO_IS)
-                                .fee(ADEQUATE_FEE)
-                                .via("invalidUpdateTxn")
-                                .hasKnownStatus(ResponseCodeEnum.INVALID_CONTRACT_ID))
+                .given(flattened(
+                        withOpContext((spec, ctxLog) -> {
+                            spec.registry().saveContractId(INVALID_CONTRACT, asContract("1.1.1"));
+                        }),
+                        newKeyNamed(INVALID_CONTRACT),
+                        takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
+                .when(contractUpdate(INVALID_CONTRACT)
+                        .memo(THE_MEMO_IS)
+                        .fee(ADEQUATE_FEE)
+                        .via("invalidUpdateTxn")
+                        .hasKnownStatus(ResponseCodeEnum.INVALID_CONTRACT_ID))
                 .then(
-                        validateTransferListForBalances(
-                                "invalidUpdateTxn", List.of(FUNDING, GENESIS, NODE)),
+                        validateTransferListForBalances("invalidUpdateTxn", List.of(FUNDING, GENESIS, NODE)),
                         getTxnRecord("invalidUpdateTxn")
                                 .hasPriority(recordWith().memo(THE_MEMO_IS)));
     }
@@ -137,24 +124,19 @@ public class Issue1765Suite extends HapiSuite {
         final String THE_MEMO_IS = "Turning and turning in the widening gyre";
 
         return defaultHapiSpec("RecordOfInvalidFileUpdateSanityChecks")
-                .given(
-                        flattened(
-                                withOpContext(
-                                        (spec, ctxLog) -> {
-                                            spec.registry()
-                                                    .saveFileId(INVALID_FILE, asFile("0.0.0"));
-                                        }),
-                                newKeyNamed(INVALID_FILE).type(KeyFactory.KeyType.LIST),
-                                takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
-                .when(
-                        fileUpdate(INVALID_FILE)
-                                .memo(THE_MEMO_IS)
-                                .fee(ADEQUATE_FEE)
-                                .via("invalidUpdateTxn")
-                                .hasKnownStatus(ResponseCodeEnum.INVALID_FILE_ID))
+                .given(flattened(
+                        withOpContext((spec, ctxLog) -> {
+                            spec.registry().saveFileId(INVALID_FILE, asFile("0.0.0"));
+                        }),
+                        newKeyNamed(INVALID_FILE).type(KeyFactory.KeyType.LIST),
+                        takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
+                .when(fileUpdate(INVALID_FILE)
+                        .memo(THE_MEMO_IS)
+                        .fee(ADEQUATE_FEE)
+                        .via("invalidUpdateTxn")
+                        .hasKnownStatus(ResponseCodeEnum.INVALID_FILE_ID))
                 .then(
-                        validateTransferListForBalances(
-                                "invalidUpdateTxn", List.of(FUNDING, GENESIS, NODE)),
+                        validateTransferListForBalances("invalidUpdateTxn", List.of(FUNDING, GENESIS, NODE)),
                         getTxnRecord("invalidUpdateTxn")
                                 .hasPriority(recordWith().memo(THE_MEMO_IS)));
     }
@@ -165,25 +147,20 @@ public class Issue1765Suite extends HapiSuite {
         final String THE_MEMO_IS = "Turning and turning in the widening gyre";
 
         return defaultHapiSpec("RecordOfInvalidFileAppendSanityChecks")
-                .given(
-                        flattened(
-                                withOpContext(
-                                        (spec, ctxLog) -> {
-                                            spec.registry()
-                                                    .saveFileId(INVALID_FILE, asFile("0.0.0"));
-                                        }),
-                                newKeyNamed(INVALID_FILE).type(KeyFactory.KeyType.LIST),
-                                takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
-                .when(
-                        fileAppend(INVALID_FILE)
-                                .memo(THE_MEMO_IS)
-                                .content("Some more content.")
-                                .fee(ADEQUATE_FEE)
-                                .via("invalidAppendTxn")
-                                .hasKnownStatus(ResponseCodeEnum.INVALID_FILE_ID))
+                .given(flattened(
+                        withOpContext((spec, ctxLog) -> {
+                            spec.registry().saveFileId(INVALID_FILE, asFile("0.0.0"));
+                        }),
+                        newKeyNamed(INVALID_FILE).type(KeyFactory.KeyType.LIST),
+                        takeBalanceSnapshots(FUNDING, GENESIS, NODE)))
+                .when(fileAppend(INVALID_FILE)
+                        .memo(THE_MEMO_IS)
+                        .content("Some more content.")
+                        .fee(ADEQUATE_FEE)
+                        .via("invalidAppendTxn")
+                        .hasKnownStatus(ResponseCodeEnum.INVALID_FILE_ID))
                 .then(
-                        validateTransferListForBalances(
-                                "invalidAppendTxn", List.of(FUNDING, GENESIS, NODE)),
+                        validateTransferListForBalances("invalidAppendTxn", List.of(FUNDING, GENESIS, NODE)),
                         getTxnRecord("invalidAppendTxn")
                                 .hasPriority(recordWith().memo(THE_MEMO_IS)));
     }

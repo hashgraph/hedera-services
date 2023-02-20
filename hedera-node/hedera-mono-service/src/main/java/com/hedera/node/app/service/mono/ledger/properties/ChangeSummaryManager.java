@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.properties;
 
 import com.hedera.node.app.service.mono.ledger.PropertyChangeObserver;
@@ -61,10 +62,9 @@ public final class ChangeSummaryManager<A, P extends Enum<P> & BeanProperty<A>> 
             final Map<P, Object> changes,
             final A account,
             final PropertyChangeObserver<K, P> changeObserver) {
-        changes.forEach(
-                (property, newValue) -> {
-                    property.setter().accept(account, newValue);
-                    changeObserver.newProperty(id, property, newValue);
-                });
+        changes.forEach((property, newValue) -> {
+            property.setter().accept(account, newValue);
+            changeObserver.newProperty(id, property, newValue);
+        });
     }
 }

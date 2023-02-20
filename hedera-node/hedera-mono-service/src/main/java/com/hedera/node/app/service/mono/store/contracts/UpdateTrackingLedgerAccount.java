@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts;
 
 import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
@@ -47,9 +48,7 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHeder
 
     public UpdateTrackingLedgerAccount(
             final Address address,
-            @Nullable
-                    final TransactionalLedger<AccountID, AccountProperty, HederaAccount>
-                            trackingAccounts) {
+            @Nullable final TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts) {
         super(address);
         Preconditions.checkNotNull(address);
         this.accountId = EntityIdUtils.accountIdFromEvmAddress(address);
@@ -59,16 +58,13 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHeder
     @SuppressWarnings("unchecked")
     public UpdateTrackingLedgerAccount(
             final A account,
-            @Nullable
-                    final TransactionalLedger<AccountID, AccountProperty, HederaAccount>
-                            trackingAccounts) {
+            @Nullable final TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts) {
         super(account);
         Preconditions.checkNotNull(account);
         this.accountId = EntityIdUtils.accountIdFromEvmAddress(account.getAddress());
-        this.addressHash =
-                account instanceof UpdateTrackingLedgerAccount
-                        ? ((UpdateTrackingLedgerAccount<A>) account).addressHash
-                        : Hash.hash(account.getAddress());
+        this.addressHash = account instanceof UpdateTrackingLedgerAccount
+                ? ((UpdateTrackingLedgerAccount<A>) account).addressHash
+                : Hash.hash(account.getAddress());
         this.trackingAccounts = trackingAccounts;
     }
 
@@ -151,8 +147,7 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHeder
     }
 
     @Override
-    public NavigableMap<Bytes32, AccountStorageEntry> storageEntriesFrom(
-            final Bytes32 startKeyHash, final int limit) {
+    public NavigableMap<Bytes32, AccountStorageEntry> storageEntriesFrom(final Bytes32 startKeyHash, final int limit) {
         throw new UnsupportedOperationException();
     }
 

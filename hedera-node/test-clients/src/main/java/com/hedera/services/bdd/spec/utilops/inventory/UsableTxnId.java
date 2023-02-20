@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops.inventory;
 
 import com.google.common.base.MoreObjects;
@@ -53,10 +54,9 @@ public class UsableTxnId extends UtilOp {
         spec.txns().defaultBodySpec().accept(usable);
         if (payerId.isPresent()) {
             String s = payerId.get();
-            AccountID id =
-                    TxnUtils.isIdLiteral(s)
-                            ? HapiPropertySource.asAccount(s)
-                            : spec.registry().getAccountID(s);
+            AccountID id = TxnUtils.isIdLiteral(s)
+                    ? HapiPropertySource.asAccount(s)
+                    : spec.registry().getAccountID(s);
             usable.setTransactionID(usable.getTransactionIDBuilder().setAccountID(id));
         }
         if (useScheduledInappropriately) {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.regression;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -57,10 +58,9 @@ public class SplittingThrottlesWorks extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    setNewLimits(), tryCreations(),
-                });
+        return List.of(new HapiSpec[] {
+            setNewLimits(), tryCreations(),
+        });
     }
 
     private HapiSpec setNewLimits() {
@@ -69,75 +69,64 @@ public class SplittingThrottlesWorks extends HapiSuite {
         return defaultHapiSpec("SetNewLimits")
                 .given()
                 .when()
-                .then(
-                        fileUpdate(THROTTLE_DEFS)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .contents(artificialLimits.toByteArray()));
+                .then(fileUpdate(THROTTLE_DEFS)
+                        .payingWith(EXCHANGE_RATE_CONTROL)
+                        .contents(artificialLimits.toByteArray()));
     }
 
     private HapiSpec tryCreations() {
         return defaultHapiSpec("TryCreations")
                 .given()
-                .when(
-                        runWithProvider(cryptoCreateOps())
-                                .lasting(duration::get, unit::get)
-                                .maxOpsPerSec(maxOpsPerSec::get))
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    var actualTps = 1.0 * spec.finalAdhoc() / duration.get();
-                                    opLog.info(
-                                            "Total ops accepted in {} {} = {} ==> {}tps",
-                                            duration.get(),
-                                            unit.get(),
-                                            spec.finalAdhoc(),
-                                            actualTps);
-                                }));
+                .when(runWithProvider(cryptoCreateOps())
+                        .lasting(duration::get, unit::get)
+                        .maxOpsPerSec(maxOpsPerSec::get))
+                .then(withOpContext((spec, opLog) -> {
+                    var actualTps = 1.0 * spec.finalAdhoc() / duration.get();
+                    opLog.info(
+                            "Total ops accepted in {} {} = {} ==> {}tps",
+                            duration.get(),
+                            unit.get(),
+                            spec.finalAdhoc(),
+                            actualTps);
+                }));
     }
 
     private Function<HapiSpec, OpProvider> cryptoCreateOps() {
         var i = new AtomicInteger(0);
 
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        return List.of(
-                                cryptoCreate("civilian")
-                                        .payingWith(GENESIS)
-                                        .balance(ONE_MILLION_HBARS)
-                                        .withRecharging());
-                    }
+        return spec -> new OpProvider() {
+            @Override
+            public List<HapiSpecOperation> suggestedInitializers() {
+                return List.of(cryptoCreate("civilian")
+                        .payingWith(GENESIS)
+                        .balance(ONE_MILLION_HBARS)
+                        .withRecharging());
+            }
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        HapiSpecOperation op;
-                        final var nextI = i.getAndIncrement();
-                        if (nextI % (scheduleCreatesPerCryptoCreate + 1) == 0) {
-                            op =
-                                    cryptoCreate("w/e" + nextI)
-                                            .noLogging()
-                                            .deferStatusResolution()
-                                            .payingWith("civilian")
-                                            .hasPrecheckFrom(OK, BUSY);
-                        } else {
-                            op =
-                                    scheduleCreate(
-                                                    "scheduleW/e" + nextI,
-                                                    cryptoTransfer(
-                                                                    tinyBarsFromTo(
-                                                                            "civilian", FUNDING, 1))
-                                                            .memo(TxnUtils.randomAlphaNumeric(32))
-                                                            .hasPrecheckFrom(
-                                                                    STANDARD_PERMISSIBLE_PRECHECKS))
-                                            .noLogging()
-                                            .deferStatusResolution()
-                                            .payingWith("civilian")
-                                            .hasPrecheckFrom(OK, BUSY);
-                        }
-                        return Optional.of(op);
-                    }
-                };
+            @Override
+            public Optional<HapiSpecOperation> get() {
+                HapiSpecOperation op;
+                final var nextI = i.getAndIncrement();
+                if (nextI % (scheduleCreatesPerCryptoCreate + 1) == 0) {
+                    op = cryptoCreate("w/e" + nextI)
+                            .noLogging()
+                            .deferStatusResolution()
+                            .payingWith("civilian")
+                            .hasPrecheckFrom(OK, BUSY);
+                } else {
+                    op = scheduleCreate(
+                                    "scheduleW/e" + nextI,
+                                    cryptoTransfer(tinyBarsFromTo("civilian", FUNDING, 1))
+                                            .memo(TxnUtils.randomAlphaNumeric(32))
+                                            .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS))
+                            .noLogging()
+                            .deferStatusResolution()
+                            .payingWith("civilian")
+                            .hasPrecheckFrom(OK, BUSY);
+                }
+                return Optional.of(op);
+            }
+        };
     }
 
     @Override

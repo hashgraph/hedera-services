@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.suites;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
@@ -55,13 +56,14 @@ public class UpdateSuite extends HapiSuite {
     }
 
     private HapiSpec doUpdate() {
-        Key newList = Key.newBuilder().setKeyList(KeyList.newBuilder().addAllKeys(keys)).build();
-        HapiTxnOp<?> update =
-                new HapiCryptoUpdate(DEFAULT_SHARD_REALM + targetAccount)
-                        .signedBy(DEFAULT_PAYER)
-                        .protoKey(newList)
-                        .blankMemo()
-                        .entityMemo(memo);
+        Key newList = Key.newBuilder()
+                .setKeyList(KeyList.newBuilder().addAllKeys(keys))
+                .build();
+        HapiTxnOp<?> update = new HapiCryptoUpdate(DEFAULT_SHARD_REALM + targetAccount)
+                .signedBy(DEFAULT_PAYER)
+                .protoKey(newList)
+                .blankMemo()
+                .entityMemo(memo);
 
         // flag that transferred as parameter to schedule a key change or to execute right away
         if (schedule) {

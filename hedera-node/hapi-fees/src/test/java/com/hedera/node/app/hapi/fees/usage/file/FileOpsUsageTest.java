@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.file;
 
 import static com.hedera.node.app.hapi.fees.test.UsageUtils.A_USAGES_MATRIX;
@@ -125,13 +126,12 @@ class FileOpsUsageTest {
     void estimatesInfoAsExpected() {
         givenInfoOp();
         // and:
-        final var ctx =
-                ExtantFileContext.newBuilder()
-                        .setCurrentExpiry(expiry)
-                        .setCurrentMemo(memo)
-                        .setCurrentWacl(wacl.getKeyList())
-                        .setCurrentSize(contents.length)
-                        .build();
+        final var ctx = ExtantFileContext.newBuilder()
+                .setCurrentExpiry(expiry)
+                .setCurrentMemo(memo)
+                .setCurrentWacl(wacl.getKeyList())
+                .setCurrentSize(contents.length)
+                .build();
         // and:
         given(queryBase.get()).willReturn(A_USAGES_MATRIX);
 
@@ -142,8 +142,7 @@ class FileOpsUsageTest {
         assertSame(A_USAGES_MATRIX, estimate);
         // and:
         verify(queryBase).addTb(BASIC_ENTITY_ID_SIZE);
-        verify(queryBase)
-                .addSb(BASE_FILEINFO_SIZE + memo.length() + getAccountKeyStorageSize(wacl));
+        verify(queryBase).addSb(BASE_FILEINFO_SIZE + memo.length() + getAccountKeyStorageSize(wacl));
     }
 
     @Test
@@ -161,8 +160,7 @@ class FileOpsUsageTest {
         // and:
         verify(base).addBpt(bytesUsed);
         verify(base).addSbs(sb * period);
-        verify(base)
-                .addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+        verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
     }
 
     @Test
@@ -175,24 +173,22 @@ class FileOpsUsageTest {
         // and:
         final long bytesUsed = reprSize() - FileOpsUsage.bytesInBaseRepr();
         // and:
-        final long oldSbs =
-                (oldExpiry - now)
-                        * (oldContents.length
-                                + oldMemo.length()
-                                + getAccountKeyStorageSize(
-                                        Key.newBuilder().setKeyList(oldWacl).build()));
+        final long oldSbs = (oldExpiry - now)
+                * (oldContents.length
+                        + oldMemo.length()
+                        + getAccountKeyStorageSize(
+                                Key.newBuilder().setKeyList(oldWacl).build()));
         // and:
         final long newSbs = (expiry - now) * bytesUsed;
 
         givenUpdateOp();
         // and:
-        final var ctx =
-                ExtantFileContext.newBuilder()
-                        .setCurrentExpiry(oldExpiry)
-                        .setCurrentMemo(oldMemo)
-                        .setCurrentWacl(oldWacl)
-                        .setCurrentSize(oldContents.length)
-                        .build();
+        final var ctx = ExtantFileContext.newBuilder()
+                .setCurrentExpiry(oldExpiry)
+                .setCurrentMemo(oldMemo)
+                .setCurrentWacl(oldWacl)
+                .setCurrentSize(oldContents.length)
+                .build();
 
         // when:
         final var estimate = subject.fileUpdateUsage(txn, sigUsage, ctx);
@@ -214,13 +210,12 @@ class FileOpsUsageTest {
 
         givenEmptyUpdateOp();
         // and:
-        final var ctx =
-                ExtantFileContext.newBuilder()
-                        .setCurrentExpiry(oldExpiry)
-                        .setCurrentMemo(oldMemo)
-                        .setCurrentWacl(oldWacl)
-                        .setCurrentSize(oldContents.length)
-                        .build();
+        final var ctx = ExtantFileContext.newBuilder()
+                .setCurrentExpiry(oldExpiry)
+                .setCurrentMemo(oldMemo)
+                .setCurrentWacl(oldWacl)
+                .setCurrentSize(oldContents.length)
+                .build();
 
         // when:
         final var estimate = subject.fileUpdateUsage(txn, sigUsage, ctx);
@@ -249,65 +244,52 @@ class FileOpsUsageTest {
     }
 
     private void givenEmptyUpdateOp() {
-        updateOp =
-                FileUpdateTransactionBody.newBuilder()
-                        .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
-                        .build();
+        updateOp = FileUpdateTransactionBody.newBuilder()
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
+                .build();
         setUpdateTxn();
     }
 
     private void givenUpdateOp() {
-        updateOp =
-                FileUpdateTransactionBody.newBuilder()
-                        .setContents(ByteString.copyFrom(contents))
-                        .setMemo(StringValue.newBuilder().setValue(memo))
-                        .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
-                        .setKeys(wacl.getKeyList())
-                        .build();
+        updateOp = FileUpdateTransactionBody.newBuilder()
+                .setContents(ByteString.copyFrom(contents))
+                .setMemo(StringValue.newBuilder().setValue(memo))
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
+                .setKeys(wacl.getKeyList())
+                .build();
         setUpdateTxn();
     }
 
     private void givenInfoOp() {
-        query =
-                Query.newBuilder()
-                        .setFileGetInfo(
-                                FileGetInfoQuery.newBuilder()
-                                        .setHeader(
-                                                QueryHeader.newBuilder()
-                                                        .setResponseType(ANSWER_STATE_PROOF)))
-                        .build();
+        query = Query.newBuilder()
+                .setFileGetInfo(FileGetInfoQuery.newBuilder()
+                        .setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_STATE_PROOF)))
+                .build();
     }
 
     private void givenCreationOp() {
-        creationOp =
-                FileCreateTransactionBody.newBuilder()
-                        .setContents(ByteString.copyFrom(contents))
-                        .setMemo(memo)
-                        .setKeys(wacl.getKeyList())
-                        .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
-                        .build();
+        creationOp = FileCreateTransactionBody.newBuilder()
+                .setContents(ByteString.copyFrom(contents))
+                .setMemo(memo)
+                .setKeys(wacl.getKeyList())
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
+                .build();
         setCreateTxn();
     }
 
     private void setCreateTxn() {
-        txn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(
-                                TransactionID.newBuilder()
-                                        .setTransactionValidStart(
-                                                Timestamp.newBuilder().setSeconds(now)))
-                        .setFileCreate(creationOp)
-                        .build();
+        txn = TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder()
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                .setFileCreate(creationOp)
+                .build();
     }
 
     private void setUpdateTxn() {
-        txn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(
-                                TransactionID.newBuilder()
-                                        .setTransactionValidStart(
-                                                Timestamp.newBuilder().setSeconds(now)))
-                        .setFileUpdate(updateOp)
-                        .build();
+        txn = TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder()
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                .setFileUpdate(updateOp)
+                .build();
     }
 }

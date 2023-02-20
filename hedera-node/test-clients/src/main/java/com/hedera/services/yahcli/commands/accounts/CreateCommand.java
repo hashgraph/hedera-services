@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.commands.accounts;
 
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED;
@@ -33,7 +34,8 @@ import picocli.CommandLine;
 public class CreateCommand implements Callable<Integer> {
     private static final int DEFAULT_NUM_RETRIES = 5;
 
-    @CommandLine.ParentCommand AccountsCommand accountsCommand;
+    @CommandLine.ParentCommand
+    AccountsCommand accountsCommand;
 
     @CommandLine.Option(
             names = {"-m", "--memo"},
@@ -76,39 +78,31 @@ public class CreateCommand implements Callable<Integer> {
         final var retries = boxedRetries != null ? boxedRetries.intValue() : DEFAULT_NUM_RETRIES;
         final var effectiveReceiverSigRequired = receiverSigRequired;
 
-        final var delegate =
-                new CreateSuite(
-                        config.asSpecConfig(),
-                        amount,
-                        effectiveMemo,
-                        noveltyLoc,
-                        retries,
-                        effectiveReceiverSigRequired);
+        final var delegate = new CreateSuite(
+                config.asSpecConfig(), amount, effectiveMemo, noveltyLoc, retries, effectiveReceiverSigRequired);
         delegate.runSuiteSync();
 
         if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
-            COMMON_MESSAGES.info(
-                    "SUCCESS - account "
-                            + HapiSuite.DEFAULT_SHARD_REALM
-                            + +delegate.getCreatedNo().get()
-                            + " has been created with balance "
-                            + amount
-                            + " tinybars "
-                            + ", signatureRequired "
-                            + effectiveReceiverSigRequired
-                            + " and memo '"
-                            + effectiveMemo
-                            + "'");
+            COMMON_MESSAGES.info("SUCCESS - account "
+                    + HapiSuite.DEFAULT_SHARD_REALM
+                    + +delegate.getCreatedNo().get()
+                    + " has been created with balance "
+                    + amount
+                    + " tinybars "
+                    + ", signatureRequired "
+                    + effectiveReceiverSigRequired
+                    + " and memo '"
+                    + effectiveMemo
+                    + "'");
         } else {
-            COMMON_MESSAGES.warn(
-                    "FAILED to create a new account with "
-                            + amount
-                            + " tinybars "
-                            + ", signatureRequired "
-                            + effectiveReceiverSigRequired
-                            + " and memo '"
-                            + effectiveMemo
-                            + "'");
+            COMMON_MESSAGES.warn("FAILED to create a new account with "
+                    + amount
+                    + " tinybars "
+                    + ", signatureRequired "
+                    + effectiveReceiverSigRequired
+                    + " and memo '"
+                    + effectiveMemo
+                    + "'");
             return 1;
         }
 

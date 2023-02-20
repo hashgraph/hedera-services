@@ -13,12 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-    id("com.hedera.hashgraph.conventions")
-}
+
+plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Hedera Admin Service API"
 
-dependencies {
-    api(project(":hedera-node:hedera-app-spi"))
-}
+dependencies { api(project(":hedera-node:hedera-app-spi")) }

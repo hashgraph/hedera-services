@@ -3,6 +3,7 @@ module com.hedera.node.app.spi {
     requires static transitive com.github.spotbugs.annotations;
     requires com.swirlds.common;
     requires com.google.protobuf;
+    requires com.swirlds.config;
 
     exports com.hedera.node.app.spi;
     exports com.hedera.node.app.spi.state;
@@ -14,4 +15,6 @@ module com.hedera.node.app.spi {
     opens com.hedera.node.app.spi to
             com.hedera.node.app.spi.test,
             com.hedera.node.app.service.mono.testFixtures;
+
+    exports com.hedera.node.app.spi.config;
 }

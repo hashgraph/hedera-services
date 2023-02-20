@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.network;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
@@ -56,18 +57,12 @@ public class HapiUncheckedSubmit<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiU
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final var subOpBytes = subOp.serializeSignedTxnFor(spec);
         if (verboseLoggingOn) {
-            log.info(
-                    "Submitting unchecked: "
-                            + CommonUtils.extractTransactionBody(
-                                    Transaction.parseFrom(subOpBytes)));
+            log.info("Submitting unchecked: " + CommonUtils.extractTransactionBody(Transaction.parseFrom(subOpBytes)));
         }
-        final UncheckedSubmitBody opBody =
-                spec.txns()
-                        .<UncheckedSubmitBody, UncheckedSubmitBody.Builder>body(
-                                UncheckedSubmitBody.class,
-                                b -> {
-                                    b.setTransactionBytes(ByteString.copyFrom(subOpBytes));
-                                });
+        final UncheckedSubmitBody opBody = spec.txns()
+                .<UncheckedSubmitBody, UncheckedSubmitBody.Builder>body(UncheckedSubmitBody.class, b -> {
+                    b.setTransactionBytes(ByteString.copyFrom(subOpBytes));
+                });
         return b -> b.setUncheckedSubmit(opBody);
     }
 

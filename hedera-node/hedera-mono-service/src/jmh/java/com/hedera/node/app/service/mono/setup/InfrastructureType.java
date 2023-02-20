@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.setup;
 
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
@@ -62,22 +63,14 @@ public enum InfrastructureType {
         @SuppressWarnings("unchecked")
         public TransactionalLedger<AccountID, AccountProperty, HederaAccount> abInitio(
                 final String dir, final InfrastructureBundle bundle) {
-            final var backingAccounts =
-                    new BackingAccounts(
-                            () ->
-                                    AccountStorageAdapter.fromInMemory(
-                                            (MerkleMap<EntityNum, MerkleAccount>)
-                                                    bundle.getterFor(ACCOUNTS_MM).get()),
-                            () ->
-                                    RecordsStorageAdapter.fromLegacy(
-                                            (MerkleMap<EntityNum, MerkleAccount>)
-                                                    bundle.getterFor(ACCOUNTS_MM).get()));
+            final var backingAccounts = new BackingAccounts(
+                    () -> AccountStorageAdapter.fromInMemory((MerkleMap<EntityNum, MerkleAccount>)
+                            bundle.getterFor(ACCOUNTS_MM).get()),
+                    () -> RecordsStorageAdapter.fromLegacy((MerkleMap<EntityNum, MerkleAccount>)
+                            bundle.getterFor(ACCOUNTS_MM).get()));
             backingAccounts.rebuildFromSources();
             return new TransactionalLedger<>(
-                    AccountProperty.class,
-                    MerkleAccount::new,
-                    backingAccounts,
-                    new ChangeSummaryManager<>());
+                    AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
         }
 
         @Override
@@ -95,8 +88,7 @@ public enum InfrastructureType {
 
         @Override
         @SuppressWarnings("unchecked")
-        public MerkleMap<EntityNum, MerkleStakingInfo> abInitio(
-                final String dir, final InfrastructureBundle bundle) {
+        public MerkleMap<EntityNum, MerkleStakingInfo> abInitio(final String dir, final InfrastructureBundle bundle) {
             return new MerkleMap<>();
         }
 
@@ -109,8 +101,7 @@ public enum InfrastructureType {
 
         @Override
         @SuppressWarnings("unchecked")
-        public void toStorage(
-                final Object fromBundle, final String dir, final InfrastructureBundle bundle) {
+        public void toStorage(final Object fromBundle, final String dir, final InfrastructureBundle bundle) {
             mmToStorage((MerkleMap<EntityNum, MerkleStakingInfo>) fromBundle, dir);
         }
     },
@@ -124,22 +115,19 @@ public enum InfrastructureType {
 
         @Override
         @SuppressWarnings("unchecked")
-        public MerkleMap<EntityNum, MerkleAccount> abInitio(
-                final String dir, final InfrastructureBundle bundle) {
+        public MerkleMap<EntityNum, MerkleAccount> abInitio(final String dir, final InfrastructureBundle bundle) {
             return new MerkleMap<>();
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        public MerkleMap<EntityNum, MerkleAccount> fromStorage(
-                final String dir, final InfrastructureBundle bundle) {
+        public MerkleMap<EntityNum, MerkleAccount> fromStorage(final String dir, final InfrastructureBundle bundle) {
             return mmFromStorage(dir);
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        public void toStorage(
-                final Object fromBundle, final String dir, final InfrastructureBundle bundle) {
+        public void toStorage(final Object fromBundle, final String dir, final InfrastructureBundle bundle) {
             mmToStorage((MerkleMap<EntityNum, MerkleAccount>) fromBundle, dir);
         }
     },
@@ -165,8 +153,7 @@ public enum InfrastructureType {
                 final String dir, final InfrastructureBundle bundle) {
             final var vMaploc = dir + File.separator + VM_META_FILE_NAME;
             final VirtualMap<ContractKey, IterableContractValue> kvStore = new VirtualMap<>();
-            try (final var fin =
-                    new MerkleDataInputStream(Files.newInputStream(Paths.get(vMaploc)))) {
+            try (final var fin = new MerkleDataInputStream(Files.newInputStream(Paths.get(vMaploc)))) {
                 kvStore.deserialize(fin, Paths.get(dir), 1);
             } catch (final IOException e) {
                 throw new UncheckedIOException(e);
@@ -176,14 +163,12 @@ public enum InfrastructureType {
 
         @Override
         @SuppressWarnings("unchecked")
-        public void toStorage(
-                final Object fromBundle, final String dir, final InfrastructureBundle bundle) {
+        public void toStorage(final Object fromBundle, final String dir, final InfrastructureBundle bundle) {
             final var contractStorage = (VirtualMap<ContractKey, IterableContractValue>) fromBundle;
             final var metaLoc = locWithin(dir);
             final var newContractStorage = contractStorage.copy();
             MerkleCryptoFactory.getInstance().digestTreeSync(contractStorage);
-            try (final var fout =
-                    new SerializableDataOutputStream(Files.newOutputStream(Paths.get(metaLoc)))) {
+            try (final var fout = new SerializableDataOutputStream(Files.newOutputStream(Paths.get(metaLoc)))) {
                 contractStorage.serialize(fout, Paths.get(dir));
             } catch (final IOException e) {
                 throw new UncheckedIOException(e);
@@ -196,8 +181,7 @@ public enum InfrastructureType {
         return EnumSet.noneOf(InfrastructureType.class);
     }
 
-    public void toStorage(
-            final Object fromBundle, final String dir, final InfrastructureBundle bundle) {
+    public void toStorage(final Object fromBundle, final String dir, final InfrastructureBundle bundle) {
         // No-op
     }
 
@@ -222,8 +206,7 @@ public enum InfrastructureType {
     protected <K, V extends MerkleNode & Keyed<K>> void mmToStorage(
             final MerkleMap<K, V> fromBundle, final String dir) {
         final var mMapLoc = locWithin(dir);
-        try (final var mMapOut =
-                new MerkleDataOutputStream(Files.newOutputStream(Paths.get(mMapLoc)))) {
+        try (final var mMapOut = new MerkleDataOutputStream(Files.newOutputStream(Paths.get(mMapLoc)))) {
             mMapOut.writeProtocolVersion();
             mMapOut.writeMerkleTree(Paths.get(dir), fromBundle);
         } catch (final IOException e) {

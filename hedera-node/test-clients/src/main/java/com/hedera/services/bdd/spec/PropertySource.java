@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec;
 
 import com.hedera.services.bdd.spec.keys.KeyFactory;
@@ -97,8 +98,7 @@ public interface PropertySource {
     }
 
     static String asAccountString(AccountID account) {
-        return String.format(
-                "%d.%d.%d", account.getShardNum(), account.getRealmNum(), account.getAccountNum());
+        return String.format("%d.%d.%d", account.getShardNum(), account.getRealmNum(), account.getAccountNum());
     }
 
     static ContractID asContract(String v) {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage;
 
 import static com.hedera.node.app.hapi.fees.test.IdUtils.asAccount;
@@ -44,11 +45,10 @@ class SingletonEstimatorUtilsTest {
     private final long maxLifetime = 100 * 365 * 24 * 60 * 60L;
     private final String memo = "abcdefgh";
     private final SigUsage sigUsage = new SigUsage(3, 256, 2);
-    private final TransferList transfers =
-            TxnUtils.withAdjustments(
-                    asAccount("0.0.2"), -2,
-                    asAccount("0.0.3"), 1,
-                    asAccount("0.0.4"), 1);
+    private final TransferList transfers = TxnUtils.withAdjustments(
+            asAccount("0.0.2"), -2,
+            asAccount("0.0.3"), 1,
+            asAccount("0.0.4"), 1);
 
     @Test
     void byteSecondsUsagePeriodsAreCappedAtOneCentury() {
@@ -61,8 +61,7 @@ class SingletonEstimatorUtilsTest {
         final long cappedChange = maxLifetime * (newUsage - oldUsage);
 
         // when:
-        final var result =
-                ESTIMATOR_UTILS.changeInBsUsage(oldUsage, oldLifetime, newUsage, newLifetime);
+        final var result = ESTIMATOR_UTILS.changeInBsUsage(oldUsage, oldLifetime, newUsage, newLifetime);
 
         // then:
         assertEquals(cappedChange, result);
@@ -71,22 +70,14 @@ class SingletonEstimatorUtilsTest {
     @Test
     void hasExpectedBaseEstimate() {
         // given:
-        final TransactionBody txn =
-                TransactionBody.newBuilder()
-                        .setMemo("You won't want to hear this.")
-                        .setCryptoTransfer(
-                                CryptoTransferTransactionBody.newBuilder()
-                                        .setTransfers(
-                                                TransferList.newBuilder()
-                                                        .addAccountAmounts(
-                                                                AccountAmount.newBuilder()
-                                                                        .setAmount(123L)
-                                                                        .setAccountID(
-                                                                                AccountID
-                                                                                        .newBuilder()
-                                                                                        .setAccountNum(
-                                                                                                75231)))))
-                        .build();
+        final TransactionBody txn = TransactionBody.newBuilder()
+                .setMemo("You won't want to hear this.")
+                .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()
+                        .setTransfers(TransferList.newBuilder()
+                                .addAccountAmounts(AccountAmount.newBuilder()
+                                        .setAmount(123L)
+                                        .setAccountID(AccountID.newBuilder().setAccountNum(75231)))))
+                .build();
         // and:
         final long expectedBpt = ESTIMATOR_UTILS.baseBodyBytes(txn) + sigUsage.sigsSize();
         final long expectedRbs = ESTIMATOR_UTILS.baseRecordBytes(txn) * RECEIPT_STORAGE_TIME_SEC;
@@ -104,8 +95,7 @@ class SingletonEstimatorUtilsTest {
     @Test
     void hasExpectedBaseNetworkRbs() {
         // expect:
-        assertEquals(
-                BASIC_RECEIPT_SIZE * RECEIPT_STORAGE_TIME_SEC, ESTIMATOR_UTILS.baseNetworkRbs());
+        assertEquals(BASIC_RECEIPT_SIZE * RECEIPT_STORAGE_TIME_SEC, ESTIMATOR_UTILS.baseNetworkRbs());
     }
 
     @Test
@@ -120,9 +110,7 @@ class SingletonEstimatorUtilsTest {
     @Test
     void partitionsQueriesAsExpected() {
         // expect:
-        assertEquals(
-                A_QUERY_USAGES_MATRIX,
-                ESTIMATOR_UTILS.withDefaultQueryPartitioning(A_USAGE_VECTOR));
+        assertEquals(A_QUERY_USAGES_MATRIX, ESTIMATOR_UTILS.withDefaultQueryPartitioning(A_USAGE_VECTOR));
     }
 
     @Test
@@ -130,9 +118,8 @@ class SingletonEstimatorUtilsTest {
         // given:
         final long now = Instant.now().getEpochSecond();
         final long then = 4688462211L;
-        final var txnId =
-                TransactionID.newBuilder()
-                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now));
+        final var txnId = TransactionID.newBuilder()
+                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now));
         final var txn = TransactionBody.newBuilder().setTransactionID(txnId).build();
 
         // when:
@@ -159,17 +146,14 @@ class SingletonEstimatorUtilsTest {
     @Test
     void getsBaseRecordBytesForTransfer() {
         // given:
-        final TransactionBody txn =
-                TransactionBody.newBuilder()
-                        .setMemo(memo)
-                        .setCryptoTransfer(
-                                CryptoTransferTransactionBody.newBuilder().setTransfers(transfers))
-                        .build();
+        final TransactionBody txn = TransactionBody.newBuilder()
+                .setMemo(memo)
+                .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder().setTransfers(transfers))
+                .build();
         // and:
-        final int expected =
-                FeeBuilder.BASIC_TX_RECORD_SIZE
-                        + memo.length()
-                        + FeeBuilder.BASIC_ACCOUNT_AMT_SIZE * transfers.getAccountAmountsCount();
+        final int expected = FeeBuilder.BASIC_TX_RECORD_SIZE
+                + memo.length()
+                + FeeBuilder.BASIC_ACCOUNT_AMT_SIZE * transfers.getAccountAmountsCount();
 
         // when:
         final int actual = ESTIMATOR_UTILS.baseRecordBytes(txn);

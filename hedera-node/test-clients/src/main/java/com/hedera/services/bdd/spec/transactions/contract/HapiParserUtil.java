@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.contract;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -46,8 +47,7 @@ public class HapiParserUtil {
     }
 
     public static Address asHeadlongAddress(final String address) {
-        final var addressBytes =
-                Bytes.fromHexString(address.startsWith("0x") ? address : "0x" + address);
+        final var addressBytes = Bytes.fromHexString(address.startsWith("0x") ? address : "0x" + address);
         final var addressAsInteger = addressBytes.toUnsignedBigInteger();
         return Address.wrap(Address.toChecksumAddress(addressAsInteger));
     }
@@ -68,8 +68,8 @@ public class HapiParserUtil {
 
     public static Address evmAddressFromSecp256k1Key(final Key key) {
         if (key.hasECDSASecp256K1()) {
-            return asHeadlongAddress(
-                    EthSigsUtils.recoverAddressFromPubKey(key.getECDSASecp256K1().toByteArray()));
+            return asHeadlongAddress(EthSigsUtils.recoverAddressFromPubKey(
+                    key.getECDSASecp256K1().toByteArray()));
         } else {
             throw new IllegalStateException("Cannot observe address for non-ECDSA key!");
         }

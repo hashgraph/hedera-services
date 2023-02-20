@@ -13,15 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.utils.validation.domain;
 
 public class ContractScenario {
     public static String NOVEL_CONTRACT_NAME = "Multipurpose";
     public static String PERSISTENT_CONTRACT_NAME = "Multipurpose";
-    public static String DEFAULT_CONTRACT_RESOURCE =
-            "contract/contracts/Multipurpose/Multipurpose.sol";
-    public static String DEFAULT_BYTECODE_RESOURCE =
-            "contract/contracts/Multipurpose/Multipurpose.bin";
+    public static String DEFAULT_CONTRACT_RESOURCE = "contract/contracts/Multipurpose/Multipurpose.sol";
+    public static String DEFAULT_BYTECODE_RESOURCE = "contract/contracts/Multipurpose/Multipurpose.bin";
     public static int DEFAULT_LUCKY_NUMBER = 42;
 
     PersistentContract persistent;

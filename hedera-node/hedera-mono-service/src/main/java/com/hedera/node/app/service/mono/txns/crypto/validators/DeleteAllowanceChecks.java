@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.crypto.validators;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
@@ -45,8 +46,7 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
     private final OptionValidator validator;
 
     @Inject
-    public DeleteAllowanceChecks(
-            final GlobalDynamicProperties dynamicProperties, final OptionValidator validator) {
+    public DeleteAllowanceChecks(final GlobalDynamicProperties dynamicProperties, final OptionValidator validator) {
         super(dynamicProperties);
         this.validator = validator;
     }
@@ -61,16 +61,13 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
      * @return validation response
      */
     public ResponseCodeEnum deleteAllowancesValidation(
-            final List<NftRemoveAllowance> nftAllowances,
-            final Account payerAccount,
-            final StateView view) {
+            final List<NftRemoveAllowance> nftAllowances, final Account payerAccount, final StateView view) {
         final var accountStore = new AccountStore(validator, view.asReadOnlyAccountStore());
-        final var tokenStore =
-                new ReadOnlyTokenStore(
-                        accountStore,
-                        view.asReadOnlyTokenStore(),
-                        view.asReadOnlyNftStore(),
-                        view.asReadOnlyAssociationStore());
+        final var tokenStore = new ReadOnlyTokenStore(
+                accountStore,
+                view.asReadOnlyTokenStore(),
+                view.asReadOnlyNftStore(),
+                view.asReadOnlyAssociationStore());
         return deleteAllowancesValidation(nftAllowances, payerAccount, accountStore, tokenStore);
     }
 
@@ -124,9 +121,7 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
             final var serialNums = allowance.getSerialNumbersList();
             final Token token;
             try {
-                token =
-                        tokenStore.loadPossiblyPausedToken(
-                                Id.fromGrpcToken(allowance.getTokenId()));
+                token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(allowance.getTokenId()));
             } catch (InvalidTransactionException e) {
                 return e.getResponseCode();
             }

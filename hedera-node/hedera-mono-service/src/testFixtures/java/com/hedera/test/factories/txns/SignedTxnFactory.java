@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.txns;
 
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
@@ -77,9 +78,7 @@ public abstract class SignedTxnFactory<T extends SignedTxnFactory<T>> {
 
     public Transaction get() throws Throwable {
         final Transaction provisional = signed(signableTxn(customFee.orElse(0L)));
-        return customFee.isPresent()
-                ? provisional
-                : signed(signableTxn(feeFor(provisional, payerKt.numLeaves())));
+        return customFee.isPresent() ? provisional : signed(signableTxn(feeFor(provisional, payerKt.numLeaves())));
     }
 
     private Transaction.Builder signableTxn(final long fee) {
@@ -96,19 +95,16 @@ public abstract class SignedTxnFactory<T extends SignedTxnFactory<T>> {
     }
 
     private List<KeyTree> allKts() {
-        return Stream.of(
-                        skipPayerSig ? Stream.<KeyTree>empty() : Stream.of(payerKt),
-                        otherKts.stream())
+        return Stream.of(skipPayerSig ? Stream.<KeyTree>empty() : Stream.of(payerKt), otherKts.stream())
                 .flatMap(Function.identity())
                 .collect(toList());
     }
 
     private TransactionBody.Builder baseTxn() {
-        final TransactionBody.Builder txn =
-                TransactionBody.newBuilder()
-                        .setNodeAccountID(asAccount(node))
-                        .setTransactionValidDuration(validDuration())
-                        .setMemo(memo);
+        final TransactionBody.Builder txn = TransactionBody.newBuilder()
+                .setNodeAccountID(asAccount(node))
+                .setTransactionValidDuration(validDuration())
+                .setMemo(memo);
         if (!skipTxnId) {
             txn.setTransactionID(txnId());
         }

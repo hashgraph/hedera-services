@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
@@ -21,7 +22,6 @@ import static com.hedera.node.app.service.mono.utils.MapValueListUtils.linkInPla
 import static com.hedera.node.app.service.mono.utils.MapValueListUtils.unlinkInPlaceFromMapValueList;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.hedera.node.app.service.mono.state.expiry.UniqueTokensListMutation;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
@@ -32,6 +32,7 @@ import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.config.PropertyNames;
 import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -41,6 +42,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class UniqueTokensLinkManager {
+
     private static final Logger log = LogManager.getLogger(UniqueTokensLinkManager.class);
 
     private final Supplier<AccountStorageAdapter> accounts;
@@ -57,9 +59,7 @@ public class UniqueTokensLinkManager {
         this.accounts = accounts;
         this.tokens = tokens;
         this.uniqueTokens = uniqueTokens;
-        this.enableVirtualNft =
-                bootstrapProperties.getBooleanProperty(
-                        PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE);
+        this.enableVirtualNft = bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE);
     }
 
     /**
@@ -79,9 +79,7 @@ public class UniqueTokensLinkManager {
      */
     @Nullable
     public UniqueTokenAdapter updateLinks(
-            @Nullable final EntityNum from,
-            @Nullable final EntityNum to,
-            @NonNull final NftId nftId) {
+            @Nullable final EntityNum from, @Nullable final EntityNum to, @NonNull final NftId nftId) {
         final var curAccounts = accounts.get();
         final var curTokens = tokens.get();
         final var curUniqueTokens = uniqueTokens.get();
@@ -113,10 +111,9 @@ public class UniqueTokensLinkManager {
             } else {
                 // This is "non-treasury mint" done via a multi-stage contract op; we need to
                 // create a NFT whose link pointers we can update, since it doesn't exist yet
-                insertedNft =
-                        enableVirtualNft
-                                ? UniqueTokenAdapter.wrap(new UniqueTokenValue())
-                                : UniqueTokenAdapter.wrap(new MerkleUniqueToken());
+                insertedNft = enableVirtualNft
+                        ? UniqueTokenAdapter.wrap(new UniqueTokenValue())
+                        : UniqueTokenAdapter.wrap(new MerkleUniqueToken());
                 insertInPlaceAtMapValueListHead(nftId, insertedNft, rootKey, null, listMutation);
             }
             toAccount.setHeadNftId(nftId.num());
@@ -127,9 +124,7 @@ public class UniqueTokensLinkManager {
     }
 
     private boolean isValidAndNotTreasury(final EntityNum accountNum, final MerkleToken token) {
-        return accountNum != null
-                && !accountNum.equals(MISSING_NUM)
-                && !accountNum.equals(token.treasuryNum());
+        return accountNum != null && !accountNum.equals(MISSING_NUM) && !accountNum.equals(token.treasuryNum());
     }
 
     @Nullable

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
@@ -116,36 +117,26 @@ public class TokenAssociationSpecs extends HapiSuite {
         return defaultHapiSpec("MultiAssociationWithSameRepeatedTokenAsExpected")
                 .given(
                         cryptoCreate(civilian)
-                                .exposingCreatedIdTo(
-                                        id -> civilianMirrorAddr.set(asHexedSolidityAddress(id))),
+                                .exposingCreatedIdTo(id -> civilianMirrorAddr.set(asHexedSolidityAddress(id))),
                         tokenCreate(nfToken)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .supplyKey(GENESIS)
                                 .initialSupply(0)
-                                .exposingCreatedIdTo(
-                                        idLit ->
-                                                tokenMirrorAddr.set(
-                                                        asHexedSolidityAddress(
-                                                                HapiPropertySource.asToken(
-                                                                        idLit)))),
+                                .exposingCreatedIdTo(idLit ->
+                                        tokenMirrorAddr.set(asHexedSolidityAddress(HapiPropertySource.asToken(idLit)))),
                         uploadInitCode(theContract),
                         contractCreate(theContract))
-                .when(
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        theContract,
-                                                        "tokensAssociate",
-                                                        asHeadlongAddress(civilianMirrorAddr.get()),
-                                                        (new Address[] {
-                                                            asHeadlongAddress(
-                                                                    tokenMirrorAddr.get()),
-                                                            asHeadlongAddress(tokenMirrorAddr.get())
-                                                        }))
-                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                .via(multiAssociate)
-                                                .payingWith(civilian)
-                                                .gas(4_000_000)))
+                .when(sourcing(() -> contractCall(
+                                theContract,
+                                "tokensAssociate",
+                                asHeadlongAddress(civilianMirrorAddr.get()),
+                                (new Address[] {
+                                    asHeadlongAddress(tokenMirrorAddr.get()), asHeadlongAddress(tokenMirrorAddr.get())
+                                }))
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                        .via(multiAssociate)
+                        .payingWith(civilian)
+                        .gas(4_000_000)))
                 .then(
                         childRecordsCheck(
                                 multiAssociate,
@@ -190,13 +181,12 @@ public class TokenAssociationSpecs extends HapiSuite {
                                 .hasToken(relationshipWith("tbd")),
                         tokenDissociate(contract, "b"),
                         tokenDelete("tbd"))
-                .then(
-                        getContractInfo(contract)
-                                .hasToken(relationshipWith("a"))
-                                .hasNoTokenRelationship("b")
-                                .hasToken(relationshipWith("c"))
-                                .hasToken(relationshipWith("tbd"))
-                                .logged());
+                .then(getContractInfo(contract)
+                        .hasToken(relationshipWith("a"))
+                        .hasNoTokenRelationship("b")
+                        .hasToken(relationshipWith("c"))
+                        .hasToken(relationshipWith("tbd"))
+                        .logged());
     }
 
     public HapiSpec accountInfoQueriesAsExpected() {
@@ -218,13 +208,12 @@ public class TokenAssociationSpecs extends HapiSuite {
                                 .hasToken(relationshipWith("tbd").decimals(4)),
                         tokenDissociate(account, "b"),
                         tokenDelete("tbd"))
-                .then(
-                        getAccountInfo(account)
-                                .hasToken(relationshipWith("a").decimals(1))
-                                .hasNoTokenRelationship("b")
-                                .hasToken(relationshipWith("c").decimals(3))
-                                .hasToken(relationshipWith("tbd").decimals(4))
-                                .logged());
+                .then(getAccountInfo(account)
+                        .hasToken(relationshipWith("a").decimals(1))
+                        .hasNoTokenRelationship("b")
+                        .hasToken(relationshipWith("c").decimals(3))
+                        .hasToken(relationshipWith("tbd").decimals(4))
+                        .logged());
     }
 
     public HapiSpec expiredAndDeletedTokensStillAppearInContractInfo() {
@@ -240,42 +229,34 @@ public class TokenAssociationSpecs extends HapiSuite {
                         cryptoCreate(treasury),
                         uploadInitCode(contract),
                         contractCreate(contract).gas(300_000).via("creation"),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    var subOp = getTxnRecord("creation");
-                                    allRunFor(spec, subOp);
-                                    var record = subOp.getResponseRecord();
-                                    now.set(record.getConsensusTimestamp().getSeconds());
-                                }),
-                        sourcing(
-                                () ->
-                                        tokenCreate(expiringToken)
-                                                .decimals(666)
-                                                .adminKey("admin")
-                                                .treasury(treasury)
-                                                .expiry(now.get() + lifetimeSecs)))
+                        withOpContext((spec, opLog) -> {
+                            var subOp = getTxnRecord("creation");
+                            allRunFor(spec, subOp);
+                            var record = subOp.getResponseRecord();
+                            now.set(record.getConsensusTimestamp().getSeconds());
+                        }),
+                        sourcing(() -> tokenCreate(expiringToken)
+                                .decimals(666)
+                                .adminKey("admin")
+                                .treasury(treasury)
+                                .expiry(now.get() + lifetimeSecs)))
                 .when(
                         tokenAssociate(contract, expiringToken),
                         cryptoTransfer(moving(xfer, expiringToken).between(treasury, contract)))
                 .then(
                         getAccountBalance(contract).hasTokenBalance(expiringToken, xfer),
                         getContractInfo(contract)
-                                .hasToken(
-                                        relationshipWith(expiringToken)
-                                                .freeze(FreezeNotApplicable)),
+                                .hasToken(relationshipWith(expiringToken).freeze(FreezeNotApplicable)),
                         sleepFor(lifetimeSecs * 1_000L),
                         getAccountBalance(contract).hasTokenBalance(expiringToken, xfer, 666),
                         getContractInfo(contract)
-                                .hasToken(
-                                        relationshipWith(expiringToken)
-                                                .freeze(FreezeNotApplicable)),
+                                .hasToken(relationshipWith(expiringToken).freeze(FreezeNotApplicable)),
                         tokenDelete(expiringToken),
                         getAccountBalance(contract).hasTokenBalance(expiringToken, xfer),
                         getContractInfo(contract)
-                                .hasToken(
-                                        relationshipWith(expiringToken)
-                                                .decimals(666)
-                                                .freeze(FreezeNotApplicable)));
+                                .hasToken(relationshipWith(expiringToken)
+                                        .decimals(666)
+                                        .freeze(FreezeNotApplicable)));
     }
 
     public HapiSpec dissociationFromExpiredTokensAsExpected() {
@@ -292,111 +273,72 @@ public class TokenAssociationSpecs extends HapiSuite {
                         cryptoCreate(treasury),
                         cryptoCreate(frozenAccount).via("creation"),
                         cryptoCreate(unfrozenAccount).via("creation"),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    var subOp = getTxnRecord("creation");
-                                    allRunFor(spec, subOp);
-                                    var record = subOp.getResponseRecord();
-                                    now.set(record.getConsensusTimestamp().getSeconds());
-                                }),
-                        sourcing(
-                                () ->
-                                        tokenCreate(expiringToken)
-                                                .freezeKey("freezeKey")
-                                                .freezeDefault(true)
-                                                .treasury(treasury)
-                                                .initialSupply(1000L)
-                                                .expiry(now.get() + lifetimeSecs)))
+                        withOpContext((spec, opLog) -> {
+                            var subOp = getTxnRecord("creation");
+                            allRunFor(spec, subOp);
+                            var record = subOp.getResponseRecord();
+                            now.set(record.getConsensusTimestamp().getSeconds());
+                        }),
+                        sourcing(() -> tokenCreate(expiringToken)
+                                .freezeKey("freezeKey")
+                                .freezeDefault(true)
+                                .treasury(treasury)
+                                .initialSupply(1000L)
+                                .expiry(now.get() + lifetimeSecs)))
                 .when(
                         tokenAssociate(unfrozenAccount, expiringToken),
                         tokenAssociate(frozenAccount, expiringToken),
                         tokenUnfreeze(expiringToken, unfrozenAccount),
-                        cryptoTransfer(
-                                moving(100L, expiringToken).between(treasury, unfrozenAccount)))
+                        cryptoTransfer(moving(100L, expiringToken).between(treasury, unfrozenAccount)))
                 .then(
                         getAccountBalance(treasury).hasTokenBalance(expiringToken, 900L),
                         sleepFor(lifetimeSecs * 1_000L),
-                        tokenDissociate(treasury, expiringToken)
-                                .hasKnownStatus(ACCOUNT_IS_TREASURY),
+                        tokenDissociate(treasury, expiringToken).hasKnownStatus(ACCOUNT_IS_TREASURY),
                         tokenDissociate(unfrozenAccount, expiringToken).via("dissociateTxn"),
                         getTxnRecord("dissociateTxn")
-                                .hasPriority(
-                                        recordWith()
-                                                .tokenTransfers(
-                                                        new BaseErroringAssertsProvider<>() {
-                                                            @Override
-                                                            public ErroringAsserts<
-                                                                            List<TokenTransferList>>
-                                                                    assertsFor(HapiSpec spec) {
-                                                                return tokenXfers -> {
-                                                                    try {
-                                                                        assertEquals(
-                                                                                1,
-                                                                                tokenXfers.size(),
-                                                                                "Wrong number of"
-                                                                                    + " tokens"
-                                                                                    + " transferred!");
-                                                                        TokenTransferList xfers =
-                                                                                tokenXfers.get(0);
-                                                                        assertEquals(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                expiringToken),
-                                                                                xfers.getToken(),
-                                                                                "Wrong token"
-                                                                                    + " transferred!");
-                                                                        AccountAmount toTreasury =
-                                                                                xfers.getTransfers(
-                                                                                        0);
-                                                                        assertEquals(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                treasury),
-                                                                                toTreasury
-                                                                                        .getAccountID(),
-                                                                                "Treasury should"
-                                                                                    + " come"
-                                                                                    + " first!");
-                                                                        assertEquals(
-                                                                                100L,
-                                                                                toTreasury
-                                                                                        .getAmount(),
-                                                                                "Treasury should"
-                                                                                        + " get 100"
-                                                                                        + " tokens"
-                                                                                        + " back!");
-                                                                        AccountAmount fromAccount =
-                                                                                xfers.getTransfers(
-                                                                                        1);
-                                                                        assertEquals(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                unfrozenAccount),
-                                                                                fromAccount
-                                                                                        .getAccountID(),
-                                                                                "Account should"
-                                                                                    + " come"
-                                                                                    + " second!");
-                                                                        assertEquals(
-                                                                                -100L,
-                                                                                fromAccount
-                                                                                        .getAmount(),
-                                                                                "Account should"
-                                                                                    + " send 100"
-                                                                                    + " tokens"
-                                                                                    + " back!");
-                                                                    } catch (Exception error) {
-                                                                        return List.of(error);
-                                                                    }
-                                                                    return Collections.emptyList();
-                                                                };
-                                                            }
-                                                        })),
+                                .hasPriority(recordWith().tokenTransfers(new BaseErroringAssertsProvider<>() {
+                                    @Override
+                                    public ErroringAsserts<List<TokenTransferList>> assertsFor(HapiSpec spec) {
+                                        return tokenXfers -> {
+                                            try {
+                                                assertEquals(
+                                                        1,
+                                                        tokenXfers.size(),
+                                                        "Wrong number of" + " tokens" + " transferred!");
+                                                TokenTransferList xfers = tokenXfers.get(0);
+                                                assertEquals(
+                                                        spec.registry().getTokenID(expiringToken),
+                                                        xfers.getToken(),
+                                                        "Wrong token" + " transferred!");
+                                                AccountAmount toTreasury = xfers.getTransfers(0);
+                                                assertEquals(
+                                                        spec.registry().getAccountID(treasury),
+                                                        toTreasury.getAccountID(),
+                                                        "Treasury should" + " come" + " first!");
+                                                assertEquals(
+                                                        100L,
+                                                        toTreasury.getAmount(),
+                                                        "Treasury should" + " get 100" + " tokens" + " back!");
+                                                AccountAmount fromAccount = xfers.getTransfers(1);
+                                                assertEquals(
+                                                        spec.registry().getAccountID(unfrozenAccount),
+                                                        fromAccount.getAccountID(),
+                                                        "Account should" + " come" + " second!");
+                                                assertEquals(
+                                                        -100L,
+                                                        fromAccount.getAmount(),
+                                                        "Account should" + " send 100" + " tokens" + " back!");
+                                            } catch (Exception error) {
+                                                return List.of(error);
+                                            }
+                                            return Collections.emptyList();
+                                        };
+                                    }
+                                })),
                         getAccountBalance(treasury).hasTokenBalance(expiringToken, 1000L),
                         getAccountInfo(frozenAccount)
                                 .hasToken(relationshipWith(expiringToken).freeze(Frozen)),
-                        tokenDissociate(frozenAccount, expiringToken)
-                                .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
+                        tokenDissociate(frozenAccount, expiringToken).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
     }
 
     public HapiSpec canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury() {
@@ -422,48 +364,26 @@ public class TokenAssociationSpecs extends HapiSuite {
                         cryptoCreate(bNonTreasuryAcquaintance).maxAutomaticTokenAssociations(1))
                 .when(
                         tokenAssociate(aNonTreasuryAcquaintance, TBD_TOKEN),
-                        cryptoTransfer(
-                                moving(nonZeroXfer, TBD_TOKEN)
-                                        .distributing(
-                                                TOKEN_TREASURY,
-                                                aNonTreasuryAcquaintance,
-                                                bNonTreasuryAcquaintance)),
+                        cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN)
+                                .distributing(TOKEN_TREASURY, aNonTreasuryAcquaintance, bNonTreasuryAcquaintance)),
                         tokenFreeze(TBD_TOKEN, aNonTreasuryAcquaintance),
                         tokenDelete(TBD_TOKEN),
-                        tokenDissociate(bNonTreasuryAcquaintance, TBD_TOKEN)
-                                .via(bNonTreasuryDissoc),
+                        tokenDissociate(bNonTreasuryAcquaintance, TBD_TOKEN).via(bNonTreasuryDissoc),
                         tokenDissociate(TOKEN_TREASURY, TBD_TOKEN).via(treasuryDissoc),
-                        tokenDissociate(aNonTreasuryAcquaintance, TBD_TOKEN)
-                                .via(aNonTreasuryDissoc))
+                        tokenDissociate(aNonTreasuryAcquaintance, TBD_TOKEN).via(aNonTreasuryDissoc))
                 .then(
                         getTxnRecord(bNonTreasuryDissoc)
-                                .hasPriority(
-                                        recordWith()
-                                                .tokenTransfers(
-                                                        changingFungibleBalances()
-                                                                .including(
-                                                                        TBD_TOKEN,
-                                                                        bNonTreasuryAcquaintance,
-                                                                        -nonZeroXfer / 2))),
+                                .hasPriority(recordWith()
+                                        .tokenTransfers(changingFungibleBalances()
+                                                .including(TBD_TOKEN, bNonTreasuryAcquaintance, -nonZeroXfer / 2))),
                         getTxnRecord(treasuryDissoc)
-                                .hasPriority(
-                                        recordWith()
-                                                .tokenTransfers(
-                                                        changingFungibleBalances()
-                                                                .including(
-                                                                        TBD_TOKEN,
-                                                                        TOKEN_TREASURY,
-                                                                        nonZeroXfer
-                                                                                - initialSupply))),
+                                .hasPriority(recordWith()
+                                        .tokenTransfers(changingFungibleBalances()
+                                                .including(TBD_TOKEN, TOKEN_TREASURY, nonZeroXfer - initialSupply))),
                         getTxnRecord(aNonTreasuryDissoc)
-                                .hasPriority(
-                                        recordWith()
-                                                .tokenTransfers(
-                                                        changingFungibleBalances()
-                                                                .including(
-                                                                        TBD_TOKEN,
-                                                                        aNonTreasuryAcquaintance,
-                                                                        -nonZeroXfer / 2))));
+                                .hasPriority(recordWith()
+                                        .tokenTransfers(changingFungibleBalances()
+                                                .including(TBD_TOKEN, aNonTreasuryAcquaintance, -nonZeroXfer / 2))));
     }
 
     public HapiSpec dissociateHasExpectedSemanticsForDeletedTokens() {
@@ -511,15 +431,10 @@ public class TokenAssociationSpecs extends HapiSuite {
                         tokenUnfreeze(TBD_TOKEN, zeroBalanceUnfrozen),
                         tokenUnfreeze(TBD_TOKEN, nonZeroBalanceUnfrozen),
                         tokenUnfreeze(TBD_TOKEN, nonZeroBalanceFrozen),
-                        cryptoTransfer(
-                                moving(nonZeroXfer, TBD_TOKEN)
-                                        .between(TOKEN_TREASURY, nonZeroBalanceFrozen)),
-                        cryptoTransfer(
-                                moving(nonZeroXfer, TBD_TOKEN)
-                                        .between(TOKEN_TREASURY, nonZeroBalanceUnfrozen)),
+                        cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN).between(TOKEN_TREASURY, nonZeroBalanceFrozen)),
+                        cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN).between(TOKEN_TREASURY, nonZeroBalanceUnfrozen)),
                         tokenFreeze(TBD_TOKEN, nonZeroBalanceFrozen),
-                        getAccountBalance(TOKEN_TREASURY)
-                                .hasTokenBalance(TBD_TOKEN, initialSupply - 2 * nonZeroXfer),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TBD_TOKEN, initialSupply - 2 * nonZeroXfer),
                         tokenDelete(TBD_TOKEN),
                         tokenDelete(tbdUniqToken))
                 .then(
@@ -528,28 +443,16 @@ public class TokenAssociationSpecs extends HapiSuite {
                         tokenDissociate(nonZeroBalanceFrozen, TBD_TOKEN).via(nonZeroBalanceDissoc),
                         tokenDissociate(nonZeroBalanceUnfrozen, TBD_TOKEN),
                         tokenDissociate(TOKEN_TREASURY, tbdUniqToken).via(uniqDissoc),
-                        getAccountBalance(TOKEN_TREASURY)
-                                .hasTokenBalance(TBD_TOKEN, initialSupply - 2 * nonZeroXfer),
-                        getTxnRecord(zeroBalanceDissoc)
-                                .hasPriority(recordWith().tokenTransfers(emptyTokenTransfers())),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TBD_TOKEN, initialSupply - 2 * nonZeroXfer),
+                        getTxnRecord(zeroBalanceDissoc).hasPriority(recordWith().tokenTransfers(emptyTokenTransfers())),
                         getTxnRecord(nonZeroBalanceDissoc)
-                                .hasPriority(
-                                        recordWith()
-                                                .tokenTransfers(
-                                                        changingFungibleBalances()
-                                                                .including(
-                                                                        TBD_TOKEN,
-                                                                        nonZeroBalanceFrozen,
-                                                                        -nonZeroXfer))),
+                                .hasPriority(recordWith()
+                                        .tokenTransfers(changingFungibleBalances()
+                                                .including(TBD_TOKEN, nonZeroBalanceFrozen, -nonZeroXfer))),
                         getTxnRecord(uniqDissoc)
-                                .hasPriority(
-                                        recordWith()
-                                                .tokenTransfers(
-                                                        changingFungibleBalances()
-                                                                .including(
-                                                                        tbdUniqToken,
-                                                                        TOKEN_TREASURY,
-                                                                        -3))),
+                                .hasPriority(recordWith()
+                                        .tokenTransfers(changingFungibleBalances()
+                                                .including(tbdUniqToken, TOKEN_TREASURY, -3))),
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(0));
     }
 
@@ -563,23 +466,17 @@ public class TokenAssociationSpecs extends HapiSuite {
                         tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
                                 .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
                         tokenAssociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT, KNOWABLE_TOKEN),
-                        tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
-                                .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
+                        tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
                         tokenUnfreeze(FREEZABLE_TOKEN_ON_BY_DEFAULT, "misc"),
-                        cryptoTransfer(
-                                moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT)
-                                        .between(TOKEN_TREASURY, "misc")),
+                        cryptoTransfer(moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT).between(TOKEN_TREASURY, "misc")),
                         tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
                                 .hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
-                        cryptoTransfer(
-                                moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT)
-                                        .between("misc", TOKEN_TREASURY)),
+                        cryptoTransfer(moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT).between("misc", TOKEN_TREASURY)),
                         tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT))
-                .then(
-                        getAccountInfo("misc")
-                                .hasToken(relationshipWith(KNOWABLE_TOKEN))
-                                .hasNoTokenRelationship(FREEZABLE_TOKEN_ON_BY_DEFAULT)
-                                .logged());
+                .then(getAccountInfo("misc")
+                        .hasToken(relationshipWith(KNOWABLE_TOKEN))
+                        .hasNoTokenRelationship(FREEZABLE_TOKEN_ON_BY_DEFAULT)
+                        .logged());
     }
 
     public HapiSpec dissociateHasExpectedSemanticsForDissociatedContracts() {
@@ -605,11 +502,8 @@ public class TokenAssociationSpecs extends HapiSuite {
                         mintToken(uniqToken, List.of(firstMeta, secondMeta, thirdMeta)),
                         getAccountInfo(TOKEN_TREASURY).logged())
                 .when(tokenAssociate(contract, uniqToken), tokenDissociate(contract, uniqToken))
-                .then(
-                        cryptoTransfer(
-                                        TokenMovement.movingUnique(uniqToken, 1L)
-                                                .between(TOKEN_TREASURY, contract))
-                                .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
+                .then(cryptoTransfer(TokenMovement.movingUnique(uniqToken, 1L).between(TOKEN_TREASURY, contract))
+                        .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
     }
 
     public HapiSpec treasuryAssociationIsAutomatic() {
@@ -618,22 +512,18 @@ public class TokenAssociationSpecs extends HapiSuite {
                 .when()
                 .then(
                         getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(
-                                        relationshipWith(FREEZABLE_TOKEN_ON_BY_DEFAULT)
-                                                .kyc(KycNotApplicable)
-                                                .freeze(Unfrozen))
-                                .hasToken(
-                                        relationshipWith(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-                                                .kyc(KycNotApplicable)
-                                                .freeze(Unfrozen))
-                                .hasToken(
-                                        relationshipWith(KNOWABLE_TOKEN)
-                                                .kyc(Granted)
-                                                .freeze(FreezeNotApplicable))
-                                .hasToken(
-                                        relationshipWith(VANILLA_TOKEN)
-                                                .kyc(KycNotApplicable)
-                                                .freeze(FreezeNotApplicable))
+                                .hasToken(relationshipWith(FREEZABLE_TOKEN_ON_BY_DEFAULT)
+                                        .kyc(KycNotApplicable)
+                                        .freeze(Unfrozen))
+                                .hasToken(relationshipWith(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+                                        .kyc(KycNotApplicable)
+                                        .freeze(Unfrozen))
+                                .hasToken(relationshipWith(KNOWABLE_TOKEN)
+                                        .kyc(Granted)
+                                        .freeze(FreezeNotApplicable))
+                                .hasToken(relationshipWith(VANILLA_TOKEN)
+                                        .kyc(KycNotApplicable)
+                                        .freeze(FreezeNotApplicable))
                                 .logged(),
                         cryptoCreate("test"),
                         tokenAssociate("test", KNOWABLE_TOKEN),

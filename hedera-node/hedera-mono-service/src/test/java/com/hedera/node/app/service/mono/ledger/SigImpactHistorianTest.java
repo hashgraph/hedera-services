@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static com.hedera.node.app.service.mono.ledger.SigImpactHistorian.ChangeStatus.CHANGED;
@@ -100,8 +101,7 @@ class SigImpactHistorianTest {
 
     @Test
     void markedChangesExpireInNoLessThanMemorySecs() {
-        final var lastMemorySec =
-                firstNow.getEpochSecond() + dynamicProperties.changeHistorianMemorySecs();
+        final var lastMemorySec = firstNow.getEpochSecond() + dynamicProperties.changeHistorianMemorySecs();
 
         subject.setChangeTime(firstNow);
         subject.markAliasChanged(aAlias);
@@ -133,29 +133,23 @@ class SigImpactHistorianTest {
         subject.setChangeTime(nowInMiddleOfFirstWindow);
 
         assertEquals(UNKNOWN, subject.aliasStatusSince(firstNow.minusNanos(1), aAlias));
-        assertEquals(
-                UNKNOWN, subject.aliasStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aAlias));
+        assertEquals(UNKNOWN, subject.aliasStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aAlias));
         assertEquals(UNKNOWN, subject.entityStatusSince(firstNow.minusNanos(1), aNum));
-        assertEquals(
-                UNKNOWN, subject.entityStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aNum));
+        assertEquals(UNKNOWN, subject.entityStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aNum));
 
         subject.markEntityChanged(aNum);
         subject.markAliasChanged(aAlias);
 
         assertEquals(CHANGED, subject.aliasStatusSince(firstNow.minusNanos(1), aAlias));
         assertEquals(CHANGED, subject.aliasStatusSince(firstNow.plusNanos(1), aAlias));
-        assertEquals(
-                UNKNOWN, subject.aliasStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aAlias));
+        assertEquals(UNKNOWN, subject.aliasStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aAlias));
         assertEquals(CHANGED, subject.entityStatusSince(firstNow.minusNanos(1), aNum));
         assertEquals(CHANGED, subject.entityStatusSince(firstNow.plusNanos(1), aNum));
-        assertEquals(
-                UNKNOWN, subject.entityStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aNum));
+        assertEquals(UNKNOWN, subject.entityStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aNum));
 
         subject.setChangeTime(nowNearEndOfFirstWindow);
-        assertEquals(
-                UNCHANGED, subject.aliasStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aAlias));
-        assertEquals(
-                UNCHANGED, subject.entityStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aNum));
+        assertEquals(UNCHANGED, subject.aliasStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aAlias));
+        assertEquals(UNCHANGED, subject.entityStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aNum));
     }
 
     @Test
@@ -164,35 +158,26 @@ class SigImpactHistorianTest {
         subject.setChangeTime(nowInMiddleOfFirstWindow);
 
         assertEquals(UNKNOWN, subject.aliasStatusSince(firstNow.minusNanos(1), aAlias));
-        assertEquals(
-                UNKNOWN, subject.aliasStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aAlias));
+        assertEquals(UNKNOWN, subject.aliasStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aAlias));
         assertEquals(UNKNOWN, subject.entityStatusSince(firstNow.minusNanos(1), aNum));
-        assertEquals(
-                UNKNOWN, subject.entityStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aNum));
+        assertEquals(UNKNOWN, subject.entityStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aNum));
 
         subject.markEntityChanged(aNum);
         subject.markAliasChanged(aAlias);
 
         assertEquals(CHANGED, subject.aliasStatusSince(firstNow.minusNanos(1), aAlias));
         assertEquals(CHANGED, subject.aliasStatusSince(firstNow.plusNanos(1), aAlias));
-        assertEquals(
-                UNKNOWN, subject.aliasStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aAlias));
+        assertEquals(UNKNOWN, subject.aliasStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aAlias));
         assertEquals(CHANGED, subject.entityStatusSince(firstNow.minusNanos(1), aNum));
         assertEquals(CHANGED, subject.entityStatusSince(firstNow.plusNanos(1), aNum));
-        assertEquals(
-                UNKNOWN, subject.entityStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aNum));
+        assertEquals(UNKNOWN, subject.entityStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aNum));
 
         subject.setChangeTime(nowPostFirstWindow);
-        assertEquals(
-                UNCHANGED, subject.aliasStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aAlias));
-        assertEquals(
-                UNCHANGED, subject.entityStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aNum));
-        assertEquals(
-                UNCHANGED, subject.entityStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), bNum));
-        assertEquals(
-                UNCHANGED, subject.aliasStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), bAlias));
-        final var beforeWindow =
-                nowPostFirstWindow.minusSeconds(dynamicProperties.changeHistorianMemorySecs() + 1);
+        assertEquals(UNCHANGED, subject.aliasStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aAlias));
+        assertEquals(UNCHANGED, subject.entityStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), aNum));
+        assertEquals(UNCHANGED, subject.entityStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), bNum));
+        assertEquals(UNCHANGED, subject.aliasStatusSince(nowInMiddleOfFirstWindow.plusNanos(1), bAlias));
+        final var beforeWindow = nowPostFirstWindow.minusSeconds(dynamicProperties.changeHistorianMemorySecs() + 1);
         assertEquals(UNKNOWN, subject.entityStatusSince(beforeWindow, bNum));
     }
 

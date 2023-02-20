@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.reconnect;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -83,14 +84,10 @@ public class CreateSchedulesBeforeReconnect extends HapiSuite {
     }
 
     private HapiSpec runCreateSchedules() {
-        PerfTestLoadSettings settings =
-                new PerfTestLoadSettings(
-                        SCHEDULE_CREATION_RECONNECT_TPS,
-                        DEFAULT_MINS_FOR_RECONNECT_TESTS,
-                        DEFAULT_THREADS_FOR_RECONNECT_TESTS);
+        PerfTestLoadSettings settings = new PerfTestLoadSettings(
+                SCHEDULE_CREATION_RECONNECT_TPS, DEFAULT_MINS_FOR_RECONNECT_TESTS, DEFAULT_THREADS_FOR_RECONNECT_TESTS);
 
-        Supplier<HapiSpecOperation[]> createBurst =
-                () -> new HapiSpecOperation[] {generateScheduleCreateOperation()};
+        Supplier<HapiSpecOperation[]> createBurst = () -> new HapiSpecOperation[] {generateScheduleCreateOperation()};
 
         return defaultHapiSpec("RunCreateSchedules")
                 .given(
@@ -99,27 +96,16 @@ public class CreateSchedulesBeforeReconnect extends HapiSuite {
                         cryptoCreate("scheduleSender")
                                 .balance(initialBalance.getAsLong())
                                 .key(GENESIS)
-                                .hasRetryPrecheckFrom(
-                                        BUSY,
-                                        DUPLICATE_TRANSACTION,
-                                        PLATFORM_TRANSACTION_NOT_CREATED)
+                                .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
                                 .deferStatusResolution(),
                         cryptoCreate("scheduleReceiver")
                                 .key(GENESIS)
-                                .hasRetryPrecheckFrom(
-                                        BUSY,
-                                        DUPLICATE_TRANSACTION,
-                                        PLATFORM_TRANSACTION_NOT_CREATED)
+                                .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
                                 .deferStatusResolution(),
                         sleepFor(10000),
                         scheduleCreate(
-                                        "schedule-"
-                                                + getHostName()
-                                                + "-"
-                                                + scheduleNumber.getAndIncrement(),
-                                        cryptoTransfer(
-                                                tinyBarsFromTo(
-                                                        "scheduleSender", "scheduleReceiver", 1)))
+                                        "schedule-" + getHostName() + "-" + scheduleNumber.getAndIncrement(),
+                                        cryptoTransfer(tinyBarsFromTo("scheduleSender", "scheduleReceiver", 1)))
                                 .signedBy(DEFAULT_PAYER)
                                 .fee(ONE_HUNDRED_HBARS)
                                 .alsoSigningWith("scheduleSender")
@@ -132,18 +118,12 @@ public class CreateSchedulesBeforeReconnect extends HapiSuite {
                 .when(
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(GENESIS)
-                                .overridingProps(
-                                        Map.of("ledger.schedule.txExpiryTimeSecs", "" + 60)),
+                                .overridingProps(Map.of("ledger.schedule.txExpiryTimeSecs", "" + 60)),
                         sleepFor(10000))
                 .then(
                         scheduleCreate(
-                                        "schedule-"
-                                                + getHostName()
-                                                + "-"
-                                                + scheduleNumber.getAndIncrement(),
-                                        cryptoTransfer(
-                                                tinyBarsFromTo(
-                                                        "scheduleSender", "scheduleReceiver", 1)))
+                                        "schedule-" + getHostName() + "-" + scheduleNumber.getAndIncrement(),
+                                        cryptoTransfer(tinyBarsFromTo("scheduleSender", "scheduleReceiver", 1)))
                                 .signedBy(DEFAULT_PAYER)
                                 .fee(ONE_HUNDRED_HBARS)
                                 .alsoSigningWith("scheduleSender")

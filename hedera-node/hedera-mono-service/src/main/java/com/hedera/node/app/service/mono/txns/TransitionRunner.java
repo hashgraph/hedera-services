@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
@@ -60,29 +61,28 @@ public class TransitionRunner {
      * Some operation's transition logic still explicitly set SUCCESS instead of letting the runner
      * handle this.
      */
-    private static final EnumSet<HederaFunctionality> opsWithDefaultSuccessStatus =
-            EnumSet.of(
-                    TokenMint,
-                    TokenBurn,
-                    TokenFreezeAccount,
-                    TokenUnfreezeAccount,
-                    TokenGrantKycToAccount,
-                    TokenRevokeKycFromAccount,
-                    TokenAssociateToAccount,
-                    TokenDissociateFromAccount,
-                    TokenAccountWipe,
-                    TokenCreate,
-                    TokenPause,
-                    TokenUnpause,
-                    TokenFeeScheduleUpdate,
-                    CryptoTransfer,
-                    ConsensusCreateTopic,
-                    ContractDelete,
-                    TokenDelete,
-                    Freeze,
-                    FileDelete,
-                    CryptoApproveAllowance,
-                    UtilPrng);
+    private static final EnumSet<HederaFunctionality> opsWithDefaultSuccessStatus = EnumSet.of(
+            TokenMint,
+            TokenBurn,
+            TokenFreezeAccount,
+            TokenUnfreezeAccount,
+            TokenGrantKycToAccount,
+            TokenRevokeKycFromAccount,
+            TokenAssociateToAccount,
+            TokenDissociateFromAccount,
+            TokenAccountWipe,
+            TokenCreate,
+            TokenPause,
+            TokenUnpause,
+            TokenFeeScheduleUpdate,
+            CryptoTransfer,
+            ConsensusCreateTopic,
+            ContractDelete,
+            TokenDelete,
+            Freeze,
+            FileDelete,
+            CryptoApproveAllowance,
+            UtilPrng);
 
     private final EntityIdSource ids;
     private final TransactionContext txnCtx;
@@ -90,9 +90,7 @@ public class TransitionRunner {
 
     @Inject
     public TransitionRunner(
-            final EntityIdSource ids,
-            final TransactionContext txnCtx,
-            final TransitionLogicLookup lookup) {
+            final EntityIdSource ids, final TransactionContext txnCtx, final TransitionLogicLookup lookup) {
         this.ids = ids;
         this.txnCtx = txnCtx;
         this.lookup = lookup;
@@ -109,9 +107,7 @@ public class TransitionRunner {
         final var function = accessor.getFunction();
         final var logic = lookup.lookupFor(function, txn);
         if (logic.isEmpty()) {
-            log.warn(
-                    "Transaction w/o applicable transition logic at consensus :: {}",
-                    accessor::getSignedTxnWrapper);
+            log.warn("Transaction w/o applicable transition logic at consensus :: {}", accessor::getSignedTxnWrapper);
             txnCtx.setStatus(FAIL_INVALID);
             return false;
         } else {

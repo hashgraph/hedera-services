@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.txns;
 
 import com.hedera.test.utils.IdUtils;
@@ -21,15 +22,13 @@ import com.hederahashgraph.api.proto.java.*;
 public class ScheduledTxnFactory {
     private static final long FEE = 123L;
     private static final String SCHEDULED_TXN_MEMO = "Wait for me!";
-    public static final SchedulableTransactionBody scheduledTxn =
-            SchedulableTransactionBody.newBuilder()
-                    .setTransactionFee(FEE)
-                    .setMemo(SCHEDULED_TXN_MEMO)
-                    .setCryptoDelete(
-                            CryptoDeleteTransactionBody.newBuilder()
-                                    .setDeleteAccountID(IdUtils.asAccount("0.0.2"))
-                                    .setTransferAccountID(IdUtils.asAccount("0.0.75231")))
-                    .build();
+    public static final SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder()
+            .setTransactionFee(FEE)
+            .setMemo(SCHEDULED_TXN_MEMO)
+            .setCryptoDelete(CryptoDeleteTransactionBody.newBuilder()
+                    .setDeleteAccountID(IdUtils.asAccount("0.0.2"))
+                    .setTransferAccountID(IdUtils.asAccount("0.0.75231")))
+            .build();
 
     private ScheduledTxnFactory() {}
 
@@ -39,8 +38,7 @@ public class ScheduledTxnFactory {
             final AccountID payer,
             final AccountID scheduler,
             final Timestamp validStart) {
-        return scheduleCreateTxnWith(
-                scheduleAdminKey, scheduleMemo, payer, scheduler, validStart, null, null);
+        return scheduleCreateTxnWith(scheduleAdminKey, scheduleMemo, payer, scheduler, validStart, null, null);
     }
 
     public static TransactionBody scheduleCreateTxnWith(
@@ -51,10 +49,9 @@ public class ScheduledTxnFactory {
             final Timestamp validStart,
             final Timestamp expirationTime,
             final Boolean waitForExpiry) {
-        final var creation =
-                ScheduleCreateTransactionBody.newBuilder()
-                        .setMemo(scheduleMemo)
-                        .setScheduledTransactionBody(scheduledTxn);
+        final var creation = ScheduleCreateTransactionBody.newBuilder()
+                .setMemo(scheduleMemo)
+                .setScheduledTransactionBody(scheduledTxn);
         if (scheduleAdminKey != null) {
             creation.setAdminKey(scheduleAdminKey);
         }
@@ -68,11 +65,10 @@ public class ScheduledTxnFactory {
             creation.setWaitForExpiry(waitForExpiry);
         }
         return TransactionBody.newBuilder()
-                .setTransactionID(
-                        TransactionID.newBuilder()
-                                .setTransactionValidStart(validStart)
-                                .setAccountID(scheduler)
-                                .build())
+                .setTransactionID(TransactionID.newBuilder()
+                        .setTransactionValidStart(validStart)
+                        .setAccountID(scheduler)
+                        .build())
                 .setScheduleCreate(creation)
                 .build();
     }

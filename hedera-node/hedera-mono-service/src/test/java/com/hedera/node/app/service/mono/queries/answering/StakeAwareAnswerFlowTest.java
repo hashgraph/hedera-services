@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.answering;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -33,10 +34,17 @@ class StakeAwareAnswerFlowTest {
     private static final Query mockQuery = Query.getDefaultInstance();
     private static final Response mockResponse = Response.getDefaultInstance();
 
-    @Mock private NodeInfo nodeInfo;
-    @Mock private AnswerService service;
-    @Mock private StakedAnswerFlow stakedAnswerFlow;
-    @Mock private ZeroStakeAnswerFlow zeroStakeAnswerFlow;
+    @Mock
+    private NodeInfo nodeInfo;
+
+    @Mock
+    private AnswerService service;
+
+    @Mock
+    private StakedAnswerFlow stakedAnswerFlow;
+
+    @Mock
+    private ZeroStakeAnswerFlow zeroStakeAnswerFlow;
 
     private StakeAwareAnswerFlow subject;
 

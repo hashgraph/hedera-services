@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.keys;
 
 import com.google.protobuf.ByteString;
@@ -62,7 +63,8 @@ public class OverlappingKeyGenerator implements KeyGenerator {
             }
         }
         log.debug("**** Hexed Public Keys ****");
-        precomputed.stream().forEach(k -> log.debug(CommonUtils.hex(k.getEd25519().toByteArray())));
+        precomputed.stream()
+                .forEach(k -> log.debug(CommonUtils.hex(k.getEd25519().toByteArray())));
     }
 
     private ByteString pubKeyPrefixOf(Key key, int prefixLen) {

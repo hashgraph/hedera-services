@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ADDRESS_PAIR_RAW_TYPE;
@@ -49,12 +50,9 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class RevokeKycPrecompile extends AbstractGrantRevokeKycPrecompile {
-    private static final Function REVOKE_TOKEN_KYC_FUNCTION =
-            new Function("revokeTokenKyc(address,address)", INT);
-    private static final Bytes REVOKE_TOKEN_KYC_FUNCTION_SELECTOR =
-            Bytes.wrap(REVOKE_TOKEN_KYC_FUNCTION.selector());
-    private static final ABIType<Tuple> REVOKE_TOKEN_KYC_FUNCTION_DECODER =
-            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
+    private static final Function REVOKE_TOKEN_KYC_FUNCTION = new Function("revokeTokenKyc(address,address)", INT);
+    private static final Bytes REVOKE_TOKEN_KYC_FUNCTION_SELECTOR = Bytes.wrap(REVOKE_TOKEN_KYC_FUNCTION.selector());
+    private static final ABIType<Tuple> REVOKE_TOKEN_KYC_FUNCTION_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
     public RevokeKycPrecompile(
             WorldLedgers ledgers,
@@ -64,22 +62,14 @@ public class RevokeKycPrecompile extends AbstractGrantRevokeKycPrecompile {
             SyntheticTxnFactory syntheticTxnFactory,
             InfrastructureFactory infrastructureFactory,
             PrecompilePricingUtils pricingUtils) {
-        super(
-                ledgers,
-                aliases,
-                sigsVerifier,
-                sideEffects,
-                syntheticTxnFactory,
-                infrastructureFactory,
-                pricingUtils);
+        super(ledgers, aliases, sigsVerifier, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
     }
 
     @Override
     public void run(MessageFrame frame) {
         initialise(frame);
 
-        final var revokeKycLogic =
-                infrastructureFactory.newRevokeKycLogic(accountStore, tokenStore);
+        final var revokeKycLogic = infrastructureFactory.newRevokeKycLogic(accountStore, tokenStore);
         executeForRevoke(revokeKycLogic, tokenId, accountId);
     }
 
@@ -99,14 +89,10 @@ public class RevokeKycPrecompile extends AbstractGrantRevokeKycPrecompile {
     public static GrantRevokeKycWrapper<TokenID, AccountID> decodeRevokeTokenKyc(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input,
-                        REVOKE_TOKEN_KYC_FUNCTION_SELECTOR,
-                        REVOKE_TOKEN_KYC_FUNCTION_DECODER);
+                decodeFunctionCall(input, REVOKE_TOKEN_KYC_FUNCTION_SELECTOR, REVOKE_TOKEN_KYC_FUNCTION_DECODER);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        final var accountID =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+        final var accountID = convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
 
         return new GrantRevokeKycWrapper<>(tokenID, accountID);
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops;
 
 import static com.google.common.base.Stopwatch.createStarted;
@@ -72,8 +73,7 @@ public class RunLoadTest extends UtilOp {
     private IntSupplier totalTestTokens = () -> DEFAULT_TOTAL_TEST_TOKENS;
     private IntSupplier testTreasureStartAccount = () -> DEFAULT_TEST_TREASURE_START_ACCOUNT;
     private IntSupplier totalTestTokenAccounts = () -> DEFAULT_TOTAL_TEST_TOKEN_ACCOUNTS;
-    private IntSupplier durationCreateTokenAssociation =
-            () -> DEFAULT_DURATION_CREATE_TOKEN_ASSOCIATION;
+    private IntSupplier durationCreateTokenAssociation = () -> DEFAULT_DURATION_CREATE_TOKEN_ASSOCIATION;
     private IntSupplier durationTokenTransfer = () -> DEFAULT_DURATION_TOKEN_TRANSFER;
     private IntSupplier totalTokenAssociations = () -> DEFAULT_TOTAL_TOKEN_ASSOCIATIONS;
     private IntSupplier totalScheduled = () -> DEFAULT_TOTAL_SCHEDULED;
@@ -141,8 +141,7 @@ public class RunLoadTest extends UtilOp {
         return this;
     }
 
-    public RunLoadTest setDurationCreateTokenAssociation(
-            IntSupplier durationCreateTokenAssociation) {
+    public RunLoadTest setDurationCreateTokenAssociation(IntSupplier durationCreateTokenAssociation) {
         this.durationCreateTokenAssociation = durationCreateTokenAssociation;
         return this;
     }
@@ -265,8 +264,7 @@ public class RunLoadTest extends UtilOp {
             }
             try {
                 if (currentTPS > _targetTps) {
-                    long pauseMillieSeconds =
-                            (long) ((submitOps / (float) _targetTps) * 1000 - elapsedMS);
+                    long pauseMillieSeconds = (long) ((submitOps / (float) _targetTps) * 1000 - elapsedMS);
                     Thread.sleep(Math.max(5, pauseMillieSeconds));
                 }
             } catch (InterruptedException irrelevant) {

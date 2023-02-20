@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.schedule;
 
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.schedule.RandomSchedule.ADMIN_KEY;
@@ -45,11 +46,10 @@ public class RandomScheduleDeletion implements OpProvider {
             return Optional.empty();
         }
 
-        var op =
-                scheduleDelete(target.get())
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                        .hasKnownStatusFrom(permissibleOutcomes)
-                        .signedBy(ADMIN_KEY);
+        var op = scheduleDelete(target.get())
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                .hasKnownStatusFrom(permissibleOutcomes)
+                .signedBy(ADMIN_KEY);
         return Optional.of(op);
     }
 }

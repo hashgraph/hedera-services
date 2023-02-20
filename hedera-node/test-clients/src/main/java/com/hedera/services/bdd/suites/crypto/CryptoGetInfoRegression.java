@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -65,17 +66,16 @@ public class CryptoGetInfoRegression extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    failsForDeletedAccount(),
-                    failsForMissingAccount(),
-                    failsForMissingPayment(),
-                    failsForInsufficientPayment(),
-                    failsForMalformedPayment(),
-                    failsForUnfundablePayment(),
-                    succeedsNormally(),
-                    fetchesOnlyALimitedTokenAssociations()
-                });
+        return List.of(new HapiSpec[] {
+            failsForDeletedAccount(),
+            failsForMissingAccount(),
+            failsForMissingPayment(),
+            failsForInsufficientPayment(),
+            failsForMalformedPayment(),
+            failsForUnfundablePayment(),
+            succeedsNormally(),
+            fetchesOnlyALimitedTokenAssociations()
+        });
     }
 
     /** For Demo purpose : The limit on each account info and account balance queries is set to 5 */
@@ -157,16 +157,10 @@ public class CryptoGetInfoRegression extends HapiSuite {
                                 .initialSupply(0L)
                                 .kycKey(aKey)
                                 .supplyKey(aKey),
-                        mintToken(
-                                token7,
-                                List.of(
-                                        ByteString.copyFromUtf8("a"),
-                                        ByteString.copyFromUtf8("b"))),
+                        mintToken(token7, List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b"))),
                         mintToken(token8, List.of(ByteString.copyFromUtf8("a"))))
                 .when(
-                        tokenAssociate(
-                                account, token1, token2, token3, token4, token5, token6, token7,
-                                token8),
+                        tokenAssociate(account, token1, token2, token3, token4, token5, token6, token7, token8),
                         grantTokenKyc(token1, account),
                         grantTokenKyc(token2, account),
                         grantTokenKyc(token3, account),
@@ -189,9 +183,10 @@ public class CryptoGetInfoRegression extends HapiSuite {
                 .then(
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(
-                                        Map.of("tokens.maxRelsPerInfoQuery", "" + infoLimit)),
-                        getAccountInfo(account).hasTokenRelationShipCount(infoLimit).logged());
+                                .overridingProps(Map.of("tokens.maxRelsPerInfoQuery", "" + infoLimit)),
+                        getAccountInfo(account)
+                                .hasTokenRelationShipCount(infoLimit)
+                                .logged());
     }
 
     private HapiSpec succeedsNormally() {
@@ -213,31 +208,28 @@ public class CryptoGetInfoRegression extends HapiSuite {
                                 .stakedAccountId("0.0.20"))
                 .then(
                         getAccountInfo("noStakingTarget")
-                                .has(
-                                        accountWith()
-                                                .accountId("noStakingTarget")
-                                                .stakedNodeId(-1L) // stakedNodeId is -1 only if no
-                                                // staking info is present. Will be 0
-                                                // if staked account id is present.
-                                                .noStakedAccountId()
-                                                .key("misc")
-                                                .balance(balance))
+                                .has(accountWith()
+                                        .accountId("noStakingTarget")
+                                        .stakedNodeId(-1L) // stakedNodeId is -1 only if no
+                                        // staking info is present. Will be 0
+                                        // if staked account id is present.
+                                        .noStakedAccountId()
+                                        .key("misc")
+                                        .balance(balance))
                                 .logged(),
                         getAccountInfo("target")
-                                .has(
-                                        accountWith()
-                                                .accountId("target")
-                                                .noStakingNodeId()
-                                                .key("misc")
-                                                .balance(balance))
+                                .has(accountWith()
+                                        .accountId("target")
+                                        .noStakingNodeId()
+                                        .key("misc")
+                                        .balance(balance))
                                 .logged(),
                         getAccountInfo("targetWithStakedAccountId")
-                                .has(
-                                        accountWith()
-                                                .accountId("targetWithStakedAccountId")
-                                                .stakedAccountId("0.0.20")
-                                                .key("misc")
-                                                .balance(balance))
+                                .has(accountWith()
+                                        .accountId("targetWithStakedAccountId")
+                                        .stakedAccountId("0.0.20")
+                                        .key("misc")
+                                        .balance(balance))
                                 .logged());
     }
 
@@ -252,10 +244,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
         return defaultHapiSpec("FailsForMalformedPayment")
                 .given(newKeyNamed("wrong").shape(SIMPLE))
                 .when()
-                .then(
-                        getAccountInfo(GENESIS)
-                                .signedBy("wrong")
-                                .hasAnswerOnlyPrecheck(INVALID_SIGNATURE));
+                .then(getAccountInfo(GENESIS).signedBy("wrong").hasAnswerOnlyPrecheck(INVALID_SIGNATURE));
     }
 
     private HapiSpec failsForUnfundablePayment() {
@@ -263,31 +252,24 @@ public class CryptoGetInfoRegression extends HapiSuite {
         return defaultHapiSpec("FailsForUnfundablePayment")
                 .given(cryptoCreate("brokePayer").balance(everything))
                 .when()
-                .then(
-                        getAccountInfo(GENESIS)
-                                .payingWith("brokePayer")
-                                .nodePayment(everything)
-                                .hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE));
+                .then(getAccountInfo(GENESIS)
+                        .payingWith("brokePayer")
+                        .nodePayment(everything)
+                        .hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE));
     }
 
     private HapiSpec failsForInsufficientPayment() {
         return defaultHapiSpec("FailsForInsufficientPayment")
                 .given()
                 .when()
-                .then(
-                        getAccountInfo(GENESIS)
-                                .nodePayment(1L)
-                                .hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
+                .then(getAccountInfo(GENESIS).nodePayment(1L).hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
     }
 
     private HapiSpec failsForMissingPayment() {
         return defaultHapiSpec("FailsForMissingPayment")
                 .given()
                 .when()
-                .then(
-                        getAccountInfo(GENESIS)
-                                .useEmptyTxnAsAnswerPayment()
-                                .hasAnswerOnlyPrecheck(NOT_SUPPORTED));
+                .then(getAccountInfo(GENESIS).useEmptyTxnAsAnswerPayment().hasAnswerOnlyPrecheck(NOT_SUPPORTED));
     }
 
     private HapiSpec failsForDeletedAccount() {

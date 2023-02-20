@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.keys;
 
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
@@ -30,13 +31,11 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class HederaKeyTraversalTest {
-    private static final KeyTree kt =
-            KeyTree.withRoot(
-                    list(
-                            ed25519(),
-                            threshold(1, list(list(ed25519(), ed25519()), ed25519()), ed25519()),
-                            ed25519(),
-                            list(threshold(2, ed25519(), ed25519(), ed25519(), ed25519()))));
+    private static final KeyTree kt = KeyTree.withRoot(list(
+            ed25519(),
+            threshold(1, list(list(ed25519(), ed25519()), ed25519()), ed25519()),
+            ed25519(),
+            list(threshold(2, ed25519(), ed25519(), ed25519(), ed25519()))));
 
     @Test
     void visitsAllSimpleKeys() throws Exception {
@@ -45,8 +44,7 @@ class HederaKeyTraversalTest {
 
         final List<ByteString> visitedEd25519 = new ArrayList<>();
         HederaKeyTraversal.visitSimpleKeys(
-                jKey,
-                simpleJKey -> visitedEd25519.add(ByteString.copyFrom(simpleJKey.getEd25519())));
+                jKey, simpleJKey -> visitedEd25519.add(ByteString.copyFrom(simpleJKey.getEd25519())));
 
         assertThat(visitedEd25519, contains(expectedEd25519.toArray()));
     }

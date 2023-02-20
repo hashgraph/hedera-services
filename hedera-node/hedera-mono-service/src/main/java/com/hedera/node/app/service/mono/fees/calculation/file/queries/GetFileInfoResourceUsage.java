@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.file.queries;
 
 import com.hedera.node.app.hapi.fees.usage.file.ExtantFileContext;
@@ -40,8 +41,7 @@ public final class GetFileInfoResourceUsage implements QueryResourceUsageEstimat
     }
 
     @Override
-    public FeeData usageGiven(
-            final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
+    public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
         final var op = query.getFileGetInfo();
         final var info = view.infoForFile(op.getFileID());
         /* Given the test in {@code GetFileInfoAnswer.checkValidity}, this can only be empty
@@ -52,13 +52,12 @@ public final class GetFileInfoResourceUsage implements QueryResourceUsageEstimat
             return FeeData.getDefaultInstance();
         }
         final var details = info.get();
-        final var ctx =
-                ExtantFileContext.newBuilder()
-                        .setCurrentSize(details.getSize())
-                        .setCurrentWacl(details.getKeys())
-                        .setCurrentMemo(details.getMemo())
-                        .setCurrentExpiry(details.getExpirationTime().getSeconds())
-                        .build();
+        final var ctx = ExtantFileContext.newBuilder()
+                .setCurrentSize(details.getSize())
+                .setCurrentWacl(details.getKeys())
+                .setCurrentMemo(details.getMemo())
+                .setCurrentExpiry(details.getExpirationTime().getSeconds())
+                .build();
         return fileOpsUsage.fileInfoUsage(query, ctx);
     }
 }

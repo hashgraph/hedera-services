@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.test.utils.IdUtils.adjustFrom;
@@ -81,29 +82,41 @@ class CryptoTransferTransitionLogicTest {
     private final boolean areAllowancesEnabled = true;
     private final int maxFeeNesting = 20;
     private final int maxBalanceChanges = 20;
-    private final ImpliedTransfersMeta.ValidationProps validationProps =
-            new ImpliedTransfersMeta.ValidationProps(
-                    maxHbarAdjusts,
-                    maxTokenAdjusts,
-                    maxOwnershipChanges,
-                    maxFeeNesting,
-                    maxBalanceChanges,
-                    areNftsEnabled,
-                    autoCreationEnabled,
-                    lazyCreationEnabled,
-                    areAllowancesEnabled);
+    private final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
+            maxHbarAdjusts,
+            maxTokenAdjusts,
+            maxOwnershipChanges,
+            maxFeeNesting,
+            maxBalanceChanges,
+            areNftsEnabled,
+            autoCreationEnabled,
+            lazyCreationEnabled,
+            areAllowancesEnabled);
     private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
     private final AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
     private final AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
     private final AccountID c = AccountID.newBuilder().setAccountNum(7_999L).build();
 
-    @Mock private HederaLedger ledger;
-    @Mock private TransactionContext txnCtx;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private ImpliedTransfersMarshal impliedTransfersMarshal;
-    @Mock private PureTransferSemanticChecks transferSemanticChecks;
-    @Mock private ExpandHandleSpanMapAccessor spanMapAccessor;
-    @Mock private SignedTxnAccessor accessor;
+    @Mock
+    private HederaLedger ledger;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private ImpliedTransfersMarshal impliedTransfersMarshal;
+
+    @Mock
+    private PureTransferSemanticChecks transferSemanticChecks;
+
+    @Mock
+    private ExpandHandleSpanMapAccessor spanMapAccessor;
+
+    @Mock
+    private SignedTxnAccessor accessor;
 
     private TransactionBody cryptoTransferTxn;
 
@@ -111,26 +124,19 @@ class CryptoTransferTransitionLogicTest {
 
     @BeforeEach
     void setup() {
-        subject =
-                new CryptoTransferTransitionLogic(
-                        ledger,
-                        txnCtx,
-                        dynamicProperties,
-                        impliedTransfersMarshal,
-                        transferSemanticChecks,
-                        spanMapAccessor);
+        subject = new CryptoTransferTransitionLogic(
+                ledger, txnCtx, dynamicProperties, impliedTransfersMarshal, transferSemanticChecks, spanMapAccessor);
     }
 
     @Test
     void happyPathUsesLedgerNetZero() {
         final var a = asAccount("1.2.3");
         final var b = asAccount("2.3.4");
-        final var impliedTransfers =
-                ImpliedTransfers.valid(
-                        validationProps,
-                        List.of(hbarChange(a, +100), hbarChange(b, -100)),
-                        new ArrayList<>(),
-                        new ArrayList<>());
+        final var impliedTransfers = ImpliedTransfers.valid(
+                validationProps,
+                List.of(hbarChange(a, +100), hbarChange(b, -100)),
+                new ArrayList<>(),
+                new ArrayList<>());
 
         givenValidTxnCtx();
         // and:
@@ -146,27 +152,23 @@ class CryptoTransferTransitionLogicTest {
 
     @Test
     void recomputesImpliedTransfersIfNotAvailableInSpan() {
-        final var a =
-                AccountID.newBuilder()
-                        .setShardNum(0)
-                        .setRealmNum(0)
-                        .setAlias(ByteString.copyFromUtf8("aaaa"))
-                        .build();
+        final var a = AccountID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setAlias(ByteString.copyFromUtf8("aaaa"))
+                .build();
         final var b = asAccount("2.3.4");
-        final var impliedTransfers =
-                ImpliedTransfers.valid(
-                        validationProps,
-                        List.of(hbarChange(a, +100), hbarChange(b, -100)),
-                        new ArrayList<>(),
-                        new ArrayList<>());
+        final var impliedTransfers = ImpliedTransfers.valid(
+                validationProps,
+                List.of(hbarChange(a, +100), hbarChange(b, -100)),
+                new ArrayList<>(),
+                new ArrayList<>());
 
         givenValidTxnCtx();
         given(accessor.getPayer()).willReturn(payer);
         given(accessor.getTxn()).willReturn(cryptoTransferTxn);
         // and:
-        given(
-                        impliedTransfersMarshal.unmarshalFromGrpc(
-                                cryptoTransferTxn.getCryptoTransfer(), payer))
+        given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer(), payer))
                 .willReturn(impliedTransfers);
 
         // when:
@@ -186,54 +188,41 @@ class CryptoTransferTransitionLogicTest {
 
         // and :
         final var customFeesBalanceChangeWrapper =
-                List.of(
-                        new AssessedCustomFeeWrapper(
-                                a.asEntityId(),
-                                10L,
-                                new AccountID[] {
-                                    AccountID.newBuilder().setAccountNum(123L).build()
-                                }));
+                List.of(new AssessedCustomFeeWrapper(a.asEntityId(), 10L, new AccountID[] {
+                    AccountID.newBuilder().setAccountNum(123L).build()
+                }));
         final var customFee = List.of(FcCustomFee.fixedFee(20L, null, a.asEntityId(), false));
         final List<CustomFeeMeta> customFees = List.of(new CustomFeeMeta(c, d, customFee));
-        final var impliedTransfers =
-                ImpliedTransfers.valid(
-                        validationProps,
-                        List.of(
-                                hbarChange(a.asGrpcAccount(), +100),
-                                hbarChange(b.asGrpcAccount(), -100)),
-                        customFees,
-                        customFeesBalanceChangeWrapper);
+        final var impliedTransfers = ImpliedTransfers.valid(
+                validationProps,
+                List.of(hbarChange(a.asGrpcAccount(), +100), hbarChange(b.asGrpcAccount(), -100)),
+                customFees,
+                customFeesBalanceChangeWrapper);
 
         givenValidTxnCtx();
         given(accessor.getPayer()).willReturn(payer);
         given(accessor.getTxn()).willReturn(cryptoTransferTxn);
         // and:
-        given(
-                        impliedTransfersMarshal.unmarshalFromGrpc(
-                                cryptoTransferTxn.getCryptoTransfer(), payer))
+        given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer(), payer))
                 .willReturn(impliedTransfers);
 
         // when:
         subject.doStateTransition();
 
         // then:
-        final var customFeesBalanceChange =
-                List.of(new FcAssessedCustomFee(a.asEntityId(), 10L, new long[] {123L}));
+        final var customFeesBalanceChange = List.of(new FcAssessedCustomFee(a.asEntityId(), 10L, new long[] {123L}));
         verify(txnCtx).setAssessedCustomFees(customFeesBalanceChange);
     }
 
     @Test
     void shortCircuitsToImpliedTransfersValidityIfNotAvailableInSpan() {
-        final var impliedTransfers =
-                ImpliedTransfers.invalid(validationProps, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+        final var impliedTransfers = ImpliedTransfers.invalid(validationProps, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
         givenValidTxnCtx();
         given(accessor.getPayer()).willReturn(payer);
         given(accessor.getTxn()).willReturn(cryptoTransferTxn);
         // and:
-        given(
-                        impliedTransfersMarshal.unmarshalFromGrpc(
-                                cryptoTransferTxn.getCryptoTransfer(), payer))
+        given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer(), payer))
                 .willReturn(impliedTransfers);
 
         // when & then:
@@ -245,8 +234,7 @@ class CryptoTransferTransitionLogicTest {
     @Test
     void reusesPrecomputedFailureIfImpliedTransfersInSpan() {
         // setup:
-        final var impliedTransfers =
-                ImpliedTransfers.invalid(validationProps, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+        final var impliedTransfers = ImpliedTransfers.invalid(validationProps, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
         given(spanMapAccessor.getImpliedTransfers(accessor)).willReturn(impliedTransfers);
 
@@ -259,32 +247,22 @@ class CryptoTransferTransitionLogicTest {
 
     @Test
     void doesntAllowAllowanceTransfersWhenNotSupported() {
-        xfers =
-                CryptoTransferTransactionBody.newBuilder()
-                        .setTransfers(
-                                TransferList.newBuilder()
-                                        .addAccountAmounts(
-                                                adjustFromWithAllowance(
-                                                        asAccount("0.0.75231"), -1_000))
-                                        .addAccountAmounts(
-                                                adjustFromWithAllowance(
-                                                        asAccount("0.0.1000"), +1_000))
-                                        .build())
-                        .addTokenTransfers(
-                                TokenTransferList.newBuilder()
-                                        .setToken(asToken("0.0.12345"))
-                                        .addAllTransfers(
-                                                List.of(
-                                                        adjustFromWithAllowance(
-                                                                asAccount("0.0.2"), -1_000),
-                                                        adjustFromWithAllowance(
-                                                                asAccount("0.0.2000"), +1_000))))
-                        .build();
-        cryptoTransferTxn = TransactionBody.newBuilder().setCryptoTransfer(xfers).build();
+        xfers = CryptoTransferTransactionBody.newBuilder()
+                .setTransfers(TransferList.newBuilder()
+                        .addAccountAmounts(adjustFromWithAllowance(asAccount("0.0.75231"), -1_000))
+                        .addAccountAmounts(adjustFromWithAllowance(asAccount("0.0.1000"), +1_000))
+                        .build())
+                .addTokenTransfers(TokenTransferList.newBuilder()
+                        .setToken(asToken("0.0.12345"))
+                        .addAllTransfers(List.of(
+                                adjustFromWithAllowance(asAccount("0.0.2"), -1_000),
+                                adjustFromWithAllowance(asAccount("0.0.2000"), +1_000))))
+                .build();
+        cryptoTransferTxn =
+                TransactionBody.newBuilder().setCryptoTransfer(xfers).build();
         given(accessor.getTxn()).willReturn(cryptoTransferTxn);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
-        given(transferSemanticChecks.fullPureValidation(any(), any(), any()))
-                .willReturn(NOT_SUPPORTED);
+        given(transferSemanticChecks.fullPureValidation(any(), any(), any())).willReturn(NOT_SUPPORTED);
         final var validity = subject.validateSemantics(accessor);
         assertEquals(NOT_SUPPORTED, validity);
     }
@@ -303,11 +281,10 @@ class CryptoTransferTransitionLogicTest {
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(lazyCreationEnabled);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(areAllowancesEnabled);
         given(accessor.getTxn()).willReturn(pretendXferTxn);
-        given(
-                        transferSemanticChecks.fullPureValidation(
-                                pretendXferTxn.getCryptoTransfer().getTransfers(),
-                                pretendXferTxn.getCryptoTransfer().getTokenTransfersList(),
-                                validationProps))
+        given(transferSemanticChecks.fullPureValidation(
+                        pretendXferTxn.getCryptoTransfer().getTransfers(),
+                        pretendXferTxn.getCryptoTransfer().getTokenTransfersList(),
+                        validationProps))
                 .willReturn(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
         // when:
@@ -332,18 +309,17 @@ class CryptoTransferTransitionLogicTest {
     }
 
     private void givenValidTxnCtx(TransferList wrapper) {
-        cryptoTransferTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(ourTxnId())
-                        .setCryptoTransfer(
-                                CryptoTransferTransactionBody.newBuilder()
-                                        .setTransfers(wrapper)
-                                        .build())
-                        .build();
+        cryptoTransferTxn = TransactionBody.newBuilder()
+                .setTransactionID(ourTxnId())
+                .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()
+                        .setTransfers(wrapper)
+                        .build())
+                .build();
     }
 
     private void givenValidTxnCtx() {
-        cryptoTransferTxn = TransactionBody.newBuilder().setCryptoTransfer(xfers).build();
+        cryptoTransferTxn =
+                TransactionBody.newBuilder().setCryptoTransfer(xfers).build();
         given(txnCtx.accessor()).willReturn(accessor);
     }
 
@@ -355,25 +331,15 @@ class CryptoTransferTransitionLogicTest {
                 .build();
     }
 
-    CryptoTransferTransactionBody xfers =
-            CryptoTransferTransactionBody.newBuilder()
-                    .setTransfers(
-                            TransferList.newBuilder()
-                                    .addAccountAmounts(adjustFrom(asAccount("0.0.75231"), -1_000))
-                                    .addAccountAmounts(
-                                            adjustFrom(
-                                                    asAliasAccount(ByteString.copyFromUtf8("aaaa")),
-                                                    +1_000))
-                                    .build())
-                    .addTokenTransfers(
-                            TokenTransferList.newBuilder()
-                                    .setToken(asToken("0.0.12345"))
-                                    .addAllTransfers(
-                                            List.of(
-                                                    adjustFrom(asAccount("0.0.2"), -1_000),
-                                                    adjustFrom(
-                                                            asAliasAccount(
-                                                                    ByteString.copyFromUtf8("bbb")),
-                                                            +1_000))))
-                    .build();
+    CryptoTransferTransactionBody xfers = CryptoTransferTransactionBody.newBuilder()
+            .setTransfers(TransferList.newBuilder()
+                    .addAccountAmounts(adjustFrom(asAccount("0.0.75231"), -1_000))
+                    .addAccountAmounts(adjustFrom(asAliasAccount(ByteString.copyFromUtf8("aaaa")), +1_000))
+                    .build())
+            .addTokenTransfers(TokenTransferList.newBuilder()
+                    .setToken(asToken("0.0.12345"))
+                    .addAllTransfers(List.of(
+                            adjustFrom(asAccount("0.0.2"), -1_000),
+                            adjustFrom(asAliasAccount(ByteString.copyFromUtf8("bbb")), +1_000))))
+            .build();
 }

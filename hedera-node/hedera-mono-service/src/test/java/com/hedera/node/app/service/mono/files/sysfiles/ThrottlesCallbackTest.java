@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.sysfiles;
 
 import static org.mockito.BDDMockito.argThat;
@@ -30,18 +31,23 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ThrottlesCallbackTest {
-    @Mock MultiplierSources multiplierSources;
-    @Mock FunctionalityThrottling hapiThrottling;
-    @Mock FunctionalityThrottling handleThrottling;
-    @Mock FunctionalityThrottling scheduleThrottling;
+    @Mock
+    MultiplierSources multiplierSources;
+
+    @Mock
+    FunctionalityThrottling hapiThrottling;
+
+    @Mock
+    FunctionalityThrottling handleThrottling;
+
+    @Mock
+    FunctionalityThrottling scheduleThrottling;
 
     ThrottlesCallback subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new ThrottlesCallback(
-                        multiplierSources, hapiThrottling, handleThrottling, scheduleThrottling);
+        subject = new ThrottlesCallback(multiplierSources, hapiThrottling, handleThrottling, scheduleThrottling);
     }
 
     @Test

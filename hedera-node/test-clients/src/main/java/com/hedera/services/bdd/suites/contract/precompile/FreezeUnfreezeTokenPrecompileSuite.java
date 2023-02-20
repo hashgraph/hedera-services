@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
@@ -68,8 +69,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
-    private static final Logger log =
-            LogManager.getLogger(FreezeUnfreezeTokenPrecompileSuite.class);
+    private static final Logger log = LogManager.getLogger(FreezeUnfreezeTokenPrecompileSuite.class);
     private static final String FREEZE_CONTRACT = "FreezeUnfreezeContract";
     private static final String IS_FROZEN_FUNC = "isTokenFrozen";
     private static final String TOKEN_FREEZE_FUNC = "tokenFreeze";
@@ -117,9 +117,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                 .given(
                         newKeyNamed(FREEZE_KEY),
                         newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT)
-                                .balance(100 * ONE_HBAR)
-                                .exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(ACCOUNT).balance(100 * ONE_HBAR).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -130,32 +128,27 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                         uploadInitCode(FREEZE_CONTRACT),
                         contractCreate(FREEZE_CONTRACT),
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                FREEZE_CONTRACT,
-                                                                TOKEN_UNFREEZE_FUNC,
-                                                                asHeadlongAddress(INVALID_ADDRESS),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())))
-                                                        .payingWith(ACCOUNT)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .via("UnfreezeTx")
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                cryptoUpdate(ACCOUNT).key(FREEZE_KEY),
-                                                contractCall(
-                                                                FREEZE_CONTRACT,
-                                                                TOKEN_FREEZE_FUNC,
-                                                                asHeadlongAddress(INVALID_ADDRESS),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())))
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                        .payingWith(ACCOUNT)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .via("FreezeTx"))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        FREEZE_CONTRACT,
+                                        TOKEN_UNFREEZE_FUNC,
+                                        asHeadlongAddress(INVALID_ADDRESS),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())))
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .via("UnfreezeTx")
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        cryptoUpdate(ACCOUNT).key(FREEZE_KEY),
+                        contractCall(
+                                        FREEZE_CONTRACT,
+                                        TOKEN_FREEZE_FUNC,
+                                        asHeadlongAddress(INVALID_ADDRESS),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())))
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .via("FreezeTx"))))
                 .then(
                         childRecordsCheck(
                                 "UnfreezeTx",
@@ -175,13 +168,10 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                 .given(
                         newKeyNamed(FREEZE_KEY),
                         newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT)
-                                .balance(100 * ONE_HBAR)
-                                .exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(ACCOUNT).balance(100 * ONE_HBAR).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(ACCOUNT_WITHOUT_KEY),
                         cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(TOKEN_WITHOUT_KEY)
-                                .exposingCreatedIdTo(id -> withoutKeyID.set(asToken(id))),
+                        tokenCreate(TOKEN_WITHOUT_KEY).exposingCreatedIdTo(id -> withoutKeyID.set(asToken(id))),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
@@ -192,125 +182,85 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                         contractCreate(FREEZE_CONTRACT),
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                         cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                FREEZE_CONTRACT,
-                                                                TOKEN_FREEZE_FUNC,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())))
-                                                        .logged()
-                                                        .payingWith(ACCOUNT)
-                                                        .via(ACCOUNT_HAS_NO_KEY_TXN)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                contractCall(
-                                                                FREEZE_CONTRACT,
-                                                                TOKEN_FREEZE_FUNC,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                withoutKeyID
-                                                                                        .get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())))
-                                                        .logged()
-                                                        .payingWith(ACCOUNT)
-                                                        .via(NO_KEY_FREEZE_TXN)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                contractCall(
-                                                                FREEZE_CONTRACT,
-                                                                TOKEN_UNFREEZE_FUNC,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                withoutKeyID
-                                                                                        .get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())))
-                                                        .payingWith(ACCOUNT)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                        .via(NO_KEY_UNFREEZE_TXN),
-                                                cryptoUpdate(ACCOUNT).key(FREEZE_KEY),
-                                                contractCall(
-                                                                FREEZE_CONTRACT,
-                                                                TOKEN_FREEZE_FUNC,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())))
-                                                        .logged()
-                                                        .payingWith(ACCOUNT)
-                                                        .gas(GAS_TO_OFFER),
-                                                getAccountDetails(ACCOUNT)
-                                                        .hasToken(
-                                                                ExpectedTokenRel.relationshipWith(
-                                                                                VANILLA_TOKEN)
-                                                                        .freeze(
-                                                                                TokenFreezeStatus
-                                                                                        .Frozen)),
-                                                contractCall(
-                                                                FREEZE_CONTRACT,
-                                                                TOKEN_UNFREEZE_FUNC,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())))
-                                                        .logged()
-                                                        .payingWith(ACCOUNT)
-                                                        .gas(GAS_TO_OFFER),
-                                                getAccountDetails(ACCOUNT)
-                                                        .hasToken(
-                                                                ExpectedTokenRel.relationshipWith(
-                                                                                VANILLA_TOKEN)
-                                                                        .freeze(
-                                                                                TokenFreezeStatus
-                                                                                        .Unfrozen)))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        FREEZE_CONTRACT,
+                                        TOKEN_FREEZE_FUNC,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())))
+                                .logged()
+                                .payingWith(ACCOUNT)
+                                .via(ACCOUNT_HAS_NO_KEY_TXN)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        contractCall(
+                                        FREEZE_CONTRACT,
+                                        TOKEN_FREEZE_FUNC,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(withoutKeyID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())))
+                                .logged()
+                                .payingWith(ACCOUNT)
+                                .via(NO_KEY_FREEZE_TXN)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        contractCall(
+                                        FREEZE_CONTRACT,
+                                        TOKEN_UNFREEZE_FUNC,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(withoutKeyID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())))
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .via(NO_KEY_UNFREEZE_TXN),
+                        cryptoUpdate(ACCOUNT).key(FREEZE_KEY),
+                        contractCall(
+                                        FREEZE_CONTRACT,
+                                        TOKEN_FREEZE_FUNC,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())))
+                                .logged()
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER),
+                        getAccountDetails(ACCOUNT)
+                                .hasToken(ExpectedTokenRel.relationshipWith(VANILLA_TOKEN)
+                                        .freeze(TokenFreezeStatus.Frozen)),
+                        contractCall(
+                                        FREEZE_CONTRACT,
+                                        TOKEN_UNFREEZE_FUNC,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())))
+                                .logged()
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER),
+                        getAccountDetails(ACCOUNT)
+                                .hasToken(ExpectedTokenRel.relationshipWith(VANILLA_TOKEN)
+                                        .freeze(TokenFreezeStatus.Unfrozen)))))
                 .then(
                         childRecordsCheck(
                                 ACCOUNT_HAS_NO_KEY_TXN,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INVALID_SIGNATURE)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INVALID_SIGNATURE)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(INVALID_SIGNATURE)))),
                         childRecordsCheck(
                                 NO_KEY_FREEZE_TXN,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(TOKEN_HAS_NO_FREEZE_KEY)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                TOKEN_HAS_NO_FREEZE_KEY)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(TOKEN_HAS_NO_FREEZE_KEY)))),
                         childRecordsCheck(
                                 NO_KEY_UNFREEZE_TXN,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(TOKEN_HAS_NO_FREEZE_KEY)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                TOKEN_HAS_NO_FREEZE_KEY)))));
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(TOKEN_HAS_NO_FREEZE_KEY)))));
     }
 
     private HapiSpec freezeUnfreezeNftsWithNegativeCases() {
@@ -320,9 +270,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                 .given(
                         newKeyNamed(FREEZE_KEY),
                         newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT)
-                                .balance(100 * ONE_HBAR)
-                                .exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(ACCOUNT).balance(100 * ONE_HBAR).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(KNOWABLE_TOKEN)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
@@ -335,96 +283,64 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                         uploadInitCode(FREEZE_CONTRACT),
                         contractCreate(FREEZE_CONTRACT),
                         tokenAssociate(ACCOUNT, KNOWABLE_TOKEN),
-                        cryptoTransfer(
-                                movingUnique(KNOWABLE_TOKEN, 1L).between(TOKEN_TREASURY, ACCOUNT)))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                FREEZE_CONTRACT,
-                                                                TOKEN_UNFREEZE_FUNC,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())))
-                                                        .payingWith(ACCOUNT)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .via(ACCOUNT_HAS_NO_KEY_TXN)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                cryptoUpdate(ACCOUNT).key(FREEZE_KEY),
-                                                contractCall(
-                                                                FREEZE_CONTRACT,
-                                                                TOKEN_FREEZE_FUNC,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())))
-                                                        .payingWith(ACCOUNT)
-                                                        .gas(GAS_TO_OFFER),
-                                                getAccountDetails(ACCOUNT)
-                                                        .hasToken(
-                                                                ExpectedTokenRel.relationshipWith(
-                                                                                KNOWABLE_TOKEN)
-                                                                        .freeze(
-                                                                                TokenFreezeStatus
-                                                                                        .Frozen)),
-                                                contractCall(
-                                                                FREEZE_CONTRACT,
-                                                                TOKEN_UNFREEZE_FUNC,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())))
-                                                        .payingWith(ACCOUNT)
-                                                        .gas(GAS_TO_OFFER),
-                                                contractCall(
-                                                                FREEZE_CONTRACT,
-                                                                IS_FROZEN_FUNC,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())))
-                                                        .logged()
-                                                        .payingWith(ACCOUNT)
-                                                        .via(IS_FROZEN_TXN)
-                                                        .gas(GAS_TO_OFFER))))
+                        cryptoTransfer(movingUnique(KNOWABLE_TOKEN, 1L).between(TOKEN_TREASURY, ACCOUNT)))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        FREEZE_CONTRACT,
+                                        TOKEN_UNFREEZE_FUNC,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())))
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .via(ACCOUNT_HAS_NO_KEY_TXN)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        cryptoUpdate(ACCOUNT).key(FREEZE_KEY),
+                        contractCall(
+                                        FREEZE_CONTRACT,
+                                        TOKEN_FREEZE_FUNC,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())))
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER),
+                        getAccountDetails(ACCOUNT)
+                                .hasToken(ExpectedTokenRel.relationshipWith(KNOWABLE_TOKEN)
+                                        .freeze(TokenFreezeStatus.Frozen)),
+                        contractCall(
+                                        FREEZE_CONTRACT,
+                                        TOKEN_UNFREEZE_FUNC,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())))
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER),
+                        contractCall(
+                                        FREEZE_CONTRACT,
+                                        IS_FROZEN_FUNC,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())))
+                                .logged()
+                                .payingWith(ACCOUNT)
+                                .via(IS_FROZEN_TXN)
+                                .gas(GAS_TO_OFFER))))
                 .then(
                         childRecordsCheck(
                                 ACCOUNT_HAS_NO_KEY_TXN,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INVALID_SIGNATURE)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INVALID_SIGNATURE)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(INVALID_SIGNATURE)))),
                         childRecordsCheck(
                                 IS_FROZEN_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                ParsingConstants
-                                                                                        .FunctionType
-                                                                                        .HAPI_IS_FROZEN)
-                                                                        .withStatus(SUCCESS)
-                                                                        .withIsFrozen(false)))));
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(ParsingConstants.FunctionType.HAPI_IS_FROZEN)
+                                                        .withStatus(SUCCESS)
+                                                        .withIsFrozen(false)))));
     }
 
     private HapiSpec isFrozenHappyPathWithLocalCall() {
@@ -449,41 +365,26 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                         contractCreate(FREEZE_CONTRACT),
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                         cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)))
-                .when(
-                        assertionsHold(
-                                (spec, ctxLog) -> {
-                                    final var freezeCall =
-                                            contractCall(
-                                                            FREEZE_CONTRACT,
-                                                            TOKEN_FREEZE_FUNC,
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            vanillaTokenID.get())),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(accountID.get())))
-                                                    .logged()
-                                                    .payingWith(ACCOUNT)
-                                                    .gas(GAS_TO_OFFER);
-                                    final var isFrozenLocalCall =
-                                            contractCallLocal(
-                                                            FREEZE_CONTRACT,
-                                                            IS_FROZEN_FUNC,
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            vanillaTokenID.get())),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(accountID.get())))
-                                                    .has(
-                                                            resultWith()
-                                                                    .resultViaFunctionName(
-                                                                            IS_FROZEN_FUNC,
-                                                                            FREEZE_CONTRACT,
-                                                                            isLiteralResult(
-                                                                                    new Object[] {
-                                                                                        Boolean.TRUE
-                                                                                    })));
-                                    allRunFor(spec, freezeCall, isFrozenLocalCall);
-                                }))
+                .when(assertionsHold((spec, ctxLog) -> {
+                    final var freezeCall = contractCall(
+                                    FREEZE_CONTRACT,
+                                    TOKEN_FREEZE_FUNC,
+                                    HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                    HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())))
+                            .logged()
+                            .payingWith(ACCOUNT)
+                            .gas(GAS_TO_OFFER);
+                    final var isFrozenLocalCall = contractCallLocal(
+                                    FREEZE_CONTRACT,
+                                    IS_FROZEN_FUNC,
+                                    HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                    HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())))
+                            .has(resultWith()
+                                    .resultViaFunctionName(
+                                            IS_FROZEN_FUNC, FREEZE_CONTRACT, isLiteralResult(new Object[] {Boolean.TRUE
+                                            })));
+                    allRunFor(spec, freezeCall, isFrozenLocalCall);
+                }))
                 .then();
     }
 
@@ -496,12 +397,9 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                 .given(
                         newKeyNamed(FREEZE_KEY),
                         newKeyNamed(accountAlias).shape(SECP_256K1_SHAPE),
-                        cryptoTransfer(
-                                        tinyBarsFromAccountToAlias(
-                                                GENESIS, accountAlias, ONE_HUNDRED_HBARS))
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, accountAlias, ONE_HUNDRED_HBARS))
                                 .via("autoAccount"),
-                        getAliasedAccountInfo(accountAlias)
-                                .exposingContractAccountIdTo(autoCreatedAccountId::set),
+                        getAliasedAccountInfo(accountAlias).exposingContractAccountIdTo(autoCreatedAccountId::set),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -511,18 +409,13 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
                         uploadInitCode(FREEZE_CONTRACT),
                         contractCreate(FREEZE_CONTRACT))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCallLocal(
-                                                        FREEZE_CONTRACT,
-                                                        IS_FROZEN_FUNC,
-                                                        HapiParserUtil.asHeadlongAddress(
-                                                                asAddress(vanillaTokenID.get())),
-                                                        HapiParserUtil.asHeadlongAddress(
-                                                                autoCreatedAccountId.get())))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCallLocal(
+                                FREEZE_CONTRACT,
+                                IS_FROZEN_FUNC,
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                HapiParserUtil.asHeadlongAddress(autoCreatedAccountId.get())))))
                 .then();
     }
 }

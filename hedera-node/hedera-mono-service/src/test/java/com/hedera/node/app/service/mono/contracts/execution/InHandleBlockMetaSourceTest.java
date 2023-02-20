@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
@@ -31,8 +32,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class InHandleBlockMetaSourceTest {
-    @Mock private BlockManager blockManager;
-    @Mock private TransactionContext txnCtx;
+    @Mock
+    private BlockManager blockManager;
+
+    @Mock
+    private TransactionContext txnCtx;
 
     private InHandleBlockMetaSource subject;
 

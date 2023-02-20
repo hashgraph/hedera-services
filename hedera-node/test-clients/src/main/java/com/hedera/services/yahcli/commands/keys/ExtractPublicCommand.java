@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.commands.keys;
 
 import static com.hedera.services.yahcli.config.ConfigUtils.setLogLevels;
@@ -33,7 +34,8 @@ import picocli.CommandLine;
         subcommands = {picocli.CommandLine.HelpCommand.class},
         description = "Prints the public part of a Ed25519 key in PEM or mnemonic form")
 public class ExtractPublicCommand implements Callable<Integer> {
-    @CommandLine.ParentCommand private KeysCommand keysCommand;
+    @CommandLine.ParentCommand
+    private KeysCommand keysCommand;
 
     @CommandLine.Option(
             names = {"-p", "--path"},

@@ -32,6 +32,7 @@ module com.hedera.node.app {
     requires dagger;
     requires javax.inject;
     requires com.swirlds.platform;
+    requires com.swirlds.config;
     requires org.apache.logging.log4j;
     requires com.google.common;
     requires org.apache.commons.lang3;

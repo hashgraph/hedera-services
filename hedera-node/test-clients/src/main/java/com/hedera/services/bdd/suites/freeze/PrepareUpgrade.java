@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.freeze;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -48,14 +49,11 @@ public final class PrepareUpgrade extends HapiSuite {
     private HapiSpec prepareUpgrade() {
         return defaultHapiSpec("PrepareUpgrade")
                 .given(initializeSettings())
-                .when(
-                        sourcing(
-                                () ->
-                                        UtilVerbs.prepareUpgrade()
-                                                .withUpdateFile(upgradeFileId())
-                                                .signedBy(GENESIS)
-                                                .payingWith(GENESIS)
-                                                .havingHash(upgradeFileHash())))
+                .when(sourcing(() -> UtilVerbs.prepareUpgrade()
+                        .withUpdateFile(upgradeFileId())
+                        .signedBy(GENESIS)
+                        .payingWith(GENESIS)
+                        .havingHash(upgradeFileHash())))
                 .then();
     }
 }

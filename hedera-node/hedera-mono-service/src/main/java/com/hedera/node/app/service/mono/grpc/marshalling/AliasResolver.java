@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
@@ -67,8 +68,7 @@ public class AliasResolver {
         final var resolvedAdjusts = resolveHbarAdjusts(op.getTransfers(), aliasManager);
         resolvedOp.setTransfers(resolvedAdjusts);
 
-        final var resolvedTokenAdjusts =
-                resolveTokenAdjusts(op.getTokenTransfersList(), aliasManager);
+        final var resolvedTokenAdjusts = resolveTokenAdjusts(op.getTokenTransfersList(), aliasManager);
         resolvedOp.addAllTokenTransfers(resolvedTokenAdjusts);
 
         return resolvedOp.build();
@@ -111,8 +111,7 @@ public class AliasResolver {
         }
         for (var tokenAdjusts : op.getTokenTransfersList()) {
             for (var ownershipChange : tokenAdjusts.getNftTransfersList()) {
-                if (isAlias(ownershipChange.getSenderAccountID())
-                        || isAlias(ownershipChange.getReceiverAccountID())) {
+                if (isAlias(ownershipChange.getSenderAccountID()) || isAlias(ownershipChange.getReceiverAccountID())) {
                     return true;
                 }
             }
@@ -135,8 +134,7 @@ public class AliasResolver {
             resolvedTokenAdjust.setToken(tokenAdjust.getToken());
             for (final var adjust : tokenAdjust.getTransfersList()) {
                 final var result =
-                        resolveInternalFungible(
-                                aliasManager, adjust, resolvedTokenAdjust::addTransfers, true);
+                        resolveInternalFungible(aliasManager, adjust, resolvedTokenAdjust::addTransfers, true);
 
                 // Since the receiver can be an unknown alias in a CryptoTransfer perceive the
                 // result
@@ -144,22 +142,15 @@ public class AliasResolver {
             }
 
             for (final var change : tokenAdjust.getNftTransfersList()) {
-                final var resolvedChange =
-                        change.toBuilder().setSerialNumber(change.getSerialNumber());
+                final var resolvedChange = change.toBuilder().setSerialNumber(change.getSerialNumber());
 
                 final var senderResult =
-                        resolveInternal(
-                                aliasManager,
-                                change.getSenderAccountID(),
-                                resolvedChange::setSenderAccountID);
+                        resolveInternal(aliasManager, change.getSenderAccountID(), resolvedChange::setSenderAccountID);
                 if (senderResult != Result.KNOWN_ALIAS) {
                     perceivedMissing++;
                 }
-                final var receiverResult =
-                        resolveInternal(
-                                aliasManager,
-                                change.getReceiverAccountID(),
-                                resolvedChange::setReceiverAccountID);
+                final var receiverResult = resolveInternal(
+                        aliasManager, change.getReceiverAccountID(), resolvedChange::setReceiverAccountID);
 
                 // Since the receiver can be an unknown alias in a CryptoTransfer perceive the
                 // result
@@ -173,22 +164,17 @@ public class AliasResolver {
         return resolvedTokenAdjusts;
     }
 
-    private TransferList resolveHbarAdjusts(
-            final TransferList opAdjusts, final AliasManager aliasManager) {
+    private TransferList resolveHbarAdjusts(final TransferList opAdjusts, final AliasManager aliasManager) {
         final var resolvedAdjusts = TransferList.newBuilder();
         for (var adjust : opAdjusts.getAccountAmountsList()) {
-            final var result =
-                    resolveInternalFungible(
-                            aliasManager, adjust, resolvedAdjusts::addAccountAmounts, false);
+            final var result = resolveInternalFungible(aliasManager, adjust, resolvedAdjusts::addAccountAmounts, false);
             perceiveNonNftResult(result, adjust);
         }
         return resolvedAdjusts.build();
     }
 
     private Result resolveInternal(
-            final AliasManager aliasManager,
-            final AccountID idOrAlias,
-            final Consumer<AccountID> resolvingAction) {
+            final AliasManager aliasManager, final AccountID idOrAlias, final Consumer<AccountID> resolvingAction) {
         AccountID resolvedId = idOrAlias;
         var result = Result.KNOWN_ALIAS;
         if (isAlias(idOrAlias)) {
@@ -226,9 +212,8 @@ public class AliasResolver {
                 if (isMirror(evmAddress)) {
                     offerMirrorId(
                             evmAddress,
-                            id ->
-                                    resolvingAction.accept(
-                                            adjust.toBuilder().setAccountID(id).build()));
+                            id -> resolvingAction.accept(
+                                    adjust.toBuilder().setAccountID(id).build()));
                     return Result.KNOWN_ALIAS;
                 }
             }
@@ -236,8 +221,9 @@ public class AliasResolver {
             if (resolution == MISSING_NUM) {
                 result = netOf(alias, !isForToken);
             } else {
-                resolvedAdjust =
-                        adjust.toBuilder().setAccountID(resolution.toGrpcAccountId()).build();
+                resolvedAdjust = adjust.toBuilder()
+                        .setAccountID(resolution.toGrpcAccountId())
+                        .build();
             }
             resolutions.put(alias, resolution);
             tokenTransferResolutions.put(alias, resolution);
@@ -256,10 +242,7 @@ public class AliasResolver {
     }
 
     private void perceiveResult(
-            final Result result,
-            final long assetChange,
-            final ByteString alias,
-            final boolean repetitionsAreInvalid) {
+            final Result result, final long assetChange, final ByteString alias, final boolean repetitionsAreInvalid) {
         if (result == Result.UNKNOWN_ALIAS) {
             if (assetChange > 0) {
                 if (isSerializedProtoKey(alias)) {
@@ -280,9 +263,7 @@ public class AliasResolver {
     private Result netOf(final ByteString alias, final boolean isForNftOrHbar) {
         if (isForNftOrHbar) {
             // Note a REPEATED_UNKNOWN_ALIAS is still valid for the NFT receiver case
-            return resolutions.containsKey(alias)
-                    ? Result.REPEATED_UNKNOWN_ALIAS
-                    : Result.UNKNOWN_ALIAS;
+            return resolutions.containsKey(alias) ? Result.REPEATED_UNKNOWN_ALIAS : Result.UNKNOWN_ALIAS;
         } else {
             // If the token resolutions map already contains this unknown alias, we can assume
             // it was successfully auto-created by a prior mention in this CryptoTransfer.
@@ -295,16 +276,15 @@ public class AliasResolver {
     }
 
     private void offerMirrorId(final byte[] evmAddress, final Consumer<AccountID> resolvingAction) {
-        final var contractNum =
-                Longs.fromBytes(
-                        evmAddress[12],
-                        evmAddress[13],
-                        evmAddress[14],
-                        evmAddress[15],
-                        evmAddress[16],
-                        evmAddress[17],
-                        evmAddress[18],
-                        evmAddress[19]);
+        final var contractNum = Longs.fromBytes(
+                evmAddress[12],
+                evmAddress[13],
+                evmAddress[14],
+                evmAddress[15],
+                evmAddress[16],
+                evmAddress[17],
+                evmAddress[18],
+                evmAddress[19]);
         resolvingAction.accept(STATIC_PROPERTIES.scopedAccountWith(contractNum));
     }
 

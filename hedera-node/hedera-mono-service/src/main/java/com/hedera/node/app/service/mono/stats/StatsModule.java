@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stats;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -35,8 +36,7 @@ public final class StatsModule {
 
     @Provides
     @Singleton
-    public static MiscRunningAvgs provideMiscRunningAvgs(
-            final NodeLocalProperties nodeLocalProperties) {
+    public static MiscRunningAvgs provideMiscRunningAvgs(final NodeLocalProperties nodeLocalProperties) {
         return new MiscRunningAvgs(nodeLocalProperties.statsRunningAvgHalfLifeSecs());
     }
 
@@ -51,8 +51,7 @@ public final class StatsModule {
 
     @Provides
     @Singleton
-    public static MiscSpeedometers provideMiscSpeedometers(
-            final NodeLocalProperties nodeLocalProperties) {
+    public static MiscSpeedometers provideMiscSpeedometers(final NodeLocalProperties nodeLocalProperties) {
         return new MiscSpeedometers(nodeLocalProperties.statsSpeedometerHalfLifeSecs());
     }
 

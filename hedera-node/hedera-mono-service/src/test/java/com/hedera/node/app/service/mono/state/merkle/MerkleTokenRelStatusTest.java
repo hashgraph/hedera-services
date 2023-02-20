@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -51,9 +52,7 @@ class MerkleTokenRelStatusTest {
 
     @BeforeEach
     void setup() {
-        subject =
-                new MerkleTokenRelStatus(
-                        balance, frozen, kycGranted, automaticAssociation, numbers);
+        subject = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation, numbers);
         subject.setNext(nextTokenNum);
         subject.setPrev(prevTokenNum);
     }
@@ -61,24 +60,12 @@ class MerkleTokenRelStatusTest {
     @Test
     void objectContractMet() {
         final var one = new MerkleTokenRelStatus();
-        final var two =
-                new MerkleTokenRelStatus(
-                        balance - 1, frozen, kycGranted, automaticAssociation, numbers);
-        final var three =
-                new MerkleTokenRelStatus(
-                        balance, !frozen, kycGranted, automaticAssociation, numbers);
-        final var four =
-                new MerkleTokenRelStatus(
-                        balance, frozen, !kycGranted, automaticAssociation, numbers);
-        final var five =
-                new MerkleTokenRelStatus(
-                        balance, frozen, kycGranted, automaticAssociation, numbers - 1);
-        final var six =
-                new MerkleTokenRelStatus(
-                        balance, frozen, kycGranted, !automaticAssociation, numbers);
-        final var seven =
-                new MerkleTokenRelStatus(
-                        balance, frozen, kycGranted, automaticAssociation, numbers);
+        final var two = new MerkleTokenRelStatus(balance - 1, frozen, kycGranted, automaticAssociation, numbers);
+        final var three = new MerkleTokenRelStatus(balance, !frozen, kycGranted, automaticAssociation, numbers);
+        final var four = new MerkleTokenRelStatus(balance, frozen, !kycGranted, automaticAssociation, numbers);
+        final var five = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation, numbers - 1);
+        final var six = new MerkleTokenRelStatus(balance, frozen, kycGranted, !automaticAssociation, numbers);
+        final var seven = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation, numbers);
         seven.setNext(nextTokenNum);
         seven.setPrev(prevTokenNum);
         final var eight = subject;
@@ -124,10 +111,7 @@ class MerkleTokenRelStatusTest {
         final var in = mock(SerializableDataInputStream.class);
         final var defaultSubject = new MerkleTokenRelStatus();
         given(in.readLong()).willReturn(balance);
-        given(in.readBoolean())
-                .willReturn(frozen)
-                .willReturn(kycGranted)
-                .willReturn(automaticAssociation);
+        given(in.readBoolean()).willReturn(frozen).willReturn(kycGranted).willReturn(automaticAssociation);
 
         defaultSubject.deserialize(in, MerkleTokenRelStatus.RELEASE_090_VERSION);
 
@@ -147,10 +131,7 @@ class MerkleTokenRelStatusTest {
         final var in = mock(SerializableDataInputStream.class);
         final var defaultSubject = new MerkleTokenRelStatus();
         given(in.readLong()).willReturn(balance);
-        given(in.readBoolean())
-                .willReturn(frozen)
-                .willReturn(kycGranted)
-                .willReturn(automaticAssociation);
+        given(in.readBoolean()).willReturn(frozen).willReturn(kycGranted).willReturn(automaticAssociation);
 
         defaultSubject.deserialize(in, MerkleTokenRelStatus.RELEASE_0180_PRE_SDK_VERSION);
 
@@ -169,10 +150,7 @@ class MerkleTokenRelStatusTest {
         final var in = mock(SerializableDataInputStream.class);
         final var defaultSubject = new MerkleTokenRelStatus();
         given(in.readLong()).willReturn(balance).willReturn(numbers);
-        given(in.readBoolean())
-                .willReturn(frozen)
-                .willReturn(kycGranted)
-                .willReturn(automaticAssociation);
+        given(in.readBoolean()).willReturn(frozen).willReturn(kycGranted).willReturn(automaticAssociation);
 
         defaultSubject.deserialize(in, MerkleTokenRelStatus.RELEASE_0180_VERSION);
 
@@ -189,10 +167,7 @@ class MerkleTokenRelStatusTest {
                 .willReturn(numbers)
                 .willReturn(nextTokenNum)
                 .willReturn(prevTokenNum);
-        given(in.readBoolean())
-                .willReturn(frozen)
-                .willReturn(kycGranted)
-                .willReturn(automaticAssociation);
+        given(in.readBoolean()).willReturn(frozen).willReturn(kycGranted).willReturn(automaticAssociation);
 
         defaultSubject.deserialize(in, MerkleTokenRelStatus.RELEASE_0250_VERSION);
 
@@ -202,10 +177,9 @@ class MerkleTokenRelStatusTest {
 
     @Test
     void toStringWorks() {
-        final var desired =
-                "MerkleTokenRelStatus{balance=666, isFrozen=true, hasKycGranted=true, "
-                        + "key=528280977864 <-> (0.0.123, 0.0.456), isAutomaticAssociation=false, "
-                        + "next=457, prev=455}";
+        final var desired = "MerkleTokenRelStatus{balance=666, isFrozen=true, hasKycGranted=true, "
+                + "key=528280977864 <-> (0.0.123, 0.0.456), isAutomaticAssociation=false, "
+                + "next=457, prev=455}";
         assertEquals(desired, subject.toString());
     }
 
@@ -247,9 +221,7 @@ class MerkleTokenRelStatusTest {
         assertThrows(MutabilityException.class, () -> subject.setBalance(balance + 1));
         assertThrows(MutabilityException.class, () -> subject.setFrozen(!frozen));
         assertThrows(MutabilityException.class, () -> subject.setKycGranted(!kycGranted));
-        assertThrows(
-                MutabilityException.class,
-                () -> subject.setAutomaticAssociation(!automaticAssociation));
+        assertThrows(MutabilityException.class, () -> subject.setAutomaticAssociation(!automaticAssociation));
     }
 
     @Test

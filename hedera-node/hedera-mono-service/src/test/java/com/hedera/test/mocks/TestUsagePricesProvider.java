@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.mocks;
 
 import static com.hedera.node.app.service.mono.fees.calculation.BasicFcfsUsagePrices.DEFAULT_RESOURCE_PRICES;
@@ -39,8 +40,7 @@ import org.apache.commons.lang3.tuple.Triple;
 public enum TestUsagePricesProvider implements UsagePricesProvider {
     TEST_USAGE_PRICES;
 
-    public static final String R4_FEE_SCHEDULE_REPR_PATH =
-            "src/test/resources/testfiles/r4FeeSchedule.bin";
+    public static final String R4_FEE_SCHEDULE_REPR_PATH = "src/test/resources/testfiles/r4FeeSchedule.bin";
 
     CurrentAndNextFeeSchedule feeSchedules;
 
@@ -72,8 +72,7 @@ public enum TestUsagePricesProvider implements UsagePricesProvider {
     @Override
     public Map<SubType, FeeData> pricesGiven(HederaFunctionality function, Timestamp at) {
         try {
-            Map<HederaFunctionality, Map<SubType, FeeData>> functionUsagePrices =
-                    applicableUsagePrices(at);
+            Map<HederaFunctionality, Map<SubType, FeeData>> functionUsagePrices = applicableUsagePrices(at);
             Map<SubType, FeeData> usagePrices = functionUsagePrices.get(function);
             Objects.requireNonNull(usagePrices);
             return usagePrices;
@@ -124,8 +123,7 @@ public enum TestUsagePricesProvider implements UsagePricesProvider {
         return Timestamp.newBuilder().setSeconds(ts.getSeconds()).build();
     }
 
-    private Map<HederaFunctionality, Map<SubType, FeeData>> functionUsagePricesFrom(
-            FeeSchedule feeSchedule) {
+    private Map<HederaFunctionality, Map<SubType, FeeData>> functionUsagePricesFrom(FeeSchedule feeSchedule) {
         var feeScheduleList = feeSchedule.getTransactionFeeScheduleList();
         Map<HederaFunctionality, Map<SubType, FeeData>> feeDataMap = new HashMap<>();
         for (TransactionFeeSchedule fs : feeScheduleList) {

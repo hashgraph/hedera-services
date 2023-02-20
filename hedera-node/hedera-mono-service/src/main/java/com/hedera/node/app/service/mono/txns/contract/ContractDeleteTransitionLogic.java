@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.contract;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -31,8 +32,7 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
     private final TransactionContext txnCtx;
 
     @Inject
-    public ContractDeleteTransitionLogic(
-            final DeletionLogic deletionLogic, final TransactionContext txnCtx) {
+    public ContractDeleteTransitionLogic(final DeletionLogic deletionLogic, final TransactionContext txnCtx) {
         this.txnCtx = txnCtx;
         this.deletionLogic = deletionLogic;
     }

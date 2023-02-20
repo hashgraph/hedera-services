@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
@@ -102,51 +103,34 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
                         contractCreate(DELETE_TOKEN_CONTRACT),
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                         cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                DELETE_TOKEN_CONTRACT,
-                                                                TOKEN_DELETE_FUNCTION,
-                                                                asHeadlongAddress(
-                                                                        asHexedAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .payingWith(ACCOUNT)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .via(DELETE_TXN),
-                                                getTokenInfo(VANILLA_TOKEN).isDeleted().logged(),
-                                                cryptoTransfer(
-                                                                moving(500, VANILLA_TOKEN)
-                                                                        .between(
-                                                                                TOKEN_TREASURY,
-                                                                                ACCOUNT))
-                                                        .hasKnownStatus(TOKEN_WAS_DELETED),
-                                                contractCall(
-                                                                DELETE_TOKEN_CONTRACT,
-                                                                TOKEN_DELETE_FUNCTION,
-                                                                asHeadlongAddress(
-                                                                        asHexedAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .payingWith(ACCOUNT)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .via(tokenAlreadyDeletedTxn)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
-                .then(
-                        childRecordsCheck(
-                                tokenAlreadyDeletedTxn,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith()
-                                        .status(TOKEN_WAS_DELETED)
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        DELETE_TOKEN_CONTRACT,
+                                        TOKEN_DELETE_FUNCTION,
+                                        asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .via(DELETE_TXN),
+                        getTokenInfo(VANILLA_TOKEN).isDeleted().logged(),
+                        cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT))
+                                .hasKnownStatus(TOKEN_WAS_DELETED),
+                        contractCall(
+                                        DELETE_TOKEN_CONTRACT,
+                                        TOKEN_DELETE_FUNCTION,
+                                        asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .via(tokenAlreadyDeletedTxn)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(childRecordsCheck(
+                        tokenAlreadyDeletedTxn,
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith()
+                                .status(TOKEN_WAS_DELETED)
+                                .contractCallResult(resultWith()
                                         .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                TOKEN_WAS_DELETED)))));
+                                                htsPrecompileResult().withStatus(TOKEN_WAS_DELETED)))));
     }
 
     private HapiSpec deleteNftTokenWithNegativeCases() {
@@ -156,9 +140,7 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
         return defaultHapiSpec("deleteNftTokenWithNegativeCases")
                 .given(
                         newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT)
-                                .balance(100 * ONE_HBAR)
-                                .exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(ACCOUNT).balance(100 * ONE_HBAR).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
@@ -171,47 +153,33 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
                         uploadInitCode(DELETE_TOKEN_CONTRACT),
                         contractCreate(DELETE_TOKEN_CONTRACT),
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
-                        cryptoTransfer(
-                                movingUnique(VANILLA_TOKEN, 1L).between(TOKEN_TREASURY, ACCOUNT)))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                DELETE_TOKEN_CONTRACT,
-                                                                TOKEN_DELETE_FUNCTION,
-                                                                asHeadlongAddress(
-                                                                        asHexedAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .payingWith(ACCOUNT)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .via(notAnAdminTxn)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                cryptoUpdate(ACCOUNT).key(MULTI_KEY),
-                                                contractCall(
-                                                                DELETE_TOKEN_CONTRACT,
-                                                                TOKEN_DELETE_FUNCTION,
-                                                                asHeadlongAddress(
-                                                                        asHexedAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .payingWith(ACCOUNT)
-                                                        .gas(GAS_TO_OFFER),
-                                                getTokenInfo(VANILLA_TOKEN).isDeleted().logged())))
-                .then(
-                        childRecordsCheck(
-                                notAnAdminTxn,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith()
-                                        .status(INVALID_SIGNATURE)
+                        cryptoTransfer(movingUnique(VANILLA_TOKEN, 1L).between(TOKEN_TREASURY, ACCOUNT)))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        DELETE_TOKEN_CONTRACT,
+                                        TOKEN_DELETE_FUNCTION,
+                                        asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .via(notAnAdminTxn)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        cryptoUpdate(ACCOUNT).key(MULTI_KEY),
+                        contractCall(
+                                        DELETE_TOKEN_CONTRACT,
+                                        TOKEN_DELETE_FUNCTION,
+                                        asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER),
+                        getTokenInfo(VANILLA_TOKEN).isDeleted().logged())))
+                .then(childRecordsCheck(
+                        notAnAdminTxn,
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith()
+                                .status(INVALID_SIGNATURE)
+                                .contractCallResult(resultWith()
                                         .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INVALID_SIGNATURE)))));
+                                                htsPrecompileResult().withStatus(INVALID_SIGNATURE)))));
     }
 
     @Override

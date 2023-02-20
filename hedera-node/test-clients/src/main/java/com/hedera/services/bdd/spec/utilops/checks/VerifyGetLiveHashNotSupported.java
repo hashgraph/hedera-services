@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops.checks;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
@@ -28,14 +29,12 @@ import org.junit.jupiter.api.Assertions;
 public class VerifyGetLiveHashNotSupported extends UtilOp {
     @Override
     protected boolean submitOp(HapiSpec spec) throws Throwable {
-        CryptoGetLiveHashQuery.Builder op =
-                CryptoGetLiveHashQuery.newBuilder().setAccountID(asAccount("0.0.2"));
+        CryptoGetLiveHashQuery.Builder op = CryptoGetLiveHashQuery.newBuilder().setAccountID(asAccount("0.0.2"));
         Query query = Query.newBuilder().setCryptoGetLiveHash(op).build();
         Response response =
                 spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getLiveHash(query);
         Assertions.assertEquals(
-                NOT_SUPPORTED,
-                response.getCryptoGetLiveHash().getHeader().getNodeTransactionPrecheckCode());
+                NOT_SUPPORTED, response.getCryptoGetLiveHash().getHeader().getNodeTransactionPrecheckCode());
         return false;
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.throttles;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -47,7 +48,8 @@ class GasLimitDeterministicThrottleTest {
 
         // then:
         assertTrue(result);
-        assertEquals(DEFAULT_CAPACITY - gasLimitForTX, subject.delegate().bucket().capacityFree());
+        assertEquals(
+                DEFAULT_CAPACITY - gasLimitForTX, subject.delegate().bucket().capacityFree());
     }
 
     @Test
@@ -198,7 +200,8 @@ class GasLimitDeterministicThrottleTest {
         assertTrue(result);
         assertTrue(result2);
         assertEquals(gasLimitForTX, subject.used());
-        assertEquals(DEFAULT_CAPACITY - gasLimitForTX, subject.delegate().bucket().capacityFree());
+        assertEquals(
+                DEFAULT_CAPACITY - gasLimitForTX, subject.delegate().bucket().capacityFree());
     }
 
     @Test
@@ -217,6 +220,7 @@ class GasLimitDeterministicThrottleTest {
         assertTrue(result);
         assertTrue(result2);
         assertEquals(
-                DEFAULT_CAPACITY - (gasLimitForTX * 2), subject.delegate().bucket().capacityFree());
+                DEFAULT_CAPACITY - (gasLimitForTX * 2),
+                subject.delegate().bucket().capacityFree());
     }
 }
