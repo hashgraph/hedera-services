@@ -17,17 +17,14 @@
 package com.hedera.services.bdd.suites.records;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
-
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import com.hedera.services.bdd.junit.utils.AccountClassifier;
-import com.hedera.services.bdd.junit.validators.AccountTokenNum;
+import com.hedera.services.bdd.junit.validators.AccountNumTokenId;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
-import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
@@ -35,19 +32,24 @@ import org.apache.logging.log4j.Logger;
 
 public class TokenBalanceValidation extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenBalanceValidation.class);
-
-    private final Map<AccountTokenNum, Long> expectedTokenBalances;
+    private final Map<AccountNumTokenId, Long> expectedTokenBalances;
     private final AccountClassifier accountClassifier;
+    private static final String aFungibleToken = "aFT";
+    private static final Long aFungibleTokenId = 12L;
+    private static final Long aFungibleAmount = 1_000L;
+    private static final Long TOKEN_TREASURY = 123L;
 
-    public TokenBalanceValidation(
-            final Map<AccountTokenNum, Long> expectedTokenBalances, final AccountClassifier accountClassifier) {
+    public TokenBalanceValidation(      //NetworkConfig targetInfo,
+            final Map<AccountNumTokenId, Long> expectedTokenBalances,
+            final AccountClassifier accountClassifier) {
         this.expectedTokenBalances = expectedTokenBalances;
         this.accountClassifier = accountClassifier;
     }
 
     public static void main(String... args) {
-        // Treasury starts with 50B hbar
-        new TokenBalanceValidation(Map.of(new AccountTokenNum(2L, 10L), 500L), new AccountClassifier()).runSuiteSync();
+        //var tokenId = asTokenId(tokenBalance.getKey(), spec);
+        Map<AccountNumTokenId, Long> expectedTokenBalances = Map.of(new AccountNumTokenId(TOKEN_TREASURY, 12l), aFungibleAmount);
+        new TokenBalanceValidation(expectedTokenBalances, new AccountClassifier()).runSuiteSync();
     }
 
     @Override
@@ -57,49 +59,26 @@ public class TokenBalanceValidation extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(validateTokenBalances());
+        return List.of(validateTokenBalances() );
     }
 
     private HapiSpec validateTokenBalances() {
+        final var initBalance = ONE_HBAR;
+
         return customHapiSpec("ValidateTokenBalances")
                 .withProperties(Map.of(
                         "fees.useFixedOffer", "true",
                         "fees.fixedOffer", "100000000"))
-                .given()
+                .given(
+                        cryptoCreate(TOKEN_TREASURY.toString()).balance(initBalance),
+                        tokenCreate(aFungibleToken)
+                                .initialSupply(aFungibleAmount)
+                                .treasury(TOKEN_TREASURY.toString())
+                        )
                 .when()
-                .then(inParallel(expectedTokenBalances.entrySet().stream()
-                                .map(entry -> {
-                                    final var tokenNum = entry.getKey().tokenNum();
-                                    final var accountNum = entry.getKey().accountNum();
-                                    final var tokenBalance = entry.getValue();
-                                    return QueryVerbs.getAccountInfo(
-                                                    "0.0." + accountNum) // need to use accountClassifier here?
-                                            .hasToken(relationshipWith("primary")
-                                                    .balance(500)
-                                                    .kyc(TokenKycStatus.Granted)
-                                                    .freeze(TokenFreezeStatus.Unfrozen));
-                                    //                                                            return
-                                    // QueryVerbs.getAccountBalance(
-                                    //                                                                            "0.0."
-                                    // + accountNum,
-                                    //
-                                    // accountClassifier
-                                    //
-                                    //  .isContract(
-                                    //
-                                    //          accountNum))
-                                    //
-                                    // .hasAnswerOnlyPrecheckFrom(
-                                    //
-                                    // CONTRACT_DELETED,
-                                    //
-                                    // ACCOUNT_DELETED,
-                                    //                                                                            OK)
-                                    //
-                                    // .hasTinyBars(entry.getValue());
-                                })
-                                .toArray(HapiSpecOperation[]::new))
-                        .failOnErrors());
+                .then(
+                        getAccountBalance(TOKEN_TREASURY.toString())
+                                .hasTokenBalance(aFungibleToken, aFungibleAmount));
     }
 
     @Override

@@ -19,7 +19,7 @@ package com.hedera.services.bdd.junit;
 import static com.hedera.services.bdd.junit.TestBase.concurrentExecutionOf;
 
 import com.hedera.services.bdd.junit.utils.AccountClassifier;
-import com.hedera.services.bdd.junit.validators.AccountTokenNum;
+import com.hedera.services.bdd.junit.validators.AccountNumTokenId;
 import com.hedera.services.bdd.suites.records.TokenBalanceValidation;
 import com.hedera.services.stream.proto.RecordStreamItem;
 import java.util.HashMap;
@@ -39,7 +39,7 @@ import java.util.stream.Stream;
  * <p>It uses the {@link com.hedera.services.bdd.suites.records.TokenBalanceValidation} suite to perform the queries.
  */
 public class TokenReconciliationValidator implements RecordStreamValidator {
-    private final Map<AccountTokenNum, Long> expectedTokenBalances = new HashMap<>();
+    private final Map<AccountNumTokenId, Long> expectedTokenBalances = new HashMap<>();
 
     private final AccountClassifier accountClassifier = new AccountClassifier();
 
@@ -64,9 +64,9 @@ public class TokenReconciliationValidator implements RecordStreamValidator {
                 grpcRecord.getTokenTransferListsList().forEach(tokenTransferList -> {
                     Long tokenNum = tokenTransferList.getToken().getTokenNum();
                     tokenTransferList.getTransfersList().forEach(tokenTransfers -> {
-                        final var accountNum = tokenTransfers.getAccountID().getAccountNum();
-                        final var amount = tokenTransfers.getAmount();
-                        expectedTokenBalances.merge(new AccountTokenNum(tokenNum, accountNum), amount, Long::sum);
+                        final long accountNum = tokenTransfers.getAccountID().getAccountNum();
+                        final long amount = tokenTransfers.getAmount();
+                        expectedTokenBalances.merge(new AccountNumTokenId(tokenNum, accountNum), amount, Long::sum);
                     });
                 });
             }

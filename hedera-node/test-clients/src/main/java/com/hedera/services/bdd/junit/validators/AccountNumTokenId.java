@@ -19,4 +19,4 @@ package com.hedera.services.bdd.junit.validators;
 /**
  * Contains a single account number and a single associated token number.
  */
-public record AccountTokenNum(Long accountNum, Long tokenNum) {}
+public record AccountNumTokenId(Long accountNum, Long tokenId) {}
