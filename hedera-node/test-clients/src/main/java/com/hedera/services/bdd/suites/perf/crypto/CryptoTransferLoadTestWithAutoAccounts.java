@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -49,8 +50,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class CryptoTransferLoadTestWithAutoAccounts extends LoadTest {
-    private static final Logger log =
-            LogManager.getLogger(CryptoTransferLoadTestWithAutoAccounts.class);
+    private static final Logger log = LogManager.getLogger(CryptoTransferLoadTestWithAutoAccounts.class);
     private Random r = new Random();
     private static final int AUTO_ACCOUNTS = 20;
 
@@ -69,55 +69,54 @@ public class CryptoTransferLoadTestWithAutoAccounts extends LoadTest {
     protected HapiSpec runCryptoTransfers() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
-        Supplier<HapiSpecOperation[]> transferBurst =
-                () -> {
-                    String sender = "sender";
-                    String receiver;
+        Supplier<HapiSpecOperation[]> transferBurst = () -> {
+            String sender = "sender";
+            String receiver;
 
-                    if (r.nextInt(10) < 5) {
-                        receiver = "alias" + r.nextInt(AUTO_ACCOUNTS);
-                    } else {
-                        receiver = "receiver";
-                    }
+            if (r.nextInt(10) < 5) {
+                receiver = "alias" + r.nextInt(AUTO_ACCOUNTS);
+            } else {
+                receiver = "receiver";
+            }
 
-                    if (receiver.startsWith("alias")) {
-                        return new HapiSpecOperation[] {
-                            cryptoTransfer(tinyBarsFromToWithAlias(sender, receiver, 1L))
-                                    .logging()
-                                    .payingWith(sender)
-                                    .signedBy(GENESIS)
-                                    .suppressStats(true)
-                                    .fee(100_000_000L)
-                                    .hasKnownStatusFrom(
-                                            SUCCESS,
-                                            OK,
-                                            INSUFFICIENT_PAYER_BALANCE,
-                                            UNKNOWN,
-                                            TRANSACTION_EXPIRED,
-                                            INSUFFICIENT_ACCOUNT_BALANCE)
-                                    .hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
-                                    .deferStatusResolution()
-                        };
-                    }
-
-                    return new HapiSpecOperation[] {
-                        cryptoTransfer(tinyBarsFromTo(sender, receiver, 1L))
-                                .noLogging()
-                                .payingWith(sender)
-                                .signedBy(GENESIS)
-                                .suppressStats(true)
-                                .fee(100_000_000L)
-                                .hasKnownStatusFrom(
-                                        SUCCESS,
-                                        OK,
-                                        INSUFFICIENT_PAYER_BALANCE,
-                                        UNKNOWN,
-                                        TRANSACTION_EXPIRED,
-                                        INSUFFICIENT_ACCOUNT_BALANCE)
-                                .hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
-                                .deferStatusResolution()
-                    };
+            if (receiver.startsWith("alias")) {
+                return new HapiSpecOperation[] {
+                    cryptoTransfer(tinyBarsFromToWithAlias(sender, receiver, 1L))
+                            .logging()
+                            .payingWith(sender)
+                            .signedBy(GENESIS)
+                            .suppressStats(true)
+                            .fee(100_000_000L)
+                            .hasKnownStatusFrom(
+                                    SUCCESS,
+                                    OK,
+                                    INSUFFICIENT_PAYER_BALANCE,
+                                    UNKNOWN,
+                                    TRANSACTION_EXPIRED,
+                                    INSUFFICIENT_ACCOUNT_BALANCE)
+                            .hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
+                            .deferStatusResolution()
                 };
+            }
+
+            return new HapiSpecOperation[] {
+                cryptoTransfer(tinyBarsFromTo(sender, receiver, 1L))
+                        .noLogging()
+                        .payingWith(sender)
+                        .signedBy(GENESIS)
+                        .suppressStats(true)
+                        .fee(100_000_000L)
+                        .hasKnownStatusFrom(
+                                SUCCESS,
+                                OK,
+                                INSUFFICIENT_PAYER_BALANCE,
+                                UNKNOWN,
+                                TRANSACTION_EXPIRED,
+                                INSUFFICIENT_ACCOUNT_BALANCE)
+                        .hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
+                        .deferStatusResolution()
+            };
+        };
 
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
 
@@ -127,9 +126,7 @@ public class CryptoTransferLoadTestWithAutoAccounts extends LoadTest {
                                 (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
                         logIt(ignore -> settings.toString()))
                 .when(
-                        fileUpdate(THROTTLE_DEFS)
-                                .payingWith(GENESIS)
-                                .contents(defaultThrottles.toByteArray()),
+                        fileUpdate(THROTTLE_DEFS).payingWith(GENESIS).contents(defaultThrottles.toByteArray()),
                         cryptoCreate("sender")
                                 .balance(ignore -> settings.getInitialBalance())
                                 .payingWith(GENESIS)
@@ -137,31 +134,21 @@ public class CryptoTransferLoadTestWithAutoAccounts extends LoadTest {
                                 .key(GENESIS)
                                 .rechargeWindow(3)
                                 .logging()
-                                .hasRetryPrecheckFrom(
-                                        BUSY,
-                                        DUPLICATE_TRANSACTION,
-                                        PLATFORM_TRANSACTION_NOT_CREATED),
+                                .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
                         cryptoCreate("receiver")
                                 .payingWith(GENESIS)
-                                .hasRetryPrecheckFrom(
-                                        BUSY,
-                                        DUPLICATE_TRANSACTION,
-                                        PLATFORM_TRANSACTION_NOT_CREATED)
+                                .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
                                 .key(GENESIS)
                                 .logging(),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    List<HapiSpecOperation> ops = new ArrayList<>();
-                                    for (int i = 0; i < AUTO_ACCOUNTS; i++) {
-                                        var alias = "alias" + i;
-                                        ops.add(newKeyNamed(alias));
-                                        ops.add(
-                                                cryptoTransfer(
-                                                        tinyBarsFromToWithAlias(
-                                                                DEFAULT_PAYER, alias, ONE_HBAR)));
-                                    }
-                                    allRunFor(spec, ops);
-                                }))
+                        withOpContext((spec, opLog) -> {
+                            List<HapiSpecOperation> ops = new ArrayList<>();
+                            for (int i = 0; i < AUTO_ACCOUNTS; i++) {
+                                var alias = "alias" + i;
+                                ops.add(newKeyNamed(alias));
+                                ops.add(cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, alias, ONE_HBAR)));
+                            }
+                            allRunFor(spec, ops);
+                        }))
                 .then(
                         defaultLoadTest(transferBurst, settings),
                         getAccountBalance("sender").logged());

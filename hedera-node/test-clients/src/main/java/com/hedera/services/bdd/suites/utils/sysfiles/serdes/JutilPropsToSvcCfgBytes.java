@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.utils.sysfiles.serdes;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -41,8 +42,7 @@ public class JutilPropsToSvcCfgBytes implements SysFileSerde<String> {
                     .sorted(LEGACY_THROTTLES_FIRST_ORDER)
                     .collect(Collectors.joining("\n"));
         } catch (InvalidProtocolBufferException e) {
-            throw new IllegalArgumentException(
-                    "Content was not a valid ServicesConfigurationList", e);
+            throw new IllegalArgumentException("Content was not a valid ServicesConfigurationList", e);
         }
     }
 
@@ -54,12 +54,8 @@ public class JutilPropsToSvcCfgBytes implements SysFileSerde<String> {
             ServicesConfigurationList.Builder protoConfig = ServicesConfigurationList.newBuilder();
             jutilConfig.stringPropertyNames().stream()
                     .sorted(LEGACY_THROTTLES_FIRST_ORDER)
-                    .forEach(
-                            prop ->
-                                    protoConfig.addNameValue(
-                                            Setting.newBuilder()
-                                                    .setName(prop)
-                                                    .setValue(jutilConfig.getProperty(prop))));
+                    .forEach(prop -> protoConfig.addNameValue(
+                            Setting.newBuilder().setName(prop).setValue(jutilConfig.getProperty(prop))));
             return protoConfig.build().toByteArray();
         } catch (IOException e) {
             throw new IllegalArgumentException("Content was not a valid properties file", e);
@@ -71,18 +67,16 @@ public class JutilPropsToSvcCfgBytes implements SysFileSerde<String> {
         return fileName;
     }
 
-    public static final Comparator<String> LEGACY_THROTTLES_FIRST_ORDER =
-            Comparator.<String>comparingInt(
-                            prop -> {
-                                if (isLegacyBouncerProp(prop)) {
-                                    return 0;
-                                } else if (prop.startsWith("throttling.hcs")) {
-                                    return 1;
-                                } else {
-                                    return 2;
-                                }
-                            })
-                    .thenComparing(Comparator.naturalOrder());
+    public static final Comparator<String> LEGACY_THROTTLES_FIRST_ORDER = Comparator.<String>comparingInt(prop -> {
+                if (isLegacyBouncerProp(prop)) {
+                    return 0;
+                } else if (prop.startsWith("throttling.hcs")) {
+                    return 1;
+                } else {
+                    return 2;
+                }
+            })
+            .thenComparing(Comparator.naturalOrder());
 
     private static Set<String> legacyBouncerProps =
             Set.of("throttlingTps", "simpletransferTps", "getReceiptTps", "queriesTps");

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import java.time.Instant;
@@ -25,14 +26,13 @@ public final class HederaDateTimeFormatter {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    private static final DateTimeFormatter formatter =
-            new DateTimeFormatterBuilder()
-                    .appendPattern("yyyy-MM-dd")
-                    .appendLiteral('T')
-                    .appendPattern("HH_mm_ss")
-                    .appendLiteral('.')
-                    .toFormatter()
-                    .withZone(ZoneId.of("UTC"));
+    private static final DateTimeFormatter formatter = new DateTimeFormatterBuilder()
+            .appendPattern("yyyy-MM-dd")
+            .appendLiteral('T')
+            .appendPattern("HH_mm_ss")
+            .appendLiteral('.')
+            .toFormatter()
+            .withZone(ZoneId.of("UTC"));
 
     public static String format(final Instant instant) {
         return formatter.format(instant) + String.format("%09d", instant.getNano()) + "Z";

@@ -13,11 +13,124 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.service.mono.context.properties.EntityType.ACCOUNT;
 import static com.hedera.node.app.service.mono.context.properties.EntityType.CONTRACT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.*;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_MAX_NUM;
+import static com.hedera.node.app.spi.config.PropertyNames.AUTO_CREATION_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_GRACE_PERIOD;
+import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE;
+import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN;
+import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_TARGET_TYPES;
+import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_COMPRESS_ON_CREATION;
+import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_DIR_PATH;
+import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_PERIOD_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_TOKEN_BALANCES;
+import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD;
+import static com.hedera.node.app.spi.config.PropertyNames.CACHE_RECORDS_TTL;
+import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_AUTO_ASSOCIATIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_CREATE2;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_CHAIN_ID;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ENFORCE_CREATION_THROTTLE;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_EVM_VERSION;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_FREE_STORAGE_TIER_LIMIT;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ITEMIZE_STORAGE_FEES;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_KEYS_LEGACY_ACTIVATIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_KNOWN_BLOCK_HASH;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_LOCAL_CALL_EST_RET_BYTES;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_GAS_PER_SEC;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIRS_AGGREGATE;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_NUM;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REDIRECT_TOKEN_CALLS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REFERENCE_SLOT_LIFETIME;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECARS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
+import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_LIMIT_TOKEN_ASSOCIATIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.FEES_MIN_CONGESTION_PERIOD;
+import static com.hedera.node.app.spi.config.PropertyNames.FEES_PERCENT_CONGESTION_MULTIPLIERS;
+import static com.hedera.node.app.spi.config.PropertyNames.FEES_PERCENT_UTILIZATION_SCALE_FACTORS;
+import static com.hedera.node.app.spi.config.PropertyNames.FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_MAX_NUM;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_MAX_SIZE_KB;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ALLOWANCES_IS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ALLOWANCES_MAX_TXN_LIMIT;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_RECORD_FILE_VERSION;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_SIG_FILE_VERSION;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_TXN_MAX_MEMO_UTF8_BYTES;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_TXN_MAX_VALID_DURATION;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_TXN_MIN_VALID_DURATION;
+import static com.hedera.node.app.spi.config.PropertyNames.LAZY_CREATION_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_CHANGE_HIST_MEM_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_FUNDING_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NFT_TRANSFERS_MAX_LEN;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOKEN_TRANSFERS_MAX_LEN;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TRANSFERS_MAX_LEN;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_XFER_BAL_CHANGES_MAX_LEN;
+import static com.hedera.node.app.spi.config.PropertyNames.RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT;
+import static com.hedera.node.app.spi.config.PropertyNames.SCHEDULING_LONG_TERM_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.SCHEDULING_MAX_EXPIRATION_FUTURE_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.SCHEDULING_MAX_NUM;
+import static com.hedera.node.app.spi.config.PropertyNames.SCHEDULING_MAX_TXN_PER_SEC;
+import static com.hedera.node.app.spi.config.PropertyNames.SCHEDULING_WHITE_LIST;
+import static com.hedera.node.app.spi.config.PropertyNames.SIGS_EXPAND_FROM_IMMUTABLE_STATE;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_FEES_NODE_REWARD_PERCENT;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_FEES_STAKING_REWARD_PERCENT;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_IS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REQUIRE_MIN_STAKE_TO_REWARD;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_RATE;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_START_THRESH;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_AUTO_CREATIONS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_AGGREGATE_RELS;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_CUSTOM_FEES_ALLOWED;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_CUSTOM_FEE_DEPTH;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_NUM;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_PER_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_RELS_PER_INFO_QUERY;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_SYMBOL_UTF8_BYTES;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_TOKEN_NAME_UTF8_BYTES;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_ARE_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_ALLOWED_MINTS;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_BATCH_SIZE_BURN;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_BATCH_SIZE_MINT;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_BATCH_SIZE_WIPE;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_METADATA_BYTES;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_QUERY_RANGE;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILDCARDS;
+import static com.hedera.node.app.spi.config.PropertyNames.TOPICS_MAX_NUM;
+import static com.hedera.node.app.spi.config.PropertyNames.TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC;
+import static com.hedera.node.app.spi.config.PropertyNames.TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO;
+import static com.hedera.node.app.spi.config.PropertyNames.UPGRADE_ARTIFACTS_PATH;
+import static com.hedera.node.app.spi.config.PropertyNames.UTIL_PRNG_IS_ENABLED;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues;
@@ -44,6 +157,7 @@ import org.hyperledger.besu.datatypes.Address;
 
 @Singleton
 public class GlobalDynamicProperties implements EvmProperties {
+
     private final HederaNumbers hederaNums;
     private final PropertySource properties;
 
@@ -165,8 +279,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private LegacyContractIdActivations legacyContractIdActivations;
 
     @Inject
-    public GlobalDynamicProperties(
-            HederaNumbers hederaNums, @CompositeProps PropertySource properties) {
+    public GlobalDynamicProperties(final HederaNumbers hederaNums, @CompositeProps final PropertySource properties) {
         this.hederaNums = hederaNums;
         this.properties = properties;
 
@@ -185,20 +298,17 @@ public class GlobalDynamicProperties implements EvmProperties {
         maxTokenSymbolUtf8Bytes = properties.getIntProperty(TOKENS_MAX_SYMBOL_UTF8_BYTES);
         maxTokenNameUtf8Bytes = properties.getIntProperty(TOKENS_MAX_TOKEN_NAME_UTF8_BYTES);
         maxFileSizeKb = properties.getIntProperty(FILES_MAX_SIZE_KB);
-        fundingAccount =
-                AccountID.newBuilder()
-                        .setShardNum(hederaNums.shard())
-                        .setRealmNum(hederaNums.realm())
-                        .setAccountNum(properties.getLongProperty(LEDGER_FUNDING_ACCOUNT))
-                        .build();
+        fundingAccount = AccountID.newBuilder()
+                .setShardNum(hederaNums.shard())
+                .setRealmNum(hederaNums.realm())
+                .setAccountNum(properties.getLongProperty(LEDGER_FUNDING_ACCOUNT))
+                .build();
         fundingAccountAddress = EntityIdUtils.asTypedEvmAddress(fundingAccount);
         cacheRecordsTtl = properties.getIntProperty(CACHE_RECORDS_TTL);
-        ratesIntradayChangeLimitPercent =
-                properties.getIntProperty(RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT);
+        ratesIntradayChangeLimitPercent = properties.getIntProperty(RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT);
         balancesExportPeriodSecs = properties.getIntProperty(BALANCES_EXPORT_PERIOD_SECS);
         shouldExportBalances = properties.getBooleanProperty(BALANCES_EXPORT_ENABLED);
-        nodeBalanceWarningThreshold =
-                properties.getLongProperty(BALANCES_NODE_BALANCE_WARN_THRESHOLD);
+        nodeBalanceWarningThreshold = properties.getLongProperty(BALANCES_NODE_BALANCE_WARN_THRESHOLD);
         pathToBalancesExportDir = properties.getStringProperty(BALANCES_EXPORT_DIR_PATH);
         shouldExportTokenBalances = properties.getBooleanProperty(BALANCES_EXPORT_TOKEN_BALANCES);
         maxTransfersLen = properties.getIntProperty(LEDGER_TRANSFERS_MAX_LEN);
@@ -215,57 +325,46 @@ public class GlobalDynamicProperties implements EvmProperties {
         defaultContractLifetime = properties.getLongProperty(CONTRACTS_DEFAULT_LIFETIME);
         dynamicEvmVersion = properties.getBooleanProperty(CONTRACTS_DYNAMIC_EVM_VERSION);
         evmVersion = properties.getStringProperty(CONTRACTS_EVM_VERSION);
-        feesTokenTransferUsageMultiplier =
-                properties.getIntProperty(FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER);
-        autoRenewNumberOfEntitiesToScan =
-                properties.getIntProperty(AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN);
+        feesTokenTransferUsageMultiplier = properties.getIntProperty(FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER);
+        autoRenewNumberOfEntitiesToScan = properties.getIntProperty(AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN);
         autoRenewMaxNumberOfEntitiesToRenewOrDelete =
                 properties.getIntProperty(AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE);
         autoRenewGracePeriod = properties.getLongProperty(AUTO_RENEW_GRACE_PERIOD);
         maxAutoRenewDuration = properties.getLongProperty(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION);
         minAutoRenewDuration = properties.getLongProperty(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION);
-        grpcMinAutoRenewDuration = Duration.newBuilder().setSeconds(minAutoRenewDuration).build();
+        grpcMinAutoRenewDuration =
+                Duration.newBuilder().setSeconds(minAutoRenewDuration).build();
         localCallEstRetBytes = properties.getIntProperty(CONTRACTS_LOCAL_CALL_EST_RET_BYTES);
         scheduledTxExpiryTimeSecs = properties.getIntProperty(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS);
         schedulingLongTermEnabled = properties.getBooleanProperty(SCHEDULING_LONG_TERM_ENABLED);
         schedulingMaxTxnPerSecond = properties.getLongProperty(SCHEDULING_MAX_TXN_PER_SEC);
-        schedulingMaxExpirationFutureSeconds =
-                properties.getLongProperty(SCHEDULING_MAX_EXPIRATION_FUTURE_SECS);
+        schedulingMaxExpirationFutureSeconds = properties.getLongProperty(SCHEDULING_MAX_EXPIRATION_FUTURE_SECS);
         schedulingWhitelist = properties.getFunctionsProperty(SCHEDULING_WHITE_LIST);
         messageMaxBytesAllowed = properties.getIntProperty(CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED);
         maxPrecedingRecords = properties.getLongProperty(CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS);
         maxFollowingRecords = properties.getLongProperty(CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS);
-        congestionMultipliers =
-                properties.getCongestionMultiplierProperty(FEES_PERCENT_CONGESTION_MULTIPLIERS);
+        congestionMultipliers = properties.getCongestionMultiplierProperty(FEES_PERCENT_CONGESTION_MULTIPLIERS);
         feesMinCongestionPeriod = properties.getIntProperty(FEES_MIN_CONGESTION_PERIOD);
         maxCustomFeesAllowed = properties.getIntProperty(TOKENS_MAX_CUSTOM_FEES_ALLOWED);
         areNftsEnabled = properties.getBooleanProperty(TOKENS_NFTS_ARE_ENABLED);
         maxNftMints = properties.getLongProperty(TOKENS_NFTS_MAX_ALLOWED_MINTS);
         maxXferBalanceChanges = properties.getIntProperty(LEDGER_XFER_BAL_CHANGES_MAX_LEN);
         maxCustomFeeDepth = properties.getIntProperty(TOKENS_MAX_CUSTOM_FEE_DEPTH);
-        nftMintScaleFactor =
-                properties.getThrottleScaleFactor(TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR);
+        nftMintScaleFactor = properties.getThrottleScaleFactor(TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR);
         upgradeArtifactsLoc = properties.getStringProperty(UPGRADE_ARTIFACTS_PATH);
         throttleByGas = properties.getBooleanProperty(CONTRACTS_THROTTLE_THROTTLE_BY_GAS);
-        contractMaxRefundPercentOfGasLimit =
-                properties.getIntProperty(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT);
-        scheduleThrottleMaxGasLimit =
-                properties.getLongProperty(CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT);
+        contractMaxRefundPercentOfGasLimit = properties.getIntProperty(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT);
+        scheduleThrottleMaxGasLimit = properties.getLongProperty(CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT);
         htsDefaultGasCost = properties.getLongProperty(CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST);
         changeHistorianMemorySecs = properties.getIntProperty(LEDGER_CHANGE_HIST_MEM_SECS);
         autoCreationEnabled = properties.getBooleanProperty(AUTO_CREATION_ENABLED);
-        expandSigsFromImmutableState =
-                properties.getBooleanProperty(SIGS_EXPAND_FROM_IMMUTABLE_STATE);
+        expandSigsFromImmutableState = properties.getBooleanProperty(SIGS_EXPAND_FROM_IMMUTABLE_STATE);
         maxAggregateContractKvPairs = properties.getLongProperty(CONTRACTS_MAX_KV_PAIRS_AGGREGATE);
         maxIndividualContractKvPairs = properties.getIntProperty(CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL);
-        maxMostRecentQueryableRecords =
-                properties.getIntProperty(LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT);
-        maxAllowanceLimitPerTransaction =
-                properties.getIntProperty(HEDERA_ALLOWANCES_MAX_TXN_LIMIT);
-        maxAllowanceLimitPerAccount =
-                properties.getIntProperty(HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT);
-        exportPrecompileResults =
-                properties.getBooleanProperty(CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS);
+        maxMostRecentQueryableRecords = properties.getIntProperty(LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT);
+        maxAllowanceLimitPerTransaction = properties.getIntProperty(HEDERA_ALLOWANCES_MAX_TXN_LIMIT);
+        maxAllowanceLimitPerAccount = properties.getIntProperty(HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT);
+        exportPrecompileResults = properties.getBooleanProperty(CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS);
         create2Enabled = properties.getBooleanProperty(CONTRACTS_ALLOW_CREATE2);
         redirectTokenCalls = properties.getBooleanProperty(CONTRACTS_REDIRECT_TOKEN_CALLS);
         enabledSidecars = properties.getSidecarsProperty(CONTRACTS_SIDECARS);
@@ -275,25 +374,20 @@ public class GlobalDynamicProperties implements EvmProperties {
         expireContracts = autoRenewTargetTypes.contains(CONTRACT);
         atLeastOneAutoRenewTargetType = !autoRenewTargetTypes.isEmpty();
         limitTokenAssociations = properties.getBooleanProperty(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS);
-        enableHTSPrecompileCreate =
-                properties.getBooleanProperty(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE);
+        enableHTSPrecompileCreate = properties.getBooleanProperty(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE);
         atomicCryptoTransferEnabled =
                 properties.getBooleanProperty(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED);
         knownBlockValues = properties.getBlockValuesProperty(CONTRACTS_KNOWN_BLOCK_HASH);
-        exchangeRateGasReq =
-                properties.getLongProperty(CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST);
+        exchangeRateGasReq = properties.getLongProperty(CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST);
         stakingRewardRate = properties.getLongProperty(STAKING_REWARD_RATE);
         stakingStartThreshold = properties.getLongProperty(STAKING_START_THRESH);
         nodeRewardPercent = properties.getIntProperty(STAKING_FEES_NODE_REWARD_PERCENT);
         stakingRewardPercent = properties.getIntProperty(STAKING_FEES_STAKING_REWARD_PERCENT);
-        contractAutoAssociationsEnabled =
-                properties.getBooleanProperty(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS);
-        maxDailyStakeRewardThPerH =
-                properties.getLongProperty(STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR);
+        contractAutoAssociationsEnabled = properties.getBooleanProperty(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS);
+        maxDailyStakeRewardThPerH = properties.getLongProperty(STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR);
         stakingEnabled = properties.getBooleanProperty(STAKING_IS_ENABLED);
         recordFileVersion = properties.getIntProperty(HEDERA_RECORD_STREAM_RECORD_FILE_VERSION);
-        recordSignatureFileVersion =
-                properties.getIntProperty(HEDERA_RECORD_STREAM_SIG_FILE_VERSION);
+        recordSignatureFileVersion = properties.getIntProperty(HEDERA_RECORD_STREAM_SIG_FILE_VERSION);
         maxNumAccounts = properties.getLongProperty(ACCOUNTS_MAX_NUM);
         maxNumContracts = properties.getLongProperty(CONTRACTS_MAX_NUM);
         maxNumFiles = properties.getLongProperty(FILES_MAX_NUM);
@@ -302,38 +396,28 @@ public class GlobalDynamicProperties implements EvmProperties {
         maxNumTokenRels = properties.getLongProperty(TOKENS_MAX_AGGREGATE_RELS);
         maxNumTopics = properties.getLongProperty(TOPICS_MAX_NUM);
         utilPrngEnabled = properties.getBooleanProperty(UTIL_PRNG_IS_ENABLED);
-        requireMinStakeToReward =
-                properties.getBooleanProperty(STAKING_REQUIRE_MIN_STAKE_TO_REWARD);
-        nodeMaxMinStakeRatios =
-                properties.getNodeStakeRatiosProperty(STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS);
+        requireMinStakeToReward = properties.getBooleanProperty(STAKING_REQUIRE_MIN_STAKE_TO_REWARD);
+        nodeMaxMinStakeRatios = properties.getNodeStakeRatiosProperty(STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS);
         sidecarMaxSizeMb = properties.getIntProperty(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB);
-        storagePriceTiers =
-                ContractStoragePriceTiers.from(
-                        properties.getStringProperty(CONTRACTS_STORAGE_SLOT_PRICE_TIERS),
-                        properties.getIntProperty(CONTRACTS_FREE_STORAGE_TIER_LIMIT),
-                        maxAggregateContractKvPairs,
-                        properties.getLongProperty(CONTRACTS_REFERENCE_SLOT_LIFETIME));
+        storagePriceTiers = ContractStoragePriceTiers.from(
+                properties.getStringProperty(CONTRACTS_STORAGE_SLOT_PRICE_TIERS),
+                properties.getIntProperty(CONTRACTS_FREE_STORAGE_TIER_LIMIT),
+                maxAggregateContractKvPairs,
+                properties.getLongProperty(CONTRACTS_REFERENCE_SLOT_LIFETIME));
         itemizeStorageFees = properties.getBooleanProperty(CONTRACTS_ITEMIZE_STORAGE_FEES);
-        compressRecordFilesOnCreation =
-                properties.getBooleanProperty(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION);
+        compressRecordFilesOnCreation = properties.getBooleanProperty(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION);
         tokenAutoCreationsEnabled = properties.getBooleanProperty(TOKENS_AUTO_CREATIONS_ENABLED);
-        compressAccountBalanceFilesOnCreation =
-                properties.getBooleanProperty(BALANCES_COMPRESS_ON_CREATION);
-        doTraceabilityExport =
-                properties.getBooleanProperty(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION);
-        traceabilityMaxExportsPerConsSec =
-                properties.getLongProperty(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC);
+        compressAccountBalanceFilesOnCreation = properties.getBooleanProperty(BALANCES_COMPRESS_ON_CREATION);
+        doTraceabilityExport = properties.getBooleanProperty(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION);
+        traceabilityMaxExportsPerConsSec = properties.getLongProperty(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC);
         traceabilityMinFreeToUsedGasThrottleRatio =
                 properties.getLongProperty(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO);
         lazyCreationEnabled = properties.getBooleanProperty(LAZY_CREATION_ENABLED);
         cryptoCreateWithAliasAndEvmAddressEnabled =
                 properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED);
-        enforceContractCreationThrottle =
-                properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE);
-        entityScaleFactors =
-                properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS);
-        legacyContractIdActivations =
-                properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS);
+        enforceContractCreationThrottle = properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE);
+        entityScaleFactors = properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS);
+        legacyContractIdActivations = properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS);
     }
 
     public int maxTokensPerAccount() {

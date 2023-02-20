@@ -630,7 +630,7 @@ class TransactionDispatcherTest {
                                 .setTokenBurn(TokenBurnTransactionBody.getDefaultInstance())
                                 .build(),
                         (BiConsumer<TransactionHandlers, PreHandleContext>) (handlers, meta) ->
-                                verify(handlers.tokenBurnHandler()).preHandle(meta)),
+                                verify(handlers.tokenBurnHandler()).preHandle(eq(meta), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenDeletion(TokenDeleteTransactionBody.getDefaultInstance())
@@ -642,7 +642,7 @@ class TransactionDispatcherTest {
                                 .setTokenWipe(TokenWipeAccountTransactionBody.getDefaultInstance())
                                 .build(),
                         (BiConsumer<TransactionHandlers, PreHandleContext>) (handlers, meta) ->
-                                verify(handlers.tokenAccountWipeHandler()).preHandle(meta)),
+                                verify(handlers.tokenAccountWipeHandler()).preHandle(eq(meta), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenFreeze(TokenFreezeAccountTransactionBody.getDefaultInstance())

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry.removal;
 
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -44,8 +45,7 @@ public class TreasuryReturnHelper {
     private final EntityLookup entityLookup;
 
     @Inject
-    public TreasuryReturnHelper(
-            final EntityLookup entityLookup, final Supplier<TokenRelStorageAdapter> tokenRels) {
+    public TreasuryReturnHelper(final EntityLookup entityLookup, final Supplier<TokenRelStorageAdapter> tokenRels) {
         this.tokenRels = tokenRels;
         this.entityLookup = entityLookup;
     }
@@ -65,14 +65,10 @@ public class TreasuryReturnHelper {
             typeI = tokenTypes.size() - 1;
         }
         if (token.isDeleted()) {
-            returnExchanges
-                    .get(typeI)
-                    .appendAdjust(expiredNum.toEntityId(), MISSING_ENTITY_ID, serialNo);
+            returnExchanges.get(typeI).appendAdjust(expiredNum.toEntityId(), MISSING_ENTITY_ID, serialNo);
             return false;
         } else {
-            returnExchanges
-                    .get(typeI)
-                    .appendAdjust(expiredNum.toEntityId(), token.treasury(), serialNo);
+            returnExchanges.get(typeI).appendAdjust(expiredNum.toEntityId(), token.treasury(), serialNo);
             try {
                 // Update treasury's owned NFTs
                 final var mutableTreasury = entityLookup.getMutableAccount(token.treasuryNum());
@@ -86,8 +82,7 @@ public class TreasuryReturnHelper {
         }
     }
 
-    EntityNumPair burnOrReturnNft(
-            final boolean burn, final NftId rootKey, final UniqueTokenMapAdapter nfts) {
+    EntityNumPair burnOrReturnNft(final boolean burn, final NftId rootKey, final UniqueTokenMapAdapter nfts) {
         final NftNumPair nextKey;
         if (burn) {
             final var burnedNft = nfts.get(rootKey);
@@ -110,8 +105,7 @@ public class TreasuryReturnHelper {
             final TokenRelStorageAdapter curRels) {
         if (token.isDeleted() || !incrementTreasuryBalance(token, tokenNum, balance, curRels)) {
             final var burnTransfer =
-                    new CurrencyAdjustments(
-                            new long[] {-balance}, new long[] {expiredNum.longValue()});
+                    new CurrencyAdjustments(new long[] {-balance}, new long[] {expiredNum.longValue()});
             returnTransfers.add(burnTransfer);
         } else {
             addProperReturn(expiredNum, token, balance, returnTransfers);
@@ -149,18 +143,11 @@ public class TreasuryReturnHelper {
         final var treasuryNum = token.treasury().asNum();
         final boolean listDebitFirst = expiredAccountNum.compareTo(treasuryNum) < 0;
         // For consistency, order the transfer list by increasing account number
-        returnTransfers.add(
-                new CurrencyAdjustments(
-                        listDebitFirst
-                                ? new long[] {-balance, +balance}
-                                : new long[] {+balance, -balance},
-                        listDebitFirst
-                                ? new long[] {
-                                    expiredAccountNum.longValue(), treasuryNum.longValue()
-                                }
-                                : new long[] {
-                                    treasuryNum.longValue(), expiredAccountNum.longValue()
-                                }));
+        returnTransfers.add(new CurrencyAdjustments(
+                listDebitFirst ? new long[] {-balance, +balance} : new long[] {+balance, -balance},
+                listDebitFirst
+                        ? new long[] {expiredAccountNum.longValue(), treasuryNum.longValue()}
+                        : new long[] {treasuryNum.longValue(), expiredAccountNum.longValue()}));
     }
 
     private EntityNumPair effective(@Nullable final NftNumPair nextKey) {

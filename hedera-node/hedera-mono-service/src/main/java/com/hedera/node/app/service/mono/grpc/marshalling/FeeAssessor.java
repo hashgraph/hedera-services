@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static com.hedera.node.app.service.mono.grpc.marshalling.FixedFeeResult.ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED;
@@ -68,8 +69,7 @@ public class FeeAssessor {
         }
 
         final var maxBalanceChanges = props.maxXferBalanceChanges();
-        final var fixedFeeResult =
-                assessFixedFees(feeMeta, payer, changeManager, accumulator, maxBalanceChanges);
+        final var fixedFeeResult = assessFixedFees(feeMeta, payer, changeManager, accumulator, maxBalanceChanges);
         if (fixedFeeResult == ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED) {
             return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
         }
@@ -79,15 +79,13 @@ public class FeeAssessor {
         So these two if clauses are mutually exclusive. */
         if (fixedFeeResult == FRACTIONAL_FEE_ASSESSMENT_PENDING) {
             final var fractionalValidity =
-                    fractionalFeeAssessor.assessAllFractional(
-                            change, feeMeta, changeManager, accumulator);
+                    fractionalFeeAssessor.assessAllFractional(change, feeMeta, changeManager, accumulator);
             if (fractionalValidity != OK) {
                 return fractionalValidity;
             }
         } else if (fixedFeeResult == ROYALTY_FEE_ASSESSMENT_PENDING) {
             final var royaltyValidity =
-                    royaltyFeeAssessor.assessAllRoyalties(
-                            change, feeMeta, changeManager, accumulator);
+                    royaltyFeeAssessor.assessAllRoyalties(change, feeMeta, changeManager, accumulator);
             if (royaltyValidity != OK) {
                 return royaltyValidity;
             }

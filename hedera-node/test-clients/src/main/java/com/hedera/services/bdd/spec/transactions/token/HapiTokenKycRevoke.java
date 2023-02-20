@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -60,19 +61,14 @@ public class HapiTokenKycRevoke extends HapiTxnOp<HapiTokenKycRevoke> {
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
-            throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
-                        HederaFunctionality.TokenRevokeKycFromAccount,
-                        this::usageEstimate,
-                        txn,
-                        numPayerKeys);
+                        HederaFunctionality.TokenRevokeKycFromAccount, this::usageEstimate, txn, numPayerKeys);
     }
 
     private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
-        return TokenRevokeKycUsage.newEstimate(
-                        txn, new TxnUsageEstimator(suFrom(svo), txn, ESTIMATOR_UTILS))
+        return TokenRevokeKycUsage.newEstimate(txn, new TxnUsageEstimator(suFrom(svo), txn, ESTIMATOR_UTILS))
                 .get();
     }
 
@@ -80,28 +76,24 @@ public class HapiTokenKycRevoke extends HapiTxnOp<HapiTokenKycRevoke> {
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final var aId = TxnUtils.asId(account, spec);
         final var tId = TxnUtils.asTokenId(token, spec);
-        final TokenRevokeKycTransactionBody opBody =
-                spec.txns()
-                        .<TokenRevokeKycTransactionBody, TokenRevokeKycTransactionBody.Builder>body(
-                                TokenRevokeKycTransactionBody.class,
-                                b -> {
-                                    b.setAccount(aId);
-                                    b.setToken(tId);
-                                });
+        final TokenRevokeKycTransactionBody opBody = spec.txns()
+                .<TokenRevokeKycTransactionBody, TokenRevokeKycTransactionBody.Builder>body(
+                        TokenRevokeKycTransactionBody.class, b -> {
+                            b.setAccount(aId);
+                            b.setToken(tId);
+                        });
         return b -> b.setTokenRevokeKyc(opBody);
     }
 
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
-        return List.of(
-                spec -> spec.registry().getKey(effectivePayer(spec)),
-                spec -> spec.registry().getKycKey(token));
+        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
+                .getKycKey(token));
     }
 
     @Override
     protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)
-                ::revokeKycFromTokenAccount;
+        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::revokeKycFromTokenAccount;
     }
 
     @Override

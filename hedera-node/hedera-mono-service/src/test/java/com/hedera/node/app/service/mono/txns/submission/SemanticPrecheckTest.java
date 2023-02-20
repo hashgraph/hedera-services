@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.submission;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -37,20 +38,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SemanticPrecheckTest {
-    private final SignedTxnAccessor xferAccessor =
-            SignedTxnAccessor.uncheckedFrom(
-                    Transaction.newBuilder()
-                            .setBodyBytes(
-                                    TransactionBody.newBuilder()
-                                            .setCryptoTransfer(
-                                                    CryptoTransferTransactionBody
-                                                            .getDefaultInstance())
-                                            .build()
-                                            .toByteString())
-                            .build());
+    private final SignedTxnAccessor xferAccessor = SignedTxnAccessor.uncheckedFrom(Transaction.newBuilder()
+            .setBodyBytes(TransactionBody.newBuilder()
+                    .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+                    .build()
+                    .toByteString())
+            .build());
 
-    @Mock private TransitionLogic transitionLogic;
-    @Mock private TransitionLogicLookup transitionLogicLookup;
+    @Mock
+    private TransitionLogic transitionLogic;
+
+    @Mock
+    private TransitionLogicLookup transitionLogicLookup;
 
     private SemanticPrecheck subject;
 
@@ -63,8 +62,7 @@ class SemanticPrecheckTest {
     void usesDiscoveredLogicCheck() {
         given(transitionLogicLookup.lookupFor(CryptoTransfer, xferAccessor.getTxn()))
                 .willReturn(Optional.of(transitionLogic));
-        given(transitionLogic.validateSemantics(xferAccessor))
-                .willReturn(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
+        given(transitionLogic.validateSemantics(xferAccessor)).willReturn(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 
         // when:
         var result = subject.validate(xferAccessor, xferAccessor.getFunction(), NOT_SUPPORTED);
@@ -79,8 +77,7 @@ class SemanticPrecheckTest {
                 .willReturn(Optional.empty());
 
         // when:
-        var result =
-                subject.validate(xferAccessor, xferAccessor.getFunction(), INSUFFICIENT_TX_FEE);
+        var result = subject.validate(xferAccessor, xferAccessor.getFunction(), INSUFFICIENT_TX_FEE);
 
         // then:
         Assertions.assertEquals(INSUFFICIENT_TX_FEE, result);

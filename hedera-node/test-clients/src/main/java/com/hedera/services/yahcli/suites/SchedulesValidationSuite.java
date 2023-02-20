@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.suites;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -58,10 +59,9 @@ public class SchedulesValidationSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    validateScheduling(),
-                });
+        return List.of(new HapiSpec[] {
+            validateScheduling(),
+        });
     }
 
     private HapiSpec validateScheduling() {
@@ -74,19 +74,15 @@ public class SchedulesValidationSuite extends HapiSuite {
                         getScheduleInfo(MUTABLE_SCHEDULE)
                                 .payingWith(PAYER)
                                 .isNotExecuted()
-                                .hasEntityMemo(
-                                        "When love with one another so / Inter-animates two souls")
+                                .hasEntityMemo("When love with one another so / Inter-animates two souls")
                                 .hasAdminKey(MUTABLE_SCHEDULE),
                         getScheduleInfo(IMMUTABLE_SCHEDULE)
                                 .payingWith(PAYER)
                                 .isNotExecuted()
-                                .hasEntityMemo(
-                                        "That abler soul, which thence doth flow / Defects of"
-                                                + " loneliness controls"),
+                                .hasEntityMemo("That abler soul, which thence doth flow / Defects of"
+                                        + " loneliness controls"),
                         getTopicInfo(TOPIC).savingSeqNoTo(seqNo::set),
-                        scheduleDelete(IMMUTABLE_SCHEDULE)
-                                .payingWith(PAYER)
-                                .hasKnownStatus(SCHEDULE_IS_IMMUTABLE),
+                        scheduleDelete(IMMUTABLE_SCHEDULE).payingWith(PAYER).hasKnownStatus(SCHEDULE_IS_IMMUTABLE),
                         logIt(checkBoxed("Schedule creation looks good")))
                 .when(
                         scheduleDelete(MUTABLE_SCHEDULE)
@@ -106,8 +102,7 @@ public class SchedulesValidationSuite extends HapiSuite {
                                 .payingWith(PAYER),
                         scheduleCreate(
                                         inSpecSchedule,
-                                        submitMessageTo(TOPIC)
-                                                .message("We then who are this new soul know"))
+                                        submitMessageTo(TOPIC).message("We then who are this new soul know"))
                                 .payingWith(PAYER)
                                 .adminKey(adminKeyFor(MUTABLE_SCHEDULE))
                                 .alsoSigningWith(submitKeyFor(TOPIC))
@@ -115,8 +110,7 @@ public class SchedulesValidationSuite extends HapiSuite {
                                 .savingExpectedScheduledTxnId(),
                         scheduleCreate(
                                         inSpecSchedule,
-                                        submitMessageTo(TOPIC)
-                                                .message("We then who are this new soul know"))
+                                        submitMessageTo(TOPIC).message("We then who are this new soul know"))
                                 .payingWith(PAYER)
                                 .designatingPayer(PAYER)
                                 .adminKey(adminKeyFor(MUTABLE_SCHEDULE))

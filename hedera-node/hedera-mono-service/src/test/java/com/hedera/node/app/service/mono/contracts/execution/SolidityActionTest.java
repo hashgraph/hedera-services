@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,20 +49,18 @@ class SolidityActionTest {
         actual.setOutput(output);
         actual.setCallOperationType(CallOperationType.OP_CALL);
 
-        final var expected =
-                ContractAction.newBuilder()
-                        .setCallType(com.hedera.services.stream.proto.ContractActionType.CALL)
-                        .setCallingAccount(EntityIdUtils.asAccount(sender))
-                        .setGas(gas)
-                        .setInput(ByteStringUtils.wrapUnsafely(input))
-                        .setRecipientAccount(EntityIdUtils.asAccount(recipient))
-                        .setValue(value)
-                        .setGasUsed(gasUsed)
-                        .setOutput(ByteStringUtils.wrapUnsafely(output))
-                        .setCallDepth(0)
-                        .setCallOperationType(
-                                com.hedera.services.stream.proto.CallOperationType.OP_CALL)
-                        .build();
+        final var expected = ContractAction.newBuilder()
+                .setCallType(com.hedera.services.stream.proto.ContractActionType.CALL)
+                .setCallingAccount(EntityIdUtils.asAccount(sender))
+                .setGas(gas)
+                .setInput(ByteStringUtils.wrapUnsafely(input))
+                .setRecipientAccount(EntityIdUtils.asAccount(recipient))
+                .setValue(value)
+                .setGasUsed(gasUsed)
+                .setOutput(ByteStringUtils.wrapUnsafely(output))
+                .setCallDepth(0)
+                .setCallOperationType(com.hedera.services.stream.proto.CallOperationType.OP_CALL)
+                .build();
 
         assertEquals(expected, actual.toGrpc());
     }
@@ -75,22 +74,18 @@ class SolidityActionTest {
         actual.setRevertReason(output);
         actual.setCallOperationType(CallOperationType.OP_CALL);
 
-        final var expected =
-                ContractAction.newBuilder()
-                        .setCallType(com.hedera.services.stream.proto.ContractActionType.CALL)
-                        .setCallingContract(
-                                EntityIdUtils.contractIdFromEvmAddress(sender.toEvmAddress()))
-                        .setGas(gas)
-                        .setInput(ByteStringUtils.wrapUnsafely(input))
-                        .setRecipientContract(
-                                EntityIdUtils.contractIdFromEvmAddress(recipient.toEvmAddress()))
-                        .setValue(value)
-                        .setGasUsed(gasUsed)
-                        .setRevertReason(ByteStringUtils.wrapUnsafely(output))
-                        .setCallDepth(0)
-                        .setCallOperationType(
-                                com.hedera.services.stream.proto.CallOperationType.OP_CALL)
-                        .build();
+        final var expected = ContractAction.newBuilder()
+                .setCallType(com.hedera.services.stream.proto.ContractActionType.CALL)
+                .setCallingContract(EntityIdUtils.contractIdFromEvmAddress(sender.toEvmAddress()))
+                .setGas(gas)
+                .setInput(ByteStringUtils.wrapUnsafely(input))
+                .setRecipientContract(EntityIdUtils.contractIdFromEvmAddress(recipient.toEvmAddress()))
+                .setValue(value)
+                .setGasUsed(gasUsed)
+                .setRevertReason(ByteStringUtils.wrapUnsafely(output))
+                .setCallDepth(0)
+                .setCallOperationType(com.hedera.services.stream.proto.CallOperationType.OP_CALL)
+                .build();
 
         assertEquals(expected, actual.toGrpc());
     }
@@ -104,23 +99,19 @@ class SolidityActionTest {
         actual.setCallingContract(sender);
         actual.setCallOperationType(CallOperationType.OP_CALL);
 
-        final var expected =
-                ContractAction.newBuilder()
-                        .setCallType(com.hedera.services.stream.proto.ContractActionType.CALL)
-                        .setCallingContract(
-                                EntityIdUtils.contractIdFromEvmAddress(sender.toEvmAddress()))
-                        .setGas(gas)
-                        .setInput(ByteStringUtils.wrapUnsafely(input))
-                        .setTargetedAddress(
-                                ByteStringUtils.wrapUnsafely(
-                                        recipient.toEvmAddress().toArrayUnsafe()))
-                        .setValue(value)
-                        .setGasUsed(gasUsed)
-                        .setError(ByteStringUtils.wrapUnsafely(output))
-                        .setCallDepth(0)
-                        .setCallOperationType(
-                                com.hedera.services.stream.proto.CallOperationType.OP_CALL)
-                        .build();
+        final var expected = ContractAction.newBuilder()
+                .setCallType(com.hedera.services.stream.proto.ContractActionType.CALL)
+                .setCallingContract(EntityIdUtils.contractIdFromEvmAddress(sender.toEvmAddress()))
+                .setGas(gas)
+                .setInput(ByteStringUtils.wrapUnsafely(input))
+                .setTargetedAddress(
+                        ByteStringUtils.wrapUnsafely(recipient.toEvmAddress().toArrayUnsafe()))
+                .setValue(value)
+                .setGasUsed(gasUsed)
+                .setError(ByteStringUtils.wrapUnsafely(output))
+                .setCallDepth(0)
+                .setCallOperationType(com.hedera.services.stream.proto.CallOperationType.OP_CALL)
+                .build();
 
         assertEquals(expected, actual.toGrpc());
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.suites;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -45,34 +46,24 @@ public class PayerFundingSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    fundPayer(),
-                });
+        return List.of(new HapiSpec[] {
+            fundPayer(),
+        });
     }
 
     private HapiSpec fundPayer() {
         return customHapiSpec("FundPayer")
                 .withProperties(specConfig)
-                .given(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    var subOp = getAccountBalance(PAYER);
-                                    allRunFor(spec, subOp);
-                                    var balance =
-                                            subOp.getResponse()
-                                                    .getCryptogetAccountBalance()
-                                                    .getBalance();
-                                    if (balance < guaranteedBalance) {
-                                        var funding =
-                                                cryptoTransfer(
-                                                        tinyBarsFromTo(
-                                                                DEFAULT_PAYER,
-                                                                PAYER,
-                                                                guaranteedBalance - balance));
-                                        allRunFor(spec, funding);
-                                    }
-                                }))
+                .given(withOpContext((spec, opLog) -> {
+                    var subOp = getAccountBalance(PAYER);
+                    allRunFor(spec, subOp);
+                    var balance =
+                            subOp.getResponse().getCryptogetAccountBalance().getBalance();
+                    if (balance < guaranteedBalance) {
+                        var funding = cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, PAYER, guaranteedBalance - balance));
+                        allRunFor(spec, funding);
+                    }
+                }))
                 .when()
                 .then(logIt(checkBoxed("Payer has at least " + guaranteedBalance + " tℏ")));
     }

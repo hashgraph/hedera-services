@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.token;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
@@ -36,18 +37,16 @@ public class TokenAssociationLoadTest extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    runTokenAssociationLoadTest(),
-                });
+        return List.of(new HapiSpec[] {
+            runTokenAssociationLoadTest(),
+        });
     }
 
     private HapiSpec runTokenAssociationLoadTest() {
         return HapiSpec.defaultHapiSpec("RunTokenAssociationLoadTest")
-                .given(
-                        overridingTwo(
-                                "tokens.maxPerAccount", "10",
-                                "tokens.maxRelsPerInfoQuery", "10"))
+                .given(overridingTwo(
+                        "tokens.maxPerAccount", "10",
+                        "tokens.maxRelsPerInfoQuery", "10"))
                 .when(
                         // Something seems to be missing here...
                         )

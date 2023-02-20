@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
 import com.esaulpaugh.headlong.abi.ABIType;
@@ -31,11 +32,10 @@ public class EvmDecodingFacade {
     public static Tuple decodeFunctionCall(
             @NonNull final Bytes input, final Bytes selector, final ABIType<Tuple> decoder) {
         if (!selector.equals(input.slice(0, FUNCTION_SELECTOR_BYTES_LENGTH))) {
-            throw new IllegalArgumentException(
-                    "Selector does not match, expected "
-                            + selector
-                            + " actual "
-                            + input.slice(0, FUNCTION_SELECTOR_BYTES_LENGTH));
+            throw new IllegalArgumentException("Selector does not match, expected "
+                    + selector
+                    + " actual "
+                    + input.slice(0, FUNCTION_SELECTOR_BYTES_LENGTH));
         }
         return decoder.decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
     }

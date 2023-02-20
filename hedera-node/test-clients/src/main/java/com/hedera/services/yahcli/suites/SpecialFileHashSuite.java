@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.suites;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
@@ -50,22 +51,13 @@ public class SpecialFileHashSuite extends HapiSuite {
                 .withProperties(specConfig)
                 .given()
                 .when()
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var lookup = getFileInfo("0.0." + target);
-                                    allRunFor(spec, lookup);
-                                    final var synthMemo =
-                                            lookup.getResponse()
-                                                    .getFileGetInfo()
-                                                    .getFileInfo()
-                                                    .getMemo();
-                                    COMMON_MESSAGES.info(
-                                            "The SHA-384 hash of the "
-                                                    + specialFile
-                                                    + " is:\n"
-                                                    + synthMemo);
-                                }));
+                .then(withOpContext((spec, opLog) -> {
+                    final var lookup = getFileInfo("0.0." + target);
+                    allRunFor(spec, lookup);
+                    final var synthMemo =
+                            lookup.getResponse().getFileGetInfo().getFileInfo().getMemo();
+                    COMMON_MESSAGES.info("The SHA-384 hash of the " + specialFile + " is:\n" + synthMemo);
+                }));
     }
 
     @Override

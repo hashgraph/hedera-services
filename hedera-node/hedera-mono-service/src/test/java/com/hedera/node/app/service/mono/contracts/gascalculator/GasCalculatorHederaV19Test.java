@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.gascalculator;
 
 /*
@@ -66,17 +67,24 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class GasCalculatorHederaV19Test {
     GasCalculatorHederaV19 subject;
 
-    @Mock private GlobalDynamicProperties globalDynamicProperties;
-    @Mock private UsagePricesProvider usagePricesProvider;
-    @Mock private HbarCentExchange hbarCentExchange;
-    @Mock private MessageFrame messageFrame;
-    @Mock private MerkleNetworkContext merkleNetworkContext;
+    @Mock
+    private GlobalDynamicProperties globalDynamicProperties;
+
+    @Mock
+    private UsagePricesProvider usagePricesProvider;
+
+    @Mock
+    private HbarCentExchange hbarCentExchange;
+
+    @Mock
+    private MessageFrame messageFrame;
+
+    @Mock
+    private MerkleNetworkContext merkleNetworkContext;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new GasCalculatorHederaV19(
-                        globalDynamicProperties, usagePricesProvider, hbarCentExchange);
+        subject = new GasCalculatorHederaV19(globalDynamicProperties, usagePricesProvider, hbarCentExchange);
     }
 
     @Test
@@ -104,14 +112,16 @@ class GasCalculatorHederaV19Test {
         final var blockNo = 123L;
 
         given(messageFrame.getGasPrice()).willReturn(Wei.of(2000L));
-        given(messageFrame.getBlockValues())
-                .willReturn(new HederaBlockValues(10L, blockNo, blockConsTime));
+        given(messageFrame.getBlockValues()).willReturn(new HederaBlockValues(10L, blockNo, blockConsTime));
         given(messageFrame.getContextVariable("HederaFunctionality")).willReturn(functionality);
         given(messageFrame.getMessageFrameStack()).willReturn(returningDeque);
 
         given(usagePricesProvider.defaultPricesGiven(functionality, timestamp)).willReturn(feeData);
         given(hbarCentExchange.rate(timestamp))
-                .willReturn(ExchangeRate.newBuilder().setHbarEquiv(2000).setCentEquiv(200).build());
+                .willReturn(ExchangeRate.newBuilder()
+                        .setHbarEquiv(2000)
+                        .setCentEquiv(200)
+                        .build());
 
         assertEquals(1516L, subject.logOperationGasCost(messageFrame, 1L, 2L, 3));
         verify(messageFrame).getGasPrice();

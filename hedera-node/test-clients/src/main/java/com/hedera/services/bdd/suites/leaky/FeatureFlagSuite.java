@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.leaky;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
@@ -80,12 +81,11 @@ public class FeatureFlagSuite extends HapiSuite {
         return defaultHapiSpec("DisablesAllFeatureFlagsAndConfirmsNotSupported")
                 .given(overridingAllOf(FeatureFlags.FEATURE_FLAGS.allDisabled()))
                 .when()
-                .then(
-                        inParallel(
-                                confirmAutoCreationNotSupported(),
-                                confirmUtilPrngNotSupported(),
-                                confirmKeyAliasAutoCreationNotSupported(),
-                                confirmHollowAccountCreationNotSupported()));
+                .then(inParallel(
+                        confirmAutoCreationNotSupported(),
+                        confirmUtilPrngNotSupported(),
+                        confirmKeyAliasAutoCreationNotSupported(),
+                        confirmHollowAccountCreationNotSupported()));
     }
 
     private HapiSpec enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting() {
@@ -116,25 +116,17 @@ public class FeatureFlagSuite extends HapiSuite {
         return UtilVerbs.blockingOrder(
                 newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                 cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
-                withOpContext(
-                        (spec, opLog) -> {
-                            final var ecdsaKey =
-                                    spec.registry()
-                                            .getKey(SECP_256K1_SOURCE_KEY)
-                                            .getECDSASecp256K1()
-                                            .toByteArray();
-                            final var evmAddress =
-                                    ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
-                            final var op =
-                                    cryptoTransfer(
-                                                    tinyBarsFromTo(
-                                                            LAZY_CREATE_SPONSOR,
-                                                            evmAddress,
-                                                            ONE_HUNDRED_HBARS))
-                                            .hasKnownStatus(NOT_SUPPORTED)
-                                            .via(TRANSFER_TXN);
-                            allRunFor(spec, op);
-                        }));
+                withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry()
+                            .getKey(SECP_256K1_SOURCE_KEY)
+                            .getECDSASecp256K1()
+                            .toByteArray();
+                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                    final var op = cryptoTransfer(tinyBarsFromTo(LAZY_CREATE_SPONSOR, evmAddress, ONE_HUNDRED_HBARS))
+                            .hasKnownStatus(NOT_SUPPORTED)
+                            .via(TRANSFER_TXN);
+                    allRunFor(spec, op);
+                }));
     }
 
     private HapiSpecOperation confirmKeyAliasAutoCreationNotSupported() {
@@ -160,14 +152,12 @@ public class FeatureFlagSuite extends HapiSuite {
                         .treasury(TOKEN_TREASURY)
                         .via(NFT_CREATE),
                 mintToken(
-                        NFT_INFINITE_SUPPLY_TOKEN,
-                        List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b"))),
+                        NFT_INFINITE_SUPPLY_TOKEN, List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b"))),
                 cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR).maxAutomaticTokenAssociations(2),
                 tokenAssociate(CIVILIAN, NFT_INFINITE_SUPPLY_TOKEN),
                 cryptoTransfer(
                         moving(100, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN),
-                        movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1L, 2L)
-                                .between(TOKEN_TREASURY, CIVILIAN)),
+                        movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1L, 2L).between(TOKEN_TREASURY, CIVILIAN)),
                 getAccountInfo(CIVILIAN).hasToken(relationshipWith(A_TOKEN).balance(100)),
                 getAccountInfo(CIVILIAN).hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN)),
                 cryptoTransfer(moving(10, A_TOKEN).between(CIVILIAN, VALID_ALIAS))
@@ -175,16 +165,12 @@ public class FeatureFlagSuite extends HapiSuite {
                         .payingWith(CIVILIAN)
                         .hasKnownStatus(NOT_SUPPORTED)
                         .logged(),
-                cryptoTransfer(
-                                movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1, 2)
-                                        .between(CIVILIAN, VALID_ALIAS))
+                cryptoTransfer(movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1, 2).between(CIVILIAN, VALID_ALIAS))
                         .via(nftXfer)
                         .payingWith(CIVILIAN)
                         .hasKnownStatus(NOT_SUPPORTED)
                         .logged(),
-                getTxnRecord(fungibleTokenXfer)
-                        .andAllChildRecords()
-                        .hasNonStakingChildRecordCount(0),
+                getTxnRecord(fungibleTokenXfer).andAllChildRecords().hasNonStakingChildRecordCount(0),
                 getTxnRecord(nftXfer).andAllChildRecords().hasNonStakingChildRecordCount(0),
                 cryptoTransfer(tinyBarsFromToWithAlias(CIVILIAN, VALID_ALIAS, ONE_HBAR))
                         .payingWith(CIVILIAN)

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.tasks;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -46,13 +47,21 @@ class TraceabilityRecordsHelperTest {
     private final EntityNum someContract = EntityNum.fromLong(1234);
     private final Instant now = Instant.ofEpochSecond(1_234_567L, 890);
 
-    private final TransactionID mockSystemTxnId =
-            TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.789")).build();
+    private final TransactionID mockSystemTxnId = TransactionID.newBuilder()
+            .setAccountID(IdUtils.asAccount("0.0.789"))
+            .build();
 
-    @Mock private RecordStreaming recordStreaming;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private ConsensusTimeTracker consensusTimeTracker;
+    @Mock
+    private RecordStreaming recordStreaming;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private ConsensusTimeTracker consensusTimeTracker;
 
     private TransactionBody.Builder updateBuilder = TransactionBody.newBuilder();
     private TransactionSidecarRecord.Builder aBuilder = TransactionSidecarRecord.newBuilder();
@@ -62,12 +71,8 @@ class TraceabilityRecordsHelperTest {
 
     @BeforeEach
     void setUp() {
-        subject =
-                new TraceabilityRecordsHelper(
-                        recordStreaming,
-                        recordsHistorian,
-                        syntheticTxnFactory,
-                        consensusTimeTracker);
+        subject = new TraceabilityRecordsHelper(
+                recordStreaming, recordsHistorian, syntheticTxnFactory, consensusTimeTracker);
     }
 
     @Test
@@ -77,12 +82,10 @@ class TraceabilityRecordsHelperTest {
 
     @Test
     void happyPathWorks() {
-        ArgumentCaptor<RecordStreamObject> captor =
-                ArgumentCaptor.forClass(RecordStreamObject.class);
+        ArgumentCaptor<RecordStreamObject> captor = ArgumentCaptor.forClass(RecordStreamObject.class);
 
         given(consensusTimeTracker.nextStandaloneRecordTime()).willReturn(now);
-        given(recordsHistorian.computeNextSystemTransactionId())
-                .willReturn(TxnId.fromGrpc(mockSystemTxnId));
+        given(recordsHistorian.computeNextSystemTransactionId()).willReturn(TxnId.fromGrpc(mockSystemTxnId));
         given(syntheticTxnFactory.synthNoopContractUpdate(someContract)).willReturn(updateBuilder);
 
         subject.exportSidecarsViaSynthUpdate(someContract.longValue(), List.of(aBuilder, bBuilder));

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.commands.system;
 
 import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
@@ -27,7 +28,8 @@ import picocli.CommandLine;
         subcommands = {picocli.CommandLine.HelpCommand.class},
         description = "Get the deployed version of a network")
 public final class VersionInfoCommand implements Callable<Integer> {
-    @CommandLine.ParentCommand private Yahcli yahcli;
+    @CommandLine.ParentCommand
+    private Yahcli yahcli;
 
     @Override
     public Integer call() throws Exception {

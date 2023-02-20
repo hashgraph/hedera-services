@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.fees;
 
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.FEE_MATRICES_CONST;
@@ -25,24 +26,24 @@ public class AdapterUtils {
     public static FeeData feeDataFrom(UsageAccumulator usage) {
         var usages = FeeData.newBuilder();
 
-        var network =
-                FeeComponents.newBuilder()
-                        .setConstant(FEE_MATRICES_CONST)
-                        .setBpt(usage.getUniversalBpt())
-                        .setVpt(usage.getNetworkVpt())
-                        .setRbh(usage.getNetworkRbh());
-        var node =
-                FeeComponents.newBuilder()
-                        .setConstant(FEE_MATRICES_CONST)
-                        .setBpt(usage.getUniversalBpt())
-                        .setVpt(usage.getNodeVpt())
-                        .setBpr(usage.getNodeBpr())
-                        .setSbpr(usage.getNodeSbpr());
-        var service =
-                FeeComponents.newBuilder()
-                        .setConstant(FEE_MATRICES_CONST)
-                        .setRbh(usage.getServiceRbh())
-                        .setSbh(usage.getServiceSbh());
-        return usages.setNetworkdata(network).setNodedata(node).setServicedata(service).build();
+        var network = FeeComponents.newBuilder()
+                .setConstant(FEE_MATRICES_CONST)
+                .setBpt(usage.getUniversalBpt())
+                .setVpt(usage.getNetworkVpt())
+                .setRbh(usage.getNetworkRbh());
+        var node = FeeComponents.newBuilder()
+                .setConstant(FEE_MATRICES_CONST)
+                .setBpt(usage.getUniversalBpt())
+                .setVpt(usage.getNodeVpt())
+                .setBpr(usage.getNodeBpr())
+                .setSbpr(usage.getNodeSbpr());
+        var service = FeeComponents.newBuilder()
+                .setConstant(FEE_MATRICES_CONST)
+                .setRbh(usage.getServiceRbh())
+                .setSbh(usage.getServiceSbh());
+        return usages.setNetworkdata(network)
+                .setNodedata(node)
+                .setServicedata(service)
+                .build();
     }
 }

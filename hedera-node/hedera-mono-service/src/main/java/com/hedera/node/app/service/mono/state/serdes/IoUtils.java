@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.serdes;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -31,19 +32,17 @@ public class IoUtils {
     }
 
     @Nullable
-    public static String readNullableString(final SerializableDataInputStream in, final int maxLen)
-            throws IOException {
+    public static String readNullableString(final SerializableDataInputStream in, final int maxLen) throws IOException {
         return readNullable(in, input -> input.readNormalisedString(maxLen));
     }
 
-    public static void writeNullableString(
-            @Nullable final String msg, final SerializableDataOutputStream out) throws IOException {
+    public static void writeNullableString(@Nullable final String msg, final SerializableDataOutputStream out)
+            throws IOException {
         writeNullable(msg, out, (msgVal, outVal) -> outVal.writeNormalisedString(msgVal));
     }
 
     @Nullable
-    public static <T> T readNullable(
-            final SerializableDataInputStream in, final IoReadingFunction<T> reader)
+    public static <T> T readNullable(final SerializableDataInputStream in, final IoReadingFunction<T> reader)
             throws IOException {
         return in.readBoolean() ? reader.read(in) : null;
     }
@@ -59,15 +58,13 @@ public class IoUtils {
     }
 
     @Nullable
-    public static <T extends SelfSerializable> T readNullableSerializable(
-            final SerializableDataInputStream in) throws IOException {
+    public static <T extends SelfSerializable> T readNullableSerializable(final SerializableDataInputStream in)
+            throws IOException {
         return in.readBoolean() ? in.readSerializable() : null;
     }
 
     public static <T> void writeNullable(
-            @Nullable final T data,
-            final SerializableDataOutputStream out,
-            final IoWritingConsumer<T> writer)
+            @Nullable final T data, final SerializableDataOutputStream out, final IoWritingConsumer<T> writer)
             throws IOException {
         if (data == null) {
             out.writeBoolean(false);
@@ -77,8 +74,7 @@ public class IoUtils {
         }
     }
 
-    public static byte[] byteStream(final JKeySerializer.StreamConsumer<DataOutputStream> consumer)
-            throws IOException {
+    public static byte[] byteStream(final JKeySerializer.StreamConsumer<DataOutputStream> consumer) throws IOException {
         try (final ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
             try (final DataOutputStream dos = new DataOutputStream(bos)) {
                 consumer.accept(dos);

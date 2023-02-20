@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.SECP256K1_ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -38,11 +39,13 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -520,29 +523,37 @@ public class CryptoCreateSuite extends HapiSuite {
                     final var addressBytes = recoverAddressFromPubKey(tmp);
                     assert addressBytes.length > 0;
                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                    final var op = cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY);
-                    final var op2 = cryptoCreate(ACCOUNT)
-                            .alias(ecdsaKey.toByteString())
-                            .hasPrecheck(INVALID_ALIAS_KEY)
-                            .balance(100 * ONE_HBAR);
-                    final var op3 = cryptoCreate(ACCOUNT)
-                            .alias(evmAddressBytes)
-                            .hasPrecheck(INVALID_ALIAS_KEY)
-                            .balance(100 * ONE_HBAR);
-                    final var op4 = cryptoCreate(ANOTHER_ACCOUNT)
-                            .key(SECP_256K1_SOURCE_KEY)
-                            .balance(100 * ONE_HBAR);
-
-                    allRunFor(spec, op, op2, op3, op4);
-                    var hapiGetAccountInfo = getAccountInfo(ACCOUNT)
-                            .has(accountWith().key(SECP_256K1_SOURCE_KEY).evmAddress(evmAddressBytes));
-                    var hapiGetAnotherAccountInfo = getAccountInfo(ANOTHER_ACCOUNT)
+                    final var createWithECDSAKey = cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY);
+                    final var getAccountInfo = getAccountInfo(ACCOUNT)
                             .has(accountWith()
                                     .key(SECP_256K1_SOURCE_KEY)
                                     .noAlias()
-                                    .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                    .receiverSigReq(false));
-                    allRunFor(spec, hapiGetAccountInfo, hapiGetAnotherAccountInfo);
+                                    .evmAddress(evmAddressBytes));
+
+                    final var getECDSAAliasAccountInfo =
+                            getAliasedAccountInfo(ecdsaKey.toByteString()).hasCostAnswerPrecheck(INVALID_ACCOUNT_ID);
+
+                    final var getEVMAddressAliasAccountInfo =
+                            getAliasedAccountInfo(evmAddressBytes).hasCostAnswerPrecheck(INVALID_ACCOUNT_ID);
+
+                    final var createWithECDSAKeyAlias = cryptoCreate(ANOTHER_ACCOUNT)
+                            .alias(ecdsaKey.toByteString())
+                            .hasKnownStatus(SUCCESS)
+                            .balance(100 * ONE_HBAR);
+
+                    final var createWithEVMAddressAlias = cryptoCreate(ANOTHER_ACCOUNT)
+                            .alias(evmAddressBytes)
+                            .hasPrecheck(INVALID_ALIAS_KEY)
+                            .balance(100 * ONE_HBAR);
+
+                    allRunFor(
+                            spec,
+                            createWithECDSAKey,
+                            getAccountInfo,
+                            getECDSAAliasAccountInfo,
+                            getEVMAddressAliasAccountInfo,
+                            createWithECDSAKeyAlias,
+                            createWithEVMAddressAlias);
                 }))
                 .then();
     }

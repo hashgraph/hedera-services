@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.properties;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -23,9 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.mono.context.properties.EntityType;
-import com.hedera.node.app.service.mono.context.properties.Profile;
 import com.hedera.node.app.service.mono.context.properties.SupplierMapPropertySource;
 import com.hedera.node.app.service.mono.exceptions.UnparseablePropertyException;
+import com.hedera.node.app.spi.config.Profile;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.EnumSet;
 import java.util.List;
@@ -34,6 +35,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class SupplierMapPropertySourceTest {
+
     private final String INT_PROP = "a.int.prop";
     private final String LONG_PROP = "a.long.prop";
     private final String STRING_PROP = "a.string.prop";
@@ -45,19 +47,17 @@ class SupplierMapPropertySourceTest {
     private final String BAD_ACCOUNT_PROP = "a.bad.account";
     private final String GOOD_ACCOUNT_PROP = "a.good.account";
     private final String ENTITY_TYPES_PROP = "some.types";
-    private final SupplierMapPropertySource subject =
-            new SupplierMapPropertySource(
-                    Map.of(
-                            INT_PROP, () -> 1,
-                            LONG_PROP, () -> 1L,
-                            DOUBLE_PROP, () -> 1.0d,
-                            STRING_PROP, () -> "cellar door",
-                            PROFILE_PROP, () -> Profile.DEV,
-                            BOOLEAN_PROP, () -> Boolean.TRUE,
-                            CS_STRINGS_PROP, () -> List.of("a", "b", "c"),
-                            BAD_ACCOUNT_PROP, () -> "asdf",
-                            GOOD_ACCOUNT_PROP, () -> "0.0.2",
-                            ENTITY_TYPES_PROP, () -> EnumSet.of(EntityType.FILE)));
+    private final SupplierMapPropertySource subject = new SupplierMapPropertySource(Map.of(
+            INT_PROP, () -> 1,
+            LONG_PROP, () -> 1L,
+            DOUBLE_PROP, () -> 1.0d,
+            STRING_PROP, () -> "cellar door",
+            PROFILE_PROP, () -> Profile.DEV,
+            BOOLEAN_PROP, () -> Boolean.TRUE,
+            CS_STRINGS_PROP, () -> List.of("a", "b", "c"),
+            BAD_ACCOUNT_PROP, () -> "asdf",
+            GOOD_ACCOUNT_PROP, () -> "0.0.2",
+            ENTITY_TYPES_PROP, () -> EnumSet.of(EntityType.FILE)));
 
     @Test
     void getsEntityTypes() {
@@ -74,26 +74,23 @@ class SupplierMapPropertySourceTest {
     @Test
     void getsParseableAccount() {
         // expect:
-        assertEquals(
-                AccountID.newBuilder().setAccountNum(2L).build(),
-                subject.getAccountProperty(GOOD_ACCOUNT_PROP));
+        assertEquals(AccountID.newBuilder().setAccountNum(2L).build(), subject.getAccountProperty(GOOD_ACCOUNT_PROP));
     }
 
     @Test
     void allPropertyNames() {
         assertNotNull(subject.allPropertyNames());
-        var propSet =
-                Set.of(
-                        "a.double.prop",
-                        "a.string.prop",
-                        "a.profile.prop",
-                        "a.boolean.prop",
-                        "a.bad.account",
-                        "a.long.prop",
-                        "a.good.account",
-                        "a.int.prop",
-                        "some.types",
-                        "a.cs_strings.prop");
+        final var propSet = Set.of(
+                "a.double.prop",
+                "a.string.prop",
+                "a.profile.prop",
+                "a.boolean.prop",
+                "a.bad.account",
+                "a.long.prop",
+                "a.good.account",
+                "a.int.prop",
+                "some.types",
+                "a.cs_strings.prop");
         assertEquals(propSet, subject.allPropertyNames());
     }
 
@@ -105,13 +102,12 @@ class SupplierMapPropertySourceTest {
         // when:
         try {
             subject.getAccountProperty(BAD_ACCOUNT_PROP);
-        } catch (UnparseablePropertyException upe) {
+        } catch (final UnparseablePropertyException upe) {
             e = upe;
         }
 
         // then:
-        assertEquals(
-                UnparseablePropertyException.messageFor(BAD_ACCOUNT_PROP, "asdf"), e.getMessage());
+        assertEquals(UnparseablePropertyException.messageFor(BAD_ACCOUNT_PROP, "asdf"), e.getMessage());
     }
 
     @Test

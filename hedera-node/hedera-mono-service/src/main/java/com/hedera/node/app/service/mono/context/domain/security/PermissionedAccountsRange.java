@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.domain.security;
 
 import java.util.regex.Pattern;
@@ -49,8 +50,7 @@ public class PermissionedAccountsRange {
 
         var nonDegenWildMatch = NON_DEGENERATE_WILDCARD.matcher(description);
         if (nonDegenWildMatch.matches()) {
-            return new PermissionedAccountsRange(
-                    Long.valueOf(nonDegenWildMatch.group(1)), Long.MAX_VALUE);
+            return new PermissionedAccountsRange(Long.valueOf(nonDegenWildMatch.group(1)), Long.MAX_VALUE);
         }
 
         return null;

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.scenarios;
 
 import static com.hedera.test.factories.txns.ContractCreateFactory.newSignedContractCreate;
@@ -22,12 +23,14 @@ import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 public enum ContractCreateScenarios implements TxnHandlingScenario {
     CONTRACT_CREATE_WITH_ADMIN_KEY {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedContractCreate().useAdminKey(true).get());
+            return PlatformTxnAccessor.from(
+                    newSignedContractCreate().useAdminKey(true).get());
         }
     },
     CONTRACT_CREATE_NO_ADMIN_KEY {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedContractCreate().useAdminKey(false).get());
+            return PlatformTxnAccessor.from(
+                    newSignedContractCreate().useAdminKey(false).get());
         }
     },
     CONTRACT_CREATE_DEPRECATED_CID_ADMIN_KEY {
@@ -38,8 +41,10 @@ public enum ContractCreateScenarios implements TxnHandlingScenario {
     },
     CONTRACT_CREATE_WITH_AUTO_RENEW_ACCOUNT {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedContractCreate().useAdminKey(false).useAutoRenewAccount(true).get());
+            return PlatformTxnAccessor.from(newSignedContractCreate()
+                    .useAdminKey(false)
+                    .useAutoRenewAccount(true)
+                    .get());
         }
     }
 }

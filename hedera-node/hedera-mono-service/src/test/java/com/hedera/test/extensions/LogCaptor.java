@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.extensions;
 
 import java.io.CharArrayWriter;
@@ -41,12 +42,12 @@ public class LogCaptor {
     public LogCaptor(org.apache.logging.log4j.Logger logger) {
         this.logger = (Logger) logger;
 
-        appender =
-                WriterAppender.newBuilder()
-                        .setTarget(capture)
-                        .setLayout(PatternLayout.newBuilder().withPattern(MINIMAL_PATTERN).build())
-                        .setName("LogCaptor")
-                        .build();
+        appender = WriterAppender.newBuilder()
+                .setTarget(capture)
+                .setLayout(
+                        PatternLayout.newBuilder().withPattern(MINIMAL_PATTERN).build())
+                .setName("LogCaptor")
+                .build();
 
         appender.start();
         this.logger.addAppender(appender);

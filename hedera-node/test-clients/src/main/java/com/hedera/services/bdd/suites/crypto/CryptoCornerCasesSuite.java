@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -66,20 +67,20 @@ public class CryptoCornerCasesSuite extends HapiSuite {
         return defaultHapiSpec("InvalidTransactionBody")
                 .given()
                 .when()
-                .then(
-                        cryptoCreate("newPayee")
-                                .balance(10000L)
-                                .withProtoStructure(
-                                        HapiSpecSetup.TxnProtoStructure
-                                                .OLD) // Ensure legacy construction so
-                                // removeTransactionBody() works
-                                .scrambleTxnBody(CryptoCornerCasesSuite::removeTransactionBody)
-                                .hasPrecheckFrom(INVALID_TRANSACTION_BODY, INVALID_TRANSACTION));
+                .then(cryptoCreate("newPayee")
+                        .balance(10000L)
+                        .withProtoStructure(HapiSpecSetup.TxnProtoStructure.OLD) // Ensure legacy construction so
+                        // removeTransactionBody() works
+                        .scrambleTxnBody(CryptoCornerCasesSuite::removeTransactionBody)
+                        .hasPrecheckFrom(INVALID_TRANSACTION_BODY, INVALID_TRANSACTION));
     }
 
     private static Transaction replaceTxnNodeAccount(Transaction txn) {
-        AccountID badNodeAccount =
-                AccountID.newBuilder().setAccountNum(2000).setRealmNum(0).setShardNum(0).build();
+        AccountID badNodeAccount = AccountID.newBuilder()
+                .setAccountNum(2000)
+                .setRealmNum(0)
+                .setShardNum(0)
+                .build();
         return TxnUtils.replaceTxnNodeAccount(txn, badNodeAccount);
     }
 
@@ -87,11 +88,10 @@ public class CryptoCornerCasesSuite extends HapiSuite {
         return defaultHapiSpec("InvalidNodeAccount")
                 .given()
                 .when()
-                .then(
-                        cryptoCreate("newPayee")
-                                .balance(10000L)
-                                .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnNodeAccount)
-                                .hasPrecheckFrom(INVALID_NODE_ACCOUNT, INVALID_TRANSACTION));
+                .then(cryptoCreate("newPayee")
+                        .balance(10000L)
+                        .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnNodeAccount)
+                        .hasPrecheckFrom(INVALID_NODE_ACCOUNT, INVALID_TRANSACTION));
     }
 
     private static Transaction replaceTxnDuration(Transaction txn) {
@@ -102,12 +102,10 @@ public class CryptoCornerCasesSuite extends HapiSuite {
         return defaultHapiSpec("InvalidTransactionDuration")
                 .given()
                 .when()
-                .then(
-                        cryptoCreate("newPayee")
-                                .balance(10000L)
-                                .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnDuration)
-                                .hasPrecheckFrom(
-                                        INVALID_TRANSACTION_DURATION, INVALID_TRANSACTION));
+                .then(cryptoCreate("newPayee")
+                        .balance(10000L)
+                        .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnDuration)
+                        .hasPrecheckFrom(INVALID_TRANSACTION_DURATION, INVALID_TRANSACTION));
     }
 
     private static Transaction replaceTxnMemo(Transaction txn) {
@@ -119,16 +117,18 @@ public class CryptoCornerCasesSuite extends HapiSuite {
         return defaultHapiSpec("InvalidTransactionMemoTooLong")
                 .given()
                 .when()
-                .then(
-                        cryptoCreate("newPayee")
-                                .balance(10000L)
-                                .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnMemo)
-                                .hasPrecheckFrom(MEMO_TOO_LONG, INVALID_TRANSACTION));
+                .then(cryptoCreate("newPayee")
+                        .balance(10000L)
+                        .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnMemo)
+                        .hasPrecheckFrom(MEMO_TOO_LONG, INVALID_TRANSACTION));
     }
 
     private static Transaction replaceTxnPayerAccount(Transaction txn) {
-        AccountID badPayerAccount =
-                AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(999999).build();
+        AccountID badPayerAccount = AccountID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setAccountNum(999999)
+                .build();
         return TxnUtils.replaceTxnPayerAccount(txn, badPayerAccount);
     }
 
@@ -136,11 +136,10 @@ public class CryptoCornerCasesSuite extends HapiSuite {
         return defaultHapiSpec("InvalidTransactionDuration")
                 .given()
                 .when()
-                .then(
-                        cryptoCreate("newPayee")
-                                .balance(10000L)
-                                .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnPayerAccount)
-                                .hasPrecheckFrom(PAYER_ACCOUNT_NOT_FOUND, INVALID_TRANSACTION));
+                .then(cryptoCreate("newPayee")
+                        .balance(10000L)
+                        .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnPayerAccount)
+                        .hasPrecheckFrom(PAYER_ACCOUNT_NOT_FOUND, INVALID_TRANSACTION));
     }
 
     private static Transaction replaceTxnStartTtime(Transaction txn) {
@@ -152,11 +151,10 @@ public class CryptoCornerCasesSuite extends HapiSuite {
         return defaultHapiSpec("InvalidTransactionStartTime")
                 .given()
                 .when()
-                .then(
-                        cryptoCreate("newPayee")
-                                .balance(10000L)
-                                .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnStartTtime)
-                                .hasPrecheckFrom(INVALID_TRANSACTION_START, INVALID_TRANSACTION));
+                .then(cryptoCreate("newPayee")
+                        .balance(10000L)
+                        .scrambleTxnBody(CryptoCornerCasesSuite::replaceTxnStartTtime)
+                        .hasPrecheckFrom(INVALID_TRANSACTION_START, INVALID_TRANSACTION));
     }
 
     @Override

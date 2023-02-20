@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.token;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUppercase;
@@ -46,22 +47,20 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class RandomTokenUpdate implements OpProvider {
-    private final List<Consumer<HapiTokenUpdate>> randomUpdates =
-            List.of(
-                    this::randomKeysUpdate,
-                    this::randomNameUpdate,
-                    this::randomSymbolUpdate,
-                    this::randomTreasuryUpdate,
-                    this::randomAutoRenewPeriodUpdate,
-                    this::randomAutoRenewAccountUpdate);
+    private final List<Consumer<HapiTokenUpdate>> randomUpdates = List.of(
+            this::randomKeysUpdate,
+            this::randomNameUpdate,
+            this::randomSymbolUpdate,
+            this::randomTreasuryUpdate,
+            this::randomAutoRenewPeriodUpdate,
+            this::randomAutoRenewAccountUpdate);
 
-    private static final List<BiConsumer<HapiTokenUpdate, String>> KEY_SETTERS =
-            List.of(
-                    HapiTokenUpdate::kycKey,
-                    HapiTokenUpdate::wipeKey,
-                    HapiTokenUpdate::adminKey,
-                    HapiTokenUpdate::supplyKey,
-                    HapiTokenUpdate::freezeKey);
+    private static final List<BiConsumer<HapiTokenUpdate, String>> KEY_SETTERS = List.of(
+            HapiTokenUpdate::kycKey,
+            HapiTokenUpdate::wipeKey,
+            HapiTokenUpdate::adminKey,
+            HapiTokenUpdate::supplyKey,
+            HapiTokenUpdate::freezeKey);
 
     private static final int DEFAULT_MAX_STRING_LEN = 100;
     private static final long MAX_PERIOD = 1_000_000_000;
@@ -72,21 +71,20 @@ public class RandomTokenUpdate implements OpProvider {
     private final RegistrySourcedNameProvider<TokenID> tokens;
     private final RegistrySourcedNameProvider<AccountID> accounts;
 
-    private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(
-                    INVALID_KYC_KEY,
-                    INVALID_WIPE_KEY,
-                    INVALID_SIGNATURE,
-                    TOKEN_WAS_DELETED,
-                    INVALID_ADMIN_KEY,
-                    INVALID_FREEZE_KEY,
-                    INVALID_SUPPLY_KEY,
-                    TOKEN_IS_IMMUTABLE,
-                    TOKEN_NAME_TOO_LONG,
-                    TOKEN_SYMBOL_TOO_LONG,
-                    INVALID_RENEWAL_PERIOD,
-                    INVALID_AUTORENEW_ACCOUNT,
-                    INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+    private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
+            INVALID_KYC_KEY,
+            INVALID_WIPE_KEY,
+            INVALID_SIGNATURE,
+            TOKEN_WAS_DELETED,
+            INVALID_ADMIN_KEY,
+            INVALID_FREEZE_KEY,
+            INVALID_SUPPLY_KEY,
+            TOKEN_IS_IMMUTABLE,
+            TOKEN_NAME_TOO_LONG,
+            TOKEN_SYMBOL_TOO_LONG,
+            INVALID_RENEWAL_PERIOD,
+            INVALID_AUTORENEW_ACCOUNT,
+            INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
     public RandomTokenUpdate(
             EntityNameProvider<Key> keys,
@@ -104,10 +102,9 @@ public class RandomTokenUpdate implements OpProvider {
             return Optional.empty();
         }
 
-        var op =
-                tokenUpdate(token.get())
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                        .hasKnownStatusFrom(permissibleOutcomes);
+        var op = tokenUpdate(token.get())
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                .hasKnownStatusFrom(permissibleOutcomes);
 
         randomUpdates.forEach(o -> o.accept(op));
 

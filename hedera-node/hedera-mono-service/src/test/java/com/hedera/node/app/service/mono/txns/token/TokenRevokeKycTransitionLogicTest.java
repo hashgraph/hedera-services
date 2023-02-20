@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -146,13 +147,11 @@ class TokenRevokeKycTransitionLogicTest {
     }
 
     private void givenValidTxnCtx() {
-        tokenRevokeKycTxn =
-                TransactionBody.newBuilder()
-                        .setTokenRevokeKyc(
-                                TokenRevokeKycTransactionBody.newBuilder()
-                                        .setAccount(accountID)
-                                        .setToken(tokenID))
-                        .build();
+        tokenRevokeKycTxn = TransactionBody.newBuilder()
+                .setTokenRevokeKyc(TokenRevokeKycTransactionBody.newBuilder()
+                        .setAccount(accountID)
+                        .setToken(tokenID))
+                .build();
         given(accessor.getTxn()).willReturn(tokenRevokeKycTxn);
         given(txnCtx.accessor()).willReturn(accessor);
         given(tokenStore.loadToken(tokenId)).willReturn(token);
@@ -161,18 +160,15 @@ class TokenRevokeKycTransitionLogicTest {
     }
 
     private void givenMissingToken() {
-        tokenRevokeKycTxn =
-                TransactionBody.newBuilder()
-                        .setTokenRevokeKyc(TokenRevokeKycTransactionBody.newBuilder())
-                        .build();
+        tokenRevokeKycTxn = TransactionBody.newBuilder()
+                .setTokenRevokeKyc(TokenRevokeKycTransactionBody.newBuilder())
+                .build();
     }
 
     private void givenMissingAccount() {
-        tokenRevokeKycTxn =
-                TransactionBody.newBuilder()
-                        .setTokenRevokeKyc(
-                                TokenRevokeKycTransactionBody.newBuilder().setToken(tokenID))
-                        .build();
+        tokenRevokeKycTxn = TransactionBody.newBuilder()
+                .setTokenRevokeKyc(TokenRevokeKycTransactionBody.newBuilder().setToken(tokenID))
+                .build();
     }
 
     private void assertFailsWith(Runnable something, ResponseCodeEnum status) {

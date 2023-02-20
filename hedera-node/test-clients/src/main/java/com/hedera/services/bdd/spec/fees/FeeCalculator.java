@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.fees;
 
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getFeeObject;
@@ -67,13 +68,9 @@ public class FeeCalculator {
             return;
         }
         final FeeSchedule feeSchedule = provider.currentSchedule();
-        feeSchedule
-                .getTransactionFeeScheduleList()
-                .forEach(
-                        f -> {
-                            opFeeData.put(
-                                    f.getHederaFunctionality(), feesListToMap(f.getFeesList()));
-                        });
+        feeSchedule.getTransactionFeeScheduleList().forEach(f -> {
+            opFeeData.put(f.getHederaFunctionality(), feesListToMap(f.getFeesList()));
+        });
         tokenTransferUsageMultiplier = setup.feesTokenTransferUsageMultiplier();
     }
 
@@ -89,28 +86,20 @@ public class FeeCalculator {
         return usingFixedFee
                 ? fixedFee
                 : Arrays.stream(HederaFunctionality.values())
-                        .mapToLong(
-                                op ->
-                                        Optional.ofNullable(opFeeData.get(op))
-                                                .map(
-                                                        fd -> {
-                                                            final var pricesForSubtype =
-                                                                    fd.get(subType);
-                                                            if (pricesForSubtype == null) {
-                                                                return 0L;
-                                                            } else {
-                                                                return pricesForSubtype
-                                                                                .getServicedata()
-                                                                                .getMax()
-                                                                        + pricesForSubtype
-                                                                                .getNodedata()
-                                                                                .getMax()
-                                                                        + pricesForSubtype
-                                                                                .getNetworkdata()
-                                                                                .getMax();
-                                                            }
-                                                        })
-                                                .orElse(0L))
+                        .mapToLong(op -> Optional.ofNullable(opFeeData.get(op))
+                                .map(fd -> {
+                                    final var pricesForSubtype = fd.get(subType);
+                                    if (pricesForSubtype == null) {
+                                        return 0L;
+                                    } else {
+                                        return pricesForSubtype.getServicedata().getMax()
+                                                + pricesForSubtype.getNodedata().getMax()
+                                                + pricesForSubtype
+                                                        .getNetworkdata()
+                                                        .getMax();
+                                    }
+                                })
+                                .orElse(0L))
                         .max()
                         .orElse(0L);
     }
@@ -161,23 +150,20 @@ public class FeeCalculator {
         return forOp(op, subType, activityMetrics);
     }
 
-    private FeeData metricsFor(
-            final Transaction txn, final int numPayerSigs, final ActivityMetrics metricsCalculator)
+    private FeeData metricsFor(final Transaction txn, final int numPayerSigs, final ActivityMetrics metricsCalculator)
             throws Throwable {
         final SigValueObj sigUsage = sigUsageGiven(txn, numPayerSigs);
         final TransactionBody body = CommonUtils.extractTransactionBody(txn);
         return metricsCalculator.compute(body, sigUsage);
     }
 
-    private long forOp(
-            final HederaFunctionality op, final SubType subType, final FeeData knownActivity) {
+    private long forOp(final HederaFunctionality op, final SubType subType, final FeeData knownActivity) {
         if (usingFixedFee) {
             return fixedFee;
         }
         try {
             final Map<SubType, FeeData> activityPrices = opFeeData.get(op);
-            return getTotalFeeforRequest(
-                    activityPrices.get(subType), knownActivity, provider.rates());
+            return getTotalFeeforRequest(activityPrices.get(subType), knownActivity, provider.rates());
         } catch (final Throwable t) {
             log.warn("Unable to calculate fee for op {}, using max fee!", op, t);
         }

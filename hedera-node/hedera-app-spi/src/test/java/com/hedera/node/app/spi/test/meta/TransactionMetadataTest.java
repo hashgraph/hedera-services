@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.test.meta;
 
 import static com.hedera.node.app.spi.fixtures.meta.TransactionMetadataAssert.assertThat;
@@ -36,9 +37,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TransactionMetadataTest {
 
-    @Mock private HederaKey payerKey;
+    @Mock
+    private HederaKey payerKey;
 
-    @Mock private HederaKey otherKey;
+    @Mock
+    private HederaKey otherKey;
 
     private final TransactionBody txBody = TransactionBody.newBuilder().build();
     private final AccountID payer = AccountID.newBuilder().setAccountNum(42L).build();
@@ -49,25 +52,13 @@ class TransactionMetadataTest {
         final List<HederaKey> hederaKeys = List.of(otherKey);
         final List<TransactionMetadata.ReadKeys> readKeys = List.of();
 
-        assertThatCode(
-                        () ->
-                                new TransactionMetadata(
-                                        null, null, OK, null, hederaKeys, null, readKeys))
+        assertThatCode(() -> new TransactionMetadata(null, null, OK, null, hederaKeys, null, readKeys))
                 .doesNotThrowAnyException();
-        assertThatThrownBy(
-                        () ->
-                                new TransactionMetadata(
-                                        txBody, payer, null, payerKey, hederaKeys, null, readKeys))
+        assertThatThrownBy(() -> new TransactionMetadata(txBody, payer, null, payerKey, hederaKeys, null, readKeys))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () ->
-                                new TransactionMetadata(
-                                        txBody, payer, OK, payerKey, null, null, readKeys))
+        assertThatThrownBy(() -> new TransactionMetadata(txBody, payer, OK, payerKey, null, null, readKeys))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () ->
-                                new TransactionMetadata(
-                                        txBody, payer, OK, payerKey, hederaKeys, null, null))
+        assertThatThrownBy(() -> new TransactionMetadata(txBody, payer, OK, payerKey, hederaKeys, null, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -105,10 +96,8 @@ class TransactionMetadataTest {
         final List<TransactionMetadata.ReadKeys> readKeys = List.of();
 
         // then
-        assertThatThrownBy(() -> new TransactionMetadata(null, readKeys))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionMetadata(context, null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new TransactionMetadata(null, readKeys)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new TransactionMetadata(context, null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -131,7 +120,6 @@ class TransactionMetadataTest {
     @Test
     void testErrorConstructorWithInvalidArguments() {
         assertThatCode(() -> new TransactionMetadata(null, null, OK)).doesNotThrowAnyException();
-        assertThatThrownBy(() -> new TransactionMetadata(txBody, payer, null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new TransactionMetadata(txBody, payer, null)).isInstanceOf(NullPointerException.class);
     }
 }

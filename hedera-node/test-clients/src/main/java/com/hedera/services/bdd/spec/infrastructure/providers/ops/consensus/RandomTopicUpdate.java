@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.consensus;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
@@ -32,8 +33,7 @@ import java.util.Optional;
 public class RandomTopicUpdate implements OpProvider {
     private final EntityNameProvider<TopicID> topics;
 
-    private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(TOPIC_EXPIRED, INVALID_TOPIC_ID);
+    private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(TOPIC_EXPIRED, INVALID_TOPIC_ID);
 
     public RandomTopicUpdate(EntityNameProvider<TopicID> topics) {
         this.topics = topics;
@@ -51,10 +51,9 @@ public class RandomTopicUpdate implements OpProvider {
             return Optional.empty();
         }
 
-        HapiTopicUpdate op =
-                updateTopic(target.get())
-                        .hasKnownStatusFrom(permissibleOutcomes)
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS);
+        HapiTopicUpdate op = updateTopic(target.get())
+                .hasKnownStatusFrom(permissibleOutcomes)
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS);
         return Optional.of(op);
     }
 }

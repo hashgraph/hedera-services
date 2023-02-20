@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees;
 
 import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.AUTHORIZED;
@@ -29,8 +30,7 @@ public class StandardExemptions implements FeeExemptions {
     private final SystemOpPolicies systemOpPolicies;
 
     @Inject
-    public StandardExemptions(
-            final HederaAccountNumbers accountNums, final SystemOpPolicies systemOpPolicies) {
+    public StandardExemptions(final HederaAccountNumbers accountNums, final SystemOpPolicies systemOpPolicies) {
         this.accountNums = accountNums;
         this.systemOpPolicies = systemOpPolicies;
     }

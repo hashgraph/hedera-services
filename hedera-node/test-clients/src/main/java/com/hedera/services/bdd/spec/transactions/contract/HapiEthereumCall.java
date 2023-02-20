@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.contract;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
@@ -75,10 +76,8 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private EthTxData.EthTransactionType type = EthTxData.EthTransactionType.EIP1559;
     private long nonce = 0L;
     private boolean useSpecNonce = true;
-    private BigInteger gasPrice =
-            WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(DEFAULT_GAS_PRICE_TINYBARS));
-    private BigInteger maxFeePerGas =
-            WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(DEFAULT_GAS_PRICE_TINYBARS));
+    private BigInteger gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(DEFAULT_GAS_PRICE_TINYBARS));
+    private BigInteger maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(DEFAULT_GAS_PRICE_TINYBARS));
     private long maxPriorityGas = 1_000L;
     private Optional<Long> maxGasAllowance = Optional.of(FIVE_HBARS);
     private Optional<BigInteger> valueSent = Optional.of(BigInteger.ZERO);
@@ -149,10 +148,8 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         this.privateKeyRef = contractCall.getPrivateKeyRef();
         this.deferStatusResolution = contractCall.getDeferStatusResolution();
         if (contractCall.getValueSent().isPresent()) {
-            this.valueSent =
-                    Optional.of(
-                            WEIBARS_TO_TINYBARS.multiply(
-                                    BigInteger.valueOf(contractCall.getValueSent().orElseThrow())));
+            this.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(
+                    BigInteger.valueOf(contractCall.getValueSent().orElseThrow())));
         }
         if (!contractCall.otherSigs.isEmpty()) {
             this.alsoSigningWithFullPrefix(contractCall.otherSigs.toArray(new String[0]));
@@ -313,38 +310,33 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         if (useSpecNonce) {
             nonce = spec.getNonce(privateKeyRef);
         }
-        final var ethTxData =
-                new EthTxData(
-                        null,
-                        type,
-                        Integers.toBytes(CHAIN_ID),
-                        nonce,
-                        gasPriceBytes,
-                        maxPriorityGasBytes,
-                        maxFeePerGasBytes,
-                        gas.orElse(100_000L),
-                        to,
-                        valueSent.orElse(BigInteger.ZERO),
-                        callData,
-                        new byte[] {},
-                        0,
-                        null,
-                        null,
-                        null);
+        final var ethTxData = new EthTxData(
+                null,
+                type,
+                Integers.toBytes(CHAIN_ID),
+                nonce,
+                gasPriceBytes,
+                maxPriorityGasBytes,
+                maxFeePerGasBytes,
+                gas.orElse(100_000L),
+                to,
+                valueSent.orElse(BigInteger.ZERO),
+                callData,
+                new byte[] {},
+                0,
+                null,
+                null,
+                null);
 
         byte[] privateKeyByteArray = getPrivateKeyFromSpec(spec, privateKeyRef);
         var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
-        spec.registry()
-                .saveBytes(ETH_HASH_KEY, ByteString.copyFrom((signedEthTxData.getEthereumHash())));
+        spec.registry().saveBytes(ETH_HASH_KEY, ByteString.copyFrom((signedEthTxData.getEthereumHash())));
 
         if (createCallDataFile || callData.length > MAX_CALL_DATA_SIZE) {
             final var callDataBytesString = ByteString.copyFrom(Hex.encode(callData));
             final var createFile = new HapiFileCreate(CALL_DATA_FILE_NAME);
             final var updateLargeFile =
-                    updateLargeFile(
-                            payer.orElse(DEFAULT_CONTRACT_SENDER),
-                            CALL_DATA_FILE_NAME,
-                            callDataBytesString);
+                    updateLargeFile(payer.orElse(DEFAULT_CONTRACT_SENDER), CALL_DATA_FILE_NAME, callDataBytesString);
             createFile.execFor(spec);
             updateLargeFile.execFor(spec);
             ethFileID = Optional.of(TxnUtils.asFileId(CALL_DATA_FILE_NAME, spec));
@@ -352,16 +344,13 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         }
         final var finalEthTxData = signedEthTxData;
 
-        final EthereumTransactionBody ethOpBody =
-                spec.txns()
-                        .<EthereumTransactionBody, EthereumTransactionBody.Builder>body(
-                                EthereumTransactionBody.class,
-                                builder -> {
-                                    builder.setEthereumData(
-                                            ByteString.copyFrom(finalEthTxData.encodeTx()));
-                                    maxGasAllowance.ifPresent(builder::setMaxGasAllowance);
-                                    ethFileID.ifPresent(builder::setCallData);
-                                });
+        final EthereumTransactionBody ethOpBody = spec.txns()
+                .<EthereumTransactionBody, EthereumTransactionBody.Builder>body(
+                        EthereumTransactionBody.class, builder -> {
+                            builder.setEthereumData(ByteString.copyFrom(finalEthTxData.encodeTx()));
+                            maxGasAllowance.ifPresent(builder::setMaxGasAllowance);
+                            ethFileID.ifPresent(builder::setCallData);
+                        });
         return b -> b.setEthereumTransaction(ethOpBody);
     }
 
@@ -371,30 +360,22 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
             spec.incrementNonce(privateKeyRef);
         }
         if (gasObserver.isPresent()) {
-            doGasLookup(
-                    gas -> gasObserver.get().accept(actualStatus, gas), spec, txnSubmitted, false);
+            doGasLookup(gas -> gasObserver.get().accept(actualStatus, gas), spec, txnSubmitted, false);
         }
         if (resultObserver != null) {
-            doObservedLookup(
-                    spec,
-                    txnSubmitted,
-                    rcd -> {
-                        final var function = com.esaulpaugh.headlong.abi.Function.fromJson(abi);
-                        final var result =
-                                function.decodeReturn(
-                                        rcd.getContractCallResult()
-                                                .getContractCallResult()
-                                                .toByteArray());
-                        resultObserver.accept(result.toList().toArray());
-                    });
+            doObservedLookup(spec, txnSubmitted, rcd -> {
+                final var function = com.esaulpaugh.headlong.abi.Function.fromJson(abi);
+                final var result = function.decodeReturn(
+                        rcd.getContractCallResult().getContractCallResult().toByteArray());
+                resultObserver.accept(result.toList().toArray());
+            });
         }
         if (eventDataObserver != null) {
             doObservedLookup(
                     spec,
                     txnSubmitted,
-                    rcd ->
-                            eventDataObserver.accept(
-                                    rcd.getContractCallResult().getLogInfo(0).getData()));
+                    rcd -> eventDataObserver.accept(
+                            rcd.getContractCallResult().getLogInfo(0).getData()));
         }
     }
 
@@ -409,42 +390,30 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     }
 
     static void doGasLookup(
-            final LongConsumer gasObserver,
-            final HapiSpec spec,
-            final Transaction txn,
-            final boolean isCreate)
+            final LongConsumer gasObserver, final HapiSpec spec, final Transaction txn, final boolean isCreate)
             throws Throwable {
-        doObservedLookup(
-                spec,
-                txn,
-                rcd -> {
-                    final var gasUsed =
-                            isCreate
-                                    ? rcd.getContractCreateResult().getGasUsed()
-                                    : rcd.getContractCallResult().getGasUsed();
-                    gasObserver.accept(gasUsed);
-                });
+        doObservedLookup(spec, txn, rcd -> {
+            final var gasUsed = isCreate
+                    ? rcd.getContractCreateResult().getGasUsed()
+                    : rcd.getContractCallResult().getGasUsed();
+            gasObserver.accept(gasUsed);
+        });
     }
 
-    static void doObservedLookup(
-            final HapiSpec spec, final Transaction txn, Consumer<TransactionRecord> observer)
+    static void doObservedLookup(final HapiSpec spec, final Transaction txn, Consumer<TransactionRecord> observer)
             throws Throwable {
         final var txnId = extractTxnId(txn);
-        final var lookup =
-                getTxnRecord(txnId)
-                        .assertingNothing()
-                        .noLogging()
-                        .payingWith(GENESIS)
-                        .nodePayment(1)
-                        .exposingTo(observer);
+        final var lookup = getTxnRecord(txnId)
+                .assertingNothing()
+                .noLogging()
+                .payingWith(GENESIS)
+                .nodePayment(1)
+                .exposingTo(observer);
         allRunFor(spec, lookup);
     }
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        return super.toStringHelper()
-                .add("contract", contract)
-                .add("abi", abi)
-                .add("params", Arrays.toString(params));
+        return super.toStringHelper().add("contract", contract).add("abi", abi).add("params", Arrays.toString(params));
     }
 }

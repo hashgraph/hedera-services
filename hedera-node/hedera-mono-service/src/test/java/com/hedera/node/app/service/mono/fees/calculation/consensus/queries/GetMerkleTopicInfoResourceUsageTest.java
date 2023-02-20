@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.consensus.queries;
 
 import static com.hedera.test.utils.IdUtils.asTopic;
@@ -84,8 +85,7 @@ class GetMerkleTopicInfoResourceUsageTest {
     @CsvSource({
         ", , , , 236, 112",
         "abcdefgh, , , , 236, 120", // bpr += memo size(8)
-        "abcdefgh, 0000000000000000000000000000000000000000000000000000000000000000,"
-                + " , , 236, 152", // bpr += 32
+        "abcdefgh, 0000000000000000000000000000000000000000000000000000000000000000," + " , , 236, 152", // bpr += 32
         // for admin key
         "abcdefgh, 0000000000000000000000000000000000000000000000000000000000000000,"
                 + " 1111111111111111111111111111111111111111111111111111111111111111,"
@@ -105,35 +105,29 @@ class GetMerkleTopicInfoResourceUsageTest {
             final int expectedBpr // query response header + topic id size + topic info size
             ) {
         final var merkleTopic =
-                new MerkleTopic(
-                        memo, adminKey, submitKey, 0, autoRenewAccountId, new RichInstant(1, 0));
-        final var expectedFeeData =
-                FeeData.newBuilder()
-                        .setNodedata(
-                                FeeComponents.newBuilder()
-                                        .setConstant(1)
-                                        .setBpt(expectedBpt)
-                                        .setBpr(expectedBpr)
-                                        .build())
-                        .setNetworkdata(FeeComponents.getDefaultInstance())
-                        .setServicedata(FeeComponents.getDefaultInstance())
-                        .build();
+                new MerkleTopic(memo, adminKey, submitKey, 0, autoRenewAccountId, new RichInstant(1, 0));
+        final var expectedFeeData = FeeData.newBuilder()
+                .setNodedata(FeeComponents.newBuilder()
+                        .setConstant(1)
+                        .setBpt(expectedBpt)
+                        .setBpr(expectedBpr)
+                        .build())
+                .setNetworkdata(FeeComponents.getDefaultInstance())
+                .setServicedata(FeeComponents.getDefaultInstance())
+                .build();
         given(topics.get(EntityNum.fromTopicId(topicId))).willReturn(merkleTopic);
 
-        final var costAnswerEstimate =
-                subject.usageGiven(topicInfoQuery(topicId, COST_ANSWER), view);
-        final var answerOnlyEstimate =
-                subject.usageGiven(topicInfoQuery(topicId, ANSWER_ONLY), view);
+        final var costAnswerEstimate = subject.usageGiven(topicInfoQuery(topicId, COST_ANSWER), view);
+        final var answerOnlyEstimate = subject.usageGiven(topicInfoQuery(topicId, ANSWER_ONLY), view);
 
         assertEquals(expectedFeeData, costAnswerEstimate);
         assertEquals(expectedFeeData, answerOnlyEstimate);
     }
 
     private Query topicInfoQuery(final TopicID topicId, final ResponseType type) {
-        final var op =
-                ConsensusGetTopicInfoQuery.newBuilder()
-                        .setTopicID(topicId)
-                        .setHeader(QueryHeader.newBuilder().setResponseType(type));
+        final var op = ConsensusGetTopicInfoQuery.newBuilder()
+                .setTopicID(topicId)
+                .setHeader(QueryHeader.newBuilder().setResponseType(type));
         return Query.newBuilder().setConsensusGetTopicInfo(op).build();
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops.inventory;
 
 import com.google.common.base.MoreObjects;
@@ -66,11 +67,7 @@ public class SpecKeyFromMnemonic extends UtilOp {
     }
 
     static void createAndLinkSimpleKey(
-            HapiSpec spec,
-            byte[] privateKey,
-            String name,
-            Optional<String> linkedId,
-            @Nullable Logger logToUse) {
+            HapiSpec spec, byte[] privateKey, String name, Optional<String> linkedId, @Nullable Logger logToUse) {
         var params = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519);
         var privateKeySpec = new EdDSAPrivateKeySpec(privateKey, params);
         var pk = new EdDSAPrivateKey(privateKeySpec);
@@ -81,8 +78,7 @@ public class SpecKeyFromMnemonic extends UtilOp {
         var key = Ed25519Factory.populatedFrom(pk.getAbyte());
         spec.registry().saveKey(name, key);
         spec.keys().incorporate(name, pubKeyHex, pk, KeyShape.SIMPLE);
-        linkedId.ifPresent(
-                s -> spec.registry().saveAccountId(name, HapiPropertySource.asAccount(s)));
+        linkedId.ifPresent(s -> spec.registry().saveAccountId(name, HapiPropertySource.asAccount(s)));
     }
 
     @Override

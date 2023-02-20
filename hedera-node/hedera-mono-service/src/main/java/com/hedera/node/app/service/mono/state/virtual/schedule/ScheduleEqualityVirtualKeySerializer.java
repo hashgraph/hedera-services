@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.schedule;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -22,8 +23,7 @@ import com.swirlds.jasperdb.files.hashmap.KeySerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class ScheduleEqualityVirtualKeySerializer
-        implements KeySerializer<ScheduleEqualityVirtualKey> {
+public class ScheduleEqualityVirtualKeySerializer implements KeySerializer<ScheduleEqualityVirtualKey> {
     static final long CLASS_ID = 0xc7b4f042e2fe2417L;
     static final int CURRENT_VERSION = 1;
 
@@ -50,22 +50,19 @@ public class ScheduleEqualityVirtualKeySerializer
     }
 
     @Override
-    public ScheduleEqualityVirtualKey deserialize(ByteBuffer byteBuffer, long version)
-            throws IOException {
+    public ScheduleEqualityVirtualKey deserialize(ByteBuffer byteBuffer, long version) throws IOException {
         final var key = new ScheduleEqualityVirtualKey();
         key.deserialize(byteBuffer, (int) version);
         return key;
     }
 
     @Override
-    public boolean equals(ByteBuffer buffer, int version, ScheduleEqualityVirtualKey key)
-            throws IOException {
+    public boolean equals(ByteBuffer buffer, int version, ScheduleEqualityVirtualKey key) throws IOException {
         return key.equals(buffer, version);
     }
 
     @Override
-    public int serialize(ScheduleEqualityVirtualKey key, SerializableDataOutputStream out)
-            throws IOException {
+    public int serialize(ScheduleEqualityVirtualKey key, SerializableDataOutputStream out) throws IOException {
         key.serialize(out);
         return ScheduleEqualityVirtualKey.sizeInBytes();
     }

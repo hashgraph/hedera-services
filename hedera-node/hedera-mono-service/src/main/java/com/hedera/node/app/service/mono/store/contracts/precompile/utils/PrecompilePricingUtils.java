@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.utils;
 
 import static com.hedera.node.app.hapi.fees.pricing.FeeSchedules.USD_TO_TINYCENTS;
@@ -83,10 +84,9 @@ public class PrecompilePricingUtils {
      */
     static final long COST_PROHIBITIVE = 1_000_000L * 10_000_000_000L;
 
-    private static final Query SYNTHETIC_REDIRECT_QUERY =
-            Query.newBuilder()
-                    .setTransactionGetRecord(TransactionGetRecordQuery.newBuilder().build())
-                    .build();
+    private static final Query SYNTHETIC_REDIRECT_QUERY = Query.newBuilder()
+            .setTransactionGetRecord(TransactionGetRecordQuery.newBuilder().build())
+            .build();
     private final HbarCentExchange exchange;
     private final Provider<FeeCalculator> feeCalculator;
     private final UsagePricesProvider resourceCosts;
@@ -131,30 +131,23 @@ public class PrecompilePricingUtils {
         return canonicalOperationCostsInTinyCents.getOrDefault(gasCostType, COST_PROHIBITIVE);
     }
 
-    public long getMinimumPriceInTinybars(
-            final GasCostType gasCostType, final Timestamp timestamp) {
-        return FeeBuilder.getTinybarsFromTinyCents(
-                exchange.rate(timestamp), getCanonicalPriceInTinyCents(gasCostType));
+    public long getMinimumPriceInTinybars(final GasCostType gasCostType, final Timestamp timestamp) {
+        return FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp), getCanonicalPriceInTinyCents(gasCostType));
     }
 
     public long gasFeeInTinybars(
-            final TransactionBody.Builder txBody,
-            final Instant consensusTime,
-            final Precompile precompile) {
-        final var signedTxn =
-                SignedTransaction.newBuilder()
-                        .setBodyBytes(txBody.build().toByteString())
-                        .setSigMap(SignatureMap.getDefaultInstance())
-                        .build();
-        final var txn =
-                Transaction.newBuilder()
-                        .setSignedTransactionBytes(signedTxn.toByteString())
-                        .build();
+            final TransactionBody.Builder txBody, final Instant consensusTime, final Precompile precompile) {
+        final var signedTxn = SignedTransaction.newBuilder()
+                .setBodyBytes(txBody.build().toByteString())
+                .setSigMap(SignatureMap.getDefaultInstance())
+                .build();
+        final var txn = Transaction.newBuilder()
+                .setSignedTransactionBytes(signedTxn.toByteString())
+                .build();
 
         final var accessor = accessorFactory.uncheckedSpecializedAccessor(txn);
         precompile.addImplicitCostsIn(accessor);
-        final var fees =
-                feeCalculator.get().computeFee(accessor, EMPTY_KEY, currentView, consensusTime);
+        final var fees = feeCalculator.get().computeFee(accessor, EMPTY_KEY, currentView, consensusTime);
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
     }
 
@@ -162,45 +155,37 @@ public class PrecompilePricingUtils {
         final var calculator = feeCalculator.get();
         final var usagePrices = resourceCosts.defaultPricesGiven(TokenGetInfo, now);
         final var fees =
-                calculator.estimatePayment(
-                        SYNTHETIC_REDIRECT_QUERY, usagePrices, currentView, now, ANSWER_ONLY);
+                calculator.estimatePayment(SYNTHETIC_REDIRECT_QUERY, usagePrices, currentView, now, ANSWER_ONLY);
 
         final long gasPriceInTinybars = calculator.estimatedGasPriceInTinybars(ContractCall, now);
-        final long calculatedFeeInTinybars =
-                fees.getNetworkFee() + fees.getNodeFee() + fees.getServiceFee();
+        final long calculatedFeeInTinybars = fees.getNetworkFee() + fees.getNodeFee() + fees.getServiceFee();
         final long actualFeeInTinybars = Math.max(minimumTinybarCost, calculatedFeeInTinybars);
 
         // convert to gas cost
-        final long baseGasCost =
-                (actualFeeInTinybars + gasPriceInTinybars - 1L) / gasPriceInTinybars;
+        final long baseGasCost = (actualFeeInTinybars + gasPriceInTinybars - 1L) / gasPriceInTinybars;
 
         // charge premium
         return baseGasCost + (baseGasCost / 5L);
     }
 
     public long computeGasRequirement(
-            final long blockTimestamp,
-            final Precompile precompile,
-            final TransactionBody.Builder transactionBody) {
-        final Timestamp timestamp = Timestamp.newBuilder().setSeconds(blockTimestamp).build();
-        final long gasPriceInTinybars =
-                feeCalculator.get().estimatedGasPriceInTinybars(ContractCall, timestamp);
+            final long blockTimestamp, final Precompile precompile, final TransactionBody.Builder transactionBody) {
+        final Timestamp timestamp =
+                Timestamp.newBuilder().setSeconds(blockTimestamp).build();
+        final long gasPriceInTinybars = feeCalculator.get().estimatedGasPriceInTinybars(ContractCall, timestamp);
 
-        final long calculatedFeeInTinybars =
-                gasFeeInTinybars(
-                        transactionBody.setTransactionID(
-                                TransactionID.newBuilder()
-                                        .setTransactionValidStart(timestamp)
-                                        .build()),
-                        Instant.ofEpochSecond(blockTimestamp),
-                        precompile);
+        final long calculatedFeeInTinybars = gasFeeInTinybars(
+                transactionBody.setTransactionID(TransactionID.newBuilder()
+                        .setTransactionValidStart(timestamp)
+                        .build()),
+                Instant.ofEpochSecond(blockTimestamp),
+                precompile);
 
         final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp);
         final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
 
         // convert to gas cost
-        final long baseGasCost =
-                (actualFeeInTinybars + gasPriceInTinybars - 1L) / gasPriceInTinybars;
+        final long baseGasCost = (actualFeeInTinybars + gasPriceInTinybars - 1L) / gasPriceInTinybars;
 
         // charge premium
         return baseGasCost + (baseGasCost / 5L);

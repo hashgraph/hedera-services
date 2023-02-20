@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
@@ -48,22 +49,15 @@ public class OwnerOfPrecompile extends AbstractReadOnlyPrecompile implements Evm
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var wrapper = decodeOwnerOf(input.slice(24));
-        nftId =
-                new NftId(
-                        tokenId.getShardNum(),
-                        tokenId.getRealmNum(),
-                        tokenId.getTokenNum(),
-                        wrapper.serialNo());
+        nftId = new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(), wrapper.serialNo());
         return super.body(input, aliasResolver);
     }
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        Objects.requireNonNull(
-                nftId, "`body` method should be called before `getSuccessResultsFor`");
+        Objects.requireNonNull(nftId, "`body` method should be called before `getSuccessResultsFor`");
 
         final var nftsLedger = ledgers.nfts();
         validateTrueOrRevert(nftsLedger.contains(nftId), INVALID_TOKEN_NFT_SERIAL_NUMBER);

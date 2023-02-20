@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.query;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -85,8 +86,7 @@ public class QueryChecker {
      * @throws PreCheckException if validation fails
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionBody validateCryptoTransfer(
-            @NonNull final SessionContext session, @NonNull final Transaction txn)
+    public TransactionBody validateCryptoTransfer(@NonNull final SessionContext session, @NonNull final Transaction txn)
             throws PreCheckException {
         requireNonNull(session);
         requireNonNull(txn);
@@ -128,8 +128,7 @@ public class QueryChecker {
         }
 
         final var xfers = txBody.getCryptoTransfer().getTransfers().getAccountAmountsList();
-        final var feeStatus =
-                queryFeeCheck.nodePaymentValidity(xfers, fee, txBody.getNodeAccountID());
+        final var feeStatus = queryFeeCheck.nodePaymentValidity(xfers, fee, txBody.getNodeAccountID());
         if (feeStatus != OK) {
             throw new InsufficientBalanceException(feeStatus, fee);
         }
@@ -143,8 +142,7 @@ public class QueryChecker {
      * @throws PreCheckException if permissions are not sufficient
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void checkPermissions(
-            @NonNull final AccountID payer, @NonNull final HederaFunctionality functionality)
+    public void checkPermissions(@NonNull final AccountID payer, @NonNull final HederaFunctionality functionality)
             throws PreCheckException {
         requireNonNull(payer);
         requireNonNull(functionality);

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.exports;
 
 import static org.mockito.BDDMockito.given;
@@ -35,10 +36,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ServicesSignedStateListenerTest {
     private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
     private final NodeId selfId = new NodeId(false, 123L);
-    @Mock private NewSignedStateNotification notice;
-    @Mock private CurrentPlatformStatus currentPlatformStatus;
-    @Mock private ServicesState signedState;
-    @Mock private BalancesExporter balancesExporter;
+
+    @Mock
+    private NewSignedStateNotification notice;
+
+    @Mock
+    private CurrentPlatformStatus currentPlatformStatus;
+
+    @Mock
+    private ServicesState signedState;
+
+    @Mock
+    private BalancesExporter balancesExporter;
 
     private ServicesSignedStateListener subject;
 

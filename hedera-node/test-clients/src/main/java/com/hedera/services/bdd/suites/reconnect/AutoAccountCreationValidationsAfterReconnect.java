@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.reconnect;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -28,8 +29,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class AutoAccountCreationValidationsAfterReconnect extends HapiSuite {
-    private static final Logger log =
-            LogManager.getLogger(AutoAccountCreationValidationsAfterReconnect.class);
+    private static final Logger log = LogManager.getLogger(AutoAccountCreationValidationsAfterReconnect.class);
 
     @Override
     protected Logger getResultsLogger() {
@@ -50,16 +50,9 @@ public class AutoAccountCreationValidationsAfterReconnect extends HapiSuite {
         return defaultHapiSpec("GetAccountInfoOfAutomaticallyCreatedAccounts")
                 .given()
                 .when()
-                .then(
-                        inParallel(
-                                asOpArray(
-                                        TOTAL_ACCOUNTS,
-                                        i ->
-                                                getAccountInfo("0.0." + (i + 1004))
-                                                        .has(
-                                                                AccountInfoAsserts.accountWith()
-                                                                        .hasAlias())
-                                                        .setNode("0.0.8")
-                                                        .logged())));
+                .then(inParallel(asOpArray(TOTAL_ACCOUNTS, i -> getAccountInfo("0.0." + (i + 1004))
+                        .has(AccountInfoAsserts.accountWith().hasAlias())
+                        .setNode("0.0.8")
+                        .logged())));
     }
 }

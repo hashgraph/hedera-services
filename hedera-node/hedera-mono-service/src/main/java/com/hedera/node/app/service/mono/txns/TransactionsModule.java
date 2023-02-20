@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
@@ -75,8 +76,7 @@ public interface TransactionsModule {
 
     @Provides
     @Singleton
-    static ExpandHandleSpan provideExpandHandleSpan(
-            SpanMapManager spanMapManager, AccessorFactory factory) {
+    static ExpandHandleSpan provideExpandHandleSpan(SpanMapManager spanMapManager, AccessorFactory factory) {
         return new ExpandHandleSpan(spanMapManager, factory);
     }
 

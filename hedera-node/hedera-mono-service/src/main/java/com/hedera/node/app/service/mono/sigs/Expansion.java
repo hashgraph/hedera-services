@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs;
 
 import static com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
@@ -85,20 +86,17 @@ class Expansion {
 
         if (pkToSigFn.hasAtLeastOneUnusedSigWithFullPrefix()) {
             pkToSigFn.forEachUnusedSigWithFullPrefix(
-                    (type, pubKey, sig) ->
-                            expandedSigs.add(sigFactory.signAppropriately(type, pubKey, sig)));
+                    (type, pubKey, sig) -> expandedSigs.add(sigFactory.signAppropriately(type, pubKey, sig)));
         }
         finalizeForExpansionUpTo(Role.OTHER_PARTIES, OK);
     }
 
-    private void finalizeForExpansionUpTo(
-            final Role lastExpandSuccess, final ResponseCodeEnum finalStatus) {
+    private void finalizeForExpansionUpTo(final Role lastExpandSuccess, final ResponseCodeEnum finalStatus) {
         txnAccessor.addAllCryptoSigs(expandedSigs);
         if (lastExpandSuccess == Role.PAYER) {
             txnAccessor.setSigMeta(forPayerOnly(payerKey, expandedSigs, txnAccessor));
         } else {
-            txnAccessor.setSigMeta(
-                    forPayerAndOthers(payerKey, otherPartyKeys, expandedSigs, txnAccessor));
+            txnAccessor.setSigMeta(forPayerAndOthers(payerKey, otherPartyKeys, expandedSigs, txnAccessor));
         }
         txnAccessor.setExpandedSigStatus(finalStatus);
         txnAccessor.setLinkedRefs(linkedRefs);
@@ -107,11 +105,7 @@ class Expansion {
     private ResponseCodeEnum expand(
             final Role role, final PubKeyToSigBytes pkToSigFn, final SigReqsFunction sigReqsFn) {
         final var orderResult =
-                sigReqsFn.apply(
-                        txnAccessor.getTxn(),
-                        CODE_ORDER_RESULT_FACTORY,
-                        linkedRefs,
-                        txnAccessor.getPayer());
+                sigReqsFn.apply(txnAccessor.getTxn(), CODE_ORDER_RESULT_FACTORY, linkedRefs, txnAccessor.getPayer());
         if (orderResult.hasErrorReport()) {
             return orderResult.getErrorReport();
         }
@@ -121,8 +115,7 @@ class Expansion {
             otherPartyKeys = orderResult.getOrderedKeys();
         }
 
-        final var creationResult =
-                cryptoSigsCreation.createFrom(orderResult.getOrderedKeys(), pkToSigFn, sigFactory);
+        final var creationResult = cryptoSigsCreation.createFrom(orderResult.getOrderedKeys(), pkToSigFn, sigFactory);
         if (!creationResult.hasFailed()) {
             expandedSigs.addAll(creationResult.getPlatformSigs());
         }
@@ -141,8 +134,6 @@ class Expansion {
     @FunctionalInterface
     interface CryptoSigsCreation {
         PlatformSigsCreationResult createFrom(
-                List<JKey> hederaKeys,
-                PubKeyToSigBytes sigBytesFn,
-                TxnScopedPlatformSigFactory factory);
+                List<JKey> hederaKeys, PubKeyToSigBytes sigBytesFn, TxnScopedPlatformSigFactory factory);
     }
 }

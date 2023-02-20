@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile;
 
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isTokenProxyRedirect;
@@ -44,13 +45,11 @@ public class EvmHTSPrecompiledContract implements PrecompiledContract {
         if (frame.isStatic()) {
             if (isTokenProxyRedirect(input)) {
                 final var executor =
-                        infrastructureFactory.newRedirectExecutor(
-                                input, frame, viewGasCalculator, tokenAccessor);
+                        infrastructureFactory.newRedirectExecutor(input, frame, viewGasCalculator, tokenAccessor);
                 return executor.computeCosted();
             } else if (isViewFunction(input)) {
                 final var executor =
-                        infrastructureFactory.newViewExecutor(
-                                input, frame, viewGasCalculator, tokenAccessor);
+                        infrastructureFactory.newViewExecutor(input, frame, viewGasCalculator, tokenAccessor);
                 return executor.computeCosted();
             }
         }

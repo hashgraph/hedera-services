@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.meta.queries;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -37,8 +38,7 @@ public final class GetVersionInfoResourceUsage implements QueryResourceUsageEsti
     }
 
     @Override
-    public FeeData usageGiven(
-            final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
+    public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
         return FixedUsageEstimates.getVersionInfoUsage();
     }
 }

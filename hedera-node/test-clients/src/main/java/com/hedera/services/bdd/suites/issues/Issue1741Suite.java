@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.issues;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -40,15 +41,13 @@ public class Issue1741Suite extends HapiSuite {
     public static HapiSpec queryPaymentTxnMustHavePayerBalanceForBothTransferFeeAndNodePayment() {
         final long BALANCE = 1_000_000L;
 
-        return HapiSpec.defaultHapiSpec(
-                        "QueryPaymentTxnMustHavePayerBalanceForBothTransferFeeAndNodePayment")
+        return HapiSpec.defaultHapiSpec("QueryPaymentTxnMustHavePayerBalanceForBothTransferFeeAndNodePayment")
                 .given(cryptoCreate("payer").balance(BALANCE))
                 .when()
-                .then(
-                        getAccountInfo("payer")
-                                .nodePayment(BALANCE)
-                                .payingWith("payer")
-                                .hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE));
+                .then(getAccountInfo("payer")
+                        .nodePayment(BALANCE)
+                        .payingWith("payer")
+                        .hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE));
     }
 
     @Override

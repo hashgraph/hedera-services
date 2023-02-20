@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry.removal;
 
 import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
@@ -56,9 +57,7 @@ public record CryptoGcOutcome(
         boolean finished) {
 
     public boolean needsExternalizing() {
-        return finished
-                || fungibleTreasuryReturns().numReturns() != 0
-                || nonFungibleTreasuryReturns.numReturns() != 0;
+        return finished || fungibleTreasuryReturns().numReturns() != 0 || nonFungibleTreasuryReturns.numReturns() != 0;
     }
 
     public List<EntityId> allReturnedTokens() {
@@ -77,8 +76,7 @@ public record CryptoGcOutcome(
         if (nonFungibleTreasuryReturns.numReturns() == 0) {
             return fungibleTreasuryReturns.transfers();
         } else {
-            final List<CurrencyAdjustments> ans =
-                    new ArrayList<>(fungibleTreasuryReturns.transfers());
+            final List<CurrencyAdjustments> ans = new ArrayList<>(fungibleTreasuryReturns.transfers());
             for (int i = 0, n = nonFungibleTreasuryReturns.numReturns(); i < n; i++) {
                 ans.add(null);
             }
@@ -90,8 +88,7 @@ public record CryptoGcOutcome(
         if (fungibleTreasuryReturns.numReturns() == 0) {
             return nonFungibleTreasuryReturns.exchanges();
         } else {
-            final List<NftAdjustments> ans =
-                    new ArrayList<>(nonFungibleTreasuryReturns.exchanges());
+            final List<NftAdjustments> ans = new ArrayList<>(nonFungibleTreasuryReturns.exchanges());
             for (int i = 0, n = fungibleTreasuryReturns.numReturns(); i < n; i++) {
                 ans.add(0, null);
             }

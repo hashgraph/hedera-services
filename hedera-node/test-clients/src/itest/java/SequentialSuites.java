@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite;
 import com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite;
@@ -27,16 +28,15 @@ import java.util.function.Supplier;
 public class SequentialSuites {
     @SuppressWarnings("unchecked")
     static Supplier<HapiSuite>[] all() {
-        return (Supplier<HapiSuite>[])
-                new Supplier[] {
-                    TargetNetworkPrep::new,
-                    FeatureFlagSuite::new,
-                    SpecialAccountsAreExempted::new,
-                    PrivilegedOpsSuite::new,
-                    TraceabilitySuite::new,
-                    LeakyContractTestsSuite::new,
-                    LeakyCryptoTestsSuite::new,
-                    Create2OperationSuite::new,
-                };
+        return (Supplier<HapiSuite>[]) new Supplier[] {
+            TargetNetworkPrep::new,
+            FeatureFlagSuite::new,
+            SpecialAccountsAreExempted::new,
+            PrivilegedOpsSuite::new,
+            TraceabilitySuite::new,
+            LeakyContractTestsSuite::new,
+            LeakyCryptoTestsSuite::new,
+            Create2OperationSuite::new,
+        };
     }
 }

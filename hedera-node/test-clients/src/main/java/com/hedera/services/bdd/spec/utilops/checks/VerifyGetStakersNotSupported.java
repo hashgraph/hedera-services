@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops.checks;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
@@ -28,16 +29,12 @@ import org.junit.jupiter.api.Assertions;
 public class VerifyGetStakersNotSupported extends UtilOp {
     @Override
     protected boolean submitOp(HapiSpec spec) throws Throwable {
-        CryptoGetStakersQuery.Builder op =
-                CryptoGetStakersQuery.newBuilder().setAccountID(asAccount("0.0.2"));
+        CryptoGetStakersQuery.Builder op = CryptoGetStakersQuery.newBuilder().setAccountID(asAccount("0.0.2"));
         Query query = Query.newBuilder().setCryptoGetProxyStakers(op).build();
         Response response =
-                spec.clients()
-                        .getCryptoSvcStub(targetNodeFor(spec), useTls)
-                        .getStakersByAccountID(query);
+                spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getStakersByAccountID(query);
         Assertions.assertEquals(
-                NOT_SUPPORTED,
-                response.getCryptoGetProxyStakers().getHeader().getNodeTransactionPrecheckCode());
+                NOT_SUPPORTED, response.getCryptoGetProxyStakers().getHeader().getNodeTransactionPrecheckCode());
         return false;
     }
 }

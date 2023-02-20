@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hedera.node.app.service.mono.utils.Units.MIN_TRANS_TIMESTAMP_INCR_NANOS;
@@ -94,8 +95,7 @@ public class StandardProcessLogic implements ProcessLogic {
         }
     }
 
-    void incorporate(
-            final SwirldsTxnAccessor accessor, Instant consensusTime, final long submittingMember) {
+    void incorporate(final SwirldsTxnAccessor accessor, Instant consensusTime, final long submittingMember) {
         // Deduct 1000 nanos from the consensusTime allotted by platform, to accommodate the
         // preceding,
         // following child records and any long term scheduled transactions triggered by the
@@ -137,15 +137,11 @@ public class StandardProcessLogic implements ProcessLogic {
 
             boolean hasMore = consensusTimeTracker.hasMoreTransactionTime(false);
 
-            triggeredAccessor =
-                    scheduleProcessing.triggerNextTransactionExpiringAsNeeded(
-                            consensusTime, triggeredAccessor, !hasMore);
+            triggeredAccessor = scheduleProcessing.triggerNextTransactionExpiringAsNeeded(
+                    consensusTime, triggeredAccessor, !hasMore);
 
             if (triggeredAccessor != null) {
-                doProcess(
-                        submittingMember,
-                        consensusTimeTracker.nextTransactionTime(false),
-                        triggeredAccessor);
+                doProcess(submittingMember, consensusTimeTracker.nextTransactionTime(false), triggeredAccessor);
             } else {
                 hasMore = false;
             }
@@ -155,21 +151,16 @@ public class StandardProcessLogic implements ProcessLogic {
             }
         }
 
-        log.warn(
-                "maxProcessingLoopIterations reached in processScheduledTransactions. Waiting for"
-                    + " next call to continue. Scheduled Transaction expiration may be delayed.");
+        log.warn("maxProcessingLoopIterations reached in processScheduledTransactions. Waiting for"
+                + " next call to continue. Scheduled Transaction expiration may be delayed.");
     }
 
-    private void doProcess(
-            final long submittingMember, final Instant consensusTime, final TxnAccessor accessor) {
+    private void doProcess(final long submittingMember, final Instant consensusTime, final TxnAccessor accessor) {
         executionTimeTracker.start();
         txnManager.process(accessor, consensusTime, submittingMember);
         final var triggeredAccessor = txnCtx.triggeredTxn();
         if (triggeredAccessor != null) {
-            txnManager.process(
-                    triggeredAccessor,
-                    consensusTimeTracker.nextTransactionTime(false),
-                    submittingMember);
+            txnManager.process(triggeredAccessor, consensusTimeTracker.nextTransactionTime(false), submittingMember);
         }
         executionTimeTracker.stop();
     }

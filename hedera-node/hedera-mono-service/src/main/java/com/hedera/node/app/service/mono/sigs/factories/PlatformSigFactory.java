@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.factories;
 
 import static java.util.stream.Collectors.joining;
@@ -41,8 +42,7 @@ public final class PlatformSigFactory {
      * @param data bytes of the data claimed to have been signed.
      * @return the platform signature representing the collective input parameters.
      */
-    public static TransactionSignature ed25519Sig(
-            final byte[] pk, final byte[] sig, final byte[] data) {
+    public static TransactionSignature ed25519Sig(final byte[] pk, final byte[] sig, final byte[] data) {
         return sig(pk, sig, data, SignatureType.ED25519);
     }
 
@@ -55,8 +55,7 @@ public final class PlatformSigFactory {
      * @param data bytes of the data claimed to have been signed.
      * @return the platform signature representing the collective input parameters.
      */
-    public static TransactionSignature ecdsaSecp256k1Sig(
-            final byte[] pk, final byte[] sig, final byte[] data) {
+    public static TransactionSignature ecdsaSecp256k1Sig(final byte[] pk, final byte[] sig, final byte[] data) {
         return sig(pk, sig, data, SignatureType.ECDSA_SECP256K1);
     }
 
@@ -65,12 +64,10 @@ public final class PlatformSigFactory {
         final var contents = new byte[sig.length + data.length];
         System.arraycopy(sig, 0, contents, 0, sig.length);
         System.arraycopy(data, 0, contents, sig.length, data.length);
-        return new TransactionSignature(
-                contents, 0, sig.length, pk, 0, pk.length, sig.length, data.length, type);
+        return new TransactionSignature(contents, 0, sig.length, pk, 0, pk.length, sig.length, data.length, type);
     }
 
-    public static boolean varyingMaterialEquals(
-            final TransactionSignature a, final TransactionSignature b) {
+    public static boolean varyingMaterialEquals(final TransactionSignature a, final TransactionSignature b) {
         if (!Arrays.equals(a.getExpandedPublicKeyDirect(), b.getExpandedPublicKeyDirect())) {
             return false;
         }
@@ -79,12 +76,7 @@ public final class PlatformSigFactory {
         final var bOffset = b.getSignatureOffset();
         final var bLen = b.getSignatureLength();
         return Arrays.equals(
-                a.getContentsDirect(),
-                aOffset,
-                aOffset + aLen,
-                b.getContentsDirect(),
-                bOffset,
-                bOffset + bLen);
+                a.getContentsDirect(), aOffset, aOffset + aLen, b.getContentsDirect(), bOffset, bOffset + bLen);
     }
 
     public static boolean allVaryingMaterialEquals(
@@ -104,18 +96,14 @@ public final class PlatformSigFactory {
 
     public static String pkSigRepr(final List<TransactionSignature> sigs) {
         return sigs.stream()
-                .map(
-                        sig ->
-                                String.format(
-                                        "(PK = %s | SIG = %s | %s)",
-                                        CommonUtils.hex(sig.getExpandedPublicKeyDirect()),
-                                        CommonUtils.hex(
-                                                Arrays.copyOfRange(
-                                                        sig.getContentsDirect(),
-                                                        sig.getSignatureOffset(),
-                                                        sig.getSignatureOffset()
-                                                                + sig.getSignatureLength())),
-                                        sig.getSignatureStatus()))
+                .map(sig -> String.format(
+                        "(PK = %s | SIG = %s | %s)",
+                        CommonUtils.hex(sig.getExpandedPublicKeyDirect()),
+                        CommonUtils.hex(Arrays.copyOfRange(
+                                sig.getContentsDirect(),
+                                sig.getSignatureOffset(),
+                                sig.getSignatureOffset() + sig.getSignatureLength())),
+                        sig.getSignatureStatus()))
                 .collect(joining(", "));
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.tokens;
 
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -110,8 +111,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
     private final GlobalDynamicProperties properties;
     private final SideEffectsTracker sideEffectsTracker;
     private final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
-    private final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-            tokenRelsLedger;
+    private final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRelsLedger;
     private final BackingStore<TokenID, MerkleToken> backingTokens;
 
     TokenID pendingId = NO_PENDING_ID;
@@ -124,8 +124,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
             final OptionValidator validator,
             final SideEffectsTracker sideEffectsTracker,
             final GlobalDynamicProperties properties,
-            final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-                    tokenRelsLedger,
+            final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRelsLedger,
             final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger,
             final BackingStore<TokenID, MerkleToken> backingTokens) {
         super(ids);
@@ -166,57 +165,46 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
     @Override
     public ResponseCodeEnum autoAssociate(AccountID aId, TokenID tId) {
-        return fullySanityChecked(
-                aId,
-                tId,
-                (accountId, tokenId) -> {
-                    if (tokenRelsLedger.contains(Pair.of(aId, tId))) {
-                        return TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
-                    }
-                    if (!usageLimits.areCreatableTokenRels(1)) {
-                        return MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
-                    }
-                    var numAssociations = (int) accountsLedger.get(aId, NUM_ASSOCIATIONS);
+        return fullySanityChecked(aId, tId, (accountId, tokenId) -> {
+            if (tokenRelsLedger.contains(Pair.of(aId, tId))) {
+                return TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+            }
+            if (!usageLimits.areCreatableTokenRels(1)) {
+                return MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+            }
+            var numAssociations = (int) accountsLedger.get(aId, NUM_ASSOCIATIONS);
 
-                    if (properties.areTokenAssociationsLimited()
-                            && numAssociations == properties.maxTokensPerAccount()) {
-                        return TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
-                    }
+            if (properties.areTokenAssociationsLimited() && numAssociations == properties.maxTokensPerAccount()) {
+                return TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+            }
 
-                    var validity = OK;
-                    var maxAutomaticAssociations =
-                            (int) accountsLedger.get(aId, MAX_AUTOMATIC_ASSOCIATIONS);
-                    var alreadyUsedAutomaticAssociations =
-                            (int) accountsLedger.get(aId, USED_AUTOMATIC_ASSOCIATIONS);
+            var validity = OK;
+            var maxAutomaticAssociations = (int) accountsLedger.get(aId, MAX_AUTOMATIC_ASSOCIATIONS);
+            var alreadyUsedAutomaticAssociations = (int) accountsLedger.get(aId, USED_AUTOMATIC_ASSOCIATIONS);
 
-                    if (alreadyUsedAutomaticAssociations >= maxAutomaticAssociations) {
-                        validity = NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
-                    }
+            if (alreadyUsedAutomaticAssociations >= maxAutomaticAssociations) {
+                validity = NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
+            }
 
-                    if (validity == OK) {
-                        final var relationship = asTokenRel(aId, tId);
+            if (validity == OK) {
+                final var relationship = asTokenRel(aId, tId);
 
-                        tokenRelsLedger.create(relationship);
-                        final var token = get(tId);
-                        tokenRelsLedger.set(
-                                relationship,
-                                TokenRelProperty.IS_FROZEN,
-                                token.hasFreezeKey() && token.accountsAreFrozenByDefault());
-                        tokenRelsLedger.set(
-                                relationship, TokenRelProperty.IS_KYC_GRANTED, !token.hasKycKey());
-                        tokenRelsLedger.set(
-                                relationship, TokenRelProperty.IS_AUTOMATIC_ASSOCIATION, true);
+                tokenRelsLedger.create(relationship);
+                final var token = get(tId);
+                tokenRelsLedger.set(
+                        relationship,
+                        TokenRelProperty.IS_FROZEN,
+                        token.hasFreezeKey() && token.accountsAreFrozenByDefault());
+                tokenRelsLedger.set(relationship, TokenRelProperty.IS_KYC_GRANTED, !token.hasKycKey());
+                tokenRelsLedger.set(relationship, TokenRelProperty.IS_AUTOMATIC_ASSOCIATION, true);
 
-                        accountsLedger.set(
-                                aId,
-                                USED_AUTOMATIC_ASSOCIATIONS,
-                                alreadyUsedAutomaticAssociations + 1);
+                accountsLedger.set(aId, USED_AUTOMATIC_ASSOCIATIONS, alreadyUsedAutomaticAssociations + 1);
 
-                        numAssociations++;
-                        accountsLedger.set(aId, NUM_ASSOCIATIONS, numAssociations);
-                    }
-                    return validity;
-                });
+                numAssociations++;
+                accountsLedger.set(aId, NUM_ASSOCIATIONS, numAssociations);
+            }
+            return validity;
+        });
     }
 
     @Override
@@ -269,77 +257,53 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
         return setIsFrozen(aId, tId, true);
     }
 
-    private ResponseCodeEnum setHasKyc(
-            final AccountID aId, final TokenID tId, final boolean value) {
-        return manageFlag(
-                aId,
-                tId,
-                value,
-                TOKEN_HAS_NO_KYC_KEY,
-                TokenRelProperty.IS_KYC_GRANTED,
-                MerkleToken::kycKey);
+    private ResponseCodeEnum setHasKyc(final AccountID aId, final TokenID tId, final boolean value) {
+        return manageFlag(aId, tId, value, TOKEN_HAS_NO_KYC_KEY, TokenRelProperty.IS_KYC_GRANTED, MerkleToken::kycKey);
     }
 
-    private ResponseCodeEnum setIsFrozen(
-            final AccountID aId, final TokenID tId, final boolean value) {
-        return manageFlag(
-                aId,
-                tId,
-                value,
-                TOKEN_HAS_NO_FREEZE_KEY,
-                TokenRelProperty.IS_FROZEN,
-                MerkleToken::freezeKey);
+    private ResponseCodeEnum setIsFrozen(final AccountID aId, final TokenID tId, final boolean value) {
+        return manageFlag(aId, tId, value, TOKEN_HAS_NO_FREEZE_KEY, TokenRelProperty.IS_FROZEN, MerkleToken::freezeKey);
     }
 
     @Override
-    public ResponseCodeEnum adjustBalance(
-            final AccountID aId, final TokenID tId, final long adjustment) {
+    public ResponseCodeEnum adjustBalance(final AccountID aId, final TokenID tId, final long adjustment) {
         return sanityCheckedFungibleCommon(aId, tId, token -> tryAdjustment(aId, tId, adjustment));
     }
 
     @Override
-    public ResponseCodeEnum changeOwner(
-            final NftId nftId, final AccountID from, final AccountID to) {
+    public ResponseCodeEnum changeOwner(final NftId nftId, final AccountID from, final AccountID to) {
         final var tId = nftId.tokenId();
-        return sanityChecked(
-                false,
-                from,
-                to,
-                tId,
-                token -> {
-                    if (!nftsLedger.exists(nftId)) {
-                        return INVALID_NFT_ID;
-                    }
+        return sanityChecked(false, from, to, tId, token -> {
+            if (!nftsLedger.exists(nftId)) {
+                return INVALID_NFT_ID;
+            }
 
-                    final var fromFreezeAndKycValidity = checkRelFrozenAndKycProps(from, tId);
-                    if (fromFreezeAndKycValidity != OK) {
-                        return fromFreezeAndKycValidity;
-                    }
-                    final var toFreezeAndKycValidity = checkRelFrozenAndKycProps(to, tId);
-                    if (toFreezeAndKycValidity != OK) {
-                        return toFreezeAndKycValidity;
-                    }
+            final var fromFreezeAndKycValidity = checkRelFrozenAndKycProps(from, tId);
+            if (fromFreezeAndKycValidity != OK) {
+                return fromFreezeAndKycValidity;
+            }
+            final var toFreezeAndKycValidity = checkRelFrozenAndKycProps(to, tId);
+            if (toFreezeAndKycValidity != OK) {
+                return toFreezeAndKycValidity;
+            }
 
-                    final var tid = nftId.tokenId();
-                    final var tokenTreasury = backingTokens.getImmutableRef(tid).treasury();
-                    var owner = (EntityId) nftsLedger.get(nftId, OWNER);
-                    if (owner.equals(EntityId.MISSING_ENTITY_ID)) {
-                        owner = tokenTreasury;
-                    }
-                    if (!owner.matches(from)) {
-                        return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
-                    }
+            final var tid = nftId.tokenId();
+            final var tokenTreasury = backingTokens.getImmutableRef(tid).treasury();
+            var owner = (EntityId) nftsLedger.get(nftId, OWNER);
+            if (owner.equals(EntityId.MISSING_ENTITY_ID)) {
+                owner = tokenTreasury;
+            }
+            if (!owner.matches(from)) {
+                return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+            }
 
-                    updateLedgers(nftId, from, to, tokenTreasury.toGrpcAccountId());
-                    return OK;
-                });
+            updateLedgers(nftId, from, to, tokenTreasury.toGrpcAccountId());
+            return OK;
+        });
     }
 
     private void updateLedgers(
-            final NftId nftId,
-            final AccountID from,
-            final AccountID to,
-            final AccountID tokenTreasury) {
+            final NftId nftId, final AccountID from, final AccountID to, final AccountID tokenTreasury) {
         final var nftType = nftId.tokenId();
         final var fromRel = asTokenRel(from, nftType);
         final var toRel = asTokenRel(to, nftType);
@@ -374,42 +338,35 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
     }
 
     @Override
-    public ResponseCodeEnum changeOwnerWildCard(
-            final NftId nftId, final AccountID from, final AccountID to) {
+    public ResponseCodeEnum changeOwnerWildCard(final NftId nftId, final AccountID from, final AccountID to) {
         final var tId = nftId.tokenId();
-        return sanityChecked(
-                false,
-                from,
-                to,
-                tId,
-                token -> {
-                    final var fromFreezeAndKycValidity = checkRelFrozenAndKycProps(from, tId);
-                    if (fromFreezeAndKycValidity != OK) {
-                        return fromFreezeAndKycValidity;
-                    }
-                    final var toFreezeAndKycValidity = checkRelFrozenAndKycProps(to, tId);
-                    if (toFreezeAndKycValidity != OK) {
-                        return toFreezeAndKycValidity;
-                    }
+        return sanityChecked(false, from, to, tId, token -> {
+            final var fromFreezeAndKycValidity = checkRelFrozenAndKycProps(from, tId);
+            if (fromFreezeAndKycValidity != OK) {
+                return fromFreezeAndKycValidity;
+            }
+            final var toFreezeAndKycValidity = checkRelFrozenAndKycProps(to, tId);
+            if (toFreezeAndKycValidity != OK) {
+                return toFreezeAndKycValidity;
+            }
 
-                    final var nftType = nftId.tokenId();
-                    final var fromRel = asTokenRel(from, nftType);
-                    final var toRel = asTokenRel(to, nftType);
-                    final var fromNftsOwned = (long) accountsLedger.get(from, NUM_NFTS_OWNED);
-                    final var fromThisNftsOwned =
-                            (long) tokenRelsLedger.get(fromRel, TOKEN_BALANCE);
-                    final var toNftsOwned = (long) accountsLedger.get(to, NUM_NFTS_OWNED);
-                    final var toThisNftsOwned = (long) tokenRelsLedger.get(toRel, TOKEN_BALANCE);
+            final var nftType = nftId.tokenId();
+            final var fromRel = asTokenRel(from, nftType);
+            final var toRel = asTokenRel(to, nftType);
+            final var fromNftsOwned = (long) accountsLedger.get(from, NUM_NFTS_OWNED);
+            final var fromThisNftsOwned = (long) tokenRelsLedger.get(fromRel, TOKEN_BALANCE);
+            final var toNftsOwned = (long) accountsLedger.get(to, NUM_NFTS_OWNED);
+            final var toThisNftsOwned = (long) tokenRelsLedger.get(toRel, TOKEN_BALANCE);
 
-                    accountsLedger.set(from, NUM_NFTS_OWNED, fromNftsOwned - fromThisNftsOwned);
-                    accountsLedger.set(to, NUM_NFTS_OWNED, toNftsOwned + fromThisNftsOwned);
-                    tokenRelsLedger.set(fromRel, TOKEN_BALANCE, 0L);
-                    tokenRelsLedger.set(toRel, TOKEN_BALANCE, toThisNftsOwned + fromThisNftsOwned);
+            accountsLedger.set(from, NUM_NFTS_OWNED, fromNftsOwned - fromThisNftsOwned);
+            accountsLedger.set(to, NUM_NFTS_OWNED, toNftsOwned + fromThisNftsOwned);
+            tokenRelsLedger.set(fromRel, TOKEN_BALANCE, 0L);
+            tokenRelsLedger.set(toRel, TOKEN_BALANCE, toThisNftsOwned + fromThisNftsOwned);
 
-                    sideEffectsTracker.trackNftOwnerChange(nftId, from, to);
+            sideEffectsTracker.trackNftOwnerChange(nftId, from, to);
 
-                    return OK;
-                });
+            return OK;
+        });
     }
 
     @Override
@@ -417,8 +374,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
         return get(tId).decimals() == expectedDecimals;
     }
 
-    private ResponseCodeEnum tryAdjustment(
-            final AccountID aId, final TokenID tId, final long adjustment) {
+    private ResponseCodeEnum tryAdjustment(final AccountID aId, final TokenID tId, final long adjustment) {
         final var freezeAndKycValidity = checkRelFrozenAndKycProps(aId, tId);
         if (!freezeAndKycValidity.equals(OK)) {
             return freezeAndKycValidity;
@@ -460,7 +416,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
     }
 
     private boolean isValidAutoRenewPeriod(final long secs) {
-        return validator.isValidAutoRenewPeriod(Duration.newBuilder().setSeconds(secs).build());
+        return validator.isValidAutoRenewPeriod(
+                Duration.newBuilder().setSeconds(secs).build());
     }
 
     @Override
@@ -492,98 +449,58 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
             return validity;
         }
 
-        final var newKycKey =
-                changes.hasKycKey() ? asUsableFcKey(changes.getKycKey()) : Optional.empty();
-        final var newWipeKey =
-                changes.hasWipeKey() ? asUsableFcKey(changes.getWipeKey()) : Optional.empty();
-        final var newSupplyKey =
-                changes.hasSupplyKey() ? asUsableFcKey(changes.getSupplyKey()) : Optional.empty();
-        final var newFreezeKey =
-                changes.hasFreezeKey() ? asUsableFcKey(changes.getFreezeKey()) : Optional.empty();
+        final var newKycKey = changes.hasKycKey() ? asUsableFcKey(changes.getKycKey()) : Optional.empty();
+        final var newWipeKey = changes.hasWipeKey() ? asUsableFcKey(changes.getWipeKey()) : Optional.empty();
+        final var newSupplyKey = changes.hasSupplyKey() ? asUsableFcKey(changes.getSupplyKey()) : Optional.empty();
+        final var newFreezeKey = changes.hasFreezeKey() ? asUsableFcKey(changes.getFreezeKey()) : Optional.empty();
         final var newFeeScheduleKey =
-                changes.hasFeeScheduleKey()
-                        ? asUsableFcKey(changes.getFeeScheduleKey())
-                        : Optional.empty();
-        final var newPauseKey =
-                changes.hasPauseKey() ? asUsableFcKey(changes.getPauseKey()) : Optional.empty();
+                changes.hasFeeScheduleKey() ? asUsableFcKey(changes.getFeeScheduleKey()) : Optional.empty();
+        final var newPauseKey = changes.hasPauseKey() ? asUsableFcKey(changes.getPauseKey()) : Optional.empty();
 
         var appliedValidity = new AtomicReference<>(OK);
-        apply(
-                tId,
-                token -> {
-                    processExpiry(appliedValidity, changes, token);
-                    processAutoRenewAccount(appliedValidity, changes, token);
+        apply(tId, token -> {
+            processExpiry(appliedValidity, changes, token);
+            processAutoRenewAccount(appliedValidity, changes, token);
 
-                    checkKeyOfType(
-                            appliedValidity,
-                            token.hasKycKey(),
-                            newKycKey.isPresent(),
-                            TOKEN_HAS_NO_KYC_KEY);
-                    checkKeyOfType(
-                            appliedValidity,
-                            token.hasFreezeKey(),
-                            newFreezeKey.isPresent(),
-                            TOKEN_HAS_NO_FREEZE_KEY);
-                    checkKeyOfType(
-                            appliedValidity,
-                            token.hasPauseKey(),
-                            newPauseKey.isPresent(),
-                            TOKEN_HAS_NO_PAUSE_KEY);
-                    checkKeyOfType(
-                            appliedValidity,
-                            token.hasWipeKey(),
-                            newWipeKey.isPresent(),
-                            TOKEN_HAS_NO_WIPE_KEY);
-                    checkKeyOfType(
-                            appliedValidity,
-                            token.hasSupplyKey(),
-                            newSupplyKey.isPresent(),
-                            TOKEN_HAS_NO_SUPPLY_KEY);
-                    checkKeyOfType(
-                            appliedValidity,
-                            token.hasAdminKey(),
-                            !isExpiryOnly,
-                            TOKEN_IS_IMMUTABLE);
-                    checkKeyOfType(
-                            appliedValidity,
-                            token.hasFeeScheduleKey(),
-                            newFeeScheduleKey.isPresent(),
-                            TOKEN_HAS_NO_FEE_SCHEDULE_KEY);
-                    if (OK != appliedValidity.get()) {
-                        return;
-                    }
+            checkKeyOfType(appliedValidity, token.hasKycKey(), newKycKey.isPresent(), TOKEN_HAS_NO_KYC_KEY);
+            checkKeyOfType(appliedValidity, token.hasFreezeKey(), newFreezeKey.isPresent(), TOKEN_HAS_NO_FREEZE_KEY);
+            checkKeyOfType(appliedValidity, token.hasPauseKey(), newPauseKey.isPresent(), TOKEN_HAS_NO_PAUSE_KEY);
+            checkKeyOfType(appliedValidity, token.hasWipeKey(), newWipeKey.isPresent(), TOKEN_HAS_NO_WIPE_KEY);
+            checkKeyOfType(appliedValidity, token.hasSupplyKey(), newSupplyKey.isPresent(), TOKEN_HAS_NO_SUPPLY_KEY);
+            checkKeyOfType(appliedValidity, token.hasAdminKey(), !isExpiryOnly, TOKEN_IS_IMMUTABLE);
+            checkKeyOfType(
+                    appliedValidity,
+                    token.hasFeeScheduleKey(),
+                    newFeeScheduleKey.isPresent(),
+                    TOKEN_HAS_NO_FEE_SCHEDULE_KEY);
+            if (OK != appliedValidity.get()) {
+                return;
+            }
 
-                    final var ret = checkNftBalances(token, tId, changes);
-                    if (ret != OK) {
-                        appliedValidity.set(ret);
-                        return;
-                    }
+            final var ret = checkNftBalances(token, tId, changes);
+            if (ret != OK) {
+                appliedValidity.set(ret);
+                return;
+            }
 
-                    updateAdminKeyIfAppropriate(token, changes);
-                    updateAutoRenewAccountIfAppropriate(token, changes);
-                    updateAutoRenewPeriodIfAppropriate(token, changes);
+            updateAdminKeyIfAppropriate(token, changes);
+            updateAutoRenewAccountIfAppropriate(token, changes);
+            updateAutoRenewPeriodIfAppropriate(token, changes);
 
-                    updateKeyOfTypeIfAppropriate(
-                            changes.hasFreezeKey(), token::setFreezeKey, changes::getFreezeKey);
-                    updateKeyOfTypeIfAppropriate(
-                            changes.hasKycKey(), token::setKycKey, changes::getKycKey);
-                    updateKeyOfTypeIfAppropriate(
-                            changes.hasPauseKey(), token::setPauseKey, changes::getPauseKey);
-                    updateKeyOfTypeIfAppropriate(
-                            changes.hasSupplyKey(), token::setSupplyKey, changes::getSupplyKey);
-                    updateKeyOfTypeIfAppropriate(
-                            changes.hasWipeKey(), token::setWipeKey, changes::getWipeKey);
-                    updateKeyOfTypeIfAppropriate(
-                            changes.hasFeeScheduleKey(),
-                            token::setFeeScheduleKey,
-                            changes::getFeeScheduleKey);
+            updateKeyOfTypeIfAppropriate(changes.hasFreezeKey(), token::setFreezeKey, changes::getFreezeKey);
+            updateKeyOfTypeIfAppropriate(changes.hasKycKey(), token::setKycKey, changes::getKycKey);
+            updateKeyOfTypeIfAppropriate(changes.hasPauseKey(), token::setPauseKey, changes::getPauseKey);
+            updateKeyOfTypeIfAppropriate(changes.hasSupplyKey(), token::setSupplyKey, changes::getSupplyKey);
+            updateKeyOfTypeIfAppropriate(changes.hasWipeKey(), token::setWipeKey, changes::getWipeKey);
+            updateKeyOfTypeIfAppropriate(
+                    changes.hasFeeScheduleKey(), token::setFeeScheduleKey, changes::getFeeScheduleKey);
 
-                    updateTokenSymbolIfAppropriate(token, changes);
-                    updateTokenNameIfAppropriate(token, changes);
-                    updateTreasuryIfAppropriate(token, changes);
-                    updateMemoIfAppropriate(token, changes);
-                    updateExpiryIfAppropriate(token, changes);
-                });
+            updateTokenSymbolIfAppropriate(token, changes);
+            updateTokenNameIfAppropriate(token, changes);
+            updateTreasuryIfAppropriate(token, changes);
+            updateMemoIfAppropriate(token, changes);
+            updateExpiryIfAppropriate(token, changes);
+        });
         return appliedValidity.get();
     }
 
@@ -600,20 +517,18 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
         }
 
         var appliedValidity = new AtomicReference<>(OK);
-        apply(
-                tId,
-                token -> {
-                    processExpiry(appliedValidity, changes, token);
-                    processAutoRenewAccount(appliedValidity, changes, token);
+        apply(tId, token -> {
+            processExpiry(appliedValidity, changes, token);
+            processAutoRenewAccount(appliedValidity, changes, token);
 
-                    if (OK != appliedValidity.get()) {
-                        return;
-                    }
+            if (OK != appliedValidity.get()) {
+                return;
+            }
 
-                    updateAutoRenewAccountIfAppropriate(token, changes);
-                    updateAutoRenewPeriodIfAppropriate(token, changes);
-                    updateExpiryIfAppropriate(token, changes);
-                });
+            updateAutoRenewAccountIfAppropriate(token, changes);
+            updateAutoRenewPeriodIfAppropriate(token, changes);
+            updateExpiryIfAppropriate(token, changes);
+        });
         return appliedValidity.get();
     }
 
@@ -674,8 +589,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
         return OK;
     }
 
-    private void updateAdminKeyIfAppropriate(
-            final MerkleToken token, final TokenUpdateTransactionBody changes) {
+    private void updateAdminKeyIfAppropriate(final MerkleToken token, final TokenUpdateTransactionBody changes) {
         if (changes.hasAdminKey()) {
             final var newAdminKey = changes.getAdminKey();
             if (REMOVES_ADMIN_KEY.test(newAdminKey)) {
@@ -693,8 +607,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
         }
     }
 
-    private void updateAutoRenewPeriodIfAppropriate(
-            final MerkleToken token, final TokenUpdateTransactionBody changes) {
+    private void updateAutoRenewPeriodIfAppropriate(final MerkleToken token, final TokenUpdateTransactionBody changes) {
         if (token.hasAutoRenewAccount()) {
             final long changedAutoRenewPeriod = changes.getAutoRenewPeriod().getSeconds();
             if (changedAutoRenewPeriod > 0) {
@@ -703,37 +616,32 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
         }
     }
 
-    private void updateTokenSymbolIfAppropriate(
-            final MerkleToken token, final TokenUpdateTransactionBody changes) {
+    private void updateTokenSymbolIfAppropriate(final MerkleToken token, final TokenUpdateTransactionBody changes) {
         if (changes.getSymbol().length() > 0) {
             token.setSymbol(changes.getSymbol());
         }
     }
 
-    private void updateTokenNameIfAppropriate(
-            final MerkleToken token, final TokenUpdateTransactionBody changes) {
+    private void updateTokenNameIfAppropriate(final MerkleToken token, final TokenUpdateTransactionBody changes) {
         if (changes.getName().length() > 0) {
             token.setName(changes.getName());
         }
     }
 
-    private void updateMemoIfAppropriate(
-            final MerkleToken token, final TokenUpdateTransactionBody changes) {
+    private void updateMemoIfAppropriate(final MerkleToken token, final TokenUpdateTransactionBody changes) {
         if (changes.hasMemo()) {
             token.setMemo(changes.getMemo().getValue());
         }
     }
 
-    private void updateExpiryIfAppropriate(
-            final MerkleToken token, final TokenUpdateTransactionBody changes) {
+    private void updateExpiryIfAppropriate(final MerkleToken token, final TokenUpdateTransactionBody changes) {
         final var expiry = changes.getExpiry().getSeconds();
         if (expiry != 0) {
             token.setExpiry(expiry);
         }
     }
 
-    private void updateTreasuryIfAppropriate(
-            final MerkleToken token, final TokenUpdateTransactionBody changes) {
+    private void updateTreasuryIfAppropriate(final MerkleToken token, final TokenUpdateTransactionBody changes) {
         if (changes.hasTreasury()
                 && !changes.getTreasury().equals(token.treasury().toGrpcAccountId())) {
             final var treasuryId = fromGrpcAccountId(changes.getTreasury());
@@ -764,9 +672,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
     }
 
     private ResponseCodeEnum fullySanityChecked(
-            final AccountID aId,
-            final TokenID tId,
-            final BiFunction<AccountID, TokenID, ResponseCodeEnum> action) {
+            final AccountID aId, final TokenID tId, final BiFunction<AccountID, TokenID, ResponseCodeEnum> action) {
         final var validity = checkAccountUsability(aId);
         if (validity != OK) {
             return validity;
@@ -796,8 +702,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
     private void throwIfMissing(final TokenID id) {
         if (!exists(id)) {
             throw new IllegalArgumentException(
-                    String.format(
-                            "Argument 'id=%s' does not refer to a known token!", readableId(id)));
+                    String.format("Argument 'id=%s' does not refer to a known token!", readableId(id)));
         }
     }
 
@@ -808,25 +713,18 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
             final ResponseCodeEnum keyFailure,
             final TokenRelProperty flagProperty,
             final Function<MerkleToken, Optional<JKey>> controlKeyFn) {
-        return sanityChecked(
-                false,
-                aId,
-                null,
-                tId,
-                token -> {
-                    if (controlKeyFn.apply(token).isEmpty()) {
-                        return keyFailure;
-                    }
-                    final var relationship = asTokenRel(aId, tId);
-                    tokenRelsLedger.set(relationship, flagProperty, value);
-                    return OK;
-                });
+        return sanityChecked(false, aId, null, tId, token -> {
+            if (controlKeyFn.apply(token).isEmpty()) {
+                return keyFailure;
+            }
+            final var relationship = asTokenRel(aId, tId);
+            tokenRelsLedger.set(relationship, flagProperty, value);
+            return OK;
+        });
     }
 
     private ResponseCodeEnum sanityCheckedFungibleCommon(
-            final AccountID aId,
-            final TokenID tId,
-            final Function<MerkleToken, ResponseCodeEnum> action) {
+            final AccountID aId, final TokenID tId, final Function<MerkleToken, ResponseCodeEnum> action) {
         return sanityChecked(true, aId, null, tId, action);
     }
 

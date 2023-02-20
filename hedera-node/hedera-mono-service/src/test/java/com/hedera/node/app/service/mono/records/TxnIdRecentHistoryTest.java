@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.records;
 
 import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
@@ -159,9 +160,7 @@ class TxnIdRecentHistoryTest {
                         .map(ExpirableTxnRecord::getMemo)
                         .collect(toList()));
         assertEquals(
-                List.of(
-                        memoIdentifying(1, 6, INVALID_PAYER_SIGNATURE),
-                        memoIdentifying(2, 7, INVALID_NODE_ACCOUNT)),
+                List.of(memoIdentifying(1, 6, INVALID_PAYER_SIGNATURE), memoIdentifying(2, 7, INVALID_NODE_ACCOUNT)),
                 subject.unclassifiableRecords.stream()
                         .map(ExpirableTxnRecord::getMemo)
                         .collect(toList()));
@@ -266,16 +265,12 @@ class TxnIdRecentHistoryTest {
     }
 
     private static final ExpirableTxnRecord recordOf(
-            final long submittingMember,
-            final long consensusOffsetSecs,
-            final ResponseCodeEnum status) {
-        final var payerRecord =
-                TransactionRecord.newBuilder()
-                        .setConsensusTimestamp(
-                                Timestamp.newBuilder().setSeconds(consensusOffsetSecs))
-                        .setMemo(memoIdentifying(submittingMember, consensusOffsetSecs, status))
-                        .setReceipt(TransactionReceipt.newBuilder().setStatus(status))
-                        .build();
+            final long submittingMember, final long consensusOffsetSecs, final ResponseCodeEnum status) {
+        final var payerRecord = TransactionRecord.newBuilder()
+                .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(consensusOffsetSecs))
+                .setMemo(memoIdentifying(submittingMember, consensusOffsetSecs, status))
+                .setReceipt(TransactionReceipt.newBuilder().setStatus(status))
+                .build();
         final var expirableRecord = fromGprc(payerRecord);
         expirableRecord.setExpiry(expiryAtOffset(consensusOffsetSecs));
         expirableRecord.setSubmittingMember(submittingMember);
@@ -287,10 +282,7 @@ class TxnIdRecentHistoryTest {
     }
 
     private static final String memoIdentifying(
-            final long submittingMember,
-            final long consensusOffsetSecs,
-            final ResponseCodeEnum status) {
-        return String.format(
-                "%d submitted @ %d past -> %s", submittingMember, consensusOffsetSecs, status);
+            final long submittingMember, final long consensusOffsetSecs, final ResponseCodeEnum status) {
+        return String.format("%d submitted @ %d past -> %s", submittingMember, consensusOffsetSecs, status);
     }
 }

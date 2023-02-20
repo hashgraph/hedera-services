@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
@@ -51,12 +52,24 @@ public class CryptoHandlerTestBase {
     protected final HederaKey payerKey = asHederaKey(A_COMPLEX_KEY).get();
     protected final Long payerNum = payer.getAccountNum();
 
-    @Mock protected ReadableKVState<Long, MerkleAccount> aliases;
-    @Mock protected ReadableKVState<Long, MerkleAccount> accounts;
-    @Mock protected MerkleAccount payerAccount;
-    @Mock protected ReadableStates states;
-    @Mock protected CryptoSignatureWaiversImpl waivers;
-    @Mock protected TransactionMetadata metaToHandle;
+    @Mock
+    protected ReadableKVState<Long, MerkleAccount> aliases;
+
+    @Mock
+    protected ReadableKVState<Long, MerkleAccount> accounts;
+
+    @Mock
+    protected MerkleAccount payerAccount;
+
+    @Mock
+    protected ReadableStates states;
+
+    @Mock
+    protected CryptoSignatureWaiversImpl waivers;
+
+    @Mock
+    protected TransactionMetadata metaToHandle;
+
     protected ReadableAccountStore store;
 
     @BeforeEach

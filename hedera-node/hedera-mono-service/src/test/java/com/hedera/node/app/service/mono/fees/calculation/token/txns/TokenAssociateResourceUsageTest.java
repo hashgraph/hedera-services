@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.token.txns;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -80,12 +81,11 @@ class TokenAssociateResourceUsageTest {
         tokenAssociateTxn = mock(TransactionBody.class);
         given(tokenAssociateTxn.hasTokenAssociate()).willReturn(true);
         given(tokenAssociateTxn.getTokenAssociate())
-                .willReturn(
-                        TokenAssociateTransactionBody.newBuilder()
-                                .setAccount(IdUtils.asAccount("1.2.3"))
-                                .addTokens(firstToken)
-                                .addTokens(secondToken)
-                                .build());
+                .willReturn(TokenAssociateTransactionBody.newBuilder()
+                        .setAccount(IdUtils.asAccount("1.2.3"))
+                        .addTokens(firstToken)
+                        .addTokens(secondToken)
+                        .build());
 
         nonTokenAssociateTxn = mock(TransactionBody.class);
         given(nonTokenAssociateTxn.hasTokenAssociate()).willReturn(false);
@@ -124,7 +124,6 @@ class TokenAssociateResourceUsageTest {
     void returnsDefaultIfInfoMissing() throws InvalidTxBodyException {
         given(accounts.get(EntityNum.fromAccountId(target))).willReturn(null);
 
-        assertEquals(
-                FeeData.getDefaultInstance(), subject.usageGiven(tokenAssociateTxn, obj, view));
+        assertEquals(FeeData.getDefaultInstance(), subject.usageGiven(tokenAssociateTxn, obj, view));
     }
 }

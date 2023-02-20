@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.freeze;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -40,8 +41,7 @@ import org.junit.jupiter.api.Assertions;
 public class UpdateServerFiles extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UpdateServerFiles.class);
     private static final String zipFile = "Archive.zip";
-    private static final String DEFAULT_SCRIPT =
-            "src/main/resource/testfiles/updateFeature/updateSettings/exec.sh";
+    private static final String DEFAULT_SCRIPT = "src/main/resource/testfiles/updateFeature/updateSettings/exec.sh";
 
     private static String uploadPath = "updateFiles/";
 
@@ -118,13 +118,12 @@ public class UpdateServerFiles extends HapiSuite {
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(Map.of("maxFileSize", "2048000")),
                         UtilVerbs.updateLargeFile(GENESIS, fileIDString, ByteString.copyFrom(data)))
-                .when(
-                        freezeUpgrade()
-                                .withUpdateFile(fileIDString)
-                                .havingHash(hash)
-                                .payingWith(GENESIS)
-                                .startingIn(60)
-                                .seconds())
+                .when(freezeUpgrade()
+                        .withUpdateFile(fileIDString)
+                        .havingHash(hash)
+                        .payingWith(GENESIS)
+                        .startingIn(60)
+                        .seconds())
                 .then();
     }
 }

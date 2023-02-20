@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.issues;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -36,18 +37,14 @@ public class Issue2143Spec extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    account55ControlCanUpdatePropertiesAndPermissions(),
-                    account57ControlCanUpdatePropertiesAndPermissions(),
-                });
+        return List.of(new HapiSpec[] {
+            account55ControlCanUpdatePropertiesAndPermissions(), account57ControlCanUpdatePropertiesAndPermissions(),
+        });
     }
 
     private HapiSpec account55ControlCanUpdatePropertiesAndPermissions() {
         return defaultHapiSpec("Account55ControlCanUpdatePropertiesAndPermissions")
-                .given(
-                        cryptoTransfer(
-                                tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000L)))
+                .given(cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000L)))
                 .when(
                         fileUpdate(APP_PROPERTIES)
                                 .overridingProps(Map.of("simpletransferTps", "100"))
@@ -66,9 +63,7 @@ public class Issue2143Spec extends HapiSuite {
 
     private HapiSpec account57ControlCanUpdatePropertiesAndPermissions() {
         return defaultHapiSpec("Account57ControlCanUpdatePropertiesAndPermissions")
-                .given(
-                        cryptoTransfer(
-                                tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, 1_000_000_000L)))
+                .given(cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, 1_000_000_000L)))
                 .when(
                         fileUpdate(APP_PROPERTIES)
                                 .overridingProps(Map.of("simpletransferTps", "100"))

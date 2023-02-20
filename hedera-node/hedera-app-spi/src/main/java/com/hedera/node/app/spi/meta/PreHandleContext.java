@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.meta;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
@@ -60,8 +61,7 @@ public class PreHandleContext {
         addToKeysOrFail(lookedUpPayerKey, INVALID_PAYER_ACCOUNT_ID, true);
     }
 
-    public PreHandleContext(
-            @NonNull final AccountKeyLookup keyLookup, @NonNull final TransactionBody txn) {
+    public PreHandleContext(@NonNull final AccountKeyLookup keyLookup, @NonNull final TransactionBody txn) {
         this(keyLookup, txn, txn.getTransactionID().getAccountID());
     }
 

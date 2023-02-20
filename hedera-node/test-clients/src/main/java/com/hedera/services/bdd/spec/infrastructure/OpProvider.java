@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -73,8 +74,7 @@ public interface OpProvider {
     }
 
     default ResponseCodeEnum[] plus(ResponseCodeEnum[] some, ResponseCodeEnum[] more) {
-        return Stream.concat(Stream.of(some), Stream.of(more))
-                .toArray(n -> new ResponseCodeEnum[n]);
+        return Stream.concat(Stream.of(some), Stream.of(more)).toArray(n -> new ResponseCodeEnum[n]);
     }
 
     default String unique(String opName, Class<?> providerType) {

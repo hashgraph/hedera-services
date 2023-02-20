@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.sources;
 
 import static com.hedera.node.app.service.mono.contracts.sources.AddressKeyedMapFactory.LEGACY_BYTECODE_PATH_PATTERN;
@@ -90,21 +91,11 @@ class AddressKeyedMapFactoryTest {
         assertEquals(
                 "/2/s3->SOME, /4/s555555->THE, /2/s7->APRIORI",
                 delegate.entrySet().stream()
-                        .sorted(
-                                Comparator.comparingLong(
-                                        entry ->
-                                                Long.parseLong(
-                                                        entry.getKey()
-                                                                .substring(
-                                                                        entry.getKey().indexOf('s')
-                                                                                + 1,
-                                                                        entry.getKey().indexOf('s')
-                                                                                + 2))))
-                        .map(
-                                entry ->
-                                        String.format(
-                                                "%s->%s",
-                                                entry.getKey(), new String(entry.getValue())))
+                        .sorted(Comparator.comparingLong(entry -> Long.parseLong(entry.getKey()
+                                .substring(
+                                        entry.getKey().indexOf('s') + 1,
+                                        entry.getKey().indexOf('s') + 2))))
+                        .map(entry -> String.format("%s->%s", entry.getKey(), new String(entry.getValue())))
                         .collect(Collectors.joining(", ")));
 
         assertTrue(storageMap.containsKey(address1));
@@ -148,21 +139,11 @@ class AddressKeyedMapFactoryTest {
         assertEquals(
                 "/2/d3->SOME, /4/d555555->THE, /2/d7->APRIORI",
                 delegate.entrySet().stream()
-                        .sorted(
-                                Comparator.comparingLong(
-                                        entry ->
-                                                Long.parseLong(
-                                                        entry.getKey()
-                                                                .substring(
-                                                                        entry.getKey().indexOf('d')
-                                                                                + 1,
-                                                                        entry.getKey().indexOf('d')
-                                                                                + 2))))
-                        .map(
-                                entry ->
-                                        String.format(
-                                                "%s->%s",
-                                                entry.getKey(), new String(entry.getValue())))
+                        .sorted(Comparator.comparingLong(entry -> Long.parseLong(entry.getKey()
+                                .substring(
+                                        entry.getKey().indexOf('d') + 1,
+                                        entry.getKey().indexOf('d') + 2))))
+                        .map(entry -> String.format("%s->%s", entry.getKey(), new String(entry.getValue())))
                         .collect(Collectors.joining(", ")));
 
         assertTrue(storageMap.containsKey(address1));

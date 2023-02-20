@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -77,11 +78,9 @@ public class MiscCryptoSuite extends HapiSuite {
 
         return defaultHapiSpec("sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign")
                 .given(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    spec.registry()
-                                            .saveKey(sysAccount, spec.registry().getKey(GENESIS));
-                                }),
+                        withOpContext((spec, opLog) -> {
+                            spec.registry().saveKey(sysAccount, spec.registry().getKey(GENESIS));
+                        }),
                         newKeyNamed(firstKey).shape(SIMPLE),
                         newKeyNamed(secondKey).shape(SIMPLE))
                 .when(
@@ -113,12 +112,7 @@ public class MiscCryptoSuite extends HapiSuite {
                                 .payingWith("sender")
                                 .fee(REDUCED_TOTAL_FEE)
                                 .hasPrecheck(INSUFFICIENT_TX_FEE))
-                .when(
-                        reduceFeeFor(
-                                CryptoTransfer,
-                                REDUCED_NODE_FEE,
-                                REDUCED_NETWORK_FEE,
-                                REDUCED_SERVICE_FEE))
+                .when(reduceFeeFor(CryptoTransfer, REDUCED_NODE_FEE, REDUCED_NETWORK_FEE, REDUCED_SERVICE_FEE))
                 .then(
                         cryptoTransfer(tinyBarsFromTo("sender", "receiver", ONE_HBAR))
                                 .payingWith("sender")
@@ -158,9 +152,8 @@ public class MiscCryptoSuite extends HapiSuite {
                                 .deferStatusResolution()
                                 .hasAnyKnownStatus(),
                         sleepFor(1_000L))
-                .then(
-                        getTxnRecord("invalidKeyUpdateTxn")
-                                .hasPriority(recordWith().status(INVALID_SIGNATURE)));
+                .then(getTxnRecord("invalidKeyUpdateTxn")
+                        .hasPriority(recordWith().status(INVALID_SIGNATURE)));
     }
 
     @Override

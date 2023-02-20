@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.test.meta;
 
 import static com.hedera.node.app.spi.test.meta.PreHandleContextListUpdatesTest.A_COMPLEX_KEY;
@@ -40,10 +41,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class PreHandleContextTest {
-    private static final AccountID PAYER = AccountID.newBuilder().setAccountNum(3L).build();
-    @Mock private HederaKey payerKey;
-    @Mock private HederaKey otherKey;
-    @Mock AccountKeyLookup lookup;
+    private static final AccountID PAYER =
+            AccountID.newBuilder().setAccountNum(3L).build();
+
+    @Mock
+    private HederaKey payerKey;
+
+    @Mock
+    private HederaKey otherKey;
+
+    @Mock
+    AccountKeyLookup lookup;
+
     private PreHandleContext subject;
 
     @Test
@@ -63,33 +72,28 @@ class PreHandleContextTest {
     void gettersWorkOnFailure() {
         given(lookup.getKey(PAYER)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
         final var txn = createAccountTransaction();
-        subject =
-                new PreHandleContext(lookup, txn, PAYER)
-                        .status(INVALID_ACCOUNT_ID)
-                        .addToReqNonPayerKeys(otherKey);
+        subject = new PreHandleContext(lookup, txn, PAYER)
+                .status(INVALID_ACCOUNT_ID)
+                .addToReqNonPayerKeys(otherKey);
 
         assertTrue(subject.failed());
         assertEquals(txn, subject.getTxn());
         assertEquals(INVALID_ACCOUNT_ID, subject.getStatus());
         assertEquals(payerKey, subject.getPayerKey());
-        assertEquals(
-                List.of(),
-                subject.getRequiredNonPayerKeys()); // otherKey is not added as there is failure
+        assertEquals(List.of(), subject.getRequiredNonPayerKeys()); // otherKey is not added as there is failure
         // status set
     }
 
     private TransactionBody createAccountTransaction() {
-        final var transactionID =
-                TransactionID.newBuilder()
-                        .setAccountID(PAYER)
-                        .setTransactionValidStart(
-                                Timestamp.newBuilder().setSeconds(123_456L).build());
-        final var createTxnBody =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setKey(A_COMPLEX_KEY)
-                        .setReceiverSigRequired(true)
-                        .setMemo("Create Account")
-                        .build();
+        final var transactionID = TransactionID.newBuilder()
+                .setAccountID(PAYER)
+                .setTransactionValidStart(
+                        Timestamp.newBuilder().setSeconds(123_456L).build());
+        final var createTxnBody = CryptoCreateTransactionBody.newBuilder()
+                .setKey(A_COMPLEX_KEY)
+                .setReceiverSigRequired(true)
+                .setMemo("Create Account")
+                .build();
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)
                 .setCryptoCreateAccount(createTxnBody)

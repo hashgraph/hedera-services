@@ -13,131 +13,130 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-    id("com.hedera.hashgraph.conventions")
-}
+
+plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Hedera Application - Implementation"
 
 configurations.all {
-    exclude("javax.annotation", "javax.annotation-api")
-    exclude("com.google.code.findbugs", "jsr305")
-    exclude("org.jetbrains", "annotations")
-    exclude("org.checkerframework", "checker-qual")
+  exclude("javax.annotation", "javax.annotation-api")
+  exclude("com.google.code.findbugs", "jsr305")
+  exclude("org.jetbrains", "annotations")
+  exclude("org.checkerframework", "checker-qual")
 
-    exclude("io.grpc", "grpc-core")
-    exclude("io.grpc", "grpc-context")
-    exclude("io.grpc", "grpc-api")
-    exclude("io.grpc", "grpc-testing")
+  exclude("io.grpc", "grpc-core")
+  exclude("io.grpc", "grpc-context")
+  exclude("io.grpc", "grpc-api")
+  exclude("io.grpc", "grpc-testing")
 }
 
 dependencies {
-    annotationProcessor(libs.dagger.compiler)
+  annotationProcessor(libs.dagger.compiler)
 
-    implementation(project(":hedera-node:hedera-app-spi"))
-    implementation(project(":hedera-node:hedera-mono-service"))
-    implementation(project(":hedera-node:hapi-utils"))
-    implementation(project(":hedera-node:hapi-fees"))
-    implementation(project(":hedera-node:hedera-admin-service-impl"))
-    implementation(project(":hedera-node:hedera-consensus-service-impl"))
-    implementation(project(":hedera-node:hedera-file-service-impl"))
-    implementation(project(":hedera-node:hedera-network-service-impl"))
-    implementation(project(":hedera-node:hedera-schedule-service-impl"))
-    implementation(project(":hedera-node:hedera-smart-contract-service-impl"))
-    implementation(project(":hedera-node:hedera-token-service-impl"))
-    implementation(project(":hedera-node:hedera-util-service-impl"))
-    implementation(project(":hedera-node:hedera-evm"))
-    implementation(libs.bundles.di)
-    implementation(libs.bundles.swirlds)
-    implementation(libs.bundles.helidon)
-    implementation(libs.helidon.grpc.server)
+  implementation(project(":hedera-node:hedera-app-spi"))
+  implementation(project(":hedera-node:hedera-mono-service"))
+  implementation(project(":hedera-node:hapi-utils"))
+  implementation(project(":hedera-node:hapi-fees"))
+  implementation(project(":hedera-node:hedera-admin-service-impl"))
+  implementation(project(":hedera-node:hedera-consensus-service-impl"))
+  implementation(project(":hedera-node:hedera-file-service-impl"))
+  implementation(project(":hedera-node:hedera-network-service-impl"))
+  implementation(project(":hedera-node:hedera-schedule-service-impl"))
+  implementation(project(":hedera-node:hedera-smart-contract-service-impl"))
+  implementation(project(":hedera-node:hedera-token-service-impl"))
+  implementation(project(":hedera-node:hedera-util-service-impl"))
+  implementation(project(":hedera-node:hedera-evm"))
+  implementation(libs.bundles.di)
+  implementation(libs.bundles.swirlds)
+  implementation(libs.bundles.helidon)
+  implementation(libs.helidon.grpc.server)
 
-    itestImplementation(libs.hapi)
-    itestImplementation(libs.bundles.helidon)
-    itestImplementation(libs.bundles.swirlds)
-    itestImplementation(testLibs.helidon.grpc.client)
-    itestImplementation(testLibs.bundles.mockito)
-    itestCompileOnly(libs.spotbugs.annotations)
+  itestImplementation(libs.hapi)
+  itestImplementation(libs.bundles.helidon)
+  itestImplementation(libs.bundles.swirlds)
+  itestImplementation(testLibs.helidon.grpc.client)
+  itestImplementation(testLibs.bundles.mockito)
+  itestCompileOnly(libs.spotbugs.annotations)
 
-    testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
-    testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
-    testImplementation(testLibs.bundles.testing)
-    testCompileOnly(libs.spotbugs.annotations)
+  testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
+  testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
+  testImplementation(testLibs.bundles.testing)
+  testCompileOnly(libs.spotbugs.annotations)
 }
 
 tasks.withType<Test> {
-    testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+  testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
 }
 
 // Add all the libs dependencies into the jar manifest!
 tasks.jar {
-    doFirst {
-        tasks.jar.configure {
-            manifest {
-                attributes(
-                    "Main-Class" to "com.hedera.node.app.ServicesMain",
-                    "Class-Path" to configurations.getByName("runtimeClasspath")
-                        .joinToString(separator = " ") { "../../data/lib/" + it.name }
-
-                )
-            }
-        }
+  doFirst {
+    tasks.jar.configure {
+      manifest {
+        attributes(
+            "Main-Class" to "com.hedera.node.app.ServicesMain",
+            "Class-Path" to
+                configurations.getByName("runtimeClasspath").joinToString(separator = " ") {
+                  "../../data/lib/" + it.name
+                })
+      }
     }
+  }
 }
 
 // Copy dependencies into `data/lib`
-val copyLib = tasks.register<Copy>("copyLib") {
-    from(project.configurations.getByName("runtimeClasspath"))
-    into(project(":hedera-node").file("data/lib"))
-}
+val copyLib =
+    tasks.register<Copy>("copyLib") {
+      from(project.configurations.getByName("runtimeClasspath"))
+      into(project(":hedera-node").file("data/lib"))
+    }
 
 // Copy built jar into `data/apps` and rename HederaNode.jar
-val copyApp = tasks.register<Copy>("copyApp") {
-    from(tasks.jar)
-    into(project(":hedera-node").file("data/apps"))
-    rename { "HederaNode.jar" }
-    shouldRunAfter(tasks.getByName("copyLib"))
-}
+val copyApp =
+    tasks.register<Copy>("copyApp") {
+      from(tasks.jar)
+      into(project(":hedera-node").file("data/apps"))
+      rename { "HederaNode.jar" }
+      shouldRunAfter(tasks.getByName("copyLib"))
+    }
 
 tasks.assemble {
-    dependsOn(copyLib)
-    dependsOn(copyApp)
+  dependsOn(copyLib)
+  dependsOn(copyApp)
 }
 
 // Create the "run" task for running a Hedera consensus node
 tasks.register<JavaExec>("run") {
-    group = "application"
-    dependsOn(tasks.assemble)
-    workingDir = project(":hedera-node").projectDir
-    jvmArgs = listOf("-cp", "data/lib/*")
-    mainClass.set("com.swirlds.platform.Browser")
+  group = "application"
+  dependsOn(tasks.assemble)
+  workingDir = project(":hedera-node").projectDir
+  jvmArgs = listOf("-cp", "data/lib/*")
+  mainClass.set("com.swirlds.platform.Browser")
 }
 
-val cleanRun = tasks.register("cleanRun") {
-    val prj = project(":hedera-node")
-    prj.delete(File(prj.projectDir, "database"))
-    prj.delete(File(prj.projectDir, "output"))
-    prj.delete(File(prj.projectDir, "settingsUsed.txt"))
-    prj.delete(File(prj.projectDir, "swirlds.jar"))
-    prj.projectDir.list { _, fileName -> fileName.startsWith("MainNetStats") }
-        ?.forEach { file ->
-            prj.delete(file)
-        }
+val cleanRun =
+    tasks.register("cleanRun") {
+      val prj = project(":hedera-node")
+      prj.delete(File(prj.projectDir, "database"))
+      prj.delete(File(prj.projectDir, "output"))
+      prj.delete(File(prj.projectDir, "settingsUsed.txt"))
+      prj.delete(File(prj.projectDir, "swirlds.jar"))
+      prj.projectDir
+          .list { _, fileName -> fileName.startsWith("MainNetStats") }
+          ?.forEach { file -> prj.delete(file) }
 
-    val dataDir = File(prj.projectDir, "data")
-    prj.delete(File(dataDir, "accountBalances"))
-    prj.delete(File(dataDir, "apps"))
-    prj.delete(File(dataDir, "lib"))
-    prj.delete(File(dataDir, "recordstreams"))
-    prj.delete(File(dataDir, "saved"))
-}
+      val dataDir = File(prj.projectDir, "data")
+      prj.delete(File(dataDir, "accountBalances"))
+      prj.delete(File(dataDir, "apps"))
+      prj.delete(File(dataDir, "lib"))
+      prj.delete(File(dataDir, "recordstreams"))
+      prj.delete(File(dataDir, "saved"))
+    }
 
-tasks.clean {
-    dependsOn(cleanRun)
-}
+tasks.clean { dependsOn(cleanRun) }
 
 tasks.register("showHapiVersion") {
-    doLast {
-        println(versionCatalogs.named("libs").findVersion("hapi-version").get().requiredVersion)
-    }
+  doLast {
+    println(versionCatalogs.named("libs").findVersion("hapi-version").get().requiredVersion)
+  }
 }

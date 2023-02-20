@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts;
 
 import java.util.NavigableMap;
@@ -101,16 +102,13 @@ public class HederaEvmWorldStateTokenAccount implements Account {
     private Code interpolatedCode() {
         if (interpolatedCode == null) {
             final var interpolatedBytecode = proxyBytecodeFor(address);
-            interpolatedCode =
-                    CodeFactory.createCode(
-                            interpolatedBytecode, Hash.hash(interpolatedBytecode), 0, false);
+            interpolatedCode = CodeFactory.createCode(interpolatedBytecode, Hash.hash(interpolatedBytecode), 0, false);
         }
         return interpolatedCode;
     }
 
     public static Bytes proxyBytecodeFor(final Address address) {
         return Bytes.fromHexString(
-                TOKEN_CALL_REDIRECT_CONTRACT_BINARY.replace(
-                        TOKEN_BYTECODE_PATTERN, address.toUnprefixedHexString()));
+                TOKEN_CALL_REDIRECT_CONTRACT_BINARY.replace(TOKEN_BYTECODE_PATTERN, address.toUnprefixedHexString()));
     }
 }

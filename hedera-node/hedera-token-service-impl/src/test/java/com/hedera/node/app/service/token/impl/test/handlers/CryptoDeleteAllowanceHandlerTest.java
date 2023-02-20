@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
@@ -47,7 +48,9 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
     private final TokenID nft = asToken("0.0.56789");
     private final AccountID owner = asAccount("0.0.123456");
     private final HederaKey ownerKey = asHederaKey(A_COMPLEX_KEY).get();
-    @Mock private MerkleAccount ownerAccount;
+
+    @Mock
+    private MerkleAccount ownerAccount;
 
     private CryptoDeleteAllowanceHandler subject = new CryptoDeleteAllowanceHandler();
 
@@ -103,18 +106,14 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     private TransactionBody cryptoDeleteAllowanceTransaction(final AccountID id) {
         final var transactionID =
-                TransactionID.newBuilder()
-                        .setAccountID(id)
-                        .setTransactionValidStart(consensusTimestamp);
-        final var allowanceTxnBody =
-                CryptoDeleteAllowanceTransactionBody.newBuilder()
-                        .addNftAllowances(
-                                NftRemoveAllowance.newBuilder()
-                                        .setOwner(owner)
-                                        .setTokenId(nft)
-                                        .addAllSerialNumbers(List.of(1L, 2L, 3L))
-                                        .build())
-                        .build();
+                TransactionID.newBuilder().setAccountID(id).setTransactionValidStart(consensusTimestamp);
+        final var allowanceTxnBody = CryptoDeleteAllowanceTransactionBody.newBuilder()
+                .addNftAllowances(NftRemoveAllowance.newBuilder()
+                        .setOwner(owner)
+                        .setTokenId(nft)
+                        .addAllSerialNumbers(List.of(1L, 2L, 3L))
+                        .build())
+                .build();
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)
                 .setCryptoDeleteAllowance(allowanceTxnBody)

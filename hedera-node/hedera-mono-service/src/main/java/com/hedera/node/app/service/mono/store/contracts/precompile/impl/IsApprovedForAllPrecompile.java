@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
@@ -45,15 +46,12 @@ import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile
-        implements EvmIsApprovedForAllPrecompile {
+public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile implements EvmIsApprovedForAllPrecompile {
 
     private static final Function HAPI_IS_APPROVED_FOR_ALL =
             new Function("isApprovedForAll(address,address,address)", INT_BOOL_PAIR);
-    private static final Bytes HAPI_IS_APPROVED_FOR_ALL_SELECTOR =
-            Bytes.wrap(HAPI_IS_APPROVED_FOR_ALL.selector());
-    private static final ABIType<Tuple> HAPI_IS_APPROVED_FOR_ALL_DECODER =
-            TypeFactory.create(ADDRESS_TRIO_RAW_TYPE);
+    private static final Bytes HAPI_IS_APPROVED_FOR_ALL_SELECTOR = Bytes.wrap(HAPI_IS_APPROVED_FOR_ALL.selector());
+    private static final ABIType<Tuple> HAPI_IS_APPROVED_FOR_ALL_DECODER = TypeFactory.create(ADDRESS_TRIO_RAW_TYPE);
 
     private IsApproveForAllWrapper<TokenID, AccountID, AccountID> isApproveForAllWrapper;
 
@@ -76,8 +74,7 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         isApproveForAllWrapper = decodeIsApprovedForAll(input, tokenId, aliasResolver);
         return super.body(input, aliasResolver);
     }
@@ -85,9 +82,7 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile
     @Override
     @SuppressWarnings("unchecked")
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        Objects.requireNonNull(
-                isApproveForAllWrapper,
-                "`body` method should be called before `getSuccessResultsFor`");
+        Objects.requireNonNull(isApproveForAllWrapper, "`body` method should be called before `getSuccessResultsFor`");
 
         final var accountsLedger = ledgers.accounts();
         var answer = true;
@@ -97,10 +92,8 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile
         answer &= accountsLedger.contains(operatorId);
         if (answer) {
             final var allowances =
-                    (Set<FcTokenAllowanceId>)
-                            accountsLedger.get(ownerId, APPROVE_FOR_ALL_NFTS_ALLOWANCES);
-            final var allowanceId =
-                    FcTokenAllowanceId.from(isApproveForAllWrapper.token(), operatorId);
+                    (Set<FcTokenAllowanceId>) accountsLedger.get(ownerId, APPROVE_FOR_ALL_NFTS_ALLOWANCES);
+            final var allowanceId = FcTokenAllowanceId.from(isApproveForAllWrapper.token(), operatorId);
             answer &= allowances.contains(allowanceId);
         }
         return tokenId == null
@@ -109,30 +102,22 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile
     }
 
     public static IsApproveForAllWrapper<TokenID, AccountID, AccountID> decodeIsApprovedForAll(
-            final Bytes input,
-            final TokenID impliedTokenId,
-            final UnaryOperator<byte[]> aliasResolver) {
+            final Bytes input, final TokenID impliedTokenId, final UnaryOperator<byte[]> aliasResolver) {
         final var offset = impliedTokenId == null ? 1 : 0;
         if (offset == 1) {
             final Tuple decodedArguments =
-                    decodeFunctionCall(
-                            input,
-                            HAPI_IS_APPROVED_FOR_ALL_SELECTOR,
-                            HAPI_IS_APPROVED_FOR_ALL_DECODER);
+                    decodeFunctionCall(input, HAPI_IS_APPROVED_FOR_ALL_SELECTOR, HAPI_IS_APPROVED_FOR_ALL_DECODER);
 
             return new IsApproveForAllWrapper<>(
                     convertAddressBytesToTokenID(decodedArguments.get(0)),
                     convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver),
                     convertLeftPaddedAddressToAccountId(decodedArguments.get(2), aliasResolver));
         } else {
-            final var rawIsApproveForAllWrapper =
-                    EvmIsApprovedForAllPrecompile.decodeIsApprovedForAll(input);
+            final var rawIsApproveForAllWrapper = EvmIsApprovedForAllPrecompile.decodeIsApprovedForAll(input);
             return new IsApproveForAllWrapper<>(
                     tokenIdFromEvmAddress(rawIsApproveForAllWrapper.token()),
-                    convertLeftPaddedAddressToAccountId(
-                            rawIsApproveForAllWrapper.owner(), aliasResolver),
-                    convertLeftPaddedAddressToAccountId(
-                            rawIsApproveForAllWrapper.operator(), aliasResolver));
+                    convertLeftPaddedAddressToAccountId(rawIsApproveForAllWrapper.owner(), aliasResolver),
+                    convertLeftPaddedAddressToAccountId(rawIsApproveForAllWrapper.operator(), aliasResolver));
         }
     }
 }

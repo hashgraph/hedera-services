@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry;
 
 import static com.hedera.node.app.service.mono.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
@@ -37,7 +38,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class UniqueTokensListMutationTest {
-    @Mock private UniqueTokenMapAdapter uniqueTokens;
+    @Mock
+    private UniqueTokenMapAdapter uniqueTokens;
 
     private UniqueTokensListMutation subject;
 
@@ -153,19 +155,10 @@ class UniqueTokensListMutationTest {
     private final NftId rootNftKey = NftId.withDefaultShardRealm(tokenNum, rootNum);
     private final NftId nextNftKey = NftId.withDefaultShardRealm(tokenNum, nextNum);
     private final NftId targetNftKey = NftId.withDefaultShardRealm(tokenNum, targetNum);
-    private final UniqueTokenAdapter rootNft =
-            UniqueTokenAdapter.wrap(
-                    new MerkleUniqueToken(
-                            ownerNum, "aa".getBytes(StandardCharsets.UTF_8), packedTime, rootNum));
-    private final UniqueTokenAdapter nextNft =
-            UniqueTokenAdapter.wrap(
-                    new MerkleUniqueToken(
-                            ownerNum, "bb".getBytes(StandardCharsets.UTF_8), packedTime, nextNum));
-    private final UniqueTokenAdapter targetNft =
-            UniqueTokenAdapter.wrap(
-                    new MerkleUniqueToken(
-                            ownerNum,
-                            "cc".getBytes(StandardCharsets.UTF_8),
-                            packedTime,
-                            targetNum));
+    private final UniqueTokenAdapter rootNft = UniqueTokenAdapter.wrap(
+            new MerkleUniqueToken(ownerNum, "aa".getBytes(StandardCharsets.UTF_8), packedTime, rootNum));
+    private final UniqueTokenAdapter nextNft = UniqueTokenAdapter.wrap(
+            new MerkleUniqueToken(ownerNum, "bb".getBytes(StandardCharsets.UTF_8), packedTime, nextNum));
+    private final UniqueTokenAdapter targetNft = UniqueTokenAdapter.wrap(
+            new MerkleUniqueToken(ownerNum, "cc".getBytes(StandardCharsets.UTF_8), packedTime, targetNum));
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.token;
 
 import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
@@ -24,8 +25,7 @@ public class TokenGrantKycUsage extends TokenTxnUsage<TokenGrantKycUsage> {
         super(tokenGrantKycOp, usageEstimator);
     }
 
-    public static TokenGrantKycUsage newEstimate(
-            TransactionBody tokenGrantKycOp, TxnUsageEstimator usageEstimator) {
+    public static TokenGrantKycUsage newEstimate(TransactionBody tokenGrantKycOp, TxnUsageEstimator usageEstimator) {
         return new TokenGrantKycUsage(tokenGrantKycOp, usageEstimator);
     }
 

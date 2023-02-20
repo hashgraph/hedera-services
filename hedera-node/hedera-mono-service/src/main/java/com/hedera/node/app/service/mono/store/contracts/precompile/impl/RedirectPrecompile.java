@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
@@ -45,17 +46,14 @@ public class RedirectPrecompile implements Precompile, EvmRedirectForTokenPrecom
     private final WorldLedgers worldLedgers;
 
     public RedirectPrecompile(
-            final Precompile wrappedPrecompile,
-            final WorldLedgers worldLedgers,
-            final TokenID tokenID) {
+            final Precompile wrappedPrecompile, final WorldLedgers worldLedgers, final TokenID tokenID) {
         this.wrappedPrecompile = wrappedPrecompile;
         this.worldLedgers = worldLedgers;
         this.tokenID = tokenID;
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         return wrappedPrecompile.body(input, aliasResolver);
     }
 
@@ -66,8 +64,7 @@ public class RedirectPrecompile implements Precompile, EvmRedirectForTokenPrecom
 
     @Override
     public void run(final MessageFrame frame) {
-        validateTrueOrRevert(
-                worldLedgers.tokens().exists(tokenID), ResponseCodeEnum.INVALID_TOKEN_ID);
+        validateTrueOrRevert(worldLedgers.tokens().exists(tokenID), ResponseCodeEnum.INVALID_TOKEN_ID);
         wrappedPrecompile.run(frame);
     }
 

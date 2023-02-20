@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.queries.token;
 
 import com.google.protobuf.ByteString;
@@ -54,10 +55,7 @@ public class HapiTokenNftInfo {
     }
 
     public static HapiTokenNftInfo newTokenNftInfo(
-            final String tokenId,
-            final long serialNum,
-            final String accountId,
-            final ByteString metadata) {
+            final String tokenId, final long serialNum, final String accountId, final ByteString metadata) {
         return newTokenNftInfo(tokenId, serialNum, accountId, metadata, "0x03");
     }
 

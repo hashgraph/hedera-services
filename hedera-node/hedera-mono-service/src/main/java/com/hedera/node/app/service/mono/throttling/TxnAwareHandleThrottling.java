@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.throttling;
 
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions;
@@ -28,8 +29,7 @@ public class TxnAwareHandleThrottling implements FunctionalityThrottling {
     private final TransactionContext txnCtx;
     private final TimedFunctionalityThrottling delegate;
 
-    public TxnAwareHandleThrottling(
-            TransactionContext txnCtx, TimedFunctionalityThrottling delegate) {
+    public TxnAwareHandleThrottling(TransactionContext txnCtx, TimedFunctionalityThrottling delegate) {
         this.txnCtx = txnCtx;
         this.delegate = delegate;
     }

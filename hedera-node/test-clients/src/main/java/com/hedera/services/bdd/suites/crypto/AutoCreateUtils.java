@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
@@ -29,7 +30,10 @@ import org.apache.commons.lang3.RandomStringUtils;
 public class AutoCreateUtils {
     public static ByteString randomValidEd25519Alias() {
         final var alias = RandomStringUtils.random(128, true, true);
-        return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(alias)).build().toByteString();
+        return Key.newBuilder()
+                .setEd25519(ByteString.copyFromUtf8(alias))
+                .build()
+                .toByteString();
     }
 
     public static ByteString randomValidECDSAAlias() {

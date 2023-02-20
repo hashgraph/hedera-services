@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
@@ -162,39 +163,27 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 .supplyKey(MULTI_KEY)
                                 .exposingCreatedIdTo(idLit -> fungible.set(asToken(idLit))),
                         uploadInitCode(MINT_CONTRACT),
-                        sourcing(
-                                () ->
-                                        contractCreate(
-                                                MINT_CONTRACT,
-                                                HapiParserUtil.asHeadlongAddress(
-                                                        asAddress(fungible.get())))))
+                        sourcing(() -> contractCreate(
+                                MINT_CONTRACT, HapiParserUtil.asHeadlongAddress(asAddress(fungible.get())))))
                 .when(
-                        contractCall(
-                                        MINT_CONTRACT,
-                                        "mintFungibleTokenWithEvent",
-                                        BigInteger.valueOf(amount))
+                        contractCall(MINT_CONTRACT, "mintFungibleTokenWithEvent", BigInteger.valueOf(amount))
                                 .via(FIRST_MINT_TXN)
                                 .payingWith(ACCOUNT)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
                         getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged())
-                .then(
-                        childRecordsCheck(
-                                FIRST_MINT_TXN,
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .HAPI_MINT)
-                                                                        .withStatus(SUCCESS)
-                                                                        .withTotalSupply(0)
-                                                                        .withSerialNumbers())
-                                                        .gasUsed(gasUsed))
-                                        .newTotalSupply(0)));
+                .then(childRecordsCheck(
+                        FIRST_MINT_TXN,
+                        SUCCESS,
+                        recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(htsPrecompileResult()
+                                                .forFunction(FunctionType.HAPI_MINT)
+                                                .withStatus(SUCCESS)
+                                                .withTotalSupply(0)
+                                                .withSerialNumbers())
+                                        .gasUsed(gasUsed))
+                                .newTotalSupply(0)));
     }
 
     private HapiSpec helloWorldFungibleMint() {
@@ -212,49 +201,35 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 .exposingCreatedIdTo(idLit -> fungible.set(asToken(idLit))),
                         uploadInitCode(HELLO_WORLD_MINT))
                 .when(
-                        sourcing(
-                                () ->
-                                        contractCreate(
-                                                HELLO_WORLD_MINT,
-                                                HapiParserUtil.asHeadlongAddress(
-                                                        asAddress(fungible.get())))),
+                        sourcing(() -> contractCreate(
+                                HELLO_WORLD_MINT, HapiParserUtil.asHeadlongAddress(asAddress(fungible.get())))),
                         contractCall(HELLO_WORLD_MINT, "brrr", BigInteger.valueOf(amount))
                                 .via(FIRST_MINT_TXN)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
                         getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged(),
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(amount),
                         /* And now make the token contract-controlled so no explicit supply sig is required */
-                        newKeyNamed(CONTRACT_KEY)
-                                .shape(DELEGATE_CONTRACT.signedWith(HELLO_WORLD_MINT)),
+                        newKeyNamed(CONTRACT_KEY).shape(DELEGATE_CONTRACT.signedWith(HELLO_WORLD_MINT)),
                         tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
                         getTokenInfo(FUNGIBLE_TOKEN).logged(),
                         contractCall(HELLO_WORLD_MINT, "brrr", BigInteger.valueOf(amount))
                                 .via(SECOND_MINT_TXN),
                         getTxnRecord(SECOND_MINT_TXN).andAllChildRecords().logged(),
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(2 * amount))
-                .then(
-                        childRecordsCheck(
-                                SECOND_MINT_TXN,
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .HAPI_MINT)
-                                                                        .withStatus(SUCCESS)
-                                                                        .withTotalSupply(2469134L)
-                                                                        .withSerialNumbers()))
-                                        .newTotalSupply(2469134L)
-                                        .tokenTransfers(
-                                                changingFungibleBalances()
-                                                        .including(
-                                                                FUNGIBLE_TOKEN,
-                                                                DEFAULT_PAYER,
-                                                                amount))));
+                .then(childRecordsCheck(
+                        SECOND_MINT_TXN,
+                        SUCCESS,
+                        recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(htsPrecompileResult()
+                                                .forFunction(FunctionType.HAPI_MINT)
+                                                .withStatus(SUCCESS)
+                                                .withTotalSupply(2469134L)
+                                                .withSerialNumbers()))
+                                .newTotalSupply(2469134L)
+                                .tokenTransfers(
+                                        changingFungibleBalances().including(FUNGIBLE_TOKEN, DEFAULT_PAYER, amount))));
     }
 
     private HapiSpec helloWorldNftMint() {
@@ -270,12 +245,8 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 .supplyKey(MULTI_KEY)
                                 .exposingCreatedIdTo(idLit -> nonFungible.set(asToken(idLit))),
                         uploadInitCode(HELLO_WORLD_MINT),
-                        sourcing(
-                                () ->
-                                        contractCreate(
-                                                HELLO_WORLD_MINT,
-                                                HapiParserUtil.asHeadlongAddress(
-                                                        asAddress(nonFungible.get())))))
+                        sourcing(() -> contractCreate(
+                                HELLO_WORLD_MINT, HapiParserUtil.asHeadlongAddress(asAddress(nonFungible.get())))))
                 .when(
                         contractCall(HELLO_WORLD_MINT, "mint")
                                 .via(FIRST_MINT_TXN)
@@ -284,8 +255,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                         getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged(),
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(1),
                         /* And now make the token contract-controlled so no explicit supply sig is required */
-                        newKeyNamed(CONTRACT_KEY)
-                                .shape(DELEGATE_CONTRACT.signedWith(HELLO_WORLD_MINT)),
+                        newKeyNamed(CONTRACT_KEY).shape(DELEGATE_CONTRACT.signedWith(HELLO_WORLD_MINT)),
                         tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
                         getTokenInfo(NON_FUNGIBLE_TOKEN).logged(),
                         contractCall(HELLO_WORLD_MINT, "mint")
@@ -300,16 +270,12 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .HAPI_MINT)
-                                                                        .withStatus(SUCCESS)
-                                                                        .withTotalSupply(1)
-                                                                        .withSerialNumbers(1)))
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.HAPI_MINT)
+                                                        .withStatus(SUCCESS)
+                                                        .withTotalSupply(1)
+                                                        .withSerialNumbers(1)))
                                         .newTotalSupply(1)
                                         .serialNos(List.of(1L))),
                         childRecordsCheck(
@@ -317,16 +283,12 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .HAPI_MINT)
-                                                                        .withStatus(SUCCESS)
-                                                                        .withTotalSupply(2)
-                                                                        .withSerialNumbers(2)))
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.HAPI_MINT)
+                                                        .withStatus(SUCCESS)
+                                                        .withTotalSupply(2)
+                                                        .withSerialNumbers(2)))
                                         .newTotalSupply(2)
                                         .serialNos(List.of(2L))));
     }
@@ -349,37 +311,21 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 .supplyKey(MULTI_KEY)
                                 .exposingCreatedIdTo(idLit -> fungible.set(asToken(idLit))),
                         uploadInitCode(MINT_CONTRACT),
-                        sourcing(
-                                () ->
-                                        contractCreate(
-                                                MINT_CONTRACT,
-                                                HapiParserUtil.asHeadlongAddress(
-                                                        asAddress(fungible.get())))))
+                        sourcing(() -> contractCreate(
+                                MINT_CONTRACT, HapiParserUtil.asHeadlongAddress(asAddress(fungible.get())))))
                 .when(
-                        contractCall(
-                                        MINT_CONTRACT,
-                                        "mintFungibleTokenWithEvent",
-                                        BigInteger.valueOf(10))
+                        contractCall(MINT_CONTRACT, "mintFungibleTokenWithEvent", BigInteger.valueOf(10))
                                 .via(FIRST_MINT_TXN)
                                 .payingWith(ACCOUNT)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
                         getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged(),
                         getTxnRecord(FIRST_MINT_TXN)
-                                .hasPriority(
-                                        recordWith()
-                                                .contractCallResult(
-                                                        resultWith()
-                                                                .logs(
-                                                                        inOrder(
-                                                                                logWith()
-                                                                                        .noData()
-                                                                                        .withTopicsInOrder(
-                                                                                                List
-                                                                                                        .of(
-                                                                                                                parsedToByteString(
-                                                                                                                        amount),
-                                                                                                                parsedToByteString(
-                                                                                                                        0))))))))
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith()
+                                                .logs(inOrder(logWith()
+                                                        .noData()
+                                                        .withTopicsInOrder(List.of(
+                                                                parsedToByteString(amount), parsedToByteString(0))))))))
                 .then(
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(amount),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, amount),
@@ -388,17 +334,13 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .HAPI_MINT)
-                                                                        .withStatus(SUCCESS)
-                                                                        .withTotalSupply(10)
-                                                                        .withSerialNumbers())
-                                                        .gasUsed(gasUsed))
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.HAPI_MINT)
+                                                        .withStatus(SUCCESS)
+                                                        .withTotalSupply(10)
+                                                        .withSerialNumbers())
+                                                .gasUsed(gasUsed))
                                         .newTotalSupply(10)));
     }
 
@@ -420,62 +362,39 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 .supplyKey(MULTI_KEY)
                                 .exposingCreatedIdTo(idLit -> nonFungible.set(asToken(idLit))),
                         uploadInitCode(MINT_CONTRACT),
-                        sourcing(
-                                () ->
-                                        contractCreate(
-                                                MINT_CONTRACT,
-                                                HapiParserUtil.asHeadlongAddress(
-                                                        asAddress(nonFungible.get())))))
+                        sourcing(() -> contractCreate(
+                                MINT_CONTRACT, HapiParserUtil.asHeadlongAddress(asAddress(nonFungible.get())))))
                 .when(
-                        contractCall(
-                                        MINT_CONTRACT,
-                                        "mintNonFungibleTokenWithEvent",
-                                        (Object)
-                                                new byte[][] {
-                                                    TEST_METADATA_1.getBytes(),
-                                                    TEST_METADATA_2.getBytes()
-                                                })
+                        contractCall(MINT_CONTRACT, "mintNonFungibleTokenWithEvent", (Object)
+                                        new byte[][] {TEST_METADATA_1.getBytes(), TEST_METADATA_2.getBytes()})
                                 .via(FIRST_MINT_TXN)
                                 .payingWith(ACCOUNT)
                                 .gas(GAS_TO_OFFER)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
                         getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged(),
                         getTxnRecord(FIRST_MINT_TXN)
-                                .hasPriority(
-                                        recordWith()
-                                                .contractCallResult(
-                                                        resultWith()
-                                                                .logs(
-                                                                        inOrder(
-                                                                                logWith()
-                                                                                        .noData()
-                                                                                        .withTopicsInOrder(
-                                                                                                List
-                                                                                                        .of(
-                                                                                                                parsedToByteString(
-                                                                                                                        totalSupply),
-                                                                                                                parsedToByteString(
-                                                                                                                        1))))))))
+                                .hasPriority(recordWith()
+                                        .contractCallResult(resultWith()
+                                                .logs(inOrder(logWith()
+                                                        .noData()
+                                                        .withTopicsInOrder(List.of(
+                                                                parsedToByteString(totalSupply),
+                                                                parsedToByteString(1))))))))
                 .then(
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(totalSupply),
-                        getAccountBalance(TOKEN_TREASURY)
-                                .hasTokenBalance(NON_FUNGIBLE_TOKEN, totalSupply),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, totalSupply),
                         childRecordsCheck(
                                 FIRST_MINT_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .HAPI_MINT)
-                                                                        .withStatus(SUCCESS)
-                                                                        .withTotalSupply(2L)
-                                                                        .withSerialNumbers(1L, 2L))
-                                                        .gasUsed(704226L))
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.HAPI_MINT)
+                                                        .withStatus(SUCCESS)
+                                                        .withTotalSupply(2L)
+                                                        .withSerialNumbers(1L, 2L))
+                                                .gasUsed(704226L))
                                         .newTotalSupply(2)
                                         .serialNos(Arrays.asList(1L, 2L))));
     }
@@ -498,135 +417,83 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(NESTED_MINT_CONTRACT, MINT_NFT_CONTRACT),
                         contractCreate(MINT_NFT_CONTRACT).gas(GAS_TO_OFFER))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(
-                                                                NESTED_MINT_CONTRACT,
-                                                                asHeadlongAddress(
-                                                                        getNestedContractAddress(
-                                                                                MINT_NFT_CONTRACT,
-                                                                                spec)),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                NON_FUNGIBLE_TOKEN))))
-                                                        .gas(GAS_TO_OFFER),
-                                                newKeyNamed(DELEGATE_CONTRACT_KEY_NAME)
-                                                        .shape(
-                                                                DELEGATE_CONTRACT_KEY_SHAPE
-                                                                        .signedWith(
-                                                                                sigs(
-                                                                                        ON,
-                                                                                        NESTED_MINT_CONTRACT))),
-                                                cryptoUpdate(TOKEN_TREASURY)
-                                                        .key(DELEGATE_CONTRACT_KEY_NAME),
-                                                tokenUpdate(NON_FUNGIBLE_TOKEN)
-                                                        .supplyKey(DELEGATE_CONTRACT_KEY_NAME),
-                                                contractCall(
-                                                                NESTED_MINT_CONTRACT,
-                                                                "sendNFTAfterMint",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                TOKEN_TREASURY))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                RECIPIENT))),
-                                                                new byte[][] {
-                                                                    TEST_METADATA_1.getBytes()
-                                                                },
-                                                                1L)
-                                                        .payingWith(GENESIS)
-                                                        .alsoSigningWithFullPrefix(MULTI_KEY)
-                                                        .via(nestedTransferTxn)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(SUCCESS),
-                                                getTxnRecord(nestedTransferTxn)
-                                                        .andAllChildRecords()
-                                                        .logged())))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCreate(
+                                        NESTED_MINT_CONTRACT,
+                                        asHeadlongAddress(getNestedContractAddress(MINT_NFT_CONTRACT, spec)),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
+                                .gas(GAS_TO_OFFER),
+                        newKeyNamed(DELEGATE_CONTRACT_KEY_NAME)
+                                .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, NESTED_MINT_CONTRACT))),
+                        cryptoUpdate(TOKEN_TREASURY).key(DELEGATE_CONTRACT_KEY_NAME),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(DELEGATE_CONTRACT_KEY_NAME),
+                        contractCall(
+                                        NESTED_MINT_CONTRACT,
+                                        "sendNFTAfterMint",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(TOKEN_TREASURY))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
+                                        new byte[][] {TEST_METADATA_1.getBytes()},
+                                        1L)
+                                .payingWith(GENESIS)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .via(nestedTransferTxn)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTxnRecord(nestedTransferTxn).andAllChildRecords().logged())))
                 .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    if (!spec.isUsingEthCalls()) {
-                                        allRunFor(
-                                                spec,
-                                                assertTxnRecordHasNoTraceabilityEnrichedContractFnResult(
-                                                        nestedTransferTxn));
-                                    }
-                                }),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var expectedGasUsage =
-                                            expectedPrecompileGasFor(
-                                                    spec, TokenMint, TOKEN_NON_FUNGIBLE_UNIQUE);
-                                    allRunFor(
-                                            spec,
-                                            childRecordsCheck(
-                                                    nestedTransferTxn,
-                                                    SUCCESS,
-                                                    recordWith()
-                                                            .status(SUCCESS)
-                                                            .contractCallResult(
-                                                                    resultWith()
-                                                                            .approxGasUsed(
-                                                                                    expectedGasUsage,
-                                                                                    5)
-                                                                            .contractCallResult(
-                                                                                    htsPrecompileResult()
-                                                                                            .forFunction(
-                                                                                                    FunctionType
-                                                                                                            .HAPI_MINT)
-                                                                                            .withStatus(
-                                                                                                    SUCCESS)
-                                                                                            .withTotalSupply(
-                                                                                                    1L)
-                                                                                            .withSerialNumbers(
-                                                                                                    1L))
-                                                                            .gas(3_838_738L)
-                                                                            .amount(0L)
-                                                                            .functionParameters(
-                                                                                    functionParameters()
-                                                                                            .forFunction(
-                                                                                                    FunctionParameters
-                                                                                                            .PrecompileFunction
-                                                                                                            .MINT)
-                                                                                            .withTokenAddress(
-                                                                                                    asAddress(
-                                                                                                            spec.registry()
-                                                                                                                    .getTokenID(
-                                                                                                                            NON_FUNGIBLE_TOKEN)))
-                                                                                            .withAmount(
-                                                                                                    0L)
-                                                                                            .withMetadata(
-                                                                                                    List
-                                                                                                            .of(
-                                                                                                                    "Test metadata"
-                                                                                                                        + " 1"))
-                                                                                            .build())),
-                                                    recordWith()
-                                                            .status(SUCCESS)
-                                                            .contractCallResult(
-                                                                    resultWith()
-                                                                            .contractCallResult(
-                                                                                    htsPrecompileResult()
-                                                                                            .withStatus(
-                                                                                                    SUCCESS)))
-                                                            .tokenTransfers(
-                                                                    NonFungibleTransfers
-                                                                            .changingNFTBalances()
-                                                                            .including(
-                                                                                    NON_FUNGIBLE_TOKEN,
-                                                                                    TOKEN_TREASURY,
-                                                                                    RECIPIENT,
-                                                                                    1))));
-                                }));
+                        withOpContext((spec, opLog) -> {
+                            if (!spec.isUsingEthCalls()) {
+                                allRunFor(
+                                        spec,
+                                        assertTxnRecordHasNoTraceabilityEnrichedContractFnResult(nestedTransferTxn));
+                            }
+                        }),
+                        withOpContext((spec, opLog) -> {
+                            final var expectedGasUsage =
+                                    expectedPrecompileGasFor(spec, TokenMint, TOKEN_NON_FUNGIBLE_UNIQUE);
+                            allRunFor(
+                                    spec,
+                                    childRecordsCheck(
+                                            nestedTransferTxn,
+                                            SUCCESS,
+                                            recordWith()
+                                                    .status(SUCCESS)
+                                                    .contractCallResult(resultWith()
+                                                            .approxGasUsed(expectedGasUsage, 5)
+                                                            .contractCallResult(htsPrecompileResult()
+                                                                    .forFunction(FunctionType.HAPI_MINT)
+                                                                    .withStatus(SUCCESS)
+                                                                    .withTotalSupply(1L)
+                                                                    .withSerialNumbers(1L))
+                                                            .gas(3_838_738L)
+                                                            .amount(0L)
+                                                            .functionParameters(functionParameters()
+                                                                    .forFunction(
+                                                                            FunctionParameters.PrecompileFunction.MINT)
+                                                                    .withTokenAddress(
+                                                                            asAddress(
+                                                                                    spec.registry()
+                                                                                            .getTokenID(
+                                                                                                    NON_FUNGIBLE_TOKEN)))
+                                                                    .withAmount(0L)
+                                                                    .withMetadata(List.of("Test metadata" + " 1"))
+                                                                    .build())),
+                                            recordWith()
+                                                    .status(SUCCESS)
+                                                    .contractCallResult(resultWith()
+                                                            .contractCallResult(htsPrecompileResult()
+                                                                    .withStatus(SUCCESS)))
+                                                    .tokenTransfers(NonFungibleTransfers.changingNFTBalances()
+                                                            .including(
+                                                                    NON_FUNGIBLE_TOKEN,
+                                                                    TOKEN_TREASURY,
+                                                                    RECIPIENT,
+                                                                    1))));
+                        }));
     }
 
     @SuppressWarnings("java:S5669")
@@ -647,49 +514,29 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 .supplyKey(MULTI_KEY),
                         tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
                         tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
-                        cryptoTransfer(
-                                moving(200, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
+                        cryptoTransfer(moving(200, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
                         uploadInitCode(MINT_CONTRACT))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(
-                                                        MINT_CONTRACT,
-                                                        HapiParserUtil.asHeadlongAddress(
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        FUNGIBLE_TOKEN)))),
-                                                newKeyNamed(DELEGATE_KEY)
-                                                        .shape(
-                                                                DELEGATE_CONTRACT_KEY_SHAPE
-                                                                        .signedWith(
-                                                                                sigs(
-                                                                                        ON,
-                                                                                        MINT_CONTRACT))),
-                                                cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
-                                                contractCall(
-                                                                MINT_CONTRACT,
-                                                                "revertMintAfterFailedMint",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                ACCOUNT))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                RECIPIENT))),
-                                                                20L)
-                                                        .payingWith(GENESIS)
-                                                        .via(failedMintTxn)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord(failedMintTxn)
-                                                        .andAllChildRecords()
-                                                        .logged())))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCreate(
+                                MINT_CONTRACT,
+                                HapiParserUtil.asHeadlongAddress(
+                                        asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)))),
+                        newKeyNamed(DELEGATE_KEY)
+                                .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, MINT_CONTRACT))),
+                        cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+                        contractCall(
+                                        MINT_CONTRACT,
+                                        "revertMintAfterFailedMint",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
+                                        20L)
+                                .payingWith(GENESIS)
+                                .via(failedMintTxn)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        getTxnRecord(failedMintTxn).andAllChildRecords().logged())))
                 .then(
                         getAccountBalance(ACCOUNT).hasTokenBalance(FUNGIBLE_TOKEN, 200),
                         getAccountBalance(RECIPIENT).hasTokenBalance(FUNGIBLE_TOKEN, 0),
@@ -698,17 +545,12 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(REVERTED_SUCCESS),
                                 recordWith()
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .HAPI_MINT)
-                                                                        .withStatus(
-                                                                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-                                                                        .withTotalSupply(0L)
-                                                                        .withSerialNumbers()))));
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.HAPI_MINT)
+                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                                        .withTotalSupply(0L)
+                                                        .withSerialNumbers()))));
     }
 
     private HapiSpec rollbackOnFailedAssociateAfterNonFungibleMint() {
@@ -729,50 +571,29 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(MINT_NFT_CONTRACT, NESTED_MINT_CONTRACT),
                         contractCreate(MINT_NFT_CONTRACT))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(
-                                                                NESTED_MINT_CONTRACT,
-                                                                asHeadlongAddress(
-                                                                        getNestedContractAddress(
-                                                                                MINT_NFT_CONTRACT,
-                                                                                spec)),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                NON_FUNGIBLE_TOKEN))))
-                                                        .gas(GAS_TO_OFFER),
-                                                newKeyNamed(DELEGATE_KEY)
-                                                        .shape(
-                                                                DELEGATE_CONTRACT_KEY_SHAPE
-                                                                        .signedWith(
-                                                                                sigs(
-                                                                                        ON,
-                                                                                        NESTED_MINT_CONTRACT))),
-                                                cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
-                                                contractCall(
-                                                                NESTED_MINT_CONTRACT,
-                                                                "revertMintAfterFailedAssociate",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                ACCOUNT))),
-                                                                new byte[][] {
-                                                                    TEST_METADATA_1.getBytes()
-                                                                })
-                                                        .payingWith(GENESIS)
-                                                        .alsoSigningWithFullPrefix(MULTI_KEY)
-                                                        .via(nestedMintTxn)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord(nestedMintTxn)
-                                                        .andAllChildRecords()
-                                                        .logged())))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCreate(
+                                        NESTED_MINT_CONTRACT,
+                                        asHeadlongAddress(getNestedContractAddress(MINT_NFT_CONTRACT, spec)),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
+                                .gas(GAS_TO_OFFER),
+                        newKeyNamed(DELEGATE_KEY)
+                                .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, NESTED_MINT_CONTRACT))),
+                        cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+                        contractCall(
+                                        NESTED_MINT_CONTRACT,
+                                        "revertMintAfterFailedAssociate",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        new byte[][] {TEST_METADATA_1.getBytes()})
+                                .payingWith(GENESIS)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .via(nestedMintTxn)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        getTxnRecord(nestedMintTxn).andAllChildRecords().logged())))
                 .then(
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0),
                         childRecordsCheck(
@@ -783,12 +604,9 @@ public class ContractMintHTSSuite extends HapiSuite {
                                         .newTotalSupply(0)
                                         .serialNos(List.of()),
                                 recordWith()
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                INVALID_TOKEN_ID)))));
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(INVALID_TOKEN_ID)))));
     }
 
     private HapiSpec gasCostNotMetSetsInsufficientGasStatusInChildRecord() {
@@ -810,52 +628,36 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY)
                                 .exposingCreatedIdTo(idLit -> fungible.set(asToken(idLit))))
-                .when(
-                        uploadInitCode(MINT_CONTRACT),
-                        sourcing(
-                                () ->
-                                        contractCreate(
-                                                        MINT_CONTRACT,
-                                                        HapiParserUtil.asHeadlongAddress(
-                                                                asAddress(fungible.get())))
-                                                .payingWith(ACCOUNT)
-                                                .gas(GAS_TO_OFFER)))
+                .when(uploadInitCode(MINT_CONTRACT), sourcing(() -> contractCreate(
+                                MINT_CONTRACT, HapiParserUtil.asHeadlongAddress(asAddress(fungible.get())))
+                        .payingWith(ACCOUNT)
+                        .gas(GAS_TO_OFFER)))
                 .then(
                         contractCall(MINT_CONTRACT, MINT_FUNGIBLE_TOKEN, BigInteger.valueOf(amount))
                                 .via(baselineMintWithEnoughGas)
                                 .payingWith(ACCOUNT)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(64_000L),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var expectedPrecompileGas =
-                                            expectedPrecompileGasFor(
-                                                    spec, TokenMint, TOKEN_FUNGIBLE_COMMON);
-                                    final var baselineCostLookup =
-                                            getTxnRecord(baselineMintWithEnoughGas)
-                                                    .andAllChildRecords()
-                                                    .logged()
-                                                    .assertingNothing();
-                                    allRunFor(spec, baselineCostLookup);
-                                    final var baselineGas =
-                                            baselineCostLookup
-                                                    .getResponseRecord()
-                                                    .getContractCallResult()
-                                                    .getGasUsed();
-                                    expectedInsufficientGas.set(
-                                            baselineGas - expectedPrecompileGas);
-                                }),
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        MINT_CONTRACT,
-                                                        MINT_FUNGIBLE_TOKEN,
-                                                        BigInteger.valueOf(amount))
-                                                .via(FIRST_MINT_TXN)
-                                                .payingWith(ACCOUNT)
-                                                .alsoSigningWithFullPrefix(MULTI_KEY)
-                                                .gas(expectedInsufficientGas.get())
-                                                .hasKnownStatus(INSUFFICIENT_GAS)),
+                        withOpContext((spec, opLog) -> {
+                            final var expectedPrecompileGas =
+                                    expectedPrecompileGasFor(spec, TokenMint, TOKEN_FUNGIBLE_COMMON);
+                            final var baselineCostLookup = getTxnRecord(baselineMintWithEnoughGas)
+                                    .andAllChildRecords()
+                                    .logged()
+                                    .assertingNothing();
+                            allRunFor(spec, baselineCostLookup);
+                            final var baselineGas = baselineCostLookup
+                                    .getResponseRecord()
+                                    .getContractCallResult()
+                                    .getGasUsed();
+                            expectedInsufficientGas.set(baselineGas - expectedPrecompileGas);
+                        }),
+                        sourcing(() -> contractCall(MINT_CONTRACT, MINT_FUNGIBLE_TOKEN, BigInteger.valueOf(amount))
+                                .via(FIRST_MINT_TXN)
+                                .payingWith(ACCOUNT)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .gas(expectedInsufficientGas.get())
+                                .hasKnownStatus(INSUFFICIENT_GAS)),
                         getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged(),
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(amount),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, amount),
@@ -863,28 +665,21 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 FIRST_MINT_TXN,
                                 INSUFFICIENT_GAS,
                                 recordWith()
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .HAPI_MINT)
-                                                                        .withStatus(
-                                                                                INSUFFICIENT_GAS)
-                                                                        .withTotalSupply(0L)
-                                                                        .withSerialNumbers()))));
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.HAPI_MINT)
+                                                        .withStatus(INSUFFICIENT_GAS)
+                                                        .withTotalSupply(0L)
+                                                        .withSerialNumbers()))));
     }
 
-    private long expectedPrecompileGasFor(
-            final HapiSpec spec, final HederaFunctionality function, final SubType type) {
-        final var gasThousandthsOfTinycentPrice =
-                spec.fees()
-                        .getCurrentOpFeeData()
-                        .get(ContractCall)
-                        .get(DEFAULT)
-                        .getServicedata()
-                        .getGas();
+    private long expectedPrecompileGasFor(final HapiSpec spec, final HederaFunctionality function, final SubType type) {
+        final var gasThousandthsOfTinycentPrice = spec.fees()
+                .getCurrentOpFeeData()
+                .get(ContractCall)
+                .get(DEFAULT)
+                .getServicedata()
+                .getGas();
         final var assetsLoader = new AssetsLoader();
         final BigDecimal hapiUsdPrice;
         try {
@@ -892,11 +687,10 @@ public class ContractMintHTSSuite extends HapiSuite {
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
-        final var precompileTinycentPrice =
-                hapiUsdPrice
-                        .multiply(BigDecimal.valueOf(1.2))
-                        .multiply(BigDecimal.valueOf(100 * 100_000_000L))
-                        .longValueExact();
+        final var precompileTinycentPrice = hapiUsdPrice
+                .multiply(BigDecimal.valueOf(1.2))
+                .multiply(BigDecimal.valueOf(100 * 100_000_000L))
+                .longValueExact();
         return (precompileTinycentPrice * 1000 / gasThousandthsOfTinycentPrice);
     }
 
@@ -912,25 +706,17 @@ public class ContractMintHTSSuite extends HapiSuite {
 
     @NotNull
     @SuppressWarnings("java:S5960")
-    private CustomSpecAssert assertTxnRecordHasNoTraceabilityEnrichedContractFnResult(
-            final String nestedTransferTxn) {
-        return assertionsHold(
-                (spec, log) -> {
-                    final var subOp = getTxnRecord(nestedTransferTxn);
-                    allRunFor(spec, subOp);
+    private CustomSpecAssert assertTxnRecordHasNoTraceabilityEnrichedContractFnResult(final String nestedTransferTxn) {
+        return assertionsHold((spec, log) -> {
+            final var subOp = getTxnRecord(nestedTransferTxn);
+            allRunFor(spec, subOp);
 
-                    final var rcd = subOp.getResponseRecord();
+            final var rcd = subOp.getResponseRecord();
 
-                    final var contractCallResult = rcd.getContractCallResult();
-                    assertEquals(
-                            0L,
-                            contractCallResult.getGas(),
-                            "Result not expected to externalize gas");
-                    assertEquals(
-                            0L,
-                            contractCallResult.getAmount(),
-                            "Result not expected to externalize amount");
-                    assertEquals(ByteString.EMPTY, contractCallResult.getFunctionParameters());
-                });
+            final var contractCallResult = rcd.getContractCallResult();
+            assertEquals(0L, contractCallResult.getGas(), "Result not expected to externalize gas");
+            assertEquals(0L, contractCallResult.getAmount(), "Result not expected to externalize amount");
+            assertEquals(ByteString.EMPTY, contractCallResult.getFunctionParameters());
+        });
     }
 }

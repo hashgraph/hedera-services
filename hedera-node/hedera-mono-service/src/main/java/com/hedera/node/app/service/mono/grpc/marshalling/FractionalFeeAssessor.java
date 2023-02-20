@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
@@ -36,8 +37,7 @@ public class FractionalFeeAssessor {
     private final CustomFeePayerExemptions customFeePayerExemptions;
 
     @Inject
-    public FractionalFeeAssessor(
-            FixedFeeAssessor fixedFeeAssessor, CustomFeePayerExemptions customFeePayerExemptions) {
+    public FractionalFeeAssessor(FixedFeeAssessor fixedFeeAssessor, CustomFeePayerExemptions customFeePayerExemptions) {
         this.fixedFeeAssessor = fixedFeeAssessor;
         this.customFeePayerExemptions = customFeePayerExemptions;
     }
@@ -85,12 +85,8 @@ public class FractionalFeeAssessor {
             }
 
             if (spec.isNetOfTransfers()) {
-                final var addedFee =
-                        fixedFee(
-                                assessedAmount,
-                                denom.asEntityId(),
-                                fee.getFeeCollector(),
-                                fee.getAllCollectorsAreExempt());
+                final var addedFee = fixedFee(
+                        assessedAmount, denom.asEntityId(), fee.getFeeCollector(), fee.getAllCollectorsAreExempt());
                 fixedFeeAssessor.assess(payer, feeMeta, addedFee, changeManager, accumulator);
             } else {
                 long exemptAmount;
@@ -104,18 +100,12 @@ public class FractionalFeeAssessor {
                 if (unitsLeft < 0) {
                     return INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
                 }
-                AdjustmentUtils.adjustedFractionalChange(
-                        collector, denom, assessedAmount, changeManager);
-                final var finalEffPayerNums =
-                        (filteredCredits == creditsToReclaimFrom)
-                                ? effPayerAccountNums
-                                : effPayerAccountsOf(filteredCredits);
-                final var assessed =
-                        new AssessedCustomFeeWrapper(
-                                collector.asEntityId(),
-                                denom.asEntityId(),
-                                assessedAmount,
-                                finalEffPayerNums);
+                AdjustmentUtils.adjustedFractionalChange(collector, denom, assessedAmount, changeManager);
+                final var finalEffPayerNums = (filteredCredits == creditsToReclaimFrom)
+                        ? effPayerAccountNums
+                        : effPayerAccountsOf(filteredCredits);
+                final var assessed = new AssessedCustomFeeWrapper(
+                        collector.asEntityId(), denom.asEntityId(), assessedAmount, finalEffPayerNums);
                 accumulator.add(assessed);
             }
         }
@@ -148,8 +138,7 @@ public class FractionalFeeAssessor {
         var amountReclaimed = 0L;
         for (var credit : credits) {
             var toReclaimHere =
-                    AdjustmentUtils.safeFractionMultiply(
-                            credit.getAggregatedUnits(), availableToReclaim, amount);
+                    AdjustmentUtils.safeFractionMultiply(credit.getAggregatedUnits(), availableToReclaim, amount);
             credit.aggregateUnits(-toReclaimHere);
             amountReclaimed += toReclaimHere;
         }
@@ -189,8 +178,7 @@ public class FractionalFeeAssessor {
 
     long amountOwedGiven(long initialUnits, FractionalFeeSpec spec) {
         final var nominalFee =
-                AdjustmentUtils.safeFractionMultiply(
-                        spec.getNumerator(), spec.getDenominator(), initialUnits);
+                AdjustmentUtils.safeFractionMultiply(spec.getNumerator(), spec.getDenominator(), initialUnits);
         long effectiveFee = Math.max(nominalFee, spec.getMinimumAmount());
         if (spec.getMaximumUnitsToCollect() > 0) {
             effectiveFee = Math.min(effectiveFee, spec.getMaximumUnitsToCollect());

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,16 +50,35 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StakeChangesInterceptorTest {
-    @Mock private StakeChangeManager stakeChangeManager;
-    @Mock private MerkleNetworkContext networkCtx;
-    @Mock private RewardCalculator rewardCalculator;
-    @Mock private SideEffectsTracker sideEffectsTracker;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private StakePeriodManager stakePeriodManager;
-    @Mock private StakeInfoManager stakeInfoManager;
-    @Mock private HederaAccountNumbers accountNumbers;
-    @Mock private TransactionContext txnCtx;
-    @Mock private UsageLimits usageLimits;
+    @Mock
+    private StakeChangeManager stakeChangeManager;
+
+    @Mock
+    private MerkleNetworkContext networkCtx;
+
+    @Mock
+    private RewardCalculator rewardCalculator;
+
+    @Mock
+    private SideEffectsTracker sideEffectsTracker;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private StakePeriodManager stakePeriodManager;
+
+    @Mock
+    private StakeInfoManager stakeInfoManager;
+
+    @Mock
+    private HederaAccountNumbers accountNumbers;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private UsageLimits usageLimits;
 
     private EntityChangeSet<AccountID, HederaAccount, AccountProperty> changes;
     private StakingAccountsCommitInterceptor subject;
@@ -66,18 +86,17 @@ class StakeChangesInterceptorTest {
     @BeforeEach
     void setUp() {
         changes = new EntityChangeSet<>();
-        subject =
-                new StakingAccountsCommitInterceptor(
-                        sideEffectsTracker,
-                        () -> networkCtx,
-                        dynamicProperties,
-                        rewardCalculator,
-                        stakeChangeManager,
-                        stakePeriodManager,
-                        stakeInfoManager,
-                        accountNumbers,
-                        txnCtx,
-                        usageLimits);
+        subject = new StakingAccountsCommitInterceptor(
+                sideEffectsTracker,
+                () -> networkCtx,
+                dynamicProperties,
+                rewardCalculator,
+                stakeChangeManager,
+                stakePeriodManager,
+                stakeInfoManager,
+                accountNumbers,
+                txnCtx,
+                usageLimits);
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
     }
 
@@ -110,16 +129,11 @@ class StakeChangesInterceptorTest {
     @Test
     void withdrawsAccountStakeAndAwardsNodeStakeFromAccountToNode() {
         given(accountNumbers.stakingRewardAccount()).willReturn(800L);
-        addChange(
-                alice,
-                accountStakedWith(oneBalance, bob),
-                decliningRewardAfter(changingToNode(aNodeNum)));
-        willAnswer(
-                        invocationOnMock -> {
-                            changes.include(
-                                    bob, unstakedWith(twoBalance, oneBalance), newChanges());
-                            return 1;
-                        })
+        addChange(alice, accountStakedWith(oneBalance, bob), decliningRewardAfter(changingToNode(aNodeNum)));
+        willAnswer(invocationOnMock -> {
+                    changes.include(bob, unstakedWith(twoBalance, oneBalance), newChanges());
+                    return 1;
+                })
                 .given(stakeChangeManager)
                 .findOrAdd(bob.getAccountNum(), changes);
 
@@ -132,10 +146,7 @@ class StakeChangesInterceptorTest {
     @Test
     void withdrawsNodeStakeAndAwardsNodeStakeSwitchingNodes() {
         given(accountNumbers.stakingRewardAccount()).willReturn(800L);
-        addChange(
-                alice,
-                nodeStakedWith(oneBalance, aNodeNum),
-                decliningRewardAfter(changingToNode(bNodeNum)));
+        addChange(alice, nodeStakedWith(oneBalance, aNodeNum), decliningRewardAfter(changingToNode(bNodeNum)));
 
         subject.preview(changes);
 
@@ -158,11 +169,10 @@ class StakeChangesInterceptorTest {
     void awardsAccountStakeWhenComingFromAbsent() {
         given(accountNumbers.stakingRewardAccount()).willReturn(800L);
         addChange(alice, unstakedWith(oneBalance), changingToAccount(bob));
-        willAnswer(
-                        invocationOnMock -> {
-                            changes.include(bob, unstakedWith(twoBalance, 0), newChanges());
-                            return 1;
-                        })
+        willAnswer(invocationOnMock -> {
+                    changes.include(bob, unstakedWith(twoBalance, 0), newChanges());
+                    return 1;
+                })
                 .given(stakeChangeManager)
                 .findOrAdd(bob.getAccountNum(), changes);
 
@@ -175,11 +185,10 @@ class StakeChangesInterceptorTest {
     void withdrawsFromNodeAndAwardsAccountStakeWhenSwitching() {
         given(accountNumbers.stakingRewardAccount()).willReturn(800L);
         addChange(alice, nodeStakedWith(oneBalance, aNodeNum, true), changingToAccount(bob));
-        willAnswer(
-                        invocationOnMock -> {
-                            changes.include(bob, unstakedWith(twoBalance, 0), newChanges());
-                            return 1;
-                        })
+        willAnswer(invocationOnMock -> {
+                    changes.include(bob, unstakedWith(twoBalance, 0), newChanges());
+                    return 1;
+                })
                 .given(stakeChangeManager)
                 .findOrAdd(bob.getAccountNum(), changes);
 
@@ -193,19 +202,16 @@ class StakeChangesInterceptorTest {
     void deductsFromAccountAndAwardsToNewAccountWhenSwitching() {
         given(accountNumbers.stakingRewardAccount()).willReturn(800L);
         addChange(alice, accountStakedWith(oneBalance, bob), changingToAccount(carol));
-        willAnswer(
-                        invocationOnMock -> {
-                            changes.include(
-                                    bob, unstakedWith(twoBalance, oneBalance), newChanges());
-                            return 1;
-                        })
+        willAnswer(invocationOnMock -> {
+                    changes.include(bob, unstakedWith(twoBalance, oneBalance), newChanges());
+                    return 1;
+                })
                 .given(stakeChangeManager)
                 .findOrAdd(bob.getAccountNum(), changes);
-        willAnswer(
-                        invocationOnMock -> {
-                            changes.include(carol, unstakedWith(twoBalance, 0), newChanges());
-                            return 2;
-                        })
+        willAnswer(invocationOnMock -> {
+                    changes.include(carol, unstakedWith(twoBalance, 0), newChanges());
+                    return 2;
+                })
                 .given(stakeChangeManager)
                 .findOrAdd(carol.getAccountNum(), changes);
 
@@ -219,12 +225,10 @@ class StakeChangesInterceptorTest {
     void justAdjustsStakedToMeWhenBalanceChanges() {
         given(accountNumbers.stakingRewardAccount()).willReturn(800L);
         addChange(alice, accountStakedWith(oneBalance, bob), toNewBalance(twoBalance));
-        willAnswer(
-                        invocationOnMock -> {
-                            changes.include(
-                                    bob, unstakedWith(twoBalance, oneBalance), newChanges());
-                            return 1;
-                        })
+        willAnswer(invocationOnMock -> {
+                    changes.include(bob, unstakedWith(twoBalance, oneBalance), newChanges());
+                    return 1;
+                })
                 .given(stakeChangeManager)
                 .findOrAdd(bob.getAccountNum(), changes);
 
@@ -247,12 +251,10 @@ class StakeChangesInterceptorTest {
     void deductsFromAccountWhenOptingOut() {
         given(accountNumbers.stakingRewardAccount()).willReturn(800L);
         addChange(alice, accountStakedWith(oneBalance, bob), noLongerStaking());
-        willAnswer(
-                        invocationOnMock -> {
-                            changes.include(
-                                    bob, unstakedWith(twoBalance, oneBalance), newChanges());
-                            return 1;
-                        })
+        willAnswer(invocationOnMock -> {
+                    changes.include(bob, unstakedWith(twoBalance, oneBalance), newChanges());
+                    return 1;
+                })
                 .given(stakeChangeManager)
                 .findOrAdd(bob.getAccountNum(), changes);
 
@@ -273,18 +275,13 @@ class StakeChangesInterceptorTest {
 
     @Test
     void canAwardStakedToMeSideEffectAccount() {
-        addChange(
-                alice,
-                accountStakedWith(oneBalance, bob),
-                decliningRewardAfter(changingToNode(aNodeNum)));
-        willAnswer(
-                        invocationOnMock -> {
-                            changes.include(
-                                    bob, nodeStakedWith(twoBalance, aNodeNum), newChanges());
-                            changes.entity(1).setStakePeriodStart(123L);
-                            changes.entity(1).setEntityNum(EntityNum.fromAccountId(bob));
-                            return 1;
-                        })
+        addChange(alice, accountStakedWith(oneBalance, bob), decliningRewardAfter(changingToNode(aNodeNum)));
+        willAnswer(invocationOnMock -> {
+                    changes.include(bob, nodeStakedWith(twoBalance, aNodeNum), newChanges());
+                    changes.entity(1).setStakePeriodStart(123L);
+                    changes.entity(1).setEntityNum(EntityNum.fromAccountId(bob));
+                    return 1;
+                })
                 .given(stakeChangeManager)
                 .findOrAdd(bob.getAccountNum(), changes);
         given(rewardCalculator.applyReward(anyLong(), any(), any())).willReturn(true);
@@ -301,9 +298,7 @@ class StakeChangesInterceptorTest {
     }
 
     private void addChange(
-            final AccountID id,
-            final MerkleAccount account,
-            final Map<AccountProperty, Object> changeSet) {
+            final AccountID id, final MerkleAccount account, final Map<AccountProperty, Object> changeSet) {
         changes.include(id, account, changeSet);
     }
 
@@ -312,7 +307,10 @@ class StakeChangesInterceptorTest {
     }
 
     private MerkleAccount unstakedWith(final long balance, final long stakedToMe) {
-        return MerkleAccountFactory.newAccount().balance(balance).stakedToMe(stakedToMe).get();
+        return MerkleAccountFactory.newAccount()
+                .balance(balance)
+                .stakedToMe(stakedToMe)
+                .get();
     }
 
     private MerkleAccount accountStakedWith(final long balance, final AccountID to) {
@@ -326,8 +324,7 @@ class StakeChangesInterceptorTest {
         return nodeStakedWith(balance, nodeNum, false);
     }
 
-    private MerkleAccount nodeStakedWith(
-            final long balance, final long nodeNum, final boolean declineReward) {
+    private MerkleAccount nodeStakedWith(final long balance, final long nodeNum, final boolean declineReward) {
         return MerkleAccountFactory.newAccount()
                 .declineReward(declineReward)
                 .stakedId(-nodeNum - 1)
@@ -335,8 +332,7 @@ class StakeChangesInterceptorTest {
                 .get();
     }
 
-    private Map<AccountProperty, Object> decliningRewardAfter(
-            final Map<AccountProperty, Object> otherChanges) {
+    private Map<AccountProperty, Object> decliningRewardAfter(final Map<AccountProperty, Object> otherChanges) {
         otherChanges.put(AccountProperty.DECLINE_REWARD, true);
         return otherChanges;
     }
@@ -367,9 +363,12 @@ class StakeChangesInterceptorTest {
 
     private static final long aNodeNum = 1;
     private static final long bNodeNum = 2;
-    private static final AccountID alice = AccountID.newBuilder().setAccountNum(1234).build();
-    private static final AccountID bob = AccountID.newBuilder().setAccountNum(5678).build();
-    private static final AccountID carol = AccountID.newBuilder().setAccountNum(9012).build();
+    private static final AccountID alice =
+            AccountID.newBuilder().setAccountNum(1234).build();
+    private static final AccountID bob =
+            AccountID.newBuilder().setAccountNum(5678).build();
+    private static final AccountID carol =
+            AccountID.newBuilder().setAccountNum(9012).build();
     private static final long oneBalance = 100_000_000;
     private static final long twoBalance = 200_000_000;
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops.inventory;
 
 import com.google.common.base.MoreObjects;
@@ -83,9 +84,7 @@ public class SpecKeyFromPem extends UtilOp {
     }
 
     private String actualName() {
-        return nameSupplier
-                .map(Supplier::get)
-                .orElse(name.orElse(pemLoc.substring(0, pemLoc.indexOf(".pem"))));
+        return nameSupplier.map(Supplier::get).orElse(name.orElse(pemLoc.substring(0, pemLoc.indexOf(".pem"))));
     }
 
     @Override
@@ -107,32 +106,28 @@ public class SpecKeyFromPem extends UtilOp {
             final Optional<Supplier<String>> linkSupplier) {
         final var seed = Ed25519Utils.readKeyFrom(pemLoc, passphrase);
         final var key = populatedFromSeed(control, seed);
-        linkedId.ifPresent(
-                s -> {
-                    spec.registry().saveAccountId(name, HapiPropertySource.asAccount(s));
-                    spec.registry().saveKey(s, key);
-                });
-        linkSupplier.ifPresent(
-                fn -> {
-                    var s = fn.get();
-                    spec.registry().saveAccountId(name, HapiPropertySource.asAccount(s));
-                    spec.registry().saveKey(s, key);
-                });
+        linkedId.ifPresent(s -> {
+            spec.registry().saveAccountId(name, HapiPropertySource.asAccount(s));
+            spec.registry().saveKey(s, key);
+        });
+        linkSupplier.ifPresent(fn -> {
+            var s = fn.get();
+            spec.registry().saveAccountId(name, HapiPropertySource.asAccount(s));
+            spec.registry().saveKey(s, key);
+        });
         spec.registry().saveKey(name, key);
         spec.keys().incorporate(name, seed, control);
     }
 
     private static Key populatedFromSeed(final SigControl control, final EdDSAPrivateKey key) {
         if (control == SIMPLE) {
-            return Key.newBuilder().setEd25519(ByteString.copyFrom(key.getAbyte())).build();
+            return Key.newBuilder()
+                    .setEd25519(ByteString.copyFrom(key.getAbyte()))
+                    .build();
         } else if (control == SIMPLE_WACL) {
             return Key.newBuilder()
-                    .setKeyList(
-                            KeyList.newBuilder()
-                                    .addKeys(
-                                            Key.newBuilder()
-                                                    .setEd25519(
-                                                            ByteString.copyFrom(key.getAbyte()))))
+                    .setKeyList(KeyList.newBuilder()
+                            .addKeys(Key.newBuilder().setEd25519(ByteString.copyFrom(key.getAbyte()))))
                     .build();
         } else {
             throw new IllegalStateException("Cannot populate key shape " + control);

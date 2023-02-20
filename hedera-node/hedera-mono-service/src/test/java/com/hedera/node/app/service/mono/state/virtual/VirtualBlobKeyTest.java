@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey.BYTES_IN_SERIALIZED_FORM;
@@ -55,8 +56,7 @@ class VirtualBlobKeyTest {
 
     @Test
     void orderPrioritizesEntityNum() {
-        final var smallerEntityNum =
-                new VirtualBlobKey(SYSTEM_DELETED_ENTITY_EXPIRY, entityNum - 1);
+        final var smallerEntityNum = new VirtualBlobKey(SYSTEM_DELETED_ENTITY_EXPIRY, entityNum - 1);
         assertEquals(+1, subject.compareTo(smallerEntityNum));
     }
 

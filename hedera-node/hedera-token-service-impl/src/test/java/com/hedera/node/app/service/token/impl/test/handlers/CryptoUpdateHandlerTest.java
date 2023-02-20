@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
@@ -40,7 +41,9 @@ import org.mockito.Mock;
 class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     private final AccountID updateAccountId = asAccount("0.0.32132");
     private final HederaKey updateAccountKey = asHederaKey(A_COMPLEX_KEY).get();
-    @Mock private MerkleAccount updateAccount;
+
+    @Mock
+    private MerkleAccount updateAccount;
 
     private CryptoUpdateHandler subject = new CryptoUpdateHandler();
 
@@ -134,20 +137,16 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
     }
 
-    private TransactionBody cryptoUpdateTransaction(
-            final AccountID payerId, final AccountID accountToUpdate) {
+    private TransactionBody cryptoUpdateTransaction(final AccountID payerId, final AccountID accountToUpdate) {
         if (payerId.equals(payer)) {
             setUpPayer();
         }
         final var transactionID =
-                TransactionID.newBuilder()
-                        .setAccountID(payerId)
-                        .setTransactionValidStart(consensusTimestamp);
-        final var updateTxnBody =
-                CryptoUpdateTransactionBody.newBuilder()
-                        .setAccountIDToUpdate(accountToUpdate)
-                        .setKey(key)
-                        .build();
+                TransactionID.newBuilder().setAccountID(payerId).setTransactionValidStart(consensusTimestamp);
+        final var updateTxnBody = CryptoUpdateTransactionBody.newBuilder()
+                .setAccountIDToUpdate(accountToUpdate)
+                .setKey(key)
+                .build();
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)
                 .setCryptoUpdateAccount(updateTxnBody)

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts;
 
 import java.util.NavigableMap;
@@ -28,8 +29,7 @@ import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.code.CodeFactory;
 
 public class WorldStateAccount implements Account {
-    private static final Code EMPTY_CODE =
-            CodeFactory.createCode(Bytes.EMPTY, Hash.hash(Bytes.EMPTY), 0, false);
+    private static final Code EMPTY_CODE = CodeFactory.createCode(Bytes.EMPTY, Hash.hash(Bytes.EMPTY), 0, false);
 
     private final Wei balance;
     private final Address address;
@@ -93,8 +93,7 @@ public class WorldStateAccount implements Account {
     }
 
     @Override
-    public NavigableMap<Bytes32, AccountStorageEntry> storageEntriesFrom(
-            final Bytes32 startKeyHash, final int limit) {
+    public NavigableMap<Bytes32, AccountStorageEntry> storageEntriesFrom(final Bytes32 startKeyHash, final int limit) {
         throw new UnsupportedOperationException();
     }
 

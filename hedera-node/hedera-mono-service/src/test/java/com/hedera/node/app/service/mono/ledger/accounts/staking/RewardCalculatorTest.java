@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
@@ -44,10 +45,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RewardCalculatorTest {
-    @Mock private StakePeriodManager stakePeriodManager;
-    @Mock private StakeInfoManager stakeInfoManager;
-    @Mock private MerkleStakingInfo merkleStakingInfo;
-    @Mock private MerkleAccount account;
+    @Mock
+    private StakePeriodManager stakePeriodManager;
+
+    @Mock
+    private StakeInfoManager stakeInfoManager;
+
+    @Mock
+    private MerkleStakingInfo merkleStakingInfo;
+
+    @Mock
+    private MerkleAccount account;
 
     private RewardCalculator subject;
     private static final long todayNumber =
@@ -149,8 +157,7 @@ class RewardCalculatorTest {
         given(account.getStakedNodeAddressBookId()).willReturn(0L);
         given(account.isDeclinedReward()).willReturn(false);
         given(account.totalStake()).willReturn(100 * Units.HBARS_TO_TINYBARS);
-        given(account.totalStakeAtStartOfLastRewardedPeriod())
-                .willReturn(90 * Units.HBARS_TO_TINYBARS);
+        given(account.totalStakeAtStartOfLastRewardedPeriod()).willReturn(90 * Units.HBARS_TO_TINYBARS);
 
         given(account.getStakePeriodStart()).willReturn(todayNumber - 4);
         // 100 * (6-1) + 90 * (1-0) = 590;
@@ -189,8 +196,7 @@ class RewardCalculatorTest {
 
         given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
         given(stakePeriodManager.currentStakePeriod()).willReturn(expectedStakePeriodStart);
-        given(stakePeriodManager.effectivePeriod(anyLong()))
-                .willReturn(expectedStakePeriodStart - 365);
+        given(stakePeriodManager.effectivePeriod(anyLong())).willReturn(expectedStakePeriodStart - 365);
         given(stakeInfoManager.mutableStakeInfoFor(2L)).willReturn(merkleStakingInfo);
 
         final var reward = subject.computePendingReward(merkleAccount);
