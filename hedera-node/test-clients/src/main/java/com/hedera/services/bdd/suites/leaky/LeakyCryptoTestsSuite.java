@@ -174,6 +174,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 cannotExceedAccountAllowanceLimit(),
                 cannotExceedAllowancesTransactionLimit(),
                 createAnAccountWithEVMAddressAliasAndECKey(),
+                createAnAccountWithEVMAddress(),
                 scheduledCryptoApproveAllowanceWaitForExpiryTrue(),
                 txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled(),
                 getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
@@ -556,6 +557,31 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                     allRunFor(spec, hapiGetAccountInfo, hapiGetAnotherAccountInfo, getTxnRecord);
                 }))
                 .then(overridingAllOfDeferred(() -> startingProps));
+    }
+
+    private HapiSpec createAnAccountWithEVMAddress() {
+        return propertyPreservingHapiSpec("CreateAnAccountWithEVMAddress")
+                .preserving(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED)
+                .given(
+                        overridingTwo(
+                                LAZY_CREATION_ENABLED,
+                                TRUE_VALUE,
+                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED,
+                                TRUE_VALUE),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    assert addressBytes.length > 0;
+                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                    final var op = cryptoCreate(ACCOUNT)
+                            .alias(evmAddressBytes)
+                            .balance(100 * ONE_HBAR)
+                            .hasPrecheck(INVALID_ALIAS_KEY);
+                    allRunFor(spec, op);
+                }))
+                .then();
     }
 
     private HapiSpec cannotExceedAllowancesTransactionLimit() {

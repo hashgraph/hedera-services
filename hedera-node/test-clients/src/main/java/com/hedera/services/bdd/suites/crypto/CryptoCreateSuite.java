@@ -97,7 +97,6 @@ public class CryptoCreateSuite extends HapiSuite {
                 createAnAccountWithStakingFields(),
                 /* --- HIP-583 --- */
                 createAnAccountWithECDSAAlias(),
-                createAnAccountWithEVMAddress(),
                 createAnAccountWithED25519Alias(),
                 createAnAccountWithECKeyAndNoAlias(),
                 createAnAccountWithEDKeyAndNoAlias(),
@@ -484,24 +483,6 @@ public class CryptoCreateSuite extends HapiSuite {
                                     .autoRenew(THREE_MONTHS_IN_SECONDS)
                                     .receiverSigReq(false));
                     allRunFor(spec, hapiGetAccountInfo);
-                }))
-                .then();
-    }
-
-    private HapiSpec createAnAccountWithEVMAddress() {
-        return defaultHapiSpec("CreateAnAccountWithEVMAddress")
-                .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
-                .when(withOpContext((spec, opLog) -> {
-                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
-                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                    final var addressBytes = recoverAddressFromPubKey(tmp);
-                    assert addressBytes.length > 0;
-                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                    final var op = cryptoCreate(ACCOUNT)
-                            .alias(evmAddressBytes)
-                            .balance(100 * ONE_HBAR)
-                            .hasPrecheck(INVALID_ALIAS_KEY);
-                    allRunFor(spec, op);
                 }))
                 .then();
     }
