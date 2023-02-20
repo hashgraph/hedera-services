@@ -9,7 +9,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.schedule.impl,
             com.hedera.node.app.service.schedule.impl.test,
             com.hedera.node.app.service.token.impl,
-            com.hedera.node.app.service.token.impl.test;
+            com.hedera.node.app.service.token.impl.test,
+            com.hedera.node.app.service.network.impl.test;
     exports com.hedera.node.app.service.mono.exceptions to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app.service.schedule.impl,
@@ -33,7 +34,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.contract.impl.test,
             com.hedera.node.app.service.consensus.impl,
             com.hedera.node.app.service.network.impl,
-            com.hedera.node.app.service.consensus.impl.test;
+            com.hedera.node.app.service.consensus.impl.test,
+            com.hedera.node.app.service.network.impl.test;
     exports com.hedera.node.app.service.mono.ledger to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app;
@@ -49,7 +51,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.consensus.impl,
             com.hedera.node.app.service.file.impl,
             com.hedera.node.app,
-            com.hedera.node.app.service.schedule.impl;
+            com.hedera.node.app.service.schedule.impl,
+            com.hedera.node.app.service.network.impl.test;
     exports com.hedera.node.app.service.mono.state.validation to
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.utils.accessors;
@@ -137,6 +140,7 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.throttling.annotations;
     exports com.hedera.node.app.service.mono.state.virtual.temporal;
     exports com.hedera.node.app.service.mono.state.logic;
+    exports com.hedera.node.app.service.mono.state.merkle.internals;
 
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.swirlds.common;

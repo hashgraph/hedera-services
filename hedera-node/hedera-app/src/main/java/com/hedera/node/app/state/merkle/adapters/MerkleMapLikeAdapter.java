@@ -32,6 +32,10 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 public class MerkleMapLikeAdapter {
+    private MerkleMapLikeAdapter() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
+
     public static <K extends Comparable<? super K>, V extends MerkleNode & Keyed<K>> MerkleMapLike<K, V> unwrapping(
             final StateMetadata<K, V> md, final MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> real) {
         return new MerkleMapLike<>() {
@@ -80,13 +84,12 @@ public class MerkleMapLikeAdapter {
 
             @Override
             public V getForModify(final K key) {
-                final var modifiable = real.getForModify(new InMemoryKey<>(key));
-                return modifiable != null ? modifiable.getValue() : null;
+                return withKeyIfPresent(key, real.getForModify(new InMemoryKey<>(key)));
             }
 
             @Override
             public V put(final K key, final V value) {
-                final var wrappedKey = new InMemoryKey<>((K) key);
+                final var wrappedKey = new InMemoryKey<>(key);
                 final var replaced = real.put(wrappedKey, new InMemoryValue<>(md, wrappedKey, value));
                 return replaced != null ? replaced.getValue() : null;
             }

@@ -32,6 +32,10 @@ import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class VirtualMapLikeAdapter {
+    private VirtualMapLikeAdapter() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
+
     public static <K extends VirtualKey<? super K>, V extends VirtualValue> VirtualMapLike<K, V> unwrapping(
             final StateMetadata<K, V> md, final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> real) {
         return new VirtualMapLike<>() {
@@ -46,7 +50,7 @@ public class VirtualMapLikeAdapter {
             }
 
             @Override
-            public VirtualDataSource<?, ?> getDataSource() {
+            public VirtualDataSource getDataSource() {
                 return real.getDataSource();
             }
 

@@ -35,10 +35,10 @@ import java.util.Set;
  * Standard implementation of the {@link NetworkService} {@link com.hedera.node.app.spi.Service}.
  */
 public final class NetworkServiceImpl implements NetworkService {
-    private static final String CONTEXT_KEY = "CONTEXT";
-    private static final String STAKING_KEY = "STAKING";
-    private static final String SPECIAL_FILES_KEY = "SPECIAL_FILES";
-    private static final String RUNNING_HASHES_KEY = "RUNNING_HASHES";
+    public static final String CONTEXT_KEY = "CONTEXT";
+    public static final String STAKING_KEY = "STAKING";
+    public static final String SPECIAL_FILES_KEY = "SPECIAL_FILES";
+    public static final String RUNNING_HASHES_KEY = "RUNNING_HASHES";
     private static final SemanticVersion CURRENT_VERSION =
             SemanticVersion.newBuilder().setMinor(34).build();
 

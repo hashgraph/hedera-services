@@ -42,10 +42,10 @@ public final class ScheduleServiceImpl implements ScheduleService {
     private static final SemanticVersion CURRENT_VERSION =
             SemanticVersion.newBuilder().setMinor(34).build();
 
-    private static final String SCHEDULING_STATE_KEY = "SCHEDULING_STATE";
-    private static final String SCHEDULES_BY_ID_KEY = "SCHEDULES_BY_ID";
-    private static final String SCHEDULES_BY_EXPIRY_SEC_KEY = "SCHEDULES_BY_EXPIRY_SEC";
-    private static final String SCHEDULES_BY_EQUALITY_KEY = "SCHEDULES_BY_EQUALITY";
+    public static final String SCHEDULING_STATE_KEY = "SCHEDULING_STATE";
+    public static final String SCHEDULES_BY_ID_KEY = "SCHEDULES_BY_ID";
+    public static final String SCHEDULES_BY_EXPIRY_SEC_KEY = "SCHEDULES_BY_EXPIRY_SEC";
+    public static final String SCHEDULES_BY_EQUALITY_KEY = "SCHEDULES_BY_EQUALITY";
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {

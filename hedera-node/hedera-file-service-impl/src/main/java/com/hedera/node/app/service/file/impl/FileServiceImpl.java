@@ -31,9 +31,9 @@ import java.util.Set;
 /** Standard implementation of the {@link FileService} {@link com.hedera.node.app.spi.Service}. */
 public final class FileServiceImpl implements FileService {
     private static final int MAX_BLOBS = 50_000_000;
-    private static final String BLOBS_KEY = "BLOBS";
     private static final SemanticVersion CURRENT_VERSION =
             SemanticVersion.newBuilder().setMinor(34).build();
+    public static final String BLOBS_KEY = "BLOBS";
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {

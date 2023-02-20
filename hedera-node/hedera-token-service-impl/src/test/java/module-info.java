@@ -25,4 +25,6 @@ module com.hedera.node.app.service.token.impl.test {
             org.junit.platform.commons;
     opens com.hedera.node.app.service.token.impl.test.handlers to
             org.junit.platform.commons;
+    opens com.hedera.node.app.service.token.impl.test.serdes to
+            org.junit.platform.commons;
 }

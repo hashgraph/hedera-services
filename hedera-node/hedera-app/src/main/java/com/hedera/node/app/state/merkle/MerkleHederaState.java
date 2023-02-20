@@ -26,6 +26,11 @@ import static com.swirlds.common.system.InitTrigger.RECONNECT;
 import static com.swirlds.common.system.InitTrigger.RESTART;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
+import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.DaggerServicesApp;
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.context.StateChildrenProvider;
@@ -64,6 +69,12 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualVa
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.network.NetworkService;
+import com.hedera.node.app.service.network.impl.NetworkServiceImpl;
+import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
+import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.EmptyWritableStates;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -154,27 +165,6 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     private static final long CLASS_ID = 0x2de3ead3caf06392L;
     private static final int VERSION_1 = 1;
     private static final int CURRENT_VERSION = VERSION_1;
-    public static final String NETWORK_SERVICE = "NetworkService";
-    public static final String SPECIAL_FILES = "SPECIAL_FILES";
-    public static final String TOKEN_SERVICE = "TokenService";
-    public static final String NFTS = "NFTS";
-    public static final String RUNNING_HASHES = "RUNNING_HASHES";
-    public static final String STAKING = "STAKING";
-    public static final String SCHEDULE_SERVICE = "ScheduleService";
-    public static final String CONTEXT = "CONTEXT";
-    public static final String SCHEDULING_STATE = "SCHEDULING_STATE";
-    public static final String SCHEDULES_BY_EQUALITY = "SCHEDULES_BY_EQUALITY";
-    public static final String SCHEDULES_BY_EXPIRY_SEC = "SCHEDULES_BY_EXPIRY_SEC";
-    public static final String SCHEDULES_BY_ID = "SCHEDULES_BY_ID";
-    public static final String CONSENSUS_SERVICE = "ConsensusService";
-    public static final String TOPICS = "TOPICS";
-    public static final String PAYER_RECORDS = "PAYER_RECORDS";
-    public static final String FILE_SERVICE = "FileService";
-    public static final String BLOBS = "BLOBS";
-    public static final String CONTRACT_SERVICE = "ContractService";
-    public static final String STORAGE = "STORAGE";
-    public static final String TOKENS = "TOKENS";
-    public static final String TOKEN_RELS = "TOKEN_RELS";
 
     /**
      * This callback is invoked whenever the consensus round happens. The Hashgraph Platform, today,
@@ -243,8 +233,6 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
             final InitTrigger trigger,
             final SoftwareVersion deserializedVersion) {
         this.platform = platform;
-
-        //        System.out.println("In init with " + trigger);
         if (trigger == GENESIS) {
             // Create the top-level children in the Merkle tree
             onMigrate.accept(this);
@@ -274,18 +262,23 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     private void createSpecialGenesisChildren(
             final AddressBook addressBook, final long seqStart, final BootstrapProperties bootstrapProperties) {
 
-        final var writableNetworkStates = createWritableStates(NETWORK_SERVICE);
-        writableNetworkStates.getSingleton(CONTEXT).put(genesisNetworkCtxWith(seqStart));
-        writableNetworkStates.getSingleton(RUNNING_HASHES).put(genesisRunningHashLeaf());
-        writableNetworkStates.getSingleton(SPECIAL_FILES).put(new MerkleSpecialFiles());
+        final var writableNetworkStates = createWritableStates(NetworkService.NAME);
+        writableNetworkStates.getSingleton(NetworkServiceImpl.CONTEXT_KEY).put(genesisNetworkCtxWith(seqStart));
+        writableNetworkStates
+                .getSingleton(NetworkServiceImpl.RUNNING_HASHES_KEY)
+                .put(genesisRunningHashLeaf());
+        writableNetworkStates.getSingleton(NetworkServiceImpl.SPECIAL_FILES_KEY).put(new MerkleSpecialFiles());
         ((MerkleWritableStates) writableNetworkStates).commit();
 
-        final var writableScheduleStates = createWritableStates(SCHEDULE_SERVICE);
+        final var writableScheduleStates = createWritableStates(ScheduleService.NAME);
         final var neverScheduledState = new MerkleScheduledTransactionsState();
-        writableScheduleStates.getSingleton(SCHEDULING_STATE).put(neverScheduledState);
+        writableScheduleStates
+                .getSingleton(ScheduleServiceImpl.SCHEDULING_STATE_KEY)
+                .put(neverScheduledState);
         ((MerkleWritableStates) writableScheduleStates).commit();
 
-        final var writableStakingInfos = writableNetworkStates.<EntityNum, MerkleStakingInfo>get(STAKING);
+        final var writableStakingInfos =
+                writableNetworkStates.<EntityNum, MerkleStakingInfo>get(NetworkServiceImpl.STAKING_KEY);
         buildStakingInfoMap(addressBook, bootstrapProperties, writableStakingInfos);
     }
 
@@ -637,16 +630,16 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
                 mapLikePayerRecords(),
                 VirtualMapLikeAdapter.unwrapping(
                         (StateMetadata<EntityNumVirtualKey, OnDiskAccount>)
-                                services.get(TOKEN_SERVICE).get("ACCOUNTS"),
-                        getChild(findNodeIndex(TOKEN_SERVICE, "ACCOUNTS"))));
+                                services.get(TokenService.NAME).get("ACCOUNTS"),
+                        getChild(findNodeIndex(TokenService.NAME, "ACCOUNTS"))));
     }
 
     @SuppressWarnings("unchecked")
     private MerkleMapLike<EntityNum, MerklePayerRecords> mapLikePayerRecords() {
         return MerkleMapLikeAdapter.unwrapping(
                 (StateMetadata<EntityNum, MerklePayerRecords>)
-                        services.get(TOKEN_SERVICE).get(PAYER_RECORDS),
-                getChild(findNodeIndex(TOKEN_SERVICE, PAYER_RECORDS)));
+                        services.get(TokenService.NAME).get(TokenServiceImpl.PAYER_RECORDS_KEY),
+                getChild(findNodeIndex(TokenService.NAME, TokenServiceImpl.PAYER_RECORDS_KEY)));
     }
 
     @Override
@@ -654,8 +647,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     public MerkleMapLike<EntityNum, MerkleTopic> topics() {
         return MerkleMapLikeAdapter.unwrapping(
                 (StateMetadata<EntityNum, MerkleTopic>)
-                        services.get(CONSENSUS_SERVICE).get(TOPICS),
-                getChild(findNodeIndex(CONSENSUS_SERVICE, TOPICS)));
+                        services.get(ConsensusService.NAME).get(ConsensusServiceImpl.TOPICS_KEY),
+                getChild(findNodeIndex(ConsensusService.NAME, ConsensusServiceImpl.TOPICS_KEY)));
     }
 
     @Override
@@ -663,8 +656,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     public VirtualMapLike<VirtualBlobKey, VirtualBlobValue> storage() {
         return VirtualMapLikeAdapter.unwrapping(
                 (StateMetadata<VirtualBlobKey, VirtualBlobValue>)
-                        services.get(FILE_SERVICE).get(BLOBS),
-                getChild(findNodeIndex(FILE_SERVICE, BLOBS)));
+                        services.get(FileService.NAME).get(FileServiceImpl.BLOBS_KEY),
+                getChild(findNodeIndex(FileService.NAME, FileServiceImpl.BLOBS_KEY)));
     }
 
     @Override
@@ -672,8 +665,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     public VirtualMapLike<ContractKey, IterableContractValue> contractStorage() {
         return VirtualMapLikeAdapter.unwrapping(
                 (StateMetadata<ContractKey, IterableContractValue>)
-                        services.get(CONTRACT_SERVICE).get(STORAGE),
-                getChild(findNodeIndex(CONTRACT_SERVICE, STORAGE)));
+                        services.get(ContractServiceImpl.NAME).get(ContractServiceImpl.STORAGE_KEY),
+                getChild(findNodeIndex(ContractServiceImpl.NAME, ContractServiceImpl.STORAGE_KEY)));
     }
 
     @Override
@@ -681,8 +674,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     public MerkleMapLike<EntityNum, MerkleToken> tokens() {
         return MerkleMapLikeAdapter.unwrapping(
                 (StateMetadata<EntityNum, MerkleToken>)
-                        services.get(TOKEN_SERVICE).get(TOKENS),
-                getChild(findNodeIndex(TOKEN_SERVICE, TOKENS)));
+                        services.get(TokenService.NAME).get(TokenServiceImpl.TOKENS_KEY),
+                getChild(findNodeIndex(TokenService.NAME, TokenServiceImpl.TOKENS_KEY)));
     }
 
     @Override
@@ -690,34 +683,36 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     public TokenRelStorageAdapter tokenAssociations() {
         return TokenRelStorageAdapter.fromOnDisk(VirtualMapLikeAdapter.unwrapping(
                 (StateMetadata<EntityNumVirtualKey, OnDiskTokenRel>)
-                        services.get(TOKEN_SERVICE).get(TOKEN_RELS),
-                getChild(findNodeIndex(TOKEN_SERVICE, TOKEN_RELS))));
+                        services.get(TokenService.NAME).get(TokenServiceImpl.TOKEN_RELS_KEY),
+                getChild(findNodeIndex(TokenService.NAME, TokenServiceImpl.TOKEN_RELS_KEY))));
     }
 
     @Override
     public ScheduledTransactions scheduleTxs() {
         return new ScheduledTransactionsAdapter(
                 ((SingletonNode<MerkleScheduledTransactionsState>)
-                                getChild(findNodeIndex(SCHEDULE_SERVICE, SCHEDULING_STATE)))
+                                getChild(findNodeIndex(ScheduleService.NAME, ScheduleServiceImpl.SCHEDULING_STATE_KEY)))
                         .getValue(),
                 MerkleMapLikeAdapter.unwrapping(
                         (StateMetadata<EntityNumVirtualKey, ScheduleVirtualValue>)
-                                services.get(SCHEDULE_SERVICE).get(SCHEDULES_BY_ID),
-                        getChild(findNodeIndex(SCHEDULE_SERVICE, SCHEDULES_BY_ID))),
+                                services.get(ScheduleService.NAME).get(ScheduleServiceImpl.SCHEDULES_BY_ID_KEY),
+                        getChild(findNodeIndex(ScheduleService.NAME, ScheduleServiceImpl.SCHEDULES_BY_ID_KEY))),
                 MerkleMapLikeAdapter.unwrapping(
                         (StateMetadata<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue>)
-                                services.get(SCHEDULE_SERVICE).get(SCHEDULES_BY_EXPIRY_SEC),
-                        getChild(findNodeIndex(SCHEDULE_SERVICE, SCHEDULES_BY_EXPIRY_SEC))),
+                                services.get(ScheduleService.NAME).get(ScheduleServiceImpl.SCHEDULES_BY_EXPIRY_SEC_KEY),
+                        getChild(findNodeIndex(ScheduleService.NAME, ScheduleServiceImpl.SCHEDULES_BY_EXPIRY_SEC_KEY))),
                 MerkleMapLikeAdapter.unwrapping(
                         (StateMetadata<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue>)
-                                services.get(SCHEDULE_SERVICE).get(SCHEDULES_BY_EQUALITY),
-                        getChild(findNodeIndex(SCHEDULE_SERVICE, SCHEDULES_BY_EQUALITY))));
+                                services.get(ScheduleService.NAME).get(ScheduleServiceImpl.SCHEDULES_BY_EQUALITY_KEY),
+                        getChild(findNodeIndex(ScheduleService.NAME, ScheduleServiceImpl.SCHEDULES_BY_EQUALITY_KEY))));
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public MerkleNetworkContext networkCtx() {
-        return ((SingletonNode<MerkleNetworkContext>) getChild(findNodeIndex(NETWORK_SERVICE, CONTEXT))).getValue();
+        return ((SingletonNode<MerkleNetworkContext>)
+                        getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.CONTEXT_KEY)))
+                .getValue();
     }
 
     @Override
@@ -728,7 +723,9 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
     @Override
     public MerkleSpecialFiles specialFiles() {
-        return ((SingletonNode<MerkleSpecialFiles>) getChild(findNodeIndex(NETWORK_SERVICE, SPECIAL_FILES))).getValue();
+        return ((SingletonNode<MerkleSpecialFiles>)
+                        getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.SPECIAL_FILES_KEY)))
+                .getValue();
     }
 
     @Override
@@ -736,8 +733,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     public UniqueTokenMapAdapter uniqueTokens() {
         return UniqueTokenMapAdapter.wrap(VirtualMapLikeAdapter.unwrapping(
                 (StateMetadata<UniqueTokenKey, UniqueTokenValue>)
-                        services.get(TOKEN_SERVICE).get(NFTS),
-                getChild(findNodeIndex(TOKEN_SERVICE, NFTS))));
+                        services.get(TokenService.NAME).get(TokenServiceImpl.NFTS_KEY),
+                getChild(findNodeIndex(TokenService.NAME, TokenServiceImpl.NFTS_KEY))));
     }
 
     @Override
@@ -747,7 +744,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
     @Override
     public RecordsRunningHashLeaf runningHashLeaf() {
-        return ((SingletonNode<RecordsRunningHashLeaf>) getChild(findNodeIndex(NETWORK_SERVICE, RUNNING_HASHES)))
+        return ((SingletonNode<RecordsRunningHashLeaf>)
+                        getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.RUNNING_HASHES_KEY)))
                 .getValue();
     }
 
@@ -761,8 +759,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     public MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfo() {
         return MerkleMapLikeAdapter.unwrapping(
                 (StateMetadata<EntityNum, MerkleStakingInfo>)
-                        services.get(NETWORK_SERVICE).get(STAKING),
-                getChild(findNodeIndex(NETWORK_SERVICE, STAKING)));
+                        services.get(NetworkService.NAME).get(NetworkServiceImpl.STAKING_KEY),
+                getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.STAKING_KEY)));
     }
 
     @Override

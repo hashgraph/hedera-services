@@ -507,10 +507,10 @@ class SizeLimitedStorageTest {
     @Test
     void aPendingChangeMustBeReflectedInAnAdditionSet() {
         newMappings.put(firstAKey, aValue);
+        final var storageLike = VirtualMapLike.from(storage);
         assertThrows(
                 IllegalStateException.class,
-                () -> incorporateKvImpact(
-                        firstAKey, ZERO_VALUE, updatedKeys, removedKeys, newMappings, VirtualMapLike.from(storage)));
+                () -> incorporateKvImpact(firstAKey, ZERO_VALUE, updatedKeys, removedKeys, newMappings, storageLike));
     }
 
     @Test

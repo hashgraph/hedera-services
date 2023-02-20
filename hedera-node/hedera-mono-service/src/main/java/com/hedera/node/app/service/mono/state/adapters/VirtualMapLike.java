@@ -49,7 +49,8 @@ public interface VirtualMapLike<K extends VirtualKey<? super K>, V extends Virtu
 
     Hash getHash();
 
-    VirtualDataSource<?, ?> getDataSource();
+    @SuppressWarnings("rawtypes")
+    VirtualDataSource getDataSource();
 
     void extractVirtualMapData(ThreadManager threadManager, InterruptableConsumer<Pair<K, V>> handler, int threadCount)
             throws InterruptedException;
@@ -127,7 +128,7 @@ public interface VirtualMapLike<K extends VirtualKey<? super K>, V extends Virtu
         return new VirtualMapLike<>() {
             @Override
             public VirtualDataSource<K, V> getDataSource() {
-                return null;
+                return real.getDataSource();
             }
 
             @Override

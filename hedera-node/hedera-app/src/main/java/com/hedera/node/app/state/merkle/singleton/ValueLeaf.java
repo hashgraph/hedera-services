@@ -31,6 +31,9 @@ import java.util.Objects;
  * StateMetadata}.
  */
 public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
+    /**
+     * {@deprecated} Needed for ConstructableRegistry, TO BE REMOVED ASAP
+     */
     @Deprecated(forRemoval = true)
     private static final long CLASS_ID = 0x65A48B28C563D72EL;
 
@@ -38,7 +41,9 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
     /** The actual value. For example, it could be an Account or SmartContract. */
     private T val;
 
-    // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
+    /**
+     * {@deprecated} Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
+     */
     @Deprecated(forRemoval = true)
     public ValueLeaf() {
         md = null;

@@ -34,4 +34,5 @@ module com.hedera.node.app.service.token.impl {
             com.hedera.node.app.service.token.impl.test;
 
     exports com.hedera.node.app.service.token.impl.components;
+    exports com.hedera.node.app.service.token.impl.serdes;
 }

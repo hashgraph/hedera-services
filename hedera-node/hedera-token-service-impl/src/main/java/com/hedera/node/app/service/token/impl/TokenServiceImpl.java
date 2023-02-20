@@ -44,11 +44,11 @@ public class TokenServiceImpl implements TokenService {
     private static final SemanticVersion CURRENT_VERSION =
             SemanticVersion.newBuilder().setMinor(34).build();
 
-    private static final String NFTS_KEY = "NFTS";
-    private static final String TOKENS_KEY = "TOKENS";
-    private static final String ACCOUNTS_KEY = "ACCOUNTS";
-    private static final String TOKEN_RELS_KEY = "TOKEN_RELS";
-    private static final String PAYER_RECORDS_KEY = "PAYER_RECORDS";
+    public static final String NFTS_KEY = "NFTS";
+    public static final String TOKENS_KEY = "TOKENS";
+    public static final String ACCOUNTS_KEY = "ACCOUNTS";
+    public static final String TOKEN_RELS_KEY = "TOKEN_RELS";
+    public static final String PAYER_RECORDS_KEY = "PAYER_RECORDS";
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {

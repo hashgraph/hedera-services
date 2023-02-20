@@ -32,10 +32,10 @@ import java.util.Set;
  * Standard implementation of the {@link ConsensusService} {@link com.hedera.node.app.spi.Service}.
  */
 public final class ConsensusServiceImpl implements ConsensusService {
-    private static final String TOPICS_KEY = "TOPICS";
-
     private static final SemanticVersion CURRENT_VERSION =
             SemanticVersion.newBuilder().setMinor(34).build();
+
+    public static final String TOPICS_KEY = "TOPICS";
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {

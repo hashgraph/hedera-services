@@ -24,7 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
@@ -36,7 +36,7 @@ public class ContractLogAsserts extends BaseErroringAssertsProvider<ContractLogi
 
     public ContractLogAsserts utf8data(String data) {
         registerProvider((spec, o) -> {
-            String actual = new String(dataFrom(o), Charset.forName("UTF-8"));
+            String actual = new String(dataFrom(o), StandardCharsets.UTF_8);
             Assertions.assertEquals(data, actual, "Wrong UTF-8 data!");
         });
         return this;

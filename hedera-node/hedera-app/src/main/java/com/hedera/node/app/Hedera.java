@@ -115,21 +115,13 @@ public final class Hedera {
 
     static Consumer<MerkleHederaState> registerServiceSchemasForMigration(final SemanticVersion currentVersion) {
         final List<ServiceRegistry> serviceRegistries = List.of(
-                //            ServiceRegistry.registryFor(ConsensusService.getInstance()),
                 ServiceRegistry.registryFor(new ConsensusServiceImpl()),
-                //            ServiceRegistry.registryFor(ContractService.getInstance()),
                 ServiceRegistry.registryFor(new ContractServiceImpl()),
-                //            ServiceRegistry.registryFor(FileService.getInstance()),
                 ServiceRegistry.registryFor(new FileServiceImpl()),
-                //            ServiceRegistry.registryFor(FreezeService.getInstance()),
                 ServiceRegistry.registryFor(new FreezeServiceImpl()),
-                //            ServiceRegistry.registryFor(NetworkService.getInstance()),
                 ServiceRegistry.registryFor(new NetworkServiceImpl()),
-                //            ServiceRegistry.registryFor(ScheduleService.getInstance()),
                 ServiceRegistry.registryFor(new ScheduleServiceImpl()),
-                //            ServiceRegistry.registryFor(TokenService.getInstance()),
                 ServiceRegistry.registryFor(new TokenServiceImpl()),
-                //            ServiceRegistry.registryFor(UtilService.getInstance())
                 ServiceRegistry.registryFor(new UtilServiceImpl()));
 
         serviceRegistries.forEach(ServiceRegistry::registerSchemas);
