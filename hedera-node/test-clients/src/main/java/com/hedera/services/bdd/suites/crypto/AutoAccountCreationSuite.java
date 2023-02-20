@@ -1596,7 +1596,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
     private HapiSpec transferHbarsToECDSAKey() {
         final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
-
+        final var transferToACDSA = "transferToACDSA";
         return defaultHapiSpec("transferHbarsToECDSAKey")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -1612,7 +1612,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> {
                     final var hbarCreateTransfer = cryptoTransfer(
                                     tinyBarsFromAccountToAlias(PAYER, SECP_256K1_SOURCE_KEY, ONE_HBAR))
-                            .via("transferToACDSA");
+                            .via(transferToACDSA);
 
                     final var op1 = cryptoTransfer(tinyBarsFromTo(PAYER, evmAddress.get(), ONE_HBAR));
 
@@ -1626,7 +1626,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                     .memo(AUTO_MEMO));
 
                     var op3 = childRecordsCheck(
-                            "transferToACDSA",
+                            transferToACDSA,
                             SUCCESS,
                             recordWith()
                                     .evmAddress(evmAddress.get())
@@ -1635,7 +1635,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
                     allRunFor(spec, hbarCreateTransfer, op1, op2, op3);
                 }))
-                .then(getTxnRecord("transferToACDSA").andAllChildRecords().logged());
+                .then(getTxnRecord(transferToACDSA).andAllChildRecords().logged());
     }
 
     private HapiSpec transferFungibleToEVMAddressAlias() {
