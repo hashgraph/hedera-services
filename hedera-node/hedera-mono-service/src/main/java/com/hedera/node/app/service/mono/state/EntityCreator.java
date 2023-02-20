@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -51,10 +52,7 @@ public interface EntityCreator {
      * @return the {@link ExpirableTxnRecord} after setting needed properties
      */
     ExpirableTxnRecord saveExpiringRecord(
-            AccountID id,
-            ExpirableTxnRecord expiringRecord,
-            long consensusTime,
-            long submittingMember);
+            AccountID id, ExpirableTxnRecord expiringRecord, long consensusTime, long submittingMember);
 
     /**
      * Returns a {@link ExpirableTxnRecord.Builder} summarizing the information for the given
@@ -89,9 +87,7 @@ public interface EntityCreator {
      * @return a {@link ExpirableTxnRecord.Builder} summarizing the input
      */
     ExpirableTxnRecord.Builder createSuccessfulSyntheticRecord(
-            List<FcAssessedCustomFee> assessedCustomFees,
-            SideEffectsTracker sideEffectsTracker,
-            String memo);
+            List<FcAssessedCustomFee> assessedCustomFees, SideEffectsTracker sideEffectsTracker, String memo);
 
     /**
      * Returns a {@link ExpirableTxnRecord.Builder} summarizing a failed synthetic transaction.
@@ -109,6 +105,5 @@ public interface EntityCreator {
      * @param consensusTimestamp consensus timestamp
      * @return a record of a invalid failure transaction
      */
-    ExpirableTxnRecord.Builder createInvalidFailureRecord(
-            TxnAccessor accessor, Instant consensusTimestamp);
+    ExpirableTxnRecord.Builder createInvalidFailureRecord(TxnAccessor accessor, Instant consensusTimestamp);
 }

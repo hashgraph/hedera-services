@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry;
 
 import static com.hedera.node.app.service.mono.state.tasks.SystemTaskResult.DONE;
@@ -126,9 +127,7 @@ public class EntityAutoExpiry {
     }
 
     private boolean canContinueGiven(
-            final @Nullable SystemTaskResult result,
-            final int idsScanned,
-            final int entitiesProcessed) {
+            final @Nullable SystemTaskResult result, final int idsScanned, final int entitiesProcessed) {
         return idsScanned < maxIdsToScan
                 && entitiesProcessed < maxEntitiesToProcess
                 && result != NO_CAPACITY_LEFT

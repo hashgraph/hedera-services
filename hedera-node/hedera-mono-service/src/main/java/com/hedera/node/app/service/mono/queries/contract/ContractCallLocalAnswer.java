@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.contract;
 
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.unaliased;
@@ -87,10 +88,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
                 ContractCallLocal,
                 query -> query.getContractCallLocal().getHeader().getPayment(),
                 query -> query.getContractCallLocal().getHeader().getResponseType(),
-                response ->
-                        response.getContractCallLocal()
-                                .getHeader()
-                                .getNodeTransactionPrecheckCode(),
+                response -> response.getContractCallLocal().getHeader().getNodeTransactionPrecheckCode(),
                 (query, view) -> {
                     final var op = query.getContractCallLocal();
                     if (op.getGas() < 0) {
@@ -98,8 +96,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
                     } else if (op.getGas() > dynamicProperties.maxGasPerSec()) {
                         return MAX_GAS_LIMIT_EXCEEDED;
                     } else {
-                        if (entityAccess.isTokenAccount(
-                                EntityIdUtils.asTypedEvmAddress(op.getContractID()))) {
+                        if (entityAccess.isTokenAccount(EntityIdUtils.asTypedEvmAddress(op.getContractID()))) {
                             return OK;
                         } else {
                             final var target = unaliased(op.getContractID(), aliasManager);
@@ -120,10 +117,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 
     @Override
     public Response responseGiven(
-            final Query query,
-            @Nullable final StateView view,
-            final ResponseCodeEnum validity,
-            final long cost) {
+            final Query query, @Nullable final StateView view, final ResponseCodeEnum validity, final long cost) {
         return responseFor(query, view, validity, cost, NO_QUERY_CTX);
     }
 
@@ -174,9 +168,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
                 response.setHeader(answerOnlyHeader(FAIL_INVALID, cost));
             } else {
                 response.mergeFrom(
-                        withCid(
-                                (ContractCallLocalResponse) ctx.get(CONTRACT_CALL_LOCAL_CTX_KEY),
-                                op.getContractID()));
+                        withCid((ContractCallLocalResponse) ctx.get(CONTRACT_CALL_LOCAL_CTX_KEY), op.getContractID()));
             }
         } else {
             // If answering from a zero-stake node, there are no node payments, and the
@@ -188,21 +180,14 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
                     response.setHeader(answerOnlyHeader(BUSY, cost));
                 } else {
                     final var entityAccess =
-                            new StaticEntityAccess(
-                                    Objects.requireNonNull(view), aliasManager, validator);
+                            new StaticEntityAccess(Objects.requireNonNull(view), aliasManager, validator);
                     final var codeCache = new CodeCache(nodeProperties, entityAccess);
-                    try (final var worldState =
-                            new HederaWorldState(ids, entityAccess, codeCache, dynamicProperties)) {
+                    try (final var worldState = new HederaWorldState(ids, entityAccess, codeCache, dynamicProperties)) {
                         final var evmTxProcessor = evmTxProcessorProvider.get();
                         evmTxProcessor.setWorldState(worldState);
                         evmTxProcessor.setBlockMetaSource(blockMetaSource.get());
                         final var opResponse =
-                                CallLocalExecutor.execute(
-                                        accountStore,
-                                        evmTxProcessor,
-                                        op,
-                                        aliasManager,
-                                        entityAccess);
+                                CallLocalExecutor.execute(accountStore, evmTxProcessor, op, aliasManager, entityAccess);
                         response.mergeFrom(withCid(opResponse, op.getContractID()));
                     }
                 }
@@ -213,8 +198,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
         }
     }
 
-    private ContractCallLocalResponse withCid(
-            final ContractCallLocalResponse response, final ContractID target) {
+    private ContractCallLocalResponse withCid(final ContractCallLocalResponse response, final ContractID target) {
         return response.toBuilder()
                 .setFunctionResult(response.getFunctionResult().toBuilder().setContractID(target))
                 .build();

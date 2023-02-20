@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,25 +37,19 @@ class UtilOpsUsageTest {
     @Test
     void estimatesAutoRenewAsExpected() {
         final var op = UtilPrngTransactionBody.newBuilder().setRange(10).build();
-        final var txn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(
-                                TransactionID.newBuilder()
-                                        .setTransactionValidStart(
-                                                Timestamp.newBuilder().setSeconds(now)))
-                        .setUtilPrng(op)
-                        .build();
+        final var txn = TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder()
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                .setUtilPrng(op)
+                .build();
 
         final ByteString canonicalSig =
-                ByteString.copyFromUtf8(
-                        "0123456789012345678901234567890123456789012345678901234567890123");
-        final SignatureMap onePairSigMap =
-                SignatureMap.newBuilder()
-                        .addSigPair(
-                                SignaturePair.newBuilder()
-                                        .setPubKeyPrefix(ByteString.copyFromUtf8("a"))
-                                        .setEd25519(canonicalSig))
-                        .build();
+                ByteString.copyFromUtf8("0123456789012345678901234567890123456789012345678901234567890123");
+        final SignatureMap onePairSigMap = SignatureMap.newBuilder()
+                .addSigPair(SignaturePair.newBuilder()
+                        .setPubKeyPrefix(ByteString.copyFromUtf8("a"))
+                        .setEd25519(canonicalSig))
+                .build();
         final SigUsage singleSigUsage = new SigUsage(1, onePairSigMap.getSerializedSize(), 1);
         final var opMeta = new UtilPrngMeta(txn.getUtilPrng());
         final var baseMeta = new BaseTransactionMeta(0, 0);

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
@@ -29,8 +30,7 @@ public class InHandleBlockMetaSource implements BlockMetaSource {
     private final TransactionContext txnCtx;
 
     @Inject
-    public InHandleBlockMetaSource(
-            final BlockManager blockManager, final TransactionContext txnCtx) {
+    public InHandleBlockMetaSource(final BlockManager blockManager, final TransactionContext txnCtx) {
         this.blockManager = blockManager;
         this.txnCtx = txnCtx;
     }

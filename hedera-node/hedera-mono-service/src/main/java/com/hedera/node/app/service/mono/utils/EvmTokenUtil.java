@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import static com.hedera.node.app.service.mono.context.primitives.StateView.tokenFreeStatusFor;
@@ -44,19 +45,18 @@ public class EvmTokenUtil {
     }
 
     public static EvmTokenInfo asEvmTokenInfo(MerkleToken token, final ByteString ledgerId) {
-        final var info =
-                new EvmTokenInfo(
-                        ledgerId.toByteArray(),
-                        token.supplyType().ordinal(),
-                        token.isDeleted(),
-                        token.symbol(),
-                        token.name(),
-                        token.memo(),
-                        EntityIdUtils.asTypedEvmAddress(token.treasury()),
-                        token.totalSupply(),
-                        token.maxSupply(),
-                        token.decimals(),
-                        token.expiry());
+        final var info = new EvmTokenInfo(
+                ledgerId.toByteArray(),
+                token.supplyType().ordinal(),
+                token.isDeleted(),
+                token.symbol(),
+                token.name(),
+                token.memo(),
+                EntityIdUtils.asTypedEvmAddress(token.treasury()),
+                token.totalSupply(),
+                token.maxSupply(),
+                token.decimals(),
+                token.expiry());
 
         final var adminCandidate = token.adminKey();
         adminCandidate.ifPresentOrElse(
@@ -69,24 +69,23 @@ public class EvmTokenUtil {
         final var freezeCandidate = token.freezeKey();
         freezeCandidate.ifPresentOrElse(
                 k -> {
-                    info.setDefaultFreezeStatus(
-                            tokenFreeStatusFor(token.accountsAreFrozenByDefault()).getNumber()
-                                    == 1);
+                    info.setDefaultFreezeStatus(tokenFreeStatusFor(token.accountsAreFrozenByDefault())
+                                    .getNumber()
+                            == 1);
                     final var key = asKeyUnchecked(k);
                     info.setFreezeKey(convertToEvmKey(key));
                 },
                 () -> {
                     info.setFreezeKey(new EvmKey());
-                    info.setDefaultFreezeStatus(
-                            TokenFreezeStatus.FreezeNotApplicable.getNumber() == 1);
+                    info.setDefaultFreezeStatus(TokenFreezeStatus.FreezeNotApplicable.getNumber() == 1);
                 });
 
         final var kycCandidate = token.kycKey();
         kycCandidate.ifPresentOrElse(
                 k -> {
-                    info.setDefaultKycStatus(
-                            tokenKycStatusFor(token.accountsKycGrantedByDefault()).getNumber()
-                                    == 1);
+                    info.setDefaultKycStatus(tokenKycStatusFor(token.accountsKycGrantedByDefault())
+                                    .getNumber()
+                            == 1);
                     final var key = asKeyUnchecked(k);
                     info.setKycKey(convertToEvmKey(key));
                 },
@@ -141,10 +140,10 @@ public class EvmTokenUtil {
         return info;
     }
 
-    public static List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee>
-            evmCustomFees(List<CustomFee> customFees) {
-        List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee>
-                evmCustomFees = new ArrayList<>();
+    public static List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee> evmCustomFees(
+            List<CustomFee> customFees) {
+        List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee> evmCustomFees =
+                new ArrayList<>();
         for (final var customFee : customFees) {
             extractFees(customFee, evmCustomFees);
         }
@@ -154,12 +153,9 @@ public class EvmTokenUtil {
 
     public static void extractFees(
             CustomFee customFee,
-            List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee>
-                    evmCustomFees) {
-        final var feeCollector =
-                EntityIdUtils.asTypedEvmAddress(customFee.getFeeCollectorAccountId());
-        var evmCustomFee =
-                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+            List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee> evmCustomFees) {
+        final var feeCollector = EntityIdUtils.asTypedEvmAddress(customFee.getFeeCollectorAccountId());
+        var evmCustomFee = new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
 
         if (customFee.getFixedFee().getAmount() > 0) {
             var fixedFee = getFixedFee(customFee.getFixedFee(), feeCollector);
@@ -185,8 +181,7 @@ public class EvmTokenUtil {
                 royaltyFee.getExchangeValueFraction().getNumerator(),
                 royaltyFee.getExchangeValueFraction().getDenominator(),
                 royaltyFee.getFallbackFee().getAmount(),
-                EntityIdUtils.asTypedEvmAddress(
-                        royaltyFee.getFallbackFee().getDenominatingTokenId()),
+                EntityIdUtils.asTypedEvmAddress(royaltyFee.getFallbackFee().getDenominatingTokenId()),
                 royaltyFee.getFallbackFee().getDenominatingTokenId().getTokenNum() == 0,
                 feeCollector);
     }
@@ -202,8 +197,7 @@ public class EvmTokenUtil {
                 feeCollector);
     }
 
-    public static FixedFee getFixedFee(
-            com.hederahashgraph.api.proto.java.FixedFee fixedFee, Address feeCollector) {
+    public static FixedFee getFixedFee(com.hederahashgraph.api.proto.java.FixedFee fixedFee, Address feeCollector) {
         return new FixedFee(
                 fixedFee.getAmount(),
                 EntityIdUtils.asTypedEvmAddress(fixedFee.getDenominatingTokenId()),
@@ -213,26 +207,22 @@ public class EvmTokenUtil {
     }
 
     public static EvmKey convertToEvmKey(Key key) {
-        final var contractId =
-                key.getContractID().getContractNum() > 0
-                        ? EntityIdUtils.asTypedEvmAddress(key.getContractID())
-                        : EntityIdUtils.asTypedEvmAddress(
-                                ContractID.newBuilder()
-                                        .setShardNum(0L)
-                                        .setRealmNum(0L)
-                                        .setContractNum(0L)
-                                        .build());
+        final var contractId = key.getContractID().getContractNum() > 0
+                ? EntityIdUtils.asTypedEvmAddress(key.getContractID())
+                : EntityIdUtils.asTypedEvmAddress(ContractID.newBuilder()
+                        .setShardNum(0L)
+                        .setRealmNum(0L)
+                        .setContractNum(0L)
+                        .build());
         final var ed25519 = key.getEd25519().toByteArray();
         final var ecdsaSecp256K1 = key.getECDSASecp256K1().toByteArray();
-        final var delegatableContractId =
-                key.getDelegatableContractId().getContractNum() > 0
-                        ? EntityIdUtils.asTypedEvmAddress(key.getDelegatableContractId())
-                        : EntityIdUtils.asTypedEvmAddress(
-                                ContractID.newBuilder()
-                                        .setShardNum(0L)
-                                        .setRealmNum(0L)
-                                        .setContractNum(0L)
-                                        .build());
+        final var delegatableContractId = key.getDelegatableContractId().getContractNum() > 0
+                ? EntityIdUtils.asTypedEvmAddress(key.getDelegatableContractId())
+                : EntityIdUtils.asTypedEvmAddress(ContractID.newBuilder()
+                        .setShardNum(0L)
+                        .setRealmNum(0L)
+                        .setContractNum(0L)
+                        .build());
 
         return new EvmKey(contractId, ed25519, ecdsaSecp256K1, delegatableContractId);
     }

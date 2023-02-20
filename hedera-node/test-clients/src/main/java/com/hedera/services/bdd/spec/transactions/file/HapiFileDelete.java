@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.file;
 
 import com.google.common.base.MoreObjects;
@@ -65,21 +66,18 @@ public class HapiFileDelete extends HapiTxnOp<HapiFileDelete> {
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         file = fileSupplier.isPresent() ? fileSupplier.get().get() : file;
         var fid = TxnUtils.asFileId(file, spec);
-        FileDeleteTransactionBody opBody =
-                spec.txns()
-                        .<FileDeleteTransactionBody, FileDeleteTransactionBody.Builder>body(
-                                FileDeleteTransactionBody.class,
-                                builder -> {
-                                    builder.setFileID(fid);
-                                });
+        FileDeleteTransactionBody opBody = spec.txns()
+                .<FileDeleteTransactionBody, FileDeleteTransactionBody.Builder>body(
+                        FileDeleteTransactionBody.class, builder -> {
+                            builder.setFileID(fid);
+                        });
         return builder -> builder.setFileDelete(opBody);
     }
 
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
-        return List.of(
-                spec -> spec.registry().getKey(effectivePayer(spec)),
-                spec -> spec.registry().getKey(file));
+        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
+                .getKey(file));
     }
 
     @Override
@@ -107,10 +105,7 @@ public class HapiFileDelete extends HapiTxnOp<HapiFileDelete> {
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
-                        HederaFunctionality.FileDelete,
-                        fileFees::getFileDeleteTxFeeMatrices,
-                        txn,
-                        numPayerKeys);
+                        HederaFunctionality.FileDelete, fileFees::getFileDeleteTxFeeMatrices, txn, numPayerKeys);
     }
 
     @Override

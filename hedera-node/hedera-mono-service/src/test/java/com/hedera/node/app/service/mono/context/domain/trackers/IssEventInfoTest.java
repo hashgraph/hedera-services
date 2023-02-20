@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.domain.trackers;
 
 import static com.hedera.node.app.service.mono.context.domain.trackers.IssEventStatus.NO_KNOWN_ISS;
@@ -37,7 +38,8 @@ class IssEventInfoTest {
     private final Instant recentIssTime = Instant.now();
     private final int roundsToDump = 2;
 
-    @Mock private NodeLocalProperties nodeLocalProperties;
+    @Mock
+    private NodeLocalProperties nodeLocalProperties;
 
     private IssEventInfo subject;
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.order;
 
 import static com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
@@ -30,8 +31,7 @@ class CodeOrderResultFactoryTest {
     @Test
     void createsNewResultForValidOrder() {
         // given:
-        final List<JKey> pretendKeys =
-                List.of(new JEd25519Key("IMAGINARY".getBytes(StandardCharsets.UTF_8)));
+        final List<JKey> pretendKeys = List.of(new JEd25519Key("IMAGINARY".getBytes(StandardCharsets.UTF_8)));
 
         // when:
         final var ans = subject.forValidOrder(pretendKeys);
@@ -45,31 +45,19 @@ class CodeOrderResultFactoryTest {
         // expect:
         assertSame(CodeOrderResultFactory.INVALID_ACCOUNT_RESULT, subject.forInvalidAccount());
         assertSame(CodeOrderResultFactory.GENERAL_ERROR_RESULT, subject.forGeneralError());
-        assertSame(
-                CodeOrderResultFactory.GENERAL_PAYER_ERROR_RESULT, subject.forGeneralPayerError());
+        assertSame(CodeOrderResultFactory.GENERAL_PAYER_ERROR_RESULT, subject.forGeneralPayerError());
         assertSame(CodeOrderResultFactory.MISSING_ACCOUNT_RESULT, subject.forMissingAccount());
         assertSame(CodeOrderResultFactory.MISSING_FILE_RESULT, subject.forMissingFile());
         assertSame(CodeOrderResultFactory.MISSING_CONTRACT_RESULT, subject.forInvalidContract());
-        assertSame(
-                CodeOrderResultFactory.IMMUTABLE_CONTRACT_RESULT, subject.forImmutableContract());
+        assertSame(CodeOrderResultFactory.IMMUTABLE_CONTRACT_RESULT, subject.forImmutableContract());
         assertSame(CodeOrderResultFactory.MISSING_TOPIC_RESULT, subject.forMissingTopic());
-        assertSame(
-                CodeOrderResultFactory.INVALID_AUTORENEW_RESULT,
-                subject.forInvalidAutoRenewAccount());
+        assertSame(CodeOrderResultFactory.INVALID_AUTORENEW_RESULT, subject.forInvalidAutoRenewAccount());
         assertSame(CodeOrderResultFactory.MISSING_TOKEN_RESULT, subject.forMissingToken());
         assertSame(CodeOrderResultFactory.MISSING_SCHEDULE_RESULT, subject.forMissingSchedule());
         assertSame(CodeOrderResultFactory.MISSING_SCHEDULE_RESULT, subject.forMissingSchedule());
-        assertSame(
-                CodeOrderResultFactory.UNRESOLVABLE_SIGNERS_RESULT,
-                subject.forUnresolvableRequiredSigners());
-        assertSame(
-                CodeOrderResultFactory.UNSCHEDULABLE_TRANSACTION_RESULT,
-                subject.forUnschedulableTxn());
-        assertSame(
-                CodeOrderResultFactory.INVALID_FEE_COLLECTOR_RESULT,
-                subject.forInvalidFeeCollector());
-        assertSame(
-                CodeOrderResultFactory.MISSING_ALLOWANCE_OWNER_RESULT,
-                subject.forInvalidAllowanceOwner());
+        assertSame(CodeOrderResultFactory.UNRESOLVABLE_SIGNERS_RESULT, subject.forUnresolvableRequiredSigners());
+        assertSame(CodeOrderResultFactory.UNSCHEDULABLE_TRANSACTION_RESULT, subject.forUnschedulableTxn());
+        assertSame(CodeOrderResultFactory.INVALID_FEE_COLLECTOR_RESULT, subject.forInvalidFeeCollector());
+        assertSame(CodeOrderResultFactory.MISSING_ALLOWANCE_OWNER_RESULT, subject.forInvalidAllowanceOwner());
     }
 }

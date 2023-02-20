@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token.process;
 
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -41,16 +42,14 @@ public class Dissociation {
     private boolean modelsAreUpdated = false;
     private boolean expiredTokenTreasuryReceivedBalance = false;
 
-    public static Dissociation loadFrom(
-            final TypedTokenStore tokenStore, final Account account, final Id tokenId) {
+    public static Dissociation loadFrom(final TypedTokenStore tokenStore, final Account account, final Id tokenId) {
         final var token = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(tokenId);
         final var dissociatingAccountRel = tokenStore.loadTokenRelationship(token, account);
         if (token.isBelievedToHaveBeenAutoRemoved()) {
             return new Dissociation(dissociatingAccountRel, null);
         } else {
             final var treasury = token.getTreasury();
-            final var dissociatedTokenTreasuryRel =
-                    tokenStore.loadPossiblyMissingTokenRelationship(token, treasury);
+            final var dissociatedTokenTreasuryRel = tokenStore.loadPossiblyMissingTokenRelationship(token, treasury);
             return new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
         }
     }
@@ -178,9 +177,13 @@ public class Dissociation {
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(Dissociation.class)
-                .add("dissociatingAccountId", dissociatingAccountRel.getAccount().getId())
+                .add(
+                        "dissociatingAccountId",
+                        dissociatingAccountRel.getAccount().getId())
                 .add("dissociatedTokenId", dissociatingAccountRel.getToken().getId())
-                .add("dissociatedTokenTreasuryId", dissociatedTokenTreasuryRel.getAccount().getId())
+                .add(
+                        "dissociatedTokenTreasuryId",
+                        dissociatedTokenTreasuryRel.getAccount().getId())
                 .add("expiredTokenTreasuryReceivedBalance", expiredTokenTreasuryReceivedBalance)
                 .toString();
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.mono.state.serdes.IoUtils.readNullableSerializable;
@@ -82,13 +83,11 @@ public class EvmFnResult implements SelfSerializable {
         return from(result, EMPTY);
     }
 
-    public static EvmFnResult fromCreate(
-            final TransactionProcessingResult result, final byte[] evmAddress) {
+    public static EvmFnResult fromCreate(final TransactionProcessingResult result, final byte[] evmAddress) {
         return from(result, evmAddress);
     }
 
-    private static EvmFnResult from(
-            final TransactionProcessingResult result, final byte[] evmAddress) {
+    private static EvmFnResult from(final TransactionProcessingResult result, final byte[] evmAddress) {
         if (result.isSuccessful()) {
             final var recipient = result.getRecipient().orElse(Address.ZERO);
             if (Address.ZERO == recipient) {
@@ -102,10 +101,9 @@ public class EvmFnResult implements SelfSerializable {
                     serializableIdsFrom(result.getCreatedContracts()),
                     evmAddress);
         } else {
-            final var error =
-                    result.getRevertReason()
-                            .map(Object::toString)
-                            .orElse(result.getHaltReason().map(Object::toString).orElse(null));
+            final var error = result.getRevertReason()
+                    .map(Object::toString)
+                    .orElse(result.getHaltReason().map(Object::toString).orElse(null));
             return failure(result.getGasUsed(), error);
         }
     }
@@ -154,8 +152,7 @@ public class EvmFnResult implements SelfSerializable {
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         gasUsed = in.readLong();
         bloom = in.readByteArray(EvmLog.MAX_BLOOM_BYTES);
         result = in.readByteArray(MAX_RESULT_BYTES);

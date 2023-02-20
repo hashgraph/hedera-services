@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.ethereum;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
@@ -99,8 +100,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     }
 
     List<HapiSpec> ethereumCreates() {
-        return List.of(
-                smallContractCreate(), contractCreateWithConstructorArgs(), bigContractCreate());
+        return List.of(smallContractCreate(), contractCreateWithConstructorArgs(), bigContractCreate());
     }
 
     HapiSpec badRelayClient() {
@@ -122,85 +122,52 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                         cryptoCreate(RELAYER)
                                 .balance(10 * ONE_MILLION_HBARS)
                                 .exposingCreatedIdTo(
-                                        id ->
-                                                relayerEvmAddress.set(
-                                                        asHexedSolidityAddress(
-                                                                0, 0, id.getAccountNum()))),
-                        cryptoTransfer(
-                                        tinyBarsFromAccountToAlias(
-                                                GENESIS, maliciousEOA, maliciousStartBalance))
+                                        id -> relayerEvmAddress.set(asHexedSolidityAddress(0, 0, id.getAccountNum()))),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, maliciousEOA, maliciousStartBalance))
                                 .via(maliciousAutoCreation),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var lookup =
-                                            getTxnRecord(maliciousAutoCreation)
-                                                    .andAllChildRecords()
-                                                    .logged();
-                                    allRunFor(spec, lookup);
-                                    final var childCreation = lookup.getChildRecord(0);
-                                    maliciousEOAId.set(
-                                            asAccountString(
-                                                    childCreation.getReceipt().getAccountID()));
-                                }),
+                        withOpContext((spec, opLog) -> {
+                            final var lookup = getTxnRecord(maliciousAutoCreation)
+                                    .andAllChildRecords()
+                                    .logged();
+                            allRunFor(spec, lookup);
+                            final var childCreation = lookup.getChildRecord(0);
+                            maliciousEOAId.set(
+                                    asAccountString(childCreation.getReceipt().getAccountID()));
+                        }),
                         uploadInitCode(exploitContract),
                         contractCreate(exploitContract).adminKey(adminKey),
-                        sourcing(
-                                () ->
-                                        tokenCreate(exploitToken)
-                                                .treasury(maliciousEOAId.get())
-                                                .symbol("IDYM")
-                                                .symbol("I DRINK YOUR MILKSHAKE")
-                                                .initialSupply(Long.MAX_VALUE)
-                                                .decimals(0)
-                                                .withCustom(
-                                                        fixedHbarFee(
-                                                                ONE_MILLION_HBARS,
-                                                                maliciousEOAId.get()))
-                                                .signedBy(DEFAULT_PAYER, maliciousEOA)
-                                                .exposingCreatedIdTo(
-                                                        id ->
-                                                                exploitTokenEvmAddress.set(
-                                                                        asHexedSolidityAddress(
-                                                                                0,
-                                                                                0,
-                                                                                asToken(id)
-                                                                                        .getTokenNum())))))
-                .when(
-                        sourcing(
-                                () ->
-                                        ethereumCall(
-                                                        exploitContract,
-                                                        "stealFrom",
-                                                        asHeadlongAddress(relayerEvmAddress.get()),
-                                                        asHeadlongAddress(
-                                                                exploitTokenEvmAddress.get()))
-                                                .type(EthTxData.EthTransactionType.EIP1559)
-                                                .signingWith(maliciousEOA)
-                                                .payingWith(RELAYER)
-                                                .via(maliciousTxn)
-                                                .nonce(0)
-                                                .gasLimit(1_000_000L)
-                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
+                        sourcing(() -> tokenCreate(exploitToken)
+                                .treasury(maliciousEOAId.get())
+                                .symbol("IDYM")
+                                .symbol("I DRINK YOUR MILKSHAKE")
+                                .initialSupply(Long.MAX_VALUE)
+                                .decimals(0)
+                                .withCustom(fixedHbarFee(ONE_MILLION_HBARS, maliciousEOAId.get()))
+                                .signedBy(DEFAULT_PAYER, maliciousEOA)
+                                .exposingCreatedIdTo(id -> exploitTokenEvmAddress.set(
+                                        asHexedSolidityAddress(0, 0, asToken(id).getTokenNum())))))
+                .when(sourcing(() -> ethereumCall(
+                                exploitContract,
+                                "stealFrom",
+                                asHeadlongAddress(relayerEvmAddress.get()),
+                                asHeadlongAddress(exploitTokenEvmAddress.get()))
+                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .signingWith(maliciousEOA)
+                        .payingWith(RELAYER)
+                        .via(maliciousTxn)
+                        .nonce(0)
+                        .gasLimit(1_000_000L)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
                 .then(
                         getTxnRecord(maliciousTxn).andAllChildRecords().logged(),
                         childRecordsCheck(
                                 maliciousTxn,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)),
-                        sourcing(
-                                () ->
-                                        getAccountBalance(maliciousEOAId.get())
-                                                .hasTinyBars(
-                                                        spec ->
-                                                                amount ->
-                                                                        (amount
-                                                                                        > maliciousStartBalance)
-                                                                                ? Optional.of(
-                                                                                        "Malicious"
-                                                                                            + " EOA balance"
-                                                                                            + " increased")
-                                                                                : Optional
-                                                                                        .empty())),
+                        sourcing(() -> getAccountBalance(maliciousEOAId.get())
+                                .hasTinyBars(spec -> amount -> (amount > maliciousStartBalance)
+                                        ? Optional.of("Malicious" + " EOA balance" + " increased")
+                                        : Optional.empty())),
                         getAliasedAccountInfo(maliciousEOA).has(accountWith().nonce(1L)));
     }
 
@@ -211,9 +178,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
-                        cryptoTransfer(
-                                        tinyBarsFromAccountToAlias(
-                                                GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via("autoAccount"),
                         getTxnRecord("autoAccount").andAllChildRecords(),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
@@ -221,10 +186,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 .when(
                         // The cost to the relayer to transmit a simple call with sufficient gas
                         // allowance is ≈ $0.0001
-                        ethereumCall(
-                                        PAY_RECEIVABLE_CONTRACT,
-                                        DEPOSIT,
-                                        BigInteger.valueOf(depositAmount))
+                        ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -235,13 +197,9 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .maxPriorityGas(2_000_000L)
                                 .gasLimit(1_000_000L)
                                 .sending(depositAmount))
-                .then(
-                        getAccountInfo(RELAYER)
-                                .has(
-                                        accountWith()
-                                                .expectedBalanceWithChargedUsd(
-                                                        ONE_HUNDRED_HBARS, 0.0001, 0.5))
-                                .logged());
+                .then(getAccountInfo(RELAYER)
+                        .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.0001, 0.5))
+                        .logged());
     }
 
     HapiSpec depositSuccess() {
@@ -249,19 +207,14 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoTransfer(
-                                        tinyBarsFromAccountToAlias(
-                                                GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via("autoAccount"),
                         getTxnRecord("autoAccount").andAllChildRecords(),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
                 .when(
                         // EIP1559 Ethereum Calls Work
-                        ethereumCall(
-                                        PAY_RECEIVABLE_CONTRACT,
-                                        DEPOSIT,
-                                        BigInteger.valueOf(depositAmount))
+                        ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -273,10 +226,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .sending(depositAmount)
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS),
                         // Legacy Ethereum Calls Work
-                        ethereumCall(
-                                        PAY_RECEIVABLE_CONTRACT,
-                                        DEPOSIT,
-                                        BigInteger.valueOf(depositAmount))
+                        ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
                                 .type(EthTxData.EthTransactionType.LEGACY_ETHEREUM)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -288,10 +238,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .sending(depositAmount)
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS),
                         // Ethereum Call with FileID callData works
-                        ethereumCall(
-                                        PAY_RECEIVABLE_CONTRACT,
-                                        DEPOSIT,
-                                        BigInteger.valueOf(depositAmount))
+                        ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -305,32 +252,22 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)))
                 .then(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                getTxnRecord("payTxn")
-                                                        .logged()
-                                                        .hasPriority(
-                                                                recordWith()
-                                                                        .contractCallResult(
-                                                                                resultWith()
-                                                                                        .logs(
-                                                                                                inOrder())
-                                                                                        .senderId(
-                                                                                                spec.registry()
-                                                                                                        .getAccountID(
-                                                                                                                spec.registry()
-                                                                                                                        .aliasIdFor(
-                                                                                                                                SECP_256K1_SOURCE_KEY)
-                                                                                                                        .getAlias()
-                                                                                                                        .toStringUtf8())))
-                                                                        .ethereumHash(
-                                                                                ByteString.copyFrom(
-                                                                                        spec.registry()
-                                                                                                .getBytes(
-                                                                                                        ETH_HASH_KEY)))))),
-                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(3L)));
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                getTxnRecord("payTxn")
+                                        .logged()
+                                        .hasPriority(recordWith()
+                                                .contractCallResult(resultWith()
+                                                        .logs(inOrder())
+                                                        .senderId(spec.registry()
+                                                                .getAccountID(spec.registry()
+                                                                        .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .getAlias()
+                                                                        .toStringUtf8())))
+                                                .ethereumHash(ByteString.copyFrom(
+                                                        spec.registry().getBytes(ETH_HASH_KEY)))))),
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(3L)));
     }
 
     HapiSpec ethereumCallWithCalldataBiggerThanMaxSucceeds() {
@@ -339,9 +276,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoTransfer(
-                                        tinyBarsFromAccountToAlias(
-                                                GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via("autoAccount"),
                         getTxnRecord("autoAccount").andAllChildRecords(),
                         uploadInitCode(CALLDATA_SIZE_CONTRACT),
@@ -352,42 +287,25 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)))
                 .then(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                getTxnRecord("payTxn")
-                                                        .logged()
-                                                        .hasPriority(
-                                                                recordWith()
-                                                                        .contractCallResult(
-                                                                                resultWith()
-                                                                                        .logs(
-                                                                                                inOrder(
-                                                                                                        logWith()
-                                                                                                                .longAtBytes(
-                                                                                                                        largerThanMaxCalldata
-                                                                                                                                .length,
-                                                                                                                        24)
-                                                                                                                .withTopicsInOrder(
-                                                                                                                        List
-                                                                                                                                .of(
-                                                                                                                                        eventSignatureOf(
-                                                                                                                                                "Info(uint256)")))))
-                                                                                        .senderId(
-                                                                                                spec.registry()
-                                                                                                        .getAccountID(
-                                                                                                                spec.registry()
-                                                                                                                        .aliasIdFor(
-                                                                                                                                SECP_256K1_SOURCE_KEY)
-                                                                                                                        .getAlias()
-                                                                                                                        .toStringUtf8())))
-                                                                        .ethereumHash(
-                                                                                ByteString.copyFrom(
-                                                                                        spec.registry()
-                                                                                                .getBytes(
-                                                                                                        ETH_HASH_KEY)))))),
-                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(1L)));
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                getTxnRecord("payTxn")
+                                        .logged()
+                                        .hasPriority(recordWith()
+                                                .contractCallResult(resultWith()
+                                                        .logs(inOrder(logWith()
+                                                                .longAtBytes(largerThanMaxCalldata.length, 24)
+                                                                .withTopicsInOrder(
+                                                                        List.of(eventSignatureOf("Info(uint256)")))))
+                                                        .senderId(spec.registry()
+                                                                .getAccountID(spec.registry()
+                                                                        .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .getAlias()
+                                                                        .toStringUtf8())))
+                                                .ethereumHash(ByteString.copyFrom(
+                                                        spec.registry().getBytes(ETH_HASH_KEY)))))),
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(1L)));
     }
 
     HapiSpec smallContractCreate() {
@@ -395,9 +313,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoTransfer(
-                                        tinyBarsFromAccountToAlias(
-                                                GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via("autoAccount"),
                         getTxnRecord("autoAccount").andAllChildRecords(),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT))
@@ -413,39 +329,26 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .via("payTxn"),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)))
                 .then(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                getTxnRecord("payTxn")
-                                                        .logged()
-                                                        .hasPriority(
-                                                                recordWith()
-                                                                        .contractCreateResult(
-                                                                                resultWith()
-                                                                                        .logs(
-                                                                                                inOrder())
-                                                                                        .senderId(
-                                                                                                spec.registry()
-                                                                                                        .getAccountID(
-                                                                                                                spec.registry()
-                                                                                                                        .aliasIdFor(
-                                                                                                                                SECP_256K1_SOURCE_KEY)
-                                                                                                                        .getAlias()
-                                                                                                                        .toStringUtf8()))
-                                                                                        .create1EvmAddress(
-                                                                                                ByteString
-                                                                                                        .copyFrom(
-                                                                                                                spec.registry()
-                                                                                                                        .getBytes(
-                                                                                                                                ETH_SENDER_ADDRESS)),
-                                                                                                0L))
-                                                                        .ethereumHash(
-                                                                                ByteString.copyFrom(
-                                                                                        spec.registry()
-                                                                                                .getBytes(
-                                                                                                        ETH_HASH_KEY)))))),
-                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(1L)));
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                getTxnRecord("payTxn")
+                                        .logged()
+                                        .hasPriority(recordWith()
+                                                .contractCreateResult(resultWith()
+                                                        .logs(inOrder())
+                                                        .senderId(spec.registry()
+                                                                .getAccountID(spec.registry()
+                                                                        .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .getAlias()
+                                                                        .toStringUtf8()))
+                                                        .create1EvmAddress(
+                                                                ByteString.copyFrom(spec.registry()
+                                                                        .getBytes(ETH_SENDER_ADDRESS)),
+                                                                0L))
+                                                .ethereumHash(ByteString.copyFrom(
+                                                        spec.registry().getBytes(ETH_HASH_KEY)))))),
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(1L)));
     }
 
     private HapiSpec bigContractCreate() {
@@ -454,9 +357,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoTransfer(
-                                        tinyBarsFromAccountToAlias(
-                                                GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via("autoAccount"),
                         getTxnRecord("autoAccount").andAllChildRecords(),
                         newKeyNamed(contractAdminKey),
@@ -473,39 +374,26 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .hasKnownStatus(SUCCESS),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)))
                 .then(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                getTxnRecord("payTxn")
-                                                        .logged()
-                                                        .hasPriority(
-                                                                recordWith()
-                                                                        .contractCreateResult(
-                                                                                resultWith()
-                                                                                        .logs(
-                                                                                                inOrder())
-                                                                                        .senderId(
-                                                                                                spec.registry()
-                                                                                                        .getAccountID(
-                                                                                                                spec.registry()
-                                                                                                                        .aliasIdFor(
-                                                                                                                                SECP_256K1_SOURCE_KEY)
-                                                                                                                        .getAlias()
-                                                                                                                        .toStringUtf8()))
-                                                                                        .create1EvmAddress(
-                                                                                                ByteString
-                                                                                                        .copyFrom(
-                                                                                                                spec.registry()
-                                                                                                                        .getBytes(
-                                                                                                                                ETH_SENDER_ADDRESS)),
-                                                                                                0L))
-                                                                        .ethereumHash(
-                                                                                ByteString.copyFrom(
-                                                                                        spec.registry()
-                                                                                                .getBytes(
-                                                                                                        ETH_HASH_KEY)))))),
-                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(1L)));
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                getTxnRecord("payTxn")
+                                        .logged()
+                                        .hasPriority(recordWith()
+                                                .contractCreateResult(resultWith()
+                                                        .logs(inOrder())
+                                                        .senderId(spec.registry()
+                                                                .getAccountID(spec.registry()
+                                                                        .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .getAlias()
+                                                                        .toStringUtf8()))
+                                                        .create1EvmAddress(
+                                                                ByteString.copyFrom(spec.registry()
+                                                                        .getBytes(ETH_SENDER_ADDRESS)),
+                                                                0L))
+                                                .ethereumHash(ByteString.copyFrom(
+                                                        spec.registry().getBytes(ETH_HASH_KEY)))))),
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(1L)));
     }
 
     private HapiSpec contractCreateWithConstructorArgs() {
@@ -514,9 +402,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoTransfer(
-                                        tinyBarsFromAccountToAlias(
-                                                GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via("autoAccount"),
                         getTxnRecord("autoAccount").andAllChildRecords(),
                         newKeyNamed(contractAdminKey),
@@ -539,39 +425,26 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .hasKnownStatus(SUCCESS),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)))
                 .then(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                getTxnRecord("payTxn")
-                                                        .logged()
-                                                        .hasPriority(
-                                                                recordWith()
-                                                                        .contractCreateResult(
-                                                                                resultWith()
-                                                                                        .logs(
-                                                                                                inOrder())
-                                                                                        .senderId(
-                                                                                                spec.registry()
-                                                                                                        .getAccountID(
-                                                                                                                spec.registry()
-                                                                                                                        .aliasIdFor(
-                                                                                                                                SECP_256K1_SOURCE_KEY)
-                                                                                                                        .getAlias()
-                                                                                                                        .toStringUtf8()))
-                                                                                        .create1EvmAddress(
-                                                                                                ByteString
-                                                                                                        .copyFrom(
-                                                                                                                spec.registry()
-                                                                                                                        .getBytes(
-                                                                                                                                ETH_SENDER_ADDRESS)),
-                                                                                                0L))
-                                                                        .ethereumHash(
-                                                                                ByteString.copyFrom(
-                                                                                        spec.registry()
-                                                                                                .getBytes(
-                                                                                                        ETH_HASH_KEY)))))),
-                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(1L)));
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                getTxnRecord("payTxn")
+                                        .logged()
+                                        .hasPriority(recordWith()
+                                                .contractCreateResult(resultWith()
+                                                        .logs(inOrder())
+                                                        .senderId(spec.registry()
+                                                                .getAccountID(spec.registry()
+                                                                        .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .getAlias()
+                                                                        .toStringUtf8()))
+                                                        .create1EvmAddress(
+                                                                ByteString.copyFrom(spec.registry()
+                                                                        .getBytes(ETH_SENDER_ADDRESS)),
+                                                                0L))
+                                                .ethereumHash(ByteString.copyFrom(
+                                                        spec.registry().getBytes(ETH_HASH_KEY)))))),
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(1L)));
     }
 
     @Override

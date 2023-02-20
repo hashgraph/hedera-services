@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.accountIdFromHexedMirrorAddress;
@@ -133,18 +134,13 @@ public class Create2OperationSuite extends HapiSuite {
     public static final String DEPLOY = "deploy";
     private static final String CREATE_2_TXN = "create2Txn";
     private static final String SWISS = "swiss";
-    public static final String SALT =
-            "aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011";
+    public static final String SALT = "aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011";
     private static final String RETURNER = "Returner";
     private static final String CALL_RETURNER = "callReturner";
-    public static final String RETURNER_REPORTED_LOG_MESSAGE =
-            "Returner reported {} when called with mirror address";
-    public static final String CONTRACT_REPORTED_LOG_MESSAGE =
-            "Contract reported TestContract initcode is {} bytes";
-    public static final String CONTRACT_REPORTED_ADDRESS_MESSAGE =
-            "Contract reported address results {}";
-    public static final String EXPECTED_CREATE2_ADDRESS_MESSAGE =
-            "  --> Expected CREATE2 address is {}";
+    public static final String RETURNER_REPORTED_LOG_MESSAGE = "Returner reported {} when called with mirror address";
+    public static final String CONTRACT_REPORTED_LOG_MESSAGE = "Contract reported TestContract initcode is {} bytes";
+    public static final String CONTRACT_REPORTED_ADDRESS_MESSAGE = "Contract reported address results {}";
+    public static final String EXPECTED_CREATE2_ADDRESS_MESSAGE = "  --> Expected CREATE2 address is {}";
     private static final String ADMIN_KEY = "adminKey";
     public static final String GET_ADDRESS = "getAddress";
 
@@ -199,38 +195,21 @@ public class Create2OperationSuite extends HapiSuite {
                                 .via(CREATION)
                                 .exposingNumTo(outerCreatorNum::set))
                 .when(contractCall(contract, "startChain", msg).gas(4_000_000).via(noisyTxn))
-                .then(
-                        sourcing(
-                                () -> {
-                                    final var idOfFirstThreeLogs =
-                                            "0.0." + (outerCreatorNum.get() + 1);
-                                    final var idOfLastTwoLogs =
-                                            "0.0." + (outerCreatorNum.get() + 2);
-                                    return getTxnRecord(noisyTxn)
-                                            .andAllChildRecords()
-                                            .hasPriority(
-                                                    recordWith()
-                                                            .contractCallResult(
-                                                                    resultWith()
-                                                                            .logs(
-                                                                                    inOrder(
-                                                                                            logWith()
-                                                                                                    .contract(
-                                                                                                            idOfFirstThreeLogs),
-                                                                                            logWith()
-                                                                                                    .contract(
-                                                                                                            idOfFirstThreeLogs),
-                                                                                            logWith()
-                                                                                                    .contract(
-                                                                                                            idOfFirstThreeLogs),
-                                                                                            logWith()
-                                                                                                    .contract(
-                                                                                                            idOfLastTwoLogs),
-                                                                                            logWith()
-                                                                                                    .contract(
-                                                                                                            idOfLastTwoLogs)))))
-                                            .logged();
-                                }));
+                .then(sourcing(() -> {
+                    final var idOfFirstThreeLogs = "0.0." + (outerCreatorNum.get() + 1);
+                    final var idOfLastTwoLogs = "0.0." + (outerCreatorNum.get() + 2);
+                    return getTxnRecord(noisyTxn)
+                            .andAllChildRecords()
+                            .hasPriority(recordWith()
+                                    .contractCallResult(resultWith()
+                                            .logs(inOrder(
+                                                    logWith().contract(idOfFirstThreeLogs),
+                                                    logWith().contract(idOfFirstThreeLogs),
+                                                    logWith().contract(idOfFirstThreeLogs),
+                                                    logWith().contract(idOfLastTwoLogs),
+                                                    logWith().contract(idOfLastTwoLogs)))))
+                            .logged();
+                }));
     }
 
     // https://github.com/hashgraph/hedera-services/issues/2868
@@ -250,61 +229,33 @@ public class Create2OperationSuite extends HapiSuite {
                         contractCreate(contract)
                                 .payingWith(GENESIS)
                                 .via(CREATION)
-                                .exposingNumTo(
-                                        num -> {
-                                            factoryEntityNum.set(num);
-                                            factoryEvmAddress.set(
-                                                    asHexedSolidityAddress(0, 0, num));
-                                        }))
-                .when(
-                        sourcing(
-                                () ->
-                                        contractCallLocal(
-                                                        contract,
-                                                        GET_BYTECODE,
-                                                        asHeadlongAddress(factoryEvmAddress.get()),
-                                                        foo)
-                                                .exposingTypedResultsTo(
-                                                        results -> {
-                                                            final var tcInitcode =
-                                                                    (byte[]) results[0];
-                                                            testContractInitcode.set(tcInitcode);
-                                                            LOG.info(
-                                                                    CONTRACT_REPORTED_LOG_MESSAGE,
-                                                                    tcInitcode.length);
-                                                        })
-                                                .payingWith(GENESIS)
-                                                .nodePayment(ONE_HBAR)))
+                                .exposingNumTo(num -> {
+                                    factoryEntityNum.set(num);
+                                    factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num));
+                                }))
+                .when(sourcing(
+                        () -> contractCallLocal(contract, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), foo)
+                                .exposingTypedResultsTo(results -> {
+                                    final var tcInitcode = (byte[]) results[0];
+                                    testContractInitcode.set(tcInitcode);
+                                    LOG.info(CONTRACT_REPORTED_LOG_MESSAGE, tcInitcode.length);
+                                })
+                                .payingWith(GENESIS)
+                                .nodePayment(ONE_HBAR)))
                 .then(
-                        inParallel(
-                                IntStream.range(0, timesToFail)
-                                        .mapToObj(
-                                                i ->
-                                                        sourcing(
-                                                                () ->
-                                                                        contractCall(
-                                                                                        contract,
-                                                                                        DEPLOY,
-                                                                                        testContractInitcode
-                                                                                                .get(),
-                                                                                        salt)
-                                                                                .payingWith(GENESIS)
-                                                                                .gas(4_000_000L)
-                                                                                .sending(tcValue)
-                                                                                .via(CREATION)))
-                                        .toArray(HapiSpecOperation[]::new)),
-                        sourcing(
-                                () ->
-                                        cryptoCreate("nextUp")
-                                                .exposingCreatedIdTo(
-                                                        id ->
-                                                                LOG.info(
-                                                                        "Next entity num was {}"
-                                                                            + " instead of expected"
-                                                                            + " {}",
-                                                                        id.getAccountNum(),
-                                                                        factoryEntityNum.get()
-                                                                                + 1))));
+                        inParallel(IntStream.range(0, timesToFail)
+                                .mapToObj(i ->
+                                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                                                .payingWith(GENESIS)
+                                                .gas(4_000_000L)
+                                                .sending(tcValue)
+                                                .via(CREATION)))
+                                .toArray(HapiSpecOperation[]::new)),
+                        sourcing(() -> cryptoCreate("nextUp")
+                                .exposingCreatedIdTo(id -> LOG.info(
+                                        "Next entity num was {}" + " instead of expected" + " {}",
+                                        id.getAccountNum(),
+                                        factoryEntityNum.get() + 1))));
     }
 
     @SuppressWarnings("java:S5669")
@@ -325,60 +276,32 @@ public class Create2OperationSuite extends HapiSuite {
                         contractCreate(contract)
                                 .payingWith(GENESIS)
                                 .via(creation)
-                                .exposingNumTo(
-                                        num -> {
-                                            factoryEntityNum.set(num);
-                                            factoryEvmAddress.set(
-                                                    asHexedSolidityAddress(0, 0, num));
-                                        }))
-                .when(
-                        sourcing(
-                                () ->
-                                        contractCallLocal(
-                                                        contract,
-                                                        GET_BYTECODE,
-                                                        asHeadlongAddress(factoryEvmAddress.get()),
-                                                        foo)
-                                                .exposingTypedResultsTo(
-                                                        results -> {
-                                                            final var tcInitcode =
-                                                                    (byte[]) results[0];
-                                                            testContractInitcode.set(tcInitcode);
-                                                            LOG.info(
-                                                                    CONTRACT_REPORTED_LOG_MESSAGE,
-                                                                    tcInitcode.length);
-                                                        })
-                                                .payingWith(GENESIS)
-                                                .nodePayment(ONE_HBAR)))
+                                .exposingNumTo(num -> {
+                                    factoryEntityNum.set(num);
+                                    factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num));
+                                }))
+                .when(sourcing(
+                        () -> contractCallLocal(contract, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), foo)
+                                .exposingTypedResultsTo(results -> {
+                                    final var tcInitcode = (byte[]) results[0];
+                                    testContractInitcode.set(tcInitcode);
+                                    LOG.info(CONTRACT_REPORTED_LOG_MESSAGE, tcInitcode.length);
+                                })
+                                .payingWith(GENESIS)
+                                .nodePayment(ONE_HBAR)))
                 .then(
-                        inParallel(
-                                IntStream.range(0, timesToFail)
-                                        .mapToObj(
-                                                i ->
-                                                        sourcing(
-                                                                () ->
-                                                                        contractCall(
-                                                                                        contract,
-                                                                                        DEPLOY,
-                                                                                        testContractInitcode
-                                                                                                .get())
-                                                                                .payingWith(GENESIS)
-                                                                                .gas(4_000_000L)
-                                                                                .sending(tcValue)
-                                                                                .via(creation)))
-                                        .toArray(HapiSpecOperation[]::new)),
-                        sourcing(
-                                () ->
-                                        cryptoCreate("nextUp")
-                                                .exposingCreatedIdTo(
-                                                        id ->
-                                                                LOG.info(
-                                                                        "Next entity num was {}"
-                                                                            + " instead of expected"
-                                                                            + " {}",
-                                                                        id.getAccountNum(),
-                                                                        factoryEntityNum.get()
-                                                                                + 1))));
+                        inParallel(IntStream.range(0, timesToFail)
+                                .mapToObj(i -> sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get())
+                                        .payingWith(GENESIS)
+                                        .gas(4_000_000L)
+                                        .sending(tcValue)
+                                        .via(creation)))
+                                .toArray(HapiSpecOperation[]::new)),
+                        sourcing(() -> cryptoCreate("nextUp")
+                                .exposingCreatedIdTo(id -> LOG.info(
+                                        "Next entity num was {}" + " instead of expected" + " {}",
+                                        id.getAccountNum(),
+                                        factoryEntityNum.get() + 1))));
     }
 
     private HapiSpec canAssociateInConstructor() {
@@ -391,22 +314,12 @@ public class Create2OperationSuite extends HapiSuite {
                         uploadInitCode(contract),
                         tokenCreate(token)
                                 .exposingCreatedIdTo(
-                                        id ->
-                                                tokenMirrorAddr.set(
-                                                        hex(
-                                                                asAddress(
-                                                                        HapiPropertySource.asToken(
-                                                                                id))))))
-                .when(
-                        sourcing(
-                                () ->
-                                        contractCreate(
-                                                        contract,
-                                                        asHeadlongAddress(tokenMirrorAddr.get()))
-                                                .payingWith(GENESIS)
-                                                .omitAdminKey()
-                                                .gas(4_000_000)
-                                                .via(CREATION)))
+                                        id -> tokenMirrorAddr.set(hex(asAddress(HapiPropertySource.asToken(id))))))
+                .when(sourcing(() -> contractCreate(contract, asHeadlongAddress(tokenMirrorAddr.get()))
+                        .payingWith(GENESIS)
+                        .omitAdminKey()
+                        .gas(4_000_000)
+                        .via(CREATION)))
                 .then(
                         //						tokenDissociate(contract, token)
                         getContractInfo(contract).logged());
@@ -426,15 +339,9 @@ public class Create2OperationSuite extends HapiSuite {
                                 .sending(100L)
                                 .via("testCreate2"),
                         captureOneChildCreate2MetaFor(
-                                "Test contract create2",
-                                "testCreate2",
-                                tcMirrorAddr2,
-                                tcAliasAddr2))
-                .then(
-                        sourcing(
-                                () ->
-                                        getContractInfo(tcMirrorAddr2.get())
-                                                .has(contractWith().balance(100))));
+                                "Test contract create2", "testCreate2", tcMirrorAddr2, tcAliasAddr2))
+                .then(sourcing(() ->
+                        getContractInfo(tcMirrorAddr2.get()).has(contractWith().balance(100))));
     }
 
     // https://github.com/hashgraph/hedera-services/issues/2867
@@ -471,218 +378,112 @@ public class Create2OperationSuite extends HapiSuite {
                                 .autoRenewSecs(customAutoRenew)
                                 .autoRenewAccountId(autoRenewAccountID)
                                 .via(CREATE_2_TXN)
-                                .exposingNumTo(
-                                        num ->
-                                                factoryEvmAddress.set(
-                                                        asHexedSolidityAddress(0, 0, num))),
+                                .exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num))),
                         getContractInfo(contract)
                                 .has(contractWith().autoRenewAccountId(autoRenewAccountID))
                                 .logged())
                 .when(
-                        sourcing(
-                                () ->
-                                        contractCallLocal(
-                                                        contract,
-                                                        GET_BYTECODE,
-                                                        asHeadlongAddress(factoryEvmAddress.get()),
-                                                        salt)
-                                                .exposingTypedResultsTo(
-                                                        results -> {
-                                                            final var tcInitcode =
-                                                                    (byte[]) results[0];
-                                                            testContractInitcode.set(tcInitcode);
-                                                            LOG.info(
-                                                                    CONTRACT_REPORTED_LOG_MESSAGE,
-                                                                    tcInitcode.length);
-                                                        })
-                                                .payingWith(GENESIS)
-                                                .nodePayment(ONE_HBAR)),
-                        sourcing(
-                                () ->
-                                        contractCallLocal(
-                                                        contract,
-                                                        GET_ADDRESS,
-                                                        testContractInitcode.get(),
-                                                        salt)
-                                                .exposingTypedResultsTo(
-                                                        results -> {
-                                                            LOG.info(
-                                                                    CONTRACT_REPORTED_ADDRESS_MESSAGE,
-                                                                    results);
-                                                            final var expectedAddrBytes =
-                                                                    (Address) results[0];
-                                                            final var hexedAddress =
-                                                                    hex(
-                                                                            Bytes.fromHexString(
-                                                                                            expectedAddrBytes
-                                                                                                    .toString())
-                                                                                    .toArray());
-                                                            LOG.info(
-                                                                    EXPECTED_CREATE2_ADDRESS_MESSAGE,
-                                                                    hexedAddress);
-                                                            expectedCreate2Address.set(
-                                                                    hexedAddress);
-                                                        })
-                                                .payingWith(GENESIS)),
+                        sourcing(() -> contractCallLocal(
+                                        contract, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), salt)
+                                .exposingTypedResultsTo(results -> {
+                                    final var tcInitcode = (byte[]) results[0];
+                                    testContractInitcode.set(tcInitcode);
+                                    LOG.info(CONTRACT_REPORTED_LOG_MESSAGE, tcInitcode.length);
+                                })
+                                .payingWith(GENESIS)
+                                .nodePayment(ONE_HBAR)),
+                        sourcing(() -> contractCallLocal(contract, GET_ADDRESS, testContractInitcode.get(), salt)
+                                .exposingTypedResultsTo(results -> {
+                                    LOG.info(CONTRACT_REPORTED_ADDRESS_MESSAGE, results);
+                                    final var expectedAddrBytes = (Address) results[0];
+                                    final var hexedAddress = hex(Bytes.fromHexString(expectedAddrBytes.toString())
+                                            .toArray());
+                                    LOG.info(EXPECTED_CREATE2_ADDRESS_MESSAGE, hexedAddress);
+                                    expectedCreate2Address.set(hexedAddress);
+                                })
+                                .payingWith(GENESIS)),
                         // https://github.com/hashgraph/hedera-services/issues/2867 - cannot
                         // re-create same address
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        contract,
-                                                        "wronglyDeployTwice",
-                                                        testContractInitcode.get(),
-                                                        salt)
-                                                .payingWith(GENESIS)
-                                                .gas(4_000_000L)
-                                                .sending(tcValue)
-                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
-                        sourcing(
-                                () ->
-                                        getContractInfo(expectedCreate2Address.get())
-                                                .hasCostAnswerPrecheck(INVALID_CONTRACT_ID)),
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        contract,
-                                                        DEPLOY,
-                                                        testContractInitcode.get(),
-                                                        salt)
-                                                .payingWith(GENESIS)
-                                                .gas(4_000_000L)
-                                                .sending(tcValue)),
-                        sourcing(
-                                () ->
-                                        contractDelete(expectedCreate2Address.get())
-                                                .signedBy(DEFAULT_PAYER, adminKey)),
+                        sourcing(() -> contractCall(contract, "wronglyDeployTwice", testContractInitcode.get(), salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                .sending(tcValue)
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                        sourcing(() -> getContractInfo(expectedCreate2Address.get())
+                                .hasCostAnswerPrecheck(INVALID_CONTRACT_ID)),
+                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                .sending(tcValue)),
+                        sourcing(() ->
+                                contractDelete(expectedCreate2Address.get()).signedBy(DEFAULT_PAYER, adminKey)),
                         logIt("Deleted the deployed CREATE2 contract using HAPI"),
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        contract,
-                                                        DEPLOY,
-                                                        testContractInitcode.get(),
-                                                        salt)
-                                                .payingWith(GENESIS)
-                                                .gas(4_000_000L)
-                                                .sending(tcValue)
-                                                .via(CREATE_2_TXN)),
+                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                .sending(tcValue)
+                                .via(CREATE_2_TXN)),
                         logIt("Re-deployed the CREATE2 contract"),
-                        sourcing(
-                                () ->
-                                        childRecordsCheck(
-                                                CREATE_2_TXN,
-                                                SUCCESS,
-                                                recordWith()
-                                                        .contractCreateResult(
-                                                                resultWith()
-                                                                        .hexedEvmAddress(
-                                                                                expectedCreate2Address
-                                                                                        .get()))
-                                                        .status(SUCCESS))),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var parentId = spec.registry().getContractId(contract);
-                                    final var childId =
-                                            ContractID.newBuilder()
-                                                    .setContractNum(parentId.getContractNum() + 2L)
-                                                    .build();
-                                    mirrorLiteralId.set("0.0." + childId.getContractNum());
-                                    expectedMirrorAddress.set(hex(asSolidityAddress(childId)));
-                                }),
-                        sourcing(
-                                () ->
-                                        getContractBytecode(mirrorLiteralId.get())
-                                                .exposingBytecodeTo(bytecodeFromMirror::set)),
+                        sourcing(() -> childRecordsCheck(
+                                CREATE_2_TXN,
+                                SUCCESS,
+                                recordWith()
+                                        .contractCreateResult(
+                                                resultWith().hexedEvmAddress(expectedCreate2Address.get()))
+                                        .status(SUCCESS))),
+                        withOpContext((spec, opLog) -> {
+                            final var parentId = spec.registry().getContractId(contract);
+                            final var childId = ContractID.newBuilder()
+                                    .setContractNum(parentId.getContractNum() + 2L)
+                                    .build();
+                            mirrorLiteralId.set("0.0." + childId.getContractNum());
+                            expectedMirrorAddress.set(hex(asSolidityAddress(childId)));
+                        }),
+                        sourcing(() ->
+                                getContractBytecode(mirrorLiteralId.get()).exposingBytecodeTo(bytecodeFromMirror::set)),
                         // https://github.com/hashgraph/hedera-services/issues/2874
-                        sourcing(
-                                () ->
-                                        getContractBytecode(expectedCreate2Address.get())
-                                                .exposingBytecodeTo(bytecodeFromAlias::set)),
-                        withOpContext(
-                                (spec, opLog) ->
-                                        assertArrayEquals(
-                                                bytecodeFromAlias.get(),
-                                                bytecodeFromMirror.get(),
-                                                "Bytecode should be get-able using alias")),
-                        sourcing(
-                                () ->
-                                        contractUpdate(expectedCreate2Address.get())
-                                                .signedBy(DEFAULT_PAYER, adminKey, replAdminKey)
-                                                .newKey(replAdminKey)))
+                        sourcing(() -> getContractBytecode(expectedCreate2Address.get())
+                                .exposingBytecodeTo(bytecodeFromAlias::set)),
+                        withOpContext((spec, opLog) -> assertArrayEquals(
+                                bytecodeFromAlias.get(),
+                                bytecodeFromMirror.get(),
+                                "Bytecode should be get-able using alias")),
+                        sourcing(() -> contractUpdate(expectedCreate2Address.get())
+                                .signedBy(DEFAULT_PAYER, adminKey, replAdminKey)
+                                .newKey(replAdminKey)))
                 .then(
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        contract,
-                                                        DEPLOY,
-                                                        testContractInitcode.get(),
-                                                        salt)
-                                                .payingWith(GENESIS)
-                                                .gas(4_000_000L)
-                                                /* Cannot repeat CREATE2 with same args without destroying the existing contract */
-                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                /* Cannot repeat CREATE2 with same args without destroying the existing contract */
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
                         // https://github.com/hashgraph/hedera-services/issues/2874
                         // autoRenewAccountID is inherited from the sender
-                        sourcing(
-                                () ->
-                                        getContractInfo(expectedCreate2Address.get())
-                                                .has(
-                                                        contractWith()
-                                                                .addressOrAlias(
-                                                                        expectedCreate2Address
-                                                                                .get())
-                                                                .autoRenewAccountId(
-                                                                        autoRenewAccountID))
-                                                .logged()),
-                        sourcing(
-                                () ->
-                                        contractCallLocalWithFunctionAbi(
-                                                        expectedCreate2Address.get(),
-                                                        getABIFor(
-                                                                FUNCTION,
-                                                                "getBalance",
-                                                                testContract))
-                                                .payingWith(GENESIS)
-                                                .has(
-                                                        resultWith()
-                                                                .resultThruAbi(
-                                                                        getABIFor(
-                                                                                FUNCTION,
-                                                                                "getBalance",
-                                                                                testContract),
-                                                                        isLiteralResult(
-                                                                                new Object[] {
-                                                                                    BigInteger
-                                                                                            .valueOf(
-                                                                                                    tcValue)
-                                                                                })))),
+                        sourcing(() -> getContractInfo(expectedCreate2Address.get())
+                                .has(contractWith()
+                                        .addressOrAlias(expectedCreate2Address.get())
+                                        .autoRenewAccountId(autoRenewAccountID))
+                                .logged()),
+                        sourcing(() -> contractCallLocalWithFunctionAbi(
+                                        expectedCreate2Address.get(), getABIFor(FUNCTION, "getBalance", testContract))
+                                .payingWith(GENESIS)
+                                .has(resultWith()
+                                        .resultThruAbi(
+                                                getABIFor(FUNCTION, "getBalance", testContract),
+                                                isLiteralResult(new Object[] {BigInteger.valueOf(tcValue)})))),
                         // autoRenewAccountID is inherited from the sender
-                        sourcing(
-                                () ->
-                                        getContractInfo(expectedMirrorAddress.get())
-                                                .has(
-                                                        contractWith()
-                                                                .adminKey(replAdminKey)
-                                                                .addressOrAlias(
-                                                                        expectedCreate2Address
-                                                                                .get())
-                                                                .autoRenewAccountId(
-                                                                        autoRenewAccountID))
-                                                .logged()),
-                        sourcing(
-                                () ->
-                                        contractCallWithFunctionAbi(
-                                                        expectedCreate2Address.get(),
-                                                        getABIFor(
-                                                                FUNCTION,
-                                                                "vacateAddress",
-                                                                testContract))
-                                                .payingWith(GENESIS)),
-                        sourcing(
-                                () ->
-                                        getContractInfo(expectedCreate2Address.get())
-                                                .hasCostAnswerPrecheck(INVALID_CONTRACT_ID)));
+                        sourcing(() -> getContractInfo(expectedMirrorAddress.get())
+                                .has(contractWith()
+                                        .adminKey(replAdminKey)
+                                        .addressOrAlias(expectedCreate2Address.get())
+                                        .autoRenewAccountId(autoRenewAccountID))
+                                .logged()),
+                        sourcing(() -> contractCallWithFunctionAbi(
+                                        expectedCreate2Address.get(),
+                                        getABIFor(FUNCTION, "vacateAddress", testContract))
+                                .payingWith(GENESIS)),
+                        sourcing(() -> getContractInfo(expectedCreate2Address.get())
+                                .hasCostAnswerPrecheck(INVALID_CONTRACT_ID)));
     }
 
     @SuppressWarnings("java:S5960")
@@ -718,10 +519,7 @@ public class Create2OperationSuite extends HapiSuite {
                                 .adminKey(adminKey)
                                 .entityMemo(entityMemo)
                                 .via(CREATE_2_TXN)
-                                .exposingNumTo(
-                                        num ->
-                                                factoryEvmAddress.set(
-                                                        asHexedSolidityAddress(0, 0, num))),
+                                .exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num))),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
                         tokenCreate(A_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -740,228 +538,121 @@ public class Create2OperationSuite extends HapiSuite {
                                 .via(NFT_CREATE),
                         mintToken(
                                 NFT_INFINITE_SUPPLY_TOKEN,
-                                List.of(
-                                        ByteString.copyFromUtf8("a"),
-                                        ByteString.copyFromUtf8("b"))),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var registry = spec.registry();
-                                    ftId.set(registry.getTokenID(A_TOKEN));
-                                    nftId.set(registry.getTokenID(NFT_INFINITE_SUPPLY_TOKEN));
-                                    partyId.set(registry.getAccountID(PARTY));
-                                    partyAlias.set(
-                                            ByteString.copyFrom(asSolidityAddress(partyId.get())));
-                                }))
+                                List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b"))),
+                        withOpContext((spec, opLog) -> {
+                            final var registry = spec.registry();
+                            ftId.set(registry.getTokenID(A_TOKEN));
+                            nftId.set(registry.getTokenID(NFT_INFINITE_SUPPLY_TOKEN));
+                            partyId.set(registry.getAccountID(PARTY));
+                            partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
+                        }))
                 .when(
-                        sourcing(
-                                () ->
-                                        contractCallLocal(
-                                                        contract,
-                                                        GET_BYTECODE,
-                                                        asHeadlongAddress(factoryEvmAddress.get()),
-                                                        salt)
-                                                .exposingTypedResultsTo(
-                                                        results -> {
-                                                            final var tcInitcode =
-                                                                    (byte[]) results[0];
-                                                            testContractInitcode.set(tcInitcode);
-                                                            LOG.info(
-                                                                    CONTRACT_REPORTED_LOG_MESSAGE,
-                                                                    tcInitcode.length);
-                                                        })
-                                                .payingWith(GENESIS)
-                                                .nodePayment(ONE_HBAR)),
-                        sourcing(
-                                () ->
-                                        contractCallLocal(
-                                                        contract,
-                                                        GET_ADDRESS,
-                                                        testContractInitcode.get(),
-                                                        salt)
-                                                .exposingTypedResultsTo(
-                                                        results -> {
-                                                            LOG.info(
-                                                                    CONTRACT_REPORTED_ADDRESS_MESSAGE,
-                                                                    results);
-                                                            final var expectedAddrBytes =
-                                                                    (Address) results[0];
-                                                            final var hexedAddress =
-                                                                    hex(
-                                                                            Bytes.fromHexString(
-                                                                                            expectedAddrBytes
-                                                                                                    .toString())
-                                                                                    .toArray());
-                                                            LOG.info(
-                                                                    EXPECTED_CREATE2_ADDRESS_MESSAGE,
-                                                                    hexedAddress);
-                                                            expectedCreate2Address.set(
-                                                                    hexedAddress);
-                                                        })
-                                                .payingWith(GENESIS)),
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        contract,
-                                                        DEPLOY,
-                                                        testContractInitcode.get(),
-                                                        salt)
-                                                .payingWith(GENESIS)
-                                                .gas(4_000_000L)
-                                                .sending(tcValue)),
-                        sourcing(
-                                () ->
-                                        contractDelete(expectedCreate2Address.get())
-                                                .signedBy(DEFAULT_PAYER, adminKey)),
+                        sourcing(() -> contractCallLocal(
+                                        contract, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), salt)
+                                .exposingTypedResultsTo(results -> {
+                                    final var tcInitcode = (byte[]) results[0];
+                                    testContractInitcode.set(tcInitcode);
+                                    LOG.info(CONTRACT_REPORTED_LOG_MESSAGE, tcInitcode.length);
+                                })
+                                .payingWith(GENESIS)
+                                .nodePayment(ONE_HBAR)),
+                        sourcing(() -> contractCallLocal(contract, GET_ADDRESS, testContractInitcode.get(), salt)
+                                .exposingTypedResultsTo(results -> {
+                                    LOG.info(CONTRACT_REPORTED_ADDRESS_MESSAGE, results);
+                                    final var expectedAddrBytes = (Address) results[0];
+                                    final var hexedAddress = hex(Bytes.fromHexString(expectedAddrBytes.toString())
+                                            .toArray());
+                                    LOG.info(EXPECTED_CREATE2_ADDRESS_MESSAGE, hexedAddress);
+                                    expectedCreate2Address.set(hexedAddress);
+                                })
+                                .payingWith(GENESIS)),
+                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                .sending(tcValue)),
+                        sourcing(() ->
+                                contractDelete(expectedCreate2Address.get()).signedBy(DEFAULT_PAYER, adminKey)),
                         logIt("Deleted the deployed CREATE2 contract using HAPI"),
                         // Now create a hollow account at the desired address
-                        cryptoTransfer(
-                                        (spec, b) -> {
-                                            final var defaultPayerId =
-                                                    spec.registry().getAccountID(DEFAULT_PAYER);
-                                            b.setTransfers(
-                                                            TransferList.newBuilder()
-                                                                    .addAccountAmounts(
-                                                                            aaWith(
-                                                                                    ByteString
-                                                                                            .copyFrom(
-                                                                                                    CommonUtils
-                                                                                                            .unhex(
-                                                                                                                    expectedCreate2Address
-                                                                                                                            .get())),
-                                                                                    +ONE_HBAR))
-                                                                    .addAccountAmounts(
-                                                                            aaWith(
-                                                                                    defaultPayerId,
-                                                                                    -ONE_HBAR)))
-                                                    .addTokenTransfers(
-                                                            TokenTransferList.newBuilder()
-                                                                    .setToken(ftId.get())
-                                                                    .addTransfers(
-                                                                            aaWith(
-                                                                                    partyAlias
-                                                                                            .get(),
-                                                                                    -500))
-                                                                    .addTransfers(
-                                                                            aaWith(
-                                                                                    ByteString
-                                                                                            .copyFrom(
-                                                                                                    CommonUtils
-                                                                                                            .unhex(
-                                                                                                                    expectedCreate2Address
-                                                                                                                            .get())),
-                                                                                    +500)))
-                                                    .addTokenTransfers(
-                                                            TokenTransferList.newBuilder()
-                                                                    .setToken(nftId.get())
-                                                                    .addNftTransfers(
-                                                                            ocWith(
-                                                                                    accountId(
-                                                                                            partyAlias
-                                                                                                    .get()),
-                                                                                    accountId(
-                                                                                            ByteString
-                                                                                                    .copyFrom(
-                                                                                                            CommonUtils
-                                                                                                                    .unhex(
-                                                                                                                            expectedCreate2Address
-                                                                                                                                    .get()))),
-                                                                                    1L)));
-                                        })
+                        cryptoTransfer((spec, b) -> {
+                                    final var defaultPayerId = spec.registry().getAccountID(DEFAULT_PAYER);
+                                    b.setTransfers(TransferList.newBuilder()
+                                                    .addAccountAmounts(aaWith(
+                                                            ByteString.copyFrom(
+                                                                    CommonUtils.unhex(expectedCreate2Address.get())),
+                                                            +ONE_HBAR))
+                                                    .addAccountAmounts(aaWith(defaultPayerId, -ONE_HBAR)))
+                                            .addTokenTransfers(TokenTransferList.newBuilder()
+                                                    .setToken(ftId.get())
+                                                    .addTransfers(aaWith(partyAlias.get(), -500))
+                                                    .addTransfers(aaWith(
+                                                            ByteString.copyFrom(
+                                                                    CommonUtils.unhex(expectedCreate2Address.get())),
+                                                            +500)))
+                                            .addTokenTransfers(TokenTransferList.newBuilder()
+                                                    .setToken(nftId.get())
+                                                    .addNftTransfers(ocWith(
+                                                            accountId(partyAlias.get()),
+                                                            accountId(ByteString.copyFrom(
+                                                                    CommonUtils.unhex(expectedCreate2Address.get()))),
+                                                            1L)));
+                                })
                                 .signedBy(DEFAULT_PAYER, PARTY)
                                 .fee(ONE_HBAR)
                                 .via(creation),
                         getTxnRecord(creation)
                                 .andAllChildRecords()
                                 .exposingCreationsTo(l -> hollowCreationAddress.set(l.get(0))),
-                        sourcing(() -> getAccountInfo(hollowCreationAddress.get()).logged()))
+                        sourcing(() ->
+                                getAccountInfo(hollowCreationAddress.get()).logged()))
                 .then(
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        contract,
-                                                        "wronglyDeployTwice",
-                                                        testContractInitcode.get(),
-                                                        salt)
-                                                .payingWith(GENESIS)
-                                                .gas(4_000_000L)
-                                                .sending(tcValue)
-                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        contract,
-                                                        DEPLOY,
-                                                        testContractInitcode.get(),
-                                                        salt)
-                                                .payingWith(GENESIS)
-                                                .gas(4_000_000L)
-                                                .sending(tcValue)
-                                                .via(CREATE_2_TXN)),
+                        sourcing(() -> contractCall(contract, "wronglyDeployTwice", testContractInitcode.get(), salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                .sending(tcValue)
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                .sending(tcValue)
+                                .via(CREATE_2_TXN)),
                         captureOneChildCreate2MetaFor(
                                 "Merged deployed contract with hollow account",
                                 CREATE_2_TXN,
                                 mergedMirrorAddr,
                                 mergedAliasAddr),
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        contract,
-                                                        DEPLOY,
-                                                        testContractInitcode.get(),
-                                                        salt)
-                                                .payingWith(GENESIS)
-                                                .gas(4_000_000L)
-                                                /* Cannot repeat CREATE2
-                                                with same args without destroying the existing contract */
+                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                /* Cannot repeat CREATE2
+                                with same args without destroying the existing contract */
 
-                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                        sourcing(() -> getContractInfo(mergedAliasAddr.get())
+                                .has(contractWith()
+                                        .numKvPairs(2)
+                                        .hasStandinContractKey()
+                                        .maxAutoAssociations(2)
+                                        .hasAlreadyUsedAutomaticAssociations(2)
+                                        .memo(LAZY_MEMO)
+                                        .balance(ONE_HBAR + tcValue))
+                                .hasToken(relationshipWith(A_TOKEN).balance(500))
+                                .hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN)
+                                        .balance(1))
+                                .logged()),
                         sourcing(
-                                () ->
-                                        getContractInfo(mergedAliasAddr.get())
-                                                .has(
-                                                        contractWith()
-                                                                .numKvPairs(2)
-                                                                .hasStandinContractKey()
-                                                                .maxAutoAssociations(2)
-                                                                .hasAlreadyUsedAutomaticAssociations(
-                                                                        2)
-                                                                .memo(LAZY_MEMO)
-                                                                .balance(ONE_HBAR + tcValue))
-                                                .hasToken(relationshipWith(A_TOKEN).balance(500))
-                                                .hasToken(
-                                                        relationshipWith(NFT_INFINITE_SUPPLY_TOKEN)
-                                                                .balance(1))
-                                                .logged()),
-                        sourcing(() -> getContractBytecode(mergedAliasAddr.get()).isNonEmpty()),
-                        sourcing(
-                                () ->
-                                        contractCallLocal(
-                                                        contract,
-                                                        GET_ADDRESS,
-                                                        testContractInitcode.get(),
-                                                        salt)
-                                                .exposingTypedResultsTo(
-                                                        results -> {
-                                                            LOG.info(
-                                                                    CONTRACT_REPORTED_ADDRESS_MESSAGE,
-                                                                    results);
-                                                            final var addrBytes =
-                                                                    (Address) results[0];
-                                                            final var hexedAddress =
-                                                                    hex(
-                                                                            Bytes.fromHexString(
-                                                                                            addrBytes
-                                                                                                    .toString())
-                                                                                    .toArray());
-                                                            LOG.info(
-                                                                    EXPECTED_CREATE2_ADDRESS_MESSAGE,
-                                                                    hexedAddress);
+                                () -> getContractBytecode(mergedAliasAddr.get()).isNonEmpty()),
+                        sourcing(() -> contractCallLocal(contract, GET_ADDRESS, testContractInitcode.get(), salt)
+                                .exposingTypedResultsTo(results -> {
+                                    LOG.info(CONTRACT_REPORTED_ADDRESS_MESSAGE, results);
+                                    final var addrBytes = (Address) results[0];
+                                    final var hexedAddress = hex(Bytes.fromHexString(addrBytes.toString())
+                                            .toArray());
+                                    LOG.info(EXPECTED_CREATE2_ADDRESS_MESSAGE, hexedAddress);
 
-                                                            assertEquals(
-                                                                    expectedCreate2Address.get(),
-                                                                    hexedAddress);
-                                                        })
-                                                .payingWith(GENESIS)));
+                                    assertEquals(expectedCreate2Address.get(), hexedAddress);
+                                })
+                                .payingWith(GENESIS)));
     }
 
     @SuppressWarnings("java:S5669")
@@ -989,66 +680,41 @@ public class Create2OperationSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .gas(4_000_000L)
                                 .via(CREATE_2_TXN),
-                        captureOneChildCreate2MetaFor(
-                                "Precompile user", CREATE_2_TXN, userMirrorAddr, userAliasAddr),
-                        sourcing(
-                                () ->
-                                        getAliasedContractBalance(userAliasAddr.get())
-                                                .hasId(
-                                                        accountIdFromHexedMirrorAddress(
-                                                                userMirrorAddr.get()))),
-                        withOpContext(
-                                (spec, opLog) ->
-                                        userLiteralId.set(
-                                                asContractString(
-                                                        contractIdFromHexedMirrorAddress(
-                                                                userMirrorAddr.get())))),
-                        sourcing(
-                                () ->
-                                        tokenCreate(nft)
-                                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                                .treasury(userLiteralId.get())
-                                                .initialSupply(0L)
-                                                .supplyKey(SWISS)
-                                                .fee(ONE_HUNDRED_HBARS)
-                                                .signedBy(DEFAULT_PAYER, SWISS)),
+                        captureOneChildCreate2MetaFor("Precompile user", CREATE_2_TXN, userMirrorAddr, userAliasAddr),
+                        sourcing(() -> getAliasedContractBalance(userAliasAddr.get())
+                                .hasId(accountIdFromHexedMirrorAddress(userMirrorAddr.get()))),
+                        withOpContext((spec, opLog) -> userLiteralId.set(
+                                asContractString(contractIdFromHexedMirrorAddress(userMirrorAddr.get())))),
+                        sourcing(() -> tokenCreate(nft)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(userLiteralId.get())
+                                .initialSupply(0L)
+                                .supplyKey(SWISS)
+                                .fee(ONE_HUNDRED_HBARS)
+                                .signedBy(DEFAULT_PAYER, SWISS)),
                         mintToken(nft, List.of(ByteString.copyFromUtf8("PRICELESS"))))
                 .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var nftType = spec.registry().getTokenID(nft);
-                                    nftAddress.set(asSolidityAddress(nftType));
-                                }),
+                        withOpContext((spec, opLog) -> {
+                            final var nftType = spec.registry().getTokenID(nft);
+                            nftAddress.set(asSolidityAddress(nftType));
+                        }),
                         sourcing(() -> getContractInfo(userLiteralId.get()).logged()),
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        ercContract,
-                                                        "ownerOf",
-                                                        HapiParserUtil.asHeadlongAddress(
-                                                                nftAddress.get()),
-                                                        BigInteger.valueOf(1))
-                                                .via(lookup)
-                                                .gas(4_000_000)))
-                .then(
-                        sourcing(
-                                () ->
-                                        childRecordsCheck(
-                                                lookup,
-                                                SUCCESS,
-                                                recordWith()
-                                                        .status(SUCCESS)
-                                                        .contractCallResult(
-                                                                resultWith()
-                                                                        .contractCallResult(
-                                                                                htsPrecompileResult()
-                                                                                        .forFunction(
-                                                                                                FunctionType
-                                                                                                        .ERC_OWNER)
-                                                                                        .withOwner(
-                                                                                                unhex(
-                                                                                                        userAliasAddr
-                                                                                                                .get())))))));
+                        sourcing(() -> contractCall(
+                                        ercContract,
+                                        "ownerOf",
+                                        HapiParserUtil.asHeadlongAddress(nftAddress.get()),
+                                        BigInteger.valueOf(1))
+                                .via(lookup)
+                                .gas(4_000_000)))
+                .then(sourcing(() -> childRecordsCheck(
+                        lookup,
+                        SUCCESS,
+                        recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(htsPrecompileResult()
+                                                .forFunction(FunctionType.ERC_OWNER)
+                                                .withOwner(unhex(userAliasAddr.get())))))));
     }
 
     private HapiSpec childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor() {
@@ -1065,26 +731,15 @@ public class Create2OperationSuite extends HapiSuite {
                         newKeyNamed(multiKey),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(ft)
-                                .exposingCreatedIdTo(
-                                        id ->
-                                                tokenMirrorAddr.set(
-                                                        hex(
-                                                                asSolidityAddress(
-                                                                        HapiPropertySource.asToken(
-                                                                                id))))))
-                .when(
-                        uploadInitCode(immediateChildAssoc),
-                        sourcing(
-                                () ->
-                                        contractCreate(
-                                                        immediateChildAssoc,
-                                                        asHeadlongAddress(tokenMirrorAddr.get()))
-                                                .gas(2_000_000)
-                                                .adminKey(multiKey)
-                                                .payingWith(GENESIS)
-                                                .exposingNumTo(
-                                                        n -> childMirrorAddr.set("0.0." + (n + 1)))
-                                                .via(creationAndAssociation)))
+                                .exposingCreatedIdTo(id ->
+                                        tokenMirrorAddr.set(hex(asSolidityAddress(HapiPropertySource.asToken(id))))))
+                .when(uploadInitCode(immediateChildAssoc), sourcing(() -> contractCreate(
+                                immediateChildAssoc, asHeadlongAddress(tokenMirrorAddr.get()))
+                        .gas(2_000_000)
+                        .adminKey(multiKey)
+                        .payingWith(GENESIS)
+                        .exposingNumTo(n -> childMirrorAddr.set("0.0." + (n + 1)))
+                        .via(creationAndAssociation)))
                 .then(sourcing(() -> getContractInfo(childMirrorAddr.get()).logged()));
     }
 
@@ -1118,14 +773,9 @@ public class Create2OperationSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .gas(4_000_000L)
                                 .via(creation2),
-                        captureOneChildCreate2MetaFor(
-                                "Precompile user", creation2, userMirrorAddr, userAliasAddr),
-                        withOpContext(
-                                (spec, opLog) ->
-                                        userLiteralId.set(
-                                                asContractString(
-                                                        contractIdFromHexedMirrorAddress(
-                                                                userMirrorAddr.get())))),
+                        captureOneChildCreate2MetaFor("Precompile user", creation2, userMirrorAddr, userAliasAddr),
+                        withOpContext((spec, opLog) -> userLiteralId.set(
+                                asContractString(contractIdFromHexedMirrorAddress(userMirrorAddr.get())))),
                         tokenCreate(ft)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
@@ -1138,119 +788,71 @@ public class Create2OperationSuite extends HapiSuite {
                                 .supplyKey(multiKey),
                         mintToken(nft, List.of(ByteString.copyFromUtf8("PRICELESS"))),
                         tokenUpdate(nft).supplyKey(() -> aliasContractIdKey(userAliasAddr.get())))
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var registry = spec.registry();
-                                    final var ftType = registry.getTokenID(ft);
-                                    final var nftType = registry.getTokenID(nft);
+                .when(withOpContext((spec, opLog) -> {
+                    final var registry = spec.registry();
+                    final var ftType = registry.getTokenID(ft);
+                    final var nftType = registry.getTokenID(nft);
 
-                                    final var ftAssoc =
-                                            contractCall(
-                                                            contract,
-                                                            "associateBothTo",
-                                                            asHeadlongAddress(
-                                                                    hex(asSolidityAddress(ftType))))
-                                                    .gas(4_000_000L);
-                                    final var nftAssoc =
-                                            contractCall(
-                                                            contract,
-                                                            "associateBothTo",
-                                                            asHeadlongAddress(
-                                                                    hex(
-                                                                            asSolidityAddress(
-                                                                                    nftType))))
-                                                    .gas(4_000_000L);
+                    final var ftAssoc = contractCall(
+                                    contract, "associateBothTo", asHeadlongAddress(hex(asSolidityAddress(ftType))))
+                            .gas(4_000_000L);
+                    final var nftAssoc = contractCall(
+                                    contract, "associateBothTo", asHeadlongAddress(hex(asSolidityAddress(nftType))))
+                            .gas(4_000_000L);
 
-                                    final var fundingXfer =
-                                            cryptoTransfer(
-                                                    moving(100, ft)
-                                                            .between(TOKEN_TREASURY, contract),
-                                                    movingUnique(nft, 1L)
-                                                            .between(TOKEN_TREASURY, contract));
+                    final var fundingXfer = cryptoTransfer(
+                            moving(100, ft).between(TOKEN_TREASURY, contract),
+                            movingUnique(nft, 1L).between(TOKEN_TREASURY, contract));
 
-                                    // https://github.com/hashgraph/hedera-services/issues/2874
-                                    // (alias in transfer precompile)
-                                    final var sendFt =
-                                            contractCall(
-                                                            contract,
-                                                            "sendFtToUser",
-                                                            asHeadlongAddress(
-                                                                    hex(asSolidityAddress(ftType))),
-                                                            100L)
-                                                    .gas(4_000_000L);
-                                    final var sendNft =
-                                            contractCall(
-                                                            contract,
-                                                            "sendNftToUser",
-                                                            asHeadlongAddress(
-                                                                    hex(
-                                                                            asSolidityAddress(
-                                                                                    nftType))),
-                                                            1L)
-                                                    .via(ftFail)
-                                                    .gas(4_000_000L);
-                                    final var failFtDissoc =
-                                            contractCall(
-                                                            contract,
-                                                            "dissociateBothFrom",
-                                                            asHeadlongAddress(
-                                                                    hex(asSolidityAddress(ftType))))
-                                                    .via(ftFail)
-                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                    .gas(4_000_000L);
-                                    final var failNftDissoc =
-                                            contractCall(
-                                                            contract,
-                                                            "dissociateBothFrom",
-                                                            asHeadlongAddress(
-                                                                    hex(
-                                                                            asSolidityAddress(
-                                                                                    nftType))))
-                                                    .via(nftFail)
-                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                    .gas(4_000_000L);
-                                    // https://github.com/hashgraph/hedera-services/issues/2876
-                                    // (mint via ContractID key)
-                                    final var mint =
-                                            contractCallWithFunctionAbi(
-                                                            userAliasAddr.get(),
-                                                            getABIFor(
-                                                                    FUNCTION,
-                                                                    "mintNft",
-                                                                    userContract),
-                                                            asHeadlongAddress(
-                                                                    hex(
-                                                                            asSolidityAddress(
-                                                                                    nftType))),
-                                                            new byte[][] {"WoRtHlEsS".getBytes()})
-                                                    .gas(4_000_000L);
-                                    /* Can't succeed yet because supply key isn't delegatable */
-                                    hexedNftType.set(hex(asSolidityAddress(nftType)));
-                                    final var helperMint =
-                                            contractCallWithFunctionAbi(
-                                                            userAliasAddr.get(),
-                                                            getABIFor(
-                                                                    FUNCTION,
-                                                                    "mintNftViaDelegate",
-                                                                    userContract),
-                                                            asHeadlongAddress(hexedNftType.get()),
-                                                            new byte[][] {"WoRtHlEsS".getBytes()})
-                                                    .via(helperMintFail)
-                                                    .gas(4_000_000L);
+                    // https://github.com/hashgraph/hedera-services/issues/2874
+                    // (alias in transfer precompile)
+                    final var sendFt = contractCall(
+                                    contract, "sendFtToUser", asHeadlongAddress(hex(asSolidityAddress(ftType))), 100L)
+                            .gas(4_000_000L);
+                    final var sendNft = contractCall(
+                                    contract, "sendNftToUser", asHeadlongAddress(hex(asSolidityAddress(nftType))), 1L)
+                            .via(ftFail)
+                            .gas(4_000_000L);
+                    final var failFtDissoc = contractCall(
+                                    contract, "dissociateBothFrom", asHeadlongAddress(hex(asSolidityAddress(ftType))))
+                            .via(ftFail)
+                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                            .gas(4_000_000L);
+                    final var failNftDissoc = contractCall(
+                                    contract, "dissociateBothFrom", asHeadlongAddress(hex(asSolidityAddress(nftType))))
+                            .via(nftFail)
+                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                            .gas(4_000_000L);
+                    // https://github.com/hashgraph/hedera-services/issues/2876
+                    // (mint via ContractID key)
+                    final var mint = contractCallWithFunctionAbi(
+                                    userAliasAddr.get(),
+                                    getABIFor(FUNCTION, "mintNft", userContract),
+                                    asHeadlongAddress(hex(asSolidityAddress(nftType))),
+                                    new byte[][] {"WoRtHlEsS".getBytes()})
+                            .gas(4_000_000L);
+                    /* Can't succeed yet because supply key isn't delegatable */
+                    hexedNftType.set(hex(asSolidityAddress(nftType)));
+                    final var helperMint = contractCallWithFunctionAbi(
+                                    userAliasAddr.get(),
+                                    getABIFor(FUNCTION, "mintNftViaDelegate", userContract),
+                                    asHeadlongAddress(hexedNftType.get()),
+                                    new byte[][] {"WoRtHlEsS".getBytes()})
+                            .via(helperMintFail)
+                            .gas(4_000_000L);
 
-                                    allRunFor(
-                                            spec,
-                                            ftAssoc,
-                                            nftAssoc,
-                                            fundingXfer,
-                                            sendFt,
-                                            sendNft,
-                                            failFtDissoc,
-                                            failNftDissoc,
-                                            mint,
-                                            helperMint);
-                                }))
+                    allRunFor(
+                            spec,
+                            ftAssoc,
+                            nftAssoc,
+                            fundingXfer,
+                            sendFt,
+                            sendNft,
+                            failFtDissoc,
+                            failNftDissoc,
+                            mint,
+                            helperMint);
+                }))
                 .then(
                         childRecordsCheck(
                                 helperMintFail,
@@ -1259,97 +861,63 @@ public class Create2OperationSuite extends HapiSuite {
                                 recordWith().status(SUCCESS),
                                 recordWith()
                                         .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .HAPI_MINT)
-                                                                        .withTotalSupply(0)
-                                                                        .withSerialNumbers()
-                                                                        .withStatus(
-                                                                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.HAPI_MINT)
+                                                        .withTotalSupply(0)
+                                                        .withSerialNumbers()
+                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
                         childRecordsCheck(
                                 ftFail,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(REVERTED_SUCCESS),
                                 recordWith()
                                         .status(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)))),
                         childRecordsCheck(
                                 nftFail,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(REVERTED_SUCCESS),
                                 recordWith()
                                         .status(ACCOUNT_STILL_OWNS_NFTS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                ACCOUNT_STILL_OWNS_NFTS)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(ACCOUNT_STILL_OWNS_NFTS)))),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nft, 1),
 
                         // https://github.com/hashgraph/hedera-services/issues/2876 (mint via
                         // delegatable_contract_id)
-                        tokenUpdate(nft)
-                                .supplyKey(() -> aliasDelegateContractKey(userAliasAddr.get())),
-                        sourcing(
-                                () ->
-                                        contractCallWithFunctionAbi(
-                                                        userAliasAddr.get(),
-                                                        getABIFor(
-                                                                FUNCTION,
-                                                                "mintNftViaDelegate",
-                                                                userContract),
-                                                        asHeadlongAddress(hexedNftType.get()),
-                                                        new byte[][] {"WoRtHlEsS...NOT".getBytes()})
-                                                .via(helperMintSuccess)
-                                                .gas(4_000_000L)),
+                        tokenUpdate(nft).supplyKey(() -> aliasDelegateContractKey(userAliasAddr.get())),
+                        sourcing(() -> contractCallWithFunctionAbi(
+                                        userAliasAddr.get(),
+                                        getABIFor(FUNCTION, "mintNftViaDelegate", userContract),
+                                        asHeadlongAddress(hexedNftType.get()),
+                                        new byte[][] {"WoRtHlEsS...NOT".getBytes()})
+                                .via(helperMintSuccess)
+                                .gas(4_000_000L)),
                         getTxnRecord(helperMintSuccess).andAllChildRecords().logged(),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nft, 2),
-                        cryptoTransfer(
-                                        (spec, b) -> {
-                                            final var registry = spec.registry();
-                                            final var tt = registry.getAccountID(TOKEN_TREASURY);
-                                            final var ftId = registry.getTokenID(ft);
-                                            final var nftId = registry.getTokenID(nft);
-                                            b.setTransfers(
-                                                    TransferList.newBuilder()
-                                                            .addAccountAmounts(aaWith(tt, -666))
-                                                            .addAccountAmounts(
-                                                                    aaWith(
-                                                                            userMirrorAddr.get(),
-                                                                            +666)));
-                                            b.addTokenTransfers(
-                                                            TokenTransferList.newBuilder()
-                                                                    .setToken(ftId)
-                                                                    .addTransfers(aaWith(tt, -6))
-                                                                    .addTransfers(
-                                                                            aaWith(
-                                                                                    userMirrorAddr
-                                                                                            .get(),
-                                                                                    +6)))
-                                                    .addTokenTransfers(
-                                                            TokenTransferList.newBuilder()
-                                                                    .setToken(nftId)
-                                                                    .addNftTransfers(
-                                                                            NftTransfer.newBuilder()
-                                                                                    .setSerialNumber(
-                                                                                            2L)
-                                                                                    .setSenderAccountID(
-                                                                                            tt)
-                                                                                    .setReceiverAccountID(
-                                                                                            accountId(
-                                                                                                    userMirrorAddr
-                                                                                                            .get()))));
-                                        })
+                        cryptoTransfer((spec, b) -> {
+                                    final var registry = spec.registry();
+                                    final var tt = registry.getAccountID(TOKEN_TREASURY);
+                                    final var ftId = registry.getTokenID(ft);
+                                    final var nftId = registry.getTokenID(nft);
+                                    b.setTransfers(TransferList.newBuilder()
+                                            .addAccountAmounts(aaWith(tt, -666))
+                                            .addAccountAmounts(aaWith(userMirrorAddr.get(), +666)));
+                                    b.addTokenTransfers(TokenTransferList.newBuilder()
+                                                    .setToken(ftId)
+                                                    .addTransfers(aaWith(tt, -6))
+                                                    .addTransfers(aaWith(userMirrorAddr.get(), +6)))
+                                            .addTokenTransfers(TokenTransferList.newBuilder()
+                                                    .setToken(nftId)
+                                                    .addNftTransfers(NftTransfer.newBuilder()
+                                                            .setSerialNumber(2L)
+                                                            .setSenderAccountID(tt)
+                                                            .setReceiverAccountID(accountId(userMirrorAddr.get()))));
+                                })
                                 .signedBy(DEFAULT_PAYER, TOKEN_TREASURY),
                         sourcing(() -> getContractInfo(userLiteralId.get()).logged()));
     }
@@ -1369,8 +937,7 @@ public class Create2OperationSuite extends HapiSuite {
         final AtomicReference<String> mDonorMirrorAddr = new AtomicReference<>();
 
         final var salt = unhex(SALT);
-        final var otherSalt =
-                unhex("aabbccddee880011aabbccddee880011aabbccddee880011aabbccddee880011");
+        final var otherSalt = unhex("aabbccddee880011aabbccddee880011aabbccddee880011aabbccddee880011");
 
         return defaultHapiSpec("CannotSelfDestructToMirrorAddress")
                 .given(
@@ -1381,29 +948,18 @@ public class Create2OperationSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .gas(4_000_000L)
                                 .via(creation2),
-                        captureOneChildCreate2MetaFor(
-                                "donor", creation2, donorMirrorAddr, donorAliasAddr))
+                        captureOneChildCreate2MetaFor("donor", creation2, donorMirrorAddr, donorAliasAddr))
                 .when(
-                        sourcing(
-                                () ->
-                                        contractCallWithFunctionAbi(
-                                                        donorAliasAddr.get(),
-                                                        getABIFor(
-                                                                FUNCTION,
-                                                                "relinquishFundsTo",
-                                                                donorContract),
-                                                        asHeadlongAddress(donorAliasAddr.get()))
-                                                .hasKnownStatus(OBTAINER_SAME_CONTRACT_ID)),
-                        sourcing(
-                                () ->
-                                        contractCallWithFunctionAbi(
-                                                        donorAliasAddr.get(),
-                                                        getABIFor(
-                                                                FUNCTION,
-                                                                "relinquishFundsTo",
-                                                                donorContract),
-                                                        asHeadlongAddress(donorMirrorAddr.get()))
-                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)))
+                        sourcing(() -> contractCallWithFunctionAbi(
+                                        donorAliasAddr.get(),
+                                        getABIFor(FUNCTION, "relinquishFundsTo", donorContract),
+                                        asHeadlongAddress(donorAliasAddr.get()))
+                                .hasKnownStatus(OBTAINER_SAME_CONTRACT_ID)),
+                        sourcing(() -> contractCallWithFunctionAbi(
+                                        donorAliasAddr.get(),
+                                        getABIFor(FUNCTION, "relinquishFundsTo", donorContract),
+                                        asHeadlongAddress(donorMirrorAddr.get()))
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)))
                 .then(
                         contractCall(contract, "buildThenRevertThenBuild", otherSalt)
                                 .sending(1_000)
@@ -1411,15 +967,10 @@ public class Create2OperationSuite extends HapiSuite {
                                 .gas(4_000_000L)
                                 .via(messyCreation2),
                         captureOneChildCreate2MetaFor(
-                                "questionableDonor",
-                                messyCreation2,
-                                mDonorMirrorAddr,
-                                mDonorAliasAddr),
-                        sourcing(
-                                () ->
-                                        getContractInfo(mDonorAliasAddr.get())
-                                                .has(contractWith().balance(100))
-                                                .logged()));
+                                "questionableDonor", messyCreation2, mDonorMirrorAddr, mDonorAliasAddr),
+                        sourcing(() -> getContractInfo(mDonorAliasAddr.get())
+                                .has(contractWith().balance(100))
+                                .logged()));
     }
 
     // https://github.com/hashgraph/hedera-services/issues/2874
@@ -1436,8 +987,7 @@ public class Create2OperationSuite extends HapiSuite {
         final AtomicReference<String> saltingCreatorLiteralId = new AtomicReference<>();
 
         final var salt = unhex(SALT);
-        final var otherSalt =
-                unhex("aabbccddee330011aabbccddee330011aabbccddee330011aabbccddee330011");
+        final var otherSalt = unhex("aabbccddee330011aabbccddee330011aabbccddee330011aabbccddee330011");
 
         return defaultHapiSpec("CanDeleteViaAlias")
                 .given(
@@ -1449,106 +999,52 @@ public class Create2OperationSuite extends HapiSuite {
                                 .gas(4_000_000L)
                                 .via(creation2),
                         captureOneChildCreate2MetaFor(
-                                "Salting creator",
-                                creation2,
-                                saltingCreatorMirrorAddr,
-                                saltingCreatorAliasAddr),
-                        withOpContext(
-                                (spec, opLog) ->
-                                        saltingCreatorLiteralId.set(
-                                                asContractString(
-                                                        contractIdFromHexedMirrorAddress(
-                                                                saltingCreatorMirrorAddr.get())))),
+                                "Salting creator", creation2, saltingCreatorMirrorAddr, saltingCreatorAliasAddr),
+                        withOpContext((spec, opLog) -> saltingCreatorLiteralId.set(
+                                asContractString(contractIdFromHexedMirrorAddress(saltingCreatorMirrorAddr.get())))),
                         // https://github.com/hashgraph/hedera-services/issues/2867 (can't
                         // re-create2 after selfdestruct)
-                        sourcing(
-                                () ->
-                                        contractCallWithFunctionAbi(
-                                                        saltingCreatorAliasAddr.get(),
-                                                        getABIFor(
-                                                                FUNCTION,
-                                                                "createAndRecreateTest",
-                                                                saltingCreator),
-                                                        otherSalt)
-                                                .payingWith(GENESIS)
-                                                .gas(2_000_000L)
-                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
+                        sourcing(() -> contractCallWithFunctionAbi(
+                                        saltingCreatorAliasAddr.get(),
+                                        getABIFor(FUNCTION, "createAndRecreateTest", saltingCreator),
+                                        otherSalt)
+                                .payingWith(GENESIS)
+                                .gas(2_000_000L)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
                 .when(
-                        sourcing(
-                                () ->
-                                        contractUpdate(saltingCreatorAliasAddr.get())
-                                                .signedBy(DEFAULT_PAYER, adminKey)
-                                                .memo("That's why you always leave a note")),
-                        sourcing(
-                                () ->
-                                        contractCallLocalWithFunctionAbi(
-                                                        saltingCreatorAliasAddr.get(),
-                                                        getABIFor(
-                                                                FUNCTION,
-                                                                "whatTheFoo",
-                                                                saltingCreator))
-                                                .has(
-                                                        resultWith()
-                                                                .resultThruAbi(
-                                                                        getABIFor(
-                                                                                FUNCTION,
-                                                                                "whatTheFoo",
-                                                                                saltingCreator),
-                                                                        isLiteralResult(
-                                                                                new Object[] {
-                                                                                    BigInteger
-                                                                                            .valueOf(
-                                                                                                    42)
-                                                                                })))),
-                        sourcing(
-                                () ->
-                                        contractDelete(saltingCreatorAliasAddr.get())
-                                                .signedBy(DEFAULT_PAYER, adminKey)
-                                                .transferContract(saltingCreatorMirrorAddr.get())
-                                                .hasKnownStatus(OBTAINER_SAME_CONTRACT_ID)),
-                        sourcing(
-                                () ->
-                                        contractDelete(saltingCreatorMirrorAddr.get())
-                                                .signedBy(DEFAULT_PAYER, adminKey)
-                                                .transferContract(saltingCreatorAliasAddr.get())
-                                                .hasKnownStatus(OBTAINER_SAME_CONTRACT_ID)))
+                        sourcing(() -> contractUpdate(saltingCreatorAliasAddr.get())
+                                .signedBy(DEFAULT_PAYER, adminKey)
+                                .memo("That's why you always leave a note")),
+                        sourcing(() -> contractCallLocalWithFunctionAbi(
+                                        saltingCreatorAliasAddr.get(),
+                                        getABIFor(FUNCTION, "whatTheFoo", saltingCreator))
+                                .has(resultWith()
+                                        .resultThruAbi(
+                                                getABIFor(FUNCTION, "whatTheFoo", saltingCreator),
+                                                isLiteralResult(new Object[] {BigInteger.valueOf(42)})))),
+                        sourcing(() -> contractDelete(saltingCreatorAliasAddr.get())
+                                .signedBy(DEFAULT_PAYER, adminKey)
+                                .transferContract(saltingCreatorMirrorAddr.get())
+                                .hasKnownStatus(OBTAINER_SAME_CONTRACT_ID)),
+                        sourcing(() -> contractDelete(saltingCreatorMirrorAddr.get())
+                                .signedBy(DEFAULT_PAYER, adminKey)
+                                .transferContract(saltingCreatorAliasAddr.get())
+                                .hasKnownStatus(OBTAINER_SAME_CONTRACT_ID)))
                 .then(
-                        sourcing(
-                                () ->
-                                        getContractInfo(saltingCreatorMirrorAddr.get())
-                                                .has(
-                                                        contractWith()
-                                                                .addressOrAlias(
-                                                                        saltingCreatorAliasAddr
-                                                                                .get()))),
-                        sourcing(
-                                () ->
-                                        contractDelete(saltingCreatorAliasAddr.get())
-                                                .signedBy(DEFAULT_PAYER, adminKey)
-                                                .transferAccount(FUNDING)
-                                                .via(deletion)),
-                        sourcing(
-                                () ->
-                                        getTxnRecord(deletion)
-                                                .hasPriority(
-                                                        recordWith()
-                                                                .targetedContractId(
-                                                                        saltingCreatorLiteralId
-                                                                                .get()))),
-                        sourcing(
-                                () ->
-                                        contractDelete(saltingCreatorMirrorAddr.get())
-                                                .signedBy(DEFAULT_PAYER, adminKey)
-                                                .transferAccount(FUNDING)
-                                                .hasPrecheck(CONTRACT_DELETED)),
-                        sourcing(
-                                () ->
-                                        getContractInfo(saltingCreatorMirrorAddr.get())
-                                                .has(
-                                                        contractWith()
-                                                                .addressOrAlias(
-                                                                        saltingCreatorMirrorAddr
-                                                                                .get()))));
+                        sourcing(() -> getContractInfo(saltingCreatorMirrorAddr.get())
+                                .has(contractWith().addressOrAlias(saltingCreatorAliasAddr.get()))),
+                        sourcing(() -> contractDelete(saltingCreatorAliasAddr.get())
+                                .signedBy(DEFAULT_PAYER, adminKey)
+                                .transferAccount(FUNDING)
+                                .via(deletion)),
+                        sourcing(() -> getTxnRecord(deletion)
+                                .hasPriority(recordWith().targetedContractId(saltingCreatorLiteralId.get()))),
+                        sourcing(() -> contractDelete(saltingCreatorMirrorAddr.get())
+                                .signedBy(DEFAULT_PAYER, adminKey)
+                                .transferAccount(FUNDING)
+                                .hasPrecheck(CONTRACT_DELETED)),
+                        sourcing(() -> getContractInfo(saltingCreatorMirrorAddr.get())
+                                .has(contractWith().addressOrAlias(saltingCreatorMirrorAddr.get()))));
     }
 
     @SuppressWarnings("java:S5669")
@@ -1568,8 +1064,7 @@ public class Create2OperationSuite extends HapiSuite {
 
         final var salt = unhex(SALT);
 
-        return defaultHapiSpec(
-                        "Create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed")
+        return defaultHapiSpec("Create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed")
                 .given(
                         uploadInitCode(contract),
                         contractCreate(contract).payingWith(GENESIS),
@@ -1578,88 +1073,51 @@ public class Create2OperationSuite extends HapiSuite {
                                 .gas(4_000_000L)
                                 .via(creation2),
                         captureOneChildCreate2MetaFor(
-                                "Salting creator",
-                                creation2,
-                                saltingCreatorMirrorAddr,
-                                saltingCreatorAliasAddr))
+                                "Salting creator", creation2, saltingCreatorMirrorAddr, saltingCreatorAliasAddr))
                 .when(
-                        sourcing(
-                                () ->
-                                        contractCallWithFunctionAbi(
-                                                        saltingCreatorAliasAddr.get(),
-                                                        getABIFor(
-                                                                FUNCTION,
-                                                                "createSaltedTestContract",
-                                                                saltingCreator),
-                                                        salt)
-                                                .payingWith(GENESIS)
-                                                .gas(4_000_000L)
-                                                .via(innerCreation2)),
-                        sourcing(
-                                () -> {
-                                    final var emitterId =
-                                            literalIdFromHexedMirrorAddress(
-                                                    saltingCreatorMirrorAddr.get());
-                                    return getTxnRecord(innerCreation2)
-                                            .hasPriority(
-                                                    recordWith()
-                                                            .contractCallResult(
-                                                                    resultWith()
-                                                                            .contract(emitterId)
-                                                                            .logs(
-                                                                                    inOrder(
-                                                                                            logWith()
-                                                                                                    .contract(
-                                                                                                            emitterId)))))
-                                            .andAllChildRecords()
-                                            .logged();
-                                }),
+                        sourcing(() -> contractCallWithFunctionAbi(
+                                        saltingCreatorAliasAddr.get(),
+                                        getABIFor(FUNCTION, "createSaltedTestContract", saltingCreator),
+                                        salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                .via(innerCreation2)),
+                        sourcing(() -> {
+                            final var emitterId = literalIdFromHexedMirrorAddress(saltingCreatorMirrorAddr.get());
+                            return getTxnRecord(innerCreation2)
+                                    .hasPriority(recordWith()
+                                            .contractCallResult(resultWith()
+                                                    .contract(emitterId)
+                                                    .logs(inOrder(logWith().contract(emitterId)))))
+                                    .andAllChildRecords()
+                                    .logged();
+                        }),
                         captureOneChildCreate2MetaFor(
                                 "Test contract create2'd via mirror address",
                                 innerCreation2,
                                 tcMirrorAddr1,
                                 tcAliasAddr1),
-                        sourcing(
-                                () ->
-                                        contractCallWithFunctionAbi(
-                                                        tcAliasAddr1.get(),
-                                                        getABIFor(
-                                                                FUNCTION,
-                                                                "vacateAddress",
-                                                                "TestContract"))
-                                                .payingWith(GENESIS)),
-                        sourcing(
-                                () ->
-                                        getContractInfo(tcMirrorAddr1.get())
-                                                .has(contractWith().isDeleted())))
+                        sourcing(() -> contractCallWithFunctionAbi(
+                                        tcAliasAddr1.get(), getABIFor(FUNCTION, "vacateAddress", "TestContract"))
+                                .payingWith(GENESIS)),
+                        sourcing(() -> getContractInfo(tcMirrorAddr1.get())
+                                .has(contractWith().isDeleted())))
                 .then(
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        contract,
-                                                        "callCreator",
-                                                        asHeadlongAddress(
-                                                                saltingCreatorAliasAddr.get()),
-                                                        salt)
-                                                .payingWith(GENESIS)
-                                                .gas(4_000_000L)
-                                                .via(delegateCreation2)),
+                        sourcing(() -> contractCall(
+                                        contract, "callCreator", asHeadlongAddress(saltingCreatorAliasAddr.get()), salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                .via(delegateCreation2)),
                         captureOneChildCreate2MetaFor(
                                 "Test contract create2'd via alias address",
                                 delegateCreation2,
                                 tcMirrorAddr2,
                                 tcAliasAddr2),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    assertNotEquals(
-                                            tcMirrorAddr1.get(),
-                                            tcMirrorAddr2.get(),
-                                            "Mirror addresses must be different");
-                                    assertEquals(
-                                            tcAliasAddr1.get(),
-                                            tcAliasAddr2.get(),
-                                            "Alias addresses must be stable");
-                                }));
+                        withOpContext((spec, opLog) -> {
+                            assertNotEquals(
+                                    tcMirrorAddr1.get(), tcMirrorAddr2.get(), "Mirror addresses must be different");
+                            assertEquals(tcAliasAddr1.get(), tcAliasAddr2.get(), "Alias addresses must be stable");
+                        }));
     }
 
     @SuppressWarnings("java:S5669")
@@ -1681,65 +1139,39 @@ public class Create2OperationSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .gas(4_000_000L)
                                 .via(CREATE_2_TXN),
-                        captureOneChildCreate2MetaFor(
-                                RETURNER, CREATE_2_TXN, mirrorAddr, aliasAddr))
+                        captureOneChildCreate2MetaFor(RETURNER, CREATE_2_TXN, mirrorAddr, aliasAddr))
                 .when(
-                        sourcing(
-                                () ->
-                                        contractCallLocalWithFunctionAbi(
-                                                        mirrorAddr.get(),
-                                                        getABIFor(FUNCTION, "returnThis", RETURNER))
-                                                .payingWith(GENESIS)
-                                                .exposingTypedResultsTo(
-                                                        results -> {
-                                                            LOG.info(
-                                                                    RETURNER_REPORTED_LOG_MESSAGE,
-                                                                    results);
-                                                            staticCallMirrorAns.set(
-                                                                    (BigInteger) results[0]);
-                                                        })),
-                        sourcing(
-                                () ->
-                                        contractCallLocalWithFunctionAbi(
-                                                        aliasAddr.get(),
-                                                        getABIFor(FUNCTION, "returnThis", RETURNER))
-                                                .payingWith(GENESIS)
-                                                .exposingTypedResultsTo(
-                                                        results -> {
-                                                            LOG.info(
-                                                                    "Returner reported {} when"
-                                                                            + " called with alias"
-                                                                            + " address",
-                                                                    results);
-                                                            staticCallAliasAns.set(
-                                                                    (BigInteger) results[0]);
-                                                        })))
+                        sourcing(() -> contractCallLocalWithFunctionAbi(
+                                        mirrorAddr.get(), getABIFor(FUNCTION, "returnThis", RETURNER))
+                                .payingWith(GENESIS)
+                                .exposingTypedResultsTo(results -> {
+                                    LOG.info(RETURNER_REPORTED_LOG_MESSAGE, results);
+                                    staticCallMirrorAns.set((BigInteger) results[0]);
+                                })),
+                        sourcing(() -> contractCallLocalWithFunctionAbi(
+                                        aliasAddr.get(), getABIFor(FUNCTION, "returnThis", RETURNER))
+                                .payingWith(GENESIS)
+                                .exposingTypedResultsTo(results -> {
+                                    LOG.info("Returner reported {} when" + " called with alias" + " address", results);
+                                    staticCallAliasAns.set((BigInteger) results[0]);
+                                })))
                 .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    assertEquals(
-                                            staticCallAliasAns.get(),
-                                            staticCallMirrorAns.get(),
-                                            "Static call with mirror address should be same as call"
-                                                    + " with alias");
-                                    assertTrue(
-                                            aliasAddr
-                                                    .get()
-                                                    .endsWith(
-                                                            staticCallAliasAns.get().toString(16)),
-                                            "Alias should get priority over mirror address");
-                                }),
-                        sourcing(
-                                () ->
-                                        contractCallWithFunctionAbi(
-                                                        aliasAddr.get(),
-                                                        getABIFor(
-                                                                FUNCTION,
-                                                                "createPlaceholder",
-                                                                RETURNER))
-                                                .gas(4_000_000L)
-                                                .payingWith(GENESIS)
-                                                .via(CREATION)));
+                        withOpContext((spec, opLog) -> {
+                            assertEquals(
+                                    staticCallAliasAns.get(),
+                                    staticCallMirrorAns.get(),
+                                    "Static call with mirror address should be same as call" + " with alias");
+                            assertTrue(
+                                    aliasAddr
+                                            .get()
+                                            .endsWith(staticCallAliasAns.get().toString(16)),
+                                    "Alias should get priority over mirror address");
+                        }),
+                        sourcing(() -> contractCallWithFunctionAbi(
+                                        aliasAddr.get(), getABIFor(FUNCTION, "createPlaceholder", RETURNER))
+                                .gas(4_000_000L)
+                                .payingWith(GENESIS)
+                                .via(CREATION)));
     }
 
     @SuppressWarnings("java:S5669")
@@ -1763,74 +1195,39 @@ public class Create2OperationSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .gas(4_000_000L)
                                 .via(CREATE_2_TXN),
-                        captureOneChildCreate2MetaFor(
-                                RETURNER, CREATE_2_TXN, mirrorAddr, aliasAddr))
+                        captureOneChildCreate2MetaFor(RETURNER, CREATE_2_TXN, mirrorAddr, aliasAddr))
                 .when(
-                        sourcing(
-                                () ->
-                                        contractCallLocal(
-                                                        contract,
-                                                        CALL_RETURNER,
-                                                        asHeadlongAddress(mirrorAddr.get()))
-                                                .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS)
-                                                .payingWith(GENESIS)
-                                                .exposingTypedResultsTo(
-                                                        results -> {
-                                                            LOG.info(
-                                                                    RETURNER_REPORTED_LOG_MESSAGE,
-                                                                    results);
-                                                            staticCallMirrorAns.set(
-                                                                    (BigInteger) results[0]);
-                                                        })),
-                        sourcing(
-                                () ->
-                                        contractCallLocal(
-                                                        contract,
-                                                        CALL_RETURNER,
-                                                        asHeadlongAddress(aliasAddr.get()))
-                                                .payingWith(GENESIS)
-                                                .exposingTypedResultsTo(
-                                                        results -> {
-                                                            LOG.info(
-                                                                    "Returner reported {} when"
-                                                                            + " called with alias"
-                                                                            + " address",
-                                                                    results);
-                                                            staticCallAliasAns.set(
-                                                                    (BigInteger) results[0]);
-                                                        })),
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        contract,
-                                                        CALL_RETURNER,
-                                                        asHeadlongAddress(aliasAddr.get()))
-                                                .payingWith(GENESIS)
-                                                .via(aliasCall)),
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        contract,
-                                                        CALL_RETURNER,
-                                                        asHeadlongAddress(mirrorAddr.get()))
-                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)
-                                                .payingWith(GENESIS)
-                                                .via(mirrorCall)))
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var mirrorLookup = getTxnRecord(mirrorCall);
-                                    allRunFor(spec, mirrorLookup);
-                                    final var mirrorResult =
-                                            mirrorLookup
-                                                    .getResponseRecord()
-                                                    .getContractCallResult()
-                                                    .getContractCallResult();
-                                    assertEquals(
-                                            ByteString.EMPTY,
-                                            mirrorResult,
-                                            "Internal calls with mirror address should not be"
-                                                    + " possible for aliased contracts");
-                                }));
+                        sourcing(() -> contractCallLocal(contract, CALL_RETURNER, asHeadlongAddress(mirrorAddr.get()))
+                                .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS)
+                                .payingWith(GENESIS)
+                                .exposingTypedResultsTo(results -> {
+                                    LOG.info(RETURNER_REPORTED_LOG_MESSAGE, results);
+                                    staticCallMirrorAns.set((BigInteger) results[0]);
+                                })),
+                        sourcing(() -> contractCallLocal(contract, CALL_RETURNER, asHeadlongAddress(aliasAddr.get()))
+                                .payingWith(GENESIS)
+                                .exposingTypedResultsTo(results -> {
+                                    LOG.info("Returner reported {} when" + " called with alias" + " address", results);
+                                    staticCallAliasAns.set((BigInteger) results[0]);
+                                })),
+                        sourcing(() -> contractCall(contract, CALL_RETURNER, asHeadlongAddress(aliasAddr.get()))
+                                .payingWith(GENESIS)
+                                .via(aliasCall)),
+                        sourcing(() -> contractCall(contract, CALL_RETURNER, asHeadlongAddress(mirrorAddr.get()))
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)
+                                .payingWith(GENESIS)
+                                .via(mirrorCall)))
+                .then(withOpContext((spec, opLog) -> {
+                    final var mirrorLookup = getTxnRecord(mirrorCall);
+                    allRunFor(spec, mirrorLookup);
+                    final var mirrorResult = mirrorLookup
+                            .getResponseRecord()
+                            .getContractCallResult()
+                            .getContractCallResult();
+                    assertEquals(
+                            ByteString.EMPTY,
+                            mirrorResult,
+                            "Internal calls with mirror address should not be" + " possible for aliased contracts");
+                }));
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.queries.crypto;
 
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
@@ -172,7 +173,8 @@ public class HapiGetAccountDetails extends HapiQueryOp<HapiGetAccountDetails> {
             final var expectedKeyForAccount =
                     spec.registry().getKey(aliasKeySource).toByteString().toStringUtf8();
             final var expectedID = spec.registry().getAccountID(expectedKeyForAccount);
-            Assertions.assertNotEquals(details.getAlias(), details.getAccountId().getAccountNum());
+            Assertions.assertNotEquals(
+                    details.getAlias(), details.getAccountId().getAccountNum());
             assertEquals(expectedID, details.getAccountId());
         }
         if (expectations.isPresent()) {
@@ -182,52 +184,45 @@ public class HapiGetAccountDetails extends HapiQueryOp<HapiGetAccountDetails> {
         }
         var actualTokenRels = details.getTokenRelationshipsList();
         ExpectedTokenRel.assertExpectedRels(account, relationships, actualTokenRels, spec);
-        ExpectedTokenRel.assertNoUnexpectedRels(
-                account, absentRelationships, actualTokenRels, spec);
+        ExpectedTokenRel.assertNoUnexpectedRels(account, absentRelationships, actualTokenRels, spec);
 
         var actualOwnedNfts = details.getOwnedNfts();
         ownedNfts.ifPresent(nftsOwned -> assertEquals((long) nftsOwned, actualOwnedNfts));
 
         var actualMaxAutoAssociations = details.getMaxAutomaticTokenAssociations();
         maxAutomaticAssociations.ifPresent(
-                maxAutoAssociations ->
-                        assertEquals((int) maxAutoAssociations, actualMaxAutoAssociations));
-        alreadyUsedAutomaticAssociations.ifPresent(
-                usedCount -> {
-                    int actualCount = 0;
-                    for (var rel : actualTokenRels) {
-                        if (rel.getAutomaticAssociation()) {
-                            actualCount++;
-                        }
-                    }
-                    assertEquals(actualCount, usedCount);
-                });
+                maxAutoAssociations -> assertEquals((int) maxAutoAssociations, actualMaxAutoAssociations));
+        alreadyUsedAutomaticAssociations.ifPresent(usedCount -> {
+            int actualCount = 0;
+            for (var rel : actualTokenRels) {
+                if (rel.getAutomaticAssociation()) {
+                    actualCount++;
+                }
+            }
+            assertEquals(actualCount, usedCount);
+        });
         expectedLedgerId.ifPresent(id -> assertEquals(rationalize(id), details.getLedgerId()));
 
-        tokenAssociationsCount.ifPresent(
-                count -> assertEquals(count, details.getTokenRelationshipsCount()));
+        tokenAssociationsCount.ifPresent(count -> assertEquals(count, details.getTokenRelationshipsCount()));
     }
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getAccountDetailsQuery(spec, payment, false);
-        response =
-                spec.clients()
-                        .getNetworkSvcStub(targetNodeFor(spec), useTls)
-                        .getAccountDetails(query);
+        response = spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls).getAccountDetails(query);
         final var details = response.getAccountDetails();
         if (details.getHeader().getNodeTransactionPrecheckCode() == OK) {
-            exposingExpiryTo.ifPresent(
-                    cb -> cb.accept(details.getAccountDetails().getExpirationTime().getSeconds()));
-            exposingBalanceTo.ifPresent(cb -> cb.accept(details.getAccountDetails().getBalance()));
+            exposingExpiryTo.ifPresent(cb ->
+                    cb.accept(details.getAccountDetails().getExpirationTime().getSeconds()));
+            exposingBalanceTo.ifPresent(
+                    cb -> cb.accept(details.getAccountDetails().getBalance()));
             idObserver.ifPresent(cb -> cb.accept(details.getAccountDetails().getAccountId()));
         }
         if (verboseLoggingOn) {
-            log.info(
-                    "Details for '"
-                            + repr()
-                            + "': "
-                            + response.getAccountDetails().getAccountDetails());
+            log.info("Details for '"
+                    + repr()
+                    + "': "
+                    + response.getAccountDetails().getAccountDetails());
         }
         if (customLog.isPresent()) {
             customLog.get().accept(response.getAccountDetails().getAccountDetails(), log);
@@ -243,27 +238,23 @@ public class HapiGetAccountDetails extends HapiQueryOp<HapiGetAccountDetails> {
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getAccountDetailsQuery(spec, payment, true);
         Response response =
-                spec.clients()
-                        .getNetworkSvcStub(targetNodeFor(spec), useTls)
-                        .getAccountDetails(query);
+                spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls).getAccountDetails(query);
         return costFrom(response);
     }
 
     private Query getAccountDetailsQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         AccountID target;
         if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
-            target =
-                    AccountID.newBuilder()
-                            .setAlias(spec.registry().getKey(aliasKeySource).toByteString())
-                            .build();
+            target = AccountID.newBuilder()
+                    .setAlias(spec.registry().getKey(aliasKeySource).toByteString())
+                    .build();
         } else {
             target = TxnUtils.asId(account, spec);
         }
-        GetAccountDetailsQuery query =
-                GetAccountDetailsQuery.newBuilder()
-                        .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
-                        .setAccountId(target)
-                        .build();
+        GetAccountDetailsQuery query = GetAccountDetailsQuery.newBuilder()
+                .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
+                .setAccountId(target)
+                .build();
         return Query.newBuilder().setAccountDetails(query).build();
     }
 

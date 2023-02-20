@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -37,8 +38,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
-    private static final Logger log =
-            LogManager.getLogger(CryptoTransferLoadTestWithStakedAccounts.class);
+    private static final Logger log = LogManager.getLogger(CryptoTransferLoadTestWithStakedAccounts.class);
     private Random RANDOM = new Random();
     private static final long TEST_ACCOUNT_STARTS_FROM = 1001L;
     private static final int STAKED_CREATIONS = 50;
@@ -46,8 +46,7 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
     public static void main(String... args) {
         parseArgs(args);
 
-        CryptoTransferLoadTestWithStakedAccounts suite =
-                new CryptoTransferLoadTestWithStakedAccounts();
+        CryptoTransferLoadTestWithStakedAccounts suite = new CryptoTransferLoadTestWithStakedAccounts();
         suite.runSuiteSync();
     }
 
@@ -59,38 +58,37 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
     protected HapiSpec runCryptoTransfers() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
-        Supplier<HapiSpecOperation[]> transferBurst =
-                () -> {
-                    String sender = "sender";
-                    String receiver = "receiver";
-                    if (settings.getTotalAccounts() > 2) {
-                        int s = RANDOM.nextInt(settings.getTotalAccounts());
-                        int re = 0;
-                        do {
-                            re = RANDOM.nextInt(settings.getTotalAccounts());
-                        } while (re == s);
-                        sender = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + s);
-                        receiver = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + re);
-                    }
+        Supplier<HapiSpecOperation[]> transferBurst = () -> {
+            String sender = "sender";
+            String receiver = "receiver";
+            if (settings.getTotalAccounts() > 2) {
+                int s = RANDOM.nextInt(settings.getTotalAccounts());
+                int re = 0;
+                do {
+                    re = RANDOM.nextInt(settings.getTotalAccounts());
+                } while (re == s);
+                sender = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + s);
+                receiver = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + re);
+            }
 
-                    return new HapiSpecOperation[] {
-                        cryptoTransfer(tinyBarsFromTo(sender, receiver, 1L))
-                                .noLogging()
-                                .payingWith(sender)
-                                .signedBy(GENESIS)
-                                .suppressStats(true)
-                                .fee(100_000_000L)
-                                .hasKnownStatusFrom(
-                                        SUCCESS,
-                                        OK,
-                                        INSUFFICIENT_PAYER_BALANCE,
-                                        UNKNOWN,
-                                        TRANSACTION_EXPIRED,
-                                        INSUFFICIENT_ACCOUNT_BALANCE)
-                                .hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
-                                .deferStatusResolution()
-                    };
-                };
+            return new HapiSpecOperation[] {
+                cryptoTransfer(tinyBarsFromTo(sender, receiver, 1L))
+                        .noLogging()
+                        .payingWith(sender)
+                        .signedBy(GENESIS)
+                        .suppressStats(true)
+                        .fee(100_000_000L)
+                        .hasKnownStatusFrom(
+                                SUCCESS,
+                                OK,
+                                INSUFFICIENT_PAYER_BALANCE,
+                                UNKNOWN,
+                                TRANSACTION_EXPIRED,
+                                INSUFFICIENT_ACCOUNT_BALANCE)
+                        .hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
+                        .deferStatusResolution()
+            };
+        };
 
         return defaultHapiSpec("RunCryptoTransfers")
                 .given(
@@ -106,33 +104,25 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
                                 .rechargeWindow(3)
                                 .stakedNodeId(settings.getNodeToStake())
                                 .logging()
-                                .hasRetryPrecheckFrom(
-                                        BUSY,
-                                        DUPLICATE_TRANSACTION,
-                                        PLATFORM_TRANSACTION_NOT_CREATED),
+                                .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED),
                         cryptoCreate("receiver")
                                 .payingWith(GENESIS)
                                 .stakedNodeId(settings.getNodeToStake())
-                                .hasRetryPrecheckFrom(
-                                        BUSY,
-                                        DUPLICATE_TRANSACTION,
-                                        PLATFORM_TRANSACTION_NOT_CREATED)
+                                .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
                                 .key(GENESIS)
                                 .logging(),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    List<HapiSpecOperation> ops = new ArrayList<>();
-                                    for (int i = 0; i < STAKED_CREATIONS; i++) {
-                                        var stakedAccount = "stakedAccount" + i;
-                                        ops.add(
-                                                cryptoCreate(stakedAccount)
-                                                        .payingWith("sender")
-                                                        .stakedNodeId(settings.getNodeToStake())
-                                                        .fee(ONE_HBAR)
-                                                        .signedBy("sender", DEFAULT_PAYER));
-                                    }
-                                    allRunFor(spec, ops);
-                                }))
+                        withOpContext((spec, opLog) -> {
+                            List<HapiSpecOperation> ops = new ArrayList<>();
+                            for (int i = 0; i < STAKED_CREATIONS; i++) {
+                                var stakedAccount = "stakedAccount" + i;
+                                ops.add(cryptoCreate(stakedAccount)
+                                        .payingWith("sender")
+                                        .stakedNodeId(settings.getNodeToStake())
+                                        .fee(ONE_HBAR)
+                                        .signedBy("sender", DEFAULT_PAYER));
+                            }
+                            allRunFor(spec, ops);
+                        }))
                 .then(
                         defaultLoadTest(transferBurst, settings),
                         getAccountBalance("sender").logged());

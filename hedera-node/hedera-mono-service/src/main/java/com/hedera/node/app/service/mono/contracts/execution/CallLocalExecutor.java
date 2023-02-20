@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -65,37 +66,32 @@ public class CallLocalExecutor {
         try {
             final var paymentTxn =
                     SignedTxnAccessor.uncheckedFrom(op.getHeader().getPayment()).getTxn();
-            final var senderId =
-                    EntityIdUtils.unaliased(
-                                    op.hasSenderId()
-                                            ? op.getSenderId()
-                                            : paymentTxn.getTransactionID().getAccountID(),
-                                    aliasManager)
-                            .toId();
+            final var senderId = EntityIdUtils.unaliased(
+                            op.hasSenderId()
+                                    ? op.getSenderId()
+                                    : paymentTxn.getTransactionID().getAccountID(),
+                            aliasManager)
+                    .toId();
             final var idOrAlias = op.getContractID();
-            final var contractId = EntityIdUtils.unaliased(idOrAlias, aliasManager).toId();
+            final var contractId =
+                    EntityIdUtils.unaliased(idOrAlias, aliasManager).toId();
 
             /* --- Load the model objects --- */
             final var sender = accountStore.loadAccount(senderId);
-            var receiver =
-                    entityAccess.isTokenAccount(contractId.asEvmAddress())
-                            ? new Account(contractId)
-                            : accountStore.loadContract(contractId);
-            final var callData =
-                    !op.getFunctionParameters().isEmpty()
-                            ? Bytes.fromHexString(
-                                    CommonUtils.hex(op.getFunctionParameters().toByteArray()))
-                            : Bytes.EMPTY;
+            var receiver = entityAccess.isTokenAccount(contractId.asEvmAddress())
+                    ? new Account(contractId)
+                    : accountStore.loadContract(contractId);
+            final var callData = !op.getFunctionParameters().isEmpty()
+                    ? Bytes.fromHexString(
+                            CommonUtils.hex(op.getFunctionParameters().toByteArray()))
+                    : Bytes.EMPTY;
 
             /* --- Do the business logic --- */
-            final var result =
-                    evmTxProcessor.execute(
-                            sender, receiver.canonicalAddress(), op.getGas(), 0, callData);
+            final var result = evmTxProcessor.execute(sender, receiver.canonicalAddress(), op.getGas(), 0, callData);
 
             var status = ResponseCodeUtil.getStatusOrDefault(result, OK);
 
-            final var responseHeader =
-                    RequestBuilder.getResponseHeader(status, 0L, ANSWER_ONLY, ByteString.EMPTY);
+            final var responseHeader = RequestBuilder.getResponseHeader(status, 0L, ANSWER_ONLY, ByteString.EMPTY);
 
             return ContractCallLocalResponse.newBuilder()
                     .setHeader(responseHeader)
@@ -103,10 +99,11 @@ public class CallLocalExecutor {
                     .build();
         } catch (InvalidTransactionException ite) {
             final var responseHeader =
-                    RequestBuilder.getResponseHeader(
-                            ite.getResponseCode(), 0L, ANSWER_ONLY, ByteString.EMPTY);
+                    RequestBuilder.getResponseHeader(ite.getResponseCode(), 0L, ANSWER_ONLY, ByteString.EMPTY);
 
-            return ContractCallLocalResponse.newBuilder().setHeader(responseHeader).build();
+            return ContractCallLocalResponse.newBuilder()
+                    .setHeader(responseHeader)
+                    .build();
         }
     }
 }

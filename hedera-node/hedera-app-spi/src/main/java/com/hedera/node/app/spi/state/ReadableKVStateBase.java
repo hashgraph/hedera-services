@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -25,8 +26,7 @@ import java.util.*;
  * @param <K> The key type
  * @param <V> The value type
  */
-public abstract class ReadableKVStateBase<K extends Comparable<K>, V>
-        implements ReadableKVState<K, V> {
+public abstract class ReadableKVStateBase<K extends Comparable<K>, V> implements ReadableKVState<K, V> {
     /** The state key, which cannot be null */
     private final String stateKey;
 

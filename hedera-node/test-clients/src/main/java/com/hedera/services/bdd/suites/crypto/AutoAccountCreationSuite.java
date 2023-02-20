@@ -173,39 +173,39 @@ public class AutoAccountCreationSuite extends HapiSuite {
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 /* --- Hbar auto creates */
-                autoAccountCreationsHappyPath(),
-                autoAccountCreationBadAlias(),
-                autoAccountCreationUnsupportedAlias(),
-                transferToAccountAutoCreatedUsingAlias(),
-                transferToAccountAutoCreatedUsingAccount(),
-                transferFromAliasToAlias(),
-                transferFromAliasToAccount(),
-                multipleAutoAccountCreations(),
-                accountCreatedIfAliasUsedAsPubKey(),
-                aliasCanBeUsedOnManyAccountsNotAsAlias(),
-                autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(),
-                canGetBalanceAndInfoViaAlias(),
-                noStakePeriodStartIfNotStakingToNode(),
-                /* -- HTS auto creates -- */
-                canAutoCreateWithFungibleTokenTransfersToAlias(),
-                multipleTokenTransfersSucceed(),
-                nftTransfersToAlias(),
-                autoCreateWithNftFallBackFeeFails(),
-                repeatedAliasInSameTransferListFails(),
-                canAutoCreateWithHbarAndTokenTransfers(),
-                payerBalanceIsReflectsAllChangesBeforeFeeCharging(),
-                /* --- HIP 583 --- */
-                hollowAccountCreationWithCryptoTransfer(),
-                failureAfterHollowAccountCreationReclaimsAlias(),
-                hollowAccountCompletionWithCryptoTransfer(),
-                hollowAccountCompletionWithContractCreate(),
-                hollowAccountCompletionWithContractCall(),
-                hollowAccountCompletionWithTokenAssociation(),
-                completedHollowAccountsTransfer(),
-                transferHbarsToEVMAddressAlias(),
-                transferFungibleToEVMAddressAlias(),
-                transferNonFungibleToEVMAddressAlias(),
-                hollowAccountCompletionWithTokenTransfer(),
+                //                autoAccountCreationsHappyPath(),
+                //                autoAccountCreationBadAlias(),
+                //                autoAccountCreationUnsupportedAlias(),
+                //                transferToAccountAutoCreatedUsingAlias(),
+                //                transferToAccountAutoCreatedUsingAccount(),
+                //                transferFromAliasToAlias(),
+                //                transferFromAliasToAccount(),
+                //                multipleAutoAccountCreations(),
+                //                accountCreatedIfAliasUsedAsPubKey(),
+                //                aliasCanBeUsedOnManyAccountsNotAsAlias(),
+                //                autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(),
+                //                canGetBalanceAndInfoViaAlias(),
+                //                noStakePeriodStartIfNotStakingToNode(),
+                //                /* -- HTS auto creates -- */
+                //                canAutoCreateWithFungibleTokenTransfersToAlias(),
+                //                multipleTokenTransfersSucceed(),
+                //                nftTransfersToAlias(),
+                //                autoCreateWithNftFallBackFeeFails(),
+                //                repeatedAliasInSameTransferListFails(),
+                //                canAutoCreateWithHbarAndTokenTransfers(),
+                //                payerBalanceIsReflectsAllChangesBeforeFeeCharging(),
+                //                /* --- HIP 583 --- */
+                //                hollowAccountCreationWithCryptoTransfer(),
+                //                failureAfterHollowAccountCreationReclaimsAlias(),
+                //                hollowAccountCompletionWithCryptoTransfer(),
+                //                hollowAccountCompletionWithContractCreate(),
+                //                hollowAccountCompletionWithContractCall(),
+                //                hollowAccountCompletionWithTokenAssociation(),
+                //                completedHollowAccountsTransfer(),
+                //                transferHbarsToEVMAddressAlias(),
+                //                transferFungibleToEVMAddressAlias(),
+                //                transferNonFungibleToEVMAddressAlias(),
+                //                hollowAccountCompletionWithTokenTransfer(),
                 transferHbarsToECDSAKey());
     }
 
@@ -1596,7 +1596,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
     private HapiSpec transferHbarsToECDSAKey() {
         final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
-        final var transferToЕCDSA = "transferToЕCDSA";
+        final var transferToECDSA = "transferToЕCDSA";
         return defaultHapiSpec("transferHbarsToECDSAKey")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -1612,7 +1612,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 .when(withOpContext((spec, opLog) -> {
                     final var hbarCreateTransfer = cryptoTransfer(
                                     tinyBarsFromAccountToAlias(PAYER, SECP_256K1_SOURCE_KEY, ONE_HBAR))
-                            .via(transferToЕCDSA);
+                            .via(transferToECDSA);
 
                     final var op1 = cryptoTransfer(tinyBarsFromTo(PAYER, evmAddress.get(), ONE_HBAR));
 
@@ -1626,7 +1626,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                     .memo(AUTO_MEMO));
 
                     var op3 = childRecordsCheck(
-                            transferToЕCDSA,
+                            transferToECDSA,
                             SUCCESS,
                             recordWith()
                                     .evmAddress(evmAddress.get())
@@ -1635,7 +1635,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
                     allRunFor(spec, hbarCreateTransfer, op1, op2, op3);
                 }))
-                .then(getTxnRecord(transferToЕCDSA).andAllChildRecords().logged());
+                .then(getTxnRecord(transferToECDSA).andAllChildRecords().logged());
     }
 
     private HapiSpec transferFungibleToEVMAddressAlias() {

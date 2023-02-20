@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.models;
 
 import static com.hedera.node.app.service.mono.utils.MiscUtils.perm64;
@@ -31,9 +32,7 @@ import org.hyperledger.besu.datatypes.Address;
 public record Id(long shard, long realm, long num) {
     public static final Id DEFAULT = new Id(0, 0, 0);
     public static final Comparator<Id> ID_COMPARATOR =
-            Comparator.comparingLong(Id::num)
-                    .thenComparingLong(Id::shard)
-                    .thenComparingLong(Id::realm);
+            Comparator.comparingLong(Id::num).thenComparingLong(Id::shard).thenComparingLong(Id::realm);
     public static final Id MISSING_ID = new Id(0, 0, 0);
 
     public static Id fromGrpcAccount(final AccountID id) {
@@ -65,11 +64,19 @@ public record Id(long shard, long realm, long num) {
     }
 
     public TokenID asGrpcToken() {
-        return TokenID.newBuilder().setShardNum(shard).setRealmNum(realm).setTokenNum(num).build();
+        return TokenID.newBuilder()
+                .setShardNum(shard)
+                .setRealmNum(realm)
+                .setTokenNum(num)
+                .build();
     }
 
     public TopicID asGrpcTopic() {
-        return TopicID.newBuilder().setShardNum(shard).setRealmNum(realm).setTopicNum(num).build();
+        return TopicID.newBuilder()
+                .setShardNum(shard)
+                .setRealmNum(realm)
+                .setTopicNum(num)
+                .build();
     }
 
     public ContractID asGrpcContract() {

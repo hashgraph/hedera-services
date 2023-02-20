@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.crypto;
 
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
@@ -189,69 +190,42 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
             account = asAccountString(id);
         }
 
-        CryptoUpdateTransactionBody opBody =
-                spec.txns()
-                        .<CryptoUpdateTransactionBody, CryptoUpdateTransactionBody.Builder>body(
-                                CryptoUpdateTransactionBody.class,
-                                builder -> {
-                                    builder.setAccountIDToUpdate(id);
-                                    newProxy.ifPresent(
-                                            p -> {
-                                                var proxyId = TxnUtils.asId(p, spec);
-                                                builder.setProxyAccountID(proxyId);
-                                            });
-                                    updSigRequired.ifPresent(
-                                            u ->
-                                                    builder.setReceiverSigRequiredWrapper(
-                                                            BoolValue.of(u)));
-                                    if (useContractKey) {
-                                        builder.setKey(
-                                                Key.newBuilder()
-                                                        .setContractID(
-                                                                HapiPropertySource.asContract(
-                                                                        "0.0.1234")));
-                                    } else {
-                                        updKey.ifPresent(builder::setKey);
-                                    }
+        CryptoUpdateTransactionBody opBody = spec.txns()
+                .<CryptoUpdateTransactionBody, CryptoUpdateTransactionBody.Builder>body(
+                        CryptoUpdateTransactionBody.class, builder -> {
+                            builder.setAccountIDToUpdate(id);
+                            newProxy.ifPresent(p -> {
+                                var proxyId = TxnUtils.asId(p, spec);
+                                builder.setProxyAccountID(proxyId);
+                            });
+                            updSigRequired.ifPresent(u -> builder.setReceiverSigRequiredWrapper(BoolValue.of(u)));
+                            if (useContractKey) {
+                                builder.setKey(
+                                        Key.newBuilder().setContractID(HapiPropertySource.asContract("0.0.1234")));
+                            } else {
+                                updKey.ifPresent(builder::setKey);
+                            }
 
-                                    protoKey.ifPresent(builder::setKey);
+                            protoKey.ifPresent(builder::setKey);
 
-                                    newAutoRenewPeriod.ifPresent(
-                                            p ->
-                                                    builder.setAutoRenewPeriod(
-                                                            Duration.newBuilder().setSeconds(p)));
-                                    entityMemo.ifPresent(
-                                            m ->
-                                                    builder.setMemo(
-                                                            StringValue.newBuilder()
-                                                                    .setValue(m)
-                                                                    .build()));
-                                    sendThreshold.ifPresent(
-                                            v ->
-                                                    builder.setSendRecordThresholdWrapper(
-                                                            UInt64Value.newBuilder()
-                                                                    .setValue(v)
-                                                                    .build()));
-                                    newExpiry.ifPresent(
-                                            l ->
-                                                    builder.setExpirationTime(
-                                                            Timestamp.newBuilder()
-                                                                    .setSeconds(l)
-                                                                    .build()));
-                                    newMaxAutomaticAssociations.ifPresent(
-                                            p ->
-                                                    builder.setMaxAutomaticTokenAssociations(
-                                                            Int32Value.of(p)));
+                            newAutoRenewPeriod.ifPresent(p -> builder.setAutoRenewPeriod(
+                                    Duration.newBuilder().setSeconds(p)));
+                            entityMemo.ifPresent(m -> builder.setMemo(
+                                    StringValue.newBuilder().setValue(m).build()));
+                            sendThreshold.ifPresent(v -> builder.setSendRecordThresholdWrapper(
+                                    UInt64Value.newBuilder().setValue(v).build()));
+                            newExpiry.ifPresent(l -> builder.setExpirationTime(
+                                    Timestamp.newBuilder().setSeconds(l).build()));
+                            newMaxAutomaticAssociations.ifPresent(
+                                    p -> builder.setMaxAutomaticTokenAssociations(Int32Value.of(p)));
 
-                                    if (newStakee.isPresent()) {
-                                        builder.setStakedAccountId(
-                                                TxnUtils.asId(newStakee.get(), spec));
-                                    } else if (newStakedNodeId.isPresent()) {
-                                        builder.setStakedNodeId(newStakedNodeId.get());
-                                    }
-                                    isDeclinedReward.ifPresent(
-                                            b -> builder.setDeclineReward(BoolValue.of(b)));
-                                });
+                            if (newStakee.isPresent()) {
+                                builder.setStakedAccountId(TxnUtils.asId(newStakee.get(), spec));
+                            } else if (newStakedNodeId.isPresent()) {
+                                builder.setStakedNodeId(newStakedNodeId.get());
+                            }
+                            isDeclinedReward.ifPresent(b -> builder.setDeclineReward(BoolValue.of(b)));
+                        });
         if (logUpdateDetailsToSysout) {
             System.out.println("\n---- Raw update ----\n");
             System.out.println(opBody);
@@ -274,33 +248,24 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         try {
             final CryptoGetInfoResponse.AccountInfo info = lookupInfo(spec);
-            FeeCalculator.ActivityMetrics metricsCalc =
-                    (_txn, svo) -> {
-                        var ctx =
-                                ExtantCryptoContext.newBuilder()
-                                        .setCurrentNumTokenRels(info.getTokenRelationshipsCount())
-                                        .setCurrentExpiry(info.getExpirationTime().getSeconds())
-                                        .setCurrentMemo(info.getMemo())
-                                        .setCurrentKey(info.getKey())
-                                        .setCurrentlyHasProxy(info.hasProxyAccountID())
-                                        .setCurrentMaxAutomaticAssociations(
-                                                info.getMaxAutomaticTokenAssociations())
-                                        .build();
-                        var baseMeta = new BaseTransactionMeta(_txn.getMemoBytes().size(), 0);
-                        var opMeta =
-                                new CryptoUpdateMeta(
-                                        _txn.getCryptoUpdateAccount(),
-                                        _txn.getTransactionID()
-                                                .getTransactionValidStart()
-                                                .getSeconds());
-                        var accumulator = new UsageAccumulator();
-                        cryptoOpsUsage.cryptoUpdateUsage(
-                                suFrom(svo), baseMeta, opMeta, ctx, accumulator);
-                        return AdapterUtils.feeDataFrom(accumulator);
-                    };
-            return spec.fees()
-                    .forActivityBasedOp(
-                            HederaFunctionality.CryptoUpdate, metricsCalc, txn, numPayerKeys);
+            FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> {
+                var ctx = ExtantCryptoContext.newBuilder()
+                        .setCurrentNumTokenRels(info.getTokenRelationshipsCount())
+                        .setCurrentExpiry(info.getExpirationTime().getSeconds())
+                        .setCurrentMemo(info.getMemo())
+                        .setCurrentKey(info.getKey())
+                        .setCurrentlyHasProxy(info.hasProxyAccountID())
+                        .setCurrentMaxAutomaticAssociations(info.getMaxAutomaticTokenAssociations())
+                        .build();
+                var baseMeta = new BaseTransactionMeta(_txn.getMemoBytes().size(), 0);
+                var opMeta = new CryptoUpdateMeta(
+                        _txn.getCryptoUpdateAccount(),
+                        _txn.getTransactionID().getTransactionValidStart().getSeconds());
+                var accumulator = new UsageAccumulator();
+                cryptoOpsUsage.cryptoUpdateUsage(suFrom(svo), baseMeta, opMeta, ctx, accumulator);
+                return AdapterUtils.feeDataFrom(accumulator);
+            };
+            return spec.fees().forActivityBasedOp(HederaFunctionality.CryptoUpdate, metricsCalc, txn, numPayerKeys);
         } catch (Throwable ignore) {
             return HapiSuite.ONE_HBAR;
         }

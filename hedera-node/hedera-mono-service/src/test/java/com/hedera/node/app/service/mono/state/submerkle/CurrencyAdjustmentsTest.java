@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -51,14 +52,12 @@ class CurrencyAdjustmentsTest {
     private static final long bAmount = 2L;
     private static final long cAmount = -3L;
 
-    private static final CurrencyAdjustments grpcAdjustments =
-            CurrencyAdjustments.fromChanges(
-                    new long[] {aAmount, bAmount, cAmount},
-                    new long[] {a.getAccountNum(), b.getAccountNum(), c.getAccountNum()});
-    private static final CurrencyAdjustments otherGrpcAdjustments =
-            CurrencyAdjustments.fromChanges(
-                    new long[] {aAmount * 2, bAmount * 2, cAmount * 2},
-                    new long[] {a.getAccountNum(), b.getAccountNum(), c.getAccountNum()});
+    private static final CurrencyAdjustments grpcAdjustments = CurrencyAdjustments.fromChanges(
+            new long[] {aAmount, bAmount, cAmount},
+            new long[] {a.getAccountNum(), b.getAccountNum(), c.getAccountNum()});
+    private static final CurrencyAdjustments otherGrpcAdjustments = CurrencyAdjustments.fromChanges(
+            new long[] {aAmount * 2, bAmount * 2, cAmount * 2},
+            new long[] {a.getAccountNum(), b.getAccountNum(), c.getAccountNum()});
 
     private CurrencyAdjustments subject;
 
@@ -90,9 +89,7 @@ class CurrencyAdjustmentsTest {
     @Test
     void toStringWorks() {
         assertEquals(
-                "CurrencyAdjustments{readable="
-                        + "[0.0.13257 <- +1, 0.0.13258 <- +2, 0.0.13259 -> -3]"
-                        + "}",
+                "CurrencyAdjustments{readable=" + "[0.0.13257 <- +1, 0.0.13258 <- +2, 0.0.13259 -> -3]" + "}",
                 subject.toString());
     }
 
@@ -113,8 +110,7 @@ class CurrencyAdjustmentsTest {
 
     @Test
     void viewWorks() {
-        final TransferList grpcAdjustments =
-                TxnUtils.withAdjustments(a, aAmount, b, bAmount, c, cAmount);
+        final TransferList grpcAdjustments = TxnUtils.withAdjustments(a, aAmount, b, bAmount, c, cAmount);
         assertEquals(grpcAdjustments, subject.toGrpc());
     }
 
@@ -123,8 +119,7 @@ class CurrencyAdjustmentsTest {
         final var builder = TokenTransferList.newBuilder();
         subject.addToGrpc(builder);
 
-        final TransferList grpcAdjustments =
-                TxnUtils.withAdjustments(a, aAmount, b, bAmount, c, cAmount);
+        final TransferList grpcAdjustments = TxnUtils.withAdjustments(a, aAmount, b, bAmount, c, cAmount);
         final var expected = grpcAdjustments.getAccountAmountsList();
         final var actual = builder.build().getTransfersList();
 
@@ -145,15 +140,13 @@ class CurrencyAdjustmentsTest {
     @Test
     void deserializeWorksForPre0240Version() throws IOException {
         final var in = mock(SerializableDataInputStream.class);
-        given(
-                        in.readSerializableList(
-                                intThat(i -> i == CurrencyAdjustments.MAX_NUM_ADJUSTMENTS),
-                                booleanThat(Boolean.TRUE::equals),
-                                (Supplier<EntityId>) any()))
-                .willReturn(
-                        Arrays.stream(subject.accountNums)
-                                .mapToObj(a -> EntityId.fromIdentityCode((int) a))
-                                .toList());
+        given(in.readSerializableList(
+                        intThat(i -> i == CurrencyAdjustments.MAX_NUM_ADJUSTMENTS),
+                        booleanThat(Boolean.TRUE::equals),
+                        (Supplier<EntityId>) any()))
+                .willReturn(Arrays.stream(subject.accountNums)
+                        .mapToObj(a -> EntityId.fromIdentityCode((int) a))
+                        .toList());
         given(in.readLongArray(CurrencyAdjustments.MAX_NUM_ADJUSTMENTS)).willReturn(subject.hbars);
 
         final var readSubject = new CurrencyAdjustments();

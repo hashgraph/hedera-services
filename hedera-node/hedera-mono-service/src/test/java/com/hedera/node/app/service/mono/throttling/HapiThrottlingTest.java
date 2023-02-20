@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.throttling;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
@@ -38,8 +39,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HapiThrottlingTest {
-    @Mock private TimedFunctionalityThrottling delegate;
-    @Mock private Query query;
+    @Mock
+    private TimedFunctionalityThrottling delegate;
+
+    @Mock
+    private Query query;
 
     private HapiThrottling subject;
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.order;
 
 import static com.hedera.node.app.service.mono.ledger.SigImpactHistorian.ChangeStatus.CHANGED;
@@ -40,7 +41,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class LinkedRefsTest {
     private LinkedRefs subject = new LinkedRefs();
 
-    @Mock private SigImpactHistorian historian;
+    @Mock
+    private SigImpactHistorian historian;
 
     @Test
     void recognizesNoChangesToNumOnly() {
@@ -128,8 +130,7 @@ class LinkedRefsTest {
         }
 
         assertArrayEquals(
-                new long[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
-                Arrays.copyOfRange(subject.linkedNumbers(), 0, 10));
+                new long[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, Arrays.copyOfRange(subject.linkedNumbers(), 0, 10));
     }
 
     @Test
@@ -146,8 +147,7 @@ class LinkedRefsTest {
         subject.link(2L);
         subject.link(3L);
         final var expectedString =
-                "LinkedRefs{sourceSignedAt=1970-01-15T06:56:07Z, linkedAliases=null, linkedNums=[1,"
-                        + " 2, 3, 0]}";
+                "LinkedRefs{sourceSignedAt=1970-01-15T06:56:07Z, linkedAliases=null, linkedNums=[1," + " 2, 3, 0]}";
         assertEquals(expectedString, subject.toString());
     }
 

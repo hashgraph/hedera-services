@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.file;
 
 import static com.hedera.node.app.service.mono.files.TieredHederaFs.firstUnsuccessful;
@@ -106,7 +107,8 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 
             Optional<HederaFs.UpdateResult> replaceResult = Optional.empty();
             if (!op.getContents().isEmpty()) {
-                replaceResult = Optional.of(hfs.overwrite(target, op.getContents().toByteArray()));
+                replaceResult =
+                        Optional.of(hfs.overwrite(target, op.getContents().toByteArray()));
             }
             attr.setExpiry(max(op.getExpirationTime().getSeconds(), attr.getExpiry()));
 
@@ -116,10 +118,9 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
                 changeResult = Optional.of(hfs.setattr(target, attr));
             }
 
-            final var status =
-                    firstUnsuccessful(
-                            replaceResult.map(HederaFs.UpdateResult::outcome).orElse(SUCCESS),
-                            changeResult.map(HederaFs.UpdateResult::outcome).orElse(SUCCESS));
+            final var status = firstUnsuccessful(
+                    replaceResult.map(HederaFs.UpdateResult::outcome).orElse(SUCCESS),
+                    changeResult.map(HederaFs.UpdateResult::outcome).orElse(SUCCESS));
             txnCtx.setStatus(status);
             if (status == SUCCESS) {
                 sigImpactHistorian.markEntityChanged(target.getFileNum());
@@ -127,10 +128,7 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
         } catch (IllegalArgumentException iae) {
             mapToStatus(iae, txnCtx);
         } catch (Exception unknown) {
-            log.warn(
-                    "Unrecognized failure handling {}!",
-                    txnCtx.accessor().getSignedTxnWrapper(),
-                    unknown);
+            log.warn("Unrecognized failure handling {}!", txnCtx.accessor().getSignedTxnWrapper(), unknown);
             txnCtx.setStatus(FAIL_INVALID);
         }
     }
@@ -207,21 +205,20 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
     private ResponseCodeEnum validate(final TransactionBody fileUpdateTxn) {
         var op = fileUpdateTxn.getFileUpdate();
 
-        final var memoValidity = !op.hasMemo() ? OK : validator.memoCheck(op.getMemo().getValue());
+        final var memoValidity =
+                !op.hasMemo() ? OK : validator.memoCheck(op.getMemo().getValue());
         if (memoValidity != OK) {
             return memoValidity;
         }
 
         if (op.hasExpirationTime()) {
-            final var effectiveDuration =
-                    Duration.newBuilder()
-                            .setSeconds(
-                                    op.getExpirationTime().getSeconds()
-                                            - fileUpdateTxn
-                                                    .getTransactionID()
-                                                    .getTransactionValidStart()
-                                                    .getSeconds())
-                            .build();
+            final var effectiveDuration = Duration.newBuilder()
+                    .setSeconds(op.getExpirationTime().getSeconds()
+                            - fileUpdateTxn
+                                    .getTransactionID()
+                                    .getTransactionValidStart()
+                                    .getSeconds())
+                    .build();
             if (!validator.isValidAutoRenewPeriod(effectiveDuration)) {
                 return AUTORENEW_DURATION_NOT_IN_RANGE;
             }

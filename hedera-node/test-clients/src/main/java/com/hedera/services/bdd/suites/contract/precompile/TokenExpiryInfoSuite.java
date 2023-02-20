@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -92,9 +93,7 @@ public class TokenExpiryInfoSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                getExpiryInfoForToken(),
-                updateExpiryInfoForToken(),
-                updateExpiryInfoForTokenAndReadLatestInfo());
+                getExpiryInfoForToken(), updateExpiryInfoForToken(), updateExpiryInfoForTokenAndReadLatestInfo());
     }
 
     private HapiSpec getExpiryInfoForToken() {
@@ -118,76 +117,60 @@ public class TokenExpiryInfoSuite extends HapiSuite {
                                 .initialSupply(500L)
                                 .adminKey(ADMIN_KEY)
                                 .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                TOKEN_EXPIRY_CONTRACT,
-                                                                GET_EXPIRY_INFO_FOR_TOKEN,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                TokenID.newBuilder()
-                                                                                        .build())))
-                                                        .via("expiryForInvalidTokenIDTxn")
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .payingWith(GENESIS),
-                                                contractCall(
-                                                                TOKEN_EXPIRY_CONTRACT,
-                                                                GET_EXPIRY_INFO_FOR_TOKEN,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .via("expiryTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .payingWith(GENESIS),
-                                                contractCallLocal(
-                                                        TOKEN_EXPIRY_CONTRACT,
-                                                        GET_EXPIRY_INFO_FOR_TOKEN,
-                                                        HapiParserUtil.asHeadlongAddress(
-                                                                asAddress(vanillaTokenID.get()))))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        TOKEN_EXPIRY_CONTRACT,
+                                        GET_EXPIRY_INFO_FOR_TOKEN,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(TokenID.newBuilder().build())))
+                                .via("expiryForInvalidTokenIDTxn")
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .gas(GAS_TO_OFFER)
+                                .payingWith(GENESIS),
+                        contractCall(
+                                        TOKEN_EXPIRY_CONTRACT,
+                                        GET_EXPIRY_INFO_FOR_TOKEN,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                .via("expiryTxn")
+                                .gas(GAS_TO_OFFER)
+                                .payingWith(GENESIS),
+                        contractCallLocal(
+                                TOKEN_EXPIRY_CONTRACT,
+                                GET_EXPIRY_INFO_FOR_TOKEN,
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get()))))))
                 .then(
                         childRecordsCheck(
                                 "expiryForInvalidTokenIDTxn",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(INVALID_TOKEN_ID)),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var getTokenInfoQuery = getTokenInfo(VANILLA_TOKEN);
-                                    allRunFor(spec, getTokenInfoQuery);
-                                    final var expirySecond =
-                                            getTokenInfoQuery
-                                                    .getResponse()
-                                                    .getTokenGetInfo()
-                                                    .getTokenInfo()
-                                                    .getExpiry()
-                                                    .getSeconds();
-                                    allRunFor(
-                                            spec,
-                                            childRecordsCheck(
-                                                    "expiryTxn",
-                                                    SUCCESS,
-                                                    recordWith()
-                                                            .status(SUCCESS)
-                                                            .contractCallResult(
-                                                                    resultWith()
-                                                                            .contractCallResult(
-                                                                                    htsPrecompileResult()
-                                                                                            .forFunction(
-                                                                                                    FunctionType
-                                                                                                            .HAPI_GET_TOKEN_EXPIRY_INFO)
-                                                                                            .withStatus(
-                                                                                                    SUCCESS)
-                                                                                            .withExpiry(
-                                                                                                    expirySecond,
-                                                                                                    spec.registry()
-                                                                                                            .getAccountID(
-                                                                                                                    AUTO_RENEW_ACCOUNT),
-                                                                                                    THREE_MONTHS_IN_SECONDS)))));
-                                }));
+                        withOpContext((spec, opLog) -> {
+                            final var getTokenInfoQuery = getTokenInfo(VANILLA_TOKEN);
+                            allRunFor(spec, getTokenInfoQuery);
+                            final var expirySecond = getTokenInfoQuery
+                                    .getResponse()
+                                    .getTokenGetInfo()
+                                    .getTokenInfo()
+                                    .getExpiry()
+                                    .getSeconds();
+                            allRunFor(
+                                    spec,
+                                    childRecordsCheck(
+                                            "expiryTxn",
+                                            SUCCESS,
+                                            recordWith()
+                                                    .status(SUCCESS)
+                                                    .contractCallResult(resultWith()
+                                                            .contractCallResult(htsPrecompileResult()
+                                                                    .forFunction(
+                                                                            FunctionType.HAPI_GET_TOKEN_EXPIRY_INFO)
+                                                                    .withStatus(SUCCESS)
+                                                                    .withExpiry(
+                                                                            expirySecond,
+                                                                            spec.registry()
+                                                                                    .getAccountID(AUTO_RENEW_ACCOUNT),
+                                                                            THREE_MONTHS_IN_SECONDS)))));
+                        }));
     }
 
     @SuppressWarnings("java:S5960")
@@ -217,121 +200,78 @@ public class TokenExpiryInfoSuite extends HapiSuite {
                                 .initialSupply(500L)
                                 .adminKey(ADMIN_KEY)
                                 .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                TOKEN_EXPIRY_CONTRACT,
-                                                                UPDATE_EXPIRY_INFO_FOR_TOKEN,
-                                                                asHeadlongAddress(INVALID_ADDRESS),
-                                                                DEFAULT_MAX_LIFETIME - 12_345L,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                updatedAutoRenewAccountID
-                                                                                        .get())),
-                                                                MONTH_IN_SECONDS)
-                                                        .alsoSigningWithFullPrefix(
-                                                                ADMIN_KEY,
-                                                                UPDATED_AUTO_RENEW_ACCOUNT)
-                                                        .via("invalidTokenTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .payingWith(GENESIS)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                contractCall(
-                                                                TOKEN_EXPIRY_CONTRACT,
-                                                                UPDATE_EXPIRY_INFO_FOR_TOKEN,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())),
-                                                                DEFAULT_MAX_LIFETIME - 12_345L,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                updatedAutoRenewAccountID
-                                                                                        .get())),
-                                                                MONTH_IN_SECONDS)
-                                                        .via("invalidSignatureTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .payingWith(GENESIS)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                contractCall(
-                                                                TOKEN_EXPIRY_CONTRACT,
-                                                                UPDATE_EXPIRY_INFO_FOR_TOKEN,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())),
-                                                                100L,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                updatedAutoRenewAccountID
-                                                                                        .get())),
-                                                                MONTH_IN_SECONDS)
-                                                        .alsoSigningWithFullPrefix(
-                                                                ADMIN_KEY,
-                                                                UPDATED_AUTO_RENEW_ACCOUNT)
-                                                        .via("invalidExpiryTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .payingWith(GENESIS)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                contractCall(
-                                                                TOKEN_EXPIRY_CONTRACT,
-                                                                UPDATE_EXPIRY_INFO_FOR_TOKEN,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())),
-                                                                DEFAULT_MAX_LIFETIME - 12_345L,
-                                                                asHeadlongAddress(INVALID_ADDRESS),
-                                                                MONTH_IN_SECONDS)
-                                                        .alsoSigningWithFullPrefix(
-                                                                ADMIN_KEY,
-                                                                UPDATED_AUTO_RENEW_ACCOUNT)
-                                                        .via("invalidAutoRenewAccountTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .payingWith(GENESIS)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                contractCall(
-                                                                TOKEN_EXPIRY_CONTRACT,
-                                                                UPDATE_EXPIRY_INFO_FOR_TOKEN,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())),
-                                                                DEFAULT_MAX_LIFETIME - 12_345L,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                updatedAutoRenewAccountID
-                                                                                        .get())),
-                                                                1L)
-                                                        .alsoSigningWithFullPrefix(
-                                                                ADMIN_KEY,
-                                                                UPDATED_AUTO_RENEW_ACCOUNT)
-                                                        .via("invalidAutoRenewPeriodTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .payingWith(GENESIS)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                contractCall(
-                                                                TOKEN_EXPIRY_CONTRACT,
-                                                                UPDATE_EXPIRY_INFO_FOR_TOKEN,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())),
-                                                                DEFAULT_MAX_LIFETIME - 12_345L,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                updatedAutoRenewAccountID
-                                                                                        .get())),
-                                                                MONTH_IN_SECONDS)
-                                                        .alsoSigningWithFullPrefix(
-                                                                ADMIN_KEY,
-                                                                UPDATED_AUTO_RENEW_ACCOUNT)
-                                                        .via("updateExpiryTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .payingWith(GENESIS))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        TOKEN_EXPIRY_CONTRACT,
+                                        UPDATE_EXPIRY_INFO_FOR_TOKEN,
+                                        asHeadlongAddress(INVALID_ADDRESS),
+                                        DEFAULT_MAX_LIFETIME - 12_345L,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(updatedAutoRenewAccountID.get())),
+                                        MONTH_IN_SECONDS)
+                                .alsoSigningWithFullPrefix(ADMIN_KEY, UPDATED_AUTO_RENEW_ACCOUNT)
+                                .via("invalidTokenTxn")
+                                .gas(GAS_TO_OFFER)
+                                .payingWith(GENESIS)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        contractCall(
+                                        TOKEN_EXPIRY_CONTRACT,
+                                        UPDATE_EXPIRY_INFO_FOR_TOKEN,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        DEFAULT_MAX_LIFETIME - 12_345L,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(updatedAutoRenewAccountID.get())),
+                                        MONTH_IN_SECONDS)
+                                .via("invalidSignatureTxn")
+                                .gas(GAS_TO_OFFER)
+                                .payingWith(GENESIS)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        contractCall(
+                                        TOKEN_EXPIRY_CONTRACT,
+                                        UPDATE_EXPIRY_INFO_FOR_TOKEN,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        100L,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(updatedAutoRenewAccountID.get())),
+                                        MONTH_IN_SECONDS)
+                                .alsoSigningWithFullPrefix(ADMIN_KEY, UPDATED_AUTO_RENEW_ACCOUNT)
+                                .via("invalidExpiryTxn")
+                                .gas(GAS_TO_OFFER)
+                                .payingWith(GENESIS)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        contractCall(
+                                        TOKEN_EXPIRY_CONTRACT,
+                                        UPDATE_EXPIRY_INFO_FOR_TOKEN,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        DEFAULT_MAX_LIFETIME - 12_345L,
+                                        asHeadlongAddress(INVALID_ADDRESS),
+                                        MONTH_IN_SECONDS)
+                                .alsoSigningWithFullPrefix(ADMIN_KEY, UPDATED_AUTO_RENEW_ACCOUNT)
+                                .via("invalidAutoRenewAccountTxn")
+                                .gas(GAS_TO_OFFER)
+                                .payingWith(GENESIS)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        contractCall(
+                                        TOKEN_EXPIRY_CONTRACT,
+                                        UPDATE_EXPIRY_INFO_FOR_TOKEN,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        DEFAULT_MAX_LIFETIME - 12_345L,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(updatedAutoRenewAccountID.get())),
+                                        1L)
+                                .alsoSigningWithFullPrefix(ADMIN_KEY, UPDATED_AUTO_RENEW_ACCOUNT)
+                                .via("invalidAutoRenewPeriodTxn")
+                                .gas(GAS_TO_OFFER)
+                                .payingWith(GENESIS)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        contractCall(
+                                        TOKEN_EXPIRY_CONTRACT,
+                                        UPDATE_EXPIRY_INFO_FOR_TOKEN,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        DEFAULT_MAX_LIFETIME - 12_345L,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(updatedAutoRenewAccountID.get())),
+                                        MONTH_IN_SECONDS)
+                                .alsoSigningWithFullPrefix(ADMIN_KEY, UPDATED_AUTO_RENEW_ACCOUNT)
+                                .via("updateExpiryTxn")
+                                .gas(GAS_TO_OFFER)
+                                .payingWith(GENESIS))))
                 .then(
                         childRecordsCheck(
                                 "invalidTokenTxn",
@@ -353,37 +293,30 @@ public class TokenExpiryInfoSuite extends HapiSuite {
                                 "invalidAutoRenewPeriodTxn",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(INVALID_RENEWAL_PERIOD)),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var getTokenInfoQuery = getTokenInfo(VANILLA_TOKEN);
-                                    allRunFor(spec, getTokenInfoQuery);
-                                    final var expirySecond =
-                                            getTokenInfoQuery
-                                                    .getResponse()
-                                                    .getTokenGetInfo()
-                                                    .getTokenInfo()
-                                                    .getExpiry()
-                                                    .getSeconds();
-                                    final var autoRenewAccount =
-                                            getTokenInfoQuery
-                                                    .getResponse()
-                                                    .getTokenGetInfo()
-                                                    .getTokenInfo()
-                                                    .getAutoRenewAccount();
-                                    final var autoRenewPeriod =
-                                            getTokenInfoQuery
-                                                    .getResponse()
-                                                    .getTokenGetInfo()
-                                                    .getTokenInfo()
-                                                    .getAutoRenewPeriod()
-                                                    .getSeconds();
-                                    assertEquals(expirySecond, DEFAULT_MAX_LIFETIME - 12_345L);
-                                    assertEquals(
-                                            autoRenewAccount,
-                                            spec.registry()
-                                                    .getAccountID(UPDATED_AUTO_RENEW_ACCOUNT));
-                                    assertEquals(autoRenewPeriod, MONTH_IN_SECONDS);
-                                }));
+                        withOpContext((spec, opLog) -> {
+                            final var getTokenInfoQuery = getTokenInfo(VANILLA_TOKEN);
+                            allRunFor(spec, getTokenInfoQuery);
+                            final var expirySecond = getTokenInfoQuery
+                                    .getResponse()
+                                    .getTokenGetInfo()
+                                    .getTokenInfo()
+                                    .getExpiry()
+                                    .getSeconds();
+                            final var autoRenewAccount = getTokenInfoQuery
+                                    .getResponse()
+                                    .getTokenGetInfo()
+                                    .getTokenInfo()
+                                    .getAutoRenewAccount();
+                            final var autoRenewPeriod = getTokenInfoQuery
+                                    .getResponse()
+                                    .getTokenGetInfo()
+                                    .getTokenInfo()
+                                    .getAutoRenewPeriod()
+                                    .getSeconds();
+                            assertEquals(expirySecond, DEFAULT_MAX_LIFETIME - 12_345L);
+                            assertEquals(autoRenewAccount, spec.registry().getAccountID(UPDATED_AUTO_RENEW_ACCOUNT));
+                            assertEquals(autoRenewPeriod, MONTH_IN_SECONDS);
+                        }));
     }
 
     private HapiSpec updateExpiryInfoForTokenAndReadLatestInfo() {
@@ -412,55 +345,34 @@ public class TokenExpiryInfoSuite extends HapiSuite {
                                 .initialSupply(500L)
                                 .adminKey(ADMIN_KEY)
                                 .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                TOKEN_EXPIRY_CONTRACT,
-                                                                UPDATE_EXPIRY_INFO_FOR_TOKEN_AND_READ_LATEST_INFO,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())),
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        TOKEN_EXPIRY_CONTRACT,
+                                        UPDATE_EXPIRY_INFO_FOR_TOKEN_AND_READ_LATEST_INFO,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                        DEFAULT_MAX_LIFETIME - 12_345L,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(updatedAutoRenewAccountID.get())),
+                                        MONTH_IN_SECONDS)
+                                .alsoSigningWithFullPrefix(ADMIN_KEY, UPDATED_AUTO_RENEW_ACCOUNT)
+                                .via("updateExpiryAndReadLatestInfoTxn")
+                                .gas(GAS_TO_OFFER)
+                                .payingWith(GENESIS))))
+                .then(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        childRecordsCheck(
+                                "updateExpiryAndReadLatestInfoTxn",
+                                SUCCESS,
+                                recordWith().status(SUCCESS),
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(FunctionType.HAPI_GET_TOKEN_EXPIRY_INFO)
+                                                        .withStatus(SUCCESS)
+                                                        .withExpiry(
                                                                 DEFAULT_MAX_LIFETIME - 12_345L,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                updatedAutoRenewAccountID
-                                                                                        .get())),
-                                                                MONTH_IN_SECONDS)
-                                                        .alsoSigningWithFullPrefix(
-                                                                ADMIN_KEY,
-                                                                UPDATED_AUTO_RENEW_ACCOUNT)
-                                                        .via("updateExpiryAndReadLatestInfoTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .payingWith(GENESIS))))
-                .then(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                childRecordsCheck(
-                                                        "updateExpiryAndReadLatestInfoTxn",
-                                                        SUCCESS,
-                                                        recordWith().status(SUCCESS),
-                                                        recordWith()
-                                                                .status(SUCCESS)
-                                                                .contractCallResult(
-                                                                        resultWith()
-                                                                                .contractCallResult(
-                                                                                        htsPrecompileResult()
-                                                                                                .forFunction(
-                                                                                                        FunctionType
-                                                                                                                .HAPI_GET_TOKEN_EXPIRY_INFO)
-                                                                                                .withStatus(
-                                                                                                        SUCCESS)
-                                                                                                .withExpiry(
-                                                                                                        DEFAULT_MAX_LIFETIME
-                                                                                                                - 12_345L,
-                                                                                                        updatedAutoRenewAccountID
-                                                                                                                .get(),
-                                                                                                        MONTH_IN_SECONDS)))))));
+                                                                updatedAutoRenewAccountID.get(),
+                                                                MONTH_IN_SECONDS)))))));
     }
 }

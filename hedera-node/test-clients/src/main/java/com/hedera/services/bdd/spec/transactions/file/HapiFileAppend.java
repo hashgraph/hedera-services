@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.file;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.currExpiry;
@@ -56,15 +57,17 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
 
     private Optional<Consumer<FileID>> preAppendCb = Optional.empty();
     private Optional<Consumer<ResponseCodeEnum>> postAppendCb = Optional.empty();
-    @Nullable private UploadProgress uploadProgress;
+
+    @Nullable
+    private UploadProgress uploadProgress;
+
     private int appendNum;
 
     public HapiFileAppend(final String file) {
         this.file = file;
     }
 
-    public HapiFileAppend trackingProgressIn(
-            final UploadProgress uploadProgress, final int appendNum) {
+    public HapiFileAppend trackingProgressIn(final UploadProgress uploadProgress, final int appendNum) {
         this.uploadProgress = uploadProgress;
         this.appendNum = appendNum;
         return this;
@@ -113,15 +116,12 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
             contents = Optional.of(Files.toByteArray(new File(path.get())));
         }
         final var fid = TxnUtils.asFileId(file, spec);
-        final FileAppendTransactionBody opBody =
-                spec.txns()
-                        .<FileAppendTransactionBody, FileAppendTransactionBody.Builder>body(
-                                FileAppendTransactionBody.class,
-                                builder -> {
-                                    builder.setFileID(fid);
-                                    contents.ifPresent(
-                                            b -> builder.setContents(ByteString.copyFrom(b)));
-                                });
+        final FileAppendTransactionBody opBody = spec.txns()
+                .<FileAppendTransactionBody, FileAppendTransactionBody.Builder>body(
+                        FileAppendTransactionBody.class, builder -> {
+                            builder.setFileID(fid);
+                            contents.ifPresent(b -> builder.setContents(ByteString.copyFrom(b)));
+                        });
         preAppendCb.ifPresent(cb -> cb.accept(fid));
         return b -> b.setFileAppend(opBody);
     }
@@ -132,23 +132,18 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
-            throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         final var expiry =
-                payer.isPresent()
-                        ? currExpiry(file, spec, payerToUse(payer.get(), spec))
-                        : currExpiry(file, spec);
+                payer.isPresent() ? currExpiry(file, spec, payerToUse(payer.get(), spec)) : currExpiry(file, spec);
         final FeeCalculator.ActivityMetrics metricsCalc =
                 (txBody, sigUsage) -> usageEstimate(txBody, sigUsage, expiry.getSeconds());
-        return spec.fees()
-                .forActivityBasedOp(HederaFunctionality.FileAppend, metricsCalc, txn, numPayerKeys);
+        return spec.fees().forActivityBasedOp(HederaFunctionality.FileAppend, metricsCalc, txn, numPayerKeys);
     }
 
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
-        return List.of(
-                spec -> spec.registry().getKey(effectivePayer(spec)),
-                spec -> spec.registry().getKey(file));
+        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
+                .getKey(file));
     }
 
     @Override
@@ -180,11 +175,11 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
                 || account.equals(spec.setup().strongControlName());
     }
 
-    private FeeData usageEstimate(
-            final TransactionBody txn, final SigValueObj svo, final long expiry) {
+    private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo, final long expiry) {
         final var op = txn.getFileAppend();
         final var baseMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
-        final var effectiveNow = txn.getTransactionID().getTransactionValidStart().getSeconds();
+        final var effectiveNow =
+                txn.getTransactionID().getTransactionValidStart().getSeconds();
         final var opMeta = new FileAppendMeta(op.getContents().size(), expiry - effectiveNow);
 
         final var accumulator = new UsageAccumulator();

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.properties;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -33,9 +34,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(LogCaptureExtension.class)
 class SemanticVersionsTest {
-    @LoggingTarget private LogCaptor logCaptor;
+    @LoggingTarget
+    private LogCaptor logCaptor;
 
-    @LoggingSubject private SemanticVersions subject = SemanticVersions.SEMANTIC_VERSIONS;
+    @LoggingSubject
+    private SemanticVersions subject = SemanticVersions.SEMANTIC_VERSIONS;
 
     @Test
     void canParseFullSemver() {
@@ -99,11 +102,9 @@ class SemanticVersionsTest {
 
     @Test
     void warnsOfUnavailableSemversAndUsesEmpty() {
-        final var shouldBeEmpty =
-                SemanticVersions.fromResource("nonExistent.properties", "w/e", "n/a");
-        final var desiredPrefix =
-                "Failed to parse resource 'nonExistent.properties' (keys 'w/e' and 'n/a'). "
-                        + "Version info will be unavailable!";
+        final var shouldBeEmpty = SemanticVersions.fromResource("nonExistent.properties", "w/e", "n/a");
+        final var desiredPrefix = "Failed to parse resource 'nonExistent.properties' (keys 'w/e' and 'n/a'). "
+                + "Version info will be unavailable!";
 
         assertEquals(SemanticVersion.getDefaultInstance(), shouldBeEmpty.hederaSemVer());
         assertEquals(SemanticVersion.getDefaultInstance(), shouldBeEmpty.protoSemVer());
@@ -114,8 +115,7 @@ class SemanticVersionsTest {
         return baseSemVer(1, 2, 4);
     }
 
-    private static SemanticVersion.Builder baseSemVer(
-            final int major, final int minor, final int patch) {
+    private static SemanticVersion.Builder baseSemVer(final int major, final int minor, final int patch) {
         return SemanticVersion.newBuilder().setMajor(major).setMinor(minor).setPatch(patch);
     }
 }

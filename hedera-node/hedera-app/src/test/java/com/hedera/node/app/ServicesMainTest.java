@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app;
 
 import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
@@ -71,28 +72,71 @@ class ServicesMainTest {
     private final NodeId nodeId = new NodeId(false, selfId);
     private final NodeId edonId = new NodeId(false, unselfId);
 
-    @Mock private Platform platform;
-    @Mock private SystemExits systemExits;
-    @Mock private PrintStream consoleOut;
-    @Mock private Supplier<Charset> nativeCharset;
-    @Mock private ServicesApp app;
-    @Mock private GlobalStaticProperties globalStaticProperties;
-    @Mock private NamedDigestFactory namedDigestFactory;
-    @Mock private MutableStateChildren workingState;
-    @Mock private AccountStorageAdapter accounts;
-    @Mock private LedgerValidator ledgerValidator;
-    @Mock private NodeInfo nodeInfo;
-    @Mock private ReconnectCompleteListener reconnectListener;
-    @Mock private StateWriteToDiskCompleteListener stateToDiskListener;
-    @Mock private PlatformStatusChangeListener statusChangeListener;
-    @Mock private IssListener issListener;
-    @Mock private NewSignedStateListener newSignedStateListener;
-    @Mock private NotificationEngine notificationEngine;
-    @Mock private ServicesStatsManager statsManager;
-    @Mock private AccountsExporter accountsExporter;
-    @Mock private GrpcStarter grpcStarter;
-    @Mock private CurrentPlatformStatus currentPlatformStatus;
-    @Mock private RecordStreamManager recordStreamManager;
+    @Mock
+    private Platform platform;
+
+    @Mock
+    private SystemExits systemExits;
+
+    @Mock
+    private PrintStream consoleOut;
+
+    @Mock
+    private Supplier<Charset> nativeCharset;
+
+    @Mock
+    private ServicesApp app;
+
+    @Mock
+    private GlobalStaticProperties globalStaticProperties;
+
+    @Mock
+    private NamedDigestFactory namedDigestFactory;
+
+    @Mock
+    private MutableStateChildren workingState;
+
+    @Mock
+    private AccountStorageAdapter accounts;
+
+    @Mock
+    private LedgerValidator ledgerValidator;
+
+    @Mock
+    private NodeInfo nodeInfo;
+
+    @Mock
+    private ReconnectCompleteListener reconnectListener;
+
+    @Mock
+    private StateWriteToDiskCompleteListener stateToDiskListener;
+
+    @Mock
+    private PlatformStatusChangeListener statusChangeListener;
+
+    @Mock
+    private IssListener issListener;
+
+    @Mock
+    private NewSignedStateListener newSignedStateListener;
+
+    @Mock
+    private NotificationEngine notificationEngine;
+
+    @Mock
+    private ServicesStatsManager statsManager;
+
+    @Mock
+    private AccountsExporter accountsExporter;
+
+    @Mock
+    private GrpcStarter grpcStarter;
+
+    @Mock
+    private CurrentPlatformStatus currentPlatformStatus;
+
+    @Mock
+    private RecordStreamManager recordStreamManager;
 
     private final ServicesMain subject = new ServicesMain();
 
@@ -146,15 +190,13 @@ class ServicesMainTest {
         verify(ledgerValidator).validate(accounts);
         verify(nodeInfo).validateSelfAccountIfStaked();
         // and:
-        verify(notificationEngine)
-                .register(PlatformStatusChangeListener.class, statusChangeListener);
+        verify(notificationEngine).register(PlatformStatusChangeListener.class, statusChangeListener);
         verify(notificationEngine).register(IssListener.class, issListener);
         verify(notificationEngine).register(NewSignedStateListener.class, newSignedStateListener);
         verify(statsManager).initializeFor(platform);
         verify(accountsExporter).toFile(accounts);
         verify(notificationEngine).register(ReconnectCompleteListener.class, reconnectListener);
-        verify(notificationEngine)
-                .register(StateWriteToDiskCompleteListener.class, stateToDiskListener);
+        verify(notificationEngine).register(StateWriteToDiskCompleteListener.class, stateToDiskListener);
         verify(grpcStarter).startIfAppropriate();
     }
 
@@ -172,8 +214,7 @@ class ServicesMainTest {
 
     @Test
     void updatesCurrentMiscPlatformStatus() throws NoSuchAlgorithmException {
-        final var listener =
-                new StatusChangeListener(currentPlatformStatus, nodeId, recordStreamManager);
+        final var listener = new StatusChangeListener(currentPlatformStatus, nodeId, recordStreamManager);
         withRunnableApp();
         withChangeableApp();
         withNotificationEngine();
@@ -186,8 +227,7 @@ class ServicesMainTest {
 
     @Test
     void updatesCurrentActivePlatformStatus() throws NoSuchAlgorithmException {
-        final var listener =
-                new StatusChangeListener(currentPlatformStatus, nodeId, recordStreamManager);
+        final var listener = new StatusChangeListener(currentPlatformStatus, nodeId, recordStreamManager);
         withRunnableApp();
         withChangeableApp();
         withNotificationEngine();
@@ -201,8 +241,7 @@ class ServicesMainTest {
 
     @Test
     void updatesCurrentMaintenancePlatformStatus() throws NoSuchAlgorithmException {
-        final var listener =
-                new StatusChangeListener(currentPlatformStatus, nodeId, recordStreamManager);
+        final var listener = new StatusChangeListener(currentPlatformStatus, nodeId, recordStreamManager);
         withRunnableApp();
         withChangeableApp();
         withNotificationEngine();

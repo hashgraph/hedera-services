@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.persistence;
 
 import static com.hedera.services.bdd.spec.persistence.Entity.UNUSED_KEY;
@@ -42,10 +43,9 @@ public class Topic {
         if (submitKey != UNUSED_KEY) {
             submitKey.registerWith(spec, under(submitKeyFor(name)));
         }
-        entityId.ifPresent(
-                id -> {
-                    spec.registry().saveTopicId(name, id.asTopic());
-                });
+        entityId.ifPresent(id -> {
+            spec.registry().saveTopicId(name, id.asTopic());
+        });
     }
 
     public HapiQueryOp<?> existenceCheck(String name) {

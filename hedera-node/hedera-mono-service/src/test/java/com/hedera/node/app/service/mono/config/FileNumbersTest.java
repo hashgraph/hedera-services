@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.config;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_ADDRESS_BOOK;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_EXCHANGE_RATES;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_FEE_SCHEDULES;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_HAPI_PERMISSIONS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_NETWORK_PROPERTIES;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_NODE_DETAILS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_SOFTWARE_UPDATE_RANGE;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_THROTTLE_DEFINITIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_ADDRESS_BOOK;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_EXCHANGE_RATES;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_FEE_SCHEDULES;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_HAPI_PERMISSIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_NETWORK_PROPERTIES;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_NODE_DETAILS;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_SOFTWARE_UPDATE_RANGE;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_THROTTLE_DEFINITIONS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,6 +37,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class FileNumbersTest {
+
     private static final String FILES_SOFTWARE_UPDATE_ZIP = "files.softwareUpdateZip";
     PropertySource properties;
     HederaNumbers hederaNumbers;
@@ -58,8 +60,7 @@ class FileNumbersTest {
         given(properties.getLongProperty(FILES_EXCHANGE_RATES)).willReturn(112L);
         given(properties.getLongProperty(FILES_SOFTWARE_UPDATE_ZIP)).willReturn(150L);
         given(properties.getLongProperty(FILES_THROTTLE_DEFINITIONS)).willReturn(123L);
-        given(properties.getEntityNumRange(FILES_SOFTWARE_UPDATE_RANGE))
-                .willReturn(Pair.of(150L, 159L));
+        given(properties.getEntityNumRange(FILES_SOFTWARE_UPDATE_RANGE)).willReturn(Pair.of(150L, 159L));
 
         subject = new FileNumbers(hederaNumbers, properties);
     }
@@ -90,7 +91,7 @@ class FileNumbersTest {
     @Test
     void getsExpectedFid() {
         // when:
-        var fid = subject.toFid(3L);
+        final var fid = subject.toFid(3L);
 
         // then:
         assertEquals(IdUtils.asFile("42.24.3"), fid);

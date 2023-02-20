@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -70,10 +71,7 @@ public class StakeInfoManager {
                 return null;
             }
             if (nodeId >= cache.length) {
-                log.warn(
-                        "Stake info requested for node id {} beyond cache size {}",
-                        nodeId,
-                        cache.length);
+                log.warn("Stake info requested for node id {} beyond cache size {}", nodeId, cache.length);
                 return null;
             }
             return getFromCache(nodeId);

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
@@ -70,8 +71,7 @@ public final class OnDiskValueSerializer<V> implements SelfSerializableSupplier<
 
     /** {@inheritDoc} */
     @Override
-    public void deserialize(@NonNull final SerializableDataInputStream in, final int ignored)
-            throws IOException {
+    public void deserialize(@NonNull final SerializableDataInputStream in, final int ignored) throws IOException {
         // This class has nothing to deserialize
     }
 

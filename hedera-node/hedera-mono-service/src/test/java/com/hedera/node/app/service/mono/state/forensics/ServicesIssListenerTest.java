@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.forensics;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -46,15 +47,26 @@ class ServicesIssListenerTest {
     private final long round = 1_234_567;
     private final Instant consensusTime = Instant.now();
 
-    @Mock private ServicesState state;
-    @Mock private IssEventInfo issEventInfo;
-    @Mock private IssNotification issNotification;
-    @Mock private Platform platform;
-    @Mock private AutoCloseableWrapper<SwirldState> wrapper;
+    @Mock
+    private ServicesState state;
 
-    @LoggingTarget private LogCaptor logCaptor;
+    @Mock
+    private IssEventInfo issEventInfo;
 
-    @LoggingSubject private ServicesIssListener subject;
+    @Mock
+    private IssNotification issNotification;
+
+    @Mock
+    private Platform platform;
+
+    @Mock
+    private AutoCloseableWrapper<SwirldState> wrapper;
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private ServicesIssListener subject;
 
     @BeforeEach
     void setup() {
@@ -79,8 +91,7 @@ class ServicesIssListenerTest {
         subject.notify(issNotification);
 
         // then:
-        var desired =
-                String.format(ServicesIssListener.ISS_FALLBACK_ERROR_MSG_PATTERN, round, otherId);
+        var desired = String.format(ServicesIssListener.ISS_FALLBACK_ERROR_MSG_PATTERN, round, otherId);
         assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith(desired)));
     }
 

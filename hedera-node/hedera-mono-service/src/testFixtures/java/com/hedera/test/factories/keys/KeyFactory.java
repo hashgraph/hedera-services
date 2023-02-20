@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.keys;
 
 import static com.hedera.test.factories.keys.KeyFactory.DefaultKeyGen.DEFAULT_KEY_GEN;
@@ -82,14 +83,15 @@ public class KeyFactory {
     }
 
     public Key newList(List<Key> children) {
-        return Key.newBuilder().setKeyList(KeyList.newBuilder().addAllKeys(children)).build();
+        return Key.newBuilder()
+                .setKeyList(KeyList.newBuilder().addAllKeys(children))
+                .build();
     }
 
     public Key newThreshold(List<Key> children, int M) {
-        ThresholdKey.Builder thresholdKey =
-                ThresholdKey.newBuilder()
-                        .setKeys(KeyList.newBuilder().addAllKeys(children).build())
-                        .setThreshold(M);
+        ThresholdKey.Builder thresholdKey = ThresholdKey.newBuilder()
+                .setKeys(KeyList.newBuilder().addAllKeys(children).build())
+                .setThreshold(M);
         return Key.newBuilder().setThresholdKey(thresholdKey).build();
     }
 
@@ -137,13 +139,10 @@ public class KeyFactory {
     public static Key genSingleEcdsaSecp256k1Key(final Map<String, PrivateKey> publicToPrivateKey) {
         final var kp = ecdsaKpGenerator.generateKeyPair();
         final var pubKey = ((ECPublicKeyParameters) kp.getPublic()).getQ().getEncoded(true);
-        final var privKeySpec =
-                new ECPrivateKeySpec(
-                        ((ECPrivateKeyParameters) kp.getPrivate()).getD(), curveParams);
+        final var privKeySpec = new ECPrivateKeySpec(((ECPrivateKeyParameters) kp.getPrivate()).getD(), curveParams);
 
         try {
-            final var privKey =
-                    java.security.KeyFactory.getInstance("ECDSA").generatePrivate(privKeySpec);
+            final var privKey = java.security.KeyFactory.getInstance("ECDSA").generatePrivate(privKeySpec);
             publicToPrivateKey.put(CommonUtils.hex(pubKey), privKey);
         } catch (InvalidKeySpecException | NoSuchAlgorithmException fatal) {
             throw new IllegalStateException(fatal);
@@ -152,15 +151,9 @@ public class KeyFactory {
         return Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(pubKey)).build();
     }
 
-    private static final ECNamedCurveParameterSpec curveParams =
-            ECNamedCurveTable.getParameterSpec("secp256k1");
-    private static final ECDomainParameters domainParams =
-            new ECDomainParameters(
-                    curveParams.getCurve(),
-                    curveParams.getG(),
-                    curveParams.getN(),
-                    curveParams.getH(),
-                    curveParams.getSeed());
+    private static final ECNamedCurveParameterSpec curveParams = ECNamedCurveTable.getParameterSpec("secp256k1");
+    private static final ECDomainParameters domainParams = new ECDomainParameters(
+            curveParams.getCurve(), curveParams.getG(), curveParams.getN(), curveParams.getH(), curveParams.getSeed());
     private static final ECKeyGenerationParameters genParams =
             new ECKeyGenerationParameters(domainParams, new SecureRandom());
     public static final ECKeyPairGenerator ecdsaKpGenerator = new ECKeyPairGenerator();

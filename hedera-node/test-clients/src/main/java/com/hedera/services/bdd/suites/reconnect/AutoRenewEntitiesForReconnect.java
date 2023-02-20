@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.reconnect;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -61,41 +62,35 @@ public class AutoRenewEntitiesForReconnect extends HapiSuite {
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(GENESIS)
                                 .overridingProps(
-                                        AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(
-                                                autoRenewSecs, 0, 100, 2))
+                                        AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(autoRenewSecs, 0, 100, 2))
                                 .erasingProps(Set.of("minimumAutoRenewDuration")),
-                        cryptoCreate(autoDeleteAccount).autoRenewSecs(autoRenewSecs).balance(0L))
+                        cryptoCreate(autoDeleteAccount)
+                                .autoRenewSecs(autoRenewSecs)
+                                .balance(0L))
                 .when(
                         // do some transfers so that we pass autoRenewSecs
-                        withOpContext(
-                                (spec, ctxLog) -> {
-                                    List<HapiSpecOperation> opsList =
-                                            new ArrayList<HapiSpecOperation>();
-                                    for (int i = 0; i < 50; i++) {
-                                        opsList.add(
-                                                cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
-                                                        .logged());
-                                    }
-                                    CustomSpecAssert.allRunFor(spec, opsList);
-                                }),
+                        withOpContext((spec, ctxLog) -> {
+                            List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
+                            for (int i = 0; i < 50; i++) {
+                                opsList.add(cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
+                                        .logged());
+                            }
+                            CustomSpecAssert.allRunFor(spec, opsList);
+                        }),
                         withLiveNode("0.0.8")
                                 .within(120, TimeUnit.SECONDS)
                                 .loggingAvailabilityEvery(10)
                                 .sleepingBetweenRetriesFor(10))
-                .then(
-                        getAccountBalance(autoDeleteAccount)
-                                .setNode("0.0.8")
-                                .hasAnswerOnlyPrecheckFrom(INVALID_ACCOUNT_ID));
+                .then(getAccountBalance(autoDeleteAccount)
+                        .setNode("0.0.8")
+                        .hasAnswerOnlyPrecheckFrom(INVALID_ACCOUNT_ID));
     }
 
     private HapiSpec accountAutoRenewalSuiteCleanup() {
         return defaultHapiSpec("accountAutoRenewalSuiteCleanup")
                 .given()
                 .when()
-                .then(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(disablingAutoRenewWithDefaults()));
+                .then(fileUpdate(APP_PROPERTIES).payingWith(GENESIS).overridingProps(disablingAutoRenewWithDefaults()));
     }
 
     @Override
@@ -115,15 +110,12 @@ public class AutoRenewEntitiesForReconnect extends HapiSuite {
                 .when()
                 .then(
                         // do some transfers to save a state before reconnect
-                        withOpContext(
-                                (spec, ctxLog) -> {
-                                    List<HapiSpecOperation> opsList =
-                                            new ArrayList<HapiSpecOperation>();
-                                    for (int i = 0; i < 500; i++) {
-                                        opsList.add(
-                                                cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)));
-                                    }
-                                    CustomSpecAssert.allRunFor(spec, opsList);
-                                }));
+                        withOpContext((spec, ctxLog) -> {
+                            List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
+                            for (int i = 0; i < 500; i++) {
+                                opsList.add(cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)));
+                            }
+                            CustomSpecAssert.allRunFor(spec, opsList);
+                        }));
     }
 }

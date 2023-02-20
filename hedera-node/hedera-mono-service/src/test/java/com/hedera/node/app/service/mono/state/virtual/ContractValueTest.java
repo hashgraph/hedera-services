@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.hedera.node.app.service.mono.state.virtual.ContractValue.MERKLE_VERSION;
@@ -43,11 +44,9 @@ import org.junit.jupiter.api.Test;
 
 class ContractValueTest {
     private static final UInt256 uint256Value =
-            UInt256.fromHexString(
-                    "0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060");
+            UInt256.fromHexString("0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060");
     private static final UInt256 otherUint256Value =
-            UInt256.fromHexString(
-                    "0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
+            UInt256.fromHexString("0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
     private static final byte[] bytesValue = uint256Value.toArray();
     private static final byte[] otherBytesValue = otherUint256Value.toArray();
     private static final byte[] defaultEmpty = new byte[SERIALIZED_SIZE];
@@ -147,8 +146,7 @@ class ContractValueTest {
         final var actual = subject.getValue();
         var actualLen = 31;
         for (int i = len - 1; i >= len - 32; i--) {
-            assertEquals(
-                    bigIntegerBytes[i], actual[actualLen--], "byte at index " + i + " dont match");
+            assertEquals(bigIntegerBytes[i], actual[actualLen--], "byte at index " + i + " dont match");
         }
 
         assertEquals(BigInteger.valueOf(value), new BigInteger(subject.getValue()));
@@ -194,11 +192,10 @@ class ContractValueTest {
     void deserializeWorks() throws IOException {
         subject = new ContractValue();
         final var in = mock(SerializableDataInputStream.class);
-        doAnswer(
-                        invocation -> {
-                            subject.setValue(bytesValue);
-                            return SERIALIZED_SIZE;
-                        })
+        doAnswer(invocation -> {
+                    subject.setValue(bytesValue);
+                    return SERIALIZED_SIZE;
+                })
                 .when(in)
                 .read(subject.getValue());
 
@@ -220,11 +217,10 @@ class ContractValueTest {
     void deserializeWithByteBufferWorks() throws IOException {
         subject = new ContractValue();
         final var byteBuffer = mock(ByteBuffer.class);
-        doAnswer(
-                        invocation -> {
-                            subject.setValue(bytesValue);
-                            return null;
-                        })
+        doAnswer(invocation -> {
+                    subject.setValue(bytesValue);
+                    return null;
+                })
                 .when(byteBuffer)
                 .get(subject.getValue());
 
@@ -239,11 +235,10 @@ class ContractValueTest {
         final var readOnly = subject.asReadOnly();
 
         final var in = mock(SerializableDataInputStream.class);
-        doAnswer(
-                        invocation -> {
-                            subject.setValue(bytesValue);
-                            return SERIALIZED_SIZE;
-                        })
+        doAnswer(invocation -> {
+                    subject.setValue(bytesValue);
+                    return SERIALIZED_SIZE;
+                })
                 .when(in)
                 .read(subject.getValue());
 
@@ -251,16 +246,13 @@ class ContractValueTest {
 
         // and when
         final var byteBuffer = mock(ByteBuffer.class);
-        doAnswer(
-                        invocation -> {
-                            subject.setValue(bytesValue);
-                            return null;
-                        })
+        doAnswer(invocation -> {
+                    subject.setValue(bytesValue);
+                    return null;
+                })
                 .when(byteBuffer)
                 .get(subject.getValue());
 
-        assertThrows(
-                IllegalStateException.class,
-                () -> readOnly.deserialize(byteBuffer, MERKLE_VERSION));
+        assertThrows(IllegalStateException.class, () -> readOnly.deserialize(byteBuffer, MERKLE_VERSION));
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.token.txns;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -33,10 +34,9 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class TokenDissociateResourceUsage extends AbstractTokenResourceUsage
-        implements TxnResourceUsageEstimator {
-    private static final BiFunction<TransactionBody, TxnUsageEstimator, TokenDissociateUsage>
-            factory = TokenDissociateUsage::newEstimate;
+public class TokenDissociateResourceUsage extends AbstractTokenResourceUsage implements TxnResourceUsageEstimator {
+    private static final BiFunction<TransactionBody, TxnUsageEstimator, TokenDissociateUsage> factory =
+            TokenDissociateUsage::newEstimate;
 
     @Inject
     public TokenDissociateResourceUsage(final EstimatorFactory estimatorFactory) {
@@ -49,8 +49,7 @@ public class TokenDissociateResourceUsage extends AbstractTokenResourceUsage
     }
 
     @Override
-    public FeeData usageGiven(
-            final TransactionBody txn, final SigValueObj svo, final StateView view)
+    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final StateView view)
             throws InvalidTxBodyException {
         final var op = txn.getTokenDissociate();
         final var account = view.accounts().get(fromAccountId(op.getAccount()));
@@ -58,12 +57,8 @@ public class TokenDissociateResourceUsage extends AbstractTokenResourceUsage
             return FeeData.getDefaultInstance();
         } else {
             final var sigUsage =
-                    new SigUsage(
-                            svo.getTotalSigCount(),
-                            svo.getSignatureSize(),
-                            svo.getPayerAcctSigCount());
-            final var estimate =
-                    factory.apply(txn, estimatorFactory.get(sigUsage, txn, ESTIMATOR_UTILS));
+                    new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+            final var estimate = factory.apply(txn, estimatorFactory.get(sigUsage, txn, ESTIMATOR_UTILS));
             return estimate.get();
         }
     }

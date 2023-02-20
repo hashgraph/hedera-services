@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,14 +38,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HederaEvmWorldStateTest {
 
-    @Mock private HederaEvmEntityAccess hederaEvmEntityAccess;
+    @Mock
+    private HederaEvmEntityAccess hederaEvmEntityAccess;
 
-    @Mock private EvmProperties evmProperties;
+    @Mock
+    private EvmProperties evmProperties;
 
-    @Mock private AbstractCodeCache abstractCodeCache;
+    @Mock
+    private AbstractCodeCache abstractCodeCache;
 
-    private final Address address =
-            Address.fromHexString("0x000000000000000000000000000000000000077e");
+    private final Address address = Address.fromHexString("0x000000000000000000000000000000000000077e");
     final long balance = 1_234L;
 
     MockAccountAccessor accountAccessor = new MockAccountAccessor();
@@ -58,13 +61,8 @@ class HederaEvmWorldStateTest {
     void setUp() {
         subject = new HederaEvmWorldState(hederaEvmEntityAccess, evmProperties, abstractCodeCache);
 
-        subject2 =
-                new HederaEvmWorldState(
-                        hederaEvmEntityAccess,
-                        evmProperties,
-                        abstractCodeCache,
-                        accountAccessor,
-                        tokenAccessor);
+        subject2 = new HederaEvmWorldState(
+                hederaEvmEntityAccess, evmProperties, abstractCodeCache, accountAccessor, tokenAccessor);
     }
 
     @Test

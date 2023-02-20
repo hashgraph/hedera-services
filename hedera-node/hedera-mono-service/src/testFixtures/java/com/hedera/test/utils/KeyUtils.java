@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.utils;
 
 import com.google.protobuf.ByteString;
@@ -34,69 +35,54 @@ public class KeyUtils {
 
     private static final String C_NAME = "cccccccccccccccccccccccccccccccc";
 
-    public static final Key A_THRESHOLD_KEY =
-            Key.newBuilder()
-                    .setThresholdKey(
-                            ThresholdKey.newBuilder()
-                                    .setThreshold(2)
-                                    .setKeys(
-                                            KeyList.newBuilder()
-                                                    .addKeys(KEY_BUILDER.apply(A_NAME))
-                                                    .addKeys(KEY_BUILDER.apply(B_NAME))
-                                                    .addKeys(KEY_BUILDER.apply(C_NAME))))
-                    .build();
-    public static final Key A_KEY_LIST =
-            Key.newBuilder()
-                    .setKeyList(
-                            KeyList.newBuilder()
-                                    .addKeys(KEY_BUILDER.apply(A_NAME))
-                                    .addKeys(KEY_BUILDER.apply(B_NAME))
-                                    .addKeys(KEY_BUILDER.apply(C_NAME)))
-                    .build();
-    public static final Key A_COMPLEX_KEY =
-            Key.newBuilder()
-                    .setThresholdKey(
-                            ThresholdKey.newBuilder()
-                                    .setThreshold(2)
-                                    .setKeys(
-                                            KeyList.newBuilder()
-                                                    .addKeys(KEY_BUILDER.apply(A_NAME))
-                                                    .addKeys(KEY_BUILDER.apply(B_NAME))
-                                                    .addKeys(A_THRESHOLD_KEY)))
-                    .build();
-    public static final Key B_COMPLEX_KEY =
-            Key.newBuilder()
-                    .setThresholdKey(
-                            ThresholdKey.newBuilder()
-                                    .setThreshold(2)
-                                    .setKeys(
-                                            KeyList.newBuilder()
-                                                    .addKeys(KEY_BUILDER.apply(A_NAME))
-                                                    .addKeys(KEY_BUILDER.apply(B_NAME))
-                                                    .addKeys(A_COMPLEX_KEY)))
-                    .build();
-    public static final Key C_COMPLEX_KEY =
-            Key.newBuilder()
-                    .setThresholdKey(
-                            ThresholdKey.newBuilder()
-                                    .setThreshold(2)
-                                    .setKeys(
-                                            KeyList.newBuilder()
-                                                    .addKeys(KEY_BUILDER.apply(A_NAME))
-                                                    .addKeys(KEY_BUILDER.apply(B_NAME))
-                                                    .addKeys(B_COMPLEX_KEY)))
-                    .build();
+    public static final Key A_THRESHOLD_KEY = Key.newBuilder()
+            .setThresholdKey(ThresholdKey.newBuilder()
+                    .setThreshold(2)
+                    .setKeys(KeyList.newBuilder()
+                            .addKeys(KEY_BUILDER.apply(A_NAME))
+                            .addKeys(KEY_BUILDER.apply(B_NAME))
+                            .addKeys(KEY_BUILDER.apply(C_NAME))))
+            .build();
+    public static final Key A_KEY_LIST = Key.newBuilder()
+            .setKeyList(KeyList.newBuilder()
+                    .addKeys(KEY_BUILDER.apply(A_NAME))
+                    .addKeys(KEY_BUILDER.apply(B_NAME))
+                    .addKeys(KEY_BUILDER.apply(C_NAME)))
+            .build();
+    public static final Key A_COMPLEX_KEY = Key.newBuilder()
+            .setThresholdKey(ThresholdKey.newBuilder()
+                    .setThreshold(2)
+                    .setKeys(KeyList.newBuilder()
+                            .addKeys(KEY_BUILDER.apply(A_NAME))
+                            .addKeys(KEY_BUILDER.apply(B_NAME))
+                            .addKeys(A_THRESHOLD_KEY)))
+            .build();
+    public static final Key B_COMPLEX_KEY = Key.newBuilder()
+            .setThresholdKey(ThresholdKey.newBuilder()
+                    .setThreshold(2)
+                    .setKeys(KeyList.newBuilder()
+                            .addKeys(KEY_BUILDER.apply(A_NAME))
+                            .addKeys(KEY_BUILDER.apply(B_NAME))
+                            .addKeys(A_COMPLEX_KEY)))
+            .build();
+    public static final Key C_COMPLEX_KEY = Key.newBuilder()
+            .setThresholdKey(ThresholdKey.newBuilder()
+                    .setThreshold(2)
+                    .setKeys(KeyList.newBuilder()
+                            .addKeys(KEY_BUILDER.apply(A_NAME))
+                            .addKeys(KEY_BUILDER.apply(B_NAME))
+                            .addKeys(B_COMPLEX_KEY)))
+            .build();
 
     public static List<Key> sanityRestored(List<? extends HederaKey> jKeys) {
         return jKeys.stream()
-                .map(
-                        jKey -> {
-                            try {
-                                return JKey.mapJKey((JKey) jKey);
-                            } catch (Exception ignore) {
-                            }
-                            throw new AssertionError("All keys should be mappable!");
-                        })
+                .map(jKey -> {
+                    try {
+                        return JKey.mapJKey((JKey) jKey);
+                    } catch (Exception ignore) {
+                    }
+                    throw new AssertionError("All keys should be mappable!");
+                })
                 .toList();
     }
 

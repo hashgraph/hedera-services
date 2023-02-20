@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.answering;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
@@ -84,34 +85,54 @@ class StakedAnswerFlowTest {
 
     private static final HederaAccountNumbers accountNumbers = new MockAccountNumbers();
 
-    @Mock private FeeData usagePrices;
-    @Mock private StateView stateView;
-    @Mock private FeeCalculator fees;
-    @Mock private AnswerService service;
-    @Mock private QueryFeeCheck queryFeeCheck;
-    @Mock private UsagePricesProvider resourceCosts;
-    @Mock private QueryHeaderValidity queryHeaderValidity;
-    @Mock private TransactionPrecheck transactionPrecheck;
-    @Mock private HapiOpPermissions hapiOpPermissions;
-    @Mock private FunctionalityThrottling throttles;
-    @Mock private PlatformSubmissionManager submissionManager;
+    @Mock
+    private FeeData usagePrices;
+
+    @Mock
+    private StateView stateView;
+
+    @Mock
+    private FeeCalculator fees;
+
+    @Mock
+    private AnswerService service;
+
+    @Mock
+    private QueryFeeCheck queryFeeCheck;
+
+    @Mock
+    private UsagePricesProvider resourceCosts;
+
+    @Mock
+    private QueryHeaderValidity queryHeaderValidity;
+
+    @Mock
+    private TransactionPrecheck transactionPrecheck;
+
+    @Mock
+    private HapiOpPermissions hapiOpPermissions;
+
+    @Mock
+    private FunctionalityThrottling throttles;
+
+    @Mock
+    private PlatformSubmissionManager submissionManager;
 
     private StakedAnswerFlow subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new StakedAnswerFlow(
-                        fees,
-                        accountNumbers,
-                        () -> stateView,
-                        resourceCosts,
-                        throttles,
-                        submissionManager,
-                        queryHeaderValidity,
-                        transactionPrecheck,
-                        hapiOpPermissions,
-                        queryFeeCheck);
+        subject = new StakedAnswerFlow(
+                fees,
+                accountNumbers,
+                () -> stateView,
+                resourceCosts,
+                throttles,
+                submissionManager,
+                queryHeaderValidity,
+                transactionPrecheck,
+                hapiOpPermissions,
+                queryFeeCheck);
     }
 
     @Test
@@ -159,15 +180,12 @@ class StakedAnswerFlowTest {
         givenValidSuperuserExtraction();
         givenPaymentIsRequired();
         given(service.canonicalFunction()).willReturn(NetworkGetExecutionTime);
-        given(
-                        transactionPrecheck.performForQueryPayment(
-                                superuserPaymentAccessor.getSignedTxnWrapper()))
+        given(transactionPrecheck.performForQueryPayment(superuserPaymentAccessor.getSignedTxnWrapper()))
                 .willReturn(Pair.of(new TxnValidityAndFeeReq(OK), superuserPaymentAccessor));
         given(hapiOpPermissions.permissibilityOf(NetworkGetExecutionTime, superuser))
                 .willReturn(OK);
         givenHappyService();
-        given(resourceCosts.defaultPricesGiven(NetworkGetExecutionTime, now))
-                .willReturn(usagePrices);
+        given(resourceCosts.defaultPricesGiven(NetworkGetExecutionTime, now)).willReturn(usagePrices);
         givenComputableCost();
 
         final var actual = subject.satisfyUsing(service, query);
@@ -208,9 +226,7 @@ class StakedAnswerFlowTest {
         givenExtractableSuperuserPayment();
         givenValidSuperuserExtraction();
         givenPaymentIsRequired();
-        given(
-                        transactionPrecheck.performForQueryPayment(
-                                superuserPaymentAccessor.getSignedTxnWrapper()))
+        given(transactionPrecheck.performForQueryPayment(superuserPaymentAccessor.getSignedTxnWrapper()))
                 .willReturn(Pair.of(new TxnValidityAndFeeReq(OK), superuserPaymentAccessor));
         givenAvailFunction();
         givenSuperuserPermission();
@@ -232,8 +248,7 @@ class StakedAnswerFlowTest {
         givenValidExtraction();
         givenPaymentIsRequired();
         givenAvailFunction();
-        given(hapiOpPermissions.permissibilityOf(ConsensusGetTopicInfo, payer))
-                .willReturn(NOT_SUPPORTED);
+        given(hapiOpPermissions.permissibilityOf(ConsensusGetTopicInfo, payer)).willReturn(NOT_SUPPORTED);
 
         final var actual = subject.satisfyUsing(service, query);
 
@@ -321,8 +336,7 @@ class StakedAnswerFlowTest {
         givenAvailableResourcePrices();
         givenComputableCost();
         givenValidPayment();
-        given(submissionManager.trySubmission(paymentAccessor))
-                .willReturn(PLATFORM_TRANSACTION_NOT_CREATED);
+        given(submissionManager.trySubmission(paymentAccessor)).willReturn(PLATFORM_TRANSACTION_NOT_CREATED);
 
         final var actual = subject.satisfyUsing(service, query);
 
@@ -427,7 +441,8 @@ class StakedAnswerFlowTest {
     }
 
     private void givenSuperuserPermission() {
-        given(hapiOpPermissions.permissibilityOf(ConsensusGetTopicInfo, superuser)).willReturn(OK);
+        given(hapiOpPermissions.permissibilityOf(ConsensusGetTopicInfo, superuser))
+                .willReturn(OK);
     }
 
     private void givenCostEstimateIsRequired() {
@@ -448,9 +463,7 @@ class StakedAnswerFlowTest {
     }
 
     private void givenValidSuperuserExtraction() {
-        given(
-                        transactionPrecheck.performForQueryPayment(
-                                superuserPaymentAccessor.getSignedTxnWrapper()))
+        given(transactionPrecheck.performForQueryPayment(superuserPaymentAccessor.getSignedTxnWrapper()))
                 .willReturn(Pair.of(new TxnValidityAndFeeReq(OK), superuserPaymentAccessor));
     }
 
@@ -484,17 +497,14 @@ class StakedAnswerFlowTest {
     }
 
     private static final SignedTxnAccessor accessorWith(final AccountID txnPayer) {
-        return SignedTxnAccessor.uncheckedFrom(
-                Transaction.newBuilder()
-                        .setBodyBytes(
-                                TransactionBody.newBuilder()
-                                        .setNodeAccountID(node)
-                                        .setTransactionID(
-                                                TransactionID.newBuilder()
-                                                        .setTransactionValidStart(now)
-                                                        .setAccountID(txnPayer))
-                                        .build()
-                                        .toByteString())
-                        .build());
+        return SignedTxnAccessor.uncheckedFrom(Transaction.newBuilder()
+                .setBodyBytes(TransactionBody.newBuilder()
+                        .setNodeAccountID(node)
+                        .setTransactionID(TransactionID.newBuilder()
+                                .setTransactionValidStart(now)
+                                .setAccountID(txnPayer))
+                        .build()
+                        .toByteString())
+                .build());
     }
 }

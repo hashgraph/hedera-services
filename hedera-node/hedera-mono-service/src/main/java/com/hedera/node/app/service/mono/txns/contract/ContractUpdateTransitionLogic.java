@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.contract;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
@@ -128,8 +129,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
             if (newMax < ledger.alreadyUsedAutomaticAssociations(target.toGrpcAccountId())) {
                 return EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
             }
-            if (properties.areTokenAssociationsLimited()
-                    && newMax > properties.maxTokensPerAccount()) {
+            if (properties.areTokenAssociationsLimited() && newMax > properties.maxTokensPerAccount()) {
                 return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
             }
         }
@@ -164,13 +164,11 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
             }
         }
 
-        final var newMemoIfAny =
-                op.hasMemoWrapper() ? op.getMemoWrapper().getValue() : op.getMemo();
+        final var newMemoIfAny = op.hasMemoWrapper() ? op.getMemoWrapper().getValue() : op.getMemo();
         if ((status = validator.memoCheck(newMemoIfAny)) != OK) {
             return status;
         }
-        if (op.hasProxyAccountID()
-                && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
+        if (op.hasProxyAccountID() && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
             return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
         }
 
@@ -183,16 +181,11 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
             if (validSentinel(stakedIdCase, op.getStakedAccountId(), op.getStakedNodeId())) {
                 return OK;
             } else if (!validator.isValidStakedId(
-                    stakedIdCase,
-                    op.getStakedAccountId(),
-                    op.getStakedNodeId(),
-                    contracts.get(),
-                    nodeInfo)) {
+                    stakedIdCase, op.getStakedAccountId(), op.getStakedNodeId(), contracts.get(), nodeInfo)) {
                 return INVALID_STAKING_ID;
             }
         }
-        if (op.hasMaxAutomaticTokenAssociations()
-                && !properties.areContractAutoAssociationsEnabled()) {
+        if (op.hasMaxAutomaticTokenAssociations() && !properties.areContractAutoAssociationsEnabled()) {
             return NOT_SUPPORTED;
         }
         return OK;

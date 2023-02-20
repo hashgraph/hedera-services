@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
@@ -59,7 +60,8 @@ public class ExtCodeHashOperationSuite extends HapiSuite {
     HapiSpec verifiesExistence() {
         final var contract = "ExtCodeOperationsChecker";
         final var invalidAddress = "0x0000000000000000000000000000000000123456";
-        final var expectedAccountHash = ByteString.copyFrom(Hash.keccak256(Bytes.EMPTY).toArray());
+        final var expectedAccountHash =
+                ByteString.copyFrom(Hash.keccak256(Bytes.EMPTY).toArray());
         final var hashOf = "hashOf";
 
         return defaultHapiSpec("VerifiesExistence")
@@ -70,76 +72,44 @@ public class ExtCodeHashOperationSuite extends HapiSuite {
                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
                         contractCallLocal(contract, hashOf, asHeadlongAddress(invalidAddress))
                                 .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var accountID =
-                                            spec.registry().getAccountID(DEFAULT_PAYER);
-                                    final var contractID = spec.registry().getContractId(contract);
-                                    final var accountSolidityAddress =
-                                            asHexedSolidityAddress(accountID);
-                                    final var contractAddress = asHexedSolidityAddress(contractID);
+                        withOpContext((spec, opLog) -> {
+                            final var accountID = spec.registry().getAccountID(DEFAULT_PAYER);
+                            final var contractID = spec.registry().getContractId(contract);
+                            final var accountSolidityAddress = asHexedSolidityAddress(accountID);
+                            final var contractAddress = asHexedSolidityAddress(contractID);
 
-                                    final var call =
-                                            contractCall(
-                                                            contract,
-                                                            hashOf,
-                                                            asHeadlongAddress(
-                                                                    accountSolidityAddress))
-                                                    .via("callRecord");
-                                    final var callRecord = getTxnRecord("callRecord");
+                            final var call = contractCall(contract, hashOf, asHeadlongAddress(accountSolidityAddress))
+                                    .via("callRecord");
+                            final var callRecord = getTxnRecord("callRecord");
 
-                                    final var accountCodeHashCallLocal =
-                                            contractCallLocal(
-                                                            contract,
-                                                            hashOf,
-                                                            asHeadlongAddress(
-                                                                    accountSolidityAddress))
-                                                    .saveResultTo("accountCodeHash");
+                            final var accountCodeHashCallLocal = contractCallLocal(
+                                            contract, hashOf, asHeadlongAddress(accountSolidityAddress))
+                                    .saveResultTo("accountCodeHash");
 
-                                    final var contractCodeHash =
-                                            contractCallLocal(
-                                                            contract,
-                                                            hashOf,
-                                                            asHeadlongAddress(contractAddress))
-                                                    .saveResultTo("contractCodeHash");
+                            final var contractCodeHash = contractCallLocal(
+                                            contract, hashOf, asHeadlongAddress(contractAddress))
+                                    .saveResultTo("contractCodeHash");
 
-                                    final var getBytecode =
-                                            getContractBytecode(contract)
-                                                    .saveResultTo("contractBytecode");
+                            final var getBytecode =
+                                    getContractBytecode(contract).saveResultTo("contractBytecode");
 
-                                    allRunFor(
-                                            spec,
-                                            call,
-                                            callRecord,
-                                            accountCodeHashCallLocal,
-                                            contractCodeHash,
-                                            getBytecode);
+                            allRunFor(spec, call, callRecord, accountCodeHashCallLocal, contractCodeHash, getBytecode);
 
-                                    final var recordResult =
-                                            callRecord.getResponseRecord().getContractCallResult();
-                                    final var accountCodeHash =
-                                            spec.registry().getBytes("accountCodeHash");
+                            final var recordResult =
+                                    callRecord.getResponseRecord().getContractCallResult();
+                            final var accountCodeHash = spec.registry().getBytes("accountCodeHash");
 
-                                    final var contractCodeResult =
-                                            spec.registry().getBytes("contractCodeHash");
-                                    final var contractBytecode =
-                                            spec.registry().getBytes("contractBytecode");
-                                    final var expectedContractCodeHash =
-                                            ByteString.copyFrom(
-                                                            Hash.keccak256(
-                                                                            Bytes.of(
-                                                                                    contractBytecode))
-                                                                    .toArray())
-                                                    .toByteArray();
+                            final var contractCodeResult = spec.registry().getBytes("contractCodeHash");
+                            final var contractBytecode = spec.registry().getBytes("contractBytecode");
+                            final var expectedContractCodeHash = ByteString.copyFrom(
+                                            Hash.keccak256(Bytes.of(contractBytecode))
+                                                    .toArray())
+                                    .toByteArray();
 
-                                    Assertions.assertEquals(
-                                            expectedAccountHash,
-                                            recordResult.getContractCallResult());
-                                    Assertions.assertArrayEquals(
-                                            expectedAccountHash.toByteArray(), accountCodeHash);
-                                    Assertions.assertArrayEquals(
-                                            expectedContractCodeHash, contractCodeResult);
-                                }));
+                            Assertions.assertEquals(expectedAccountHash, recordResult.getContractCallResult());
+                            Assertions.assertArrayEquals(expectedAccountHash.toByteArray(), accountCodeHash);
+                            Assertions.assertArrayEquals(expectedContractCodeHash, contractCodeResult);
+                        }));
     }
 
     @Override

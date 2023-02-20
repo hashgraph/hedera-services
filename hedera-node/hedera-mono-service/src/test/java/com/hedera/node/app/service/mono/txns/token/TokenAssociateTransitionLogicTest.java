@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -54,17 +55,27 @@ class TokenAssociateTransitionLogicTest {
     private AssociateLogic associateLogic;
     private TokenAssociateTransitionLogic subject;
 
-    @Mock private UsageLimits usageLimits;
-    @Mock private TypedTokenStore tokenStore;
-    @Mock private AccountStore accountStore;
-    @Mock private TransactionContext txnCtx;
-    @Mock private TxnAccessor accessor;
-    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock
+    private UsageLimits usageLimits;
+
+    @Mock
+    private TypedTokenStore tokenStore;
+
+    @Mock
+    private AccountStore accountStore;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private TxnAccessor accessor;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
 
     @BeforeEach
     void setup() {
-        associateLogic =
-                new AssociateLogic(usageLimits, tokenStore, accountStore, dynamicProperties);
+        associateLogic = new AssociateLogic(usageLimits, tokenStore, accountStore, dynamicProperties);
         subject = new TokenAssociateTransitionLogic(txnCtx, associateLogic);
     }
 
@@ -87,8 +98,7 @@ class TokenAssociateTransitionLogicTest {
 
         subject.doStateTransition();
 
-        verify(associateLogic)
-                .associate(Id.fromGrpcAccount(account), List.of(firstToken, secondToken));
+        verify(associateLogic).associate(Id.fromGrpcAccount(account), List.of(firstToken, secondToken));
     }
 
     @Test
@@ -112,35 +122,29 @@ class TokenAssociateTransitionLogicTest {
         givenDuplicateTokens();
 
         // expect:
-        assertEquals(
-                TOKEN_ID_REPEATED_IN_TOKEN_LIST, subject.semanticCheck().apply(tokenAssociateTxn));
+        assertEquals(TOKEN_ID_REPEATED_IN_TOKEN_LIST, subject.semanticCheck().apply(tokenAssociateTxn));
     }
 
     private void givenValidTxn() {
-        tokenAssociateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenAssociate(
-                                TokenAssociateTransactionBody.newBuilder()
-                                        .setAccount(account)
-                                        .addAllTokens(List.of(firstToken, secondToken)))
-                        .build();
+        tokenAssociateTxn = TransactionBody.newBuilder()
+                .setTokenAssociate(TokenAssociateTransactionBody.newBuilder()
+                        .setAccount(account)
+                        .addAllTokens(List.of(firstToken, secondToken)))
+                .build();
     }
 
     private void givenMissingAccount() {
-        tokenAssociateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenAssociate(TokenAssociateTransactionBody.newBuilder())
-                        .build();
+        tokenAssociateTxn = TransactionBody.newBuilder()
+                .setTokenAssociate(TokenAssociateTransactionBody.newBuilder())
+                .build();
     }
 
     private void givenDuplicateTokens() {
-        tokenAssociateTxn =
-                TransactionBody.newBuilder()
-                        .setTokenAssociate(
-                                TokenAssociateTransactionBody.newBuilder()
-                                        .setAccount(account)
-                                        .addTokens(firstToken)
-                                        .addTokens(firstToken))
-                        .build();
+        tokenAssociateTxn = TransactionBody.newBuilder()
+                .setTokenAssociate(TokenAssociateTransactionBody.newBuilder()
+                        .setAccount(account)
+                        .addTokens(firstToken)
+                        .addTokens(firstToken))
+                .build();
     }
 }

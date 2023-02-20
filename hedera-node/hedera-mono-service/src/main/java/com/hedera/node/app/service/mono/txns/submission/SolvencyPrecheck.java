@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.submission;
 
 import static com.hedera.node.app.service.mono.txns.validation.PureValidation.queryableAccountStatus;
@@ -56,8 +57,7 @@ public class SolvencyPrecheck {
     private static final Logger log = LogManager.getLogger(SolvencyPrecheck.class);
 
     private static final TxnValidityAndFeeReq VERIFIED_EXEMPT = new TxnValidityAndFeeReq(OK);
-    private static final TxnValidityAndFeeReq LOST_PAYER_EXPIRATION_RACE =
-            new TxnValidityAndFeeReq(FAIL_FEE);
+    private static final TxnValidityAndFeeReq LOST_PAYER_EXPIRATION_RACE = new TxnValidityAndFeeReq(FAIL_FEE);
 
     private final FeeExemptions feeExemptions;
     private final FeeCalculator feeCalculator;
@@ -91,9 +91,7 @@ public class SolvencyPrecheck {
     }
 
     private TxnValidityAndFeeReq assess(SignedTxnAccessor accessor, boolean includeSvcFee) {
-        final var payerStatus =
-                queryableAccountStatus(
-                        EntityNum.fromAccountId(accessor.getPayer()), accounts.get());
+        final var payerStatus = queryableAccountStatus(EntityNum.fromAccountId(accessor.getPayer()), accounts.get());
         if (payerStatus != OK) {
             return new TxnValidityAndFeeReq(PAYER_ACCOUNT_NOT_FOUND);
         }
@@ -110,49 +108,39 @@ public class SolvencyPrecheck {
         return solvencyOfVerifiedPayer(accessor, includeSvcFee);
     }
 
-    private TxnValidityAndFeeReq solvencyOfVerifiedPayer(
-            SignedTxnAccessor accessor, boolean includeSvcFee) {
+    private TxnValidityAndFeeReq solvencyOfVerifiedPayer(SignedTxnAccessor accessor, boolean includeSvcFee) {
         final var payerId = EntityNum.fromAccountId(accessor.getPayer());
         final var payerAccount = accounts.get().get(payerId);
 
         try {
             final var now = accessor.getTxnId().getTransactionValidStart();
             final var payerKey = payerAccount.getAccountKey();
-            final var estimatedFees =
-                    feeCalculator.estimateFee(accessor, payerKey, stateView.get(), now);
+            final var estimatedFees = feeCalculator.estimateFee(accessor, payerKey, stateView.get(), now);
             final var estimatedReqFee = totalOf(estimatedFees, includeSvcFee);
 
             if (accessor.getTxn().getTransactionFee() < estimatedReqFee) {
                 return new TxnValidityAndFeeReq(INSUFFICIENT_TX_FEE, estimatedReqFee);
             }
 
-            final var estimatedAdj =
-                    Math.min(0L, feeCalculator.estimatedNonFeePayerAdjustments(accessor, now));
+            final var estimatedAdj = Math.min(0L, feeCalculator.estimatedNonFeePayerAdjustments(accessor, now));
             final var requiredPayerBalance = estimatedReqFee - estimatedAdj;
             final var payerBalance = payerAccount.getBalance();
             var finalStatus = OK;
             if (payerBalance < requiredPayerBalance) {
-                final var expiryStatus =
-                        validator.expiryStatusGiven(
-                                payerBalance,
-                                payerAccount.isExpiredAndPendingRemoval(),
-                                payerAccount.isSmartContract());
+                final var expiryStatus = validator.expiryStatusGiven(
+                        payerBalance, payerAccount.isExpiredAndPendingRemoval(), payerAccount.isSmartContract());
                 finalStatus = expiryStatus != OK ? expiryStatus : INSUFFICIENT_PAYER_BALANCE;
             }
 
             return new TxnValidityAndFeeReq(finalStatus, estimatedReqFee);
         } catch (Exception suspicious) {
-            log.warn(
-                    "Fee calculation failure may be justifiable due to an expiring payer, but...",
-                    suspicious);
+            log.warn("Fee calculation failure may be justifiable due to an expiring payer, but...", suspicious);
             return LOST_PAYER_EXPIRATION_RACE;
         }
     }
 
     private long totalOf(FeeObject fees, boolean includeSvcFee) {
-        return (includeSvcFee ? fees.getServiceFee() : 0)
-                + fees.getNodeFee()
-                + fees.getNetworkFee();
+        return (includeSvcFee ? fees.getServiceFee() : 0) + fees.getNodeFee() + fees.getNetworkFee();
     }
 
     private ResponseCodeEnum checkSigs(SignedTxnAccessor accessor) {

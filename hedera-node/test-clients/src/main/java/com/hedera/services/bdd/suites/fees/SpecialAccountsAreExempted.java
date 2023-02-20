@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.fees;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -59,8 +60,7 @@ public class SpecialAccountsAreExempted extends HapiSuite {
 
         return defaultHapiSpec("FeeScheduleControlAccountIsntCharged")
                 .given(
-                        cryptoTransfer(
-                                tinyBarsFromTo(GENESIS, FEE_SCHEDULE_CONTROL, 1_000_000_000_000L)),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FEE_SCHEDULE_CONTROL, 1_000_000_000_000L)),
                         balanceSnapshot("pre", FEE_SCHEDULE_CONTROL),
                         getFileContents(FEE_SCHEDULE).in4kChunks(true).saveTo("feeSchedule.bin"))
                 .when(
@@ -84,9 +84,7 @@ public class SpecialAccountsAreExempted extends HapiSuite {
                                 .hasKnownStatusFrom(acceptable)
                                 .payingWith(FEE_SCHEDULE_CONTROL)
                                 .path(Path.of("./", "part4-feeSchedule.bin").toString()))
-                .then(
-                        getAccountBalance(FEE_SCHEDULE_CONTROL)
-                                .hasTinyBars(changeFromSnapshot("pre", 0)));
+                .then(getAccountBalance(FEE_SCHEDULE_CONTROL).hasTinyBars(changeFromSnapshot("pre", 0)));
     }
 
     @Override

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.commands.schedules;
 
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED;
@@ -32,7 +33,8 @@ import picocli.CommandLine.ParentCommand;
         description = "Sign a transaction with schedule id")
 public class SignCommand implements Callable<Integer> {
 
-    @ParentCommand ScheduleCommand scheduleCommand;
+    @ParentCommand
+    ScheduleCommand scheduleCommand;
 
     @CommandLine.Option(
             names = {"--scheduleId"},
@@ -49,8 +51,7 @@ public class SignCommand implements Callable<Integer> {
         delegate.runSuiteSync();
 
         if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
-            COMMON_MESSAGES.info(
-                    "SUCCESS - " + "scheduleId " + effectiveScheduleId + " " + " signed");
+            COMMON_MESSAGES.info("SUCCESS - " + "scheduleId " + effectiveScheduleId + " " + " signed");
         } else {
             COMMON_MESSAGES.warn("FAILED - " + "could not sign scheduleId " + effectiveScheduleId);
             return 1;

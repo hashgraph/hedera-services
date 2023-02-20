@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
@@ -43,8 +44,7 @@ public class CustomFeeSpecs {
         return spec -> builtFixedHbarSansCollector(amount);
     }
 
-    public static Function<HapiSpec, CustomFee> fixedHtsFee(
-            long amount, String denom, String collector) {
+    public static Function<HapiSpec, CustomFee> fixedHtsFee(long amount, String denom, String collector) {
         return fixedHtsFee(amount, denom, collector, false);
     }
 
@@ -53,8 +53,7 @@ public class CustomFeeSpecs {
         return spec -> builtFixedHts(amount, denom, collector, allCollectorsExempt, spec);
     }
 
-    public static Function<HapiSpec, FixedFee> fixedHtsFeeInheritingRoyaltyCollector(
-            long amount, String denom) {
+    public static Function<HapiSpec, FixedFee> fixedHtsFeeInheritingRoyaltyCollector(long amount, String denom) {
         return spec -> builtFixedHtsSansCollector(amount, denom, spec);
     }
 
@@ -65,16 +64,11 @@ public class CustomFeeSpecs {
 
     public static Function<HapiSpec, CustomFee> royaltyFeeNoFallback(
             long numerator, long denominator, String collector, boolean allCollectorsExempt) {
-        return spec ->
-                builtRoyaltyNoFallback(
-                        numerator, denominator, collector, allCollectorsExempt, spec);
+        return spec -> builtRoyaltyNoFallback(numerator, denominator, collector, allCollectorsExempt, spec);
     }
 
     public static Function<HapiSpec, CustomFee> royaltyFeeWithFallback(
-            long numerator,
-            long denominator,
-            Function<HapiSpec, FixedFee> fixedFallback,
-            String collector) {
+            long numerator, long denominator, Function<HapiSpec, FixedFee> fixedFallback, String collector) {
         return royaltyFeeWithFallback(numerator, denominator, fixedFallback, collector, false);
     }
 
@@ -85,13 +79,7 @@ public class CustomFeeSpecs {
             String collector,
             boolean allCollectorsExempt) {
         return spec ->
-                builtRoyaltyWithFallback(
-                        numerator,
-                        denominator,
-                        collector,
-                        allCollectorsExempt,
-                        fixedFallback,
-                        spec);
+                builtRoyaltyWithFallback(numerator, denominator, collector, allCollectorsExempt, fixedFallback, spec);
     }
 
     public static Function<HapiSpec, CustomFee> fractionalFee(
@@ -111,16 +99,7 @@ public class CustomFeeSpecs {
             OptionalLong max,
             String collector,
             boolean allCollectorsExempt) {
-        return spec ->
-                builtFractional(
-                        numerator,
-                        denominator,
-                        min,
-                        max,
-                        true,
-                        collector,
-                        allCollectorsExempt,
-                        spec);
+        return spec -> builtFractional(numerator, denominator, min, max, true, collector, allCollectorsExempt, spec);
     }
 
     public static Function<HapiSpec, CustomFee> fractionalFee(
@@ -130,16 +109,7 @@ public class CustomFeeSpecs {
             OptionalLong max,
             String collector,
             boolean allCollectorsExempt) {
-        return spec ->
-                builtFractional(
-                        numerator,
-                        denominator,
-                        min,
-                        max,
-                        false,
-                        collector,
-                        allCollectorsExempt,
-                        spec);
+        return spec -> builtFractional(numerator, denominator, min, max, false, collector, allCollectorsExempt, spec);
     }
 
     public static Function<HapiSpec, CustomFee> incompleteCustomFee(String collector) {
@@ -148,14 +118,11 @@ public class CustomFeeSpecs {
 
     static CustomFee buildIncompleteCustomFee(final String collector, final HapiSpec spec) {
         final var collectorId =
-                isIdLiteral(collector)
-                        ? asAccount(collector)
-                        : spec.registry().getAccountID(collector);
+                isIdLiteral(collector) ? asAccount(collector) : spec.registry().getAccountID(collector);
         return CustomFee.newBuilder().setFeeCollectorAccountId(collectorId).build();
     }
 
-    static CustomFee builtFixedHbar(
-            long amount, String collector, boolean allCollectorsExempt, HapiSpec spec) {
+    static CustomFee builtFixedHbar(long amount, String collector, boolean allCollectorsExempt, HapiSpec spec) {
         return baseFixedBuilder(amount, collector, allCollectorsExempt, spec).build();
     }
 
@@ -164,11 +131,7 @@ public class CustomFeeSpecs {
     }
 
     static CustomFee builtRoyaltyNoFallback(
-            long numerator,
-            long denominator,
-            String collector,
-            boolean allCollectorsExempt,
-            HapiSpec spec) {
+            long numerator, long denominator, String collector, boolean allCollectorsExempt, HapiSpec spec) {
         final var feeCollector = TxnUtils.asId(collector, spec);
         return CustomFee.newBuilder()
                 .setRoyaltyFee(baseRoyaltyBuilder(numerator, denominator))
@@ -200,20 +163,20 @@ public class CustomFeeSpecs {
     }
 
     static CustomFee builtFixedHts(
-            long amount,
-            String denom,
-            String collector,
-            boolean allCollectorsExempt,
-            HapiSpec spec) {
+            long amount, String denom, String collector, boolean allCollectorsExempt, HapiSpec spec) {
         final var builder = baseFixedBuilder(amount, collector, allCollectorsExempt, spec);
-        final var denomId = isIdLiteral(denom) ? asToken(denom) : spec.registry().getTokenID(denom);
+        final var denomId =
+                isIdLiteral(denom) ? asToken(denom) : spec.registry().getTokenID(denom);
         builder.getFixedFeeBuilder().setDenominatingTokenId(denomId);
         return builder.build();
     }
 
     static FixedFee builtFixedHtsSansCollector(long amount, String denom, HapiSpec spec) {
         final var denomId = TxnUtils.asTokenId(denom, spec);
-        return FixedFee.newBuilder().setAmount(amount).setDenominatingTokenId(denomId).build();
+        return FixedFee.newBuilder()
+                .setAmount(amount)
+                .setDenominatingTokenId(denomId)
+                .build();
     }
 
     static CustomFee builtFractional(
@@ -226,17 +189,12 @@ public class CustomFeeSpecs {
             boolean allCollectorsExempt,
             HapiSpec spec) {
         final var collectorId =
-                isIdLiteral(collector)
-                        ? asAccount(collector)
-                        : spec.registry().getAccountID(collector);
-        final var fractionalBuilder =
-                FractionalFee.newBuilder()
-                        .setFractionalAmount(
-                                Fraction.newBuilder()
-                                        .setNumerator(numerator)
-                                        .setDenominator(denominator))
-                        .setNetOfTransfers(netOfTransfers)
-                        .setMinimumAmount(min);
+                isIdLiteral(collector) ? asAccount(collector) : spec.registry().getAccountID(collector);
+        final var fractionalBuilder = FractionalFee.newBuilder()
+                .setFractionalAmount(
+                        Fraction.newBuilder().setNumerator(numerator).setDenominator(denominator))
+                .setNetOfTransfers(netOfTransfers)
+                .setMinimumAmount(min);
         max.ifPresent(fractionalBuilder::setMaximumAmount);
         return CustomFee.newBuilder()
                 .setFractionalFee(fractionalBuilder)
@@ -248,9 +206,7 @@ public class CustomFeeSpecs {
     static CustomFee.Builder baseFixedBuilder(
             long amount, String collector, boolean allCollectorsExempt, HapiSpec spec) {
         final var collectorId =
-                isIdLiteral(collector)
-                        ? asAccount(collector)
-                        : spec.registry().getAccountID(collector);
+                isIdLiteral(collector) ? asAccount(collector) : spec.registry().getAccountID(collector);
         final var fixedBuilder = FixedFee.newBuilder().setAmount(amount);
         return CustomFee.newBuilder()
                 .setAllCollectorsAreExempt(allCollectorsExempt)

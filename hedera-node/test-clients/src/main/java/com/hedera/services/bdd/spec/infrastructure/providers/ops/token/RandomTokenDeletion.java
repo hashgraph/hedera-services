@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.token;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
@@ -29,8 +30,7 @@ import java.util.Optional;
 public class RandomTokenDeletion implements OpProvider {
     private final RegistrySourcedNameProvider<TokenID> tokens;
 
-    private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(TOKEN_IS_IMMUTABLE, TOKEN_WAS_DELETED);
+    private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(TOKEN_IS_IMMUTABLE, TOKEN_WAS_DELETED);
 
     public RandomTokenDeletion(RegistrySourcedNameProvider<TokenID> tokens) {
         this.tokens = tokens;
@@ -43,11 +43,10 @@ public class RandomTokenDeletion implements OpProvider {
             return Optional.empty();
         }
 
-        var op =
-                tokenDelete(target.get())
-                        .purging()
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                        .hasKnownStatusFrom(permissibleOutcomes);
+        var op = tokenDelete(target.get())
+                .purging()
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                .hasKnownStatusFrom(permissibleOutcomes);
         return Optional.of(op);
     }
 }

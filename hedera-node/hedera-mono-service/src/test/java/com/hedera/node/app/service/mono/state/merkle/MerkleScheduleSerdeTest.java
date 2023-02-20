@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import com.hedera.test.serde.SelfSerializableDataTest;
@@ -67,8 +68,7 @@ public class MerkleScheduleSerdeTest extends SelfSerializableDataTest<MerkleSche
         }
         final var numSignatures = propertySource.nextInt(10);
         for (int i = 0; i < numSignatures; i++) {
-            seeded.witnessValidSignature(
-                    propertySource.nextBytes(propertySource.nextBoolean() ? 32 : 33));
+            seeded.witnessValidSignature(propertySource.nextBytes(propertySource.nextBoolean() ? 32 : 33));
         }
         seeded.setKey(propertySource.nextNum());
         return seeded;

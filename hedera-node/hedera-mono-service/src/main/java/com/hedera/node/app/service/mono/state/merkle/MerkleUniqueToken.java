@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 /*
@@ -57,8 +58,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /** Represents an uniqueToken entity. Part of the nft implementation. */
-public class MerkleUniqueToken extends PartialMerkleLeaf
-        implements Keyed<EntityNumPair>, MerkleLeaf {
+public class MerkleUniqueToken extends PartialMerkleLeaf implements Keyed<EntityNumPair>, MerkleLeaf {
     private static final int TREASURY_OWNER_CODE = 0;
 
     static final int RELEASE_0180_VERSION = 2;
@@ -87,12 +87,10 @@ public class MerkleUniqueToken extends PartialMerkleLeaf
      * @param metadata metadata about the token
      * @param creationTime the consensus time at which the token was created
      */
-    public MerkleUniqueToken(
-            final EntityId owner, final byte[] metadata, final RichInstant creationTime) {
+    public MerkleUniqueToken(final EntityId owner, final byte[] metadata, final RichInstant creationTime) {
         this.ownerCode = owner.identityCode();
         this.metadata = metadata;
-        this.packedCreationTime =
-                BitPackUtils.packedTime(creationTime.getSeconds(), creationTime.getNanos());
+        this.packedCreationTime = BitPackUtils.packedTime(creationTime.getSeconds(), creationTime.getNanos());
     }
 
     /**
@@ -105,10 +103,7 @@ public class MerkleUniqueToken extends PartialMerkleLeaf
      * @param numbers the packed representation of the token type number and serial number
      */
     public MerkleUniqueToken(
-            final int ownerCode,
-            final byte[] metadata,
-            final long packedCreationTime,
-            final long numbers) {
+            final int ownerCode, final byte[] metadata, final long packedCreationTime, final long numbers) {
         this.numbers = numbers;
         this.ownerCode = ownerCode;
         this.metadata = metadata;
@@ -146,22 +141,13 @@ public class MerkleUniqueToken extends PartialMerkleLeaf
 
     @Override
     public int hashCode() {
-        return Objects.hash(
-                numbers,
-                ownerCode,
-                spenderCode,
-                packedCreationTime,
-                Arrays.hashCode(metadata),
-                prev,
-                next);
+        return Objects.hash(numbers, ownerCode, spenderCode, packedCreationTime, Arrays.hashCode(metadata), prev, next);
     }
 
     @Override
     public String toString() {
-        final var then =
-                Instant.ofEpochSecond(
-                        unsignedHighOrder32From(packedCreationTime),
-                        signedLowOrder32From(packedCreationTime));
+        final var then = Instant.ofEpochSecond(
+                unsignedHighOrder32From(packedCreationTime), signedLowOrder32From(packedCreationTime));
         return MoreObjects.toStringHelper(MerkleUniqueToken.class)
                 .add("id", EntityIdUtils.asScopedSerialNoLiteral(numbers))
                 .add("owner", EntityId.fromIdentityCode(ownerCode).toAbbrevString())
@@ -185,8 +171,7 @@ public class MerkleUniqueToken extends PartialMerkleLeaf
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         ownerCode = in.readInt();
         packedCreationTime = in.readLong();
         metadata = in.readByteArray(UPPER_BOUND_METADATA_BYTES);
@@ -248,8 +233,7 @@ public class MerkleUniqueToken extends PartialMerkleLeaf
     }
 
     public void setPrev(final NftNumPair prev) {
-        throwIfImmutable(
-                "Cannot change this unique token's prev NFT owned field if it's immutable.");
+        throwIfImmutable("Cannot change this unique token's prev NFT owned field if it's immutable.");
         this.prev = prev;
     }
 
@@ -258,8 +242,7 @@ public class MerkleUniqueToken extends PartialMerkleLeaf
     }
 
     public void setNext(final NftNumPair next) {
-        throwIfImmutable(
-                "Cannot change this unique token's next NFT owned field if it's immutable.");
+        throwIfImmutable("Cannot change this unique token's next NFT owned field if it's immutable.");
         this.next = next;
     }
 
@@ -268,9 +251,7 @@ public class MerkleUniqueToken extends PartialMerkleLeaf
     }
 
     public RichInstant getCreationTime() {
-        return new RichInstant(
-                unsignedHighOrder32From(packedCreationTime),
-                signedLowOrder32From(packedCreationTime));
+        return new RichInstant(unsignedHighOrder32From(packedCreationTime), signedLowOrder32From(packedCreationTime));
     }
 
     public void setMetadata(final byte[] metadata) {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.init;
 
 import static org.mockito.Mockito.verify;
@@ -28,17 +29,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class EntitiesInitializationFlowTest {
-    @Mock private ExpiryManager expiryManager;
-    @Mock private NetworkCtxManager networkCtxManager;
-    @Mock private SigImpactHistorian sigImpactHistorian;
+    @Mock
+    private ExpiryManager expiryManager;
+
+    @Mock
+    private NetworkCtxManager networkCtxManager;
+
+    @Mock
+    private SigImpactHistorian sigImpactHistorian;
 
     private EntitiesInitializationFlow subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new EntitiesInitializationFlow(
-                        expiryManager, sigImpactHistorian, networkCtxManager);
+        subject = new EntitiesInitializationFlow(expiryManager, sigImpactHistorian, networkCtxManager);
     }
 
     @Test

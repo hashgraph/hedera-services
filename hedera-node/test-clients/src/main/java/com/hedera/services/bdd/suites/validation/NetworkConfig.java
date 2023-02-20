@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.validation;
 
 import static java.util.stream.Collectors.joining;
@@ -54,12 +55,8 @@ public class NetworkConfig {
 
     private String effBootstrapPemKeyLoc() {
         return Optional.ofNullable(bootstrapPemKeyLoc)
-                .orElseGet(
-                        () ->
-                                String.format(
-                                        DEFAULT_BOOTSTRAP_PEM_KEY_LOC_TPL,
-                                        effPersistentEntitiesDir(),
-                                        bootstrapAccount));
+                .orElseGet(() ->
+                        String.format(DEFAULT_BOOTSTRAP_PEM_KEY_LOC_TPL, effPersistentEntitiesDir(), bootstrapAccount));
     }
 
     public String effPersistentEntitiesDir() {

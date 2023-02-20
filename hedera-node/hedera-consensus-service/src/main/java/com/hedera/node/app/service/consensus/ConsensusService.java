@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.consensus;
 
 import com.hedera.node.app.spi.Service;
@@ -42,7 +43,6 @@ public interface ConsensusService extends Service {
      */
     @NonNull
     static ConsensusService getInstance() {
-        return ServiceFactory.loadService(
-                ConsensusService.class, ServiceLoader.load(ConsensusService.class));
+        return ServiceFactory.loadService(ConsensusService.class, ServiceLoader.load(ConsensusService.class));
     }
 }

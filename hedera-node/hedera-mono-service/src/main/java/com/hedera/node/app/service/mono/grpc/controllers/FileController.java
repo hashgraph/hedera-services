@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.controllers;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
@@ -50,8 +51,7 @@ public class FileController extends FileServiceGrpc.FileServiceImplBase {
     public static final String FILE_APPEND_METRIC = "appendContent";
 
     @Inject
-    public FileController(
-            FileAnswers fileAnswers, TxnResponseHelper txnHelper, QueryResponseHelper queryHelper) {
+    public FileController(FileAnswers fileAnswers, TxnResponseHelper txnHelper, QueryResponseHelper queryHelper) {
         this.txnHelper = txnHelper;
         this.queryHelper = queryHelper;
         this.fileAnswers = fileAnswers;
@@ -83,8 +83,7 @@ public class FileController extends FileServiceGrpc.FileServiceImplBase {
     }
 
     @Override
-    public void systemUndelete(
-            Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+    public void systemUndelete(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
         txnHelper.submit(signedTxn, observer, SystemUndelete);
     }
 

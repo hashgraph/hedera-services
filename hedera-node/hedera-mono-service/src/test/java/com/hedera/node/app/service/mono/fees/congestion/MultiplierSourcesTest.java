@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.congestion;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,9 +35,14 @@ class MultiplierSourcesTest {
     private static final Instant[] SOME_TIMES = new Instant[] {NOW, NOW};
     private static final Instant[] SOME_MORE_TIMES = new Instant[] {NOW, NOW, NOW, NOW};
 
-    @Mock private FeeMultiplierSource gasFeeMultiplier;
-    @Mock private FeeMultiplierSource genericFeeMultiplier;
-    @Mock private TxnAccessor accessor;
+    @Mock
+    private FeeMultiplierSource gasFeeMultiplier;
+
+    @Mock
+    private FeeMultiplierSource genericFeeMultiplier;
+
+    @Mock
+    private TxnAccessor accessor;
 
     private MultiplierSources subject;
 

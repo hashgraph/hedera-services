@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.schedule;
 
 import com.hedera.node.app.spi.Service;
@@ -42,7 +43,6 @@ public interface ScheduleService extends Service {
      */
     @NonNull
     static ScheduleService getInstance() {
-        return ServiceFactory.loadService(
-                ScheduleService.class, ServiceLoader.load(ScheduleService.class));
+        return ServiceFactory.loadService(ScheduleService.class, ServiceLoader.load(ScheduleService.class));
     }
 }

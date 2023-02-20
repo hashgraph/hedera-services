@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.contract;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -51,37 +52,19 @@ public class ContractCallLocalPerfSuite extends HapiSuite {
         return defaultHapiSpec("ContractCallLocalPerf")
                 .given(uploadInitCode(contract), contractCreate(contract).balance(1_000L))
                 .when(
-                        contractCallLocal(
-                                        contract,
-                                        "lookup",
-                                        spec ->
-                                                new Object[] {
-                                                    spec.registry()
-                                                            .getContractId(contract)
-                                                            .getContractNum()
-                                                })
+                        contractCallLocal(contract, "lookup", spec -> new Object[] {
+                                    spec.registry().getContractId(contract).getContractNum()
+                                })
                                 .recordNodePaymentAs("cost"),
                         UtilVerbs.startThroughputObs("contractCallLocal"))
                 .then(
-                        UtilVerbs.inParallel(
-                                asOpArray(
-                                        NUM_CALLS,
-                                        ignore ->
-                                                contractCallLocal(
-                                                                contract,
-                                                                "lookup",
-                                                                spec ->
-                                                                        new Object[] {
-                                                                            spec.registry()
-                                                                                    .getContractId(
-                                                                                            contract)
-                                                                                    .getContractNum()
-                                                                        })
-                                                        .nodePayment(
-                                                                spec ->
-                                                                        spec.registry()
-                                                                                .getAmount(
-                                                                                        "cost")))),
+                        UtilVerbs.inParallel(asOpArray(
+                                NUM_CALLS, ignore -> contractCallLocal(contract, "lookup", spec -> new Object[] {
+                                            spec.registry()
+                                                    .getContractId(contract)
+                                                    .getContractNum()
+                                        })
+                                        .nodePayment(spec -> spec.registry().getAmount("cost")))),
                         UtilVerbs.finishThroughputObs("contractCallLocal"));
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.queries.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.ensureDir;
@@ -52,8 +53,7 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
     private String account;
     private Optional<String> snapshotDirPath = Optional.empty();
     private Optional<String> expectationsDirPath = Optional.empty();
-    private Optional<ErroringAssertsProvider<List<TransactionRecord>>> expectation =
-            Optional.empty();
+    private Optional<ErroringAssertsProvider<List<TransactionRecord>>> expectation = Optional.empty();
     private Optional<BiConsumer<Logger, List<TransactionRecord>>> customLog = Optional.empty();
 
     public HapiGetAccountRecords has(ErroringAssertsProvider<List<TransactionRecord>> provider) {
@@ -61,8 +61,7 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
         return this;
     }
 
-    public HapiGetAccountRecords withLogging(
-            BiConsumer<Logger, List<TransactionRecord>> customLog) {
+    public HapiGetAccountRecords withLogging(BiConsumer<Logger, List<TransactionRecord>> customLog) {
         verboseLoggingOn = true;
         this.customLog = Optional.of(customLog);
         return this;
@@ -108,10 +107,7 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) {
         Query query = getRecordsQuery(spec, payment, false);
-        response =
-                spec.clients()
-                        .getCryptoSvcStub(targetNodeFor(spec), useTls)
-                        .getAccountRecords(query);
+        response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getAccountRecords(query);
         List<TransactionRecord> records = response.getCryptoGetAccountRecords().getRecordsList();
         if (verboseLoggingOn) {
             if (customLog.isPresent()) {
@@ -180,19 +176,16 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getRecordsQuery(spec, payment, true);
         Response response =
-                spec.clients()
-                        .getCryptoSvcStub(targetNodeFor(spec), useTls)
-                        .getAccountRecords(query);
+                spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getAccountRecords(query);
         return costFrom(response);
     }
 
     private Query getRecordsQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         var id = TxnUtils.asId(account, spec);
-        CryptoGetAccountRecordsQuery query =
-                CryptoGetAccountRecordsQuery.newBuilder()
-                        .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
-                        .setAccountID(id)
-                        .build();
+        CryptoGetAccountRecordsQuery query = CryptoGetAccountRecordsQuery.newBuilder()
+                .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
+                .setAccountID(id)
+                .build();
         return Query.newBuilder().setCryptoGetAccountRecords(query).build();
     }
 
@@ -213,11 +206,9 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
     protected MoreObjects.ToStringHelper toStringHelper() {
         MoreObjects.ToStringHelper helper = super.toStringHelper().add("account", account);
         Optional.ofNullable(response)
-                .ifPresent(
-                        r ->
-                                helper.add(
-                                        "records",
-                                        r.getCryptoGetAccountRecords().getRecordsList().size()));
+                .ifPresent(r -> helper.add(
+                        "records",
+                        r.getCryptoGetAccountRecords().getRecordsList().size()));
         return helper;
     }
 }

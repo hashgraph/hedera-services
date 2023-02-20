@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.reconnect;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -45,8 +46,7 @@ import org.apache.logging.log4j.Logger;
  * other node
  */
 public class ValidateTokensDeleteAfterReconnect extends HapiSuite {
-    private static final Logger log =
-            LogManager.getLogger(ValidateTokensDeleteAfterReconnect.class);
+    private static final Logger log = LogManager.getLogger(ValidateTokensDeleteAfterReconnect.class);
     public static final String reconnectingNode = "0.0.8";
     public static final String nonReconnectingNode = "0.0.3";
     private static final long TOKEN_INITIAL_SUPPLY = 500;
@@ -81,10 +81,9 @@ public class ValidateTokensDeleteAfterReconnect extends HapiSuite {
                         sleepFor(30000),
                         getAccountBalance(GENESIS).setNode(reconnectingNode).unavailableNode(),
                         tokenDelete(token).logging(),
-                        blockingOrder(
-                                IntStream.range(0, 500)
-                                        .mapToObj(i -> getTokenInfo(token))
-                                        .toArray(HapiSpecOperation[]::new)))
+                        blockingOrder(IntStream.range(0, 500)
+                                .mapToObj(i -> getTokenInfo(token))
+                                .toArray(HapiSpecOperation[]::new)))
                 .then(
                         withLiveNode(reconnectingNode)
                                 .within(5 * 60, TimeUnit.SECONDS)
