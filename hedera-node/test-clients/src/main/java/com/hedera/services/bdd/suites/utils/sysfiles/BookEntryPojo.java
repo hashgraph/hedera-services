@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.utils.sysfiles;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -74,8 +75,7 @@ public class BookEntryPojo {
             final var pojo = new EndpointPojo();
             pojo.setIpAddressV4(asReadableIp(proto.getIpAddressV4()));
             pojo.setPort(proto.getPort());
-            Assertions.assertNotEquals(
-                    0, pojo.getPort().intValue(), "A port is a positive integer!");
+            Assertions.assertNotEquals(0, pojo.getPort().intValue(), "A port is a positive integer!");
             return pojo;
         }
 
@@ -125,10 +125,9 @@ public class BookEntryPojo {
                 entry.nodeAccount = null;
             }
         }
-        entry.certHash =
-                address.getNodeCertHash().isEmpty()
-                        ? MISSING_CERT_HASH
-                        : address.getNodeCertHash().toStringUtf8();
+        entry.certHash = address.getNodeCertHash().isEmpty()
+                ? MISSING_CERT_HASH
+                : address.getNodeCertHash().toStringUtf8();
         mapEndpoints(address, entry);
 
         entry.description = address.getDescription().isEmpty() ? null : address.getDescription();
@@ -163,8 +162,7 @@ public class BookEntryPojo {
 
         if (rsaPubKey != null) {
             if (rsaPubKey.equals(SENTINEL_REPLACEMENT_VALUE)) {
-                final var baseDir =
-                        SysFileUploadCommand.activeSrcDir.get() + File.separator + "pubkeys";
+                final var baseDir = SysFileUploadCommand.activeSrcDir.get() + File.separator + "pubkeys";
                 final var computedKey = asHexEncodedDerPubKey(baseDir, grpc.getNodeId());
                 grpc.setRSAPubKey(computedKey);
             } else {
@@ -176,8 +174,7 @@ public class BookEntryPojo {
         }
         if (!certHash.equals(MISSING_CERT_HASH)) {
             if (certHash.equals(SENTINEL_REPLACEMENT_VALUE)) {
-                final var baseDir =
-                        SysFileUploadCommand.activeSrcDir.get() + File.separator + "certs";
+                final var baseDir = SysFileUploadCommand.activeSrcDir.get() + File.separator + "certs";
                 final var computedHash = asHexEncodedSha384HashFor(baseDir, grpc.getNodeId());
                 grpc.setNodeCertHash(ByteString.copyFromUtf8(computedHash));
             } else {
@@ -199,7 +196,9 @@ public class BookEntryPojo {
     }
 
     private static void mapEndpoints(final NodeAddress from, final BookEntryPojo to) {
-        to.endpoints = from.getServiceEndpointList().stream().map(EndpointPojo::fromGrpc).toList();
+        to.endpoints = from.getServiceEndpointList().stream()
+                .map(EndpointPojo::fromGrpc)
+                .toList();
     }
 
     public Long getStake() {
@@ -276,8 +275,7 @@ public class BookEntryPojo {
 
     static String asHexEncodedSha384HashFor(final String baseDir, final long nodeId) {
         try {
-            final var crtBytes =
-                    Files.readAllBytes(Paths.get(baseDir, String.format("node%d.crt", nodeId)));
+            final var crtBytes = Files.readAllBytes(Paths.get(baseDir, String.format("node%d.crt", nodeId)));
             final var crtHash = CommonUtils.noThrowSha384HashOf(crtBytes);
             return com.swirlds.common.utility.CommonUtils.hex(crtHash);
         } catch (final Exception e) {
@@ -287,8 +285,7 @@ public class BookEntryPojo {
 
     static String asHexEncodedDerPubKey(final String baseDir, final long nodeId) {
         try {
-            final var pubKeyBytes =
-                    Files.readAllBytes(Paths.get(baseDir, String.format("node%d.der", nodeId)));
+            final var pubKeyBytes = Files.readAllBytes(Paths.get(baseDir, String.format("node%d.der", nodeId)));
             return com.swirlds.common.utility.CommonUtils.hex(pubKeyBytes);
         } catch (final Exception e) {
             throw new IllegalStateException(e);

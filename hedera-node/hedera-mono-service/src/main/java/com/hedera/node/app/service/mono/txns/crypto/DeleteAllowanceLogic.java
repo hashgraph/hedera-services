@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -43,8 +44,7 @@ public class DeleteAllowanceLogic {
         this.nftsTouched = new ArrayList<>();
     }
 
-    public void deleteAllowance(
-            final List<NftRemoveAllowance> nftAllowancesList, final AccountID payer) {
+    public void deleteAllowance(final List<NftRemoveAllowance> nftAllowancesList, final AccountID payer) {
         nftsTouched.clear();
 
         // --- Load models ---
@@ -67,8 +67,7 @@ public class DeleteAllowanceLogic {
      * @param nftAllowances given nftAllowances
      * @param payerAccount payer for the transaction
      */
-    private void deleteNftSerials(
-            final List<NftRemoveAllowance> nftAllowances, final Account payerAccount) {
+    private void deleteNftSerials(final List<NftRemoveAllowance> nftAllowances, final Account payerAccount) {
         if (nftAllowances.isEmpty()) {
             return;
         }
@@ -80,8 +79,7 @@ public class DeleteAllowanceLogic {
             final var token = tokenStore.loadPossiblyPausedToken(tokenId);
             for (final var serial : serialNums) {
                 final var nft = tokenStore.loadUniqueToken(tokenId, serial);
-                validateTrue(
-                        validOwner(nft, owner.getId(), token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+                validateTrue(validOwner(nft, owner.getId(), token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
                 nft.clearSpender();
                 nfts.add(nft);
             }

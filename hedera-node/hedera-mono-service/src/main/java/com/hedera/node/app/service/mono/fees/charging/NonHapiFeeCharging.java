@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.charging;
 
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
@@ -54,13 +55,7 @@ public class NonHapiFeeCharging {
         if (preferredPayer != null && !MISSING_ENTITY_ID.equals(preferredPayer)) {
             final var grpcId = preferredPayer.toGrpcAccountId();
             if (accounts.contains(grpcId) && !(boolean) accounts.get(grpcId, IS_DELETED)) {
-                final var debited =
-                        charge(
-                                preferredPayer.toGrpcAccountId(),
-                                leftToPay,
-                                false,
-                                accounts,
-                                failureStatus);
+                final var debited = charge(preferredPayer.toGrpcAccountId(), leftToPay, false, accounts, failureStatus);
                 leftToPay -= debited;
             }
         }

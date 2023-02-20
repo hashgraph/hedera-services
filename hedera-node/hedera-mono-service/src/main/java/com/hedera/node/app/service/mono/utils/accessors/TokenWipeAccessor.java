@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils.accessors;
 
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
@@ -40,9 +41,7 @@ public class TokenWipeAccessor extends SignedTxnAccessor {
     private final int maxBatchSizeWipe;
 
     public TokenWipeAccessor(
-            final byte[] signedTxnWrapperBytes,
-            final Transaction txn,
-            final GlobalDynamicProperties dynamicProperties)
+            final byte[] signedTxnWrapperBytes, final Transaction txn, final GlobalDynamicProperties dynamicProperties)
             throws InvalidProtocolBufferException {
         super(signedTxnWrapperBytes, txn);
         this.body = getTxn().getTokenWipe();
@@ -78,9 +77,7 @@ public class TokenWipeAccessor extends SignedTxnAccessor {
     }
 
     public static ResponseCodeEnum validateSyntax(
-            final TokenWipeAccountTransactionBody body,
-            final boolean areNftsEnabled,
-            final int maxBatchSizeWipe) {
+            final TokenWipeAccountTransactionBody body, final boolean areNftsEnabled, final int maxBatchSizeWipe) {
         if (!body.hasToken()) {
             return INVALID_TOKEN_ID;
         }

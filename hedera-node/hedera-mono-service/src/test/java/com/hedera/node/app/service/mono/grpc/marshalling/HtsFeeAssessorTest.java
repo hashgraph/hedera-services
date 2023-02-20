@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
@@ -36,8 +37,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HtsFeeAssessorTest {
     private final List<AssessedCustomFeeWrapper> accumulator = new ArrayList<>();
 
-    @Mock private BalanceChange collectorChange;
-    @Mock private BalanceChangeManager balanceChangeManager;
+    @Mock
+    private BalanceChange collectorChange;
+
+    @Mock
+    private BalanceChangeManager balanceChangeManager;
 
     private final HtsFeeAssessor subject = new HtsFeeAssessor();
 
@@ -45,13 +49,10 @@ class HtsFeeAssessorTest {
     void updatesExistingChangesIfPresent() {
         // setup:
         final var expectedAssess =
-                new AssessedCustomFeeWrapper(
-                        htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
+                new AssessedCustomFeeWrapper(htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
         // and:
-        final var expectedPayerChange =
-                BalanceChange.tokenCustomFeeAdjust(payer, denom, -amountOfHtsFee);
-        expectedPayerChange.setCodeForInsufficientBalance(
-                INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+        final var expectedPayerChange = BalanceChange.tokenCustomFeeAdjust(payer, denom, -amountOfHtsFee);
+        expectedPayerChange.setCodeForInsufficientBalance(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
 
         given(balanceChangeManager.changeFor(feeCollector, denom)).willReturn(collectorChange);
 
@@ -70,14 +71,11 @@ class HtsFeeAssessorTest {
     void addsNewChangesIfNotPresent() {
         // setup:
         final var expectedAssess =
-                new AssessedCustomFeeWrapper(
-                        htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
+                new AssessedCustomFeeWrapper(htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
 
         // given:
-        final var expectedPayerChange =
-                BalanceChange.tokenCustomFeeAdjust(payer, denom, -amountOfHtsFee);
-        expectedPayerChange.setCodeForInsufficientBalance(
-                INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+        final var expectedPayerChange = BalanceChange.tokenCustomFeeAdjust(payer, denom, -amountOfHtsFee);
+        expectedPayerChange.setCodeForInsufficientBalance(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
 
         // when:
         subject.assess(payer, nonDenomFeeMeta, htsFee, balanceChangeManager, accumulator);
@@ -85,8 +83,7 @@ class HtsFeeAssessorTest {
         // then:
         verify(balanceChangeManager).includeChange(expectedPayerChange);
         verify(balanceChangeManager)
-                .includeChange(
-                        BalanceChange.tokenCustomFeeAdjust(feeCollector, denom, +amountOfHtsFee));
+                .includeChange(BalanceChange.tokenCustomFeeAdjust(feeCollector, denom, +amountOfHtsFee));
         // and:
         assertEquals(1, accumulator.size());
         assertEquals(expectedAssess, accumulator.get(0));
@@ -96,15 +93,12 @@ class HtsFeeAssessorTest {
     void addsExemptNewChangesForSelfDenominatedFee() {
         // setup:
         final var expectedAssess =
-                new AssessedCustomFeeWrapper(
-                        htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
+                new AssessedCustomFeeWrapper(htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
 
         // given:
-        final var expectedPayerChange =
-                BalanceChange.tokenCustomFeeAdjust(payer, denom, -amountOfHtsFee);
+        final var expectedPayerChange = BalanceChange.tokenCustomFeeAdjust(payer, denom, -amountOfHtsFee);
         expectedPayerChange.setExemptFromCustomFees(true);
-        expectedPayerChange.setCodeForInsufficientBalance(
-                INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+        expectedPayerChange.setCodeForInsufficientBalance(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
 
         // when:
         subject.assess(payer, denomFeeMeta, htsFee, balanceChangeManager, accumulator);
@@ -112,8 +106,7 @@ class HtsFeeAssessorTest {
         // then:
         verify(balanceChangeManager).includeChange(expectedPayerChange);
         verify(balanceChangeManager)
-                .includeChange(
-                        BalanceChange.tokenCustomFeeAdjust(feeCollector, denom, +amountOfHtsFee));
+                .includeChange(BalanceChange.tokenCustomFeeAdjust(feeCollector, denom, +amountOfHtsFee));
         // and:
         assertEquals(1, accumulator.size());
         assertEquals(expectedAssess, accumulator.get(0));
@@ -127,8 +120,7 @@ class HtsFeeAssessorTest {
     private final Id feeCollector = new Id(1, 2, 3);
     private final EntityId feeDenom = new EntityId(6, 6, 6);
     private final EntityId htsFeeCollector = feeCollector.asEntityId();
-    private final FcCustomFee htsFee =
-            FcCustomFee.fixedFee(amountOfHtsFee, feeDenom, htsFeeCollector, false);
+    private final FcCustomFee htsFee = FcCustomFee.fixedFee(amountOfHtsFee, feeDenom, htsFeeCollector, false);
     private final CustomFeeMeta denomFeeMeta = new CustomFeeMeta(denom, treasury, List.of());
     private final CustomFeeMeta nonDenomFeeMeta =
             new CustomFeeMeta(nonSelfDenominatedChargingToken, treasury, List.of());

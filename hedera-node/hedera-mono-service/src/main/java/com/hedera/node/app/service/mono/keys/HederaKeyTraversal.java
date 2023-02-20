@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.keys;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -44,10 +45,7 @@ public final class HederaKeyTraversal {
      */
     public static void visitSimpleKeys(final JKey key, final Consumer<JKey> actionOnSimpleKey) {
         if (key.hasThresholdKey()) {
-            key.getThresholdKey()
-                    .getKeys()
-                    .getKeysList()
-                    .forEach(k -> visitSimpleKeys(k, actionOnSimpleKey));
+            key.getThresholdKey().getKeys().getKeysList().forEach(k -> visitSimpleKeys(k, actionOnSimpleKey));
         } else if (key.hasKeyList()) {
             key.getKeyList().getKeysList().forEach(k -> visitSimpleKeys(k, actionOnSimpleKey));
         } else {

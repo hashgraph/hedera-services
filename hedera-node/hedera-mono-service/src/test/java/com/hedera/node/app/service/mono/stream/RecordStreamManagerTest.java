@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stream;
 
 import static com.swirlds.common.utility.Units.MB_TO_BYTES;
@@ -67,27 +68,26 @@ public class RecordStreamManagerTest {
     private static final String recordMemo = "0.0.3";
     private static final int maxSidecarSizeMb = 256;
 
-    private static final String INITIALIZE_NOT_NULL =
-            "after initialization, the instance should not be null";
-    private static final String INITIALIZE_QUEUE_EMPTY =
-            "after initialization, hash queue should be empty";
+    private static final String INITIALIZE_NOT_NULL = "after initialization, the instance should not be null";
+    private static final String INITIALIZE_QUEUE_EMPTY = "after initialization, hash queue should be empty";
 
     private static RecordStreamManager disableStreamingInstance;
     private static RecordStreamManager enableV6StreamingInstance;
 
-    public static final Hash INITIAL_RANDOM_HASH =
-            new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
+    public static final Hash INITIAL_RANDOM_HASH = new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
 
     private static final MultiStream<RecordStreamObject> multiStreamMock = mock(MultiStream.class);
     private static final QueueThreadObjectStream<RecordStreamObject> writeQueueThreadMock =
             mock(QueueThreadObjectStream.class);
-    private static final GlobalDynamicProperties globalDynamicProperties =
-            mock(GlobalDynamicProperties.class);
+    private static final GlobalDynamicProperties globalDynamicProperties = mock(GlobalDynamicProperties.class);
     private static final RecordStreamManager RECORD_STREAM_MANAGER =
             new RecordStreamManager(multiStreamMock, writeQueueThreadMock, runningAvgsMock);
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private RecordStreamManager recordStreamManager;
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private RecordStreamManager recordStreamManager;
 
     @BeforeAll
     public static void init() throws Exception {
@@ -100,29 +100,27 @@ public class RecordStreamManagerTest {
         configProps(enabledProps);
         RecordStreamType streamType = mock(RecordStreamType.class);
 
-        disableStreamingInstance =
-                new RecordStreamManager(
-                        platform,
-                        runningAvgsMock,
-                        disabledProps,
-                        recordMemo,
-                        INITIAL_RANDOM_HASH,
-                        streamType,
-                        globalDynamicProperties);
+        disableStreamingInstance = new RecordStreamManager(
+                platform,
+                runningAvgsMock,
+                disabledProps,
+                recordMemo,
+                INITIAL_RANDOM_HASH,
+                streamType,
+                globalDynamicProperties);
 
         given(globalDynamicProperties.recordFileVersion()).willReturn(5);
 
         given(globalDynamicProperties.recordFileVersion()).willReturn(6);
         given(globalDynamicProperties.getSidecarMaxSizeMb()).willReturn(maxSidecarSizeMb);
-        enableV6StreamingInstance =
-                new RecordStreamManager(
-                        platform,
-                        runningAvgsMock,
-                        enabledProps,
-                        recordMemo,
-                        INITIAL_RANDOM_HASH,
-                        streamType,
-                        globalDynamicProperties);
+        enableV6StreamingInstance = new RecordStreamManager(
+                platform,
+                runningAvgsMock,
+                enabledProps,
+                recordMemo,
+                INITIAL_RANDOM_HASH,
+                streamType,
+                globalDynamicProperties);
     }
 
     private static void configProps(NodeLocalProperties props) {
@@ -144,8 +142,7 @@ public class RecordStreamManagerTest {
 
         assertNotNull(
                 enableV6StreamingInstance.getProtobufStreamFileWriter(),
-                "When V6 recordStreaming is enabled, V6streamFileWriter instance should not be"
-                        + " null");
+                "When V6 recordStreaming is enabled, V6streamFileWriter instance should not be" + " null");
         assertNotNull(enableV6StreamingInstance.getMultiStream(), INITIALIZE_NOT_NULL);
         assertNotNull(enableV6StreamingInstance.getHashCalculator(), INITIALIZE_NOT_NULL);
         assertEquals(0, enableV6StreamingInstance.getHashQueueSize(), INITIALIZE_QUEUE_EMPTY);
@@ -159,10 +156,7 @@ public class RecordStreamManagerTest {
     void setInitialHashTest() {
         RECORD_STREAM_MANAGER.setInitialHash(INITIAL_RANDOM_HASH);
         verify(multiStreamMock).setRunningHash(INITIAL_RANDOM_HASH);
-        assertEquals(
-                INITIAL_RANDOM_HASH,
-                RECORD_STREAM_MANAGER.getInitialHash(),
-                "initialHash is not set");
+        assertEquals(INITIAL_RANDOM_HASH, RECORD_STREAM_MANAGER.getInitialHash(), "initialHash is not set");
     }
 
     @Test
@@ -171,8 +165,7 @@ public class RecordStreamManagerTest {
         final var mockQueue = mock(Queue.class);
 
         given(writeQueueThreadMock.getQueue()).willReturn(mockQueue);
-        recordStreamManager =
-                new RecordStreamManager(multiStreamMock, writeQueueThreadMock, runningAvgsMock);
+        recordStreamManager = new RecordStreamManager(multiStreamMock, writeQueueThreadMock, runningAvgsMock);
 
         willThrow(RuntimeException.class).given(multiStreamMock).addObject(any());
 
@@ -180,9 +173,7 @@ public class RecordStreamManagerTest {
         recordStreamManager.addRecordStreamObject(new RecordStreamObject());
 
         // then:
-        assertThat(
-                logCaptor.warnLogs(),
-                contains(Matchers.startsWith("Unhandled exception while streaming")));
+        assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith("Unhandled exception while streaming")));
     }
 
     @Test
@@ -190,10 +181,8 @@ public class RecordStreamManagerTest {
         // setup:
         final MiscRunningAvgs runningAvgsMock = mock(MiscRunningAvgs.class);
         final var mockQueue = mock(Queue.class);
-        recordStreamManager =
-                new RecordStreamManager(multiStreamMock, writeQueueThreadMock, runningAvgsMock);
-        assertFalse(
-                recordStreamManager.getInFreeze(), "inFreeze should be false after initialization");
+        recordStreamManager = new RecordStreamManager(multiStreamMock, writeQueueThreadMock, runningAvgsMock);
+        assertFalse(recordStreamManager.getInFreeze(), "inFreeze should be false after initialization");
         final int recordsNum = 10;
         for (int i = 1; i <= recordsNum; i++) {
             addRecordStreamObject(runningAvgsMock, mockQueue, i, INITIAL_RANDOM_HASH);
@@ -220,8 +209,7 @@ public class RecordStreamManagerTest {
     @Test
     void setInFreezeTest() {
         MultiStream<RecordStreamObject> multiStreamMock = mock(MultiStream.class);
-        recordStreamManager =
-                new RecordStreamManager(multiStreamMock, writeQueueThreadMock, runningAvgsMock);
+        recordStreamManager = new RecordStreamManager(multiStreamMock, writeQueueThreadMock, runningAvgsMock);
 
         recordStreamManager.setInFreeze(false);
         assertFalse(recordStreamManager.getInFreeze());
@@ -234,9 +222,7 @@ public class RecordStreamManagerTest {
         // and:
         assertThat(
                 logCaptor.infoLogs(),
-                contains(
-                        "RecordStream inFreeze is set to be false",
-                        "RecordStream inFreeze is set to be true"));
+                contains("RecordStream inFreeze is set to be false", "RecordStream inFreeze is set to be true"));
     }
 
     @Test
@@ -276,10 +262,7 @@ public class RecordStreamManagerTest {
     // For ease of testing, we will assume that a new block contains a single RecordStreamObject.
     // In the real world scenario, a block/record file will contain >=1 RecordStreamObjects.
     private void addRecordStreamObject(
-            final MiscRunningAvgs runningAvgsMock,
-            final Queue mockQueue,
-            final int queueSize,
-            final Hash hash) {
+            final MiscRunningAvgs runningAvgsMock, final Queue mockQueue, final int queueSize, final Hash hash) {
         final RecordStreamObject recordStreamObject = mock(RecordStreamObject.class);
         when(writeQueueThreadMock.getQueue()).thenReturn(mockQueue);
         given(mockQueue.size()).willReturn(queueSize);
@@ -289,8 +272,6 @@ public class RecordStreamManagerTest {
         verify(runningAvgsMock).writeQueueSizeRecordStream(queueSize);
         // multiStream should not be closed after adding it
         verify(multiStreamMock, never()).close();
-        assertFalse(
-                recordStreamManager.getInFreeze(),
-                "inFreeze should be false after adding the records");
+        assertFalse(recordStreamManager.getInFreeze(), "inFreeze should be false after adding the records");
     }
 }

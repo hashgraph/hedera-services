@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.OwnerOfPrecompile.decodeOwnerOf;
@@ -28,11 +29,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class OwnerOfPrecompileTest {
 
     private static final Bytes OWNER_OF_INPUT =
-            Bytes.fromHexString(
-                    "0x6352211e0000000000000000000000000000000000000000000000000000000000000001");
+            Bytes.fromHexString("0x6352211e0000000000000000000000000000000000000000000000000000000000000001");
     private static final Bytes OWNER_OF_LONG_OVERFLOWN =
-            Bytes.fromHexString(
-                    "0x6352211e0000000000000000000000000000000000000000000000010000000000000001");
+            Bytes.fromHexString("0x6352211e0000000000000000000000000000000000000000000000010000000000000001");
 
     @Test
     void decodeOwnerOfInput() {

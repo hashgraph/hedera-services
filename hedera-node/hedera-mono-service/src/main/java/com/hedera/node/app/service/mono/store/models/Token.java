@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.models;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
@@ -121,10 +122,9 @@ public class Token {
             @Nullable final Account autoRenewAccount,
             final long consensusTimestamp) {
         final var token = new Token(tokenId);
-        final var tokenExpiry =
-                op.hasAutoRenewAccount()
-                        ? consensusTimestamp + op.getAutoRenewPeriod().getSeconds()
-                        : op.getExpiry().getSeconds();
+        final var tokenExpiry = op.hasAutoRenewAccount()
+                ? consensusTimestamp + op.getAutoRenewPeriod().getSeconds()
+                : op.getExpiry().getSeconds();
 
         final var freezeKey = asUsableFcKey(op.getFreezeKey());
         final var adminKey = asUsableFcKey(op.getAdminKey());
@@ -142,8 +142,7 @@ public class Token {
         feeScheduleKey.ifPresent(token::setFeeScheduleKey);
         pauseKey.ifPresent(token::setPauseKey);
 
-        token.initSupplyConstraints(
-                TokenTypesMapper.mapToDomain(op.getSupplyType()), op.getMaxSupply());
+        token.initSupplyConstraints(TokenTypesMapper.mapToDomain(op.getSupplyType()), op.getMaxSupply());
         token.setType(TokenTypesMapper.mapToDomain(op.getTokenType()));
 
         token.setTreasury(treasury);
@@ -158,17 +157,16 @@ public class Token {
         token.setDecimals(op.getDecimals());
         token.setName(op.getName());
         token.setFrozenByDefault(op.getFreezeDefault());
-        token.setCustomFees(op.getCustomFeesList().stream().map(FcCustomFee::fromGrpc).toList());
+        token.setCustomFees(
+                op.getCustomFeesList().stream().map(FcCustomFee::fromGrpc).toList());
         token.setPaused(false);
 
         token.setNew(true);
         return token;
     }
 
-    public void mint(
-            final TokenRelationship treasuryRel, final long amount, final boolean ignoreSupplyKey) {
-        validateTrue(
-                amount >= 0, INVALID_TOKEN_MINT_AMOUNT, errorMessage("mint", amount, treasuryRel));
+    public void mint(final TokenRelationship treasuryRel, final long amount, final boolean ignoreSupplyKey) {
+        validateTrue(amount >= 0, INVALID_TOKEN_MINT_AMOUNT, errorMessage("mint", amount, treasuryRel));
         validateTrue(
                 type == TokenType.FUNGIBLE_COMMON,
                 FAIL_INVALID,
@@ -193,15 +191,12 @@ public class Token {
             final List<ByteString> metadata,
             final RichInstant creationTime) {
         final var metadataCount = metadata.size();
-        validateFalse(
-                metadata.isEmpty(), INVALID_TOKEN_MINT_METADATA, "Cannot mint zero unique tokens");
+        validateFalse(metadata.isEmpty(), INVALID_TOKEN_MINT_METADATA, "Cannot mint zero unique tokens");
         validateTrue(
                 type == TokenType.NON_FUNGIBLE_UNIQUE,
                 FAIL_INVALID,
                 "Non-fungible mint can be invoked only on non-fungible token type");
-        validateTrue(
-                (lastUsedSerialNumber + metadataCount) <= MAX_NUM_ALLOWED,
-                SERIAL_NUMBER_LIMIT_REACHED);
+        validateTrue((lastUsedSerialNumber + metadataCount) <= MAX_NUM_ALLOWED, SERIAL_NUMBER_LIMIT_REACHED);
 
         changeSupply(treasuryRel, metadataCount, FAIL_INVALID, false);
 
@@ -210,18 +205,15 @@ public class Token {
             // The default sentinel account is used (0.0.0) to represent unique tokens owned by the
             // Treasury
             final var uniqueToken =
-                    new UniqueToken(
-                            id, lastUsedSerialNumber, creationTime, Id.DEFAULT, m.toByteArray());
+                    new UniqueToken(id, lastUsedSerialNumber, creationTime, Id.DEFAULT, m.toByteArray());
             mintedUniqueTokens.add(uniqueToken);
-            ownershipTracker.add(
-                    id, OwnershipTracker.forMinting(treasury.getId(), lastUsedSerialNumber));
+            ownershipTracker.add(id, OwnershipTracker.forMinting(treasury.getId(), lastUsedSerialNumber));
         }
         treasury.setOwnedNfts(treasury.getOwnedNfts() + metadataCount);
     }
 
     public void burn(final TokenRelationship treasuryRel, final long amount) {
-        validateTrue(
-                amount >= 0, INVALID_TOKEN_BURN_AMOUNT, errorMessage("burn", amount, treasuryRel));
+        validateTrue(amount >= 0, INVALID_TOKEN_BURN_AMOUNT, errorMessage("burn", amount, treasuryRel));
         changeSupply(treasuryRel, -amount, INVALID_TOKEN_BURN_AMOUNT, false);
     }
 
@@ -339,8 +331,7 @@ public class Token {
         return adminKey != null;
     }
 
-    public TokenRelationship newRelationshipWith(
-            final Account account, final boolean automaticAssociation) {
+    public TokenRelationship newRelationshipWith(final Account account, final boolean automaticAssociation) {
         final var newRel = new TokenRelationship(this, account);
         if (hasFreezeKey() && frozenByDefault) {
             newRel.setFrozen(true);
@@ -373,12 +364,7 @@ public class Token {
         validateTrue(
                 treasuryRel.hasInvolvedIds(id, treasury.getId()),
                 FAIL_INVALID,
-                "Cannot change "
-                        + this
-                        + " supply ("
-                        + amount
-                        + ") with non-treasury rel "
-                        + treasuryRel);
+                "Cannot change " + this + " supply (" + amount + ") with non-treasury rel " + treasuryRel);
         if (!ignoreSupplyKey) {
             validateTrue(supplyKey != null, TOKEN_HAS_NO_SUPPLY_KEY);
         }
@@ -388,11 +374,7 @@ public class Token {
             validateTrue(
                     maxSupply >= newTotalSupply,
                     TOKEN_MAX_SUPPLY_REACHED,
-                    "Cannot mint new supply ("
-                            + amount
-                            + "). Max supply ("
-                            + maxSupply
-                            + ") reached");
+                    "Cannot mint new supply (" + amount + "). Max supply (" + maxSupply + ") reached");
         }
         final var treasuryAccount = treasuryRel.getAccount();
         final long newTreasuryBalance = treasuryRel.getBalance() + amount;
@@ -422,15 +404,10 @@ public class Token {
 
         final var newTotalSupply = totalSupply - amount;
         validateTrue(
-                newTotalSupply >= 0,
-                INVALID_WIPING_AMOUNT,
-                "Wiping would negate the total supply of the given token.");
+                newTotalSupply >= 0, INVALID_WIPING_AMOUNT, "Wiping would negate the total supply of the given token.");
 
         final var newAccountBalance = accountRel.getBalance() - amount;
-        validateTrue(
-                newAccountBalance >= 0,
-                INVALID_WIPING_AMOUNT,
-                "Wiping would negate account balance");
+        validateTrue(newAccountBalance >= 0, INVALID_WIPING_AMOUNT, "Wiping would negate account balance");
     }
 
     private String errorMessage(final String op, final long amount, final TokenRelationship rel) {

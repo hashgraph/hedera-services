@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.crypto;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -74,24 +75,18 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
         return this;
     }
 
-    public HapiCryptoApproveAllowance addCryptoAllowance(
-            String owner, String spender, long allowance) {
+    public HapiCryptoApproveAllowance addCryptoAllowance(String owner, String spender, long allowance) {
         cryptoAllowances.add(CryptoAllowances.from(owner, spender, allowance));
         return this;
     }
 
-    public HapiCryptoApproveAllowance addTokenAllowance(
-            String owner, String token, String spender, long allowance) {
+    public HapiCryptoApproveAllowance addTokenAllowance(String owner, String token, String spender, long allowance) {
         tokenAllowances.add(TokenAllowances.from(owner, token, spender, allowance));
         return this;
     }
 
     public HapiCryptoApproveAllowance addNftAllowance(
-            String owner,
-            String token,
-            String spender,
-            boolean approvedForAll,
-            List<Long> serials) {
+            String owner, String token, String spender, boolean approvedForAll, List<Long> serials) {
         nftAllowances.add(NftAllowances.from(owner, token, spender, approvedForAll, serials));
         return this;
     }
@@ -103,9 +98,7 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
             String delegatingSpender,
             boolean approvedForAll,
             List<Long> serials) {
-        nftAllowances.add(
-                NftAllowances.from(
-                        owner, token, spender, delegatingSpender, approvedForAll, serials));
+        nftAllowances.add(NftAllowances.from(owner, token, spender, delegatingSpender, approvedForAll, serials));
         return this;
     }
 
@@ -113,47 +106,34 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         try {
             final CryptoGetInfoResponse.AccountInfo info = lookupInfo(spec, effectivePayer(spec));
-            FeeCalculator.ActivityMetrics metricsCalc =
-                    (_txn, svo) -> {
-                        var ctx =
-                                ExtantCryptoContext.newBuilder()
-                                        .setCurrentNumTokenRels(info.getTokenRelationshipsCount())
-                                        .setCurrentExpiry(info.getExpirationTime().getSeconds())
-                                        .setCurrentMemo(info.getMemo())
-                                        .setCurrentKey(info.getKey())
-                                        .setCurrentlyHasProxy(info.hasProxyAccountID())
-                                        .setCurrentMaxAutomaticAssociations(
-                                                info.getMaxAutomaticTokenAssociations())
-                                        .setCurrentCryptoAllowances(Collections.emptyMap())
-                                        .setCurrentTokenAllowances(Collections.emptyMap())
-                                        .setCurrentApproveForAllNftAllowances(
-                                                Collections.emptySet())
-                                        .build();
-                        var baseMeta = new BaseTransactionMeta(_txn.getMemoBytes().size(), 0);
-                        var opMeta =
-                                new CryptoApproveAllowanceMeta(
-                                        _txn.getCryptoApproveAllowance(),
-                                        _txn.getTransactionID()
-                                                .getTransactionValidStart()
-                                                .getSeconds());
-                        var accumulator = new UsageAccumulator();
-                        cryptoOpsUsage.cryptoApproveAllowanceUsage(
-                                suFrom(svo), baseMeta, opMeta, ctx, accumulator);
-                        return AdapterUtils.feeDataFrom(accumulator);
-                    };
+            FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> {
+                var ctx = ExtantCryptoContext.newBuilder()
+                        .setCurrentNumTokenRels(info.getTokenRelationshipsCount())
+                        .setCurrentExpiry(info.getExpirationTime().getSeconds())
+                        .setCurrentMemo(info.getMemo())
+                        .setCurrentKey(info.getKey())
+                        .setCurrentlyHasProxy(info.hasProxyAccountID())
+                        .setCurrentMaxAutomaticAssociations(info.getMaxAutomaticTokenAssociations())
+                        .setCurrentCryptoAllowances(Collections.emptyMap())
+                        .setCurrentTokenAllowances(Collections.emptyMap())
+                        .setCurrentApproveForAllNftAllowances(Collections.emptySet())
+                        .build();
+                var baseMeta = new BaseTransactionMeta(_txn.getMemoBytes().size(), 0);
+                var opMeta = new CryptoApproveAllowanceMeta(
+                        _txn.getCryptoApproveAllowance(),
+                        _txn.getTransactionID().getTransactionValidStart().getSeconds());
+                var accumulator = new UsageAccumulator();
+                cryptoOpsUsage.cryptoApproveAllowanceUsage(suFrom(svo), baseMeta, opMeta, ctx, accumulator);
+                return AdapterUtils.feeDataFrom(accumulator);
+            };
             return spec.fees()
-                    .forActivityBasedOp(
-                            HederaFunctionality.CryptoApproveAllowance,
-                            metricsCalc,
-                            txn,
-                            numPayerKeys);
+                    .forActivityBasedOp(HederaFunctionality.CryptoApproveAllowance, metricsCalc, txn, numPayerKeys);
         } catch (Throwable ignore) {
             return HapiSuite.ONE_HBAR;
         }
     }
 
-    private CryptoGetInfoResponse.AccountInfo lookupInfo(HapiSpec spec, String payer)
-            throws Throwable {
+    private CryptoGetInfoResponse.AccountInfo lookupInfo(HapiSpec spec, String payer) throws Throwable {
         HapiGetAccountInfo subOp = getAccountInfo(payer).noLogging();
         Optional<Throwable> error = subOp.execFor(spec);
         if (error.isPresent()) {
@@ -171,17 +151,13 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
         List<TokenAllowance> tallowances = new ArrayList<>();
         List<NftAllowance> nftallowances = new ArrayList<>();
         calculateAllowances(spec, callowances, tallowances, nftallowances);
-        CryptoApproveAllowanceTransactionBody opBody =
-                spec.txns()
-                        .<CryptoApproveAllowanceTransactionBody,
-                                CryptoApproveAllowanceTransactionBody.Builder>
-                                body(
-                                        CryptoApproveAllowanceTransactionBody.class,
-                                        b -> {
-                                            b.addAllTokenAllowances(tallowances);
-                                            b.addAllCryptoAllowances(callowances);
-                                            b.addAllNftAllowances(nftallowances);
-                                        });
+        CryptoApproveAllowanceTransactionBody opBody = spec.txns()
+                .<CryptoApproveAllowanceTransactionBody, CryptoApproveAllowanceTransactionBody.Builder>body(
+                        CryptoApproveAllowanceTransactionBody.class, b -> {
+                            b.addAllTokenAllowances(tallowances);
+                            b.addAllCryptoAllowances(callowances);
+                            b.addAllNftAllowances(nftallowances);
+                        });
         return b -> b.setCryptoApproveAllowance(opBody);
     }
 
@@ -191,10 +167,9 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
             final List<TokenAllowance> tallowances,
             final List<NftAllowance> nftallowances) {
         for (var entry : cryptoAllowances) {
-            final var builder =
-                    CryptoAllowance.newBuilder()
-                            .setSpender(asId(entry.spender(), spec))
-                            .setAmount(entry.amount());
+            final var builder = CryptoAllowance.newBuilder()
+                    .setSpender(asId(entry.spender(), spec))
+                    .setAmount(entry.amount());
             if (entry.owner() != MISSING_OWNER) {
                 builder.setOwner(asId(entry.owner(), spec));
             }
@@ -203,29 +178,26 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
         }
 
         for (var entry : tokenAllowances) {
-            final var builder =
-                    TokenAllowance.newBuilder()
-                            .setTokenId(asTokenId(entry.token, spec))
-                            .setSpender(asId(entry.spender(), spec))
-                            .setAmount(entry.amount());
+            final var builder = TokenAllowance.newBuilder()
+                    .setTokenId(asTokenId(entry.token, spec))
+                    .setSpender(asId(entry.spender(), spec))
+                    .setAmount(entry.amount());
             if (entry.owner() != MISSING_OWNER) {
                 builder.setOwner(spec.registry().getAccountID(entry.owner()));
             }
             tallowances.add(builder.build());
         }
         for (var entry : nftAllowances) {
-            final var builder =
-                    NftAllowance.newBuilder()
-                            .setTokenId(spec.registry().getTokenID(entry.token()))
-                            .setSpender(spec.registry().getAccountID(entry.spender()))
-                            .setApprovedForAll(BoolValue.of(entry.approvedForAll()))
-                            .addAllSerialNumbers(entry.serials());
+            final var builder = NftAllowance.newBuilder()
+                    .setTokenId(spec.registry().getTokenID(entry.token()))
+                    .setSpender(spec.registry().getAccountID(entry.spender()))
+                    .setApprovedForAll(BoolValue.of(entry.approvedForAll()))
+                    .addAllSerialNumbers(entry.serials());
             if (entry.owner() != MISSING_OWNER) {
                 builder.setOwner(spec.registry().getAccountID(entry.owner()));
             }
             if (entry.delegatingSpender() != MISSING_DELEGATING_SPENDER) {
-                builder.setDelegatingSpender(
-                        spec.registry().getAccountID(entry.delegatingSpender()));
+                builder.setDelegatingSpender(spec.registry().getAccountID(entry.delegatingSpender()));
             }
             nftallowances.add(builder.build());
         }
@@ -250,11 +222,10 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        MoreObjects.ToStringHelper helper =
-                super.toStringHelper()
-                        .add("cryptoAllowances", cryptoAllowances)
-                        .add("tokenAllowances", tokenAllowances)
-                        .add("nftAllowances", nftAllowances);
+        MoreObjects.ToStringHelper helper = super.toStringHelper()
+                .add("cryptoAllowances", cryptoAllowances)
+                .add("tokenAllowances", tokenAllowances)
+                .add("nftAllowances", nftAllowances);
         return helper;
     }
 
@@ -278,13 +249,8 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
             boolean approvedForAll,
             List<Long> serials) {
         static NftAllowances from(
-                String owner,
-                String token,
-                String spender,
-                boolean approvedForAll,
-                List<Long> serials) {
-            return new NftAllowances(
-                    owner, token, spender, MISSING_DELEGATING_SPENDER, approvedForAll, serials);
+                String owner, String token, String spender, boolean approvedForAll, List<Long> serials) {
+            return new NftAllowances(owner, token, spender, MISSING_DELEGATING_SPENDER, approvedForAll, serials);
         }
 
         static NftAllowances from(
@@ -294,8 +260,7 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
                 String delegatingSpender,
                 boolean approvedForAll,
                 List<Long> serials) {
-            return new NftAllowances(
-                    owner, token, spender, delegatingSpender, approvedForAll, serials);
+            return new NftAllowances(owner, token, spender, delegatingSpender, approvedForAll, serials);
         }
     }
 }

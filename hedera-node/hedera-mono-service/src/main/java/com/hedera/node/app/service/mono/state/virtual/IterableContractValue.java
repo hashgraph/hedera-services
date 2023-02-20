@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.computeNonZeroBytes;
@@ -103,8 +104,7 @@ public class IterableContractValue implements VirtualValue {
         setValue(bigEndianValue);
     }
 
-    public IterableContractValue(
-            final byte[] bigEndianValue, final int[] prevUint256Key, final int[] nextUint256Key) {
+    public IterableContractValue(final byte[] bigEndianValue, final int[] prevUint256Key, final int[] nextUint256Key) {
         Objects.requireNonNull(bigEndianValue);
         setValue(bigEndianValue);
         setExplicitPrevKey(prevUint256Key);
@@ -162,8 +162,7 @@ public class IterableContractValue implements VirtualValue {
             throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
         }
         if (bigEndianUint256Value.length != 32) {
-            throw new IllegalArgumentException(
-                    "Tried to set ContractValue value with array that is not 32 bytes.");
+            throw new IllegalArgumentException("Tried to set ContractValue value with array that is not 32 bytes.");
         }
         this.uint256Value = bigEndianUint256Value;
     }
@@ -185,16 +184,11 @@ public class IterableContractValue implements VirtualValue {
             this.uint256Value = bigIntegerBytes;
         } else if (bigIntegerBytes.length > 32) {
             this.uint256Value = new byte[32];
-            System.arraycopy(
-                    bigIntegerBytes, bigIntegerBytes.length - 32, this.uint256Value, 0, 32);
+            System.arraycopy(bigIntegerBytes, bigIntegerBytes.length - 32, this.uint256Value, 0, 32);
         } else {
             this.uint256Value = new byte[32];
             System.arraycopy(
-                    bigIntegerBytes,
-                    0,
-                    this.uint256Value,
-                    32 - bigIntegerBytes.length,
-                    bigIntegerBytes.length);
+                    bigIntegerBytes, 0, this.uint256Value, 32 - bigIntegerBytes.length, bigIntegerBytes.length);
         }
     }
 
@@ -270,8 +264,7 @@ public class IterableContractValue implements VirtualValue {
 
     @Override
     public IterableContractValue asReadOnly() { // is it too expensive to make a copy here?
-        final var readOnlyThat =
-                new IterableContractValue(uint256Value, prevUint256Key, nextUint256Key);
+        final var readOnlyThat = new IterableContractValue(uint256Value, prevUint256Key, nextUint256Key);
         readOnlyThat.isImmutable = true;
         return readOnlyThat;
     }
@@ -369,15 +362,13 @@ public class IterableContractValue implements VirtualValue {
 
     int getSerializedSize() {
         int valueSize = uint256Value.length;
-        int prevSize =
-                (prevUint256Key == null)
-                        ? 1 // either an "empty" marker
-                        : 1 + prevUint256KeyNonZeroBytes; // or prev key non-zero bytes count +
+        int prevSize = (prevUint256Key == null)
+                ? 1 // either an "empty" marker
+                : 1 + prevUint256KeyNonZeroBytes; // or prev key non-zero bytes count +
         // non-zero bytes
-        int nextSize =
-                (nextUint256Key == null)
-                        ? 1 // either an "empty" marker
-                        : 1 + nextUint256KeyNonZeroBytes; // or next key non-zero bytes count +
+        int nextSize = (nextUint256Key == null)
+                ? 1 // either an "empty" marker
+                : 1 + nextUint256KeyNonZeroBytes; // or next key non-zero bytes count +
         // non-zero bytes
         return valueSize + prevSize + nextSize;
     }
@@ -385,10 +376,8 @@ public class IterableContractValue implements VirtualValue {
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.write(uint256Value);
-        KeyPackingUtils.serializePossiblyMissingKey(
-                prevUint256Key, prevUint256KeyNonZeroBytes, out);
-        KeyPackingUtils.serializePossiblyMissingKey(
-                nextUint256Key, nextUint256KeyNonZeroBytes, out);
+        KeyPackingUtils.serializePossiblyMissingKey(prevUint256Key, prevUint256KeyNonZeroBytes, out);
+        KeyPackingUtils.serializePossiblyMissingKey(nextUint256Key, nextUint256KeyNonZeroBytes, out);
     }
 
     @Override
@@ -399,8 +388,7 @@ public class IterableContractValue implements VirtualValue {
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         if (isImmutable) {
             throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
         }
@@ -424,14 +412,12 @@ public class IterableContractValue implements VirtualValue {
         byte marker = reader.read(in);
         if (marker != KeyPackingUtils.MISSING_KEY_SENTINEL) {
             prevUint256KeyNonZeroBytes = marker;
-            prevUint256Key =
-                    KeyPackingUtils.deserializeUint256Key(prevUint256KeyNonZeroBytes, in, reader);
+            prevUint256Key = KeyPackingUtils.deserializeUint256Key(prevUint256KeyNonZeroBytes, in, reader);
         }
         marker = reader.read(in);
         if (marker != KeyPackingUtils.MISSING_KEY_SENTINEL) {
             nextUint256KeyNonZeroBytes = marker;
-            nextUint256Key =
-                    KeyPackingUtils.deserializeUint256Key(nextUint256KeyNonZeroBytes, in, reader);
+            nextUint256Key = KeyPackingUtils.deserializeUint256Key(nextUint256KeyNonZeroBytes, in, reader);
         }
     }
 

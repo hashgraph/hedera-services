@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -44,16 +45,13 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
 
     private TransactionBody contractCallTransaction() {
         final var transactionID =
-                TransactionID.newBuilder()
-                        .setAccountID(payer)
-                        .setTransactionValidStart(consensusTimestamp);
+                TransactionID.newBuilder().setAccountID(payer).setTransactionValidStart(consensusTimestamp);
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)
-                .setContractCall(
-                        ContractCallTransactionBody.newBuilder()
-                                .setGas(1_234)
-                                .setAmount(1_234L)
-                                .setContractID(targetContract))
+                .setContractCall(ContractCallTransactionBody.newBuilder()
+                        .setGas(1_234)
+                        .setAmount(1_234L)
+                        .setContractID(targetContract))
                 .build();
     }
 }

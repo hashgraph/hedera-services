@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.token.meta;
 
 import com.google.common.base.MoreObjects;
@@ -23,8 +24,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 public class TokenMintMeta extends TokenOpMetaBase {
     private final long rbs;
 
-    public TokenMintMeta(
-            final int bpt, final SubType subType, final long transferRecordRb, final long rbs) {
+    public TokenMintMeta(final int bpt, final SubType subType, final long transferRecordRb, final long rbs) {
         super(bpt, subType, transferRecordRb);
         this.rbs = rbs;
     }

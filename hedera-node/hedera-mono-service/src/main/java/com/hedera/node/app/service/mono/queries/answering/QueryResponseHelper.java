@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.answering;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -47,10 +48,7 @@ public class QueryResponseHelper {
     }
 
     public void answer(
-            Query query,
-            StreamObserver<Response> observer,
-            AnswerService answer,
-            HederaFunctionality statedFunction) {
+            Query query, StreamObserver<Response> observer, AnswerService answer, HederaFunctionality statedFunction) {
         respondWithMetrics(
                 query,
                 observer,

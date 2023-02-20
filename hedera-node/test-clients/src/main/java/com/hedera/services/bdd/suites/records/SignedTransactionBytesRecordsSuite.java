@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.records;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -36,8 +37,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class SignedTransactionBytesRecordsSuite extends HapiSuite {
-    private static final Logger log =
-            LogManager.getLogger(SignedTransactionBytesRecordsSuite.class);
+    private static final Logger log = LogManager.getLogger(SignedTransactionBytesRecordsSuite.class);
 
     public static void main(String... args) {
         new SignedTransactionBytesRecordsSuite().runSuiteSync();
@@ -45,12 +45,11 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    transactionsWithOnlySigMap(),
-                    transactionsWithSignedTxnBytesAndSigMap(),
-                    transactionsWithSignedTxnBytesAndBodyBytes()
-                });
+        return List.of(new HapiSpec[] {
+            transactionsWithOnlySigMap(),
+            transactionsWithSignedTxnBytesAndSigMap(),
+            transactionsWithSignedTxnBytesAndBodyBytes()
+        });
     }
 
     @Override
@@ -71,45 +70,35 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
                                 .via("failedFileTransaction")
                                 .asTxnWithOnlySigMap()
                                 .hasPrecheck(INVALID_TRANSACTION_BODY))
-                .when(
-                        contractCreate(contract)
-                                .balance(1_000L)
-                                .via("failedContractTransaction")
-                                .asTxnWithOnlySigMap()
-                                .hasPrecheck(INVALID_TRANSACTION_BODY))
+                .when(contractCreate(contract)
+                        .balance(1_000L)
+                        .via("failedContractTransaction")
+                        .asTxnWithOnlySigMap()
+                        .hasPrecheck(INVALID_TRANSACTION_BODY))
                 .then(
-                        getTxnRecord("failedCryptoTransaction")
-                                .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
-                        getTxnRecord("failedFileTransaction")
-                                .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
-                        getTxnRecord("failedContractTransaction")
-                                .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
+                        getTxnRecord("failedCryptoTransaction").hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
+                        getTxnRecord("failedFileTransaction").hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
+                        getTxnRecord("failedContractTransaction").hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
     }
 
     private HapiSpec transactionsWithSignedTxnBytesAndSigMap() {
         return defaultHapiSpec("TransactionsWithSignedTxnBytesAndSigMap")
                 .given()
-                .when(
-                        createTopic("testTopic")
-                                .via("failedConsensusTransaction")
-                                .asTxnWithSignedTxnBytesAndSigMap()
-                                .hasPrecheck(INVALID_TRANSACTION))
-                .then(
-                        getTxnRecord("failedConsensusTransaction")
-                                .hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
+                .when(createTopic("testTopic")
+                        .via("failedConsensusTransaction")
+                        .asTxnWithSignedTxnBytesAndSigMap()
+                        .hasPrecheck(INVALID_TRANSACTION))
+                .then(getTxnRecord("failedConsensusTransaction").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
     }
 
     private HapiSpec transactionsWithSignedTxnBytesAndBodyBytes() {
         return defaultHapiSpec("TransactionsWithSignedTxnBytesAndBodyBytes")
                 .given()
-                .when(
-                        cryptoCreate("testAccount")
-                                .via("failedCryptoTransaction")
-                                .asTxnWithSignedTxnBytesAndBodyBytes()
-                                .hasPrecheck(INVALID_TRANSACTION))
-                .then(
-                        getTxnRecord("failedCryptoTransaction")
-                                .hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
+                .when(cryptoCreate("testAccount")
+                        .via("failedCryptoTransaction")
+                        .asTxnWithSignedTxnBytesAndBodyBytes()
+                        .hasPrecheck(INVALID_TRANSACTION))
+                .then(getTxnRecord("failedCryptoTransaction").hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
     }
 
     @Override

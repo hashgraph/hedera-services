@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.consensus;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
@@ -68,7 +69,8 @@ public class GetTopicInfoAnswer implements AnswerService {
 
     @Override
     public Optional<SignedTxnAccessor> extractPaymentFrom(final Query query) {
-        final Transaction paymentTxn = query.getConsensusGetTopicInfo().getHeader().getPayment();
+        final Transaction paymentTxn =
+                query.getConsensusGetTopicInfo().getHeader().getPayment();
         return Optional.ofNullable(SignedTxnAccessor.uncheckedFrom(paymentTxn));
     }
 
@@ -85,13 +87,9 @@ public class GetTopicInfoAnswer implements AnswerService {
 
     @Override
     public Response responseGiven(
-            final Query query,
-            @Nullable final StateView view,
-            final ResponseCodeEnum validity,
-            final long cost) {
+            final Query query, @Nullable final StateView view, final ResponseCodeEnum validity, final long cost) {
         final ConsensusGetTopicInfoQuery op = query.getConsensusGetTopicInfo();
-        final ConsensusGetTopicInfoResponse.Builder response =
-                ConsensusGetTopicInfoResponse.newBuilder();
+        final ConsensusGetTopicInfoResponse.Builder response = ConsensusGetTopicInfoResponse.newBuilder();
         response.setTopicID(op.getTopicID());
 
         final ResponseType type = op.getHeader().getResponseType();

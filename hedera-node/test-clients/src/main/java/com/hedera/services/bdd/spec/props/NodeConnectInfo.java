@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.props;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
@@ -45,11 +46,10 @@ public class NodeConnectInfo {
 
     public NodeConnectInfo(String inString) {
         String[] aspects = inString.split(":");
-        int[] ports =
-                Stream.of(aspects)
-                        .filter(TxnUtils::isPortLiteral)
-                        .mapToInt(Integer::parseInt)
-                        .toArray();
+        int[] ports = Stream.of(aspects)
+                .filter(TxnUtils::isPortLiteral)
+                .mapToInt(Integer::parseInt)
+                .toArray();
         if (ports.length > 0) {
             port = ports[0];
         } else {
@@ -60,19 +60,15 @@ public class NodeConnectInfo {
         } else {
             tlsPort = DEFAULT_TLS_PORT;
         }
-        account =
-                Stream.of(aspects)
-                        .filter(TxnUtils::isIdLiteral)
-                        .map(HapiPropertySource::asAccount)
-                        .findAny()
-                        .orElse(
-                                HapiPropertySource.asAccount(
-                                        String.format("0.0.%d", NEXT_DEFAULT_ACCOUNT_NUM++)));
-        host =
-                Stream.of(aspects)
-                        .filter(aspect -> !(isIdLiteral(aspect) || isPortLiteral(aspect)))
-                        .findAny()
-                        .orElse(DEFAULT_HOST);
+        account = Stream.of(aspects)
+                .filter(TxnUtils::isIdLiteral)
+                .map(HapiPropertySource::asAccount)
+                .findAny()
+                .orElse(HapiPropertySource.asAccount(String.format("0.0.%d", NEXT_DEFAULT_ACCOUNT_NUM++)));
+        host = Stream.of(aspects)
+                .filter(aspect -> !(isIdLiteral(aspect) || isPortLiteral(aspect)))
+                .findAny()
+                .orElse(DEFAULT_HOST);
     }
 
     public String uri() {

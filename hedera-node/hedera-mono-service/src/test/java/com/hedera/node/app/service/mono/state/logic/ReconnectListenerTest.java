@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -40,12 +41,20 @@ class ReconnectListenerTest {
     private final long sequence = 123L;
     private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
 
-    @Mock private ReconnectCompleteNotification notification;
-    @Mock private ServicesState servicesState;
-    @Mock private UpgradeActions upgradeActions;
+    @Mock
+    private ReconnectCompleteNotification notification;
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private ReconnectListener subject;
+    @Mock
+    private ServicesState servicesState;
+
+    @Mock
+    private UpgradeActions upgradeActions;
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private ReconnectListener subject;
 
     @BeforeEach
     void setUp() {
@@ -65,9 +74,8 @@ class ReconnectListenerTest {
         // then:
         assertThat(
                 logCaptor.infoLogs(),
-                contains(
-                        "Notification Received: Reconnect Finished. consensusTimestamp:"
-                            + " 1970-01-15T06:56:07.000000890Z, roundNumber: 234, sequence: 123"));
+                contains("Notification Received: Reconnect Finished. consensusTimestamp:"
+                        + " 1970-01-15T06:56:07.000000890Z, roundNumber: 234, sequence: 123"));
         // and:
         verify(servicesState).logSummary();
         verify(upgradeActions).catchUpOnMissedSideEffects();

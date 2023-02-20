@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
@@ -62,15 +63,11 @@ public class MintPrecompile extends AbstractWritePrecompile {
     private final int functionId;
     private static final List<ByteString> NO_METADATA = Collections.emptyList();
     private static final String MINT = String.format(FAILURE_MESSAGE, "mint");
-    private static final Function MINT_TOKEN_FUNCTION =
-            new Function("mintToken(address,uint64,bytes[])", INT);
-    private static final Function MINT_TOKEN_FUNCTION_V2 =
-            new Function("mintToken(address,int64,bytes[])", INT);
+    private static final Function MINT_TOKEN_FUNCTION = new Function("mintToken(address,uint64,bytes[])", INT);
+    private static final Function MINT_TOKEN_FUNCTION_V2 = new Function("mintToken(address,int64,bytes[])", INT);
     public static final Bytes MINT_TOKEN_SELECTOR = Bytes.wrap(MINT_TOKEN_FUNCTION.selector());
-    private static final Bytes MINT_TOKEN_SELECTOR_V2 =
-            Bytes.wrap(MINT_TOKEN_FUNCTION_V2.selector());
-    private static final ABIType<Tuple> MINT_TOKEN_DECODER =
-            TypeFactory.create("(bytes32,int64,bytes[])");
+    private static final Bytes MINT_TOKEN_SELECTOR_V2 = Bytes.wrap(MINT_TOKEN_FUNCTION_V2.selector());
+    private static final ABIType<Tuple> MINT_TOKEN_DECODER = TypeFactory.create("(bytes32,int64,bytes[])");
     private final EncodingFacade encoder;
     private final ContractAliases aliases;
     private final EvmSigsVerifier sigsVerifier;
@@ -98,15 +95,12 @@ public class MintPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         this.transactionBody = null;
-        mintOp =
-                switch (functionId) {
-                    case AbiConstants.ABI_ID_MINT_TOKEN -> decodeMint(input);
-                    case AbiConstants.ABI_ID_MINT_TOKEN_V2 -> decodeMintV2(input);
-                    default -> null;
-                };
+        mintOp = switch (functionId) {
+            case AbiConstants.ABI_ID_MINT_TOKEN -> decodeMint(input);
+            case AbiConstants.ABI_ID_MINT_TOKEN_V2 -> decodeMintV2(input);
+            default -> null;};
         transactionBody = syntheticTxnFactory.createMint(mintOp);
         return transactionBody;
     }
@@ -117,24 +111,14 @@ public class MintPrecompile extends AbstractWritePrecompile {
 
         // --- Check required signatures ---
         final var tokenId = Id.fromGrpcToken(Objects.requireNonNull(mintOp).tokenType());
-        final var hasRequiredSigs =
-                KeyActivationUtils.validateKey(
-                        frame,
-                        tokenId.asEvmAddress(),
-                        sigsVerifier::hasActiveSupplyKey,
-                        ledgers,
-                        aliases);
+        final var hasRequiredSigs = KeyActivationUtils.validateKey(
+                frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey, ledgers, aliases);
         validateTrue(hasRequiredSigs, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, MINT);
 
         /* --- Build the necessary infrastructure to execute the transaction --- */
         final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
-        final var tokenStore =
-                infrastructureFactory.newTokenStore(
-                        accountStore,
-                        sideEffects,
-                        ledgers.tokens(),
-                        ledgers.nfts(),
-                        ledgers.tokenRels());
+        final var tokenStore = infrastructureFactory.newTokenStore(
+                accountStore, sideEffects, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels());
         final var mintLogic = infrastructureFactory.newMintLogic(accountStore, tokenStore);
 
         final var validity = mintLogic.validateSyntax(transactionBody.build());
@@ -153,8 +137,7 @@ public class MintPrecompile extends AbstractWritePrecompile {
     @Override
     public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
         final var isNftMint = Objects.requireNonNull(mintOp).type() == NON_FUNGIBLE_UNIQUE;
-        return pricingUtils.getMinimumPriceInTinybars(
-                isNftMint ? MINT_NFT : MINT_FUNGIBLE, consensusTime);
+        return pricingUtils.getMinimumPriceInTinybars(isNftMint ? MINT_NFT : MINT_FUNGIBLE, consensusTime);
     }
 
     @Override
@@ -176,8 +159,7 @@ public class MintPrecompile extends AbstractWritePrecompile {
     }
 
     private static MintWrapper getMintWrapper(final Bytes input, final Bytes mintTokenSelector) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, mintTokenSelector, MINT_TOKEN_DECODER);
+        final Tuple decodedArguments = decodeFunctionCall(input, mintTokenSelector, MINT_TOKEN_DECODER);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final var fungibleAmount = (long) decodedArguments.get(1);

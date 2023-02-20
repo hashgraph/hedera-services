@@ -15,6 +15,7 @@
  */
 
 import com.hedera.services.bdd.junit.BalanceReconciliationValidator;
+import com.hedera.services.bdd.junit.ExpiryRecordsValidator;
 import com.hedera.services.bdd.junit.TokenReconciliationValidator;
 import com.hedera.services.bdd.junit.validators.BlockNoValidator;
 import java.util.Arrays;
@@ -76,6 +77,10 @@ class AllIntegrationTests extends IntegrationTestBase {
     @TestFactory
     List<DynamicTest> recordStreamValidation() {
         return List.of(recordStreamValidation(
-                TEST_CONTAINER_NODE0_STREAMS, new BalanceReconciliationValidator(), new BlockNoValidator(), new TokenReconciliationValidator()));
+                TEST_CONTAINER_NODE0_STREAMS,
+                new BalanceReconciliationValidator(),
+                new BlockNoValidator(),
+                new ExpiryRecordsValidator(),
+                new TokenReconciliationValidator()));
     }
 }

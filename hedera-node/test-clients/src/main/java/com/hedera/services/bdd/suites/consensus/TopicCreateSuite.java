@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.consensus;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -65,46 +66,42 @@ public class TopicCreateSuite extends HapiSuite {
         return defaultHapiSpec("AdminKeyIsValidated")
                 .given()
                 .when()
-                .then(
-                        createTopic("testTopic")
-                                .adminKeyName(NONSENSE_KEY)
-                                .signedBy(GENESIS)
-                                .hasPrecheck(BAD_ENCODING));
+                .then(createTopic("testTopic")
+                        .adminKeyName(NONSENSE_KEY)
+                        .signedBy(GENESIS)
+                        .hasPrecheck(BAD_ENCODING));
     }
 
     private HapiSpec submitKeyIsValidated() {
         return defaultHapiSpec("SubmitKeyIsValidated")
                 .given()
                 .when()
-                .then(
-                        createTopic("testTopic")
-                                .submitKeyName(NONSENSE_KEY)
-                                .signedBy(GENESIS)
-                                .hasKnownStatus(BAD_ENCODING));
+                .then(createTopic("testTopic")
+                        .submitKeyName(NONSENSE_KEY)
+                        .signedBy(GENESIS)
+                        .hasKnownStatus(BAD_ENCODING));
     }
 
     private HapiSpec autoRenewAccountIsValidated() {
         return defaultHapiSpec("AutoRenewAccountIsValidated")
                 .given()
                 .when()
-                .then(
-                        createTopic("testTopic")
-                                .autoRenewAccountId("1.2.3")
-                                .signedBy(GENESIS)
-                                .hasKnownStatus(INVALID_AUTORENEW_ACCOUNT));
+                .then(createTopic("testTopic")
+                        .autoRenewAccountId("1.2.3")
+                        .signedBy(GENESIS)
+                        .hasKnownStatus(INVALID_AUTORENEW_ACCOUNT));
     }
 
     private HapiSpec autoRenewAccountIdNeedsAdminKeyToo() {
         return defaultHapiSpec("autoRenewAccountIdNeedsAdminKeyToo")
                 .given(cryptoCreate("payer"), cryptoCreate("autoRenewAccount"))
                 .when()
-                .then(
-                        createTopic("noAdminKeyExplicitAutoRenewAccount")
-                                .payingWith("payer")
-                                .autoRenewAccountId("autoRenewAccount")
-                                .signedBy("payer", "autoRenewAccount")
-                                /* If autoRenewAccount is specified, adminKey should be present */
-                                .hasKnownStatus(AUTORENEW_ACCOUNT_NOT_ALLOWED));
+                .then(createTopic("noAdminKeyExplicitAutoRenewAccount")
+                        .payingWith("payer")
+                        .autoRenewAccountId("autoRenewAccount")
+                        .signedBy("payer", "autoRenewAccount")
+                        /* If autoRenewAccount is specified, adminKey should be present */
+                        .hasKnownStatus(AUTORENEW_ACCOUNT_NOT_ALLOWED));
     }
 
     private HapiSpec autoRenewPeriodIsValidated() {
@@ -112,9 +109,7 @@ public class TopicCreateSuite extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        createTopic("testTopic")
-                                .autoRenewPeriod(0L)
-                                .hasKnownStatus(AUTORENEW_DURATION_NOT_IN_RANGE),
+                        createTopic("testTopic").autoRenewPeriod(0L).hasKnownStatus(AUTORENEW_DURATION_NOT_IN_RANGE),
                         createTopic("testTopic")
                                 .autoRenewPeriod(Long.MAX_VALUE)
                                 .hasKnownStatus(AUTORENEW_DURATION_NOT_IN_RANGE));
@@ -124,10 +119,7 @@ public class TopicCreateSuite extends HapiSuite {
         return defaultHapiSpec("noAutoRenewPeriod")
                 .given()
                 .when()
-                .then(
-                        createTopic("testTopic")
-                                .clearAutoRenewPeriod()
-                                .hasKnownStatus(INVALID_RENEWAL_PERIOD));
+                .then(createTopic("testTopic").clearAutoRenewPeriod().hasKnownStatus(INVALID_RENEWAL_PERIOD));
     }
 
     private HapiSpec signingRequirementsEnforced() {
@@ -177,7 +169,9 @@ public class TopicCreateSuite extends HapiSuite {
                                 .hasKnownStatus(INVALID_SIGNATURE))
                 .then(
                         createTopic("noAdminKeyNoAutoRenewAccount"),
-                        getTopicInfo("noAdminKeyNoAutoRenewAccount").hasNoAdminKey().logged(),
+                        getTopicInfo("noAdminKeyNoAutoRenewAccount")
+                                .hasNoAdminKey()
+                                .logged(),
                         createTopic("explicitAdminKeyNoAutoRenewAccount").adminKeyName("adminKey"),
                         getTopicInfo("explicitAdminKeyNoAutoRenewAccount")
                                 .hasAdminKey("adminKey")
@@ -193,17 +187,13 @@ public class TopicCreateSuite extends HapiSuite {
 
     private HapiSpec allFieldsSetHappyCase() {
         return defaultHapiSpec("AllFieldsSetHappyCase")
-                .given(
-                        newKeyNamed("adminKey"),
-                        newKeyNamed("submitKey"),
-                        cryptoCreate("autoRenewAccount"))
+                .given(newKeyNamed("adminKey"), newKeyNamed("submitKey"), cryptoCreate("autoRenewAccount"))
                 .when()
-                .then(
-                        createTopic("testTopic")
-                                .topicMemo("testmemo")
-                                .adminKeyName("adminKey")
-                                .submitKeyName("submitKey")
-                                .autoRenewAccountId("autoRenewAccount"));
+                .then(createTopic("testTopic")
+                        .topicMemo("testmemo")
+                        .adminKeyName("adminKey")
+                        .submitKeyName("submitKey")
+                        .autoRenewAccountId("autoRenewAccount"));
     }
 
     private HapiSpec feeAsExpected() {
@@ -213,14 +203,13 @@ public class TopicCreateSuite extends HapiSuite {
                         newKeyNamed("submitKey"),
                         cryptoCreate("autoRenewAccount"),
                         cryptoCreate("payer"))
-                .when(
-                        createTopic("testTopic")
-                                .topicMemo("testmemo")
-                                .adminKeyName("adminKey")
-                                .submitKeyName("submitKey")
-                                .autoRenewAccountId("autoRenewAccount")
-                                .payingWith("payer")
-                                .via("topicCreate"))
+                .when(createTopic("testTopic")
+                        .topicMemo("testmemo")
+                        .adminKeyName("adminKey")
+                        .submitKeyName("submitKey")
+                        .autoRenewAccountId("autoRenewAccount")
+                        .payingWith("payer")
+                        .via("topicCreate"))
                 .then(validateChargedUsd("topicCreate", 0.0226));
     }
 

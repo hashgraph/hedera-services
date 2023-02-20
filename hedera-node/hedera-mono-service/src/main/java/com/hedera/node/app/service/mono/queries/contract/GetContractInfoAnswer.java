@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.contract;
 
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.unaliased;
@@ -45,8 +46,7 @@ import javax.inject.Singleton;
 
 @Singleton
 public class GetContractInfoAnswer implements AnswerService {
-    public static final String CONTRACT_INFO_CTX_KEY =
-            GetContractInfoAnswer.class.getSimpleName() + "_contractInfo";
+    public static final String CONTRACT_INFO_CTX_KEY = GetContractInfoAnswer.class.getSimpleName() + "_contractInfo";
 
     private final AliasManager aliasManager;
     private final OptionValidator validator;
@@ -78,10 +78,7 @@ public class GetContractInfoAnswer implements AnswerService {
 
     @Override
     public Response responseGiven(
-            final Query query,
-            @Nullable final StateView view,
-            final ResponseCodeEnum validity,
-            final long cost) {
+            final Query query, @Nullable final StateView view, final ResponseCodeEnum validity, final long cost) {
         return responseFor(query, view, validity, cost, NO_QUERY_CTX);
     }
 
@@ -99,8 +96,7 @@ public class GetContractInfoAnswer implements AnswerService {
     public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
         final var id = unaliased(query.getContractGetInfo().getContractID(), aliasManager);
 
-        final var validity =
-                validator.queryableContractStatus(id.toGrpcContractID(), view.contracts());
+        final var validity = validator.queryableContractStatus(id.toGrpcContractID(), view.contracts());
         return (validity == CONTRACT_DELETED) ? OK : validity;
     }
 
@@ -156,16 +152,11 @@ public class GetContractInfoAnswer implements AnswerService {
                 response.setHeader(answerOnlyHeader(INVALID_CONTRACT_ID));
             } else {
                 response.setHeader(answerOnlyHeader(OK, cost));
-                response.setContractInfo(
-                        (ContractGetInfoResponse.ContractInfo) ctx.get(CONTRACT_INFO_CTX_KEY));
+                response.setContractInfo((ContractGetInfoResponse.ContractInfo) ctx.get(CONTRACT_INFO_CTX_KEY));
             }
         } else {
-            final var info =
-                    view.infoForContract(
-                            op.getContractID(),
-                            aliasManager,
-                            dynamicProperties.maxTokensRelsPerInfoQuery(),
-                            rewardCalculator);
+            final var info = view.infoForContract(
+                    op.getContractID(), aliasManager, dynamicProperties.maxTokensRelsPerInfoQuery(), rewardCalculator);
             if (info.isEmpty()) {
                 response.setHeader(answerOnlyHeader(INVALID_CONTRACT_ID));
             } else {

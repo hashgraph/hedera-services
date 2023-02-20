@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -59,8 +60,7 @@ public interface QueryResourceUsageEstimator {
      * @return the estimated resource usage
      * @throws NullPointerException or analogous if the estimator does not apply to the query
      */
-    FeeData usageGiven(
-            final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx);
+    FeeData usageGiven(final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx);
 
     /**
      * Returns the estimated resource usage for the given query relative to the given state of the
@@ -72,8 +72,7 @@ public interface QueryResourceUsageEstimator {
      * @return the estimated resource usage
      * @throws NullPointerException or analogous if the estimator does not apply to the query
      */
-    default FeeData usageGivenType(
-            final Query query, final StateView view, final ResponseType type) {
+    default FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
         return usageGiven(query, view);
     }
 }

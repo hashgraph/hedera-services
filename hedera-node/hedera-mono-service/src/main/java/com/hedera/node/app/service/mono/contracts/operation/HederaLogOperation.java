@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.operation;
 
 import static org.apache.tuweni.bytes.Bytes32.leftPad;
@@ -36,8 +37,7 @@ import org.hyperledger.besu.evm.operation.AbstractOperation;
 public class HederaLogOperation extends AbstractOperation {
     private static final Logger log = LogManager.getLogger(HederaLogOperation.class);
 
-    private static final Address UNRESOLVABLE_ADDRESS_STANDIN =
-            EntityNum.MISSING_NUM.toEvmAddress();
+    private static final Address UNRESOLVABLE_ADDRESS_STANDIN = EntityNum.MISSING_NUM.toEvmAddress();
 
     private final int numTopics;
 
@@ -51,8 +51,7 @@ public class HederaLogOperation extends AbstractOperation {
         final long dataLocation = clampedToLong(frame.popStackItem());
         final long numBytes = clampedToLong(frame.popStackItem());
 
-        final long cost =
-                gasCalculator().logOperationGasCost(frame, dataLocation, numBytes, numTopics);
+        final long cost = gasCalculator().logOperationGasCost(frame, dataLocation, numBytes, numTopics);
         if (frame.isStatic()) {
             return new OperationResult(cost, ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
         } else if (frame.getRemainingGas() < cost) {
@@ -70,8 +69,7 @@ public class HederaLogOperation extends AbstractOperation {
 
         final Bytes data = frame.readMemory(dataLocation, numBytes);
 
-        final ImmutableList.Builder<LogTopic> builder =
-                ImmutableList.builderWithExpectedSize(numTopics);
+        final ImmutableList.Builder<LogTopic> builder = ImmutableList.builderWithExpectedSize(numTopics);
         for (int i = 0; i < numTopics; i++) {
             builder.add(LogTopic.create(leftPad(frame.popStackItem())));
         }

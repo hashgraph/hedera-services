@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.throttling;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -38,13 +39,12 @@ public final class ThrottlingModule {
             final Supplier<AddressBook> addressBook,
             final GlobalDynamicProperties dynamicProperties,
             final ScheduleStore scheduleStore) {
-        final var delegate =
-                new DeterministicThrottling(
-                        () -> addressBook.get().getSize(),
-                        aliasManager,
-                        dynamicProperties,
-                        DeterministicThrottling.DeterministicThrottlingMode.HAPI,
-                        scheduleStore);
+        final var delegate = new DeterministicThrottling(
+                () -> addressBook.get().getSize(),
+                aliasManager,
+                dynamicProperties,
+                DeterministicThrottling.DeterministicThrottlingMode.HAPI,
+                scheduleStore);
         return new HapiThrottling(delegate);
     }
 
@@ -79,13 +79,12 @@ public final class ThrottlingModule {
             final TransactionContext txnCtx,
             final GlobalDynamicProperties dynamicProperties,
             final ScheduleStore scheduleStore) {
-        final var delegate =
-                new DeterministicThrottling(
-                        () -> 1,
-                        aliasManager,
-                        dynamicProperties,
-                        DeterministicThrottling.DeterministicThrottlingMode.CONSENSUS,
-                        scheduleStore);
+        final var delegate = new DeterministicThrottling(
+                () -> 1,
+                aliasManager,
+                dynamicProperties,
+                DeterministicThrottling.DeterministicThrottlingMode.CONSENSUS,
+                scheduleStore);
         return new TxnAwareHandleThrottling(txnCtx, delegate);
     }
 

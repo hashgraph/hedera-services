@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.crypto.queries;
 
 import com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage;
@@ -54,17 +55,12 @@ public final class GetAccountInfoResourceUsage implements QueryResourceUsageEsti
     }
 
     @Override
-    public FeeData usageGiven(
-            final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
+    public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
         final var op = query.getCryptoGetInfo();
 
         final var account = op.getAccountID();
-        final var info =
-                view.infoForAccount(
-                        account,
-                        aliasManager,
-                        dynamicProperties.maxTokensRelsPerInfoQuery(),
-                        rewardCalculator);
+        final var info = view.infoForAccount(
+                account, aliasManager, dynamicProperties.maxTokensRelsPerInfoQuery(), rewardCalculator);
         /* Given the test in {@code GetAccountInfoAnswer.checkValidity}, this can only be empty
          * under the extraordinary circumstance that the desired account expired during the query
          * answer flow (which will now fail downstream with an appropriate status code); so
@@ -73,19 +69,17 @@ public final class GetAccountInfoResourceUsage implements QueryResourceUsageEsti
             return FeeData.getDefaultInstance();
         }
         final var details = info.get();
-        final var ctx =
-                ExtantCryptoContext.newBuilder()
-                        .setCurrentKey(details.getKey())
-                        .setCurrentMemo(details.getMemo())
-                        .setCurrentExpiry(details.getExpirationTime().getSeconds())
-                        .setCurrentlyHasProxy(details.hasProxyAccountID())
-                        .setCurrentNumTokenRels(details.getTokenRelationshipsCount())
-                        .setCurrentMaxAutomaticAssociations(
-                                details.getMaxAutomaticTokenAssociations())
-                        .setCurrentCryptoAllowances(Collections.emptyMap())
-                        .setCurrentTokenAllowances(Collections.emptyMap())
-                        .setCurrentApproveForAllNftAllowances(Collections.emptySet())
-                        .build();
+        final var ctx = ExtantCryptoContext.newBuilder()
+                .setCurrentKey(details.getKey())
+                .setCurrentMemo(details.getMemo())
+                .setCurrentExpiry(details.getExpirationTime().getSeconds())
+                .setCurrentlyHasProxy(details.hasProxyAccountID())
+                .setCurrentNumTokenRels(details.getTokenRelationshipsCount())
+                .setCurrentMaxAutomaticAssociations(details.getMaxAutomaticTokenAssociations())
+                .setCurrentCryptoAllowances(Collections.emptyMap())
+                .setCurrentTokenAllowances(Collections.emptyMap())
+                .setCurrentApproveForAllNftAllowances(Collections.emptySet())
+                .build();
         return cryptoOpsUsage.cryptoInfoUsage(query, ctx);
     }
 }

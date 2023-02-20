@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -48,8 +49,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class CryptoTransferPerfSuiteWOpProvider extends HapiSuite {
-    private static final Logger log =
-            LogManager.getLogger(CryptoTransferPerfSuiteWOpProvider.class);
+    private static final Logger log = LogManager.getLogger(CryptoTransferPerfSuiteWOpProvider.class);
 
     public static void main(String... args) {
         CryptoTransferPerfSuiteWOpProvider suite = new CryptoTransferPerfSuiteWOpProvider();
@@ -69,50 +69,40 @@ public class CryptoTransferPerfSuiteWOpProvider extends HapiSuite {
                                 (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
                         logIt(ignore -> settings.toString()))
                 .when()
-                .then(
-                        runWithProvider(XfersFactory())
-                                .lasting(settings::getMins, () -> MINUTES)
-                                .maxOpsPerSec(settings::getTps));
+                .then(runWithProvider(XfersFactory())
+                        .lasting(settings::getMins, () -> MINUTES)
+                        .maxOpsPerSec(settings::getTps));
     }
 
     private Function<HapiSpec, OpProvider> XfersFactory() {
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        return List.of(
-                                cryptoCreate("sender")
-                                        .balance(ONE_HUNDRED_HBARS)
-                                        .hasRetryPrecheckFrom(
-                                                BUSY, PLATFORM_TRANSACTION_NOT_CREATED),
-                                cryptoCreate("receiver")
-                                        .hasRetryPrecheckFrom(
-                                                BUSY, PLATFORM_TRANSACTION_NOT_CREATED),
-                                sleepFor(10_000L));
-                    }
+        return spec -> new OpProvider() {
+            @Override
+            public List<HapiSpecOperation> suggestedInitializers() {
+                return List.of(
+                        cryptoCreate("sender")
+                                .balance(ONE_HUNDRED_HBARS)
+                                .hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED),
+                        cryptoCreate("receiver").hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED),
+                        sleepFor(10_000L));
+            }
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        final var op =
-                                cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1L))
-                                        .noLogging()
-                                        .hasKnownStatusFrom(
-                                                SUCCESS,
-                                                OK,
-                                                INSUFFICIENT_PAYER_BALANCE,
-                                                UNKNOWN,
-                                                TRANSACTION_EXPIRED,
-                                                INSUFFICIENT_ACCOUNT_BALANCE)
-                                        .hasPrecheckFrom(
-                                                DUPLICATE_TRANSACTION, OK, INVALID_SIGNATURE)
-                                        .hasRetryPrecheckFrom(
-                                                BUSY,
-                                                PLATFORM_TRANSACTION_NOT_CREATED,
-                                                PAYER_ACCOUNT_NOT_FOUND)
-                                        .deferStatusResolution();
-                        return Optional.of(op);
-                    }
-                };
+            @Override
+            public Optional<HapiSpecOperation> get() {
+                final var op = cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1L))
+                        .noLogging()
+                        .hasKnownStatusFrom(
+                                SUCCESS,
+                                OK,
+                                INSUFFICIENT_PAYER_BALANCE,
+                                UNKNOWN,
+                                TRANSACTION_EXPIRED,
+                                INSUFFICIENT_ACCOUNT_BALANCE)
+                        .hasPrecheckFrom(DUPLICATE_TRANSACTION, OK, INVALID_SIGNATURE)
+                        .hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED, PAYER_ACCOUNT_NOT_FOUND)
+                        .deferStatusResolution();
+                return Optional.of(op);
+            }
+        };
     }
 
     @Override

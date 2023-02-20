@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext.MAX_PENDING_REWARDS;
@@ -49,10 +50,10 @@ class ExpirableTxnRecordBuilderTest {
     private static final long parentConsSec = 1_234_567L;
     private static final int parentConsNanos = 890;
     private static final long packedParentConsTime = packedTime(parentConsSec, parentConsNanos);
-    private static final Instant parentConsTime =
-            Instant.ofEpochSecond(parentConsSec, parentConsNanos);
+    private static final Instant parentConsTime = Instant.ofEpochSecond(parentConsSec, parentConsNanos);
 
-    @Mock private TxnReceipt.Builder receiptBuilder;
+    @Mock
+    private TxnReceipt.Builder receiptBuilder;
 
     private ExpirableTxnRecord.Builder subject;
 
@@ -73,17 +74,13 @@ class ExpirableTxnRecordBuilderTest {
 
     @Test
     void parentConsensusTimeMappedToAndFromGrpc() {
-        final var grpcRecord =
-                TransactionRecord.newBuilder()
-                        .setReceipt(
-                                TransactionReceipt.newBuilder()
-                                        .setAccountID(IdUtils.asAccount("0.0.3")))
-                        .setTransactionID(
-                                TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.2")))
-                        .setConsensusTimestamp(MiscUtils.asTimestamp(parentConsTime.plusNanos(1)))
-                        .setParentConsensusTimestamp(MiscUtils.asTimestamp(parentConsTime))
-                        .setPrngNumber(10)
-                        .build();
+        final var grpcRecord = TransactionRecord.newBuilder()
+                .setReceipt(TransactionReceipt.newBuilder().setAccountID(IdUtils.asAccount("0.0.3")))
+                .setTransactionID(TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.2")))
+                .setConsensusTimestamp(MiscUtils.asTimestamp(parentConsTime.plusNanos(1)))
+                .setParentConsensusTimestamp(MiscUtils.asTimestamp(parentConsTime))
+                .setPrngNumber(10)
+                .build();
 
         final var subject = ExpirableTxnRecordTestHelper.fromGprc(grpcRecord);
 
@@ -119,24 +116,12 @@ class ExpirableTxnRecordBuilderTest {
         final var inThatButNotThis = new EntityId(0, 0, 5);
         final var thirdInBoth = new EntityId(0, 0, 6);
 
-        final var thisAdjusts =
-                new CurrencyAdjustments(
-                        new long[] {-10, +6, +3, +1},
-                        new long[] {
-                            inThisButNotThat.num(),
-                            firstInBoth.num(),
-                            secondInBoth.num(),
-                            thirdInBoth.num()
-                        });
-        final var thatAdjusts =
-                new CurrencyAdjustments(
-                        new long[] {-2, -4, +5, +1},
-                        new long[] {
-                            firstInBoth.num(),
-                            secondInBoth.num(),
-                            inThatButNotThis.num(),
-                            thirdInBoth.num()
-                        });
+        final var thisAdjusts = new CurrencyAdjustments(
+                new long[] {-10, +6, +3, +1},
+                new long[] {inThisButNotThat.num(), firstInBoth.num(), secondInBoth.num(), thirdInBoth.num()});
+        final var thatAdjusts = new CurrencyAdjustments(
+                new long[] {-2, -4, +5, +1},
+                new long[] {firstInBoth.num(), secondInBoth.num(), inThatButNotThis.num(), thirdInBoth.num()});
 
         final var that = ExpirableTxnRecord.newBuilder();
         that.setHbarAdjustments(thatAdjusts);
@@ -146,12 +131,7 @@ class ExpirableTxnRecordBuilderTest {
 
         final var expectedChanges = new long[] {-10, +8, +7, -5};
         final var expectedAccounts =
-                new long[] {
-                    inThisButNotThat.num(),
-                    firstInBoth.num(),
-                    secondInBoth.num(),
-                    inThatButNotThis.num()
-                };
+                new long[] {inThisButNotThat.num(), firstInBoth.num(), secondInBoth.num(), inThatButNotThis.num()};
         assertArrayEquals(expectedChanges, subject.getHbarAdjustments().hbars);
         assertArrayEquals(expectedAccounts, subject.getHbarAdjustments().accountNums);
     }
@@ -163,12 +143,9 @@ class ExpirableTxnRecordBuilderTest {
         final var inThatButNotThis = new EntityId(0, 0, 5);
 
         final var thisAdjusts =
-                new CurrencyAdjustments(
-                        new long[] {+6, +3}, new long[] {firstInBoth.num(), secondInBoth.num()});
-        final var thatAdjusts =
-                new CurrencyAdjustments(
-                        new long[] {-2, -4, +5},
-                        new long[] {firstInBoth.num(), secondInBoth.num(), inThatButNotThis.num()});
+                new CurrencyAdjustments(new long[] {+6, +3}, new long[] {firstInBoth.num(), secondInBoth.num()});
+        final var thatAdjusts = new CurrencyAdjustments(
+                new long[] {-2, -4, +5}, new long[] {firstInBoth.num(), secondInBoth.num(), inThatButNotThis.num()});
 
         final var that = ExpirableTxnRecord.newBuilder();
         that.setHbarAdjustments(thatAdjusts);
@@ -177,8 +154,7 @@ class ExpirableTxnRecordBuilderTest {
         subject.excludeHbarChangesFrom(that);
 
         final var expectedChanges = new long[] {+8, +7, -5};
-        final var expectedAccounts =
-                new long[] {firstInBoth.num(), secondInBoth.num(), inThatButNotThis.num()};
+        final var expectedAccounts = new long[] {firstInBoth.num(), secondInBoth.num(), inThatButNotThis.num()};
         assertArrayEquals(expectedChanges, subject.getHbarAdjustments().hbars);
         assertArrayEquals(expectedAccounts, subject.getHbarAdjustments().accountNums);
     }
@@ -189,10 +165,8 @@ class ExpirableTxnRecordBuilderTest {
         final var secondInBoth = new EntityId(0, 0, 4);
 
         final var thisAdjusts =
-                new CurrencyAdjustments(
-                        new long[] {+6, +3}, new long[] {firstInBoth.num(), secondInBoth.num()});
-        final var thatAdjusts =
-                new CurrencyAdjustments(new long[] {MAX_PENDING_REWARDS}, new long[] {2L});
+                new CurrencyAdjustments(new long[] {+6, +3}, new long[] {firstInBoth.num(), secondInBoth.num()});
+        final var thatAdjusts = new CurrencyAdjustments(new long[] {MAX_PENDING_REWARDS}, new long[] {2L});
 
         final var that = ExpirableTxnRecord.newBuilder();
         that.setHbarAdjustments(thatAdjusts);
@@ -212,10 +186,8 @@ class ExpirableTxnRecordBuilderTest {
         final var secondInBoth = new EntityId(0, 0, 4);
 
         final var thisAdjusts =
-                new CurrencyAdjustments(
-                        new long[] {+6, +3}, new long[] {firstInBoth.num(), secondInBoth.num()});
-        final var thatAdjusts =
-                new CurrencyAdjustments(new long[] {MAX_PENDING_REWARDS, 1L}, new long[] {2L, 3L});
+                new CurrencyAdjustments(new long[] {+6, +3}, new long[] {firstInBoth.num(), secondInBoth.num()});
+        final var thatAdjusts = new CurrencyAdjustments(new long[] {MAX_PENDING_REWARDS, 1L}, new long[] {2L, 3L});
 
         final var that = ExpirableTxnRecord.newBuilder();
         that.setHbarAdjustments(thatAdjusts);
@@ -236,18 +208,11 @@ class ExpirableTxnRecordBuilderTest {
         final var secondInBoth = new EntityId(0, 0, 4);
         final var secondInThisButNotThat = new EntityId(0, 0, 6);
 
-        final var thisAdjusts =
-                new CurrencyAdjustments(
-                        new long[] {+10, +6, +3, -19},
-                        new long[] {
-                            firstInThisButNotThat.num(),
-                            firstInBoth.num(),
-                            secondInBoth.num(),
-                            secondInThisButNotThat.num()
-                        });
+        final var thisAdjusts = new CurrencyAdjustments(new long[] {+10, +6, +3, -19}, new long[] {
+            firstInThisButNotThat.num(), firstInBoth.num(), secondInBoth.num(), secondInThisButNotThat.num()
+        });
         final var thatAdjusts =
-                new CurrencyAdjustments(
-                        new long[] {+2, +4}, new long[] {firstInBoth.num(), secondInBoth.num()});
+                new CurrencyAdjustments(new long[] {+2, +4}, new long[] {firstInBoth.num(), secondInBoth.num()});
 
         final var that = ExpirableTxnRecord.newBuilder();
         that.setHbarAdjustments(thatAdjusts);
@@ -256,13 +221,9 @@ class ExpirableTxnRecordBuilderTest {
         subject.excludeHbarChangesFrom(that);
 
         final var expectedChanges = new long[] {+10, +4, -1, -19};
-        final var expectedAccounts =
-                new long[] {
-                    firstInThisButNotThat.num(),
-                    firstInBoth.num(),
-                    secondInBoth.num(),
-                    secondInThisButNotThat.num()
-                };
+        final var expectedAccounts = new long[] {
+            firstInThisButNotThat.num(), firstInBoth.num(), secondInBoth.num(), secondInThisButNotThat.num()
+        };
         assertArrayEquals(expectedChanges, subject.getHbarAdjustments().hbars);
         assertArrayEquals(expectedAccounts, subject.getHbarAdjustments().accountNums);
     }
@@ -270,21 +231,16 @@ class ExpirableTxnRecordBuilderTest {
     @Test
     void revertClearsAllSideEffects() {
         subject.setTokens(List.of(MISSING_ENTITY_ID));
-        subject.setHbarAdjustments(
-                new CurrencyAdjustments(new long[] {1}, new long[] {MISSING_ENTITY_ID.num()}));
-        subject.setStakingRewardsPaid(
-                new CurrencyAdjustments(new long[] {1}, new long[] {MISSING_ENTITY_ID.num()}));
+        subject.setHbarAdjustments(new CurrencyAdjustments(new long[] {1}, new long[] {MISSING_ENTITY_ID.num()}));
+        subject.setStakingRewardsPaid(new CurrencyAdjustments(new long[] {1}, new long[] {MISSING_ENTITY_ID.num()}));
         subject.setReceiptBuilder(receiptBuilder);
         subject.setTokenAdjustments(
-                List.of(
-                        new CurrencyAdjustments(
-                                new long[] {1}, new long[] {MISSING_ENTITY_ID.num()})));
+                List.of(new CurrencyAdjustments(new long[] {1}, new long[] {MISSING_ENTITY_ID.num()})));
         subject.setContractCallResult(new EvmFnResult());
         subject.setNftTokenAdjustments(List.of(new NftAdjustments()));
         subject.setContractCreateResult(new EvmFnResult());
         subject.setNewTokenAssociations(List.of(new FcTokenAssociation(1, 2)));
-        subject.setAssessedCustomFees(
-                List.of(new FcAssessedCustomFee(MISSING_ENTITY_ID, 1, new long[] {1L})));
+        subject.setAssessedCustomFees(List.of(new FcAssessedCustomFee(MISSING_ENTITY_ID, 1, new long[] {1L})));
         subject.setAlias(ByteString.copyFromUtf8("aaa"));
 
         subject.revert();

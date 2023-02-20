@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.consensus;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -60,9 +61,8 @@ public class TopicDeleteSuite extends HapiSuite {
         return defaultHapiSpec("CannotDeleteAccountAsTopic")
                 .given(cryptoCreate("nonTopicId"))
                 .when()
-                .then(
-                        deleteTopic(spec -> asTopicId(spec.registry().getAccountID("nonTopicId")))
-                                .hasKnownStatus(INVALID_TOPIC_ID));
+                .then(deleteTopic(spec -> asTopicId(spec.registry().getAccountID("nonTopicId")))
+                        .hasKnownStatus(INVALID_TOPIC_ID));
     }
 
     private HapiSpec topicIdIsValidated() {
@@ -97,11 +97,10 @@ public class TopicDeleteSuite extends HapiSuite {
                         newKeyNamed("wrongKey"),
                         cryptoCreate("payer").balance(PAYER_BALANCE),
                         createTopic("testTopic").adminKeyName("adminKey"))
-                .when(
-                        deleteTopic("testTopic")
-                                .payingWith("payer")
-                                .signedBy("payer", "wrongKey")
-                                .hasKnownStatus(ResponseCodeEnum.INVALID_SIGNATURE))
+                .when(deleteTopic("testTopic")
+                        .payingWith("payer")
+                        .signedBy("payer", "wrongKey")
+                        .hasKnownStatus(ResponseCodeEnum.INVALID_SIGNATURE))
                 .then();
     }
 

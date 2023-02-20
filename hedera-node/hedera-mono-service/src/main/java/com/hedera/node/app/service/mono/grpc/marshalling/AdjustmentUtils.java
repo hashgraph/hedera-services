@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static com.hedera.node.app.service.mono.store.models.Id.MISSING_ID;
@@ -72,10 +73,7 @@ public final class AdjustmentUtils {
     }
 
     static void adjustForAssessedHbar(
-            final Id payer,
-            final Id collector,
-            final long amount,
-            final BalanceChangeManager manager) {
+            final Id payer, final Id collector, final long amount, final BalanceChangeManager manager) {
         adjustForAssessed(payer, MISSING_ID, collector, MISSING_ID, amount, manager);
     }
 
@@ -87,24 +85,17 @@ public final class AdjustmentUtils {
             final long amount,
             final BalanceChangeManager manager) {
         final var payerChange = adjustedChange(payer, chargingToken, denom, -amount, manager);
-        payerChange.setCodeForInsufficientBalance(
-                INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+        payerChange.setCodeForInsufficientBalance(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
         adjustedChange(collector, chargingToken, denom, +amount, manager);
     }
 
     static BalanceChange adjustedFractionalChange(
-            final Id account,
-            final Id denom,
-            final long amount,
-            final BalanceChangeManager manager) {
+            final Id account, final Id denom, final long amount, final BalanceChangeManager manager) {
         return adjustedChange(account, MISSING_ID, denom, amount, manager);
     }
 
     private static BalanceChange includedHtsChange(
-            final Id account,
-            final Id denom,
-            final long amount,
-            final BalanceChangeManager manager) {
+            final Id account, final Id denom, final long amount, final BalanceChangeManager manager) {
         final var newHtsChange = BalanceChange.tokenCustomFeeAdjust(account, denom, amount);
         manager.includeChange(newHtsChange);
         return newHtsChange;

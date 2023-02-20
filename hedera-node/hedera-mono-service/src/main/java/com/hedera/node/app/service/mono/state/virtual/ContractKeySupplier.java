@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -30,8 +31,7 @@ public class ContractKeySupplier implements SelfSerializableSupplier<ContractKey
     }
 
     @Override
-    public void serialize(SerializableDataOutputStream serializableDataOutputStream)
-            throws IOException {
+    public void serialize(SerializableDataOutputStream serializableDataOutputStream) throws IOException {
         /* No-op */
     }
 

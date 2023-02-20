@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.consensus;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -36,8 +37,7 @@ import javax.inject.Singleton;
 
 @Singleton
 public class TopicDeleteTransitionLogic implements TransitionLogic {
-    private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP =
-            ignore -> OK;
+    private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP = ignore -> OK;
 
     private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
     private final OptionValidator validator;

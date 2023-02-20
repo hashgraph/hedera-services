@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.ingest;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
@@ -74,21 +75,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class IngestWorkflowImplTest {
 
-    private static final AccountID ACCOUNT_ID = AccountID.newBuilder().setAccountNum(42L).build();
+    private static final AccountID ACCOUNT_ID =
+            AccountID.newBuilder().setAccountNum(42L).build();
     private static final TransactionID TRANSACTION_ID =
             TransactionID.newBuilder().setAccountID(ACCOUNT_ID).build();
     private static final TransactionBody TRANSACTION_BODY =
             TransactionBody.newBuilder().setTransactionID(TRANSACTION_ID).build();
     private static final SignatureMap SIGNATURE_MAP = SignatureMap.newBuilder().build();
     private static final OnsetResult ONSET_RESULT =
-            new OnsetResult(
-                    TRANSACTION_BODY,
-                    TRANSACTION_BODY.toByteArray(),
-                    OK,
-                    SIGNATURE_MAP,
-                    ConsensusCreateTopic);
+            new OnsetResult(TRANSACTION_BODY, TRANSACTION_BODY.toByteArray(), OK, SIGNATURE_MAP, ConsensusCreateTopic);
 
-    @Mock private NodeInfo nodeInfo;
+    @Mock
+    private NodeInfo nodeInfo;
 
     @Mock(strictness = LENIENT)
     private CurrentPlatformStatus currentPlatformStatus;
@@ -102,18 +100,32 @@ class IngestWorkflowImplTest {
     @Mock(strictness = LENIENT)
     ReadableAccountStore accountStore;
 
-    @Mock Account account;
+    @Mock
+    Account account;
 
-    @Mock private IngestChecker checker;
+    @Mock
+    private IngestChecker checker;
 
-    @Mock private ThrottleAccumulator throttleAccumulator;
-    @Mock private SubmissionManager submissionManager;
-    @Mock private HapiOpCounters opCounters;
+    @Mock
+    private ThrottleAccumulator throttleAccumulator;
 
-    @Mock private Parser<Query> queryParser;
-    @Mock private Parser<Transaction> txParser;
-    @Mock private Parser<SignedTransaction> signedParser;
-    @Mock private Parser<TransactionBody> txBodyParser;
+    @Mock
+    private SubmissionManager submissionManager;
+
+    @Mock
+    private HapiOpCounters opCounters;
+
+    @Mock
+    private Parser<Query> queryParser;
+
+    @Mock
+    private Parser<Transaction> txParser;
+
+    @Mock
+    private Parser<SignedTransaction> signedParser;
+
+    @Mock
+    private Parser<TransactionBody> txBodyParser;
 
     private SessionContext ctx;
     private IngestWorkflowImpl workflow;
@@ -129,8 +141,91 @@ class IngestWorkflowImplTest {
         ctx = new SessionContext(queryParser, txParser, signedParser, txBodyParser);
         when(onset.parseAndCheck(ctx, requestBuffer)).thenReturn(ONSET_RESULT);
 
-        workflow =
-                new IngestWorkflowImpl(
+        workflow = new IngestWorkflowImpl(
+                nodeInfo,
+                currentPlatformStatus,
+                stateAccessor,
+                onset,
+                checker,
+                throttleAccumulator,
+                submissionManager,
+                opCounters);
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    void testConstructorWithInvalidArguments() {
+        assertThatThrownBy(() -> new IngestWorkflowImpl(
+                        null,
+                        currentPlatformStatus,
+                        stateAccessor,
+                        onset,
+                        checker,
+                        throttleAccumulator,
+                        submissionManager,
+                        opCounters))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new IngestWorkflowImpl(
+                        nodeInfo,
+                        null,
+                        stateAccessor,
+                        onset,
+                        checker,
+                        throttleAccumulator,
+                        submissionManager,
+                        opCounters))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new IngestWorkflowImpl(
+                        nodeInfo,
+                        currentPlatformStatus,
+                        null,
+                        onset,
+                        checker,
+                        throttleAccumulator,
+                        submissionManager,
+                        opCounters))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new IngestWorkflowImpl(
+                        nodeInfo,
+                        currentPlatformStatus,
+                        stateAccessor,
+                        null,
+                        checker,
+                        throttleAccumulator,
+                        submissionManager,
+                        opCounters))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new IngestWorkflowImpl(
+                        nodeInfo,
+                        currentPlatformStatus,
+                        stateAccessor,
+                        onset,
+                        null,
+                        throttleAccumulator,
+                        submissionManager,
+                        opCounters))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new IngestWorkflowImpl(
+                        nodeInfo,
+                        currentPlatformStatus,
+                        stateAccessor,
+                        onset,
+                        checker,
+                        null,
+                        submissionManager,
+                        opCounters))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new IngestWorkflowImpl(
+                        nodeInfo,
+                        currentPlatformStatus,
+                        stateAccessor,
+                        onset,
+                        checker,
+                        throttleAccumulator,
+                        null,
+                        opCounters))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new IngestWorkflowImpl(
                         nodeInfo,
                         currentPlatformStatus,
                         stateAccessor,
@@ -138,107 +233,7 @@ class IngestWorkflowImplTest {
                         checker,
                         throttleAccumulator,
                         submissionManager,
-                        opCounters);
-    }
-
-    @SuppressWarnings("ConstantConditions")
-    @Test
-    void testConstructorWithInvalidArguments() {
-        assertThatThrownBy(
-                        () ->
-                                new IngestWorkflowImpl(
-                                        null,
-                                        currentPlatformStatus,
-                                        stateAccessor,
-                                        onset,
-                                        checker,
-                                        throttleAccumulator,
-                                        submissionManager,
-                                        opCounters))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () ->
-                                new IngestWorkflowImpl(
-                                        nodeInfo,
-                                        null,
-                                        stateAccessor,
-                                        onset,
-                                        checker,
-                                        throttleAccumulator,
-                                        submissionManager,
-                                        opCounters))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () ->
-                                new IngestWorkflowImpl(
-                                        nodeInfo,
-                                        currentPlatformStatus,
-                                        null,
-                                        onset,
-                                        checker,
-                                        throttleAccumulator,
-                                        submissionManager,
-                                        opCounters))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () ->
-                                new IngestWorkflowImpl(
-                                        nodeInfo,
-                                        currentPlatformStatus,
-                                        stateAccessor,
-                                        null,
-                                        checker,
-                                        throttleAccumulator,
-                                        submissionManager,
-                                        opCounters))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () ->
-                                new IngestWorkflowImpl(
-                                        nodeInfo,
-                                        currentPlatformStatus,
-                                        stateAccessor,
-                                        onset,
-                                        null,
-                                        throttleAccumulator,
-                                        submissionManager,
-                                        opCounters))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () ->
-                                new IngestWorkflowImpl(
-                                        nodeInfo,
-                                        currentPlatformStatus,
-                                        stateAccessor,
-                                        onset,
-                                        checker,
-                                        null,
-                                        submissionManager,
-                                        opCounters))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () ->
-                                new IngestWorkflowImpl(
-                                        nodeInfo,
-                                        currentPlatformStatus,
-                                        stateAccessor,
-                                        onset,
-                                        checker,
-                                        throttleAccumulator,
-                                        null,
-                                        opCounters))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () ->
-                                new IngestWorkflowImpl(
-                                        nodeInfo,
-                                        currentPlatformStatus,
-                                        stateAccessor,
-                                        onset,
-                                        checker,
-                                        throttleAccumulator,
-                                        submissionManager,
-                                        null))
+                        null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -279,8 +274,7 @@ class IngestWorkflowImplTest {
     }
 
     @Test
-    void testParseAndCheckWithZeroStakeFails()
-            throws InvalidProtocolBufferException, PreCheckException {
+    void testParseAndCheckWithZeroStakeFails() throws InvalidProtocolBufferException, PreCheckException {
         // given
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
         when(nodeInfo.isSelfZeroStake()).thenReturn(true);
@@ -306,16 +300,15 @@ class IngestWorkflowImplTest {
             final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
             final var inactivePlatformStatus = mock(CurrentPlatformStatus.class);
             when(inactivePlatformStatus.get()).thenReturn(status);
-            workflow =
-                    new IngestWorkflowImpl(
-                            nodeInfo,
-                            inactivePlatformStatus,
-                            stateAccessor,
-                            onset,
-                            checker,
-                            throttleAccumulator,
-                            submissionManager,
-                            opCounters);
+            workflow = new IngestWorkflowImpl(
+                    nodeInfo,
+                    inactivePlatformStatus,
+                    stateAccessor,
+                    onset,
+                    checker,
+                    throttleAccumulator,
+                    submissionManager,
+                    opCounters);
 
             // when
             workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
@@ -331,21 +324,19 @@ class IngestWorkflowImplTest {
     }
 
     @Test
-    void testOnsetFails(@Mock WorkflowOnset localOnset)
-            throws PreCheckException, InvalidProtocolBufferException {
+    void testOnsetFails(@Mock WorkflowOnset localOnset) throws PreCheckException, InvalidProtocolBufferException {
         // given
         when(localOnset.parseAndCheck(any(), any(ByteBuffer.class)))
                 .thenThrow(new PreCheckException(INVALID_TRANSACTION));
-        workflow =
-                new IngestWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        localOnset,
-                        checker,
-                        throttleAccumulator,
-                        submissionManager,
-                        opCounters);
+        workflow = new IngestWorkflowImpl(
+                nodeInfo,
+                currentPlatformStatus,
+                stateAccessor,
+                localOnset,
+                checker,
+                throttleAccumulator,
+                submissionManager,
+                opCounters);
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
@@ -383,16 +374,15 @@ class IngestWorkflowImplTest {
             throws PreCheckException, InvalidProtocolBufferException {
         // given
         when(localAccountStore.getAccount(any())).thenReturn(Optional.empty());
-        workflow =
-                new IngestWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        onset,
-                        checker,
-                        throttleAccumulator,
-                        submissionManager,
-                        opCounters);
+        workflow = new IngestWorkflowImpl(
+                nodeInfo,
+                currentPlatformStatus,
+                stateAccessor,
+                onset,
+                checker,
+                throttleAccumulator,
+                submissionManager,
+                opCounters);
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
@@ -440,8 +430,7 @@ class IngestWorkflowImplTest {
 
         // then
         final TransactionResponse response = parseResponse(responseBuffer);
-        assertThat(response.getNodeTransactionPrecheckCode())
-                .isEqualTo(INSUFFICIENT_ACCOUNT_BALANCE);
+        assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(INSUFFICIENT_ACCOUNT_BALANCE);
         assertThat(response.getCost()).isEqualTo(42L);
         verify(opCounters).countReceived(ConsensusCreateTopic);
         verify(submissionManager, never()).submit(any(), any(), any());
@@ -461,15 +450,13 @@ class IngestWorkflowImplTest {
 
         // then
         final TransactionResponse response = parseResponse(responseBuffer);
-        assertThat(response.getNodeTransactionPrecheckCode())
-                .isEqualTo(PLATFORM_TRANSACTION_NOT_CREATED);
+        assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(PLATFORM_TRANSACTION_NOT_CREATED);
         assertThat(response.getCost()).isZero();
         verify(opCounters).countReceived(ConsensusCreateTopic);
         verify(opCounters, never()).countSubmitted(any());
     }
 
-    private static TransactionResponse parseResponse(ByteBuffer responseBuffer)
-            throws InvalidProtocolBufferException {
+    private static TransactionResponse parseResponse(ByteBuffer responseBuffer) throws InvalidProtocolBufferException {
         final byte[] bytes = new byte[responseBuffer.position()];
         responseBuffer.get(0, bytes);
         return TransactionResponse.parseFrom(bytes);

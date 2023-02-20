@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import com.hedera.services.bdd.junit.TestBase;
 import com.hedera.services.bdd.suites.autorenew.AccountAutoRenewalSuite;
 import com.hedera.services.bdd.suites.autorenew.AutoRemovalCasesSuite;
@@ -220,9 +221,7 @@ class EndToEndPackageRunner extends TestBase {
     @Tag("compose")
     @TestFactory
     Collection<DynamicContainer> compose() {
-        return List.of(
-                extractSpecsFromSuite(LocalNetworkCheck::new),
-                extractSpecsFromSuite(PerpetualLocalCalls::new));
+        return List.of(extractSpecsFromSuite(LocalNetworkCheck::new), extractSpecsFromSuite(PerpetualLocalCalls::new));
     }
 
     @Tag("consensus")
@@ -257,15 +256,14 @@ class EndToEndPackageRunner extends TestBase {
     @Tag("contract.precompile.part1.eth")
     @TestFactory
     Collection<DynamicContainer> contractPrecompileEth() {
-        return List.of(
-                new DynamicContainer[] {
-                    extractSpecsFromSuiteForEth(AssociatePrecompileSuite::new),
-                    extractSpecsFromSuiteForEth(ContractBurnHTSSuite::new),
-                    extractSpecsFromSuiteForEth(ContractHTSSuite::new),
-                    extractSpecsFromSuiteForEth(ContractKeysHTSSuite::new),
-                    extractSpecsFromSuiteForEth(ContractMintHTSSuite::new),
-                    extractSpecsFromSuiteForEth(CreatePrecompileSuite::new)
-                });
+        return List.of(new DynamicContainer[] {
+            extractSpecsFromSuiteForEth(AssociatePrecompileSuite::new),
+            extractSpecsFromSuiteForEth(ContractBurnHTSSuite::new),
+            extractSpecsFromSuiteForEth(ContractHTSSuite::new),
+            extractSpecsFromSuiteForEth(ContractKeysHTSSuite::new),
+            extractSpecsFromSuiteForEth(ContractMintHTSSuite::new),
+            extractSpecsFromSuiteForEth(CreatePrecompileSuite::new)
+        });
     }
 
     @Tag("contract")
@@ -273,13 +271,12 @@ class EndToEndPackageRunner extends TestBase {
     @Tag("contract.precompile.part2")
     @TestFactory
     Collection<DynamicContainer> contractPrecompile2() {
-        return List.of(
-                new DynamicContainer[] {
-                    extractSpecsFromSuite(CryptoTransferHTSSuite::new),
-                    extractSpecsFromSuite(DelegatePrecompileSuite::new),
-                    extractSpecsFromSuite(DissociatePrecompileSuite::new),
-                    extractSpecsFromSuite(MixedHTSPrecompileTestsSuite::new)
-                });
+        return List.of(new DynamicContainer[] {
+            extractSpecsFromSuite(CryptoTransferHTSSuite::new),
+            extractSpecsFromSuite(DelegatePrecompileSuite::new),
+            extractSpecsFromSuite(DissociatePrecompileSuite::new),
+            extractSpecsFromSuite(MixedHTSPrecompileTestsSuite::new)
+        });
     }
 
     @Tag("contract")
@@ -287,12 +284,11 @@ class EndToEndPackageRunner extends TestBase {
     @Tag("contract.precompile.part2.eth")
     @TestFactory
     Collection<DynamicContainer> contractPrecompile2Eth() {
-        return List.of(
-                new DynamicContainer[] {
-                    extractSpecsFromSuiteForEth(DissociatePrecompileSuite::new),
-                    extractSpecsFromSuiteForEth(CryptoTransferHTSSuite::new),
-                    extractSpecsFromSuiteForEth(DelegatePrecompileSuite::new)
-                });
+        return List.of(new DynamicContainer[] {
+            extractSpecsFromSuiteForEth(DissociatePrecompileSuite::new),
+            extractSpecsFromSuiteForEth(CryptoTransferHTSSuite::new),
+            extractSpecsFromSuiteForEth(DelegatePrecompileSuite::new)
+        });
     }
 
     @Tag("contract")
@@ -309,29 +305,25 @@ class EndToEndPackageRunner extends TestBase {
     @Tag("contract.openzeppelin.eth")
     @TestFactory
     Collection<DynamicContainer> contractOpenZeppelinEth() {
-        return List.of(
-                new DynamicContainer[] {
-                    extractSpecsFromSuiteForEth(ERC20ContractInteractions::new),
-                    extractSpecsFromSuiteForEth(ERC721ContractInteractions::new),
-                    extractSpecsFromSuiteForEth(ERC1155ContractInteractions::new)
-                });
+        return List.of(new DynamicContainer[] {
+            extractSpecsFromSuiteForEth(ERC20ContractInteractions::new),
+            extractSpecsFromSuiteForEth(ERC721ContractInteractions::new),
+            extractSpecsFromSuiteForEth(ERC1155ContractInteractions::new)
+        });
     }
 
     @Tag("contract")
     @Tag("contract.records")
     @TestFactory
     Collection<DynamicContainer> contractRecords() {
-        return List.of(
-                extractSpecsFromSuite(LogsSuite::new), extractSpecsFromSuite(RecordsSuite::new));
+        return List.of(extractSpecsFromSuite(LogsSuite::new), extractSpecsFromSuite(RecordsSuite::new));
     }
 
     @Tag("contract")
     @Tag("contract.records.eth")
     @TestFactory
     Collection<DynamicContainer> contractRecordsEth() {
-        return List.of(
-                extractSpecsFromSuiteForEth(LogsSuite::new),
-                extractSpecsFromSuiteForEth(RecordsSuite::new));
+        return List.of(extractSpecsFromSuiteForEth(LogsSuite::new), extractSpecsFromSuiteForEth(RecordsSuite::new));
     }
 
     @Tag("contract")
@@ -357,55 +349,52 @@ class EndToEndPackageRunner extends TestBase {
     @Tag("contract.opcodes.eth")
     @TestFactory
     Collection<DynamicContainer> contractOpcodesEth() {
-        return List.of(
-                new DynamicContainer[] {
-                    extractSpecsFromSuiteForEth(BalanceOperationSuite::new),
-                    extractSpecsFromSuiteForEth(CallCodeOperationSuite::new),
-                    extractSpecsFromSuiteForEth(CallOperationSuite::new),
-                    extractSpecsFromSuiteForEth(CreateOperationSuite::new),
-                    extractSpecsFromSuiteForEth(DelegateCallOperationSuite::new),
-                    extractSpecsFromSuiteForEth(ExtCodeCopyOperationSuite::new),
-                    extractSpecsFromSuiteForEth(ExtCodeHashOperationSuite::new),
-                    extractSpecsFromSuiteForEth(ExtCodeSizeOperationSuite::new),
-                    extractSpecsFromSuiteForEth(GlobalPropertiesSuite::new),
-                    extractSpecsFromSuiteForEth(StaticCallOperationSuite::new),
-                    extractSpecsFromSuiteForEth(SelfDestructSuite::new),
-                    extractSpecsFromSuiteForEth(SStoreSuite::new)
-                });
+        return List.of(new DynamicContainer[] {
+            extractSpecsFromSuiteForEth(BalanceOperationSuite::new),
+            extractSpecsFromSuiteForEth(CallCodeOperationSuite::new),
+            extractSpecsFromSuiteForEth(CallOperationSuite::new),
+            extractSpecsFromSuiteForEth(CreateOperationSuite::new),
+            extractSpecsFromSuiteForEth(DelegateCallOperationSuite::new),
+            extractSpecsFromSuiteForEth(ExtCodeCopyOperationSuite::new),
+            extractSpecsFromSuiteForEth(ExtCodeHashOperationSuite::new),
+            extractSpecsFromSuiteForEth(ExtCodeSizeOperationSuite::new),
+            extractSpecsFromSuiteForEth(GlobalPropertiesSuite::new),
+            extractSpecsFromSuiteForEth(StaticCallOperationSuite::new),
+            extractSpecsFromSuiteForEth(SelfDestructSuite::new),
+            extractSpecsFromSuiteForEth(SStoreSuite::new)
+        });
     }
 
     @Tag("contract")
     @Tag("contract.hapi")
     @TestFactory
     Collection<DynamicContainer> contractHapi() {
-        return List.of(
-                new DynamicContainer[] {
-                    extractSpecsFromSuite(ContractCallLocalSuite::new),
-                    extractSpecsFromSuite(ContractCallSuite::new),
-                    extractSpecsFromSuite(ContractCreateSuite::new),
-                    extractSpecsFromSuite(ContractDeleteSuite::new),
-                    extractSpecsFromSuite(ContractGetBytecodeSuite::new),
-                    extractSpecsFromSuite(ContractGetInfoSuite::new),
-                    extractSpecsFromSuite(ContractMusicalChairsSuite::new),
-                    extractSpecsFromSuite(ContractUpdateSuite::new)
-                });
+        return List.of(new DynamicContainer[] {
+            extractSpecsFromSuite(ContractCallLocalSuite::new),
+            extractSpecsFromSuite(ContractCallSuite::new),
+            extractSpecsFromSuite(ContractCreateSuite::new),
+            extractSpecsFromSuite(ContractDeleteSuite::new),
+            extractSpecsFromSuite(ContractGetBytecodeSuite::new),
+            extractSpecsFromSuite(ContractGetInfoSuite::new),
+            extractSpecsFromSuite(ContractMusicalChairsSuite::new),
+            extractSpecsFromSuite(ContractUpdateSuite::new)
+        });
     }
 
     @Tag("contract")
     @Tag("contract.hapi.eth")
     @TestFactory
     Collection<DynamicContainer> contractHapiEth() {
-        return List.of(
-                new DynamicContainer[] {
-                    extractSpecsFromSuiteForEth(ContractCallLocalSuite::new),
-                    extractSpecsFromSuiteForEth(ContractCallSuite::new),
-                    extractSpecsFromSuiteForEth(ContractCreateSuite::new),
-                    extractSpecsFromSuiteForEth(ContractDeleteSuite::new),
-                    extractSpecsFromSuiteForEth(ContractGetBytecodeSuite::new),
-                    extractSpecsFromSuiteForEth(ContractGetInfoSuite::new),
-                    extractSpecsFromSuiteForEth(ContractMusicalChairsSuite::new),
-                    extractSpecsFromSuiteForEth(ContractUpdateSuite::new)
-                });
+        return List.of(new DynamicContainer[] {
+            extractSpecsFromSuiteForEth(ContractCallLocalSuite::new),
+            extractSpecsFromSuiteForEth(ContractCallSuite::new),
+            extractSpecsFromSuiteForEth(ContractCreateSuite::new),
+            extractSpecsFromSuiteForEth(ContractDeleteSuite::new),
+            extractSpecsFromSuiteForEth(ContractGetBytecodeSuite::new),
+            extractSpecsFromSuiteForEth(ContractGetInfoSuite::new),
+            extractSpecsFromSuiteForEth(ContractMusicalChairsSuite::new),
+            extractSpecsFromSuiteForEth(ContractUpdateSuite::new)
+        });
     }
 
     @Tag("contract")
@@ -483,9 +472,7 @@ class EndToEndPackageRunner extends TestBase {
     @Tag("file.positive")
     @TestFactory
     Collection<DynamicContainer> filePositive() {
-        return List.of(
-                extractSpecsFromSuite(CreateSuccessSpec::new),
-                extractSpecsFromSuite(SysDelSysUndelSpec::new));
+        return List.of(extractSpecsFromSuite(CreateSuccessSpec::new), extractSpecsFromSuite(SysDelSysUndelSpec::new));
     }
 
     @Tag("file")

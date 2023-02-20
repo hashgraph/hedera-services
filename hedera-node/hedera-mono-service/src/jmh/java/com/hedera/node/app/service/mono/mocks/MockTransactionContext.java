@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.mocks;
 
 import com.google.protobuf.ByteString;
@@ -68,9 +69,7 @@ public class MockTransactionContext implements TransactionContext {
 
     @Override
     public void resetFor(
-            @Nullable final TxnAccessor accessor,
-            final Instant consensusTime,
-            final long submittingMember) {
+            @Nullable final TxnAccessor accessor, final Instant consensusTime, final long submittingMember) {
         now = consensusTime;
     }
 

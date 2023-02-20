@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils.accessors;
 
 import com.google.common.base.MoreObjects;
@@ -65,13 +66,11 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
         pubKeyToSigBytes = new PojoSigMapPubKeyToSigBytes(delegate.getSigMap());
     }
 
-    public static PlatformTxnAccessor from(final Transaction transaction)
-            throws InvalidProtocolBufferException {
+    public static PlatformTxnAccessor from(final Transaction transaction) throws InvalidProtocolBufferException {
         return from(transaction.toByteArray());
     }
 
-    public static PlatformTxnAccessor from(final byte[] contents)
-            throws InvalidProtocolBufferException {
+    public static PlatformTxnAccessor from(final byte[] contents) throws InvalidProtocolBufferException {
         return new PlatformTxnAccessor(SignedTxnAccessor.from(contents));
     }
 
@@ -149,8 +148,7 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     public Function<byte[], TransactionSignature> getRationalizedPkToCryptoSigFn() {
         final var meta = getSigMeta();
         if (!meta.couldRationalizeOthers()) {
-            throw new IllegalStateException(
-                    "Public-key-to-sig mapping is unusable after rationalization failed");
+            throw new IllegalStateException("Public-key-to-sig mapping is unusable after rationalization failed");
         }
         return meta.pkToVerifiedSigFn();
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.reconnect;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -35,8 +36,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ValidateExchangeRateStateAfterReconnect extends HapiSuite {
-    private static final Logger log =
-            LogManager.getLogger(ValidateExchangeRateStateAfterReconnect.class);
+    private static final Logger log = LogManager.getLogger(ValidateExchangeRateStateAfterReconnect.class);
 
     public static void main(String... args) {
         new ValidateExchangeRateStateAfterReconnect().runSuiteSync();
@@ -59,15 +59,13 @@ public class ValidateExchangeRateStateAfterReconnect extends HapiSuite {
                 .when(
                         getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode(),
                         fileUpdate(EXCHANGE_RATES)
-                                .contents(
-                                        spec -> {
-                                            ByteString newRates =
-                                                    spec.ratesProvider()
-                                                            .rateSetWith(1, 1)
-                                                            .toByteString();
-                                            spec.registry().saveBytes("newRates", newRates);
-                                            return newRates;
-                                        })
+                                .contents(spec -> {
+                                    ByteString newRates = spec.ratesProvider()
+                                            .rateSetWith(1, 1)
+                                            .toByteString();
+                                    spec.registry().saveBytes("newRates", newRates);
+                                    return newRates;
+                                })
                                 .payingWith(SYSTEM_ADMIN),
                         getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode())
                 .then(

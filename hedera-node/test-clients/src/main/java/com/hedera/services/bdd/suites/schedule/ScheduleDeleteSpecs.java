@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.schedule;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -51,14 +52,12 @@ public class ScheduleDeleteSpecs extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return withAndWithoutLongTermEnabled(
-                () ->
-                        List.of(
-                                deleteWithNoAdminKeyFails(),
-                                unauthorizedDeletionFails(),
-                                deletingAlreadyDeletedIsObvious(),
-                                deletingNonExistingFails(),
-                                deletingExecutedIsPointless()));
+        return withAndWithoutLongTermEnabled(() -> List.of(
+                deleteWithNoAdminKeyFails(),
+                unauthorizedDeletionFails(),
+                deletingAlreadyDeletedIsObvious(),
+                deletingNonExistingFails(),
+                deletingExecutedIsPointless()));
     }
 
     private HapiSpec deleteWithNoAdminKeyFails() {
@@ -66,9 +65,7 @@ public class ScheduleDeleteSpecs extends HapiSuite {
                 .given(
                         cryptoCreate("sender"),
                         cryptoCreate("receiver"),
-                        scheduleCreate(
-                                "validScheduledTxn",
-                                cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1))))
+                        scheduleCreate("validScheduledTxn", cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1))))
                 .when()
                 .then(scheduleDelete("validScheduledTxn").hasKnownStatus(SCHEDULE_IS_IMMUTABLE));
     }
@@ -80,15 +77,12 @@ public class ScheduleDeleteSpecs extends HapiSuite {
                         newKeyNamed("non-admin-key"),
                         cryptoCreate("sender"),
                         cryptoCreate("receiver"),
-                        scheduleCreate(
-                                        "validScheduledTxn",
-                                        cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)))
+                        scheduleCreate("validScheduledTxn", cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)))
                                 .adminKey("admin"))
                 .when()
-                .then(
-                        scheduleDelete("validScheduledTxn")
-                                .signedBy(DEFAULT_PAYER, "non-admin-key")
-                                .hasKnownStatus(INVALID_SIGNATURE));
+                .then(scheduleDelete("validScheduledTxn")
+                        .signedBy(DEFAULT_PAYER, "non-admin-key")
+                        .hasKnownStatus(INVALID_SIGNATURE));
     }
 
     private HapiSpec deletingAlreadyDeletedIsObvious() {
@@ -97,17 +91,14 @@ public class ScheduleDeleteSpecs extends HapiSuite {
                         cryptoCreate("sender"),
                         cryptoCreate("receiver"),
                         newKeyNamed("admin"),
-                        scheduleCreate(
-                                        "validScheduledTxn",
-                                        cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)))
+                        scheduleCreate("validScheduledTxn", cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)))
                                 .adminKey("admin"),
                         scheduleDelete("validScheduledTxn").signedBy("admin", DEFAULT_PAYER))
                 .when()
-                .then(
-                        scheduleDelete("validScheduledTxn")
-                                .fee(ONE_HBAR)
-                                .signedBy("admin", DEFAULT_PAYER)
-                                .hasKnownStatus(SCHEDULE_ALREADY_DELETED));
+                .then(scheduleDelete("validScheduledTxn")
+                        .fee(ONE_HBAR)
+                        .signedBy("admin", DEFAULT_PAYER)
+                        .hasKnownStatus(SCHEDULE_ALREADY_DELETED));
     }
 
     private HapiSpec deletingNonExistingFails() {
@@ -127,9 +118,8 @@ public class ScheduleDeleteSpecs extends HapiSuite {
                         scheduleCreate("validScheduledTxn", submitMessageTo("ofGreatInterest"))
                                 .adminKey("admin"))
                 .when()
-                .then(
-                        scheduleDelete("validScheduledTxn")
-                                .signedBy("admin", DEFAULT_PAYER)
-                                .hasKnownStatus(SCHEDULE_ALREADY_EXECUTED));
+                .then(scheduleDelete("validScheduledTxn")
+                        .signedBy("admin", DEFAULT_PAYER)
+                        .hasKnownStatus(SCHEDULE_ALREADY_EXECUTED));
     }
 }

@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.properties;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.WORKFLOWS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.WORKFLOWS_ENABLED;
 
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -23,6 +24,7 @@ import javax.inject.Singleton;
 
 @Singleton
 public class GlobalStaticProperties {
+
     private final PropertySource properties;
     private boolean workflowsEnabled;
 

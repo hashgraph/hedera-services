@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.grpc;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -47,11 +48,7 @@ class NoopMarshallerTest {
     }
 
     private static Stream<Arguments> provideBuffers() {
-        return Stream.of(
-                Arguments.of(0, 0),
-                Arguments.of(100, 0),
-                Arguments.of(100, 80),
-                Arguments.of(100, 100));
+        return Stream.of(Arguments.of(0, 0), Arguments.of(100, 0), Arguments.of(100, 80), Arguments.of(100, 100));
     }
 
     @ParameterizedTest(name = "A buffer with capacity {0} and position {1}")
@@ -115,14 +112,13 @@ class NoopMarshallerTest {
         final var arr = TestUtils.randomBytes(100);
         try (final var stream = Mockito.mock(InputStream.class)) {
             Mockito.when(stream.read(Mockito.any(), Mockito.anyInt(), Mockito.anyInt()))
-                    .thenAnswer(
-                            invocation -> {
-                                byte[] data = invocation.getArgument(0);
-                                int offset = invocation.getArgument(1);
-                                // Don't quite read everything
-                                System.arraycopy(arr, 0, data, offset, 99);
-                                return 99;
-                            })
+                    .thenAnswer(invocation -> {
+                        byte[] data = invocation.getArgument(0);
+                        int offset = invocation.getArgument(1);
+                        // Don't quite read everything
+                        System.arraycopy(arr, 0, data, offset, 99);
+                        return 99;
+                    })
                     .thenThrow(new IOException("Stream Terminated unexpectedly"));
 
             assertThrows(RuntimeException.class, () -> marshaller.parse(stream));
@@ -134,22 +130,20 @@ class NoopMarshallerTest {
         final var arr = TestUtils.randomBytes(100);
         try (final var stream = Mockito.mock(InputStream.class)) {
             Mockito.when(stream.read(Mockito.any(), Mockito.anyInt(), Mockito.anyInt()))
-                    .thenAnswer(
-                            invocation -> {
-                                byte[] data = invocation.getArgument(0);
-                                int offset = invocation.getArgument(1);
-                                // Don't quite read everything
-                                System.arraycopy(arr, 0, data, offset, 50);
-                                return 50;
-                            })
-                    .thenAnswer(
-                            invocation -> {
-                                byte[] data = invocation.getArgument(0);
-                                int offset = invocation.getArgument(1);
-                                // Read the rest
-                                System.arraycopy(arr, 50, data, offset, 50);
-                                return 50;
-                            })
+                    .thenAnswer(invocation -> {
+                        byte[] data = invocation.getArgument(0);
+                        int offset = invocation.getArgument(1);
+                        // Don't quite read everything
+                        System.arraycopy(arr, 0, data, offset, 50);
+                        return 50;
+                    })
+                    .thenAnswer(invocation -> {
+                        byte[] data = invocation.getArgument(0);
+                        int offset = invocation.getArgument(1);
+                        // Read the rest
+                        System.arraycopy(arr, 50, data, offset, 50);
+                        return 50;
+                    })
                     .thenReturn(-1);
 
             final var buf = marshaller.parse(stream);

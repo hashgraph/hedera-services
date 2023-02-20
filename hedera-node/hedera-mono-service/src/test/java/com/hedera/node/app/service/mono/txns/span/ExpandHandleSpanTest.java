@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.span;
 
 import static org.mockito.Mockito.verify;
@@ -33,26 +34,25 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ExpandHandleSpanTest {
-    @Mock private SpanMapManager handleSpanMap;
-    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock
+    private SpanMapManager handleSpanMap;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
 
     private final AccessorFactory accessorFactory = new AccessorFactory(dynamicProperties);
 
-    private final byte[] validTxnBytes =
-            Transaction.newBuilder()
-                    .setBodyBytes(
-                            TransactionBody.newBuilder()
-                                    .setTransactionID(
-                                            TransactionID.newBuilder()
-                                                    .setTransactionValidStart(
-                                                            Timestamp.newBuilder()
-                                                                    .setSeconds(1_234_567L)
-                                                                    .build())
-                                                    .setAccountID(IdUtils.asAccount("0.0.1234")))
-                                    .build()
-                                    .toByteString())
+    private final byte[] validTxnBytes = Transaction.newBuilder()
+            .setBodyBytes(TransactionBody.newBuilder()
+                    .setTransactionID(TransactionID.newBuilder()
+                            .setTransactionValidStart(Timestamp.newBuilder()
+                                    .setSeconds(1_234_567L)
+                                    .build())
+                            .setAccountID(IdUtils.asAccount("0.0.1234")))
                     .build()
-                    .toByteArray();
+                    .toByteString())
+            .build()
+            .toByteArray();
 
     private ExpandHandleSpan subject;
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.commands.system;
 
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED;
@@ -29,7 +30,8 @@ import picocli.CommandLine;
         subcommands = {picocli.CommandLine.HelpCommand.class},
         description = "Aborts any scheduled freeze and discards any staged NMT upgrade")
 public class FreezeAbortCommand implements Callable<Integer> {
-    @CommandLine.ParentCommand private Yahcli yahcli;
+    @CommandLine.ParentCommand
+    private Yahcli yahcli;
 
     @Override
     public Integer call() throws Exception {
@@ -43,8 +45,7 @@ public class FreezeAbortCommand implements Callable<Integer> {
             COMMON_MESSAGES.info("SUCCESS - freeze aborted and/or staged upgrade discarded");
         } else {
             COMMON_MESSAGES.warn(
-                    "FAILED - Scheduled freeze is not aborted and/or staged upgrade is not"
-                            + " discarded");
+                    "FAILED - Scheduled freeze is not aborted and/or staged upgrade is not" + " discarded");
             return 1;
         }
 

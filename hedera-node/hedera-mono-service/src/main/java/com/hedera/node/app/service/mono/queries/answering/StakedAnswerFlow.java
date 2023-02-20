@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.answering;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
@@ -111,12 +112,10 @@ public final class StakedAnswerFlow implements AnswerFlow {
             return service.responseGiven(query, view, hygieneStatus);
         }
 
-        final var bestGuessNow =
-                (null != optionalPayment)
-                        ? optionalPayment.getTxnId().getTransactionValidStart()
-                        : asTimestamp(Instant.now());
-        final var usagePrices =
-                resourceCosts.defaultPricesGiven(service.canonicalFunction(), bestGuessNow);
+        final var bestGuessNow = (null != optionalPayment)
+                ? optionalPayment.getTxnId().getTransactionValidStart()
+                : asTimestamp(Instant.now());
+        final var usagePrices = resourceCosts.defaultPricesGiven(service.canonicalFunction(), bestGuessNow);
 
         long fee = 0L;
         final Map<String, Object> queryCtx = new HashMap<>();
@@ -129,10 +128,7 @@ public final class StakedAnswerFlow implements AnswerFlow {
         }
 
         if (service.needsAnswerOnlyCost(query)) {
-            fee =
-                    totalOf(
-                            fees.estimatePayment(
-                                    query, usagePrices, view, bestGuessNow, ANSWER_ONLY));
+            fee = totalOf(fees.estimatePayment(query, usagePrices, view, bestGuessNow, ANSWER_ONLY));
         }
 
         return service.responseGiven(query, view, OK, fee, queryCtx);
@@ -142,8 +138,7 @@ public final class StakedAnswerFlow implements AnswerFlow {
         if (accountNums.isSuperuser(payment.getPayer().getAccountNum())) {
             return OK;
         }
-        final var xfers =
-                payment.getTxn().getCryptoTransfer().getTransfers().getAccountAmountsList();
+        final var xfers = payment.getTxn().getCryptoTransfer().getTransfers().getAccountAmountsList();
         final var feeStatus =
                 queryFeeCheck.nodePaymentValidity(xfers, fee, payment.getTxn().getNodeAccountID());
         if (feeStatus != OK) {
@@ -171,9 +166,7 @@ public final class StakedAnswerFlow implements AnswerFlow {
     }
 
     private ResponseCodeEnum systemScreen(
-            final HederaFunctionality function,
-            @Nullable final SignedTxnAccessor payment,
-            final Query query) {
+            final HederaFunctionality function, @Nullable final SignedTxnAccessor payment, final Query query) {
         AccountID payer = null;
         if (null != payment) {
             payer = payment.getPayer();

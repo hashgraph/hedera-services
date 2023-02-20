@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees;
 
 import com.hedera.node.app.service.mono.grpc.marshalling.CustomFeeMeta;
@@ -48,8 +49,7 @@ public class StandardCustomPayerExemptions implements CustomFeePayerExemptions {
      * @return whether the payer is exempt from the fee
      */
     @Override
-    public boolean isPayerExempt(
-            final CustomFeeMeta feeMeta, final FcCustomFee fee, final Id payer) {
+    public boolean isPayerExempt(final CustomFeeMeta feeMeta, final FcCustomFee fee, final Id payer) {
         if (feeMeta.treasuryId().equals(payer)) {
             return true;
         }

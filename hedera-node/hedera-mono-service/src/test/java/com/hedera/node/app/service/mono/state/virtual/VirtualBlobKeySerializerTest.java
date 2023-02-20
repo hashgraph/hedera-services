@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey.BYTES_IN_SERIALIZED_FORM;
@@ -76,8 +77,7 @@ class VirtualBlobKeySerializerTest {
     void equalsUsingByteBufferWorks() throws IOException {
         final var someKey = new VirtualBlobKey(FILE_DATA, entityNum);
         final var sameTypeDiffNum = new VirtualBlobKey(FILE_DATA, otherEntityNum);
-        final var diffTypeSameNum =
-                new VirtualBlobKey(VirtualBlobKey.Type.FILE_METADATA, entityNum);
+        final var diffTypeSameNum = new VirtualBlobKey(VirtualBlobKey.Type.FILE_METADATA, entityNum);
 
         final var bin = mock(ByteBuffer.class);
         given(bin.get()).willReturn((byte) someKey.getType().ordinal());

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
 import static org.mockito.Mockito.verify;
@@ -35,8 +36,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AutoAssocTokenRelsCommitInterceptorTest {
-    @Mock private UsageLimits usageLimits;
-    @Mock private SideEffectsTracker sideEffectsTracker;
+    @Mock
+    private UsageLimits usageLimits;
+
+    @Mock
+    private SideEffectsTracker sideEffectsTracker;
 
     private AutoAssocTokenRelsCommitInterceptor subject;
 
@@ -47,8 +51,7 @@ class AutoAssocTokenRelsCommitInterceptorTest {
 
     @Test
     void recordsOnlyNewAssociations() {
-        final var changes =
-                new EntityChangeSet<Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty>();
+        final var changes = new EntityChangeSet<Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty>();
         changes.include(Pair.of(aAccountId, alreadyAssocTokenId), extantRel, Map.of());
         changes.include(Pair.of(aAccountId, newAssocTokenId), null, Map.of());
 

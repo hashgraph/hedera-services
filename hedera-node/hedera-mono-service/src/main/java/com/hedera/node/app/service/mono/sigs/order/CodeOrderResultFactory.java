@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.order;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
@@ -135,18 +136,15 @@ public enum CodeOrderResultFactory implements SigningOrderResultFactory<Response
             new SigningOrderResult<>(INVALID_SIGNATURE);
     static final SigningOrderResult<ResponseCodeEnum> MISSING_ACCOUNT_RESULT =
             new SigningOrderResult<>(ACCOUNT_ID_DOES_NOT_EXIST);
-    static final SigningOrderResult<ResponseCodeEnum> MISSING_FILE_RESULT =
-            new SigningOrderResult<>(INVALID_FILE_ID);
+    static final SigningOrderResult<ResponseCodeEnum> MISSING_FILE_RESULT = new SigningOrderResult<>(INVALID_FILE_ID);
     static final SigningOrderResult<ResponseCodeEnum> MISSING_CONTRACT_RESULT =
             new SigningOrderResult<>(INVALID_CONTRACT_ID);
     static final SigningOrderResult<ResponseCodeEnum> IMMUTABLE_CONTRACT_RESULT =
             new SigningOrderResult<>(MODIFYING_IMMUTABLE_CONTRACT);
-    static final SigningOrderResult<ResponseCodeEnum> MISSING_TOPIC_RESULT =
-            new SigningOrderResult<>(INVALID_TOPIC_ID);
+    static final SigningOrderResult<ResponseCodeEnum> MISSING_TOPIC_RESULT = new SigningOrderResult<>(INVALID_TOPIC_ID);
     static final SigningOrderResult<ResponseCodeEnum> INVALID_AUTORENEW_RESULT =
             new SigningOrderResult<>(INVALID_AUTORENEW_ACCOUNT);
-    static final SigningOrderResult<ResponseCodeEnum> MISSING_TOKEN_RESULT =
-            new SigningOrderResult<>(INVALID_TOKEN_ID);
+    static final SigningOrderResult<ResponseCodeEnum> MISSING_TOKEN_RESULT = new SigningOrderResult<>(INVALID_TOKEN_ID);
     static final SigningOrderResult<ResponseCodeEnum> MISSING_SCHEDULE_RESULT =
             new SigningOrderResult<>(INVALID_SCHEDULE_ID);
     static final SigningOrderResult<ResponseCodeEnum> UNRESOLVABLE_SIGNERS_RESULT =

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.utils;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
@@ -34,11 +35,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class KeyActivationUtilsTest {
-    @Mock private MessageFrame grandparent;
-    @Mock private MessageFrame parent;
-    @Mock private MessageFrame messageFrame;
-    @Mock private WorldStateAccount worldStateAccount;
-    @Mock private HederaStackedWorldStateUpdater worldUpdater;
+    @Mock
+    private MessageFrame grandparent;
+
+    @Mock
+    private MessageFrame parent;
+
+    @Mock
+    private MessageFrame messageFrame;
+
+    @Mock
+    private WorldStateAccount worldStateAccount;
+
+    @Mock
+    private HederaStackedWorldStateUpdater worldUpdater;
 
     @Test
     void testsAccountIsToken() {

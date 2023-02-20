@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
@@ -129,8 +130,7 @@ public final class AwareNodeDiligenceScreen {
             return true;
         }
 
-        final var memoValidity =
-                validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte());
+        final var memoValidity = validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte());
         if (memoValidity != OK) {
             txnCtx.setStatus(memoValidity);
             return true;

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.entities;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -30,8 +31,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class OnDiskTokenRelSupplierTest {
     private final OnDiskTokenRelSupplier subject = new OnDiskTokenRelSupplier();
 
-    @Mock private SerializableDataInputStream in;
-    @Mock private SerializableDataOutputStream out;
+    @Mock
+    private SerializableDataInputStream in;
+
+    @Mock
+    private SerializableDataOutputStream out;
 
     @Test
     void ioIsNoop() throws IOException {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts;
 
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
@@ -68,7 +69,6 @@ public class HederaEvmStackedWorldStateUpdater
     }
 
     private boolean isTokenRedirect(final Address address) {
-        return hederaEvmEntityAccess.isTokenAccount(address)
-                && evmProperties.isRedirectTokenCallsEnabled();
+        return hederaEvmEntityAccess.isTokenAccount(address) && evmProperties.isRedirectTokenCallsEnabled();
     }
 }

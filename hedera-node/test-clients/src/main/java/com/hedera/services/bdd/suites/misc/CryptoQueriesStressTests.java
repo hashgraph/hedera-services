@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.misc;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -57,10 +58,9 @@ public class CryptoQueriesStressTests extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    getAccountInfoStress(), getAccountBalanceStress(),
-                });
+        return List.of(new HapiSpec[] {
+            getAccountInfoStress(), getAccountBalanceStress(),
+        });
     }
 
     private HapiSpec getAccountBalanceStress() {
@@ -97,62 +97,54 @@ public class CryptoQueriesStressTests extends HapiSuite {
     }
 
     private Function<HapiSpec, OpProvider> getAccountRecordsFactory() {
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        return List.of(
-                                cryptoCreate("somebody").sendThreshold(1L),
-                                cryptoTransfer(tinyBarsFromTo("somebody", FUNDING, 2L))
-                                        .via("first"),
-                                cryptoTransfer(tinyBarsFromTo("somebody", FUNDING, 3L))
-                                        .via("second"),
-                                cryptoTransfer(tinyBarsFromTo("somebody", FUNDING, 4L))
-                                        .via("third"));
-                    }
+        return spec -> new OpProvider() {
+            @Override
+            public List<HapiSpecOperation> suggestedInitializers() {
+                return List.of(
+                        cryptoCreate("somebody").sendThreshold(1L),
+                        cryptoTransfer(tinyBarsFromTo("somebody", FUNDING, 2L)).via("first"),
+                        cryptoTransfer(tinyBarsFromTo("somebody", FUNDING, 3L)).via("second"),
+                        cryptoTransfer(tinyBarsFromTo("somebody", FUNDING, 4L)).via("third"));
+            }
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        return Optional.of(
-                                getAccountRecords("somebody")
-                                        .has(
-                                                inOrder(
-                                                        recordWith().txnId("first"),
-                                                        recordWith().txnId("second"),
-                                                        recordWith().txnId("third")))
-                                        .noLogging());
-                    }
-                };
+            @Override
+            public Optional<HapiSpecOperation> get() {
+                return Optional.of(getAccountRecords("somebody")
+                        .has(inOrder(
+                                recordWith().txnId("first"),
+                                recordWith().txnId("second"),
+                                recordWith().txnId("third")))
+                        .noLogging());
+            }
+        };
     }
 
     private Function<HapiSpec, OpProvider> getAccountBalanceFactory() {
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        return List.of(cryptoCreate("somebody"));
-                    }
+        return spec -> new OpProvider() {
+            @Override
+            public List<HapiSpecOperation> suggestedInitializers() {
+                return List.of(cryptoCreate("somebody"));
+            }
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        return Optional.of(getAccountBalance("somebody").noLogging());
-                    }
-                };
+            @Override
+            public Optional<HapiSpecOperation> get() {
+                return Optional.of(getAccountBalance("somebody").noLogging());
+            }
+        };
     }
 
     private Function<HapiSpec, OpProvider> getAccountInfoFactory() {
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        return List.of(cryptoCreate("somebody"));
-                    }
+        return spec -> new OpProvider() {
+            @Override
+            public List<HapiSpecOperation> suggestedInitializers() {
+                return List.of(cryptoCreate("somebody"));
+            }
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        return Optional.of(getAccountInfo("somebody").noLogging());
-                    }
-                };
+            @Override
+            public Optional<HapiSpecOperation> get() {
+                return Optional.of(getAccountInfo("somebody").noLogging());
+            }
+        };
     }
 
     private void configureFromCi(HapiSpec spec) {
@@ -163,10 +155,7 @@ public class CryptoQueriesStressTests extends HapiSuite {
     }
 
     private <T> void configure(
-            String name,
-            Consumer<T> configurer,
-            HapiPropertySource ciProps,
-            Function<String, T> getter) {
+            String name, Consumer<T> configurer, HapiPropertySource ciProps, Function<String, T> getter) {
         if (ciProps.has(name)) {
             configurer.accept(getter.apply(name));
         }

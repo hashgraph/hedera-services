@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts;
 
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
@@ -72,31 +73,80 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ContractsModuleTest {
-    @Mock GlobalDynamicProperties globalDynamicProperties;
-    @Mock UsagePricesProvider usagePricesProvider;
-    @Mock HbarCentExchange hbarCentExchange;
-    @Mock EvmSigsVerifier evmSigsVerifier;
-    @Mock RecordsHistorian recordsHistorian;
-    @Mock ImpliedTransfersMarshal impliedTransfersMarshal;
-    @Mock FeeCalculator feeCalculatorProvider;
-    @Mock StateView stateView;
-    @Mock TxnAwareEvmSigsVerifier txnAwareEvmSigsVerifier;
-    @Mock com.hedera.node.app.service.mono.state.expiry.ExpiringCreations ExpiringCreations;
-    @Mock InfrastructureFactory InfrastructureFactory;
-    @Mock Supplier<Instant> now;
-    @Mock PrngLogic prngLogic;
-    @Mock LivePricesSource livePricesSource;
-    @Mock TransactionContext transactionContext;
-    @Mock EntityCreator entityCreator;
-    @Mock MessageFrame messageFrame;
-    @Mock WorldUpdater worldUpdater;
-    @Mock CodeCache codeCache;
-    @Mock GasCalculator gasCalculator;
-    @Mock AliasManager aliasManager;
-    @Mock MessageCallProcessor messageCallProcessor;
-    @Mock ContractCreationProcessor contractCreationProcessor;
-    @Mock AutoCreationLogic autoCreationLogic;
-    @Mock private BiPredicate<Address, MessageFrame> addressValidator;
+    @Mock
+    GlobalDynamicProperties globalDynamicProperties;
+
+    @Mock
+    UsagePricesProvider usagePricesProvider;
+
+    @Mock
+    HbarCentExchange hbarCentExchange;
+
+    @Mock
+    EvmSigsVerifier evmSigsVerifier;
+
+    @Mock
+    RecordsHistorian recordsHistorian;
+
+    @Mock
+    ImpliedTransfersMarshal impliedTransfersMarshal;
+
+    @Mock
+    FeeCalculator feeCalculatorProvider;
+
+    @Mock
+    StateView stateView;
+
+    @Mock
+    TxnAwareEvmSigsVerifier txnAwareEvmSigsVerifier;
+
+    @Mock
+    com.hedera.node.app.service.mono.state.expiry.ExpiringCreations ExpiringCreations;
+
+    @Mock
+    InfrastructureFactory InfrastructureFactory;
+
+    @Mock
+    Supplier<Instant> now;
+
+    @Mock
+    PrngLogic prngLogic;
+
+    @Mock
+    LivePricesSource livePricesSource;
+
+    @Mock
+    TransactionContext transactionContext;
+
+    @Mock
+    EntityCreator entityCreator;
+
+    @Mock
+    MessageFrame messageFrame;
+
+    @Mock
+    WorldUpdater worldUpdater;
+
+    @Mock
+    CodeCache codeCache;
+
+    @Mock
+    GasCalculator gasCalculator;
+
+    @Mock
+    AliasManager aliasManager;
+
+    @Mock
+    MessageCallProcessor messageCallProcessor;
+
+    @Mock
+    ContractCreationProcessor contractCreationProcessor;
+
+    @Mock
+    AutoCreationLogic autoCreationLogic;
+
+    @Mock
+    private BiPredicate<Address, MessageFrame> addressValidator;
 
     ContractsTestComponent subject;
 
@@ -105,41 +155,39 @@ class ContractsModuleTest {
 
     @BeforeEach
     void createComponent() {
-        subject =
-                DaggerContractsTestComponent.builder()
-                        .globalDynamicProperties(globalDynamicProperties)
-                        .usagePricesProvider(usagePricesProvider)
-                        .hbarCentExchange(hbarCentExchange)
-                        .evmSigsVerifier(evmSigsVerifier)
-                        .recordsHistorian(recordsHistorian)
-                        .impliedTransferMarshal(impliedTransfersMarshal)
-                        .feeCalculator(feeCalculatorProvider)
-                        .stateView(stateView)
-                        .txnAwareSigsVerifier(txnAwareEvmSigsVerifier)
-                        .ExpiringCreations(ExpiringCreations)
-                        .InfrastructureFactory(InfrastructureFactory)
-                        .now(now)
-                        .prngLogic(prngLogic)
-                        .livePricesSource(livePricesSource)
-                        .transactionContext(transactionContext)
-                        .entityCreator(entityCreator)
-                        .autoCreationLogic(autoCreationLogic)
-                        .build();
+        subject = DaggerContractsTestComponent.builder()
+                .globalDynamicProperties(globalDynamicProperties)
+                .usagePricesProvider(usagePricesProvider)
+                .hbarCentExchange(hbarCentExchange)
+                .evmSigsVerifier(evmSigsVerifier)
+                .recordsHistorian(recordsHistorian)
+                .impliedTransferMarshal(impliedTransfersMarshal)
+                .feeCalculator(feeCalculatorProvider)
+                .stateView(stateView)
+                .txnAwareSigsVerifier(txnAwareEvmSigsVerifier)
+                .ExpiringCreations(ExpiringCreations)
+                .InfrastructureFactory(InfrastructureFactory)
+                .now(now)
+                .prngLogic(prngLogic)
+                .livePricesSource(livePricesSource)
+                .transactionContext(transactionContext)
+                .entityCreator(entityCreator)
+                .autoCreationLogic(autoCreationLogic)
+                .build();
     }
 
     @Test
     void canManufactureCallLocalProcessors() {
         final var pretendVersion = "0.0.1";
         given(globalDynamicProperties.evmVersion()).willReturn(pretendVersion);
-        final var supplier =
-                provideCallLocalEvmTxProcessorFactory(
-                        codeCache,
-                        livePricesSource,
-                        globalDynamicProperties,
-                        gasCalculator,
-                        Map.of(pretendVersion, () -> messageCallProcessor),
-                        Map.of(pretendVersion, () -> contractCreationProcessor),
-                        aliasManager);
+        final var supplier = provideCallLocalEvmTxProcessorFactory(
+                codeCache,
+                livePricesSource,
+                globalDynamicProperties,
+                gasCalculator,
+                Map.of(pretendVersion, () -> messageCallProcessor),
+                Map.of(pretendVersion, () -> contractCreationProcessor),
+                aliasManager);
         assertInstanceOf(CallLocalEvmTxProcessor.class, supplier.get());
     }
 
@@ -165,13 +213,11 @@ class ContractsModuleTest {
     @Test
     void prngSeedOverwritesDifficulty() {
         var evm = subject.evmV_0_34();
-        var prngOperation =
-                evm.operationAtOffset(
-                        CodeFactory.createCode(Bytes.of(0x44), Hash.ZERO, 0, false), 0);
+        var prngOperation = evm.operationAtOffset(CodeFactory.createCode(Bytes.of(0x44), Hash.ZERO, 0, false), 0);
 
         byte[] testBytes = {
-            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-            25, 26, 27, 28, 29, 30, 31, 32
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+            30, 31, 32
         };
         given(prngLogic.getNMinus3RunningHashBytes()).willReturn(testBytes);
 
@@ -191,18 +237,15 @@ class ContractsModuleTest {
     @Test
     void largePrngSeedTrimsAsExpected() {
         var evm = subject.evmV_0_34();
-        var prngOperation =
-                evm.operationAtOffset(
-                        CodeFactory.createCode(Bytes.of(0x44), Hash.ZERO, 0, false), 0);
+        var prngOperation = evm.operationAtOffset(CodeFactory.createCode(Bytes.of(0x44), Hash.ZERO, 0, false), 0);
 
         byte[] testBytes = {
-            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-            25, 26, 27, 28, 29, 30, 31, 32
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+            30, 31, 32
         };
         byte[] seedBytes = {
-            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-            25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46,
-            47, 48
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+            30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48
         };
         given(prngLogic.getNMinus3RunningHashBytes()).willReturn(seedBytes);
 
@@ -222,9 +265,7 @@ class ContractsModuleTest {
     @Test
     void prngSeedOutOfGas() {
         var evm = subject.evmV_0_34();
-        var prngOperation =
-                evm.operationAtOffset(
-                        CodeFactory.createCode(Bytes.of(0x44), Hash.ZERO, 0, false), 0);
+        var prngOperation = evm.operationAtOffset(CodeFactory.createCode(Bytes.of(0x44), Hash.ZERO, 0, false), 0);
 
         given(messageFrame.getRemainingGas()).willReturn(0L);
 
@@ -235,21 +276,17 @@ class ContractsModuleTest {
     @Test
     void difficultyInV_0_30() {
         var evm = subject.evmV_0_30();
-        var difficultyOperation =
-                evm.operationAtOffset(
-                        CodeFactory.createCode(Bytes.of(0x44), Hash.ZERO, 0, false), 0);
+        var difficultyOperation = evm.operationAtOffset(CodeFactory.createCode(Bytes.of(0x44), Hash.ZERO, 0, false), 0);
 
         final var bytesCaptor = ArgumentCaptor.forClass(Bytes.class);
 
         doNothing().when(messageFrame).pushStackItem(bytesCaptor.capture());
-        given(messageFrame.getBlockValues())
-                .willReturn(
-                        new BlockValues() {
-                            @Override
-                            public Bytes getDifficultyBytes() {
-                                return Bytes32.ZERO;
-                            }
-                        });
+        given(messageFrame.getBlockValues()).willReturn(new BlockValues() {
+            @Override
+            public Bytes getDifficultyBytes() {
+                return Bytes32.ZERO;
+            }
+        });
         given(messageFrame.getRemainingGas()).willReturn(300L);
 
         var result = difficultyOperation.execute(messageFrame, evm);
@@ -265,8 +302,7 @@ class ContractsModuleTest {
         Bytes32 chainIdBytes = Bytes32.fromHexStringLenient("0x12345678");
         for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_34())) {
             var chainIdOperation =
-                    evm.operationAtOffset(
-                            CodeFactory.createCode(Bytes.of(0x46), Hash.ZERO, 0, false), 0);
+                    evm.operationAtOffset(CodeFactory.createCode(Bytes.of(0x46), Hash.ZERO, 0, false), 0);
 
             final var bytesCaptor = ArgumentCaptor.forClass(Bytes.class);
 
@@ -287,8 +323,7 @@ class ContractsModuleTest {
     void chainIdOutOfGas() {
         for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_34())) {
             var chainIdOperation =
-                    evm.operationAtOffset(
-                            CodeFactory.createCode(Bytes.of(0x46), Hash.ZERO, 0, false), 0);
+                    evm.operationAtOffset(CodeFactory.createCode(Bytes.of(0x46), Hash.ZERO, 0, false), 0);
             given(messageFrame.getRemainingGas()).willReturn(0L);
             var result = chainIdOperation.execute(messageFrame, evm);
             assertEquals(ExceptionalHaltReason.INSUFFICIENT_GAS, result.getHaltReason());
@@ -298,11 +333,8 @@ class ContractsModuleTest {
     @Test
     void balanceBadAddress() {
         var evm = subject.evmV_0_30();
-        var balanceOperation =
-                evm.operationAtOffset(
-                        CodeFactory.createCode(Bytes.of(0x31), Hash.ZERO, 0, false), 0);
-        given(messageFrame.getStackItem(0))
-                .willReturn(Bytes.fromHexString("0xdeadc0dedeadc0dedeadc0dedeadc0de"));
+        var balanceOperation = evm.operationAtOffset(CodeFactory.createCode(Bytes.of(0x31), Hash.ZERO, 0, false), 0);
+        given(messageFrame.getStackItem(0)).willReturn(Bytes.fromHexString("0xdeadc0dedeadc0dedeadc0dedeadc0de"));
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.get(any())).willReturn(null);
         var result = balanceOperation.execute(messageFrame, evm);
@@ -314,9 +346,7 @@ class ContractsModuleTest {
     void balanceGoodAddress() {
 
         var evm = subject.evmV_0_34();
-        var balanceOperation =
-                evm.operationAtOffset(
-                        CodeFactory.createCode(Bytes.of(0x31), Hash.ZERO, 0, false), 0);
+        var balanceOperation = evm.operationAtOffset(CodeFactory.createCode(Bytes.of(0x31), Hash.ZERO, 0, false), 0);
         ((HederaBalanceOperation) balanceOperation).setAddressValidator(addressValidator);
 
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);

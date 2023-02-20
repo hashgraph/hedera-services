@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries;
 
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -52,8 +53,7 @@ public interface AnswerService {
      * @param cost the cost of the query
      * @return an appropriate response
      */
-    Response responseGiven(
-            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost);
+    Response responseGiven(Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost);
 
     default Response responseGiven(
             final Query query,
@@ -72,8 +72,7 @@ public interface AnswerService {
 
     Optional<SignedTxnAccessor> extractPaymentFrom(Query query);
 
-    default Response responseGiven(
-            final Query query, final StateView view, final ResponseCodeEnum validity) {
+    default Response responseGiven(final Query query, final StateView view, final ResponseCodeEnum validity) {
         return responseGiven(query, view, validity, 0L);
     }
 
@@ -89,8 +88,7 @@ public interface AnswerService {
         return header(status, COST_ANSWER, cost);
     }
 
-    default ResponseHeader header(
-            final ResponseCodeEnum status, final ResponseType type, final long cost) {
+    default ResponseHeader header(final ResponseCodeEnum status, final ResponseType type, final long cost) {
         return ResponseHeader.newBuilder()
                 .setNodeTransactionPrecheckCode(status)
                 .setResponseType(type)

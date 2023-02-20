@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils.accessors;
 
 import static com.hedera.node.app.service.mono.utils.MiscUtils.FUNCTION_EXTRACTOR;
@@ -64,11 +65,10 @@ import org.junit.jupiter.api.Test;
 class PlatformTxnAccessorTest {
     private static final byte[] NONSENSE = "Jabberwocky".getBytes();
 
-    TransactionBody someTxn =
-            TransactionBody.newBuilder()
-                    .setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
-                    .setMemo("Hi!")
-                    .build();
+    TransactionBody someTxn = TransactionBody.newBuilder()
+            .setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
+            .setMemo("Hi!")
+            .build();
 
     @Test
     void delegatesSettingSpanMap() {
@@ -92,7 +92,8 @@ class PlatformTxnAccessorTest {
     @Test
     void hasSpanMap() throws InvalidProtocolBufferException {
         // setup:
-        final var contents = Transaction.newBuilder().setBodyBytes(someTxn.toByteString()).build();
+        final var contents =
+                Transaction.newBuilder().setBodyBytes(someTxn.toByteString()).build();
 
         final PlatformTxnAccessor subject = PlatformTxnAccessor.from(contents);
 
@@ -138,10 +139,9 @@ class PlatformTxnAccessorTest {
     @Test
     void extractorReturnsExpectedFunction() {
         // given:
-        someTxn =
-                someTxn.toBuilder()
-                        .setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.newBuilder())
-                        .build();
+        someTxn = someTxn.toBuilder()
+                .setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.newBuilder())
+                .build();
 
         // expect:
         assertEquals(ConsensusCreateTopic, FUNCTION_EXTRACTOR.apply(someTxn));
@@ -159,20 +159,19 @@ class PlatformTxnAccessorTest {
     @Test
     void failsWithIllegalStateOnUncheckedConstruction() {
         // expect:
-        assertThrows(
-                InvalidProtocolBufferException.class, () -> PlatformTxnAccessor.from(NONSENSE));
+        assertThrows(InvalidProtocolBufferException.class, () -> PlatformTxnAccessor.from(NONSENSE));
     }
 
     @Test
     void failsOnInvalidTxn() {
         // given:
-        final Transaction signedNonsenseTxn =
-                Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(NONSENSE)).build();
+        final Transaction signedNonsenseTxn = Transaction.newBuilder()
+                .setBodyBytes(ByteString.copyFrom(NONSENSE))
+                .build();
 
         // then:
         assertThrows(
-                InvalidProtocolBufferException.class,
-                () -> PlatformTxnAccessor.from(signedNonsenseTxn.toByteArray()));
+                InvalidProtocolBufferException.class, () -> PlatformTxnAccessor.from(signedNonsenseTxn.toByteArray()));
     }
 
     @Test
@@ -191,28 +190,20 @@ class PlatformTxnAccessorTest {
 
     @Test
     void getsCorrectLoggableForm() throws Exception {
-        final Transaction signedTxnWithBody =
-                Transaction.newBuilder()
-                        .setBodyBytes(someTxn.toByteString())
-                        .setSigMap(
-                                SignatureMap.newBuilder()
-                                        .addSigPair(
-                                                SignaturePair.newBuilder()
-                                                        .setPubKeyPrefix(
-                                                                ByteString.copyFrom(
-                                                                        "UNREAL".getBytes()))
-                                                        .setEd25519(
-                                                                ByteString.copyFrom(
-                                                                        "FAKE".getBytes()))))
-                        .build();
+        final Transaction signedTxnWithBody = Transaction.newBuilder()
+                .setBodyBytes(someTxn.toByteString())
+                .setSigMap(SignatureMap.newBuilder()
+                        .addSigPair(SignaturePair.newBuilder()
+                                .setPubKeyPrefix(ByteString.copyFrom("UNREAL".getBytes()))
+                                .setEd25519(ByteString.copyFrom("FAKE".getBytes()))))
+                .build();
 
         // when:
         final PlatformTxnAccessor subject = PlatformTxnAccessor.from(signedTxnWithBody);
         final Transaction signedTxn4Log = subject.getSignedTxnWrapper();
-        final Transaction asBodyBytes =
-                signedTxn4Log.toBuilder()
-                        .setBodyBytes(CommonUtils.extractTransactionBodyByteString(signedTxn4Log))
-                        .build();
+        final Transaction asBodyBytes = signedTxn4Log.toBuilder()
+                .setBodyBytes(CommonUtils.extractTransactionBodyByteString(signedTxn4Log))
+                .build();
 
         // then:
         assertEquals(someTxn, CommonUtils.extractTransactionBody(signedTxn4Log));
@@ -221,37 +212,27 @@ class PlatformTxnAccessorTest {
 
     @Test
     void getsCorrectLoggableFormWithSignedTransactionBytes() throws Exception {
-        final SignedTransaction signedTxn =
-                SignedTransaction.newBuilder()
-                        .setBodyBytes(someTxn.toByteString())
-                        .setSigMap(
-                                SignatureMap.newBuilder()
-                                        .addSigPair(
-                                                SignaturePair.newBuilder()
-                                                        .setPubKeyPrefix(
-                                                                ByteString.copyFrom(
-                                                                        "UNREAL".getBytes()))
-                                                        .setEd25519(
-                                                                ByteString.copyFrom(
-                                                                        "FAKE".getBytes()))
-                                                        .build()))
-                        .build();
+        final SignedTransaction signedTxn = SignedTransaction.newBuilder()
+                .setBodyBytes(someTxn.toByteString())
+                .setSigMap(SignatureMap.newBuilder()
+                        .addSigPair(SignaturePair.newBuilder()
+                                .setPubKeyPrefix(ByteString.copyFrom("UNREAL".getBytes()))
+                                .setEd25519(ByteString.copyFrom("FAKE".getBytes()))
+                                .build()))
+                .build();
 
-        final Transaction txn =
-                Transaction.newBuilder()
-                        .setSignedTransactionBytes(signedTxn.toByteString())
-                        .build();
+        final Transaction txn = Transaction.newBuilder()
+                .setSignedTransactionBytes(signedTxn.toByteString())
+                .build();
 
         // when:
         final PlatformTxnAccessor subject = PlatformTxnAccessor.from(txn);
         final Transaction signedTxn4Log = subject.getSignedTxnWrapper();
 
         final ByteString signedTxnBytes = signedTxn4Log.getSignedTransactionBytes();
-        final Transaction asBodyBytes =
-                signedTxn4Log.toBuilder()
-                        .setSignedTransactionBytes(
-                                CommonUtils.extractTransactionBodyByteString(signedTxn4Log))
-                        .build();
+        final Transaction asBodyBytes = signedTxn4Log.toBuilder()
+                .setSignedTransactionBytes(CommonUtils.extractTransactionBodyByteString(signedTxn4Log))
+                .build();
 
         // then:
         assertEquals(signedTxnBytes, txn.getSignedTransactionBytes());
@@ -276,32 +257,25 @@ class PlatformTxnAccessorTest {
     @SuppressWarnings("java:S5961")
     void delegatesToSignedTxnAccessor() throws InvalidProtocolBufferException {
         final AccountID payer = asAccount("0.0.2");
-        final TransactionBody someTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(
-                                TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
-                        .setMemo("Hi!")
-                        .setTransactionFee(10L)
-                        .setConsensusSubmitMessage(
-                                ConsensusSubmitMessageTransactionBody.newBuilder()
-                                        .setTopicID(asTopic("0.0.10"))
-                                        .build())
-                        .build();
+        final TransactionBody someTxn = TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
+                .setMemo("Hi!")
+                .setTransactionFee(10L)
+                .setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody.newBuilder()
+                        .setTopicID(asTopic("0.0.10"))
+                        .build())
+                .build();
         final ByteString canonicalSig =
-                ByteString.copyFromUtf8(
-                        "0123456789012345678901234567890123456789012345678901234567890123");
-        final SignatureMap onePairSigMap =
-                SignatureMap.newBuilder()
-                        .addSigPair(
-                                SignaturePair.newBuilder()
-                                        .setPubKeyPrefix(ByteString.copyFromUtf8("a"))
-                                        .setEd25519(canonicalSig))
-                        .build();
-        final Transaction signedTxnWithBody =
-                Transaction.newBuilder()
-                        .setBodyBytes(someTxn.toByteString())
-                        .setSigMap(onePairSigMap)
-                        .build();
+                ByteString.copyFromUtf8("0123456789012345678901234567890123456789012345678901234567890123");
+        final SignatureMap onePairSigMap = SignatureMap.newBuilder()
+                .addSigPair(SignaturePair.newBuilder()
+                        .setPubKeyPrefix(ByteString.copyFromUtf8("a"))
+                        .setEd25519(canonicalSig))
+                .build();
+        final Transaction signedTxnWithBody = Transaction.newBuilder()
+                .setBodyBytes(someTxn.toByteString())
+                .setSigMap(onePairSigMap)
+                .build();
         final var aliasManager = mock(AliasManager.class);
         final var stateView = mock(StateView.class);
 
@@ -389,94 +363,86 @@ class PlatformTxnAccessorTest {
 
     @Test
     void toLoggableStringWorks() throws InvalidProtocolBufferException {
-        final TransactionBody someTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(
-                                TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
-                        .setMemo("Hi!")
-                        .setTransactionFee(10L)
-                        .setConsensusSubmitMessage(
-                                ConsensusSubmitMessageTransactionBody.newBuilder()
-                                        .setTopicID(asTopic("0.0.10"))
-                                        .build())
-                        .build();
+        final TransactionBody someTxn = TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
+                .setMemo("Hi!")
+                .setTransactionFee(10L)
+                .setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody.newBuilder()
+                        .setTopicID(asTopic("0.0.10"))
+                        .build())
+                .build();
         final ByteString canonicalSig =
-                ByteString.copyFromUtf8(
-                        "0123456789012345678901234567890123456789012345678901234567890123");
-        final SignatureMap onePairSigMap =
-                SignatureMap.newBuilder()
-                        .addSigPair(
-                                SignaturePair.newBuilder()
-                                        .setPubKeyPrefix(ByteString.copyFromUtf8("a"))
-                                        .setEd25519(canonicalSig))
-                        .build();
-        final Transaction signedTxnWithBody =
-                Transaction.newBuilder()
-                        .setBodyBytes(someTxn.toByteString())
-                        .setSigMap(onePairSigMap)
-                        .build();
+                ByteString.copyFromUtf8("0123456789012345678901234567890123456789012345678901234567890123");
+        final SignatureMap onePairSigMap = SignatureMap.newBuilder()
+                .addSigPair(SignaturePair.newBuilder()
+                        .setPubKeyPrefix(ByteString.copyFromUtf8("a"))
+                        .setEd25519(canonicalSig))
+                .build();
+        final Transaction signedTxnWithBody = Transaction.newBuilder()
+                .setBodyBytes(someTxn.toByteString())
+                .setSigMap(onePairSigMap)
+                .build();
 
         // when:
         final PlatformTxnAccessor subject = PlatformTxnAccessor.from(signedTxnWithBody);
-        final var expectedString =
-                "PlatformTxnAccessor{delegate=SignedTxnAccessor{sigMapSize=71, numSigPairs=1,"
-                    + " numImplicitCreations=-1, hash=[111, -123, -70, 79, 75, -80, -114, -49, 88,"
-                    + " -76, -82, -23, 43, 103, -21, 52, -31, -60, 98, -55, -26, -18, -101, -108,"
-                    + " -51, 24, 49, 72, 18, -69, 21, -84, -68, -118, 31, -53, 91, -61, -71, -56,"
-                    + " 100, -52, -104, 87, -85, -33, -73, -124], txnBytes=[10, 4, 18, 2, 24, 2,"
-                    + " 24, 10, 50, 3, 72, 105, 33, -38, 1, 4, 10, 2, 24, 10], utf8MemoBytes=[72,"
-                    + " 105, 33], memo=Hi!, memoHasZeroByte=false, signedTxnWrapper=sigMap {\n"
-                    + "  sigPair {\n"
-                    + "    pubKeyPrefix: \"a\"\n"
-                    + "    ed25519:"
-                    + " \"0123456789012345678901234567890123456789012345678901234567890123\"\n"
-                    + "  }\n"
-                    + "}\n"
-                    + "bodyBytes: \"\\n"
-                    + "\\004\\022\\002\\030\\002\\030\\n"
-                    + "2\\003Hi!\\332\\001\\004\\n"
-                    + "\\002\\030\\n"
-                    + "\"\n"
-                    + ", hash=[111, -123, -70, 79, 75, -80, -114, -49, 88, -76, -82, -23, 43, 103,"
-                    + " -21, 52, -31, -60, 98, -55, -26, -18, -101, -108, -51, 24, 49, 72, 18, -69,"
-                    + " 21, -84, -68, -118, 31, -53, 91, -61, -71, -56, 100, -52, -104, 87, -85,"
-                    + " -33, -73, -124], txnBytes=[10, 4, 18, 2, 24, 2, 24, 10, 50, 3, 72, 105, 33,"
-                    + " -38, 1, 4, 10, 2, 24, 10], sigMap=sigPair {\n"
-                    + "  pubKeyPrefix: \"a\"\n"
-                    + "  ed25519:"
-                    + " \"0123456789012345678901234567890123456789012345678901234567890123\"\n"
-                    + "}\n"
-                    + ", txnId=accountID {\n"
-                    + "  accountNum: 2\n"
-                    + "}\n"
-                    + ", txn=transactionID {\n"
-                    + "  accountID {\n"
-                    + "    accountNum: 2\n"
-                    + "  }\n"
-                    + "}\n"
-                    + "transactionFee: 10\n"
-                    + "memo: \"Hi!\"\n"
-                    + "consensusSubmitMessage {\n"
-                    + "  topicID {\n"
-                    + "    topicNum: 10\n"
-                    + "  }\n"
-                    + "}\n"
-                    + ", submitMessageMeta=SubmitMessageMeta[numMsgBytes=0], xferUsageMeta=null,"
-                    + " txnUsageMeta=BaseTransactionMeta[memoUtf8Bytes=3, numExplicitTransfers=0],"
-                    + " function=ConsensusSubmitMessage,"
-                    + " pubKeyToSigBytes=PojoSigMapPubKeyToSigBytes{pojoSigMap=PojoSigMap{keyTypes=[ED25519],"
-                    + " rawMap=[[[97], [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52,"
-                    + " 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51,"
-                    + " 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50,"
-                    + " 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51]]]}, used=[false]},"
-                    + " payer=accountNum: 2\n"
-                    + ", scheduleRef=null, view=null}, linkedRefs=null, expandedSigStatus=null,"
-                    + " pubKeyToSigBytes=PojoSigMapPubKeyToSigBytes{pojoSigMap=PojoSigMap{keyTypes=[ED25519],"
-                    + " rawMap=[[[97], [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52,"
-                    + " 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51,"
-                    + " 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50,"
-                    + " 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51]]]}, used=[false]},"
-                    + " sigMeta=null}";
+        final var expectedString = "PlatformTxnAccessor{delegate=SignedTxnAccessor{sigMapSize=71, numSigPairs=1,"
+                + " numImplicitCreations=-1, hash=[111, -123, -70, 79, 75, -80, -114, -49, 88,"
+                + " -76, -82, -23, 43, 103, -21, 52, -31, -60, 98, -55, -26, -18, -101, -108,"
+                + " -51, 24, 49, 72, 18, -69, 21, -84, -68, -118, 31, -53, 91, -61, -71, -56,"
+                + " 100, -52, -104, 87, -85, -33, -73, -124], txnBytes=[10, 4, 18, 2, 24, 2,"
+                + " 24, 10, 50, 3, 72, 105, 33, -38, 1, 4, 10, 2, 24, 10], utf8MemoBytes=[72,"
+                + " 105, 33], memo=Hi!, memoHasZeroByte=false, signedTxnWrapper=sigMap {\n"
+                + "  sigPair {\n"
+                + "    pubKeyPrefix: \"a\"\n"
+                + "    ed25519:"
+                + " \"0123456789012345678901234567890123456789012345678901234567890123\"\n"
+                + "  }\n"
+                + "}\n"
+                + "bodyBytes: \"\\n"
+                + "\\004\\022\\002\\030\\002\\030\\n"
+                + "2\\003Hi!\\332\\001\\004\\n"
+                + "\\002\\030\\n"
+                + "\"\n"
+                + ", hash=[111, -123, -70, 79, 75, -80, -114, -49, 88, -76, -82, -23, 43, 103,"
+                + " -21, 52, -31, -60, 98, -55, -26, -18, -101, -108, -51, 24, 49, 72, 18, -69,"
+                + " 21, -84, -68, -118, 31, -53, 91, -61, -71, -56, 100, -52, -104, 87, -85,"
+                + " -33, -73, -124], txnBytes=[10, 4, 18, 2, 24, 2, 24, 10, 50, 3, 72, 105, 33,"
+                + " -38, 1, 4, 10, 2, 24, 10], sigMap=sigPair {\n"
+                + "  pubKeyPrefix: \"a\"\n"
+                + "  ed25519:"
+                + " \"0123456789012345678901234567890123456789012345678901234567890123\"\n"
+                + "}\n"
+                + ", txnId=accountID {\n"
+                + "  accountNum: 2\n"
+                + "}\n"
+                + ", txn=transactionID {\n"
+                + "  accountID {\n"
+                + "    accountNum: 2\n"
+                + "  }\n"
+                + "}\n"
+                + "transactionFee: 10\n"
+                + "memo: \"Hi!\"\n"
+                + "consensusSubmitMessage {\n"
+                + "  topicID {\n"
+                + "    topicNum: 10\n"
+                + "  }\n"
+                + "}\n"
+                + ", submitMessageMeta=SubmitMessageMeta[numMsgBytes=0], xferUsageMeta=null,"
+                + " txnUsageMeta=BaseTransactionMeta[memoUtf8Bytes=3, numExplicitTransfers=0],"
+                + " function=ConsensusSubmitMessage,"
+                + " pubKeyToSigBytes=PojoSigMapPubKeyToSigBytes{pojoSigMap=PojoSigMap{keyTypes=[ED25519],"
+                + " rawMap=[[[97], [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52,"
+                + " 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51,"
+                + " 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50,"
+                + " 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51]]]}, used=[false]},"
+                + " payer=accountNum: 2\n"
+                + ", scheduleRef=null, view=null}, linkedRefs=null, expandedSigStatus=null,"
+                + " pubKeyToSigBytes=PojoSigMapPubKeyToSigBytes{pojoSigMap=PojoSigMap{keyTypes=[ED25519],"
+                + " rawMap=[[[97], [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52,"
+                + " 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51,"
+                + " 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50,"
+                + " 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51]]]}, used=[false]},"
+                + " sigMeta=null}";
 
         assertEquals(expectedString, subject.toLoggableString());
     }

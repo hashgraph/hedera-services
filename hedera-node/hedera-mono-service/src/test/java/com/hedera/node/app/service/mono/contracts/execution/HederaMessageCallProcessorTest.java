@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATE;
@@ -76,22 +77,16 @@ class HederaMessageCallProcessorTest {
 
     private static final String HEDERA_PRECOMPILE_ADDRESS_STRING = "0x1337";
     private static final String HTS_PRECOMPILE_ADDRESS_STRING = "0x167";
-    private static final Address HEDERA_PRECOMPILE_ADDRESS =
-            Address.fromHexString(HEDERA_PRECOMPILE_ADDRESS_STRING);
-    private static final Address HTS_PRECOMPILE_ADDRESS =
-            Address.fromHexString(HTS_PRECOMPILE_ADDRESS_STRING);
+    private static final Address HEDERA_PRECOMPILE_ADDRESS = Address.fromHexString(HEDERA_PRECOMPILE_ADDRESS_STRING);
+    private static final Address HTS_PRECOMPILE_ADDRESS = Address.fromHexString(HTS_PRECOMPILE_ADDRESS_STRING);
     private static final Address RECIPIENT_ADDRESS = Address.fromHexString("0xcafecafe01");
-    private static final BalanceChange BALANCE_CHANGE =
-            BalanceChange.changingHbar(
-                    AccountAmount.newBuilder()
-                            .setAccountID(
-                                    AccountID.newBuilder()
-                                            .setAlias(
-                                                    ByteStringUtils.wrapUnsafely(
-                                                            RECIPIENT_ADDRESS.toArrayUnsafe()))
-                                            .build())
-                            .build(),
-                    null);
+    private static final BalanceChange BALANCE_CHANGE = BalanceChange.changingHbar(
+            AccountAmount.newBuilder()
+                    .setAccountID(AccountID.newBuilder()
+                            .setAlias(ByteStringUtils.wrapUnsafely(RECIPIENT_ADDRESS.toArrayUnsafe()))
+                            .build())
+                    .build(),
+            null);
     private static final Address SENDER_ADDRESS = Address.fromHexString("0xcafecafe02");
     private static final PrecompiledContract.PrecompileContractResult NO_RESULT =
             new PrecompiledContract.PrecompileContractResult(
@@ -104,29 +99,52 @@ class HederaMessageCallProcessorTest {
     private static final long GAS_ONE_M = 1_000_000L;
     private final Bytes output = Bytes.of("output".getBytes());
     HederaMessageCallProcessor subject;
-    @Mock private EVM evm;
-    @Mock private PrecompileContractRegistry precompiles;
-    @Mock private MessageFrame frame;
-    @Mock private OperationTracer operationTrace;
-    @Mock private WorldUpdater worldUpdater;
-    @Mock private PrecompiledContract nonHtsPrecompile;
-    @Mock private HTSPrecompiledContract htsPrecompile;
-    @Mock private HederaOperationTracer hederaTracer;
-    @Mock private HederaStackedWorldStateUpdater updater;
-    @Mock private AutoCreationLogic autoCreationLogic;
-    @Mock private RecordSubmissions recordSubmissions;
-    @Mock private InfrastructureFactory infrastructureFactory;
+
+    @Mock
+    private EVM evm;
+
+    @Mock
+    private PrecompileContractRegistry precompiles;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private OperationTracer operationTrace;
+
+    @Mock
+    private WorldUpdater worldUpdater;
+
+    @Mock
+    private PrecompiledContract nonHtsPrecompile;
+
+    @Mock
+    private HTSPrecompiledContract htsPrecompile;
+
+    @Mock
+    private HederaOperationTracer hederaTracer;
+
+    @Mock
+    private HederaStackedWorldStateUpdater updater;
+
+    @Mock
+    private AutoCreationLogic autoCreationLogic;
+
+    @Mock
+    private RecordSubmissions recordSubmissions;
+
+    @Mock
+    private InfrastructureFactory infrastructureFactory;
 
     @BeforeEach
     void setup() {
-        subject =
-                new HederaMessageCallProcessor(
-                        evm,
-                        precompiles,
-                        Map.of(
-                                HEDERA_PRECOMPILE_ADDRESS_STRING, nonHtsPrecompile,
-                                HTS_PRECOMPILE_ADDRESS_STRING, htsPrecompile),
-                        infrastructureFactory);
+        subject = new HederaMessageCallProcessor(
+                evm,
+                precompiles,
+                Map.of(
+                        HEDERA_PRECOMPILE_ADDRESS_STRING, nonHtsPrecompile,
+                        HTS_PRECOMPILE_ADDRESS_STRING, htsPrecompile),
+                infrastructureFactory);
     }
 
     @Test
@@ -157,8 +175,7 @@ class HederaMessageCallProcessorTest {
         given(frame.getContractAddress()).willReturn(HTS_PRECOMPILE_ADDRESS);
         given(frame.getState()).willReturn(CODE_SUCCESS);
         given(htsPrecompile.getName()).willReturn("HTS");
-        given(htsPrecompile.computeCosted(any(), eq(frame)))
-                .willReturn(Pair.of(GAS_ONE, Bytes.of(1)));
+        given(htsPrecompile.computeCosted(any(), eq(frame))).willReturn(Pair.of(GAS_ONE, Bytes.of(1)));
 
         subject.start(frame, hederaTracer);
 
@@ -220,8 +237,7 @@ class HederaMessageCallProcessorTest {
 
         subject.start(frame, hederaTracer);
 
-        verify(frame)
-                .setExceptionalHaltReason(Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
+        verify(frame).setExceptionalHaltReason(Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
         verify(frame).setState(MessageFrame.State.EXCEPTIONAL_HALT);
         verify(hederaTracer, never()).tracePrecompileResult(frame, ContractActionType.PRECOMPILE);
         verifyNoMoreInteractions(nonHtsPrecompile, frame);
@@ -235,8 +251,7 @@ class HederaMessageCallProcessorTest {
         given(frame.getSenderAddress()).willReturn(SENDER_ADDRESS);
         final var precompile = Address.fromHexString("0x1");
         given(frame.getContractAddress()).willReturn(precompile);
-        given(precompiles.get(precompile))
-                .willReturn(AltBN128AddPrecompiledContract.byzantium(null));
+        given(precompiles.get(precompile)).willReturn(AltBN128AddPrecompiledContract.byzantium(null));
 
         subject.start(frame, hederaTracer);
 
@@ -310,22 +325,16 @@ class HederaMessageCallProcessorTest {
         final var transactionalLedger = mock(TransactionalLedger.class);
         given(updater.trackingAccounts()).willReturn(transactionalLedger);
         final var creationFee = 500L;
-        given(infrastructureFactory.newAutoCreationLogicScopedTo(updater))
-                .willReturn(autoCreationLogic);
-        given(infrastructureFactory.newRecordSubmissionsScopedTo(updater))
-                .willReturn(recordSubmissions);
-        given(
-                        autoCreationLogic.create(
-                                BALANCE_CHANGE, transactionalLedger, List.of(BALANCE_CHANGE)))
+        given(infrastructureFactory.newAutoCreationLogicScopedTo(updater)).willReturn(autoCreationLogic);
+        given(infrastructureFactory.newRecordSubmissionsScopedTo(updater)).willReturn(recordSubmissions);
+        given(autoCreationLogic.create(BALANCE_CHANGE, transactionalLedger, List.of(BALANCE_CHANGE)))
                 .willReturn(Pair.of(ResponseCodeEnum.OK, creationFee));
 
         subject.start(frame, hederaTracer);
 
         verify(frame).decrementRemainingGas(creationFee / gasPrice.toLong());
         verify(autoCreationLogic).submitRecords(recordSubmissions);
-        verify(updater)
-                .trackLazilyCreatedAccount(
-                        EntityIdUtils.asTypedEvmAddress(BALANCE_CHANGE.accountId()));
+        verify(updater).trackLazilyCreatedAccount(EntityIdUtils.asTypedEvmAddress(BALANCE_CHANGE.accountId()));
         verify(frame, times(1)).getState();
         verify(hederaTracer, never()).tracePrecompileCall(any(), anyLong(), any());
     }
@@ -344,20 +353,15 @@ class HederaMessageCallProcessorTest {
         given(frame.getRemainingGas()).willReturn(initialGas);
         final var transactionalLedger = mock(TransactionalLedger.class);
         given(updater.trackingAccounts()).willReturn(transactionalLedger);
-        final var change =
-                BalanceChange.changingHbar(
-                        AccountAmount.newBuilder()
-                                .setAccountID(
-                                        AccountID.newBuilder()
-                                                .setAlias(
-                                                        ByteStringUtils.wrapUnsafely(
-                                                                RECIPIENT_ADDRESS.toArrayUnsafe()))
-                                                .build())
-                                .build(),
-                        null);
+        final var change = BalanceChange.changingHbar(
+                AccountAmount.newBuilder()
+                        .setAccountID(AccountID.newBuilder()
+                                .setAlias(ByteStringUtils.wrapUnsafely(RECIPIENT_ADDRESS.toArrayUnsafe()))
+                                .build())
+                        .build(),
+                null);
         final var creationFee = 500L;
-        given(infrastructureFactory.newAutoCreationLogicScopedTo(updater))
-                .willReturn(autoCreationLogic);
+        given(infrastructureFactory.newAutoCreationLogicScopedTo(updater)).willReturn(autoCreationLogic);
         given(autoCreationLogic.create(change, transactionalLedger, List.of(change)))
                 .willReturn(Pair.of(ResponseCodeEnum.OK, creationFee));
 
@@ -384,32 +388,23 @@ class HederaMessageCallProcessorTest {
         given(frame.getRemainingGas()).willReturn(initialGas);
         final var transactionalLedger = mock(TransactionalLedger.class);
         given(updater.trackingAccounts()).willReturn(transactionalLedger);
-        final BalanceChange change =
-                BalanceChange.changingHbar(
-                        AccountAmount.newBuilder()
-                                .setAccountID(
-                                        AccountID.newBuilder()
-                                                .setAlias(
-                                                        ByteStringUtils.wrapUnsafely(
-                                                                RECIPIENT_ADDRESS.toArrayUnsafe()))
-                                                .build())
-                                .build(),
-                        null);
-        given(infrastructureFactory.newAutoCreationLogicScopedTo(updater))
-                .willReturn(autoCreationLogic);
+        final BalanceChange change = BalanceChange.changingHbar(
+                AccountAmount.newBuilder()
+                        .setAccountID(AccountID.newBuilder()
+                                .setAlias(ByteStringUtils.wrapUnsafely(RECIPIENT_ADDRESS.toArrayUnsafe()))
+                                .build())
+                        .build(),
+                null);
+        given(infrastructureFactory.newAutoCreationLogicScopedTo(updater)).willReturn(autoCreationLogic);
         given(autoCreationLogic.create(change, transactionalLedger, List.of(change)))
-                .willReturn(
-                        Pair.of(
-                                ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED,
-                                0));
+                .willReturn(Pair.of(ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, 0));
 
         subject.start(frame, hederaTracer);
 
         verify(frame).decrementRemainingGas(frame.getRemainingGas());
         verify(frame).setState(EXCEPTIONAL_HALT);
         verify(frame, times(1)).getState();
-        verify(hederaTracer)
-                .traceAccountCreationResult(frame, Optional.of(FAILURE_DURING_LAZY_ACCOUNT_CREATE));
+        verify(hederaTracer).traceAccountCreationResult(frame, Optional.of(FAILURE_DURING_LAZY_ACCOUNT_CREATE));
         verifyNoMoreInteractions(autoCreationLogic);
         verify(hederaTracer, never()).tracePrecompileCall(any(), anyLong(), any());
     }

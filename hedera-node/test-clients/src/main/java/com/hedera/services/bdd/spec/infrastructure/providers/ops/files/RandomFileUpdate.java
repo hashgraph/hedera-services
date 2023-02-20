@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.files;
 
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -76,10 +77,9 @@ public class RandomFileUpdate implements OpProvider {
             return Optional.empty();
         }
 
-        var op =
-                TxnVerbs.fileUpdate(target.get())
-                        .hasPrecheckFrom(permissiblePrechecks)
-                        .hasKnownStatusFrom(permissibleOutcomes);
+        var op = TxnVerbs.fileUpdate(target.get())
+                .hasPrecheckFrom(permissiblePrechecks)
+                .hasKnownStatusFrom(permissibleOutcomes);
 
         var couldUpdate = new ArrayList<>(List.of(Targets.values()));
         int n = couldUpdate.size();

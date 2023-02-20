@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.models;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,15 +30,14 @@ class TopicTest {
     void createsOkTopic() {
         final var id = Id.DEFAULT;
         final var autoRenew = new Account(new Id(1, 2, 3));
-        final var topic =
-                Topic.fromGrpcTopicCreate(
-                        id,
-                        TxnHandlingScenario.MISC_TOPIC_SUBMIT_KT.asJKeyUnchecked(),
-                        TxnHandlingScenario.MISC_TOPIC_ADMIN_KT.asJKeyUnchecked(),
-                        autoRenew,
-                        "memo",
-                        100,
-                        Instant.MAX);
+        final var topic = Topic.fromGrpcTopicCreate(
+                id,
+                TxnHandlingScenario.MISC_TOPIC_SUBMIT_KT.asJKeyUnchecked(),
+                TxnHandlingScenario.MISC_TOPIC_ADMIN_KT.asJKeyUnchecked(),
+                autoRenew,
+                "memo",
+                100,
+                Instant.MAX);
         assertNotNull(topic);
         assertEquals(new Id(1, 2, 3), topic.getAutoRenewAccountId());
         assertEquals("memo", topic.getMemo());

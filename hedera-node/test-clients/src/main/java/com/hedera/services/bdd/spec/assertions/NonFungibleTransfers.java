@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.assertions;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
@@ -37,10 +38,8 @@ public class NonFungibleTransfers implements ErroringAssertsProvider<List<TokenT
         return new NonFungibleTransfers();
     }
 
-    public NonFungibleTransfers including(
-            String token, String sender, String receiver, long serialNumber) {
-        changes.computeIfAbsent(token, ignore -> new ArrayList<>())
-                .add(Triple.of(sender, receiver, serialNumber));
+    public NonFungibleTransfers including(String token, String sender, String receiver, long serialNumber) {
+        changes.computeIfAbsent(token, ignore -> new ArrayList<>()).add(Triple.of(sender, receiver, serialNumber));
         return this;
     }
 
@@ -68,11 +67,10 @@ public class NonFungibleTransfers implements ErroringAssertsProvider<List<TokenT
                 if (!tokenNameLookup.containsKey(token)) {
                     if (noOtherChangesTolerated) {
                         try {
-                            Assertions.fail(
-                                    "Unexpected changes for token "
-                                            + asTokenString(token)
-                                            + " --> "
-                                            + tokenTransfer.getTransfersList());
+                            Assertions.fail("Unexpected changes for token "
+                                    + asTokenString(token)
+                                    + " --> "
+                                    + tokenTransfer.getTransfersList());
                         } catch (Throwable t) {
                             wrongNFTChanges.add(t);
                         }
@@ -87,13 +85,12 @@ public class NonFungibleTransfers implements ErroringAssertsProvider<List<TokenT
                     if (!accountNameLookup.containsKey(sender)) {
                         if (noOtherChangesTolerated) {
                             try {
-                                Assertions.fail(
-                                        "Unexpected change to balance of account "
-                                                + asAccountString(sender)
-                                                + " for token "
-                                                + asTokenString(token)
-                                                + " with serial number --> "
-                                                + nftChange.getSerialNumber());
+                                Assertions.fail("Unexpected change to balance of account "
+                                        + asAccountString(sender)
+                                        + " for token "
+                                        + asTokenString(token)
+                                        + " with serial number --> "
+                                        + nftChange.getSerialNumber());
                             } catch (Throwable t) {
                                 wrongNFTChanges.add(t);
                             }
@@ -103,13 +100,12 @@ public class NonFungibleTransfers implements ErroringAssertsProvider<List<TokenT
                     if (!accountNameLookup.containsKey(receiver)) {
                         if (noOtherChangesTolerated) {
                             try {
-                                Assertions.fail(
-                                        "Unexpected change to balance of account "
-                                                + asAccountString(receiver)
-                                                + " for token "
-                                                + asTokenString(token)
-                                                + " with serial number --> "
-                                                + nftChange.getSerialNumber());
+                                Assertions.fail("Unexpected change to balance of account "
+                                        + asAccountString(receiver)
+                                        + " for token "
+                                        + asTokenString(token)
+                                        + " with serial number --> "
+                                        + nftChange.getSerialNumber());
                             } catch (Throwable t) {
                                 wrongNFTChanges.add(t);
                             }
@@ -125,11 +121,7 @@ public class NonFungibleTransfers implements ErroringAssertsProvider<List<TokenT
                         Assertions.assertEquals(
                                 expected,
                                 actual,
-                                "Wrong change in account '"
-                                        + senderName
-                                        + "' for token '"
-                                        + tokenName
-                                        + "'");
+                                "Wrong change in account '" + senderName + "' for token '" + tokenName + "'");
                     } catch (Throwable t) {
                         wrongNFTChanges.add(t);
                     }
@@ -143,11 +135,7 @@ public class NonFungibleTransfers implements ErroringAssertsProvider<List<TokenT
                 try {
                     Assertions.assertTrue(
                             expectations.isEmpty(),
-                            () ->
-                                    "Expected changes for token '"
-                                            + token
-                                            + "', but got none of: "
-                                            + expectations);
+                            () -> "Expected changes for token '" + token + "', but got none of: " + expectations);
                 } catch (Throwable t) {
                     wrongNFTChanges.add(t);
                 }
@@ -159,37 +147,34 @@ public class NonFungibleTransfers implements ErroringAssertsProvider<List<TokenT
     private long expectedChange(String token, String sender, String receiver) {
         final var expectations = changes.get(token);
         if (expectations == null) {
-            throw new IllegalStateException(
-                    "No expected NFT change from sender '"
-                            + sender
-                            + "' to receiver '"
-                            + receiver
-                            + "' for "
-                            + "token '"
-                            + token
-                            + "'");
+            throw new IllegalStateException("No expected NFT change from sender '"
+                    + sender
+                    + "' to receiver '"
+                    + receiver
+                    + "' for "
+                    + "token '"
+                    + token
+                    + "'");
         }
         for (var change : expectations) {
             if (change.getLeft().equals(sender) && change.getMiddle().equals(receiver)) {
                 return change.getRight();
             }
         }
-        throw new IllegalStateException(
-                "No expected NFT change in account '" + sender + "' for token '" + token + "'");
+        throw new IllegalStateException("No expected NFT change in account '" + sender + "' for token '" + token + "'");
     }
 
     private void forgetExpectation(String token, String sender, String receiver) {
         final var expectations = changes.get(token);
         if (expectations == null) {
-            throw new IllegalStateException(
-                    "No expected NFT change from sender '"
-                            + sender
-                            + "' to receiver '"
-                            + receiver
-                            + "' for "
-                            + "token '"
-                            + token
-                            + "'");
+            throw new IllegalStateException("No expected NFT change from sender '"
+                    + sender
+                    + "' to receiver '"
+                    + receiver
+                    + "' for "
+                    + "token '"
+                    + token
+                    + "'");
         }
         for (var iter = expectations.iterator(); iter.hasNext(); ) {
             final var change = iter.next();

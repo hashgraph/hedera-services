@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.token.txns;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -65,8 +66,7 @@ class TokenGrantKycResourceUsageTest {
 
         txnUsageEstimator = mock(TxnUsageEstimator.class);
         final EstimatorFactory estimatorFactory = mock(EstimatorFactory.class);
-        given(estimatorFactory.get(sigUsage, tokenGrantKycTxn, ESTIMATOR_UTILS))
-                .willReturn(txnUsageEstimator);
+        given(estimatorFactory.get(sigUsage, tokenGrantKycTxn, ESTIMATOR_UTILS)).willReturn(txnUsageEstimator);
         subject = new TokenGrantKycResourceUsage(estimatorFactory);
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.txns;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -46,10 +47,9 @@ public class CryptoDeleteFactory extends SignedTxnFactory<CryptoDeleteFactory> {
 
     @Override
     protected void customizeTxn(TransactionBody.Builder txn) {
-        CryptoDeleteTransactionBody.Builder op =
-                CryptoDeleteTransactionBody.newBuilder()
-                        .setTransferAccountID(asAccount(transfer))
-                        .setDeleteAccountID(asAccount(account));
+        CryptoDeleteTransactionBody.Builder op = CryptoDeleteTransactionBody.newBuilder()
+                .setTransferAccountID(asAccount(transfer))
+                .setDeleteAccountID(asAccount(account));
         txn.setCryptoDelete(op);
     }
 }

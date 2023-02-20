@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.token;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -28,10 +29,8 @@ import java.util.Optional;
 public class RandomTokenInfo implements OpProvider {
     private final RegistrySourcedNameProvider<TokenID> tokens;
 
-    private final ResponseCodeEnum[] permissibleCostAnswerPrechecks =
-            standardQueryPrechecksAnd(TOKEN_WAS_DELETED);
-    private final ResponseCodeEnum[] permissibleAnswerOnlyPrechecks =
-            standardQueryPrechecksAnd(TOKEN_WAS_DELETED);
+    private final ResponseCodeEnum[] permissibleCostAnswerPrechecks = standardQueryPrechecksAnd(TOKEN_WAS_DELETED);
+    private final ResponseCodeEnum[] permissibleAnswerOnlyPrechecks = standardQueryPrechecksAnd(TOKEN_WAS_DELETED);
 
     public RandomTokenInfo(RegistrySourcedNameProvider<TokenID> tokens) {
         this.tokens = tokens;
@@ -44,10 +43,9 @@ public class RandomTokenInfo implements OpProvider {
             return Optional.empty();
         }
 
-        var op =
-                getTokenInfo(token.get())
-                        .hasCostAnswerPrecheckFrom(permissibleCostAnswerPrechecks)
-                        .hasAnswerOnlyPrecheckFrom(permissibleAnswerOnlyPrechecks);
+        var op = getTokenInfo(token.get())
+                .hasCostAnswerPrecheckFrom(permissibleCostAnswerPrechecks)
+                .hasAnswerOnlyPrecheckFrom(permissibleAnswerOnlyPrechecks);
 
         return Optional.of(op);
     }

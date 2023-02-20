@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.congestion;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -77,9 +78,7 @@ public class ThrottleMultiplierSource implements FeeMultiplierSource {
         long x = maxMultiplierOfActiveConfig(activeConfig.multipliers());
         updateCongestionLevelStartsWith(activeConfig.multipliers(), x, consensusNow);
         long minPeriod = minCongestionPeriodSupplier.getAsLong();
-        multiplier =
-                highestMultiplierNotShorterThan(
-                        activeConfig.multipliers(), minPeriod, consensusNow);
+        multiplier = highestMultiplierNotShorterThan(activeConfig.multipliers(), minPeriod, consensusNow);
 
         if (multiplier != previousMultiplier) {
             logMultiplierChange(previousMultiplier, multiplier);
@@ -138,11 +137,7 @@ public class ThrottleMultiplierSource implements FeeMultiplierSource {
                     .append(" exceeds:\n");
             for (int j = 0; j < multipliers.length; j++) {
                 sb.append("    ")
-                        .append(
-                                readableTpsCutoffFor(
-                                        activeTriggerValues[i][j],
-                                        throttle.mtps(),
-                                        throttle.capacity()))
+                        .append(readableTpsCutoffFor(activeTriggerValues[i][j], throttle.mtps(), throttle.capacity()))
                         .append(" ")
                         .append(abbrevUsageType)
                         .append(", multiplier is ")
@@ -217,8 +212,7 @@ public class ThrottleMultiplierSource implements FeeMultiplierSource {
         return multiplier;
     }
 
-    private void updateCongestionLevelStartsWith(
-            final long[] multipliers, long x, Instant consensusNow) {
+    private void updateCongestionLevelStartsWith(final long[] multipliers, long x, Instant consensusNow) {
         for (int i = 0; i < multipliers.length; i++) {
             if (x < multipliers[i]) {
                 congestionLevelStarts[i] = null;

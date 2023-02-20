@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.hedera.node.app.service.mono.state.virtual.ContractKey.MERKLE_VERSION;
@@ -45,8 +46,7 @@ class ContractKeyTest {
     private final long otherContractNum = 1235L;
     private final long otherKey = 124L;
     private final UInt256 largeKey =
-            UInt256.fromHexString(
-                    "0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
+            UInt256.fromHexString("0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
     private final UInt256 uIntKey = UInt256.valueOf(key);
     private final byte[] key_array = uIntKey.toArray();
 
@@ -68,9 +68,7 @@ class ContractKeyTest {
         var testSubject1 = new ContractKey(contractNum, key);
         var testSubject2 = new ContractKey(contractNum, key_array);
         var testSubject3 =
-                new ContractKey(
-                        contractNum,
-                        new int[] {0, 0, 0, 0, 0, 0, (int) (key >> Integer.SIZE), (int) key});
+                new ContractKey(contractNum, new int[] {0, 0, 0, 0, 0, 0, (int) (key >> Integer.SIZE), (int) key});
         var testSubject4 = new ContractKey(contractNum, otherKey);
         var testSubject5 = new ContractKey(otherContractNum, key);
 
@@ -103,8 +101,7 @@ class ContractKeyTest {
         buffer.rewind();
         buffer.get();
         final var deserializedId =
-                ContractKey.deserializeContractID(
-                        key.getContractIdNonZeroBytes(), buffer, ByteBuffer::get);
+                ContractKey.deserializeContractID(key.getContractIdNonZeroBytes(), buffer, ByteBuffer::get);
         assertEquals(contractId, deserializedId);
     }
 
@@ -276,8 +273,7 @@ class ContractKeyTest {
 
         subject = new ContractKey();
 
-        assertThrows(
-                IllegalArgumentException.class, () -> new ContractKey(contractNum, (byte[]) null));
+        assertThrows(IllegalArgumentException.class, () -> new ContractKey(contractNum, (byte[]) null));
         assertThrows(IllegalArgumentException.class, () -> new ContractKey(contractNum, byteArr));
         assertThrows(IllegalArgumentException.class, () -> subject.setKey(null));
         assertThrows(IllegalArgumentException.class, () -> new ContractKey(contractNum, intArr));
@@ -320,14 +316,7 @@ class ContractKeyTest {
     })
     @ParameterizedTest
     void packsVariousAsExpected(
-            final int a,
-            final int b,
-            final int c,
-            final int d,
-            final int e,
-            final int f,
-            final int g,
-            final int h) {
+            final int a, final int b, final int c, final int d, final int e, final int f, final int g, final int h) {
         final byte[] aBytes = Ints.toByteArray(a);
         final byte[] bBytes = Ints.toByteArray(b);
         final byte[] cBytes = Ints.toByteArray(c);

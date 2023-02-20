@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.assertions;
 
 import java.util.List;
@@ -25,8 +26,7 @@ public class StateChange {
         this.contractID = contractID;
     }
 
-    public static com.hedera.services.bdd.spec.assertions.StateChange stateChangeFor(
-            String contractID) {
+    public static com.hedera.services.bdd.spec.assertions.StateChange stateChangeFor(String contractID) {
         return new com.hedera.services.bdd.spec.assertions.StateChange(contractID);
     }
 

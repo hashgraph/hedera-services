@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.exceptions;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -39,8 +40,7 @@ public class InvalidTransactionException extends RuntimeException {
         this(responseCode.name(), responseCode, reverting);
     }
 
-    public InvalidTransactionException(
-            final String detailMessage, final ResponseCodeEnum responseCode) {
+    public InvalidTransactionException(final String detailMessage, final ResponseCodeEnum responseCode) {
         this(detailMessage, responseCode, false);
     }
 

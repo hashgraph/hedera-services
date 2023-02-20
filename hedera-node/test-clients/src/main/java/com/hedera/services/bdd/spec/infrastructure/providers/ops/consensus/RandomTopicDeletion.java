@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.consensus;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.deleteTopic;
@@ -31,8 +32,7 @@ import java.util.Optional;
 
 public class RandomTopicDeletion implements OpProvider {
     private final RegistrySourcedNameProvider<TopicID> topics;
-    private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(TOPIC_EXPIRED, INVALID_TOPIC_ID);
+    private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(TOPIC_EXPIRED, INVALID_TOPIC_ID);
 
     public RandomTopicDeletion(RegistrySourcedNameProvider<TopicID> topics) {
         this.topics = topics;
@@ -49,10 +49,9 @@ public class RandomTopicDeletion implements OpProvider {
         if (topic.isEmpty()) {
             return Optional.empty();
         }
-        HapiTopicDelete op =
-                deleteTopic(topic.get())
-                        .hasKnownStatusFrom(permissibleOutcomes)
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS);
+        HapiTopicDelete op = deleteTopic(topic.get())
+                .hasKnownStatusFrom(permissibleOutcomes)
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS);
         return Optional.of(op);
     }
 }
