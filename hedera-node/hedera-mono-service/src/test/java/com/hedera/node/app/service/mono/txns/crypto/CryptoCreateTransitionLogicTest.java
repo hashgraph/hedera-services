@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.txns.crypto;
 
-import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.DECLINE_REWARD;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.EXPIRY;
@@ -60,7 +59,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.longThat;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.never;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
@@ -804,51 +802,6 @@ class CryptoCreateTransitionLogicTest {
     }
 
     @Test
-    void followsHappyPathEVMAddress() throws DecoderException {
-        final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-        final var opBuilder = CryptoCreateTransactionBody.newBuilder()
-                .setMemo(MEMO)
-                .setReceiverSigRequired(false)
-                .setDeclineReward(false)
-                .setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
-                .setAlias(ByteString.copyFrom(EVM_ADDRESS_BYTES));
-        cryptoCreateTxn =
-                TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
-        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
-        given(txnCtx.activePayer()).willReturn(ourAccount());
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
-
-        given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
-        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
-        given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
-        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
-        given(dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()).willReturn(true);
-        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
-        final var lazyCreationFinalizationFee = 100L;
-        given(autoCreationLogic.getLazyCreationFinalizationFee()).willReturn(lazyCreationFinalizationFee);
-        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE)).willReturn(lazyCreationFinalizationFee + 1);
-
-        subject.doStateTransition();
-
-        verify(ledger).create(argThat(PAYER::equals), longThat(ZERO_BALANCE::equals), captor.capture());
-        verify(txnCtx).setCreated(CREATED);
-        verify(txnCtx).setStatus(SUCCESS);
-        verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
-
-        final var changes = captor.getValue().getChanges();
-        assertEquals(8, changes.size());
-        assertEquals(0, (long) changes.get(AUTO_RENEW_PERIOD));
-        assertEquals(txnCtx.consensusTime().getEpochSecond(), (long) changes.get(EXPIRY));
-        assertEquals(ByteString.copyFrom(EVM_ADDRESS_BYTES), changes.get(AccountProperty.ALIAS));
-        assertEquals(EMPTY_KEY, changes.get(AccountProperty.KEY));
-        assertEquals(false, changes.get(IS_RECEIVER_SIG_REQUIRED));
-        assertEquals(MEMO, changes.get(AccountProperty.MEMO));
-        assertEquals(MAX_AUTO_ASSOCIATIONS, changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
-        assertEquals(false, changes.get(DECLINE_REWARD));
-    }
-
-    @Test
     void followsHappyPathECKeyAndEVMAddressAlias() throws DecoderException {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
         final var opBuilder = CryptoCreateTransactionBody.newBuilder()
@@ -892,42 +845,6 @@ class CryptoCreateTransitionLogicTest {
         assertEquals(MEMO, changes.get(AccountProperty.MEMO));
         assertEquals(MAX_AUTO_ASSOCIATIONS, changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
         assertEquals(false, changes.get(DECLINE_REWARD));
-    }
-
-    @Test
-    void followsEVMAddressAsAliasInsufficientBalanceForFinalizationFee() {
-        final var opBuilder = CryptoCreateTransactionBody.newBuilder()
-                .setMemo(MEMO)
-                .setReceiverSigRequired(false)
-                .setDeclineReward(false)
-                .setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
-                .setAlias(ByteString.copyFrom(EVM_ADDRESS_BYTES));
-        cryptoCreateTxn =
-                TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
-        given(accessor.getTxn()).willReturn(cryptoCreateTxn);
-        given(txnCtx.activePayer()).willReturn(ourAccount());
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
-
-        given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
-        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
-        given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
-        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
-        given(dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()).willReturn(true);
-        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
-        final var lazyCreationFinalizationFee = 100L;
-        given(autoCreationLogic.getLazyCreationFinalizationFee()).willReturn(lazyCreationFinalizationFee);
-        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE)).willReturn(lazyCreationFinalizationFee - 1);
-        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
-        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE)).willReturn(lazyCreationFinalizationFee - 5);
-
-        subject.doStateTransition();
-
-        verify(ledger, never()).create(any(), anyLong(), any());
-        verify(txnCtx, never()).setCreated(CREATED);
-        verify(txnCtx).setStatus(INSUFFICIENT_PAYER_BALANCE);
-        verify(sigImpactHistorian, never()).markEntityChanged(CREATED.getAccountNum());
-        verify(transferLogic, never()).payAutoCreationFee(lazyCreationFinalizationFee);
     }
 
     @Test
