@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.records;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.bdd.junit.utils.AccountClassifier;
 import com.hedera.services.bdd.junit.validators.AccountTokenNum;
@@ -32,7 +30,6 @@ import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -50,9 +47,7 @@ public class TokenBalanceValidation extends HapiSuite {
 
     public static void main(String... args) {
         // Treasury starts with 50B hbar
-        new TokenBalanceValidation(
-                        Map.of(new AccountTokenNum(2L,10L), 500L), new AccountClassifier())
-                .runSuiteSync();
+        new TokenBalanceValidation(Map.of(new AccountTokenNum(2L, 10L), 500L), new AccountClassifier()).runSuiteSync();
     }
 
     @Override
@@ -67,39 +62,44 @@ public class TokenBalanceValidation extends HapiSuite {
 
     private HapiSpec validateTokenBalances() {
         return customHapiSpec("ValidateTokenBalances")
-                .withProperties(
-                        Map.of(
-                                "fees.useFixedOffer", "true",
-                                "fees.fixedOffer", "100000000"))
+                .withProperties(Map.of(
+                        "fees.useFixedOffer", "true",
+                        "fees.fixedOffer", "100000000"))
                 .given()
                 .when()
-                .then(
-                        inParallel(
-                                        expectedTokenBalances.entrySet().stream()
-                                                .map(
-                                                        entry -> {
-                                                            final var tokenNum = entry.getKey().tokenNum();
-                                                            final var accountNum = entry.getKey().accountNum();
-                                                            final var tokenBalance = entry.getValue();
-                                                            return QueryVerbs.getAccountInfo("0.0." + accountNum)   // need to use accountClassifier here?
-                                                                    .hasToken(
-                                                                        relationshipWith("primary")
-                                                                            .balance(500)
-                                                                            .kyc(TokenKycStatus.Granted)
-                                                                            .freeze(TokenFreezeStatus.Unfrozen));
-//                                                            return QueryVerbs.getAccountBalance(
-//                                                                            "0.0." + accountNum,
-//                                                                            accountClassifier
-//                                                                                    .isContract(
-//                                                                                            accountNum))
-//                                                                    .hasAnswerOnlyPrecheckFrom(
-//                                                                            CONTRACT_DELETED,
-//                                                                            ACCOUNT_DELETED,
-//                                                                            OK)
-//                                                                    .hasTinyBars(entry.getValue());
-                                                        })
-                                                .toArray(HapiSpecOperation[]::new))
-                                .failOnErrors());
+                .then(inParallel(expectedTokenBalances.entrySet().stream()
+                                .map(entry -> {
+                                    final var tokenNum = entry.getKey().tokenNum();
+                                    final var accountNum = entry.getKey().accountNum();
+                                    final var tokenBalance = entry.getValue();
+                                    return QueryVerbs.getAccountInfo(
+                                                    "0.0." + accountNum) // need to use accountClassifier here?
+                                            .hasToken(relationshipWith("primary")
+                                                    .balance(500)
+                                                    .kyc(TokenKycStatus.Granted)
+                                                    .freeze(TokenFreezeStatus.Unfrozen));
+                                    //                                                            return
+                                    // QueryVerbs.getAccountBalance(
+                                    //                                                                            "0.0."
+                                    // + accountNum,
+                                    //
+                                    // accountClassifier
+                                    //
+                                    //  .isContract(
+                                    //
+                                    //          accountNum))
+                                    //
+                                    // .hasAnswerOnlyPrecheckFrom(
+                                    //
+                                    // CONTRACT_DELETED,
+                                    //
+                                    // ACCOUNT_DELETED,
+                                    //                                                                            OK)
+                                    //
+                                    // .hasTinyBars(entry.getValue());
+                                })
+                                .toArray(HapiSpecOperation[]::new))
+                        .failOnErrors());
     }
 
     @Override

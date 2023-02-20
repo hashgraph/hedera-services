@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.services.bdd.junit;
@@ -21,7 +20,6 @@ import static com.hedera.services.bdd.junit.TestBase.concurrentExecutionOf;
 
 import com.hedera.services.bdd.junit.utils.AccountClassifier;
 import com.hedera.services.bdd.junit.validators.AccountTokenNum;
-import com.hedera.services.bdd.suites.records.BalanceValidation;
 import com.hedera.services.bdd.suites.records.TokenBalanceValidation;
 import com.hedera.services.stream.proto.RecordStreamItem;
 import java.util.HashMap;
@@ -51,10 +49,9 @@ public class TokenReconciliationValidator implements RecordStreamValidator {
         getExpectedBalanceFrom(recordsWithSidecars);
         System.out.println("Expected balances: " + expectedTokenBalances);
 
-        final var validationSpecs =
-                TestBase.extractContextualizedSpecsFrom(
-                        List.of(() -> new TokenBalanceValidation(expectedTokenBalances, accountClassifier)),
-                        TestBase::contextualizedSpecsFromConcurrent);
+        final var validationSpecs = TestBase.extractContextualizedSpecsFrom(
+                List.of(() -> new TokenBalanceValidation(expectedTokenBalances, accountClassifier)),
+                TestBase::contextualizedSpecsFromConcurrent);
         concurrentExecutionOf(validationSpecs);
     }
 
@@ -64,37 +61,20 @@ public class TokenReconciliationValidator implements RecordStreamValidator {
             for (final var item : items) {
                 accountClassifier.incorporate(item);
                 final var grpcRecord = item.getRecord();
-                grpcRecord
-                        .getTokenTransferListsList()
-                        .forEach(
-                                tokenTransferList -> {
-                                    Long tokenNum = tokenTransferList.getToken().getTokenNum();
-                                    tokenTransferList.getTransfersList()
-                                            .forEach(
-                                                    tokenTransfers -> {
-                                                        final var accountNum = tokenTransfers.getAccountID()
-                                                                .getAccountNum();
-                                                        final var amount = tokenTransfers.getAmount();
-                                                        expectedTokenBalances.merge(
-                                                                new AccountTokenNum(tokenNum, accountNum), amount,
-                                                                Long::sum);
-                                                    });
-                                }
-                                    );
-
-
-                }
-    }
+                grpcRecord.getTokenTransferListsList().forEach(tokenTransferList -> {
+                    Long tokenNum = tokenTransferList.getToken().getTokenNum();
+                    tokenTransferList.getTransfersList().forEach(tokenTransfers -> {
+                        final var accountNum = tokenTransfers.getAccountID().getAccountNum();
+                        final var amount = tokenTransfers.getAmount();
+                        expectedTokenBalances.merge(new AccountTokenNum(tokenNum, accountNum), amount, Long::sum);
+                    });
+                });
+            }
         }
+    }
 
-    public static Stream<RecordStreamItem> streamOfItemsFrom(
-            final List<RecordWithSidecars> recordsWithSidecars) {
+    public static Stream<RecordStreamItem> streamOfItemsFrom(final List<RecordWithSidecars> recordsWithSidecars) {
         return recordsWithSidecars.stream()
-                .flatMap(
-                        recordWithSidecars ->
-                                recordWithSidecars
-                                        .recordFile()
-                                        .getRecordStreamItemsList()
-                                        .stream());
+                .flatMap(recordWithSidecars -> recordWithSidecars.recordFile().getRecordStreamItemsList().stream());
     }
 }
