@@ -21,6 +21,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
@@ -63,6 +64,7 @@ class VirtualMapLikeAdapterTest {
     private static final UniqueTokenKey B_KEY = new UniqueTokenKey(2345L, 6789L);
     private static final UniqueTokenKey C_KEY = new UniqueTokenKey(3456L, 7890L);
     private static final UniqueTokenKey D_KEY = new UniqueTokenKey(4567L, 8901L);
+    private static final UniqueTokenKey Z_KEY = new UniqueTokenKey(7890L, 1234L);
     private static final UniqueTokenValue A_VALUE =
             new UniqueTokenValue(1L, 2L, "A".getBytes(), new RichInstant(1L, 2));
     private static final UniqueTokenValue B_VALUE =
@@ -96,6 +98,10 @@ class VirtualMapLikeAdapterTest {
         putToReal(B_KEY, B_VALUE);
         putToReal(C_KEY, C_VALUE);
 
+        assertNull(subject.get(Z_KEY));
+        assertNull(subject.remove(Z_KEY));
+        assertNull(subject.getForModify(Z_KEY));
+
         subject.extractVirtualMapData(getStaticThreadManager(), consumer, 1);
         verify(consumer).accept(Pair.of(A_KEY, A_VALUE));
         verify(consumer).accept(Pair.of(B_KEY, B_VALUE));
@@ -114,6 +120,9 @@ class VirtualMapLikeAdapterTest {
         mutableA.setOwner(EntityId.fromNum(666L));
 
         assertDoesNotThrow(() -> subject.registerMetrics(metrics));
+
+        real.copy();
+        subject.release();
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

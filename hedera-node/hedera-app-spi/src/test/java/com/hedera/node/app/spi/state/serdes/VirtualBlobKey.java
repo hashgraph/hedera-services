@@ -24,12 +24,12 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-/** Grab a realistic example of a {@link VirtualKey} from the Hedera codebase. */
+/** Copied here as a test class to serve as a realistic example of a {@link VirtualKey}
+ * from the Hedera codebase. */
 public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
     static final int CURRENT_VERSION = 1;
     static final int BYTES_IN_SERIALIZED_FORM = 5;
     static final long CLASS_ID = 0x11b982c14217d523L;
-    static final int LEGACY_BLOB_CODE_INDEX = 3;
 
     private static final Type[] BLOB_TYPES = Type.values();
 
@@ -53,13 +53,13 @@ public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
     }
 
     @Override
-    public void serialize(final ByteBuffer buffer) throws IOException {
+    public void serialize(final ByteBuffer buffer) {
         buffer.put((byte) type.ordinal());
         buffer.putInt(entityNumCode);
     }
 
     @Override
-    public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
+    public void deserialize(final ByteBuffer buffer, final int version) {
         type = BLOB_TYPES[0xff & buffer.get()];
         entityNumCode = buffer.getInt();
     }
@@ -132,9 +132,5 @@ public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
     @Override
     public int getMinimumSupportedVersion() {
         return CURRENT_VERSION;
-    }
-
-    private static int codeFromNum(long num) {
-        return (int) num;
     }
 }

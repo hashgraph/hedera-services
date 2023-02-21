@@ -507,6 +507,11 @@ class BootstrapPropertiesTest {
     }
 
     @Test
+    void okToDisableLogging() {
+        assertDoesNotThrow(() -> new BootstrapProperties(false));
+    }
+
+    @Test
     void throwsIseIfUnreadable() {
         subject.bootstrapPropsResource = UNREADABLE_PROPS_RESOURCE;
 

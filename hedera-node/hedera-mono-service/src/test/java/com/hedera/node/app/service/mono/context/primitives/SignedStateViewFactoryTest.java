@@ -255,6 +255,11 @@ class SignedStateViewFactoryTest {
         assertTrue(stateView.isEmpty());
     }
 
+    @Test
+    void nullIsNotUsableProvider() {
+        assertFalse(SignedStateViewFactory.isUsable(null));
+    }
+
     private void givenStateWithMockChildren() {
         given(state.accounts()).willReturn(accounts);
         given(state.storage()).willReturn(storage);

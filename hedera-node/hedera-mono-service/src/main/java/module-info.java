@@ -180,4 +180,6 @@ module com.hedera.node.app.service.mono {
     requires io.grpc;
     requires grpc.stub;
     requires org.eclipse.collections.api;
+    requires grpc.netty;
+    requires io.netty.transport.epoll;
 }

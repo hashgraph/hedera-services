@@ -175,6 +175,6 @@ class TokenRelStorageAdapterTest {
     }
 
     private void withOnDiskSubject() {
-        subject = TokenRelStorageAdapter.fromOnDisk(VirtualMapLike.fromLongKeyed(onDiskRels));
+        subject = TokenRelStorageAdapter.fromOnDisk(VirtualMapLike.from(onDiskRels));
     }
 }

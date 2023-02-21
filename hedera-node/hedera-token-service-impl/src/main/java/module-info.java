@@ -1,5 +1,3 @@
-import com.hedera.node.app.service.token.impl.CryptoServiceImpl;
-
 module com.hedera.node.app.service.token.impl {
     requires com.hedera.node.app.service.token;
     requires org.apache.commons.lang3;
@@ -16,8 +14,6 @@ module com.hedera.node.app.service.token.impl {
 
     provides com.hedera.node.app.service.token.TokenService with
             com.hedera.node.app.service.token.impl.TokenServiceImpl;
-    provides com.hedera.node.app.service.token.CryptoService with
-            CryptoServiceImpl;
 
     exports com.hedera.node.app.service.token.impl to
             com.hedera.node.app.service.token.impl.test,

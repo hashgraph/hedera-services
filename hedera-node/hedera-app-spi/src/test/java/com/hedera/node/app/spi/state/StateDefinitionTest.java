@@ -44,8 +44,7 @@ class StateDefinitionTest {
 
     @Test
     void nonSingletonRequiresKeySerdes() {
-        assertThrows(
-                IllegalArgumentException.class, () -> new StateDefinition("KEY", null, mockSerdes, 0, true, false));
+        assertThrows(NullPointerException.class, () -> new StateDefinition("KEY", null, mockSerdes, 1, true, false));
     }
 
     @Test
@@ -56,5 +55,10 @@ class StateDefinitionTest {
     @Test
     void onDiskFactoryWorks() {
         assertDoesNotThrow(() -> StateDefinition.onDisk("KEY", mockSerdes, mockSerdes, 123));
+    }
+
+    @Test
+    void singletonFactoryWorks() {
+        assertDoesNotThrow(() -> StateDefinition.singleton("KEY", mockSerdes));
     }
 }

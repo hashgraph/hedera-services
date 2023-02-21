@@ -28,6 +28,7 @@ import static com.swirlds.common.system.InitTrigger.RESTART;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
+import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
@@ -665,8 +666,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     public VirtualMapLike<ContractKey, IterableContractValue> contractStorage() {
         return VirtualMapLikeAdapter.unwrapping(
                 (StateMetadata<ContractKey, IterableContractValue>)
-                        services.get(ContractServiceImpl.NAME).get(ContractServiceImpl.STORAGE_KEY),
-                getChild(findNodeIndex(ContractServiceImpl.NAME, ContractServiceImpl.STORAGE_KEY)));
+                        services.get(ContractService.NAME).get(ContractServiceImpl.STORAGE_KEY),
+                getChild(findNodeIndex(ContractService.NAME, ContractServiceImpl.STORAGE_KEY)));
     }
 
     @Override

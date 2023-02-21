@@ -46,20 +46,25 @@ class MerkleMapLikeAdapterTest {
     private static final EntityNum A_NUM = EntityNum.fromInt(1234);
     private static final EntityNum B_NUM = EntityNum.fromInt(2345);
     private static final EntityNum C_NUM = EntityNum.fromInt(3456);
+    private static final EntityNum Z_NUM = EntityNum.fromInt(7890);
     private static final ExpirableTxnRecord A_RECORD =
             new ExpirableTxnRecord(ExpirableTxnRecord.newBuilder().setAlias(ByteString.copyFromUtf8("alpha")));
     private static final ExpirableTxnRecord B_RECORD =
             new ExpirableTxnRecord(ExpirableTxnRecord.newBuilder().setAlias(ByteString.copyFromUtf8("bravo")));
     private static final ExpirableTxnRecord C_RECORD =
             new ExpirableTxnRecord(ExpirableTxnRecord.newBuilder().setAlias(ByteString.copyFromUtf8("charlie")));
+    private static final ExpirableTxnRecord Z_RECORD =
+            new ExpirableTxnRecord(ExpirableTxnRecord.newBuilder().setAlias(ByteString.copyFromUtf8("zulu")));
     private final MerklePayerRecords A_RECORDS = new MerklePayerRecords();
     private final MerklePayerRecords B_RECORDS = new MerklePayerRecords();
     private final MerklePayerRecords C_RECORDS = new MerklePayerRecords();
+    private final MerklePayerRecords Z_RECORDS = new MerklePayerRecords();
 
     {
         A_RECORDS.offer(A_RECORD);
         B_RECORDS.offer(B_RECORD);
         C_RECORDS.offer(C_RECORD);
+        Z_RECORDS.offer(Z_RECORD);
     }
 
     @Mock
@@ -156,12 +161,16 @@ class MerkleMapLikeAdapterTest {
     }
 
     @Test
-    void getDelegates() {
+    void getAndPutDelegate() {
         setupSubjectAdaptingReal();
 
         putToReal(A_NUM, A_RECORDS);
 
         assertSame(A_RECORDS, subject.get(A_NUM));
+        assertNotNull(subject.put(A_NUM, A_RECORDS));
+        assertNull(subject.get(Z_NUM));
+        final var shouldBeDefault = subject.getOrDefault(Z_NUM, Z_RECORDS);
+        assertSame(Z_RECORDS, shouldBeDefault);
     }
 
     @Test

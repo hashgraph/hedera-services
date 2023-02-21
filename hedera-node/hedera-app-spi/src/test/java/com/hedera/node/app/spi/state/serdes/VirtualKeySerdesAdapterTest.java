@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.SplittableRandom;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 class VirtualKeySerdesAdapterTest extends AbstractVirtualSerdesTest<VirtualBlobKey> {
@@ -56,14 +55,5 @@ class VirtualKeySerdesAdapterTest extends AbstractVirtualSerdesTest<VirtualBlobK
         final var key = new VirtualBlobKey(VirtualBlobKey.Type.FILE_DATA, RANDOM.nextInt());
         final var bb = new ByteBufferDataInput(ByteBuffer.wrap(writeUsingBuffer(key)));
         assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(key, bb));
-    }
-
-    public static Stream<VirtualBlobKey> randomInstances() {
-        return Stream.generate(() -> new VirtualBlobKey(randomType(), RANDOM.nextInt()))
-                .limit(NUM_INSTANCES);
-    }
-
-    private static VirtualBlobKey.Type randomType() {
-        return VirtualBlobKey.Type.values()[RANDOM.nextInt(VirtualBlobKey.Type.values().length)];
     }
 }

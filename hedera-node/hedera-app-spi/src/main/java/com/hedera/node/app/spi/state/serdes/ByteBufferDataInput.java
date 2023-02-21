@@ -18,7 +18,6 @@ package com.hedera.node.app.spi.state.serdes;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.DataInput;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
@@ -46,7 +45,7 @@ public class ByteBufferDataInput implements DataInput {
     }
 
     @Override
-    public int skipBytes(int n) {
+    public int skipBytes(final int n) {
         final var toRead = Math.min(buffer.remaining(), n);
         buffer.position(buffer.position() + toRead);
         return toRead;
@@ -110,7 +109,7 @@ public class ByteBufferDataInput implements DataInput {
     }
 
     @Override
-    public String readUTF() throws IOException {
+    public String readUTF() {
         throw new UnsupportedOperationException("readUTF is not supported");
     }
 

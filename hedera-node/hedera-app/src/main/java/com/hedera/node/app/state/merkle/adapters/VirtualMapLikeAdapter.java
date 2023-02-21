@@ -60,6 +60,7 @@ public class VirtualMapLikeAdapter {
                     final InterruptableConsumer<Pair<K, V>> handler,
                     final int threadCount)
                     throws InterruptedException {
+
                 final var unwrappingHandler = new InterruptableConsumer<Pair<OnDiskKey<K>, OnDiskValue<V>>>() {
                     @Override
                     public void accept(final Pair<OnDiskKey<K>, OnDiskValue<V>> pair) throws InterruptedException {

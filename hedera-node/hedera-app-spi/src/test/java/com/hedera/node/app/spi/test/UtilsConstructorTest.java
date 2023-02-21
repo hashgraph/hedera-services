@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.test;
+package com.hedera.node.app.spi.test;
 
-import com.hedera.node.app.state.merkle.adapters.MerkleMapLikeAdapter;
-import com.hedera.node.app.state.merkle.adapters.VirtualMapLikeAdapter;
+import com.hedera.node.app.spi.state.serdes.MonoMapSerdesAdapter;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -26,8 +25,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class UtilsConstructorTest {
-    private static final Set<Class<?>> toBeTested =
-            new HashSet<>(Arrays.asList(MerkleMapLikeAdapter.class, VirtualMapLikeAdapter.class));
+    private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(MonoMapSerdesAdapter.class));
 
     @Test
     void throwsInConstructor() {

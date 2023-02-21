@@ -480,7 +480,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         return (accountsStorage instanceof VirtualMap)
                 ? AccountStorageAdapter.fromOnDisk(
                         MerkleMapLike.from(getChild(StateChildIndices.PAYER_RECORDS)),
-                        VirtualMapLike.fromLongKeyed((VirtualMap<EntityNumVirtualKey, OnDiskAccount>) accountsStorage))
+                        VirtualMapLike.from((VirtualMap<EntityNumVirtualKey, OnDiskAccount>) accountsStorage))
                 : AccountStorageAdapter.fromInMemory(
                         MerkleMapLike.from((MerkleMap<EntityNum, MerkleAccount>) accountsStorage));
     }
@@ -502,7 +502,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         final var relsStorage = getChild(StateChildIndices.TOKEN_ASSOCIATIONS);
         return (relsStorage instanceof VirtualMap)
                 ? TokenRelStorageAdapter.fromOnDisk(
-                        VirtualMapLike.fromLongKeyed((VirtualMap<EntityNumVirtualKey, OnDiskTokenRel>) relsStorage))
+                        VirtualMapLike.from((VirtualMap<EntityNumVirtualKey, OnDiskTokenRel>) relsStorage))
                 : TokenRelStorageAdapter.fromInMemory((MerkleMap<EntityNumPair, MerkleTokenRelStatus>) relsStorage);
     }
 

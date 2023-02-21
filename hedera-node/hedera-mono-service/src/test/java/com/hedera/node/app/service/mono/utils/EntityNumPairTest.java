@@ -44,6 +44,15 @@ class EntityNumPairTest {
     }
 
     @Test
+    void comparesValues() {
+        final var lesser = new EntityNumPair(-123);
+        final var greater = new EntityNumPair(+123);
+        assertEquals(0, lesser.compareTo(lesser));
+        assertEquals(-1, lesser.compareTo(greater));
+        assertEquals(+1, greater.compareTo(lesser));
+    }
+
+    @Test
     void equalsWorks() {
         final var a = new EntityNumPair(1);
         final var b = new EntityNumPair(2);
