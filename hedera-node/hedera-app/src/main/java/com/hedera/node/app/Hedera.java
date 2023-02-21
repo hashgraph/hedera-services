@@ -25,6 +25,7 @@ import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.helidon.grpc.server.GrpcRouting;
 import io.helidon.grpc.server.GrpcServer;
 import io.helidon.grpc.server.GrpcServerConfiguration;
@@ -38,7 +39,7 @@ public final class Hedera {
 
     public Hedera() {}
 
-    public void start(HederaApp app, int port) {
+    public void start(@NonNull final HederaApp app, int port) {
         final var metrics = createMetrics(app.nodeId());
 
         // Create the Ingest workflow. While we are in transition, some required facilities come

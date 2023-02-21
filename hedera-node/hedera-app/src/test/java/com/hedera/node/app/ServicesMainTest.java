@@ -16,6 +16,7 @@
 
 package com.hedera.node.app;
 
+import static com.hedera.node.app.HederaAppsManager.HEDERA_APPS_MANAGER;
 import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
 import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static com.swirlds.common.system.PlatformStatus.FREEZE_COMPLETE;
@@ -86,6 +87,8 @@ class ServicesMainTest {
 
     @Mock
     private ServicesApp app;
+    @Mock
+    private HederaApp hederaApp;
 
     @Mock
     private GlobalStaticProperties globalStaticProperties;
@@ -165,6 +168,20 @@ class ServicesMainTest {
     }
 
     @Test
+    void failsOnWrongNativeCharsetWhenHedera() {
+        withDoomedHederaApp();
+
+        given(globalStaticProperties.workflowsEnabled()).willReturn(true);
+        given(nativeCharset.get()).willReturn(StandardCharsets.US_ASCII);
+
+        // when:
+        subject.init(platform, nodeId);
+
+        // then:
+        verify(systemExits).fail(1);
+    }
+
+    @Test
     void failsOnUnavailableDigest() throws NoSuchAlgorithmException {
         withDoomedApp();
 
@@ -180,8 +197,26 @@ class ServicesMainTest {
     }
 
     @Test
+    void failsOnUnavailableDigestWhenHederaApp() throws NoSuchAlgorithmException {
+        withRunnableApp();
+        withDoomedHederaApp();
+
+        given(globalStaticProperties.workflowsEnabled()).willReturn(true);
+        given(nativeCharset.get()).willReturn(UTF_8);
+        given(namedDigestFactory.forName("SHA-384")).willThrow(NoSuchAlgorithmException.class);
+        given(hederaApp.digestFactory()).willReturn(namedDigestFactory);
+
+        // when:
+        subject.init(platform, nodeId);
+
+        // then:
+        verify(systemExits).fail(1);
+    }
+
+    @Test
     void doesAppDrivenInit() throws NoSuchAlgorithmException {
         withRunnableApp();
+        HEDERA_APPS_MANAGER.save(selfId, hederaApp);
 
         // when:
         subject.init(platform, nodeId);
@@ -270,6 +305,12 @@ class ServicesMainTest {
         given(app.systemExits()).willReturn(systemExits);
     }
 
+    private void withDoomedHederaApp() {
+        HEDERA_APPS_MANAGER.save(selfId, hederaApp);
+        given(hederaApp.nativeCharset()).willReturn(nativeCharset);
+        given(hederaApp.systemExits()).willReturn(systemExits);
+    }
+
     private void withFailingApp() throws NoSuchAlgorithmException {
         APPS.save(selfId, app);
         given(nativeCharset.get()).willReturn(UTF_8);
@@ -301,6 +342,30 @@ class ServicesMainTest {
         given(app.statsManager()).willReturn(statsManager);
         given(app.accountsExporter()).willReturn(accountsExporter);
         given(app.grpcStarter()).willReturn(grpcStarter);
+    }
+
+    private void withRunnableHederaApp() throws NoSuchAlgorithmException {
+        HEDERA_APPS_MANAGER.save(selfId, hederaApp);
+        given(nativeCharset.get()).willReturn(UTF_8);
+        given(namedDigestFactory.forName("SHA-384")).willReturn(null);
+        given(hederaApp.globalStaticProperties()).willReturn(globalStaticProperties);
+        given(hederaApp.nativeCharset()).willReturn(nativeCharset);
+        given(hederaApp.digestFactory()).willReturn(namedDigestFactory);
+        given(hederaApp.consoleOut()).willReturn(Optional.of(consoleOut));
+        given(hederaApp.workingState()).willReturn(workingState);
+        given(workingState.accounts()).willReturn(accounts);
+        given(hederaApp.ledgerValidator()).willReturn(ledgerValidator);
+        given(hederaApp.nodeInfo()).willReturn(nodeInfo);
+        given(hederaApp.platform()).willReturn(platform);
+        given(hederaApp.statusChangeListener()).willReturn(statusChangeListener);
+        given(hederaApp.issListener()).willReturn(issListener);
+        given(hederaApp.newSignedStateListener()).willReturn(newSignedStateListener);
+        given(hederaApp.notificationEngine()).willReturn(() -> notificationEngine);
+        given(hederaApp.reconnectListener()).willReturn(reconnectListener);
+        given(hederaApp.stateWriteToDiskListener()).willReturn(stateToDiskListener);
+        given(hederaApp.statsManager()).willReturn(statsManager);
+        given(hederaApp.accountsExporter()).willReturn(accountsExporter);
+        given(hederaApp.grpcStarter()).willReturn(grpcStarter);
     }
 
     private void withChangeableApp() {

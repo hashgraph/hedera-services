@@ -19,6 +19,10 @@ package com.hedera.node.app;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Manages the {@link HederaApp} instances for each node.
+ * Currently, it is a copy of {@link com.hedera.node.app.service.mono.context.AppsManager}
+ */
 public enum HederaAppsManager {
     HEDERA_APPS_MANAGER;
 

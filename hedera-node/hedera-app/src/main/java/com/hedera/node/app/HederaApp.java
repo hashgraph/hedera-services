@@ -18,6 +18,7 @@ package com.hedera.node.app;
 
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.components.QueryComponent;
+import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.config.ConfigModule;
 import com.hedera.node.app.service.mono.context.ContextModule;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
@@ -92,7 +93,9 @@ import java.util.function.Supplier;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
-/** The infrastructure used to implement the platform contract for a Hedera Services node. */
+/** The infrastructure used to implement the platform contract for a Hedera Services node.
+ * This is currently a copy of {@link com.hedera.node.app.service.mono.ServicesApp}, which
+ * is needed to run workflows */
 @Singleton
 @Component(
         modules = {
@@ -119,7 +122,7 @@ import javax.inject.Singleton;
             ServiceModule.class,
             QueryModule.class
         })
-public interface HederaApp {
+public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */
     HashLogger hashLogger();
 

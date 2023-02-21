@@ -48,6 +48,7 @@ public class ServicesMain implements SwirldMain {
     /** Stores information related to the running of services in the mono-repo */
     private ServicesApp app;
 
+    /** Stores information related to the running of services outside mono-repo using workflows */
     private HederaApp hederaApp;
 
     /**
@@ -93,6 +94,7 @@ public class ServicesMain implements SwirldMain {
     }
 
     private void initApp() {
+        final long nodeId;
         if (defaultCharsetIsCorrect() && sha384DigestIsAvailable()) {
             try {
                 Locale.setDefault(Locale.US);
