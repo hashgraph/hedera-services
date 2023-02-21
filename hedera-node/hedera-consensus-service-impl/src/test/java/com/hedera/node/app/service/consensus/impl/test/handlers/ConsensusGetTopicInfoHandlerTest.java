@@ -44,6 +44,11 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    void emptyConstructor() {
+        assertNotNull(new ConsensusGetTopicInfoHandler());
+    }
+
+    @Test
     void extractsHeader() throws Throwable {
         final var query = createGetTopicInfoQuery(topicNum.intValue());
         final var header = subject.extractHeader(query);

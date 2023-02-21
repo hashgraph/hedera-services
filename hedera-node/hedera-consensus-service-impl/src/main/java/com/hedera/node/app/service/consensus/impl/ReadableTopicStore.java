@@ -16,7 +16,10 @@
 
 package com.hedera.node.app.service.consensus.impl;
 
+import static com.hedera.node.app.service.consensus.impl.ReadableTopicStore.TopicMetaOrLookupFailureReason.withFailureReason;
+import static com.hedera.node.app.service.consensus.impl.ReadableTopicStore.TopicMetaOrLookupFailureReason.withTopicMeta;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -46,6 +49,8 @@ public class ReadableTopicStore {
      * @param states The state to use.
      */
     public ReadableTopicStore(@NonNull final ReadableStates states) {
+        requireNonNull(states);
+
         this.topicState = states.get("TOPICS");
     }
 
@@ -56,13 +61,15 @@ public class ReadableTopicStore {
      * @param id topic id being looked up
      * @return topic's metadata
      */
-    public TopicMetaOrLookupFailureReason getTopicMetadata(final TopicID id) {
+    public TopicMetaOrLookupFailureReason getTopicMetadata(@NonNull final TopicID id) {
+        requireNonNull(id);
+
         final var topic = getTopicLeaf(id);
 
         if (topic.isEmpty()) {
-            return new TopicMetaOrLookupFailureReason(null, INVALID_TOPIC_ID);
+            return withFailureReason(INVALID_TOPIC_ID);
         }
-        return new TopicMetaOrLookupFailureReason(topicMetaFrom(topic.get()), null);
+        return withTopicMeta(topicMetaFrom(topic.get()));
     }
 
     private Optional<MerkleTopic> getTopicLeaf(TopicID id) {
