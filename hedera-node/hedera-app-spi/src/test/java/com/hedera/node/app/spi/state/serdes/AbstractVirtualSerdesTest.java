@@ -38,6 +38,16 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+/**
+ * A base class for automatically exercising a {@link Serdes} implementation via a
+ * subclass with a static {@code randomInstances()} method that returns a stream of
+ * random instances of the type for the {@code Serdes}.
+ *
+ * <p>Could still be useful for testing some {@code Serdes} even after full migration
+ * to PBJ key and value types. Unclear.
+ *
+ * @param <T> the type parameter of the {@link Serdes} being tested
+ */
 abstract class AbstractVirtualSerdesTest<T> {
     private static final SplittableRandom RANDOM = new SplittableRandom();
     private static final String RANDOM_INSTANCES = "randomInstances";

@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.SplittableRandom;
 import java.util.stream.Stream;
-
 import org.junit.jupiter.api.Test;
 
 class VirtualKeySerdesAdapterTest extends AbstractVirtualSerdesTest<VirtualBlobKey> {

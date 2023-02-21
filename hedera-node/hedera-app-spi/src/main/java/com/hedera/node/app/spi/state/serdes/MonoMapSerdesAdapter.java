@@ -30,7 +30,9 @@ import java.io.IOException;
 import java.util.function.Supplier;
 
 /**
- * Constructs a {@link Serdes} for a {@link SelfSerializable}, {@link VirtualKey}, or {@link VirtualValue} type.
+ * A temporary utility that constructs a {@link Serdes} for a {@link SelfSerializable}, {@link VirtualKey},
+ * or {@link VirtualValue} type. This is only useful for adapting parts of the {@code mono-service} Merkle
+ * tree, since we expect key and value types in {@code hedera-app} to enjoy protobuf serialization.
  *
  * <p>Note that {@code fastEquals()} is not implemented in any case; and only the {@link VirtualKey}
  * serdes needs to implement {@code measure()} and {@code typicalSize()}.
