@@ -64,13 +64,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.spi.meta.PreHandleContext;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.Test;
@@ -410,13 +407,6 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertTrue(context.getRequiredNonPayerKeys().isEmpty());
-    }
-
-    @Test
-    void handleNotImplemented() {
-        final var metaToHandle = mock(TransactionMetadata.class);
-
-        assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
     }
 
     private void assertContextFailedWithReqPayerKeyAnd(

@@ -18,11 +18,13 @@ package com.hedera.node.app.workflows.query;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.spi.meta.QueryContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.workflows.dispatcher.StoreFactory;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -100,18 +102,18 @@ public class QueryDispatcher {
      * Validates the query by dispatching the query to its specific handlers.
      *
      * @param storeFactory the {@link StoreFactory} that keeps all stores which are eventually
-     *     needed
-     * @param query the {@link Query} of the request
+     *                     needed
+     * @param query        the {@link Query} of the request
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void validate(@NonNull final StoreFactory storeFactory, @NonNull final Query query)
+    public ResponseCodeEnum validate(@NonNull final StoreFactory storeFactory, @NonNull final Query query)
             throws PreCheckException {
         requireNonNull(storeFactory);
         requireNonNull(query);
 
-        switch (query.getQueryCase()) {
+        return switch (query.getQueryCase()) {
             case CONSENSUSGETTOPICINFO -> handlers.consensusGetTopicInfoHandler()
-                    .validate(query);
+                    .validate(query, storeFactory.getTopicStore());
 
             case GETBYSOLIDITYID -> handlers.contractGetBySolidityIDHandler().validate(query);
             case CONTRACTCALLLOCAL -> handlers.contractCallLocalHandler().validate(query);
@@ -151,33 +153,33 @@ public class QueryDispatcher {
 
             case TRANSACTIONGETFASTRECORD -> throw new UnsupportedOperationException(GET_FAST_RECORD_IS_NOT_SUPPORTED);
             case QUERY_NOT_SET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
-
-            default -> throw new UnsupportedOperationException(
-                    "This type of query is not supported: " + query.getQueryCase());
-        }
+        };
     }
 
     /**
      * Gets the response for a given query by dispatching its respective handlers.
      *
      * @param storeFactory the {@link StoreFactory} that keeps all stores which are eventually
-     *     needed
-     * @param query the actual {@link Query}
-     * @param header the {@link ResponseHeader} that should be used in the response, if it is
-     *     successful
+     *                     needed
+     * @param query        the actual {@link Query}
+     * @param header       the {@link ResponseHeader} that should be used in the response, if it is
+     *                     successful
+     * @param queryContext
      * @return the {@link Response} with the requested answer
      */
     public Response getResponse(
             @NonNull final StoreFactory storeFactory,
             @NonNull final Query query,
-            @NonNull final ResponseHeader header) {
+            @NonNull final ResponseHeader header,
+            @NonNull final QueryContext queryContext) {
         requireNonNull(storeFactory);
         requireNonNull(query);
         requireNonNull(header);
+        requireNonNull(queryContext);
 
         return switch (query.getQueryCase()) {
             case CONSENSUSGETTOPICINFO -> handlers.consensusGetTopicInfoHandler()
-                    .findResponse(query, header);
+                    .findResponse(query, header, storeFactory.getTopicStore(), queryContext);
 
             case GETBYSOLIDITYID -> handlers.contractGetBySolidityIDHandler().findResponse(query, header);
             case CONTRACTCALLLOCAL -> handlers.contractCallLocalHandler().findResponse(query, header);
