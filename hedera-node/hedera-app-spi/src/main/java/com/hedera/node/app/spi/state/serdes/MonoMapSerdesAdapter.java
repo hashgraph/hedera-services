@@ -29,6 +29,17 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.function.Supplier;
 
+/**
+ * Constructs a {@link Serdes} for a {@link SelfSerializable}, {@link VirtualKey}, or {@link VirtualValue} type.
+ *
+ * <p>Note that {@code fastEquals()} is not implemented in any case; and only the {@link VirtualKey}
+ * serdes needs to implement {@code measure()} and {@code typicalSize()}.
+ *
+ * <p>Also note the {@link SelfSerializable} serdes are only usable with a
+ * {@code SerializableDataInputStream} and {@code SerializableDataOutputStream}. The {@link VirtualKey}
+ * and {@link VirtualValue} serdes also supports {@link ByteBufferDataInput} and
+ * {@link ByteBufferDataOutput}.
+ */
 public class MonoMapSerdesAdapter {
     private MonoMapSerdesAdapter() {
         throw new UnsupportedOperationException("Utility class");

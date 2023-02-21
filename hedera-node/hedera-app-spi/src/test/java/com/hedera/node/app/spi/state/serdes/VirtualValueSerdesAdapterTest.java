@@ -51,6 +51,12 @@ public class VirtualValueSerdesAdapterTest extends AbstractVirtualSerdesTest<Vir
         assertThrows(UnsupportedOperationException.class, subject::typicalSize);
     }
 
+    /**
+     * Used by the base {@link AbstractVirtualSerdesTest} to generate random instances of
+     * the {@link VirtualBlobValue} type.
+     *
+     * @return a stream of random instances of the {@link VirtualBlobValue} type
+     */
     public static Stream<VirtualBlobValue> randomInstances() {
         return Stream.generate(() -> new VirtualBlobValue(randomBytes())).limit(NUM_INSTANCES);
     }
