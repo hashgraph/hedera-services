@@ -26,6 +26,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -107,7 +109,60 @@ public class ReadableTopicStore {
             long sequenceNumber,
             byte[] runningHash,
             long key,
-            boolean isDeleted) {}
+            boolean isDeleted) {
+        // Overriding equals, hashCode and toString to consider array's content
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            TopicMetadata that = (TopicMetadata) o;
+            return autoRenewDurationSeconds == that.autoRenewDurationSeconds
+                    && sequenceNumber == that.sequenceNumber
+                    && key == that.key
+                    && isDeleted == that.isDeleted
+                    && Objects.equals(memo, that.memo)
+                    && Objects.equals(adminKey, that.adminKey)
+                    && Objects.equals(submitKey, that.submitKey)
+                    && Objects.equals(autoRenewAccountId, that.autoRenewAccountId)
+                    && Objects.equals(expirationTimestamp, that.expirationTimestamp)
+                    && Arrays.equals(runningHash, that.runningHash);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = Objects.hash(
+                    memo,
+                    adminKey,
+                    submitKey,
+                    autoRenewDurationSeconds,
+                    autoRenewAccountId,
+                    expirationTimestamp,
+                    sequenceNumber,
+                    key,
+                    isDeleted);
+            result = 31 * result + Arrays.hashCode(runningHash);
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return "TopicMetadata{" + "memo="
+                    + memo + ", adminKey="
+                    + adminKey + ", submitKey="
+                    + submitKey + ", autoRenewDurationSeconds="
+                    + autoRenewDurationSeconds + ", autoRenewAccountId="
+                    + autoRenewAccountId + ", expirationTimestamp="
+                    + expirationTimestamp + ", sequenceNumber="
+                    + sequenceNumber + ", runningHash="
+                    + Arrays.toString(runningHash) + ", key="
+                    + key + ", isDeleted="
+                    + isDeleted + '}';
+        }
+    }
 
     /**
      * Returns the topics metadata if the topic exists. If the topic doesn't exist returns failure reason.

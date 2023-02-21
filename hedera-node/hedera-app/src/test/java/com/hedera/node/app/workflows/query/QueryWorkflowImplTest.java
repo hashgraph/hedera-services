@@ -349,7 +349,7 @@ class QueryWorkflowImplTest {
         final var header = response.getFileGetInfo().getHeader();
         assertThat(header.getNodeTransactionPrecheckCode()).isEqualTo(OK);
         assertThat(header.getResponseType()).isEqualTo(ANSWER_ONLY);
-        assertThat(header.getCost()).isEqualTo(0L);
+        assertThat(header.getCost()).isZero();
         verify(opCounters).countReceived(FileGetInfo);
         verify(opCounters).countAnswered(FileGetInfo);
     }
@@ -370,7 +370,7 @@ class QueryWorkflowImplTest {
         final var header = response.getFileGetInfo().getHeader();
         assertThat(header.getNodeTransactionPrecheckCode()).isEqualTo(OK);
         assertThat(header.getResponseType()).isEqualTo(ANSWER_ONLY);
-        assertThat(header.getCost()).isEqualTo(0L);
+        assertThat(header.getCost()).isZero();
         verify(opCounters).countReceived(FileGetInfo);
         verify(opCounters).countAnswered(FileGetInfo);
     }

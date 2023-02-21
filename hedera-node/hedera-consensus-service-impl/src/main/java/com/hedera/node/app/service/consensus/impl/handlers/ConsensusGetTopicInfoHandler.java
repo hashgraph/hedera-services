@@ -113,12 +113,10 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
 
         final var responseType = op.getHeader().getResponseType();
         response.setHeader(header);
-        if (header.getNodeTransactionPrecheckCode() == OK) {
-            if (responseType != COST_ANSWER) {
-                final var optionalInfo = infoForTopic(op.getTopicID(), topicStore, queryContext);
-                if (optionalInfo.isPresent()) {
-                    response.setTopicInfo(optionalInfo.get());
-                }
+        if (header.getNodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
+            final var optionalInfo = infoForTopic(op.getTopicID(), topicStore, queryContext);
+            if (optionalInfo.isPresent()) {
+                response.setTopicInfo(optionalInfo.get());
             }
         }
 
@@ -142,7 +140,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
         } else {
             final var info = ConsensusTopicInfo.newBuilder();
             final var meta = metaOrFailure.metadata();
-            meta.memo().ifPresent(memo -> info.setMemo(memo));
+            meta.memo().ifPresent(info::setMemo);
             info.setRunningHash(ByteString.copyFrom(meta.runningHash()));
             info.setSequenceNumber(meta.sequenceNumber());
             info.setExpirationTime(meta.expirationTimestamp());

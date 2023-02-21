@@ -52,6 +52,6 @@ public class MonoFeeAccumulator implements FeeAccumulator {
     @Override
     public FeeObject computePayment(HederaFunctionality functionality, Query query, Timestamp now) {
         final var usagePrices = resourceCosts.defaultPricesGiven(functionality, now);
-        return feeCalculator.computePayment(query, usagePrices, stateView.get(), now, new HashMap());
+        return feeCalculator.computePayment(query, usagePrices, stateView.get(), now, new HashMap<>());
     }
 }

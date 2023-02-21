@@ -24,7 +24,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
+class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
     private ReadableTopicStore subject;
 
     @BeforeEach
