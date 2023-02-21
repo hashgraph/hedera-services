@@ -175,6 +175,7 @@ public class QueryDispatcher {
         requireNonNull(storeFactory);
         requireNonNull(query);
         requireNonNull(header);
+        requireNonNull(queryContext);
 
         return switch (query.getQueryCase()) {
             case CONSENSUSGETTOPICINFO -> handlers.consensusGetTopicInfoHandler()
