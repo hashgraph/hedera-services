@@ -253,13 +253,6 @@ public class CryptoCreateChecks {
 
     private ResponseCodeEnum validateOnlyAliasProvidedCase(final CryptoCreateTransactionBody op) {
         if (op.getAlias().size() == EVM_ADDRESS_SIZE) {
-            if (!dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
-                return NOT_SUPPORTED;
-            }
-            if (!dynamicProperties.isLazyCreationEnabled()) {
-                return NOT_SUPPORTED;
-            }
-
             return INVALID_ALIAS_KEY;
         }
         if (!dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {

@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
-import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks.keyAndAliasProvided;
 import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks.onlyAliasProvided;
 import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks.onlyKeyProvided;
@@ -111,10 +110,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
             CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
             final var customizer = asCustomizer(op);
-            final var minPayerBalanceRequired = op.getInitialBalance();
-            if (minPayerBalanceRequired > (long) ledger.getAccountsLedger().get(sponsor, BALANCE)) {
-                throw new InsufficientFundsException(txnCtx.activePayer(), minPayerBalanceRequired);
-            }
             final var created = ledger.create(sponsor, op.getInitialBalance(), customizer);
             sigImpactHistorian.markEntityChanged(created.getAccountNum());
 
