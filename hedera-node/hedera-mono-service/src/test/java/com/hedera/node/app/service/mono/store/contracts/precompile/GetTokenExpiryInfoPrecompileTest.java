@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
@@ -85,35 +86,83 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class GetTokenExpiryInfoPrecompileTest {
 
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private GasCalculator gasCalculator;
-    @Mock private MessageFrame frame;
-    @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private EncodingFacade encoder;
-    @Mock private EvmEncodingFacade evmEncoder;
-    @Mock private SideEffectsTracker sideEffects;
-    @Mock private TransactionBody.Builder mockSynthBodyBuilder;
-    @Mock private ExpirableTxnRecord.Builder mockRecordBuilder;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private HederaStackedWorldStateUpdater worldUpdater;
-    @Mock private WorldLedgers wrappedLedgers;
-    @Mock private ExpiringCreations creator;
-    @Mock private FeeCalculator feeCalculator;
-    @Mock private StateView stateView;
-    @Mock private UsagePricesProvider resourceCosts;
-    @Mock private InfrastructureFactory infrastructureFactory;
-    @Mock private AssetsLoader assetLoader;
-    @Mock private HbarCentExchange exchange;
-    @Mock private FeeObject mockFeeObject;
-    @Mock private AccessorFactory accessorFactory;
-    @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
-    @Mock private NetworkInfo networkInfo;
-    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private GasCalculator gasCalculator;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private TxnAwareEvmSigsVerifier sigsVerifier;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private EncodingFacade encoder;
+
+    @Mock
+    private EvmEncodingFacade evmEncoder;
+
+    @Mock
+    private SideEffectsTracker sideEffects;
+
+    @Mock
+    private TransactionBody.Builder mockSynthBodyBuilder;
+
+    @Mock
+    private ExpirableTxnRecord.Builder mockRecordBuilder;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private HederaStackedWorldStateUpdater worldUpdater;
+
+    @Mock
+    private WorldLedgers wrappedLedgers;
+
+    @Mock
+    private ExpiringCreations creator;
+
+    @Mock
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private StateView stateView;
+
+    @Mock
+    private UsagePricesProvider resourceCosts;
+
+    @Mock
+    private InfrastructureFactory infrastructureFactory;
+
+    @Mock
+    private AssetsLoader assetLoader;
+
+    @Mock
+    private HbarCentExchange exchange;
+
+    @Mock
+    private FeeObject mockFeeObject;
+
+    @Mock
+    private AccessorFactory accessorFactory;
+
+    @Mock
+    private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
+
+    @Mock
+    private NetworkInfo networkInfo;
+
+    @Mock
+    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     public static final Bytes GET_EXPIRY_INFO_FOR_TOKEN_INPUT =
-            Bytes.fromHexString(
-                    "0xd614cdb800000000000000000000000000000000000000000000000000000000000008c1");
+            Bytes.fromHexString("0xd614cdb800000000000000000000000000000000000000000000000000000000000008c1");
     private HTSPrecompiledContract subject;
     private MockedStatic<EntityIdUtils> entityIdUtils;
     private MockedStatic<GetTokenExpiryInfoPrecompile> getTokenExpiryInfoPrecompile;
@@ -121,35 +170,26 @@ class GetTokenExpiryInfoPrecompileTest {
 
     @BeforeEach
     void setUp() {
-        final PrecompilePricingUtils precompilePricingUtils =
-                new PrecompilePricingUtils(
-                        assetLoader,
-                        exchange,
-                        () -> feeCalculator,
-                        resourceCosts,
-                        stateView,
-                        accessorFactory);
+        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
+                assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
 
         entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
-        entityIdUtils
-                .when(() -> EntityIdUtils.asTypedEvmAddress(tokenMerkleId))
-                .thenReturn(tokenMerkleAddress);
+        entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(tokenMerkleId)).thenReturn(tokenMerkleAddress);
 
-        subject =
-                new HTSPrecompiledContract(
-                        dynamicProperties,
-                        gasCalculator,
-                        recordsHistorian,
-                        sigsVerifier,
-                        encoder,
-                        evmEncoder,
-                        syntheticTxnFactory,
-                        creator,
-                        () -> feeCalculator,
-                        stateView,
-                        precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+        subject = new HTSPrecompiledContract(
+                dynamicProperties,
+                gasCalculator,
+                recordsHistorian,
+                sigsVerifier,
+                encoder,
+                evmEncoder,
+                syntheticTxnFactory,
+                creator,
+                () -> feeCalculator,
+                stateView,
+                precompilePricingUtils,
+                infrastructureFactory,
+                evmHTSPrecompiledContract);
 
         getTokenExpiryInfoPrecompile = Mockito.mockStatic(GetTokenExpiryInfoPrecompile.class);
     }
@@ -168,25 +208,22 @@ class GetTokenExpiryInfoPrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var getTokenExpiryInfoWrapper = new GetTokenExpiryInfoWrapper<>(tokenMerkleId);
-        final var evmTokenInfo =
-                new EvmTokenInfo(
-                        Bytes.fromHexString("0x03").toArray(),
-                        1,
-                        false,
-                        "FT",
-                        "NAME",
-                        "MEMO",
-                        Address.wrap(
-                                Bytes.fromHexString("0x00000000000000000000000000000000000005cc")),
-                        1L,
-                        1000L,
-                        0,
-                        0L);
+        final var evmTokenInfo = new EvmTokenInfo(
+                Bytes.fromHexString("0x03").toArray(),
+                1,
+                false,
+                "FT",
+                "NAME",
+                "MEMO",
+                Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005cc")),
+                1L,
+                1000L,
+                0,
+                0L);
 
-        final Bytes pretendArguments =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_EXPIRY_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
+        final Bytes pretendArguments = Bytes.concatenate(
+                Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_EXPIRY_INFO)),
+                EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         getTokenExpiryInfoPrecompile
                 .when(() -> decodeGetTokenExpiryInfo(pretendArguments))
                 .thenReturn(getTokenExpiryInfoWrapper);
@@ -209,8 +246,7 @@ class GetTokenExpiryInfoPrecompileTest {
         // then:
         assertEquals(successResult, result);
         // and:
-        verify(worldUpdater)
-                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -221,10 +257,9 @@ class GetTokenExpiryInfoPrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var getTokenExpiryInfoWrapper = new GetTokenExpiryInfoWrapper<>(tokenMerkleId);
-        final Bytes pretendArguments =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_EXPIRY_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
+        final Bytes pretendArguments = Bytes.concatenate(
+                Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_EXPIRY_INFO)),
+                EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         getTokenExpiryInfoPrecompile
                 .when(() -> decodeGetTokenExpiryInfo(pretendArguments))
                 .thenReturn(getTokenExpiryInfoWrapper);
@@ -254,10 +289,8 @@ class GetTokenExpiryInfoPrecompileTest {
                 .when(() -> decodeGetTokenExpiryInfo(GET_EXPIRY_INFO_FOR_TOKEN_INPUT))
                 .thenCallRealMethod();
         entityIdUtils
-                .when(
-                        () ->
-                                EntityIdUtils.tokenIdFromEvmAddress(
-                                        Address.fromHexString(address).toArray()))
+                .when(() -> EntityIdUtils.tokenIdFromEvmAddress(
+                        Address.fromHexString(address).toArray()))
                 .thenCallRealMethod();
         final var decodedInput = decodeGetTokenExpiryInfo(GET_EXPIRY_INFO_FOR_TOKEN_INPUT);
 
@@ -275,20 +308,14 @@ class GetTokenExpiryInfoPrecompileTest {
     }
 
     private void givenMinimalContextForSuccessfulCall(final Bytes pretendArguments) {
-        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
-                .willReturn(mockSynthBodyBuilder);
-        given(
-                        creator.createSuccessfulSyntheticRecord(
-                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
+        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+        given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
     }
 
     private void givenReadOnlyFeeSchedule() {
-        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any()))
-                .willReturn(mockFeeObject);
-        given(
-                        feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, timestamp))
+        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
         given(mockFeeObject.getNodeFee()).willReturn(1L);
         given(mockFeeObject.getNetworkFee()).willReturn(1L);

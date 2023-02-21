@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.records;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CACHE_RECORDS_TTL;
+import static com.hedera.node.app.spi.config.PropertyNames.CACHE_RECORDS_TTL;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -34,6 +35,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public final class RecordCacheFactory {
+
     private static final Logger log = LogManager.getLogger(RecordCacheFactory.class);
 
     private final PropertySource properties;

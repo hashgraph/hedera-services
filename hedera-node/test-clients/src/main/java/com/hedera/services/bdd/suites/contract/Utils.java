@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract;
 
 import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.relocatedIfNotPresentInWorkingDir;
@@ -73,13 +74,12 @@ public class Utils {
     }
 
     public static ByteString parsedToByteString(long n) {
-        return ByteString.copyFrom(Bytes32.fromHexStringLenient(Long.toHexString(n)).toArray());
+        return ByteString.copyFrom(
+                Bytes32.fromHexStringLenient(Long.toHexString(n)).toArray());
     }
 
     public static String asHexedAddress(final TokenID id) {
-        return Bytes.wrap(
-                        asSolidityAddress(
-                                (int) id.getShardNum(), id.getRealmNum(), id.getTokenNum()))
+        return Bytes.wrap(asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getTokenNum()))
                 .toHexString();
     }
 
@@ -142,8 +142,7 @@ public class Utils {
      *     function name must be EMPTY ("")
      * @param contractName the name of the contract
      */
-    public static String getABIFor(
-            final FunctionType type, final String functionName, final String contractName) {
+    public static String getABIFor(final FunctionType type, final String functionName, final String contractName) {
         try {
             final var path = getResourcePath(contractName, ".json");
             try (final var input = new FileInputStream(path)) {
@@ -156,8 +155,7 @@ public class Utils {
 
     public static String getResourceABIFor(
             final FunctionType type, final String functionName, final String contractName) {
-        final var resourcePath =
-                String.format(UNIQUE_CLASSPATH_RESOURCE_TPL, contractName, contractName + ".json");
+        final var resourcePath = String.format(UNIQUE_CLASSPATH_RESOURCE_TPL, contractName, contractName + ".json");
         try (final var input = Utils.class.getClassLoader().getResourceAsStream(resourcePath)) {
             return getFunctionAbiFrom(input, functionName, type);
         } catch (final IOException e) {
@@ -165,25 +163,17 @@ public class Utils {
         }
     }
 
-    private static String getFunctionAbiFrom(
-            final InputStream in, final String functionName, final FunctionType type) {
+    private static String getFunctionAbiFrom(final InputStream in, final String functionName, final FunctionType type) {
         final var array = new JSONArray(new JSONTokener(in));
         return IntStream.range(0, array.length())
                 .mapToObj(array::getJSONObject)
-                .filter(
-                        object ->
-                                type == CONSTRUCTOR
-                                        ? object.getString("type")
-                                                .equals(type.toString().toLowerCase())
-                                        : object.getString("type")
-                                                        .equals(type.toString().toLowerCase())
-                                                && object.getString("name").equals(functionName))
+                .filter(object -> type == CONSTRUCTOR
+                        ? object.getString("type").equals(type.toString().toLowerCase())
+                        : object.getString("type").equals(type.toString().toLowerCase())
+                                && object.getString("name").equals(functionName))
                 .map(JSONObject::toString)
                 .findFirst()
-                .orElseThrow(
-                        () ->
-                                new IllegalArgumentException(
-                                        "No such function found: " + functionName));
+                .orElseThrow(() -> new IllegalArgumentException("No such function found: " + functionName));
     }
 
     /**
@@ -213,8 +203,7 @@ public class Utils {
         final var path = String.format(RESOURCE_PATH + extension, resourceName);
         final var file = relocatedIfNotPresentInWorkingDir(new File(path));
         if (!file.exists()) {
-            throw new IllegalArgumentException(
-                    "Invalid argument: " + path.substring(path.lastIndexOf('/') + 1));
+            throw new IllegalArgumentException("Invalid argument: " + path.substring(path.lastIndexOf('/') + 1));
         }
         return path;
     }
@@ -234,7 +223,10 @@ public class Utils {
     }
 
     public static AccountAmount aaWith(final AccountID account, final long amount) {
-        return AccountAmount.newBuilder().setAccountID(account).setAmount(amount).build();
+        return AccountAmount.newBuilder()
+                .setAccountID(account)
+                .setAmount(amount)
+                .build();
     }
 
     public static AccountAmount aaWith(final ByteString evmAddress, final long amount) {
@@ -251,8 +243,7 @@ public class Utils {
                 .build();
     }
 
-    public static NftTransfer ocWith(
-            final AccountID from, final AccountID to, final long serialNo) {
+    public static NftTransfer ocWith(final AccountID from, final AccountID to, final long serialNo) {
         return NftTransfer.newBuilder()
                 .setSenderAccountID(from)
                 .setReceiverAccountID(to)
@@ -261,7 +252,9 @@ public class Utils {
     }
 
     public static AccountID accountId(final String hexedEvmAddress) {
-        return AccountID.newBuilder().setAlias(ByteString.copyFrom(unhex(hexedEvmAddress))).build();
+        return AccountID.newBuilder()
+                .setAlias(ByteString.copyFrom(unhex(hexedEvmAddress)))
+                .build();
     }
 
     public static AccountID accountId(final ByteString evmAddress) {
@@ -271,18 +264,14 @@ public class Utils {
     public static Key aliasContractIdKey(final String hexedEvmAddress) {
         return Key.newBuilder()
                 .setContractID(
-                        ContractID.newBuilder()
-                                .setEvmAddress(
-                                        ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress))))
+                        ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress))))
                 .build();
     }
 
     public static Key aliasDelegateContractKey(final String hexedEvmAddress) {
         return Key.newBuilder()
                 .setDelegatableContractId(
-                        ContractID.newBuilder()
-                                .setEvmAddress(
-                                        ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress))))
+                        ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress))))
                 .build();
     }
 
@@ -301,34 +290,29 @@ public class Utils {
             final String creation2,
             final AtomicReference<String> mirrorAddr,
             final AtomicReference<String> create2Addr) {
-        return withOpContext(
-                (spec, opLog) -> {
-                    final var lookup = getTxnRecord(creation2).andAllChildRecords().logged();
-                    allRunFor(spec, lookup);
-                    final var response = lookup.getResponse().getTransactionGetRecord();
-                    final var numRecords = response.getChildTransactionRecordsCount();
-                    int numExpectedChildren = givenNumExpectedChildren;
-                    int childOfInterest = givenChildOfInterest;
-                    if (numRecords == numExpectedChildren + 1
-                            && TxnUtils.isEndOfStakingPeriodRecord(
-                                    response.getChildTransactionRecords(0))) {
-                        // This transaction may have had a preceding record for the end-of-day
-                        // staking calculations
-                        numExpectedChildren++;
-                        childOfInterest++;
-                    }
-                    assertEquals(
-                            numExpectedChildren,
-                            response.getChildTransactionRecordsCount(),
-                            "Wrong # of children");
-                    final var create2Record = response.getChildTransactionRecords(childOfInterest);
-                    final var create2Address =
-                            create2Record.getContractCreateResult().getEvmAddress().getValue();
-                    create2Addr.set(hex(create2Address.toByteArray()));
-                    final var createdId = create2Record.getReceipt().getContractID();
-                    mirrorAddr.set(hex(HapiPropertySource.asSolidityAddress(createdId)));
-                    opLog.info("{} is @ {} (mirror {})", desc, create2Addr.get(), mirrorAddr.get());
-                });
+        return withOpContext((spec, opLog) -> {
+            final var lookup = getTxnRecord(creation2).andAllChildRecords().logged();
+            allRunFor(spec, lookup);
+            final var response = lookup.getResponse().getTransactionGetRecord();
+            final var numRecords = response.getChildTransactionRecordsCount();
+            int numExpectedChildren = givenNumExpectedChildren;
+            int childOfInterest = givenChildOfInterest;
+            if (numRecords == numExpectedChildren + 1
+                    && TxnUtils.isEndOfStakingPeriodRecord(response.getChildTransactionRecords(0))) {
+                // This transaction may have had a preceding record for the end-of-day
+                // staking calculations
+                numExpectedChildren++;
+                childOfInterest++;
+            }
+            assertEquals(numExpectedChildren, response.getChildTransactionRecordsCount(), "Wrong # of children");
+            final var create2Record = response.getChildTransactionRecords(childOfInterest);
+            final var create2Address =
+                    create2Record.getContractCreateResult().getEvmAddress().getValue();
+            create2Addr.set(hex(create2Address.toByteArray()));
+            final var createdId = create2Record.getReceipt().getContractID();
+            mirrorAddr.set(hex(HapiPropertySource.asSolidityAddress(createdId)));
+            opLog.info("{} is @ {} (mirror {})", desc, create2Addr.get(), mirrorAddr.get());
+        });
     }
 
     public static Instant asInstant(final Timestamp timestamp) {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.accounts;
 
 import static com.swirlds.common.utility.CommonUtils.unhex;
@@ -44,21 +45,22 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class StackedContractAliasesTest {
     private static final EntityNum num = EntityNum.fromLong(1234L);
-    private static final byte[] rawNonMirrorAddress =
-            unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");
-    private static final byte[] otherRawNonMirrorAddress =
-            unhex("abcdecabcdecabcdecbabcdecabcdecabcdecbbb");
+    private static final byte[] rawNonMirrorAddress = unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");
+    private static final byte[] otherRawNonMirrorAddress = unhex("abcdecabcdecabcdecbabcdecabcdecabcdecbbb");
     private static final Address nonMirrorAddress = Address.wrap(Bytes.wrap(rawNonMirrorAddress));
-    private static final Address otherNonMirrorAddress =
-            Address.wrap(Bytes.wrap(otherRawNonMirrorAddress));
+    private static final Address otherNonMirrorAddress = Address.wrap(Bytes.wrap(otherRawNonMirrorAddress));
     private static final Address mirrorAddress = num.toEvmAddress();
     private static final Address otherMirrorAddress = EntityNum.fromLong(1235L).toEvmAddress();
     private static final ContractID normalId = num.toGrpcContractID();
-    private static final ContractID aliasedId =
-            ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(rawNonMirrorAddress)).build();
+    private static final ContractID aliasedId = ContractID.newBuilder()
+            .setEvmAddress(ByteString.copyFrom(rawNonMirrorAddress))
+            .build();
 
-    @Mock private ContractAliases wrappedAliases;
-    @Mock private SigImpactHistorian observer;
+    @Mock
+    private ContractAliases wrappedAliases;
+
+    @Mock
+    private SigImpactHistorian observer;
 
     private StackedContractAliases subject;
 
@@ -113,15 +115,12 @@ class StackedContractAliasesTest {
 
     @Test
     void refusesToLinkToNonMirrorAddress() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.link(nonMirrorAddress, nonMirrorAddress));
+        assertThrows(IllegalArgumentException.class, () -> subject.link(nonMirrorAddress, nonMirrorAddress));
     }
 
     @Test
     void refusesToLinkFromMirrorAddress() {
-        assertThrows(
-                IllegalArgumentException.class, () -> subject.link(mirrorAddress, mirrorAddress));
+        assertThrows(IllegalArgumentException.class, () -> subject.link(mirrorAddress, mirrorAddress));
     }
 
     @Test

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.schedule;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -20,8 +21,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.SelfSerializableSupplier;
 import java.io.IOException;
 
-public class ScheduleSecondVirtualValueSupplier
-        implements SelfSerializableSupplier<ScheduleSecondVirtualValue> {
+public class ScheduleSecondVirtualValueSupplier implements SelfSerializableSupplier<ScheduleSecondVirtualValue> {
     static final long CLASS_ID = 0x218245c13df4e2bfL;
     static final int CURRENT_VERSION = 1;
 

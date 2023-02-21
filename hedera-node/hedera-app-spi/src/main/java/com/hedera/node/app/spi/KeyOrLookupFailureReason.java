@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -26,10 +27,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * key need not be looked up when receiver signature required is false, both key and failureReason
  * are null.
  */
-public record KeyOrLookupFailureReason(
-        @Nullable HederaKey key, @Nullable ResponseCodeEnum failureReason) {
-    public static final KeyOrLookupFailureReason PRESENT_BUT_NOT_REQUIRED =
-            new KeyOrLookupFailureReason(null, null);
+public record KeyOrLookupFailureReason(@Nullable HederaKey key, @Nullable ResponseCodeEnum failureReason) {
+    public static final KeyOrLookupFailureReason PRESENT_BUT_NOT_REQUIRED = new KeyOrLookupFailureReason(null, null);
 
     public boolean failed() {
         return failureReason != null;

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.fees;
 
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
@@ -68,9 +69,11 @@ public class ScheduleTypePatching {
         for (final var type : requiredTypes) {
             if (!presentTypes.contains(type)) {
                 if (explicitDefaultPrices != null) {
-                    patchedTfs.addFees(explicitDefaultPrices.toBuilder().setSubType(type).build());
+                    patchedTfs.addFees(
+                            explicitDefaultPrices.toBuilder().setSubType(type).build());
                 } else {
-                    patchedTfs.addFees(oldDefaultPrices.toBuilder().setSubType(type).build());
+                    patchedTfs.addFees(
+                            oldDefaultPrices.toBuilder().setSubType(type).build());
                 }
             }
         }

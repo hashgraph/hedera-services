@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.schedule.impl;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -55,18 +57,14 @@ public class ReadableScheduleStore {
      * @return the schedule with the given id
      */
     public Optional<ScheduleMetadata> get(final ScheduleID id) {
-        //        final var schedule = schedulesById.get(id.scheduleNum());
-        //        return Optional.ofNullable(schedule)
-        //                .map(
-        //                        s ->
-        //                                new ScheduleMetadata(
-        //                                        schedule.adminKey(),
-        //                                        schedule.ordinaryViewOfScheduledTxn(),
-        //                                        schedule.hasExplicitPayer()
-        //                                                ? Optional.of(schedule.payer()).map(e ->
-        // AccountID.newBuilder().shardNum(e.shard()).realmNum(e.realm()).accountNum(e.num()).build())
-        //                                                : Optional.empty()));
-        return null;
+        final var schedule = schedulesById.get(id.scheduleNum());
+        return Optional.ofNullable(schedule)
+                .map(s -> new ScheduleMetadata(
+                        schedule.adminKey(),
+                        PbjConverter.toPbj(schedule.ordinaryViewOfScheduledTxn()),
+                        schedule.hasExplicitPayer()
+                                ? Optional.of(schedule.payer().toPbjAccountId())
+                                : Optional.empty()));
     }
 
     /**

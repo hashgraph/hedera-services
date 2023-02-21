@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
@@ -26,12 +27,17 @@ import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
  * HederaFunctionality#TOKEN_GET_NFT_INFO}.
  */
+@Singleton
 public class TokenGetNftInfoHandler extends PaidQueryHandler {
+    @Inject
+    public TokenGetNftInfoHandler() {}
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {

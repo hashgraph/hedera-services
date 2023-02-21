@@ -13,6 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.TransactionBody;
+
+/**
+ * Exception raised when mapping from {@link TransactionBody} or {@link Query} to {@link HederaFunctionality}
+ * when there is no known mapping. This should NEVER happen and means there is a new functionality that is
+ * not yet supported in the code.
+ */
 public class UnknownHederaFunctionality extends Exception {}

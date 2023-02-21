@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.file.negative;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -35,21 +36,17 @@ public class DeleteFailuresSpec extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    //						handleRejectsMissingFile(),
-                    handleRejectsDeletedFile(),
-                });
+        return List.of(new HapiSpec[] {
+            //						handleRejectsMissingFile(),
+            handleRejectsDeletedFile(),
+        });
     }
 
     private HapiSpec handleRejectsMissingFile() {
         return defaultHapiSpec("handleRejectsMissingFile")
                 .given()
                 .when()
-                .then(
-                        fileDelete("1.2.3")
-                                .signedBy(GENESIS)
-                                .hasKnownStatus(ResponseCodeEnum.INVALID_FILE_ID));
+                .then(fileDelete("1.2.3").signedBy(GENESIS).hasKnownStatus(ResponseCodeEnum.INVALID_FILE_ID));
     }
 
     private HapiSpec handleRejectsDeletedFile() {

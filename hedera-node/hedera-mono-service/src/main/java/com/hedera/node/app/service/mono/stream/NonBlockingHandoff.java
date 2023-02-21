@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stream;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
@@ -37,11 +38,9 @@ public class NonBlockingHandoff {
 
     @Inject
     public NonBlockingHandoff(
-            final RecordStreamManager recordStreamManager,
-            final NodeLocalProperties nodeLocalProperties) {
+            final RecordStreamManager recordStreamManager, final NodeLocalProperties nodeLocalProperties) {
         this.recordStreamManager = recordStreamManager;
-        final int capacity =
-                Math.max(MIN_CAPACITY, nodeLocalProperties.recordStreamQueueCapacity());
+        final int capacity = Math.max(MIN_CAPACITY, nodeLocalProperties.recordStreamQueueCapacity());
         queue = new ArrayBlockingQueue<>(capacity);
         executor.execute(this::handoff);
         Runtime.getRuntime().addShutdownHook(new Thread(getShutdownHook()));

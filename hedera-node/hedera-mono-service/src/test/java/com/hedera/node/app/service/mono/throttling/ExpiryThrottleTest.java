@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.throttling;
 
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.*;
@@ -45,7 +46,8 @@ class ExpiryThrottleTest {
     private static final long EXPECTED_CAPACITY = 10000000000000000L;
     private static final List<MapAccessType> minReqUnitOfWork = List.of(ACCOUNTS_GET, STORAGE_PUT);
 
-    @Mock private HybridResouceLoader resourceLoader;
+    @Mock
+    private HybridResouceLoader resourceLoader;
 
     private ExpiryThrottle subject;
 
@@ -69,9 +71,7 @@ class ExpiryThrottleTest {
         final var groups = bucket.getThrottleGroups();
         assertEquals(4, groups.size());
         assertGroupContents(
-                10_000L,
-                List.of(ACCOUNTS_GET, NFTS_GET, TOKENS_GET, TOKEN_ASSOCIATIONS_GET),
-                groups.get(0));
+                10_000L, List.of(ACCOUNTS_GET, NFTS_GET, TOKENS_GET, TOKEN_ASSOCIATIONS_GET), groups.get(0));
         assertGroupContents(
                 1000L,
                 List.of(
@@ -90,8 +90,7 @@ class ExpiryThrottleTest {
     void usesResourceProvidedByLoader() {
         final var now = Instant.ofEpochSecond(1_234_567L, 890);
         final var expectedMtps = 10000000L;
-        given(resourceLoader.readAllBytesIfPresent(VALID_RESOURCE_LOC))
-                .willReturn(getTestResource(VALID_RESOURCE_LOC));
+        given(resourceLoader.readAllBytesIfPresent(VALID_RESOURCE_LOC)).willReturn(getTestResource(VALID_RESOURCE_LOC));
 
         subject.rebuildGiven(VALID_RESOURCE_LOC, minReqUnitOfWork);
 
@@ -106,8 +105,7 @@ class ExpiryThrottleTest {
         final var neededCap = throttle.clampedCapacityRequiredFor(expectedMinReqs);
         throttle.resetUsageTo(new DeterministicThrottle.UsageSnapshot(totalCap - neededCap, now));
         assertFalse(subject.stillLacksMinFreeCapAfterLeakingUntil(now));
-        throttle.resetUsageTo(
-                new DeterministicThrottle.UsageSnapshot(totalCap - neededCap + 1, now));
+        throttle.resetUsageTo(new DeterministicThrottle.UsageSnapshot(totalCap - neededCap + 1, now));
         assertTrue(subject.stillLacksMinFreeCapAfterLeakingUntil(now));
     }
 
@@ -134,8 +132,7 @@ class ExpiryThrottleTest {
 
     @Test
     void unallowableOpsDontTakeCapacity() {
-        given(resourceLoader.readAllBytesIfPresent(VALID_RESOURCE_LOC))
-                .willReturn(getTestResource(VALID_RESOURCE_LOC));
+        given(resourceLoader.readAllBytesIfPresent(VALID_RESOURCE_LOC)).willReturn(getTestResource(VALID_RESOURCE_LOC));
 
         subject.rebuildGiven(VALID_RESOURCE_LOC, minReqUnitOfWork);
 
@@ -148,8 +145,7 @@ class ExpiryThrottleTest {
 
     @Test
     void allowableOpsTakeCapacity() {
-        given(resourceLoader.readAllBytesIfPresent(VALID_RESOURCE_LOC))
-                .willReturn(getTestResource(VALID_RESOURCE_LOC));
+        given(resourceLoader.readAllBytesIfPresent(VALID_RESOURCE_LOC)).willReturn(getTestResource(VALID_RESOURCE_LOC));
 
         subject.rebuildGiven(VALID_RESOURCE_LOC, minReqUnitOfWork);
 
@@ -164,8 +160,7 @@ class ExpiryThrottleTest {
 
     @Test
     void canAllowSingleOpAfterReubild() {
-        given(resourceLoader.readAllBytesIfPresent(VALID_RESOURCE_LOC))
-                .willReturn(getTestResource(VALID_RESOURCE_LOC));
+        given(resourceLoader.readAllBytesIfPresent(VALID_RESOURCE_LOC)).willReturn(getTestResource(VALID_RESOURCE_LOC));
         assertFalse(subject.allowOne(STORAGE_GET));
 
         subject.rebuildGiven(VALID_RESOURCE_LOC, minReqUnitOfWork);
@@ -177,8 +172,7 @@ class ExpiryThrottleTest {
 
     @Test
     void canResetToSnapshotIfNonNullThrottle() {
-        given(resourceLoader.readAllBytesIfPresent(VALID_RESOURCE_LOC))
-                .willReturn(getTestResource(VALID_RESOURCE_LOC));
+        given(resourceLoader.readAllBytesIfPresent(VALID_RESOURCE_LOC)).willReturn(getTestResource(VALID_RESOURCE_LOC));
         final var someSnapshot = new DeterministicThrottle.UsageSnapshot(10_000L, pointA);
 
         subject.rebuildGiven(VALID_RESOURCE_LOC, minReqUnitOfWork);
@@ -191,8 +185,7 @@ class ExpiryThrottleTest {
 
     @Test
     void namecanReclaimLastAllowed() {
-        given(resourceLoader.readAllBytesIfPresent(VALID_RESOURCE_LOC))
-                .willReturn(getTestResource(VALID_RESOURCE_LOC));
+        given(resourceLoader.readAllBytesIfPresent(VALID_RESOURCE_LOC)).willReturn(getTestResource(VALID_RESOURCE_LOC));
 
         assertDoesNotThrow(subject::reclaimLastAllowedUse);
         subject.rebuildGiven(VALID_RESOURCE_LOC, minReqUnitOfWork);
@@ -216,9 +209,7 @@ class ExpiryThrottleTest {
     }
 
     private void assertGroupContents(
-            final long opsPerSec,
-            final List<MapAccessType> ops,
-            final ThrottleGroup<MapAccessType> group) {
+            final long opsPerSec, final List<MapAccessType> ops, final ThrottleGroup<MapAccessType> group) {
         assertEquals(opsPerSec, group.getOpsPerSec());
         assertEquals(ops, group.getOperations());
     }
@@ -231,8 +222,7 @@ class ExpiryThrottleTest {
         }
     }
 
-    private int requiredOps(
-            final List<MapAccessType> accessTypes, final Map<MapAccessType, Integer> reqs) {
+    private int requiredOps(final List<MapAccessType> accessTypes, final Map<MapAccessType, Integer> reqs) {
         var ans = 0;
         for (final var accessType : accessTypes) {
             ans += reqs.get(accessType);

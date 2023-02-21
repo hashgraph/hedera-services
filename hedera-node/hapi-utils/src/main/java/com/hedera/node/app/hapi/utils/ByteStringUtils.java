@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -67,16 +68,14 @@ public final class ByteStringUtils {
     static class UnsafeByteOutput extends ByteOutput {
         // Size of the object header plus a compressed object reference to bytes field
         static final short SIZE = 12 + 4;
-        static final Function<String, Class<?>> CLASS_BY_NAME =
-                name -> {
-                    try {
-                        return Class.forName(name);
-                    } catch (ClassNotFoundException e) {
-                        throw new IllegalStateException(e);
-                    }
-                };
-        private static final String SUPPORTED_NAME =
-                ByteString.class.getName() + "$LiteralByteString";
+        static final Function<String, Class<?>> CLASS_BY_NAME = name -> {
+            try {
+                return Class.forName(name);
+            } catch (ClassNotFoundException e) {
+                throw new IllegalStateException(e);
+            }
+        };
+        private static final String SUPPORTED_NAME = ByteString.class.getName() + "$LiteralByteString";
         private static final Class<?> SUPPORTED_CLASS = CLASS_BY_NAME.apply(SUPPORTED_NAME);
 
         private byte[] bytes;
@@ -87,8 +86,7 @@ public final class ByteStringUtils {
         }
 
         @Override
-        public void write(final byte[] bytes, final int offset, final int length)
-                throws IOException {
+        public void write(final byte[] bytes, final int offset, final int length) throws IOException {
             this.bytes = bytes;
         }
 

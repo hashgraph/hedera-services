@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
@@ -67,21 +68,38 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class MutableEntityAccessTest {
-    @Mock private HederaLedger ledger;
-    @Mock private Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> supplierBytecode;
-    @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecodeStorage;
+    @Mock
+    private HederaLedger ledger;
 
     @Mock
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-            tokenRelsLedger;
+    private Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> supplierBytecode;
 
-    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
-    @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
-    @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
-    @Mock private TransactionContext txnCtx;
-    @Mock private SignedTxnAccessor accessor;
-    @Mock private SizeLimitedStorage storage;
-    @Mock private AliasManager aliasManager;
+    @Mock
+    private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecodeStorage;
+
+    @Mock
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRelsLedger;
+
+    @Mock
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
+
+    @Mock
+    private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
+
+    @Mock
+    private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private SignedTxnAccessor accessor;
+
+    @Mock
+    private SizeLimitedStorage storage;
+
+    @Mock
+    private AliasManager aliasManager;
 
     private MutableEntityAccess subject;
 
@@ -102,9 +120,7 @@ class MutableEntityAccessTest {
         given(ledger.getAccountsLedger()).willReturn(accountsLedger);
         given(ledger.getNftsLedger()).willReturn(nftsLedger);
 
-        subject =
-                new MutableEntityAccess(
-                        ledger, aliasManager, txnCtx, storage, tokensLedger, supplierBytecode);
+        subject = new MutableEntityAccess(ledger, aliasManager, txnCtx, storage, tokensLedger, supplierBytecode);
     }
 
     @Test

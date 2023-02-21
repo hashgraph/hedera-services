@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts;
 
 import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
@@ -38,41 +39,32 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.account.MutableAccount;
 
-public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHederaEvmAccount {
+public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHederaEvmAccount<A> {
     private final AccountID accountId;
 
     private TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts;
 
-    @Nullable private final A account;
     private boolean storageWasCleared = false;
 
     public UpdateTrackingLedgerAccount(
             final Address address,
-            @Nullable
-                    final TransactionalLedger<AccountID, AccountProperty, HederaAccount>
-                            trackingAccounts) {
+            @Nullable final TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts) {
         super(address);
         Preconditions.checkNotNull(address);
         this.accountId = EntityIdUtils.accountIdFromEvmAddress(address);
-        this.addressHash = Hash.hash(super.getAddress());
-        this.account = null;
         this.trackingAccounts = trackingAccounts;
     }
 
     @SuppressWarnings("unchecked")
     public UpdateTrackingLedgerAccount(
             final A account,
-            @Nullable
-                    final TransactionalLedger<AccountID, AccountProperty, HederaAccount>
-                            trackingAccounts) {
-        super(account.getAddress(), account.getNonce(), account.getBalance());
+            @Nullable final TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts) {
+        super(account);
         Preconditions.checkNotNull(account);
         this.accountId = EntityIdUtils.accountIdFromEvmAddress(account.getAddress());
-        this.addressHash =
-                account instanceof UpdateTrackingLedgerAccount
-                        ? ((UpdateTrackingLedgerAccount<A>) account).addressHash
-                        : Hash.hash(account.getAddress());
-        this.account = account;
+        this.addressHash = account instanceof UpdateTrackingLedgerAccount
+                ? ((UpdateTrackingLedgerAccount<A>) account).addressHash
+                : Hash.hash(account.getAddress());
         this.trackingAccounts = trackingAccounts;
     }
 
@@ -155,8 +147,7 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHeder
     }
 
     @Override
-    public NavigableMap<Bytes32, AccountStorageEntry> storageEntriesFrom(
-            final Bytes32 startKeyHash, final int limit) {
+    public NavigableMap<Bytes32, AccountStorageEntry> storageEntriesFrom(final Bytes32 startKeyHash, final int limit) {
         throw new UnsupportedOperationException();
     }
 

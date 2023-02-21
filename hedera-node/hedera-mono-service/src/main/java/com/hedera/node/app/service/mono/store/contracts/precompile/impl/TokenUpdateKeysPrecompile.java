@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ARRAY_BRACKETS;
@@ -49,16 +50,13 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
     private static final Function TOKEN_UPDATE_KEYS_FUNCTION =
             new Function("updateTokenKeys(address," + TOKEN_KEY + ARRAY_BRACKETS + ")");
-    private static final Bytes TOKEN_UPDATE_KEYS_SELECTOR =
-            Bytes.wrap(TOKEN_UPDATE_KEYS_FUNCTION.selector());
-    private static final ABIType<Tuple> TOKEN_UPDATE_KEYS_DECODER =
-            TypeFactory.create(
-                    "("
-                            + DecodingFacade.removeBrackets(BYTES32)
-                            + ","
-                            + DecodingFacade.TOKEN_KEY_DECODER
-                            + ARRAY_BRACKETS
-                            + ")");
+    private static final Bytes TOKEN_UPDATE_KEYS_SELECTOR = Bytes.wrap(TOKEN_UPDATE_KEYS_FUNCTION.selector());
+    private static final ABIType<Tuple> TOKEN_UPDATE_KEYS_DECODER = TypeFactory.create("("
+            + DecodingFacade.removeBrackets(BYTES32)
+            + ","
+            + DecodingFacade.TOKEN_KEY_DECODER
+            + ARRAY_BRACKETS
+            + ")");
     TokenUpdateKeysWrapper updateOp;
 
     public TokenUpdateKeysPrecompile(
@@ -82,8 +80,7 @@ public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         updateOp = decodeUpdateTokenKeys(input, aliasResolver);
         transactionBody = syntheticTxnFactory.createTokenUpdateKeys(updateOp);
         return transactionBody;
@@ -100,8 +97,7 @@ public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
 
     public static TokenUpdateKeysWrapper decodeUpdateTokenKeys(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, TOKEN_UPDATE_KEYS_SELECTOR, TOKEN_UPDATE_KEYS_DECODER);
+        final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_UPDATE_KEYS_SELECTOR, TOKEN_UPDATE_KEYS_DECODER);
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final var tokenKeys = decodeTokenKeys(decodedArguments.get(1), aliasResolver);
         return new TokenUpdateKeysWrapper(tokenID, tokenKeys);

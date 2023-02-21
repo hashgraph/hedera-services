@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.grpc;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -21,7 +22,6 @@ import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.pbj.runtime.io.DataBuffer;
 import com.swirlds.common.metrics.Metrics;
 import io.grpc.stub.StreamObserver;
-import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,44 +38,36 @@ class QueryMethodTest {
     @Test
     void nullServiceNameThrows() {
         //noinspection ConstantConditions
-        assertThrows(
-                NullPointerException.class,
-                () -> new QueryMethod(null, "testMethod", queryWorkflow, metrics));
+        assertThrows(NullPointerException.class, () -> new QueryMethod(null, "testMethod", queryWorkflow, metrics));
     }
 
     @Test
     void nullMethodNameThrows() {
         //noinspection ConstantConditions
-        assertThrows(
-                NullPointerException.class,
-                () -> new QueryMethod("testService", null, queryWorkflow, metrics));
+        assertThrows(NullPointerException.class, () -> new QueryMethod("testService", null, queryWorkflow, metrics));
     }
 
     @Test
     void nullWorkflowThrows() {
         //noinspection ConstantConditions
-        assertThrows(
-                NullPointerException.class,
-                () -> new QueryMethod("testService", "testMethod", null, metrics));
+        assertThrows(NullPointerException.class, () -> new QueryMethod("testService", "testMethod", null, metrics));
     }
 
     @Test
     void nullMetricsThrows() {
         //noinspection ConstantConditions
         assertThrows(
-                NullPointerException.class,
-                () -> new QueryMethod("testService", "testMethod", queryWorkflow, null));
+                NullPointerException.class, () -> new QueryMethod("testService", "testMethod", queryWorkflow, null));
     }
 
     @Test
     void handleDelegatesToWorkflow(@Mock final StreamObserver<DataBuffer> streamObserver) {
         final var requestBuffer = DataBuffer.allocate(100, false);
         final AtomicBoolean called = new AtomicBoolean(false);
-        final QueryWorkflow w =
-                (s, r1, r2) -> {
-                    assertEquals(requestBuffer, r1);
-                    called.set(true);
-                };
+        final QueryWorkflow w = (s, r1, r2) -> {
+            assertEquals(requestBuffer, r1);
+            called.set(true);
+        };
 
         final var method = new QueryMethod("testService", "testMethod", w, metrics);
         method.invoke(requestBuffer, streamObserver);
@@ -85,10 +77,9 @@ class QueryMethodTest {
     @Test
     void unexpectedExceptionFromHandler(@Mock final StreamObserver<DataBuffer> streamObserver) {
         final var requestBuffer = DataBuffer.allocate(100, false);
-        final QueryWorkflow w =
-                (s, r1, r2) -> {
-                    throw new RuntimeException("Unexpected!");
-                };
+        final QueryWorkflow w = (s, r1, r2) -> {
+            throw new RuntimeException("Unexpected!");
+        };
         final var method = new QueryMethod("testService", "testMethod", w, metrics);
         method.invoke(requestBuffer, streamObserver);
         Mockito.verify(streamObserver).onError(Mockito.any());

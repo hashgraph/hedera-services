@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.congestion;
 
 import static com.hedera.node.app.service.mono.context.properties.EntityType.*;
@@ -40,15 +41,14 @@ public class TxnRateFeeMultiplierSource extends DelegatingMultiplierSource {
             final GlobalDynamicProperties dynamicProperties,
             final @HandleThrottle FunctionalityThrottling throttling,
             final UsageLimits usageLimits) {
-        super(
-                new ThrottleMultiplierSource(
-                        "logical TPS",
-                        "TPS",
-                        "CryptoTransfer throughput",
-                        log,
-                        dynamicProperties::feesMinCongestionPeriod,
-                        dynamicProperties::congestionMultipliers,
-                        () -> throttling.activeThrottlesFor(CryptoTransfer)));
+        super(new ThrottleMultiplierSource(
+                "logical TPS",
+                "TPS",
+                "CryptoTransfer throughput",
+                log,
+                dynamicProperties::feesMinCongestionPeriod,
+                dynamicProperties::congestionMultipliers,
+                () -> throttling.activeThrottlesFor(CryptoTransfer)));
         this.dynamicProperties = dynamicProperties;
         this.usageLimits = usageLimits;
     }

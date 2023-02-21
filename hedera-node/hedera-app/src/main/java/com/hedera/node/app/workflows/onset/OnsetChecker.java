@@ -13,7 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.onset;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_START;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_EXPIRED;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
@@ -30,21 +45,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_START;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_EXPIRED;
-import static java.util.Objects.requireNonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /** This class preprocess transactions by parsing them and checking for syntax errors. */
+@Singleton
 public class OnsetChecker {
     private static final String COUNTER_DEPRECATED_TXNS_NAME = "DeprTxnsRcv";
     private static final String COUNTER_RECEIVED_DEPRECATED_DESC = "number of deprecated txns received";
@@ -61,6 +66,7 @@ public class OnsetChecker {
      * @param metrics metrics related to workflows
      * @throws NullPointerException if one of the arguments is {@code null}
      */
+    @Inject
     public OnsetChecker(
             @NonNull final RecordCache recordCache,
             @NonNull final GlobalDynamicProperties dynamicProperties,
@@ -96,10 +102,7 @@ public class OnsetChecker {
             throw new PreCheckException(INVALID_TRANSACTION_BODY);
         }
 
-        if (hasDeprecatedBody
-                || hasDeprecatedSigs
-                || hasDeprecatedSigMap
-                || hasDeprecatedBodyBytes) {
+        if (hasDeprecatedBody || hasDeprecatedSigs || hasDeprecatedSigMap || hasDeprecatedBodyBytes) {
             deprecatedCounter.increment();
         }
     }
@@ -112,8 +115,7 @@ public class OnsetChecker {
      * @throws NullPointerException if any of the parameters is {@code null}
      */
     @NonNull
-    public ResponseCodeEnum checkTransactionBody(@NonNull final TransactionBody txBody)
-            throws PreCheckException {
+    public ResponseCodeEnum checkTransactionBody(@NonNull final TransactionBody txBody) throws PreCheckException {
         requireNonNull(txBody);
 
         if (txBody.transactionID() == null) {
@@ -143,11 +145,7 @@ public class OnsetChecker {
     }
 
     private static boolean isPlausibleAccount(final AccountID accountID) {
-        final var optAccountNum = accountID.accountNum();
-        final var hasAlias = accountID.alias().isPresent() || accountID.evmAddress().isPresent();
-        return ((optAccountNum.isPresent() && optAccountNum.get() > 0) || hasAlias)
-                && accountID.realmNum() >= 0
-                && accountID.shardNum() >= 0;
+        return accountID.accountNum().isPresent() && accountID.realmNum() >= 0 && accountID.shardNum() >= 0;
     }
 
     private void checkMemo(final String memo) throws PreCheckException {
@@ -164,8 +162,7 @@ public class OnsetChecker {
 
     private ResponseCodeEnum checkTimeBox(final Timestamp start, final Duration duration) {
         final var validForSecs = duration.seconds();
-        if (validForSecs < dynamicProperties.minTxnDuration()
-                || validForSecs > dynamicProperties.maxTxnDuration()) {
+        if (validForSecs < dynamicProperties.minTxnDuration() || validForSecs > dynamicProperties.maxTxnDuration()) {
             return INVALID_TRANSACTION_DURATION;
         }
 
@@ -191,11 +188,8 @@ public class OnsetChecker {
      */
     private static Instant safeguardedInstant(final Timestamp timestamp) {
         return Instant.ofEpochSecond(
-                Math.min(
-                        Math.max(Instant.MIN.getEpochSecond(), timestamp.seconds()),
-                        Instant.MAX.getEpochSecond()),
-                Math.min(
-                        Math.max(Instant.MIN.getNano(), timestamp.nanos()), Instant.MAX.getNano()));
+                Math.min(Math.max(Instant.MIN.getEpochSecond(), timestamp.seconds()), Instant.MAX.getEpochSecond()),
+                Math.min(Math.max(Instant.MIN.getNano(), timestamp.nanos()), Instant.MAX.getNano()));
     }
 
     /**

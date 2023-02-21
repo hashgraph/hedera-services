@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.issues;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultFailingHapiSpec;
@@ -47,20 +48,15 @@ public class Issue1758Suite extends HapiSuite {
         return defaultFailingHapiSpec("AllowsCryptoCreatePayerToHaveLessThanTwiceFee")
                 .given(
                         cryptoCreate("payer").via("referenceTxn").balance(0L),
-                        UtilVerbs.withOpContext(
-                                (spec, ctxLog) -> {
-                                    HapiGetTxnRecord subOp = getTxnRecord("referenceTxn");
-                                    allRunFor(spec, subOp);
-                                    TransactionRecord record = subOp.getResponseRecord();
-                                    long fee = record.getTransactionFee();
-                                    spec.registry().saveAmount("balance", fee * 2 - 1);
-                                }))
-                .when(
-                        cryptoTransfer(
-                                tinyBarsFromTo(
-                                        GENESIS,
-                                        "payer",
-                                        spec -> spec.registry().getAmount("balance"))))
+                        UtilVerbs.withOpContext((spec, ctxLog) -> {
+                            HapiGetTxnRecord subOp = getTxnRecord("referenceTxn");
+                            allRunFor(spec, subOp);
+                            TransactionRecord record = subOp.getResponseRecord();
+                            long fee = record.getTransactionFee();
+                            spec.registry().saveAmount("balance", fee * 2 - 1);
+                        }))
+                .when(cryptoTransfer(
+                        tinyBarsFromTo(GENESIS, "payer", spec -> spec.registry().getAmount("balance"))))
                 .then(cryptoCreate("irrelevant").balance(0L).payingWith("payer"));
     }
 

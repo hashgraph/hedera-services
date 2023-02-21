@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -62,20 +63,21 @@ class ExpiryManagerTest {
 
     private final HederaNumbers nums = new MockHederaNumbers();
 
-    @Mock private SigImpactHistorian sigImpactHistorian;
-    @Mock private Map<TransactionID, TxnIdRecentHistory> mockTxnHistories;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> mockAccounts;
+    @Mock
+    private SigImpactHistorian sigImpactHistorian;
+
+    @Mock
+    private Map<TransactionID, TxnIdRecentHistory> mockTxnHistories;
+
+    @Mock
+    private MerkleMap<EntityNum, MerkleAccount> mockAccounts;
 
     private ExpiryManager subject;
 
     @Test
     void rebuildsExpectedSchedulesFromState() {
-        subject =
-                new ExpiryManager(
-                        nums,
-                        sigImpactHistorian,
-                        mockTxnHistories,
-                        () -> RecordsStorageAdapter.fromLegacy(mockAccounts));
+        subject = new ExpiryManager(
+                nums, sigImpactHistorian, mockTxnHistories, () -> RecordsStorageAdapter.fromLegacy(mockAccounts));
 
         subject.reviewExistingShortLivedEntities();
         final var resultingExpiries = subject.getShortLivedEntityExpiries();
@@ -87,12 +89,8 @@ class ExpiryManagerTest {
 
     @Test
     void rebuildsExpectedRecordsFromState() {
-        subject =
-                new ExpiryManager(
-                        nums,
-                        sigImpactHistorian,
-                        liveTxnHistories,
-                        () -> RecordsStorageAdapter.fromLegacy(liveAccounts));
+        subject = new ExpiryManager(
+                nums, sigImpactHistorian, liveTxnHistories, () -> RecordsStorageAdapter.fromLegacy(liveAccounts));
         final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
         final var leftoverTxnId = recordWith(bGrpcId, now).getTxnId().toGrpc();
         liveTxnHistories.put(leftoverTxnId, new TxnIdRecentHistory());
@@ -112,12 +110,8 @@ class ExpiryManagerTest {
 
     @Test
     void expiresRecordsAsExpected() {
-        subject =
-                new ExpiryManager(
-                        nums,
-                        sigImpactHistorian,
-                        liveTxnHistories,
-                        () -> RecordsStorageAdapter.fromLegacy(liveAccounts));
+        subject = new ExpiryManager(
+                nums, sigImpactHistorian, liveTxnHistories, () -> RecordsStorageAdapter.fromLegacy(liveAccounts));
         final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
         liveAccounts.put(aKey, anAccount);
 
@@ -143,12 +137,8 @@ class ExpiryManagerTest {
 
     @Test
     void expiresLoneRecordAsExpected() {
-        subject =
-                new ExpiryManager(
-                        nums,
-                        sigImpactHistorian,
-                        liveTxnHistories,
-                        () -> RecordsStorageAdapter.fromLegacy(liveAccounts));
+        subject = new ExpiryManager(
+                nums, sigImpactHistorian, liveTxnHistories, () -> RecordsStorageAdapter.fromLegacy(liveAccounts));
         final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
         liveAccounts.put(aKey, anAccount);
 
@@ -171,24 +161,19 @@ class ExpiryManagerTest {
         liveAccounts.replace(aKey, mutableAccount);
     }
 
-    private ExpirableTxnRecord expiring(
-            final ExpirableTxnRecord expirableTxnRecord, final long at) {
+    private ExpirableTxnRecord expiring(final ExpirableTxnRecord expirableTxnRecord, final long at) {
         final var ans = expirableTxnRecord;
         ans.setExpiry(at);
         ans.setSubmittingMember(0L);
         return ans;
     }
 
-    private static final ExpirableTxnRecord recordWith(
-            final AccountID payer, final long validStartSecs) {
+    private static final ExpirableTxnRecord recordWith(final AccountID payer, final long validStartSecs) {
         return ExpirableTxnRecord.newBuilder()
-                .setTxnId(
-                        TxnId.fromGrpc(
-                                TransactionID.newBuilder()
-                                        .setAccountID(payer)
-                                        .setTransactionValidStart(
-                                                Timestamp.newBuilder().setSeconds(validStartSecs))
-                                        .build()))
+                .setTxnId(TxnId.fromGrpc(TransactionID.newBuilder()
+                        .setAccountID(payer)
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(validStartSecs))
+                        .build()))
                 .setConsensusTime(RichInstant.fromJava(Instant.now()))
                 .setReceipt(TxnReceipt.newBuilder().setStatus(SUCCESS.name()).build())
                 .build();

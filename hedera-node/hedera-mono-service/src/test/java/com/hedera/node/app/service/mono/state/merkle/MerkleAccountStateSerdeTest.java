@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static com.hedera.node.app.service.mono.state.merkle.MerkleAccountState.RELEASE_0230_VERSION;
@@ -36,9 +37,7 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
 
     @Override
     protected int getNumTestCasesFor(final int version) {
-        return version < MerkleAccountState.RELEASE_0260_VERSION
-                ? MIN_TEST_CASES_PER_VERSION
-                : NUM_TEST_CASES;
+        return version < MerkleAccountState.RELEASE_0260_VERSION ? MIN_TEST_CASES_PER_VERSION : NUM_TEST_CASES;
     }
 
     @Override

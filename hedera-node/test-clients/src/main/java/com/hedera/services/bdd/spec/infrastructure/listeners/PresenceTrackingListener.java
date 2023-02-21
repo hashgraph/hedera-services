@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.listeners;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -69,9 +70,7 @@ public class PresenceTrackingListener<T> implements RegistryChangeListener<T> {
     private void ensure(String name) {
         if (log.isDebugEnabled()) {
             String tpl =
-                    present.contains(name)
-                            ? "%s '%s' is still available, but different."
-                            : "%s '%s' is now available.";
+                    present.contains(name) ? "%s '%s' is still available, but different." : "%s '%s' is now available.";
             log.debug(String.format(tpl, type.getSimpleName(), name));
         }
         present.add(name);

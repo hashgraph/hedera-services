@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.queries.contract;
 
 import static com.hedera.services.bdd.spec.HapiSpec.ensureDir;
@@ -134,8 +135,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
         var actualTokenRels = actualInfo.getTokenRelationshipsList();
         assertExpectedRels(contract, relationships, actualTokenRels, spec);
         assertNoUnexpectedRels(contract, absentRelationships, actualTokenRels, spec);
-        expectedLedgerId.ifPresent(
-                id -> Assertions.assertEquals(rationalize(id), actualInfo.getLedgerId()));
+        expectedLedgerId.ifPresent(id -> Assertions.assertEquals(rationalize(id), actualInfo.getLedgerId()));
     }
 
     @Override
@@ -155,8 +155,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
         if (registryEntry.isPresent()) {
             spec.registry().saveContractInfo(registryEntry.get(), contractInfo);
         }
-        exposingEvmAddress.ifPresent(
-                stringConsumer -> stringConsumer.accept(contractInfo.getContractAccountID()));
+        exposingEvmAddress.ifPresent(stringConsumer -> stringConsumer.accept(contractInfo.getContractAccountID()));
     }
 
     @Override
@@ -187,10 +186,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
             byteSinkInfo.write(contractInfo.toByteArray());
 
             if (verboseLoggingOn) {
-                LOG.info(
-                        "Saved contractInfo of {} to {}",
-                        contractInfo.getContractID(),
-                        snapshotDir);
+                LOG.info("Saved contractInfo of {} to {}", contractInfo.getContractID(), snapshotDir);
             }
         } catch (Exception e) {
             LOG.error("Couldn't save contractInfo of {}", contractInfo.getContractID(), e);
@@ -237,27 +233,20 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
         if (getPredefinedId) {
             var contractID = readContractID(spec);
             if (contractID != null) {
-                contractGetInfo =
-                        ContractGetInfoQuery.newBuilder()
-                                .setHeader(
-                                        costOnly
-                                                ? answerCostHeader(payment)
-                                                : answerHeader(payment))
-                                .setContractID(contractID)
-                                .build();
+                contractGetInfo = ContractGetInfoQuery.newBuilder()
+                        .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
+                        .setContractID(contractID)
+                        .build();
             } else {
                 LOG.error("Couldn't read contractID from saved file");
                 return null;
             }
         } else {
-            final var builder =
-                    ContractGetInfoQuery.newBuilder()
-                            .setHeader(
-                                    costOnly ? answerCostHeader(payment) : answerHeader(payment));
+            final var builder = ContractGetInfoQuery.newBuilder()
+                    .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment));
             if (contract.length() == 40) {
                 builder.setContractID(
-                        ContractID.newBuilder()
-                                .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(contract))));
+                        ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(contract))));
             } else {
                 builder.setContractID(asContractId(contract, spec));
             }

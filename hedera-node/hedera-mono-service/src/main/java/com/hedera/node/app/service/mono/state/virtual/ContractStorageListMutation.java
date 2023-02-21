@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.hedera.node.app.service.mono.utils.MapValueListMutation;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
-public class ContractStorageListMutation
-        implements MapValueListMutation<ContractKey, IterableContractValue> {
+public class ContractStorageListMutation implements MapValueListMutation<ContractKey, IterableContractValue> {
     final long contractId;
     final VirtualMap<ContractKey, IterableContractValue> storage;
 

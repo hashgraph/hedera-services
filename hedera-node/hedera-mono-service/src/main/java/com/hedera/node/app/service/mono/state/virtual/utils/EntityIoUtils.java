@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.utils;
 
 import java.io.IOException;
@@ -23,16 +24,13 @@ public final class EntityIoUtils {
     }
 
     public static void writeBytes(
-            final byte[] data,
-            final CheckedConsumer<Integer> writeIntFn,
-            final CheckedConsumer<byte[]> writeBytesFn)
+            final byte[] data, final CheckedConsumer<Integer> writeIntFn, final CheckedConsumer<byte[]> writeBytesFn)
             throws IOException {
         writeIntFn.accept(data.length);
         writeBytesFn.accept(data);
     }
 
-    public static byte[] readBytes(
-            final CheckedSupplier<Integer> readIntFn, final CheckedConsumer<byte[]> readBytesFn)
+    public static byte[] readBytes(final CheckedSupplier<Integer> readIntFn, final CheckedConsumer<byte[]> readBytesFn)
             throws IOException {
         final var len = readIntFn.get();
         final var data = new byte[len];

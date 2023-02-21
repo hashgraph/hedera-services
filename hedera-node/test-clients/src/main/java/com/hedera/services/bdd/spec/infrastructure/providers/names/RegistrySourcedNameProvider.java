@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.names;
 
 import static java.util.Collections.EMPTY_SET;
@@ -37,9 +38,7 @@ public class RegistrySourcedNameProvider<T> implements EntityNameProvider<T> {
     private final BiFunction<Set<String>, Set<String>, Optional<String>> selector;
 
     public RegistrySourcedNameProvider(
-            Class<T> type,
-            HapiSpecRegistry registry,
-            BiFunction<Set<String>, Set<String>, Optional<String>> selector) {
+            Class<T> type, HapiSpecRegistry registry, BiFunction<Set<String>, Set<String>, Optional<String>> selector) {
         this.type = type;
         this.selector = selector;
         this.listener = new PresenceTrackingListener<>(type, registry);

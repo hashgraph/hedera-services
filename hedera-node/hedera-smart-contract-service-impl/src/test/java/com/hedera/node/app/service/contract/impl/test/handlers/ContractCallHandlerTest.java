@@ -13,55 +13,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.contract.ContractCallTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
+import com.hedera.node.app.spi.meta.PreHandleContext;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static org.assertj.core.api.FactoryBasedNavigableListAssert.assertThat;
 
+@ExtendWith(MockitoExtension.class)
 class ContractCallHandlerTest extends ContractHandlerTestBase {
     private ContractCallHandler subject = new ContractCallHandler();
 
-    //    @Test
-    //    @DisplayName("Fails for invalid payer account")
-    //    void invalidPayer() {
-    //        final var txn = contractCallTransaction();
-    //        given(keyLookup.getKey(payer))
-    //                .willReturn(KeyOrLookupFailureReason.withFailureReason(INVALID_ACCOUNT_ID));
-    //        final var meta = subject.preHandle(txn, txn.getTransactionID().getAccountID(),
-    // keyLookup);
-    //        basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
-    //        assertEquals(null, meta.payerKey());
-    //    }
-    //
-    //    @Test
-    //    @DisplayName("Succeeds for valid payer account")
-    //    void validPayer() {
-    //        final var txn = contractCallTransaction();
-    //        final var meta = subject.preHandle(txn, txn.getTransactionID().getAccountID(),
-    // keyLookup);
-    //        basicMetaAssertions(meta, 0, false, OK);
-    //        assertEquals(payerKey, meta.payerKey());
-    //    }
-    //
-    //    @Test
-    //    void callHandle() {
-    //        final var txn = contractCallTransaction();
-    //        final var meta = subject.preHandle(txn, txn.getTransactionID().getAccountID(),
-    // keyLookup);
-    //        assertThrows(UnsupportedOperationException.class, () -> subject.handle(meta));
-    //    }
-    //
-    //    private TransactionBody contractCallTransaction() {
-    //        final var transactionID =
-    //                TransactionID.newBuilder()
-    //                        .setAccountID(payer)
-    //                        .setTransactionValidStart(consensusTimestamp);
-    //        return TransactionBody.newBuilder()
-    //                .setTransactionID(transactionID)
-    //                .setContractCall(
-    //                        ContractCallTransactionBody.newBuilder()
-    //                                .setGas(1_234)
-    //                                .setAmount(1_234L)
-    //                                .setContractID(targetContract))
-    //                .build();
-    //    }
+    @Test
+    @DisplayName("Succeeds for valid payer account")
+    void validPayer() {
+        final var txn = contractCallTransaction();
+        final var context = new PreHandleContext(keyLookup, txn);
+        subject.preHandle(context);
+        basicMetaAssertions(context, 0, false, OK);
+        assertThat(context.getPayerKey()).isEqualTo(payerKey);
+    }
+
+    private TransactionBody contractCallTransaction() {
+        final var transactionID =
+                TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
+        return TransactionBody.newBuilder()
+                .transactionID(transactionID)
+                .contractCall(ContractCallTransactionBody.newBuilder()
+                        .gas(1_234)
+                        .amount(1_234L)
+                        .contractID(targetContract))
+                .build();
+    }
 }

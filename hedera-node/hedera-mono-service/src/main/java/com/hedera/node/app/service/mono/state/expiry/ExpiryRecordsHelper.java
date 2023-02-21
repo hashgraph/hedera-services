@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry;
 
 import static com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
@@ -61,30 +62,23 @@ public class ExpiryRecordsHelper {
     }
 
     public void streamCryptoRemovalStep(
-            final boolean isContract,
-            final EntityNum entityNum,
-            final CryptoGcOutcome cryptoGcOutcome) {
+            final boolean isContract, final EntityNum entityNum, final CryptoGcOutcome cryptoGcOutcome) {
         final var eventTime = consensusTimeTracker.nextStandaloneRecordTime();
         final var txnId = recordsHistorian.computeNextSystemTransactionId();
-        final var memo =
-                (isContract ? "Contract " : "Account ")
-                        + entityNum.toIdString()
-                        + (cryptoGcOutcome.finished()
-                                ? " was automatically deleted"
-                                : " returned treasury assets");
+        final var memo = (isContract ? "Contract " : "Account ")
+                + entityNum.toIdString()
+                + (cryptoGcOutcome.finished() ? " was automatically deleted" : " returned treasury assets");
 
-        final var expirableTxnRecord =
-                baseRecordWith(eventTime, txnId)
-                        .setMemo(memo)
-                        .setTokens(cryptoGcOutcome.allReturnedTokens())
-                        .setTokenAdjustments(cryptoGcOutcome.parallelAdjustments())
-                        .setNftTokenAdjustments(cryptoGcOutcome.parallelExchanges());
+        final var expirableTxnRecord = baseRecordWith(eventTime, txnId)
+                .setMemo(memo)
+                .setTokens(cryptoGcOutcome.allReturnedTokens())
+                .setTokenAdjustments(cryptoGcOutcome.parallelAdjustments())
+                .setNftTokenAdjustments(cryptoGcOutcome.parallelExchanges());
         final TransactionBody.Builder synthBody;
         if (cryptoGcOutcome.finished()) {
-            synthBody =
-                    isContract
-                            ? syntheticTxnFactory.synthContractAutoRemove(entityNum)
-                            : syntheticTxnFactory.synthAccountAutoRemove(entityNum);
+            synthBody = isContract
+                    ? syntheticTxnFactory.synthContractAutoRemove(entityNum)
+                    : syntheticTxnFactory.synthAccountAutoRemove(entityNum);
         } else {
             synthBody = syntheticTxnFactory.synthTokenTransfer(cryptoGcOutcome);
         }
@@ -92,27 +86,21 @@ public class ExpiryRecordsHelper {
     }
 
     public void streamCryptoRenewal(
-            final EntityNum entityNum,
-            final long fee,
-            final long newExpiry,
-            final boolean isContract) {
+            final EntityNum entityNum, final long fee, final long newExpiry, final boolean isContract) {
         final var eventTime = consensusTimeTracker.nextStandaloneRecordTime();
-        final var memo =
-                (isContract ? "Contract " : "Account ")
-                        + entityNum.toIdString()
-                        + " was automatically renewed; new expiration time: "
-                        + newExpiry;
-        final var synthBody =
-                isContract
-                        ? syntheticTxnFactory.synthContractAutoRenew(entityNum, newExpiry)
-                        : syntheticTxnFactory.synthAccountAutoRenew(entityNum, newExpiry);
+        final var memo = (isContract ? "Contract " : "Account ")
+                + entityNum.toIdString()
+                + " was automatically renewed; new expiration time: "
+                + newExpiry;
+        final var synthBody = isContract
+                ? syntheticTxnFactory.synthContractAutoRenew(entityNum, newExpiry)
+                : syntheticTxnFactory.synthAccountAutoRenew(entityNum, newExpiry);
         final var txnId = recordsHistorian.computeNextSystemTransactionId();
-        final var expirableTxnRecord =
-                baseRecordWith(eventTime, txnId)
-                        .setMemo(memo)
-                        .setHbarAdjustments(sideEffectsTracker.getNetTrackedHbarChanges())
-                        .setStakingRewardsPaid(sideEffectsTracker.getStakingRewardsPaid())
-                        .setFee(fee);
+        final var expirableTxnRecord = baseRecordWith(eventTime, txnId)
+                .setMemo(memo)
+                .setHbarAdjustments(sideEffectsTracker.getNetTrackedHbarChanges())
+                .setStakingRewardsPaid(sideEffectsTracker.getStakingRewardsPaid())
+                .setFee(fee);
         finalizeAndStream(expirableTxnRecord, synthBody, eventTime, recordStreaming);
     }
 
@@ -135,8 +123,7 @@ public class ExpiryRecordsHelper {
         recordStreaming.streamSystemRecord(rso);
     }
 
-    public static ExpirableTxnRecord.Builder baseRecordWith(
-            final Instant consensusTime, final TxnId txnId) {
+    public static ExpirableTxnRecord.Builder baseRecordWith(final Instant consensusTime, final TxnId txnId) {
         final var at = RichInstant.fromJava(consensusTime);
         final var receipt = new TxnReceipt();
         receipt.setStatus(SUCCESS_LITERAL);

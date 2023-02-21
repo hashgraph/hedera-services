@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec;
 
+import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSources;
 import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.COMPARE;
@@ -44,6 +46,8 @@ import com.hedera.services.bdd.spec.persistence.EntityManager;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -81,8 +85,7 @@ import org.apache.logging.log4j.Logger;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class HapiSpec implements Runnable {
-    private static final String CI_PROPS_FLAG_FOR_NO_UNRECOVERABLE_NETWORK_FAILURES =
-            "suppressNetworkFailures";
+    private static final String CI_PROPS_FLAG_FOR_NO_UNRECOVERABLE_NETWORK_FAILURES = "suppressNetworkFailures";
     private static final ThreadPoolExecutor THREAD_POOL =
             new ThreadPoolExecutor(0, 10_000, 250, MILLISECONDS, new SynchronousQueue<>());
 
@@ -150,10 +153,8 @@ public class HapiSpec implements Runnable {
     CompletableFuture<Void> finalizingFuture;
     AtomicReference<Optional<Failure>> finishingError = new AtomicReference<>(Optional.empty());
     BlockingQueue<HapiSpecOpFinisher> pendingOps = new PriorityBlockingQueue<>();
-    EnumMap<ResponseCodeEnum, AtomicInteger> precheckStatusCounts =
-            new EnumMap<>(ResponseCodeEnum.class);
-    EnumMap<ResponseCodeEnum, AtomicInteger> finalizedStatusCounts =
-            new EnumMap<>(ResponseCodeEnum.class);
+    EnumMap<ResponseCodeEnum, AtomicInteger> precheckStatusCounts = new EnumMap<>(ResponseCodeEnum.class);
+    EnumMap<ResponseCodeEnum, AtomicInteger> finalizedStatusCounts = new EnumMap<>(ResponseCodeEnum.class);
 
     List<SingleAccountBalances> accountBalances = new ArrayList<>();
 
@@ -161,7 +162,8 @@ public class HapiSpec implements Runnable {
      * When this spec's final status is {@code FAILED}, contains the information on the failed
      * assertion that terminated {@code exec()}.
      */
-    @Nullable private Failure failure = null;
+    @Nullable
+    private Failure failure = null;
 
     public static ThreadPoolExecutor getCommonThreadPool() {
         return THREAD_POOL;
@@ -281,9 +283,8 @@ public class HapiSpec implements Runnable {
             if (!isEthereumAccountCreatedForSpec(this)) {
                 initializeEthereumAccountForSpec(this);
             }
-            ops =
-                    UtilVerbs.convertHapiCallsToEthereumCalls(
-                            Stream.of(given, when, then).flatMap(Arrays::stream).toList());
+            ops = UtilVerbs.convertHapiCallsToEthereumCalls(
+                    Stream.of(given, when, then).flatMap(Arrays::stream).toList());
         }
 
         exec(ops);
@@ -336,8 +337,7 @@ public class HapiSpec implements Runnable {
                     return false;
                 } else {
                     log.warn(
-                            "Hedera service is not reachable. Will wait and try connect again for"
-                                    + " {} seconds...",
+                            "Hedera service is not reachable. Will wait and try connect again for" + " {} seconds...",
                             secsWait);
                     try {
                         Thread.sleep(1000);
@@ -390,9 +390,7 @@ public class HapiSpec implements Runnable {
         if (hapiSetup.requiresPersistentEntities()) {
             List<HapiSpecOperation> creationOps = entities.requiredCreations();
             if (!creationOps.isEmpty()) {
-                log.info(
-                        "Inserting {} required creations to establish persistent entities.",
-                        creationOps.size());
+                log.info("Inserting {} required creations to establish persistent entities.", creationOps.size());
                 ops = Stream.concat(creationOps.stream(), ops.stream()).toList();
             }
         }
@@ -402,13 +400,19 @@ public class HapiSpec implements Runnable {
             startFinalizingOps();
         }
         final var shouldPreserveProps = !propertiesToPreserve.isEmpty();
-        final Map<String, String> preservedProperties =
-                shouldPreserveProps ? new HashMap<>() : Collections.emptyMap();
+        final Map<String, String> preservedProperties = shouldPreserveProps ? new HashMap<>() : Collections.emptyMap();
         if (shouldPreserveProps) {
             ops = new ArrayList<>(ops);
             ops.add(0, remembering(preservedProperties, propertiesToPreserve));
         }
+        @Nullable List<EventualRecordStreamAssertion> assertions = null;
         for (HapiSpecOperation op : ops) {
+            if (op instanceof EventualRecordStreamAssertion recordStreamAssertion) {
+                if (assertions == null) {
+                    assertions = new ArrayList<>();
+                }
+                assertions.add(recordStreamAssertion);
+            }
             Optional<Throwable> error = op.execFor(this);
             Failure asyncFailure = null;
             if (error.isPresent() || (asyncFailure = finishingError.get().orElse(null)) != null) {
@@ -432,78 +436,98 @@ public class HapiSpec implements Runnable {
         if (!preservedProperties.isEmpty()) {
             final var restoration = overridingAllOf(preservedProperties);
             Optional<Throwable> error = restoration.execFor(this);
-            error.ifPresent(
-                    t -> {
-                        status = FAILED;
-                        failure = new Failure(t, restoration.toString());
-                    });
+            error.ifPresent(t -> {
+                status = FAILED;
+                failure = new Failure(t, restoration.toString());
+            });
+        }
+        if (status == PASSED) {
+            final var maybeRecordStreamError = checkRecordStream(assertions);
+            if (maybeRecordStreamError.isPresent()) {
+                status = FAILED;
+                failure = maybeRecordStreamError.get();
+            }
         }
 
         tearDown();
         log.info("{}final status: {}!", logPrefix(), status);
 
-        if (hapiSetup.requiresPersistentEntities()
-                && hapiSetup.updateManifestsForCreatedPersistentEntities()) {
+        if (hapiSetup.requiresPersistentEntities() && hapiSetup.updateManifestsForCreatedPersistentEntities()) {
             entities.updateCreatedEntityManifests();
         }
     }
 
+    private Optional<Failure> checkRecordStream(@Nullable final List<EventualRecordStreamAssertion> assertions) {
+        if (assertions == null) {
+            return Optional.empty();
+        }
+        log.info("Checking record stream for {} assertions", assertions.size());
+        Optional<Failure> answer = Optional.empty();
+        // Keep submitting transactions to close record files (in almost every case, just
+        // one file will need to be closed, since it's very rare to have a long-running spec)
+        final var backgroundTraffic = THREAD_POOL.submit(() -> {
+            while (true) {
+                try {
+                    RecordAssertions.triggerAndCloseAtLeastOneFile(this);
+                } catch (final InterruptedException ignore) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+            }
+        });
+        for (final var assertion : assertions) {
+            log.info("Checking record stream for {}", assertion);
+            try {
+                // Each blocks until the assertion passes or times out
+                assertion.assertHasPassed();
+            } catch (final Throwable t) {
+                log.warn("{}{} failed", logPrefix(), assertion, t);
+                answer = Optional.of(new Failure(t, assertion.toString()));
+                break;
+            }
+        }
+
+        backgroundTraffic.cancel(true);
+        RECORD_STREAM_ACCESS.stopMonitorIfNoSubscribers();
+        return answer;
+    }
+
     private void startFinalizingOps() {
-        finalizingExecutor =
-                new ThreadPoolExecutor(
-                        hapiSetup.numOpFinisherThreads(),
-                        hapiSetup.numOpFinisherThreads(),
-                        0,
-                        TimeUnit.SECONDS,
-                        new SynchronousQueue<>());
-        finalizingFuture =
-                allOf(
-                        IntStream.range(0, hapiSetup.numOpFinisherThreads())
-                                .mapToObj(
-                                        ignore ->
-                                                runAsync(
-                                                        () -> {
-                                                            while (true) {
-                                                                HapiSpecOpFinisher op =
-                                                                        pendingOps.poll();
-                                                                if (op != null) {
-                                                                    if (status != FAILED
-                                                                            && finishingError
-                                                                                    .get()
-                                                                                    .isEmpty()) {
-                                                                        try {
-                                                                            op.finishFor(this);
-                                                                        } catch (Throwable t) {
-                                                                            log.warn(
-                                                                                    "{}{} failed!",
-                                                                                    logPrefix(),
-                                                                                    op);
-                                                                            finishingError.set(
-                                                                                    Optional.of(
-                                                                                            new Failure(
-                                                                                                    t,
-                                                                                                    op
-                                                                                                            .toString())));
-                                                                        }
-                                                                    }
-                                                                } else {
-                                                                    if (allOpsSubmitted.get()) {
-                                                                        break;
-                                                                    } else {
-                                                                        try {
-                                                                            MILLISECONDS.sleep(500);
-                                                                        } catch (
-                                                                                InterruptedException
-                                                                                        ignored) {
-                                                                            Thread.currentThread()
-                                                                                    .interrupt();
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                        },
-                                                        finalizingExecutor))
-                                .toArray(CompletableFuture[]::new));
+        finalizingExecutor = new ThreadPoolExecutor(
+                hapiSetup.numOpFinisherThreads(),
+                hapiSetup.numOpFinisherThreads(),
+                0,
+                TimeUnit.SECONDS,
+                new SynchronousQueue<>());
+        finalizingFuture = allOf(IntStream.range(0, hapiSetup.numOpFinisherThreads())
+                .mapToObj(ignore -> runAsync(
+                        () -> {
+                            while (true) {
+                                HapiSpecOpFinisher op = pendingOps.poll();
+                                if (op != null) {
+                                    if (status != FAILED && finishingError.get().isEmpty()) {
+                                        try {
+                                            op.finishFor(this);
+                                        } catch (Throwable t) {
+                                            log.warn("{}{} failed!", logPrefix(), op);
+                                            finishingError.set(Optional.of(new Failure(t, op.toString())));
+                                        }
+                                    }
+                                } else {
+                                    if (allOpsSubmitted.get()) {
+                                        break;
+                                    } else {
+                                        try {
+                                            MILLISECONDS.sleep(500);
+                                        } catch (InterruptedException ignored) {
+                                            Thread.currentThread().interrupt();
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        finalizingExecutor))
+                .toArray(CompletableFuture[]::new));
     }
 
     @SuppressWarnings("java:S2629")
@@ -606,8 +630,7 @@ public class HapiSpec implements Runnable {
 
     private static Def.Given internalDefaultHapiSpec(
             final String name, final boolean isOnly, final List<String> propertiesToPreserve) {
-        final Stream<Map<String, String>> prioritySource =
-                runningInCi ? Stream.of(ciPropOverrides()) : Stream.empty();
+        final Stream<Map<String, String>> prioritySource = runningInCi ? Stream.of(ciPropOverrides()) : Stream.empty();
         return customizedHapiSpec(isOnly, name, prioritySource, propertiesToPreserve)
                 .withProperties();
     }
@@ -615,9 +638,7 @@ public class HapiSpec implements Runnable {
     public static Map<String, String> ciPropOverrides() {
         if (ciPropsSource == null) {
             dynamicNodes =
-                    Stream.of(dynamicNodes.split(","))
-                            .map(s -> s + ":" + 50211)
-                            .collect(joining(","));
+                    Stream.of(dynamicNodes.split(",")).map(s -> s + ":" + 50211).collect(joining(","));
             String ciPropertiesMap =
                     Optional.ofNullable(System.getenv("CI_PROPERTIES_MAP")).orElse("");
             log.info("CI_PROPERTIES_MAP: {}", ciPropertiesMap);
@@ -642,24 +663,19 @@ public class HapiSpec implements Runnable {
     }
 
     public static Def.Given defaultFailingHapiSpec(String name) {
-        final Stream<Map<String, String>> prioritySource =
-                Stream.of(
-                        runningInCi ? ciPropOverrides() : Collections.emptyMap(),
-                        Map.of("expected.final.status", "FAILED"));
+        final Stream<Map<String, String>> prioritySource = Stream.of(
+                runningInCi ? ciPropOverrides() : Collections.emptyMap(), Map.of("expected.final.status", "FAILED"));
         return customizedHapiSpec(false, name, prioritySource).withProperties();
     }
 
     public static Def.Sourced customHapiSpec(String name) {
-        final Stream<Map<String, String>> prioritySource =
-                runningInCi ? Stream.of(ciPropOverrides()) : Stream.empty();
+        final Stream<Map<String, String>> prioritySource = runningInCi ? Stream.of(ciPropOverrides()) : Stream.empty();
         return customizedHapiSpec(false, name, prioritySource);
     }
 
     public static Def.Sourced customFailingHapiSpec(String name) {
         final Stream<Map<String, String>> prioritySource =
-                runningInCi
-                        ? Stream.of(ciPropOverrides(), Map.of("expected.final.status", "FAILED"))
-                        : Stream.empty();
+                runningInCi ? Stream.of(ciPropOverrides(), Map.of("expected.final.status", "FAILED")) : Stream.empty();
         return customizedHapiSpec(false, name, prioritySource);
     }
 
@@ -674,16 +690,11 @@ public class HapiSpec implements Runnable {
             final Stream<T> prioritySource,
             final List<String> propertiesToPreserve) {
         return (Object... sources) -> {
-            Object[] allSources =
-                    Stream.of(
-                                    prioritySource,
-                                    Stream.of(sources),
-                                    Stream.of(HapiSpecSetup.getDefaultPropertySource()))
-                            .flatMap(Function.identity())
-                            .toArray();
-            return (isOnly
-                            ? onlyHapiSpec(name, propertiesToPreserve)
-                            : hapiSpec(name, propertiesToPreserve))
+            Object[] allSources = Stream.of(
+                            prioritySource, Stream.of(sources), Stream.of(HapiSpecSetup.getDefaultPropertySource()))
+                    .flatMap(Function.identity())
+                    .toArray();
+            return (isOnly ? onlyHapiSpec(name, propertiesToPreserve) : hapiSpec(name, propertiesToPreserve))
                     .withSetup(setupFrom(allSources));
         };
     }
@@ -694,33 +705,12 @@ public class HapiSpec implements Runnable {
 
     public static Def.Setup hapiSpec(String name, List<String> propertiesToPreserve) {
         return setup ->
-                given ->
-                        when ->
-                                then ->
-                                        new HapiSpec(
-                                                name,
-                                                false,
-                                                setup,
-                                                given,
-                                                when,
-                                                then,
-                                                propertiesToPreserve);
+                given -> when -> then -> new HapiSpec(name, false, setup, given, when, then, propertiesToPreserve);
     }
 
-    public static Def.Setup onlyHapiSpec(
-            final String name, final List<String> propertiesToPreserve) {
+    public static Def.Setup onlyHapiSpec(final String name, final List<String> propertiesToPreserve) {
         return setup ->
-                given ->
-                        when ->
-                                then ->
-                                        new HapiSpec(
-                                                name,
-                                                true,
-                                                setup,
-                                                given,
-                                                when,
-                                                then,
-                                                propertiesToPreserve);
+                given -> when -> then -> new HapiSpec(name, true, setup, given, when, then, propertiesToPreserve);
     }
 
     private HapiSpec(
@@ -745,8 +735,7 @@ public class HapiSpec implements Runnable {
             keyFactory = new KeyFactory(hapiSetup, hapiRegistry);
             txnFactory = new TxnFactory(hapiSetup, keyFactory);
             FeesAndRatesProvider scheduleProvider =
-                    new FeesAndRatesProvider(
-                            txnFactory, keyFactory, hapiSetup, hapiClients, hapiRegistry);
+                    new FeesAndRatesProvider(txnFactory, keyFactory, hapiSetup, hapiClients, hapiRegistry);
             feeCalculator = new FeeCalculator(hapiSetup, scheduleProvider);
             this.ratesProvider = scheduleProvider;
         } catch (Throwable t) {
@@ -789,10 +778,8 @@ public class HapiSpec implements Runnable {
 
     @Override
     public String toString() {
-        final SpecStatus passingSpecStatus =
-                ((status == PASSED) && notOk(this)) ? PASSED_UNEXPECTEDLY : status;
-        final SpecStatus resolved =
-                ((status == FAILED) && ok(this)) ? FAILED_AS_EXPECTED : passingSpecStatus;
+        final SpecStatus passingSpecStatus = ((status == PASSED) && notOk(this)) ? PASSED_UNEXPECTEDLY : status;
+        final SpecStatus resolved = ((status == FAILED) && ok(this)) ? FAILED_AS_EXPECTED : passingSpecStatus;
         return MoreObjects.toStringHelper("Spec")
                 .add("name", name)
                 .add("status", resolved)
@@ -832,8 +819,7 @@ public class HapiSpec implements Runnable {
             Properties deserializedCosts = new Properties();
             for (int i = 0; i < costs.size(); i++) {
                 Payment cost = costs.get(i);
-                deserializedCosts.put(
-                        String.format("%d.%s", i, cost.entryName()), "" + cost.tinyBars);
+                deserializedCosts.put(String.format("%d.%s", i, cost.entryName()), "" + cost.tinyBars);
             }
             File file = new File(costSnapshotFilePath());
             CharSink sink = Files.asCharSink(file, StandardCharsets.UTF_8);
@@ -859,16 +845,15 @@ public class HapiSpec implements Runnable {
             throw new IllegalArgumentException(ie);
         }
         Map<Integer, Payment> costsByOrder = new HashMap<>();
-        serializedCosts.forEach(
-                (a, b) -> {
-                    String meta = (String) a;
-                    long amount = Long.parseLong((String) b);
-                    int i = meta.indexOf(".");
-                    costsByOrder.put(
-                            Integer.valueOf(meta.substring(0, i)),
-                            Payment.fromEntry(meta.substring(i + 1), amount));
-                });
-        return IntStream.range(0, costsByOrder.size()).mapToObj(costsByOrder::get).toList();
+        serializedCosts.forEach((a, b) -> {
+            String meta = (String) a;
+            long amount = Long.parseLong((String) b);
+            int i = meta.indexOf(".");
+            costsByOrder.put(Integer.valueOf(meta.substring(0, i)), Payment.fromEntry(meta.substring(i + 1), amount));
+        });
+        return IntStream.range(0, costsByOrder.size())
+                .mapToObj(costsByOrder::get)
+                .toList();
     }
 
     private String costSnapshotFile() {
@@ -882,8 +867,7 @@ public class HapiSpec implements Runnable {
         ensureDir(dir);
         dir += ("/" + hapiSetup.costSnapshotDir());
         ensureDir(dir);
-        return String.format(
-                "cost-snapshots/%s/%s", hapiSetup.costSnapshotDir(), costSnapshotFile());
+        return String.format("cost-snapshots/%s/%s", hapiSetup.costSnapshotDir(), costSnapshotFile());
     }
 
     /**
@@ -902,8 +886,7 @@ public class HapiSpec implements Runnable {
             if (f.mkdirs()) {
                 log.info("Created directory: {}", f.getAbsolutePath());
             } else {
-                throw new IllegalStateException(
-                        "Failed to create directory: " + f.getAbsolutePath());
+                throw new IllegalStateException("Failed to create directory: " + f.getAbsolutePath());
             }
         }
     }

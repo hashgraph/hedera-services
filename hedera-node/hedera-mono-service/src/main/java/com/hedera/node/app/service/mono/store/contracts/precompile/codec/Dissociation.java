@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.codec;
 
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -20,13 +21,11 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 
 public record Dissociation(AccountID accountId, List<TokenID> tokenIds) {
-    public static Dissociation singleDissociation(
-            final AccountID accountId, final TokenID tokenId) {
+    public static Dissociation singleDissociation(final AccountID accountId, final TokenID tokenId) {
         return new Dissociation(accountId, List.of(tokenId));
     }
 
-    public static Dissociation multiDissociation(
-            final AccountID accountId, final List<TokenID> tokenIds) {
+    public static Dissociation multiDissociation(final AccountID accountId, final List<TokenID> tokenIds) {
         return new Dissociation(accountId, tokenIds);
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -55,12 +56,8 @@ public class NWayDistNoHotspots extends HapiSuite {
     private static final int CREATIONS_PER_SEC = 50;
     private static final double ACCOUNT_BUFFER_PERCENTAGE = 10.0;
 
-    private static final int NUM_ACCOUNTS =
-            (int)
-                    Math.ceil(
-                            DISTRIBUTIONS_PER_SEC
-                                    * (1 + NUM_BENEFICIARIES)
-                                    * (1.0 + ACCOUNT_BUFFER_PERCENTAGE / 100.0));
+    private static final int NUM_ACCOUNTS = (int)
+            Math.ceil(DISTRIBUTIONS_PER_SEC * (1 + NUM_BENEFICIARIES) * (1.0 + ACCOUNT_BUFFER_PERCENTAGE / 100.0));
 
     private final IntFunction<String> nameFn = i -> "account" + i;
     private final AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
@@ -75,22 +72,19 @@ public class NWayDistNoHotspots extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    runDistributions(),
-                });
+        return List.of(new HapiSpec[] {
+            runDistributions(),
+        });
     }
 
     private HapiSpec runDistributions() {
         return customHapiSpec("runCreations")
                 .withProperties(Map.of("default.keyAlgorithm", "ED25519"))
-                .given(
-                        logIt(
-                                "Creating at least "
-                                        + NUM_ACCOUNTS
-                                        + " accounts to avoid hotspots while doing "
-                                        + DISTRIBUTIONS_PER_SEC
-                                        + (" " + NUM_BENEFICIARIES + "-way distributions/sec")))
+                .given(logIt("Creating at least "
+                        + NUM_ACCOUNTS
+                        + " accounts to avoid hotspots while doing "
+                        + DISTRIBUTIONS_PER_SEC
+                        + (" " + NUM_BENEFICIARIES + "-way distributions/sec")))
                 .when()
                 .then(
                         runWithProvider(creationsFactory())
@@ -105,58 +99,50 @@ public class NWayDistNoHotspots extends HapiSuite {
         final var nextAccount = new AtomicInteger();
         final var payer = "metaPayer";
 
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        return List.of(uniqueQuietCreation(payer));
-                    }
+        return spec -> new OpProvider() {
+            @Override
+            public List<HapiSpecOperation> suggestedInitializers() {
+                return List.of(uniqueQuietCreation(payer));
+            }
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        final var nextI = nextAccount.getAndIncrement();
-                        return Optional.of(
-                                cryptoCreate(nameFn.apply(nextI))
-                                        .balance(ONE_HUNDRED_HBARS)
-                                        .payingWith(payer)
-                                        .noLogging()
-                                        .deferStatusResolution());
-                    }
-                };
+            @Override
+            public Optional<HapiSpecOperation> get() {
+                final var nextI = nextAccount.getAndIncrement();
+                return Optional.of(cryptoCreate(nameFn.apply(nextI))
+                        .balance(ONE_HUNDRED_HBARS)
+                        .payingWith(payer)
+                        .noLogging()
+                        .deferStatusResolution());
+            }
+        };
     }
 
     private Function<HapiSpec, OpProvider> distributionsFactory() {
         final var nextSender = new AtomicInteger();
         final var n = NUM_ACCOUNTS / 100 * 99;
 
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        return List.of();
-                    }
+        return spec -> new OpProvider() {
+            @Override
+            public List<HapiSpecOperation> suggestedInitializers() {
+                return List.of();
+            }
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        final int sender = nextSender.getAndUpdate(i -> (i + 1) % n);
-                        final var from = nameFn.apply(sender);
-                        final String[] tos = new String[NUM_BENEFICIARIES];
-                        for (int i = (sender + 1) % n, j = 0;
-                                j < NUM_BENEFICIARIES;
-                                i = (i + 1) % n, j++) {
-                            tos[j] = nameFn.apply(i);
-                        }
-                        final var op =
-                                cryptoTransfer(
-                                                movingHbar(NUM_BENEFICIARIES)
-                                                        .distributing(from, tos))
-                                        .payingWith(from)
-                                        .hasKnownStatusFrom(ACCEPTED_STATUSES)
-                                        .noLogging()
-                                        .deferStatusResolution();
-                        return Optional.of(op);
-                    }
-                };
+            @Override
+            public Optional<HapiSpecOperation> get() {
+                final int sender = nextSender.getAndUpdate(i -> (i + 1) % n);
+                final var from = nameFn.apply(sender);
+                final String[] tos = new String[NUM_BENEFICIARIES];
+                for (int i = (sender + 1) % n, j = 0; j < NUM_BENEFICIARIES; i = (i + 1) % n, j++) {
+                    tos[j] = nameFn.apply(i);
+                }
+                final var op = cryptoTransfer(movingHbar(NUM_BENEFICIARIES).distributing(from, tos))
+                        .payingWith(from)
+                        .hasKnownStatusFrom(ACCEPTED_STATUSES)
+                        .noLogging()
+                        .deferStatusResolution();
+                return Optional.of(op);
+            }
+        };
     }
 
     private static final ResponseCodeEnum[] ACCEPTED_STATUSES = {

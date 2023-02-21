@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app;
 
 import com.hedera.node.app.spi.fixtures.TestBase;
@@ -32,8 +33,7 @@ public class AppTestBase extends TestBase implements TransactionFactory {
     // For many of our tests we need to have metrics available, and an easy way to test the metrics
     // are being set appropriately.
     /** Used as a dependency to the {@link Metrics} system. */
-    private static final ScheduledExecutorService METRIC_EXECUTOR =
-            Executors.newSingleThreadScheduledExecutor();
+    private static final ScheduledExecutorService METRIC_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
 
     /**
      * Represents "this node" in our tests.
@@ -44,8 +44,8 @@ public class AppTestBase extends TestBase implements TransactionFactory {
      * The gRPC system has extensive metrics. This object allows us to inspect them and make sure
      * they are being set correctly for different types of calls.
      */
-    protected Metrics metrics = new DefaultMetrics(
-            nodeSelfId, new MetricKeyRegistry(), METRIC_EXECUTOR, new DefaultMetricsFactory());
+    protected Metrics metrics =
+            new DefaultMetrics(nodeSelfId, new MetricKeyRegistry(), METRIC_EXECUTOR, new DefaultMetricsFactory());
 
     protected Counter counterMetric(String name) {
         return (Counter) metrics.getMetric("app", name);

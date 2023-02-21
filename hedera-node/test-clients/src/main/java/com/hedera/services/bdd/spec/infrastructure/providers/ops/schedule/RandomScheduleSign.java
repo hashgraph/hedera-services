@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.schedule;
 
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.schedule.RandomSchedule.STABLE_RECEIVER;
@@ -44,8 +45,7 @@ public class RandomScheduleSign implements OpProvider {
             standardOutcomesAnd(SOME_SIGNATURES_WERE_INVALID, INVALID_SCHEDULE_ID);
 
     public RandomScheduleSign(
-            RegistrySourcedNameProvider<ScheduleID> schedules,
-            RegistrySourcedNameProvider<AccountID> accounts) {
+            RegistrySourcedNameProvider<ScheduleID> schedules, RegistrySourcedNameProvider<AccountID> accounts) {
         this.schedules = schedules;
         this.accounts = accounts;
     }
@@ -67,12 +67,11 @@ public class RandomScheduleSign implements OpProvider {
             return Optional.empty();
         }
 
-        var op =
-                scheduleSign(schedulesQualifying.get())
-                        .logged()
-                        .alsoSigningWith(STABLE_RECEIVER)
-                        .hasAnyPrecheck()
-                        .hasKnownStatusFrom(permissibleOutcomes);
+        var op = scheduleSign(schedulesQualifying.get())
+                .logged()
+                .alsoSigningWith(STABLE_RECEIVER)
+                .hasAnyPrecheck()
+                .hasKnownStatusFrom(permissibleOutcomes);
         return Optional.of(op);
     }
 }

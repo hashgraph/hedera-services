@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.assertions;
 
 import com.google.protobuf.ByteString;
@@ -38,8 +39,7 @@ public class StorageChange {
         return new StorageChange(slot, value);
     }
 
-    public static StorageChange readAndWritten(
-            ByteString slot, ByteString prevValue, ByteString value) {
+    public static StorageChange readAndWritten(ByteString slot, ByteString prevValue, ByteString value) {
         return new StorageChange(slot, prevValue, BytesValue.of(value));
     }
 

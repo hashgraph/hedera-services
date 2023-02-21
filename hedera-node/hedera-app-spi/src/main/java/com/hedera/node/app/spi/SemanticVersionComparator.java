@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -25,10 +26,10 @@ import java.util.Comparator;
  * can remove this class.
  */
 public class SemanticVersionComparator {
-    public static final Comparator<SemanticVersion> INSTANCE =
-            Comparator.comparingInt(SemanticVersion::major)
-                    .thenComparingInt(SemanticVersion::minor)
-                    .thenComparingInt(SemanticVersion::patch);
+    public static final Comparator<SemanticVersion> INSTANCE = Comparator
+            .comparingInt(SemanticVersion::major)
+            .thenComparingInt(SemanticVersion::minor)
+            .thenComparingInt(SemanticVersion::patch);
 
     private SemanticVersionComparator() {}
 }

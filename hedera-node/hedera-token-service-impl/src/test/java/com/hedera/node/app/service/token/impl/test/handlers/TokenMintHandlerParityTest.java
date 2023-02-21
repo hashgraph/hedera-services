@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.test.factories.scenarios.TokenMintScenarios.MINT_FOR_TOKEN_WITHOUT_SUPPLY;
@@ -30,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import org.junit.jupiter.api.Test;
 
 class TokenMintHandlerParityTest extends ParityTestBase {
@@ -39,51 +41,39 @@ class TokenMintHandlerParityTest extends ParityTestBase {
     void tokenMintWithSupplyKeyedTokenScenario() {
         final var theTxn = txnFrom(MINT_WITH_SUPPLY_KEYED_TOKEN);
 
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
+        subject.preHandle(context, readableTokenStore);
 
-        assertFalse(meta.failed());
-        assertEquals(OK, meta.status());
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertEquals(1, meta.requiredNonPayerKeys().size());
-        assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(TOKEN_SUPPLY_KT.asKey()));
+        assertFalse(context.failed());
+        assertEquals(OK, context.getStatus());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(1, context.getRequiredNonPayerKeys().size());
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_SUPPLY_KT.asKey()));
     }
 
     @Test
     void tokenMintWithMissingTokenScenario() {
         final var theTxn = txnFrom(MINT_WITH_MISSING_TOKEN);
 
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
+        subject.preHandle(context, readableTokenStore);
 
-        assertTrue(meta.failed());
-        assertEquals(INVALID_TOKEN_ID, meta.status());
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertEquals(0, meta.requiredNonPayerKeys().size());
+        assertTrue(context.failed());
+        assertEquals(INVALID_TOKEN_ID, context.getStatus());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(0, context.getRequiredNonPayerKeys().size());
     }
 
     @Test
     void tokenMintWithoutSupplyScenario() {
         final var theTxn = txnFrom(MINT_FOR_TOKEN_WITHOUT_SUPPLY);
 
-        final var meta =
-                subject.preHandle(
-                        theTxn,
-                        theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
-                        readableTokenStore);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
+        subject.preHandle(context, readableTokenStore);
 
-        assertFalse(meta.failed());
-        assertEquals(OK, meta.status());
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertEquals(0, meta.requiredNonPayerKeys().size());
+        assertFalse(context.failed());
+        assertEquals(OK, context.getStatus());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(0, context.getRequiredNonPayerKeys().size());
     }
 }

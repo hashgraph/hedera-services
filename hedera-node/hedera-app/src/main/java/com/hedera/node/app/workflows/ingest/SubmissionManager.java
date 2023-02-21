@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.ingest;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
@@ -20,9 +21,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.node.app.service.mono.context.properties.Profile;
+import com.hedera.node.app.spi.config.Profile;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.RecordCache;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
@@ -31,17 +31,18 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.Platform;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** The {@code SubmissionManager} provides functionality to submit transactions to the platform. */
+@Singleton
 public class SubmissionManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(SubmissionManager.class);
     private static final String PLATFORM_TXN_REJECTIONS_NAME = "platformTxnNotCreated/sec";
-    private static final String PLATFORM_TXN_REJECTIONS_DESC =
-            "number of platform transactions not created per second";
+    private static final String PLATFORM_TXN_REJECTIONS_DESC = "number of platform transactions not created per second";
     private static final String SPEEDOMETER_FORMAT = "%,13.2f";
 
     private final Platform platform;
@@ -55,9 +56,9 @@ public class SubmissionManager {
      * @param platform the {@link Platform} to which transactions will be submitted
      * @param recordCache the {@link RecordCache} that tracks submitted transactions
      * @param nodeLocalProperties the {@link NodeLocalProperties} that keep local properties
-     * @param metrics {@link com.swirlds.common.metrics.Metrics} to use for metrics related to
-     *     submissions
+     * @param metrics metrics related to submissions
      */
+    @Inject
     public SubmissionManager(
             @NonNull final Platform platform,
             @NonNull final RecordCache recordCache,
@@ -67,11 +68,10 @@ public class SubmissionManager {
         this.recordCache = requireNonNull(recordCache);
         this.nodeLocalProperties = requireNonNull(nodeLocalProperties);
         this.platformTxnRejections =
-                metrics.getOrCreate(
-                        new SpeedometerMetric.Config("app", PLATFORM_TXN_REJECTIONS_NAME)
-                                .withDescription(PLATFORM_TXN_REJECTIONS_DESC)
-                                .withFormat(SPEEDOMETER_FORMAT)
-                                .withHalfLife(nodeLocalProperties.statsSpeedometerHalfLifeSecs()));
+                metrics.getOrCreate(new SpeedometerMetric.Config("app", PLATFORM_TXN_REJECTIONS_NAME)
+                        .withDescription(PLATFORM_TXN_REJECTIONS_DESC)
+                        .withFormat(SPEEDOMETER_FORMAT)
+                        .withHalfLife(nodeLocalProperties.statsSpeedometerHalfLifeSecs()));
     }
 
     /**
@@ -84,8 +84,7 @@ public class SubmissionManager {
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if the transaction could not be submitted
      */
-    public void submit(@NonNull final TransactionBody txBody, @NonNull final byte[] txBytes)
-            throws PreCheckException {
+    public void submit(@NonNull final TransactionBody txBody, @NonNull final byte[] txBytes) throws PreCheckException {
         requireNonNull(txBody);
         requireNonNull(txBytes);
 
@@ -101,10 +100,8 @@ public class SubmissionManager {
             }
             final var uncheckedSubmit = optUncheckedSubmit.get();
             final var uncheckedTxBytes = uncheckedSubmit.transactionBytes();
-            WorkflowOnset.parse(
-                    BytesBuffer.wrap(uncheckedTxBytes),
-                    Transaction.PROTOBUF,
-                    PLATFORM_TRANSACTION_NOT_CREATED);
+            final var uncheckedTxBuffer = BytesBuffer.wrap(uncheckedTxBytes);
+            WorkflowOnset.parse(uncheckedTxBuffer, Transaction.PROTOBUF, PLATFORM_TRANSACTION_NOT_CREATED);
             payload = new byte[uncheckedTxBytes.getLength()];
             uncheckedTxBytes.getBytes(0, payload);
         }

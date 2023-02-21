@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops.inventory;
 
 import static java.util.stream.Collectors.toList;
@@ -41,8 +42,9 @@ public class NewSpecKeyList extends UtilOp {
     @Override
     protected boolean submitOp(HapiSpec spec) throws Throwable {
         List<Key> childKeys = keys.stream().map(spec.registry()::getKey).collect(toList());
-        Key newList =
-                Key.newBuilder().setKeyList(KeyList.newBuilder().addAllKeys(childKeys)).build();
+        Key newList = Key.newBuilder()
+                .setKeyList(KeyList.newBuilder().addAllKeys(childKeys))
+                .build();
         spec.registry().saveKey(name, newList);
 
         SigControl[] childControls =

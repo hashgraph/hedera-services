@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation;
 
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
@@ -52,28 +53,26 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
     private static final Logger log = LogManager.getLogger(BasicFcfsUsagePrices.class);
 
     private static final long DEFAULT_FEE = 100_000L;
-    private static final FeeComponents DEFAULT_PROVIDER_RESOURCE_PRICES =
-            FeeComponents.newBuilder()
-                    .setMin(DEFAULT_FEE)
-                    .setMax(DEFAULT_FEE)
-                    .setConstant(0)
-                    .setBpt(0)
-                    .setVpt(0)
-                    .setRbh(0)
-                    .setSbh(0)
-                    .setGas(0)
-                    .setTv(0)
-                    .setBpr(0)
-                    .setSbpr(0)
-                    .build();
-    public static final Map<SubType, FeeData> DEFAULT_RESOURCE_PRICES =
-            Map.of(
-                    DEFAULT,
-                    FeeData.newBuilder()
-                            .setNetworkdata(DEFAULT_PROVIDER_RESOURCE_PRICES)
-                            .setNodedata(DEFAULT_PROVIDER_RESOURCE_PRICES)
-                            .setServicedata(DEFAULT_PROVIDER_RESOURCE_PRICES)
-                            .build());
+    private static final FeeComponents DEFAULT_PROVIDER_RESOURCE_PRICES = FeeComponents.newBuilder()
+            .setMin(DEFAULT_FEE)
+            .setMax(DEFAULT_FEE)
+            .setConstant(0)
+            .setBpt(0)
+            .setVpt(0)
+            .setRbh(0)
+            .setSbh(0)
+            .setGas(0)
+            .setTv(0)
+            .setBpr(0)
+            .setSbpr(0)
+            .build();
+    public static final Map<SubType, FeeData> DEFAULT_RESOURCE_PRICES = Map.of(
+            DEFAULT,
+            FeeData.newBuilder()
+                    .setNetworkdata(DEFAULT_PROVIDER_RESOURCE_PRICES)
+                    .setNodedata(DEFAULT_PROVIDER_RESOURCE_PRICES)
+                    .setServicedata(DEFAULT_PROVIDER_RESOURCE_PRICES)
+                    .build());
 
     private final HederaFs hfs;
     private final FileNumbers fileNumbers;
@@ -97,17 +96,13 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
         final var feeSchedulesId = fileNumbers.toFid(fileNumbers.feeSchedules());
         if (!hfs.exists(feeSchedulesId)) {
             throw new IllegalStateException(
-                    String.format(
-                            "No fee schedule available at %s!", readableId(this.feeSchedules)));
+                    String.format("No fee schedule available at %s!", readableId(this.feeSchedules)));
         }
         try {
             final var schedules = CurrentAndNextFeeSchedule.parseFrom(hfs.cat(feeSchedulesId));
             setFeeSchedules(schedules);
         } catch (final InvalidProtocolBufferException e) {
-            log.warn(
-                    "Corrupt fee schedules file at {}, may require remediation!",
-                    readableId(this.feeSchedules),
-                    e);
+            log.warn("Corrupt fee schedules file at {}, may require remediation!", readableId(this.feeSchedules), e);
             throw new IllegalStateException(
                     String.format("Fee schedule %s is corrupt!", readableId(this.feeSchedules)));
         }
@@ -116,30 +111,23 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
     @Override
     public Map<SubType, FeeData> activePrices(final TxnAccessor accessor) {
         try {
-            return pricesGiven(
-                    accessor.getFunction(), accessor.getTxnId().getTransactionValidStart());
+            return pricesGiven(accessor.getFunction(), accessor.getTxnId().getTransactionValidStart());
         } catch (final Exception e) {
-            log.warn(
-                    "Using default usage prices to calculate fees for {}!",
-                    accessor.getSignedTxnWrapper(),
-                    e);
+            log.warn("Using default usage prices to calculate fees for {}!", accessor.getSignedTxnWrapper(), e);
         }
         return DEFAULT_RESOURCE_PRICES;
     }
 
     @Override
-    public Map<SubType, FeeData> pricesGiven(
-            final HederaFunctionality function, final Timestamp at) {
+    public Map<SubType, FeeData> pricesGiven(final HederaFunctionality function, final Timestamp at) {
         try {
-            final Map<HederaFunctionality, Map<SubType, FeeData>> functionUsagePrices =
-                    applicableUsagePrices(at);
+            final Map<HederaFunctionality, Map<SubType, FeeData>> functionUsagePrices = applicableUsagePrices(at);
             final Map<SubType, FeeData> usagePrices = functionUsagePrices.get(function);
             Objects.requireNonNull(usagePrices);
             return usagePrices;
         } catch (final Exception e) {
             log.debug(
-                    "Default usage price will be used, no specific usage prices available for"
-                            + " function {} @ {}!",
+                    "Default usage price will be used, no specific usage prices available for" + " function {} @ {}!",
                     function,
                     Instant.ofEpochSecond(at.getSeconds(), at.getNanos()));
         }
@@ -157,13 +145,11 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
         return Triple.of(
                 currFunctionUsagePrices.get(function),
                 Instant.ofEpochSecond(
-                        currFunctionUsagePricesExpiry.getSeconds(),
-                        currFunctionUsagePricesExpiry.getNanos()),
+                        currFunctionUsagePricesExpiry.getSeconds(), currFunctionUsagePricesExpiry.getNanos()),
                 nextFunctionUsagePrices.get(function));
     }
 
-    private Map<HederaFunctionality, Map<SubType, FeeData>> applicableUsagePrices(
-            final Timestamp at) {
+    private Map<HederaFunctionality, Map<SubType, FeeData>> applicableUsagePrices(final Timestamp at) {
         if (onlyNextScheduleApplies(at)) {
             return nextFunctionUsagePrices;
         } else {
@@ -192,10 +178,8 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
         return Timestamp.newBuilder().setSeconds(ts.getSeconds()).build();
     }
 
-    EnumMap<HederaFunctionality, Map<SubType, FeeData>> functionUsagePricesFrom(
-            final FeeSchedule feeSchedule) {
-        final EnumMap<HederaFunctionality, Map<SubType, FeeData>> allPrices =
-                new EnumMap<>(HederaFunctionality.class);
+    EnumMap<HederaFunctionality, Map<SubType, FeeData>> functionUsagePricesFrom(final FeeSchedule feeSchedule) {
+        final EnumMap<HederaFunctionality, Map<SubType, FeeData>> allPrices = new EnumMap<>(HederaFunctionality.class);
         for (final var pricingData : feeSchedule.getTransactionFeeScheduleList()) {
             final var function = pricingData.getHederaFunctionality();
             Map<SubType, FeeData> pricesMap = allPrices.get(function);
@@ -210,9 +194,7 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
     }
 
     void ensurePricesMapHasRequiredTypes(
-            final TransactionFeeSchedule tfs,
-            final Map<SubType, FeeData> pricesMap,
-            final Set<SubType> requiredTypes) {
+            final TransactionFeeSchedule tfs, final Map<SubType, FeeData> pricesMap, final Set<SubType> requiredTypes) {
         /* The deprecated prices are the final fallback; if even they are not set, the function will be free */
         final var oldDefaultPrices = tfs.getFeeData();
         FeeData newDefaultPrices = null;
@@ -228,9 +210,11 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
         for (final var type : requiredTypes) {
             if (!pricesMap.containsKey(type)) {
                 if (newDefaultPrices != null) {
-                    pricesMap.put(type, newDefaultPrices.toBuilder().setSubType(type).build());
+                    pricesMap.put(
+                            type, newDefaultPrices.toBuilder().setSubType(type).build());
                 } else {
-                    pricesMap.put(type, oldDefaultPrices.toBuilder().setSubType(type).build());
+                    pricesMap.put(
+                            type, oldDefaultPrices.toBuilder().setSubType(type).build());
                 }
             }
         }

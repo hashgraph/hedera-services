@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.migration;
 
 import static com.hedera.node.app.service.mono.state.migration.ReleaseThirtyMigration.rebuildNftOwners;
@@ -43,7 +44,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ReleaseThirtyMigrationTest {
-    @Mock private ServicesState initializingState;
+    @Mock
+    private ServicesState initializingState;
 
     @Test
     void grantsAutoRenewToNonDeletedContracts() throws ConstructableRegistryException {
@@ -69,8 +71,7 @@ class ReleaseThirtyMigrationTest {
         accountsMap.put(cKey, c);
         final var instant = Instant.ofEpochSecond(123456789L);
 
-        given(initializingState.accounts())
-                .willReturn(AccountStorageAdapter.fromInMemory(accountsMap));
+        given(initializingState.accounts()).willReturn(AccountStorageAdapter.fromInMemory(accountsMap));
 
         ReleaseThirtyMigration.grantFreeAutoRenew(initializingState, instant);
 
@@ -149,29 +150,24 @@ class ReleaseThirtyMigrationTest {
     static void registerForAccountsMerkleMap() throws ConstructableRegistryException {
         registerForMM();
         ConstructableRegistry.getInstance()
-                .registerConstructable(
-                        new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+                .registerConstructable(new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
     }
 
     static void registerForTokenRelsMerkleMap() throws ConstructableRegistryException {
         registerForMM();
         ConstructableRegistry.getInstance()
-                .registerConstructable(
-                        new ClassConstructorPair(
-                                MerkleTokenRelStatus.class, MerkleTokenRelStatus::new));
+                .registerConstructable(new ClassConstructorPair(MerkleTokenRelStatus.class, MerkleTokenRelStatus::new));
     }
 
     private static void registerForMM() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance()
                 .registerConstructable(new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
         ConstructableRegistry.getInstance()
-                .registerConstructable(
-                        new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
+                .registerConstructable(new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
         ConstructableRegistry.getInstance()
                 .registerConstructable(new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
         ConstructableRegistry.getInstance()
                 .registerConstructable(
-                        new ClassConstructorPair(
-                                MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
+                        new ClassConstructorPair(MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.onset;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
@@ -21,12 +22,14 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.SessionContext;
+import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -43,15 +46,18 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class does some pre-processing before each workflow. It parses the provided {@link
- * ByteBuffer} and checks it.
+ * DataInputBuffer} and checks it.
  *
  * <p>This is used in every workflow that deals with transactions, i.e. in all workflows except the
- * query workflow. And even in the query workflow, it is used when dealing with the contained {@link
- * com.hederahashgraph.api.proto.java.CryptoTransfer}.
+ * query workflow. And even in the query workflow, it is used when dealing with the contained
+ * {@link HederaFunctionality#CRYPTO_TRANSFER}.
  */
+@Singleton
 public class WorkflowOnset {
 
     private final OnsetChecker checker;
@@ -64,7 +70,8 @@ public class WorkflowOnset {
      * @param checker the {@link OnsetChecker}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public WorkflowOnset(final int maxSignedTxnSize, @NonNull final OnsetChecker checker) {
+    @Inject
+    public WorkflowOnset(@MaxSignedTxnSize final int maxSignedTxnSize, @NonNull final OnsetChecker checker) {
         if (maxSignedTxnSize <= 0) {
             throw new IllegalArgumentException("maxSignedTxnSize must be > 0");
         }
@@ -86,8 +93,7 @@ public class WorkflowOnset {
      * @throws PreCheckException if the data is not valid
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public OnsetResult parseAndCheck(
-            @NonNull final SessionContext ctx, @NonNull final DataInputBuffer buffer)
+    public OnsetResult parseAndCheck(@NonNull final SessionContext ctx, @NonNull final DataInputBuffer buffer)
             throws PreCheckException {
         requireNonNull(ctx);
         requireNonNull(buffer);
@@ -108,8 +114,7 @@ public class WorkflowOnset {
      * @throws PreCheckException if the data is not valid
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public OnsetResult parseAndCheck(
-            @NonNull final SessionContext ctx, @NonNull final byte[] buffer)
+    public OnsetResult parseAndCheck(@NonNull final SessionContext ctx, @NonNull final byte[] buffer)
             throws PreCheckException {
         requireNonNull(ctx);
         requireNonNull(buffer);
@@ -130,8 +135,7 @@ public class WorkflowOnset {
      * @throws PreCheckException if the data is not valid
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public OnsetResult check(
-            @NonNull final SessionContext ctx, @NonNull final Transaction transaction)
+    public OnsetResult check(@NonNull final SessionContext ctx, @NonNull final Transaction transaction)
             throws PreCheckException {
         requireNonNull(ctx);
         requireNonNull(transaction);
@@ -148,8 +152,7 @@ public class WorkflowOnset {
     }
 
     @SuppressWarnings("deprecation")
-    private OnsetResult doParseAndCheck(
-            @NonNull final SessionContext ctx, @NonNull final DataInputBuffer txData)
+    private OnsetResult doParseAndCheck(@NonNull final SessionContext ctx, @NonNull final DataInputBuffer txData)
             throws PreCheckException {
 
         // 0. Fail fast if there are too many transaction bytes
@@ -165,11 +168,8 @@ public class WorkflowOnset {
         final Bytes bodyBytes;
         final SignatureMap signatureMap;
         if (tx.signedTransactionBytes().getLength() > 0) {
-            final SignedTransaction signedTransaction =
-                    parse(
-                            BytesBuffer.wrap(tx.signedTransactionBytes()),
-                            SignedTransaction.PROTOBUF,
-                            INVALID_TRANSACTION);
+            final SignedTransaction signedTransaction = parse(
+                    BytesBuffer.wrap(tx.signedTransactionBytes()), SignedTransaction.PROTOBUF, INVALID_TRANSACTION);
             bodyBytes = signedTransaction.bodyBytes();
             signatureMap = signedTransaction.sigMap();
         } else {
@@ -181,10 +181,7 @@ public class WorkflowOnset {
         //    the transaction, if it was a deprecated transaction, or the body of the
         //    signedTransaction, if it was not.
         final TransactionBody txBody =
-                parse(
-                        BytesBuffer.wrap(bodyBytes),
-                        TransactionBody.PROTOBUF,
-                        INVALID_TRANSACTION_BODY);
+                parse(BytesBuffer.wrap(bodyBytes), TransactionBody.PROTOBUF, INVALID_TRANSACTION_BODY);
         var errorCode = checker.checkTransactionBody(txBody);
 
         // 4. return TransactionBody
@@ -196,8 +193,7 @@ public class WorkflowOnset {
         }
     }
 
-    public static <T extends Record> T parse(
-            DataInput data, Codec<T> codec, ResponseCodeEnum parseErrorCode)
+    public static <T extends Record> T parse(DataInput data, Codec<T> codec, ResponseCodeEnum parseErrorCode)
             throws PreCheckException {
         try {
             return codec.parseStrict(data);

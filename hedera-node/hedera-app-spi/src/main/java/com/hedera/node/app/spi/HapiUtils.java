@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -21,36 +22,37 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import java.util.EnumSet;
 import java.util.Set;
 
+/**
+ * Utility class for working with the HAPI. Might possibly move this to the HAPI project.
+ */
 public class HapiUtils {
     private HapiUtils() {}
 
-    public static final Set<HederaFunctionality> QUERY_FUNCTIONS =
-            EnumSet.of(
-                    HederaFunctionality.CONSENSUS_GET_TOPIC_INFO,
-                    HederaFunctionality.GET_BY_SOLIDITY_ID,
-                    HederaFunctionality.CONTRACT_CALL_LOCAL,
-                    HederaFunctionality.CONTRACT_GET_INFO,
-                    HederaFunctionality.CONTRACT_GET_BYTECODE,
-                    HederaFunctionality.CONTRACT_GET_RECORDS,
-                    HederaFunctionality.CRYPTO_GET_ACCOUNT_BALANCE,
-                    HederaFunctionality.CRYPTO_GET_ACCOUNT_RECORDS,
-                    HederaFunctionality.CRYPTO_GET_INFO,
-                    HederaFunctionality.CRYPTO_GET_LIVE_HASH,
-                    HederaFunctionality.FILE_GET_CONTENTS,
-                    HederaFunctionality.FILE_GET_INFO,
-                    HederaFunctionality.TRANSACTION_GET_RECEIPT,
-                    HederaFunctionality.TRANSACTION_GET_RECORD,
-                    HederaFunctionality.GET_VERSION_INFO,
-                    HederaFunctionality.TOKEN_GET_INFO,
-                    HederaFunctionality.SCHEDULE_GET_INFO,
-                    HederaFunctionality.TOKEN_GET_NFT_INFO,
-                    HederaFunctionality.TOKEN_GET_NFT_INFOS,
-                    HederaFunctionality.TOKEN_GET_ACCOUNT_NFT_INFOS,
-                    HederaFunctionality.NETWORK_GET_EXECUTION_TIME,
-                    HederaFunctionality.GET_ACCOUNT_DETAILS);
+    public static final Set<HederaFunctionality> QUERY_FUNCTIONS = EnumSet.of(
+            HederaFunctionality.CONSENSUS_GET_TOPIC_INFO,
+            HederaFunctionality.GET_BY_SOLIDITY_ID,
+            HederaFunctionality.CONTRACT_CALL_LOCAL,
+            HederaFunctionality.CONTRACT_GET_INFO,
+            HederaFunctionality.CONTRACT_GET_BYTECODE,
+            HederaFunctionality.CONTRACT_GET_RECORDS,
+            HederaFunctionality.CRYPTO_GET_ACCOUNT_BALANCE,
+            HederaFunctionality.CRYPTO_GET_ACCOUNT_RECORDS,
+            HederaFunctionality.CRYPTO_GET_INFO,
+            HederaFunctionality.CRYPTO_GET_LIVE_HASH,
+            HederaFunctionality.FILE_GET_CONTENTS,
+            HederaFunctionality.FILE_GET_INFO,
+            HederaFunctionality.TRANSACTION_GET_RECEIPT,
+            HederaFunctionality.TRANSACTION_GET_RECORD,
+            HederaFunctionality.GET_VERSION_INFO,
+            HederaFunctionality.TOKEN_GET_INFO,
+            HederaFunctionality.SCHEDULE_GET_INFO,
+            HederaFunctionality.TOKEN_GET_NFT_INFO,
+            HederaFunctionality.TOKEN_GET_NFT_INFOS,
+            HederaFunctionality.TOKEN_GET_ACCOUNT_NFT_INFOS,
+            HederaFunctionality.NETWORK_GET_EXECUTION_TIME,
+            HederaFunctionality.GET_ACCOUNT_DETAILS);
 
-    public static HederaFunctionality functionOf(final TransactionBody txn)
-            throws UnknownHederaFunctionality {
+    public static HederaFunctionality functionOf(final TransactionBody txn) throws UnknownHederaFunctionality {
         return switch (txn.data().kind()) {
             case CONSENSUS_CREATE_TOPIC -> HederaFunctionality.CONSENSUS_CREATE_TOPIC;
             case CONSENSUS_UPDATE_TOPIC -> HederaFunctionality.CONSENSUS_UPDATE_TOPIC;
@@ -97,12 +99,11 @@ public class HapiUtils {
             case TOKEN_WIPE -> HederaFunctionality.TOKEN_ACCOUNT_WIPE;
             case UTIL_PRNG -> HederaFunctionality.UTIL_PRNG;
             case UNCHECKED_SUBMIT -> HederaFunctionality.UNCHECKED_SUBMIT;
-            case UNSET -> throw new UnknownHederaFunctionality(); // TODO maybe different exception?
+            case UNSET -> throw new UnknownHederaFunctionality();
         };
     }
 
-    public static HederaFunctionality functionOf(final Query txn)
-            throws UnknownHederaFunctionality {
+    public static HederaFunctionality functionOf(final Query txn) throws UnknownHederaFunctionality {
         return switch (txn.query().kind()) {
             case TOKEN_GET_ACCOUNT_NFT_INFOS -> HederaFunctionality.TOKEN_GET_ACCOUNT_NFT_INFOS;
             case TOKEN_GET_NFT_INFOS -> HederaFunctionality.TOKEN_GET_NFT_INFOS;
@@ -128,10 +129,8 @@ public class HapiUtils {
             case NETWORK_GET_VERSION_INFO -> HederaFunctionality.GET_VERSION_INFO;
             case TRANSACTION_GET_RECEIPT -> HederaFunctionality.TRANSACTION_GET_RECEIPT;
             case TRANSACTION_GET_RECORD -> HederaFunctionality.TRANSACTION_GET_RECORD;
-            case TRANSACTION_GET_FAST_RECORD -> throw new UnknownHederaFunctionality(); // Not
-                // currently
-                // supported!!!
-            case UNSET -> throw new UnknownHederaFunctionality(); // TODO maybe different exception?
+            case TRANSACTION_GET_FAST_RECORD -> throw new UnknownHederaFunctionality();
+            case UNSET -> throw new UnknownHederaFunctionality();
         };
     }
 }

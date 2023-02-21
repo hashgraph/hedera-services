@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -69,45 +70,33 @@ public class SStoreSuite extends HapiSuite {
         final var GAS_TO_OFFER = 6_000_000L;
         return HapiSpec.defaultHapiSpec("MultipleSStoresShouldWork")
                 .given(uploadInitCode(contract), contractCreate(contract))
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var step = 16;
-                                    List<HapiSpecOperation> subOps = new ArrayList<>();
+                .when(withOpContext((spec, opLog) -> {
+                    final var step = 16;
+                    List<HapiSpecOperation> subOps = new ArrayList<>();
 
-                                    for (int sizeNow = step;
-                                            sizeNow < MAX_CONTRACT_STORAGE_KB;
-                                            sizeNow += step) {
-                                        final var subOp1 =
-                                                contractCall(
-                                                                contract,
-                                                                "growTo",
-                                                                BigInteger.valueOf(sizeNow))
-                                                        .gas(GAS_TO_OFFER)
-                                                        .logged();
-                                        subOps.add(subOp1);
-                                    }
-                                    CustomSpecAssert.allRunFor(spec, subOps);
-                                }))
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var numberOfIterations = 10;
-                                    List<HapiSpecOperation> subOps = new ArrayList<>();
+                    for (int sizeNow = step; sizeNow < MAX_CONTRACT_STORAGE_KB; sizeNow += step) {
+                        final var subOp1 = contractCall(contract, "growTo", BigInteger.valueOf(sizeNow))
+                                .gas(GAS_TO_OFFER)
+                                .logged();
+                        subOps.add(subOp1);
+                    }
+                    CustomSpecAssert.allRunFor(spec, subOps);
+                }))
+                .then(withOpContext((spec, opLog) -> {
+                    final var numberOfIterations = 10;
+                    List<HapiSpecOperation> subOps = new ArrayList<>();
 
-                                    for (int i = 0; i < numberOfIterations; i++) {
-                                        final var subOp1 =
-                                                contractCall(
-                                                                contract,
-                                                                "changeArray",
-                                                                BigInteger.valueOf(
-                                                                        ThreadLocalRandom.current()
-                                                                                .nextInt(1000)))
-                                                        .logged();
-                                        subOps.add(subOp1);
-                                    }
-                                    CustomSpecAssert.allRunFor(spec, subOps);
-                                }));
+                    for (int i = 0; i < numberOfIterations; i++) {
+                        final var subOp1 = contractCall(
+                                        contract,
+                                        "changeArray",
+                                        BigInteger.valueOf(
+                                                ThreadLocalRandom.current().nextInt(1000)))
+                                .logged();
+                        subOps.add(subOp1);
+                    }
+                    CustomSpecAssert.allRunFor(spec, subOps);
+                }));
     }
 
     HapiSpec childStorage() {
@@ -115,74 +104,60 @@ public class SStoreSuite extends HapiSuite {
         final var contract = "ChildStorage";
         return defaultHapiSpec("ChildStorage")
                 .given(uploadInitCode(contract), contractCreate(contract))
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var almostFullKb = MAX_CONTRACT_STORAGE_KB * 3 / 4;
-                                    final var kbPerStep = 16;
+                .when(withOpContext((spec, opLog) -> {
+                    final var almostFullKb = MAX_CONTRACT_STORAGE_KB * 3 / 4;
+                    final var kbPerStep = 16;
 
-                                    for (int childKbStorage = 0;
-                                            childKbStorage <= almostFullKb;
-                                            childKbStorage += kbPerStep) {
-                                        final var subOp1 =
-                                                contractCall(
-                                                                contract,
-                                                                "growChild",
-                                                                BigInteger.valueOf(0),
-                                                                BigInteger.valueOf(kbPerStep),
-                                                                BigInteger.valueOf(17))
-                                                        .gas(MAX_CONTRACT_GAS)
-                                                        .via("small" + childKbStorage);
-                                        final var subOp2 =
-                                                contractCall(
-                                                                contract,
-                                                                "growChild",
-                                                                BigInteger.valueOf(1),
-                                                                BigInteger.valueOf(kbPerStep),
-                                                                BigInteger.valueOf(19))
-                                                        .gas(MAX_CONTRACT_GAS)
-                                                        .via("large" + childKbStorage);
-                                        final var subOp3 =
-                                                getTxnRecord("small" + childKbStorage).logged();
-                                        final var subOp4 =
-                                                getTxnRecord("large" + childKbStorage).logged();
-                                        CustomSpecAssert.allRunFor(
-                                                spec, subOp1, subOp2, subOp3, subOp4);
-                                    }
-                                }))
-                .then(
-                        flattened(
-                                valuesMatch(contract, 19, 17, 19),
-                                contractCall(contract, "setZeroReadOne", BigInteger.valueOf(23)),
-                                valuesMatch(contract, 23, 23, 19),
-                                contractCall(contract, "setBoth", BigInteger.valueOf(29)),
-                                valuesMatch(contract, 29, 29, 29)));
+                    for (int childKbStorage = 0; childKbStorage <= almostFullKb; childKbStorage += kbPerStep) {
+                        final var subOp1 = contractCall(
+                                        contract,
+                                        "growChild",
+                                        BigInteger.valueOf(0),
+                                        BigInteger.valueOf(kbPerStep),
+                                        BigInteger.valueOf(17))
+                                .gas(MAX_CONTRACT_GAS)
+                                .via("small" + childKbStorage);
+                        final var subOp2 = contractCall(
+                                        contract,
+                                        "growChild",
+                                        BigInteger.valueOf(1),
+                                        BigInteger.valueOf(kbPerStep),
+                                        BigInteger.valueOf(19))
+                                .gas(MAX_CONTRACT_GAS)
+                                .via("large" + childKbStorage);
+                        final var subOp3 =
+                                getTxnRecord("small" + childKbStorage).logged();
+                        final var subOp4 =
+                                getTxnRecord("large" + childKbStorage).logged();
+                        CustomSpecAssert.allRunFor(spec, subOp1, subOp2, subOp3, subOp4);
+                    }
+                }))
+                .then(flattened(
+                        valuesMatch(contract, 19, 17, 19),
+                        contractCall(contract, "setZeroReadOne", BigInteger.valueOf(23)),
+                        valuesMatch(contract, 23, 23, 19),
+                        contractCall(contract, "setBoth", BigInteger.valueOf(29)),
+                        valuesMatch(contract, 29, 29, 29)));
     }
 
     private HapiSpecOperation[] valuesMatch(
             final String contract, final long parent, final long child0, final long child1) {
         return new HapiSpecOperation[] {
             contractCallLocal(contract, GET_CHILD_VALUE, BigInteger.ZERO)
-                    .has(
-                            resultWith()
-                                    .resultThruAbi(
-                                            getABIFor(FUNCTION, GET_CHILD_VALUE, contract),
-                                            isLiteralResult(
-                                                    new Object[] {BigInteger.valueOf(child0)}))),
+                    .has(resultWith()
+                            .resultThruAbi(
+                                    getABIFor(FUNCTION, GET_CHILD_VALUE, contract),
+                                    isLiteralResult(new Object[] {BigInteger.valueOf(child0)}))),
             contractCallLocal(contract, GET_CHILD_VALUE, BigInteger.ONE)
-                    .has(
-                            resultWith()
-                                    .resultThruAbi(
-                                            getABIFor(FUNCTION, GET_CHILD_VALUE, contract),
-                                            isLiteralResult(
-                                                    new Object[] {BigInteger.valueOf(child1)}))),
+                    .has(resultWith()
+                            .resultThruAbi(
+                                    getABIFor(FUNCTION, GET_CHILD_VALUE, contract),
+                                    isLiteralResult(new Object[] {BigInteger.valueOf(child1)}))),
             contractCallLocal(contract, "getMyValue")
-                    .has(
-                            resultWith()
-                                    .resultThruAbi(
-                                            getABIFor(FUNCTION, "getMyValue", contract),
-                                            isLiteralResult(
-                                                    new Object[] {BigInteger.valueOf(parent)}))),
+                    .has(resultWith()
+                            .resultThruAbi(
+                                    getABIFor(FUNCTION, "getMyValue", contract),
+                                    isLiteralResult(new Object[] {BigInteger.valueOf(parent)}))),
         };
     }
 
@@ -190,33 +165,27 @@ public class SStoreSuite extends HapiSuite {
     private HapiSpec benchmarkSingleSetter() {
         final var contract = "Benchmark";
         final var GAS_LIMIT = 1_000_000;
-        var value =
-                Bytes.fromHexString(
-                                "0x0000000000000000000000000000000000000000000000000000000000000005")
-                        .toArray();
+        var value = Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000005")
+                .toArray();
         return defaultHapiSpec("SimpleStorage")
-                .given(
-                        cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS),
-                        uploadInitCode(contract))
+                .given(cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS), uploadInitCode(contract))
                 .when(
                         contractCreate(contract)
                                 .payingWith("payer")
                                 .via("creationTx")
                                 .gas(GAS_LIMIT),
-                        contractCall(contract, "twoSSTOREs", value).gas(GAS_LIMIT).via("storageTx"))
+                        contractCall(contract, "twoSSTOREs", value)
+                                .gas(GAS_LIMIT)
+                                .via("storageTx"))
                 .then(
                         getTxnRecord("storageTx").logged(),
                         contractCallLocal(contract, "counter")
                                 .nodePayment(1_234_567)
-                                .has(
-                                        ContractFnResultAsserts.resultWith()
-                                                .resultThruAbi(
-                                                        Utils.getABIFor(
-                                                                FUNCTION, "counter", contract),
-                                                        ContractFnResultAsserts.isLiteralResult(
-                                                                new Object[] {
-                                                                    BigInteger.valueOf(1L)
-                                                                }))));
+                                .has(ContractFnResultAsserts.resultWith()
+                                        .resultThruAbi(
+                                                Utils.getABIFor(FUNCTION, "counter", contract),
+                                                ContractFnResultAsserts.isLiteralResult(
+                                                        new Object[] {BigInteger.valueOf(1L)}))));
     }
 
     @Override

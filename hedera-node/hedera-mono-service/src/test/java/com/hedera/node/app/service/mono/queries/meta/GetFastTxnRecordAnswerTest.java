@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.meta;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_FEE;
@@ -48,14 +49,10 @@ class GetFastTxnRecordAnswerTest {
     @Test
     void extractsValidity() {
         // given:
-        final Response response =
-                Response.newBuilder()
-                        .setTransactionGetFastRecord(
-                                TransactionGetFastRecordResponse.newBuilder()
-                                        .setHeader(
-                                                ResponseHeader.newBuilder()
-                                                        .setNodeTransactionPrecheckCode(FAIL_FEE)))
-                        .build();
+        final Response response = Response.newBuilder()
+                .setTransactionGetFastRecord(TransactionGetFastRecordResponse.newBuilder()
+                        .setHeader(ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(FAIL_FEE)))
+                .build();
 
         // expect:
         assertEquals(FAIL_FEE, subject.extractValidityFrom(response));

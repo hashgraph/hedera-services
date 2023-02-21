@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.grpc;
 
 import com.hedera.node.app.SessionContext;
@@ -88,30 +89,22 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<DataBuffer, DataBuf
      * @param serviceName a non-null reference to the service name
      * @param methodName a non-null reference to the method name
      */
-    MethodBase(
-            @NonNull final String serviceName,
-            @NonNull final String methodName,
-            @NonNull final Metrics metrics) {
+    MethodBase(@NonNull final String serviceName, @NonNull final String methodName, @NonNull final Metrics metrics) {
 
         this.serviceName = Objects.requireNonNull(serviceName);
         this.methodName = Objects.requireNonNull(methodName);
 
-        this.callsHandledCounter =
-                counter(metrics, COUNTER_HANDLED_NAME_TPL, COUNTER_HANDLED_DESC_TPL);
-        this.callsReceivedCounter =
-                counter(metrics, COUNTER_RECEIVED_NAME_TPL, COUNTER_RECEIVED_DESC_TPL);
-        this.callsFailedCounter =
-                counter(metrics, COUNTER_FAILED_NAME_TPL, COUNTER_FAILED_DESC_TPL);
-        this.callsHandledSpeedometer =
-                speedometer(metrics, SPEEDOMETER_HANDLED_NAME_TPL, SPEEDOMETER_HANDLED_DESC_TPL);
+        this.callsHandledCounter = counter(metrics, COUNTER_HANDLED_NAME_TPL, COUNTER_HANDLED_DESC_TPL);
+        this.callsReceivedCounter = counter(metrics, COUNTER_RECEIVED_NAME_TPL, COUNTER_RECEIVED_DESC_TPL);
+        this.callsFailedCounter = counter(metrics, COUNTER_FAILED_NAME_TPL, COUNTER_FAILED_DESC_TPL);
+        this.callsHandledSpeedometer = speedometer(metrics, SPEEDOMETER_HANDLED_NAME_TPL, SPEEDOMETER_HANDLED_DESC_TPL);
         this.callsReceivedSpeedometer =
                 speedometer(metrics, SPEEDOMETER_RECEIVED_NAME_TPL, SPEEDOMETER_RECEIVED_DESC_TPL);
     }
 
     @Override
     public void invoke(
-            @NonNull final DataBuffer requestBuffer,
-            @NonNull final StreamObserver<DataBuffer> responseObserver) {
+            @NonNull final DataBuffer requestBuffer, @NonNull final StreamObserver<DataBuffer> responseObserver) {
         try {
             // Track the number of times this method has been called
             callsReceivedCounter.increment();
@@ -145,10 +138,8 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<DataBuffer, DataBuf
      * if a gRPC <b>ERROR</b> is to be returned.
      *
      * @param session The {@link SessionContext} for this call
-     * @param requestBuffer The {@link DataInputBuffer} containing the protobuf bytes for the
-     *     request
-     * @param responseBuffer A {@link DataBuffer} into which the response protobuf bytes may be
-     *     written
+     * @param requestBuffer The {@link DataInputBuffer} containing the protobuf bytes for the request
+     * @param responseBuffer A {@link DataBuffer} into which the response protobuf bytes may be written
      */
     protected abstract void handle(
             @NonNull final SessionContext session,

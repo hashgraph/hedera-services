@@ -13,25 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.consensus.impl.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
  * HederaFunctionality#CONSENSUS_CREATE_TOPIC}.
  */
+@Singleton
 public class ConsensusCreateTopicHandler implements TransactionHandler {
+    @Inject
+    public ConsensusCreateTopicHandler() {}
 
     /**
      * This method is called during the pre-handle workflow.
@@ -40,33 +45,25 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
      * the handle stage.
      *
-     * @param txBody the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @param keyLookup the {@link AccountKeyLookup} to use for key lookups
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
+     * <p>Please note: the method signature is just a placeholder which is most likely going to
+     * change.
+     *
+     * @param context the {@link PreHandleContext} which collects all information that will be
+     *     passed to {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody,
-            @NonNull final AccountID payer,
-            @NonNull final AccountKeyLookup keyLookup) {
-        final var metaBuilder =
-                new SigTransactionMetadataBuilder(keyLookup).txnBody(txBody).payerKeyFor(payer);
-
-        final var op = txBody.consensusCreateTopic().orElseThrow();
+    public void preHandle(@NonNull final PreHandleContext context) {
+        requireNonNull(context);
+        final var op = context.getTxn().consensusCreateTopic().orElseThrow();
         final var adminKey = asHederaKey(op.adminKey());
-        adminKey.ifPresent(metaBuilder::addToReqNonPayerKeys);
+        adminKey.ifPresent(context::addToReqNonPayerKeys);
         final var submitKey = asHederaKey(op.submitKey());
-        submitKey.ifPresent(metaBuilder::addToReqNonPayerKeys);
+        submitKey.ifPresent(context::addToReqNonPayerKeys);
 
         if (op.autoRenewAccount() != null) {
             final var autoRenewAccount = op.autoRenewAccount();
-            metaBuilder.addNonPayerKey(
-                    autoRenewAccount, ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+            context.addNonPayerKey(autoRenewAccount, ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
         }
-
-        return metaBuilder.build();
     }
 
     /**
@@ -79,6 +76,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
+        requireNonNull(metadata);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

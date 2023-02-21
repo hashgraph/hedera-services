@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -50,10 +51,7 @@ class StakeInfoManagementTest {
     }
 
     private MerkleStakingInfo subjectWith(
-            final long minStake,
-            final long maxStake,
-            final long stakedToReward,
-            final long stakedToNotReward) {
+            final long minStake, final long maxStake, final long stakedToReward, final long stakedToNotReward) {
         return subjectWith(minStake, maxStake, stakedToReward, stakedToNotReward, -1);
     }
 

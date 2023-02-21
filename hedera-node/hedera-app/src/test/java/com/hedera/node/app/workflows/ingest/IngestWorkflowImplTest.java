@@ -13,50 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.ingest;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.node.transaction.TransactionResponse;
-import com.hedera.node.app.AppTestBase;
-import com.hedera.node.app.SessionContext;
-import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
-import com.hedera.node.app.service.mono.context.NodeInfo;
-import com.hedera.node.app.service.token.entity.Account;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.throttle.ThrottleAccumulator;
-import com.hedera.node.app.workflows.StoreCache;
-import com.hedera.node.app.workflows.onset.OnsetResult;
-import com.hedera.node.app.workflows.onset.WorkflowOnset;
-import com.hedera.pbj.runtime.io.DataBuffer;
-import com.hedera.pbj.runtime.io.DataInputBuffer;
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.system.PlatformStatus;
-import com.swirlds.common.utility.AutoCloseableWrapper;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import java.io.IOException;
-import java.util.Optional;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
@@ -78,6 +37,48 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionResponse;
+import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.SessionContext;
+import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
+import com.hedera.node.app.service.mono.context.NodeInfo;
+import com.hedera.node.app.service.token.entity.Account;
+import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.workflows.onset.OnsetResult;
+import com.hedera.node.app.workflows.onset.WorkflowOnset;
+import com.hedera.pbj.runtime.io.DataBuffer;
+import com.hedera.pbj.runtime.io.DataInputBuffer;
+import com.swirlds.common.metrics.Counter;
+import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.system.PlatformStatus;
+import com.swirlds.common.utility.AutoCloseableWrapper;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class IngestWorkflowImplTest extends AppTestBase {
@@ -103,19 +104,41 @@ class IngestWorkflowImplTest extends AppTestBase {
     private TransactionBody transactionBody;
 
     // The following fields are all mocked dependencies of the workflow.
-    @Mock(strictness = LENIENT) Account account;
-    @Mock(strictness = LENIENT) NodeInfo nodeInfo;
-    @Mock(strictness = LENIENT) HederaState state;
-    @Mock(strictness = LENIENT) ReadableAccountStore accountStore;
-    @Mock(strictness = LENIENT) CurrentPlatformStatus currentPlatformStatus;
-    @Mock(strictness = LENIENT) Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
-    @Mock(strictness = LENIENT) StoreCache storeCache;
-    @Mock(strictness = LENIENT) WorkflowOnset onset;
-    @Mock(strictness = LENIENT) IngestChecker checker;
-    @Mock(strictness = LENIENT) ThrottleAccumulator throttleAccumulator;
-    @Mock(strictness = LENIENT) SubmissionManager submissionManager;
-    @Mock(strictness = LENIENT) Metrics metrics;
-    @Mock(strictness = LENIENT) Counter countSubmitted;
+    @Mock(strictness = LENIENT)
+    Account account;
+
+    @Mock(strictness = LENIENT)
+    NodeInfo nodeInfo;
+
+    @Mock(strictness = LENIENT)
+    HederaState state;
+
+    @Mock(strictness = LENIENT)
+    ReadableAccountStore accountStore;
+
+    @Mock(strictness = LENIENT)
+    CurrentPlatformStatus currentPlatformStatus;
+
+    @Mock(strictness = LENIENT)
+    Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
+
+    @Mock(strictness = LENIENT)
+    WorkflowOnset onset;
+
+    @Mock(strictness = LENIENT)
+    IngestChecker checker;
+
+    @Mock(strictness = LENIENT)
+    ThrottleAccumulator throttleAccumulator;
+
+    @Mock(strictness = LENIENT)
+    SubmissionManager submissionManager;
+
+    @Mock(strictness = LENIENT)
+    Metrics metrics;
+
+    @Mock(strictness = LENIENT)
+    Counter countSubmitted;
 
     @SuppressWarnings("unchecked")
     @BeforeEach
@@ -126,8 +149,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         ctx = new SessionContext();
         transactionBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
-                        .accountID(AccountID.newBuilder()
-                                .accountNum(1001).build())
+                        .accountID(AccountID.newBuilder().accountNum(1001).build())
                         .build())
                 .build();
 
@@ -138,8 +160,6 @@ class IngestWorkflowImplTest extends AppTestBase {
         when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
         // The state is going to always be empty
         when(stateAccessor.get()).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
-        // The storeCache will return the accountStore we mocked out
-        when(storeCache.getAccountStore(state)).thenReturn(accountStore);
         // The account store will always return the same mocked account.
         // TODO I don't like this, because we should test flows where the account doesn't exist, etc.
         when(accountStore.getAccount(any())).thenReturn(Optional.of(account));
@@ -148,10 +168,7 @@ class IngestWorkflowImplTest extends AppTestBase {
 
         // Mock out the onset to always return a valid parsed object
         final var onsetResult = new OnsetResult(
-                transactionBody,
-                OK,
-                SignatureMap.newBuilder().build(),
-                HederaFunctionality.CONSENSUS_CREATE_TOPIC);
+                transactionBody, OK, SignatureMap.newBuilder().build(), HederaFunctionality.CONSENSUS_CREATE_TOPIC);
         when(onset.parseAndCheck(ctx, requestBuffer)).thenReturn(onsetResult);
 
         // Create the workflow we are going to test with
@@ -159,7 +176,6 @@ class IngestWorkflowImplTest extends AppTestBase {
                 nodeInfo,
                 currentPlatformStatus,
                 stateAccessor,
-                storeCache,
                 onset,
                 checker,
                 throttleAccumulator,
@@ -167,127 +183,83 @@ class IngestWorkflowImplTest extends AppTestBase {
                 metrics);
     }
 
-        @SuppressWarnings("ConstantConditions")
-        @Test
-        void testConstructorWithInvalidArguments() {
-            assertThatThrownBy(
-                            () ->
-                                    new IngestWorkflowImpl(
-                                            null,
-                                            currentPlatformStatus,
-                                            stateAccessor,
-                                            storeCache,
-                                            onset,
-                                            checker,
-                                            throttleAccumulator,
-                                            submissionManager,
-                                            metrics))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(
-                            () ->
-                                    new IngestWorkflowImpl(
-                                            nodeInfo,
-                                            null,
-                                            stateAccessor,
-                                            storeCache,
-                                            onset,
-                                            checker,
-                                            throttleAccumulator,
-                                            submissionManager,
-                                            metrics))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(
-                            () ->
-                                    new IngestWorkflowImpl(
-                                            nodeInfo,
-                                            currentPlatformStatus,
-                                            null,
-                                            storeCache,
-                                            onset,
-                                            checker,
-                                            throttleAccumulator,
-                                            submissionManager,
-                                            metrics))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(
-                            () ->
-                                    new IngestWorkflowImpl(
-                                            nodeInfo,
-                                            currentPlatformStatus,
-                                            stateAccessor,
-                                            null,
-                                            onset,
-                                            checker,
-                                            throttleAccumulator,
-                                            submissionManager,
-                                            metrics))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(
-                            () ->
-                                    new IngestWorkflowImpl(
-                                            nodeInfo,
-                                            currentPlatformStatus,
-                                            stateAccessor,
-                                            storeCache,
-                                            null,
-                                            checker,
-                                            throttleAccumulator,
-                                            submissionManager,
-                                            metrics))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(
-                            () ->
-                                    new IngestWorkflowImpl(
-                                            nodeInfo,
-                                            currentPlatformStatus,
-                                            stateAccessor,
-                                            storeCache,
-                                            onset,
-                                            null,
-                                            throttleAccumulator,
-                                            submissionManager,
-                                            metrics))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(
-                            () ->
-                                    new IngestWorkflowImpl(
-                                            nodeInfo,
-                                            currentPlatformStatus,
-                                            stateAccessor,
-                                            storeCache,
-                                            onset,
-                                            checker,
-                                            null,
-                                            submissionManager,
-                                            metrics))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(
-                            () ->
-                                    new IngestWorkflowImpl(
-                                            nodeInfo,
-                                            currentPlatformStatus,
-                                            stateAccessor,
-                                            storeCache,
-                                            onset,
-                                            checker,
-                                            throttleAccumulator,
-                                            null,
-                                            metrics))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(
-                            () ->
-                                    new IngestWorkflowImpl(
-                                            nodeInfo,
-                                            currentPlatformStatus,
-                                            stateAccessor,
-                                            storeCache,
-                                            onset,
-                                            checker,
-                                            throttleAccumulator,
-                                            submissionManager,
-                                            null))
-                    .isInstanceOf(NullPointerException.class);
-        }
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    void testConstructorWithInvalidArguments() {
+        assertThatThrownBy(() -> new IngestWorkflowImpl(
+                        null,
+                        currentPlatformStatus,
+                        stateAccessor,
+                        onset,
+                        checker,
+                        throttleAccumulator,
+                        submissionManager,
+                        metrics))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new IngestWorkflowImpl(
+                        nodeInfo, null, stateAccessor, onset, checker, throttleAccumulator, submissionManager, metrics))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new IngestWorkflowImpl(
+                        nodeInfo,
+                        currentPlatformStatus,
+                        null,
+                        onset,
+                        checker,
+                        throttleAccumulator,
+                        submissionManager,
+                        metrics))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new IngestWorkflowImpl(
+                        nodeInfo,
+                        currentPlatformStatus,
+                        stateAccessor,
+                        null,
+                        checker,
+                        throttleAccumulator,
+                        submissionManager,
+                        metrics))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new IngestWorkflowImpl(
+                        nodeInfo,
+                        currentPlatformStatus,
+                        stateAccessor,
+                        onset,
+                        null,
+                        throttleAccumulator,
+                        submissionManager,
+                        metrics))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new IngestWorkflowImpl(
+                        nodeInfo,
+                        currentPlatformStatus,
+                        stateAccessor,
+                        onset,
+                        checker,
+                        null,
+                        submissionManager,
+                        metrics))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new IngestWorkflowImpl(
+                        nodeInfo,
+                        currentPlatformStatus,
+                        stateAccessor,
+                        onset,
+                        checker,
+                        throttleAccumulator,
+                        null,
+                        metrics))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new IngestWorkflowImpl(
+                        nodeInfo,
+                        currentPlatformStatus,
+                        stateAccessor,
+                        onset,
+                        checker,
+                        throttleAccumulator,
+                        submissionManager,
+                        null))
+                .isInstanceOf(NullPointerException.class);
+    }
 
     @Test
     @DisplayName("When everything goes right, the transaction should be submitted")
@@ -311,8 +283,7 @@ class IngestWorkflowImplTest extends AppTestBase {
     class NodeTests {
         @Test
         @DisplayName("When the node is zero stake, the transaction should be rejected")
-        void testParseAndCheckWithZeroStakeFails()
-                throws IOException, PreCheckException {
+        void testParseAndCheckWithZeroStakeFails() throws IOException, PreCheckException {
             // Given a node that IS zero stake
             when(nodeInfo.isSelfZeroStake()).thenReturn(true);
 
@@ -366,7 +337,8 @@ class IngestWorkflowImplTest extends AppTestBase {
          * @return a stream of arguments with the failure reason
          */
         public static Stream<Arguments> failureReasons() {
-            return Stream.of(Arguments.of(INVALID_TRANSACTION),
+            return Stream.of(
+                    Arguments.of(INVALID_TRANSACTION),
                     Arguments.of(INVALID_TRANSACTION_BODY),
                     Arguments.of(TRANSACTION_HAS_UNKNOWN_FIELDS),
                     Arguments.of(TRANSACTION_OVERSIZE));
@@ -419,7 +391,8 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("When the transaction is throttled, the transaction should be rejected")
         void testThrottleFails() throws PreCheckException, IOException {
             // Given a throttle on CONSENSUS_CREATE_TOPIC transactions (i.e. it is time to throttle)
-            when(throttleAccumulator.shouldThrottle(HederaFunctionality.CONSENSUS_CREATE_TOPIC)).thenReturn(true);
+            when(throttleAccumulator.shouldThrottle(HederaFunctionality.CONSENSUS_CREATE_TOPIC))
+                    .thenReturn(true);
 
             // When the transaction is submitted
             workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
@@ -462,7 +435,8 @@ class IngestWorkflowImplTest extends AppTestBase {
         void randomException() throws PreCheckException {
             // Given an IngestChecker that will throw a RuntimeException from checkTransactionSemantics
             doThrow(new RuntimeException("checkTransactionSemantics exception"))
-                    .when(checker).checkTransactionSemantics(any(), eq(HederaFunctionality.CONSENSUS_CREATE_TOPIC));
+                    .when(checker)
+                    .checkTransactionSemantics(any(), eq(HederaFunctionality.CONSENSUS_CREATE_TOPIC));
 
             // When the transaction is submitted, then the exception is bubbled up
             assertThatThrownBy(() -> workflow.submitTransaction(ctx, requestBuffer, responseBuffer))
@@ -491,23 +465,6 @@ class IngestWorkflowImplTest extends AppTestBase {
             final TransactionResponse response = parseResponse(responseBuffer);
             assertThat(response.nodeTransactionPrecheckCode()).isEqualTo(PAYER_ACCOUNT_NOT_FOUND);
             assertThat(response.cost()).isZero();
-            // And the transaction is not submitted to the platform
-            verify(submissionManager, never()).submit(any(), any());
-            // And the metrics for counting submitted transactions was not incremented
-            verify(countSubmitted, never()).increment();
-        }
-
-        @Test
-        @DisplayName("If some random exception is thrown from the store cache, the exception is bubbled up")
-        void randomException() throws PreCheckException {
-            // Given a StoreCache that will throw a RuntimeException from getAccountStore
-            doThrow(new RuntimeException("getAccountStore exception"))
-                    .when(storeCache).getAccountStore(any());
-
-            // When the transaction is submitted, then the exception is bubbled up
-            assertThatThrownBy(() -> workflow.submitTransaction(ctx, requestBuffer, responseBuffer))
-                    .isInstanceOf(RuntimeException.class)
-                    .hasMessageContaining("getAccountStore exception");
             // And the transaction is not submitted to the platform
             verify(submissionManager, never()).submit(any(), any());
             // And the metrics for counting submitted transactions was not incremented
@@ -546,7 +503,8 @@ class IngestWorkflowImplTest extends AppTestBase {
         void randomException() throws PreCheckException {
             // Given an IngestChecker that will throw a RuntimeException from checkPayerSignature
             doThrow(new RuntimeException("checkPayerSignature exception"))
-                    .when(checker).checkPayerSignature(any(), any(), any());
+                    .when(checker)
+                    .checkPayerSignature(any(), any(), any());
 
             // When the transaction is submitted, then the exception is bubbled up
             assertThatThrownBy(() -> workflow.submitTransaction(ctx, requestBuffer, responseBuffer))
@@ -576,8 +534,7 @@ class IngestWorkflowImplTest extends AppTestBase {
 
             // Then the response will indicate the payer account had insufficient funds
             final TransactionResponse response = parseResponse(responseBuffer);
-            assertThat(response.nodeTransactionPrecheckCode())
-                    .isEqualTo(INSUFFICIENT_ACCOUNT_BALANCE);
+            assertThat(response.nodeTransactionPrecheckCode()).isEqualTo(INSUFFICIENT_ACCOUNT_BALANCE);
             // And the cost will be the amount of the estimated fee
             assertThat(response.cost()).isEqualTo(42L);
             // And the transaction is not submitted to the platform
@@ -591,7 +548,8 @@ class IngestWorkflowImplTest extends AppTestBase {
         void randomException() throws PreCheckException {
             // Given an IngestChecker that will throw a RuntimeException from checkSolvency
             doThrow(new RuntimeException("checkSolvency exception"))
-                    .when(checker).checkSolvency(any(), any(), any());
+                    .when(checker)
+                    .checkSolvency(any(), any(), any());
 
             // When the transaction is submitted, then the exception is bubbled up
             assertThatThrownBy(() -> workflow.submitTransaction(ctx, requestBuffer, responseBuffer))
@@ -621,8 +579,7 @@ class IngestWorkflowImplTest extends AppTestBase {
 
             // Then the response will indicate the platform rejected the transaction
             final TransactionResponse response = parseResponse(responseBuffer);
-            assertThat(response.nodeTransactionPrecheckCode())
-                    .isEqualTo(PLATFORM_TRANSACTION_NOT_CREATED);
+            assertThat(response.nodeTransactionPrecheckCode()).isEqualTo(PLATFORM_TRANSACTION_NOT_CREATED);
             // And the cost will be zero
             assertThat(response.cost()).isZero();
             // And the metrics for counting submitted transactions was not incremented
@@ -634,7 +591,8 @@ class IngestWorkflowImplTest extends AppTestBase {
         void randomException() throws PreCheckException {
             // Given a SubmissionManager that will throw a RuntimeException from submit
             doThrow(new RuntimeException("submit exception"))
-                    .when(submissionManager).submit(any(), any());
+                    .when(submissionManager)
+                    .submit(any(), any());
 
             // When the transaction is submitted, then the exception is bubbled up
             assertThatThrownBy(() -> workflow.submitTransaction(ctx, requestBuffer, responseBuffer))
@@ -645,8 +603,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         }
     }
 
-    private static TransactionResponse parseResponse(@NonNull final DataBuffer responseBuffer)
-            throws IOException {
+    private static TransactionResponse parseResponse(@NonNull final DataBuffer responseBuffer) throws IOException {
         responseBuffer.flip();
         return TransactionResponse.PROTOBUF.parse(responseBuffer);
     }

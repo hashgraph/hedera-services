@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.contract;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallFrom;
@@ -33,8 +34,7 @@ public class RandomCall implements OpProvider {
     private final EntityNameProvider<ActionableContractCall> calls;
 
     private final ResponseCodeEnum[] permissiblePrechecks = standardPrechecksAnd(CONTRACT_DELETED);
-    private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(INVALID_CONTRACT_ID, CONTRACT_DELETED);
+    private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(INVALID_CONTRACT_ID, CONTRACT_DELETED);
 
     public RandomCall(EntityNameProvider<ActionableContractCall> calls) {
         this.calls = calls;
@@ -52,10 +52,9 @@ public class RandomCall implements OpProvider {
             return Optional.empty();
         }
 
-        HapiContractCall op =
-                contractCallFrom(call.get())
-                        .hasPrecheckFrom(permissiblePrechecks)
-                        .hasKnownStatusFrom(permissibleOutcomes);
+        HapiContractCall op = contractCallFrom(call.get())
+                .hasPrecheckFrom(permissiblePrechecks)
+                .hasKnownStatusFrom(permissibleOutcomes);
 
         return Optional.of(op);
     }

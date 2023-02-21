@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.query;
 
 import static java.util.Objects.requireNonNull;
@@ -22,18 +23,20 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
-import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.dispatcher.StoreFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * A {@code QueryDispatcher} provides functionality to forward validate, and reply-query requests to
  * the appropriate handler
  */
+@Singleton
 public class QueryDispatcher {
 
     private static final String QUERY_NOT_SET = "Query not set";
-    private static final String GET_FAST_RECORD_IS_NOT_SUPPORTED =
-            "TransactionGetFastRecord is not supported";
+    private static final String GET_FAST_RECORD_IS_NOT_SUPPORTED = "TransactionGetFastRecord is not supported";
 
     private final QueryHandlers handlers;
 
@@ -43,6 +46,7 @@ public class QueryDispatcher {
      * @param handlers a {@link QueryHandlers} record with all available handlers
      * @throws NullPointerException if one of the parameters is {@code null}
      */
+    @Inject
     public QueryDispatcher(@NonNull final QueryHandlers handlers) {
         this.handlers = requireNonNull(handlers);
     }
@@ -86,6 +90,7 @@ public class QueryDispatcher {
             case TOKEN_GET_ACCOUNT_NFT_INFOS -> handlers.tokenGetAccountNftInfosHandler();
             case TOKEN_GET_NFT_INFO -> handlers.tokenGetNftInfoHandler();
             case TOKEN_GET_NFT_INFOS -> handlers.tokenGetNftInfosHandler();
+
             case TRANSACTION_GET_FAST_RECORD -> throw new UnsupportedOperationException(
                     GET_FAST_RECORD_IS_NOT_SUPPORTED);
             case UNSET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
@@ -95,13 +100,14 @@ public class QueryDispatcher {
     /**
      * Validates the query by dispatching the query to its specific handlers.
      *
-     * @param state the {@link HederaState} of this request
+     * @param storeFactory the {@link StoreFactory} that keeps all stores which are eventually
+     *     needed
      * @param query the {@link Query} of the request
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void validate(@NonNull final HederaState state, @NonNull final Query query)
+    public void validate(@NonNull final StoreFactory storeFactory, @NonNull final Query query)
             throws PreCheckException {
-        requireNonNull(state);
+        requireNonNull(storeFactory);
         requireNonNull(query);
 
         switch (query.query().kind()) {
@@ -155,17 +161,18 @@ public class QueryDispatcher {
     /**
      * Gets the response for a given query by dispatching its respective handlers.
      *
-     * @param state the {@link HederaState} that should be used for the request
+     * @param storeFactory the {@link StoreFactory} that keeps all stores which are eventually
+     *     needed
      * @param query the actual {@link Query}
      * @param header the {@link ResponseHeader} that should be used in the response, if it is
      *     successful
      * @return the {@link Response} with the requested answer
      */
     public Response getResponse(
-            @NonNull final HederaState state,
+            @NonNull final StoreFactory storeFactory,
             @NonNull final Query query,
             @NonNull final ResponseHeader header) {
-        requireNonNull(state);
+        requireNonNull(storeFactory);
         requireNonNull(query);
         requireNonNull(header);
 
@@ -173,32 +180,24 @@ public class QueryDispatcher {
             case CONSENSUS_GET_TOPIC_INFO -> handlers.consensusGetTopicInfoHandler()
                     .findResponse(query, header);
 
-            case GET_BY_SOLIDITY_ID -> handlers.contractGetBySolidityIDHandler()
-                    .findResponse(query, header);
-            case CONTRACT_CALL_LOCAL -> handlers.contractCallLocalHandler()
-                    .findResponse(query, header);
+            case GET_BY_SOLIDITY_ID -> handlers.contractGetBySolidityIDHandler().findResponse(query, header);
+            case CONTRACT_CALL_LOCAL -> handlers.contractCallLocalHandler().findResponse(query, header);
             case CONTRACT_GET_INFO -> handlers.contractGetInfoHandler().findResponse(query, header);
-            case CONTRACT_GET_BYTECODE -> handlers.contractGetBytecodeHandler()
-                    .findResponse(query, header);
-            case CONTRACT_GET_RECORDS -> handlers.contractGetRecordsHandler()
-                    .findResponse(query, header);
+            case CONTRACT_GET_BYTECODE -> handlers.contractGetBytecodeHandler().findResponse(query, header);
+            case CONTRACT_GET_RECORDS -> handlers.contractGetRecordsHandler().findResponse(query, header);
 
             case CRYPTOGET_ACCOUNT_BALANCE -> handlers.cryptoGetAccountBalanceHandler()
                     .findResponse(query, header);
-            case CRYPTO_GET_INFO -> handlers.cryptoGetAccountInfoHandler()
-                    .findResponse(query, header);
+            case CRYPTO_GET_INFO -> handlers.cryptoGetAccountInfoHandler().findResponse(query, header);
             case CRYPTO_GET_ACCOUNT_RECORDS -> handlers.cryptoGetAccountRecordsHandler()
                     .findResponse(query, header);
-            case CRYPTO_GET_LIVE_HASH -> handlers.cryptoGetLiveHashHandler()
-                    .findResponse(query, header);
-            case CRYPTO_GET_PROXY_STAKERS -> handlers.cryptoGetStakersHandler()
-                    .findResponse(query, header);
+            case CRYPTO_GET_LIVE_HASH -> handlers.cryptoGetLiveHashHandler().findResponse(query, header);
+            case CRYPTO_GET_PROXY_STAKERS -> handlers.cryptoGetStakersHandler().findResponse(query, header);
 
             case FILE_GET_CONTENTS -> handlers.fileGetContentsHandler().findResponse(query, header);
             case FILE_GET_INFO -> handlers.fileGetInfoHandler().findResponse(query, header);
 
-            case ACCOUNT_DETAILS -> handlers.networkGetAccountDetailsHandler()
-                    .findResponse(query, header);
+            case ACCOUNT_DETAILS -> handlers.networkGetAccountDetailsHandler().findResponse(query, header);
             case GET_BY_KEY -> handlers.networkGetByKeyHandler().findResponse(query, header);
             case NETWORK_GET_VERSION_INFO -> handlers.networkGetVersionInfoHandler()
                     .findResponse(query, header);
@@ -214,10 +213,8 @@ public class QueryDispatcher {
             case TOKEN_GET_INFO -> handlers.tokenGetInfoHandler().findResponse(query, header);
             case TOKEN_GET_ACCOUNT_NFT_INFOS -> handlers.tokenGetAccountNftInfosHandler()
                     .findResponse(query, header);
-            case TOKEN_GET_NFT_INFO -> handlers.tokenGetNftInfoHandler()
-                    .findResponse(query, header);
-            case TOKEN_GET_NFT_INFOS -> handlers.tokenGetNftInfosHandler()
-                    .findResponse(query, header);
+            case TOKEN_GET_NFT_INFO -> handlers.tokenGetNftInfoHandler().findResponse(query, header);
+            case TOKEN_GET_NFT_INFOS -> handlers.tokenGetNftInfosHandler().findResponse(query, header);
             case TRANSACTION_GET_FAST_RECORD -> throw new UnsupportedOperationException(
                     GET_FAST_RECORD_IS_NOT_SUPPORTED);
             case UNSET -> throw new UnsupportedOperationException(QUERY_NOT_SET);

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.file.queries;
 
 import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
@@ -40,15 +41,13 @@ public final class GetFileContentsResourceUsage implements QueryResourceUsageEst
     }
 
     @Override
-    public FeeData usageGiven(
-            final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
+    public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
         return usageGivenType(
                 query, view, query.getFileGetContents().getHeader().getResponseType());
     }
 
     @Override
-    public FeeData usageGivenType(
-            final Query query, final StateView view, final ResponseType type) {
+    public FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
         final var op = query.getFileGetContents();
         final var info = view.infoForFile(op.getFileID());
         /* Given the test in {@code GetFileContentsAnswer.checkValidity}, this can only be empty

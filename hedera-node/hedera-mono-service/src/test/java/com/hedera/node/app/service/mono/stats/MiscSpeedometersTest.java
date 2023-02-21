@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stats;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -34,10 +35,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class MiscSpeedometersTest {
     private static final double halfLife = 10.0;
 
-    @Mock private Platform platform;
-    @Mock private SpeedometerMetric syncVerifies;
-    @Mock private SpeedometerMetric txnRejections;
-    @Mock private Metrics metrics;
+    @Mock
+    private Platform platform;
+
+    @Mock
+    private SpeedometerMetric syncVerifies;
+
+    @Mock
+    private SpeedometerMetric txnRejections;
+
+    @Mock
+    private Metrics metrics;
 
     private MiscSpeedometers subject;
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils.accessors;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -37,16 +38,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TokenWipeAccessorTest {
-    @Mock private GlobalDynamicProperties properties;
+    @Mock
+    private GlobalDynamicProperties properties;
+
     private TokenWipeAccessor subject;
 
     @Test
     void detectsUniqueTokenWipeSubtypeFromGrpcSyntax() throws InvalidProtocolBufferException {
-        final var op =
-                TokenWipeAccountTransactionBody.newBuilder()
-                        .addAllSerialNumbers(List.of(1L, 2L, 3L))
-                        .build();
-        final var txn = buildTransactionFrom(TransactionBody.newBuilder().setTokenWipe(op).build());
+        final var op = TokenWipeAccountTransactionBody.newBuilder()
+                .addAllSerialNumbers(List.of(1L, 2L, 3L))
+                .build();
+        final var txn = buildTransactionFrom(
+                TransactionBody.newBuilder().setTokenWipe(op).build());
 
         subject = new TokenWipeAccessor(txn.toByteArray(), txn, properties);
 
@@ -55,8 +58,10 @@ class TokenWipeAccessorTest {
 
     @Test
     void detectsCommonTokenWipeSubtypeFromGrpcSyntax() throws InvalidProtocolBufferException {
-        final var op = TokenWipeAccountTransactionBody.newBuilder().setAmount(1234L).build();
-        final var txn = buildTransactionFrom(TransactionBody.newBuilder().setTokenWipe(op).build());
+        final var op =
+                TokenWipeAccountTransactionBody.newBuilder().setAmount(1234L).build();
+        final var txn = buildTransactionFrom(
+                TransactionBody.newBuilder().setTokenWipe(op).build());
 
         subject = new TokenWipeAccessor(txn.toByteArray(), txn, properties);
 
@@ -65,14 +70,14 @@ class TokenWipeAccessorTest {
 
     @Test
     void gettersWorkAsExpected() throws InvalidProtocolBufferException {
-        final var op =
-                TokenWipeAccountTransactionBody.newBuilder()
-                        .setToken(asToken("0.0.123"))
-                        .setAccount(asAccount("0.0.123456"))
-                        .addAllSerialNumbers(List.of(1L, 2L, 3L))
-                        .setAmount(1234L)
-                        .build();
-        final var txn = buildTransactionFrom(TransactionBody.newBuilder().setTokenWipe(op).build());
+        final var op = TokenWipeAccountTransactionBody.newBuilder()
+                .setToken(asToken("0.0.123"))
+                .setAccount(asAccount("0.0.123456"))
+                .addAllSerialNumbers(List.of(1L, 2L, 3L))
+                .setAmount(1234L)
+                .build();
+        final var txn = buildTransactionFrom(
+                TransactionBody.newBuilder().setTokenWipe(op).build());
         given(properties.areNftsEnabled()).willReturn(true);
 
         subject = new TokenWipeAccessor(txn.toByteArray(), txn, properties);

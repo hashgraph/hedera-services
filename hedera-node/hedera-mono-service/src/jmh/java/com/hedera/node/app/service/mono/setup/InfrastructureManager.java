@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.setup;
 
 import static com.hedera.node.app.service.mono.setup.InfrastructureBundle.allImplied;
@@ -70,8 +71,7 @@ public class InfrastructureManager {
     private static InfrastructureBundle loadBundle(
             final Map<String, Object> config, final Collection<InfrastructureType> types) {
         if (!bundleExistsWith(config, types)) {
-            throw new IllegalArgumentException(
-                    "Bundle " + bundleDirFor(config, types) + " was not found");
+            throw new IllegalArgumentException("Bundle " + bundleDirFor(config, types) + " was not found");
         }
         final var dir = bundleDirFor(config, types);
         final var bundle = new InfrastructureBundle(types);
@@ -94,8 +94,7 @@ public class InfrastructureManager {
         return new VirtualMapFactory(Paths.get(storageLoc));
     }
 
-    private static String bundleDirFor(
-            final Map<String, Object> config, final Collection<InfrastructureType> types) {
+    private static String bundleDirFor(final Map<String, Object> config, final Collection<InfrastructureType> types) {
         final var sb = new StringBuilder("bundle").append(InfrastructureBundle.codeFor(types));
         config.keySet().stream()
                 .sorted()
@@ -107,8 +106,7 @@ public class InfrastructureManager {
         final var f = new File(loc);
         if (!f.exists()) {
             if (!f.mkdirs()) {
-                throw new IllegalStateException(
-                        "Failed to create directory " + f.getAbsolutePath());
+                throw new IllegalStateException("Failed to create directory " + f.getAbsolutePath());
             }
         } else if (!f.isDirectory()) {
             throw new IllegalStateException(f.getAbsolutePath() + " is not a directory");

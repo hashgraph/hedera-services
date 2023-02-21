@@ -13,7 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.onset;
+
+import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOPIC;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
@@ -31,6 +47,7 @@ import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.Bytes;
 import com.hedera.pbj.runtime.io.DataBuffer;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -42,21 +59,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import java.util.stream.Stream;
-import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOPIC;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mock.Strictness.LENIENT;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class WorkflowOnsetTest extends AppTestBase {
@@ -90,17 +92,19 @@ class WorkflowOnsetTest extends AppTestBase {
         // Create the signed transaction object. We hold a reference to it to make sure after
         // we parse the object we get the same thing back.
         final var bodyBytes = asBytes(TransactionBody.PROTOBUF, txBody);
-        final var sigPair = SignaturePair.newBuilder().ed25519(Bytes.wrap(randomBytes(64))).build();
+        final var sigPair =
+                SignaturePair.newBuilder().ed25519(Bytes.wrap(randomBytes(64))).build();
         signatureMap = SignatureMap.newBuilder().sigPair(sigPair).build();
-        signedTx =
-                SignedTransaction.newBuilder()
-                        .bodyBytes(bodyBytes)
-                        .sigMap(signatureMap)
-                        .build();
+        signedTx = SignedTransaction.newBuilder()
+                .bodyBytes(bodyBytes)
+                .sigMap(signatureMap)
+                .build();
 
         // Create the transaction object
         final var signedTransactionBytes = asBytes(SignedTransaction.PROTOBUF, signedTx);
-        tx = Transaction.newBuilder().signedTransactionBytes(signedTransactionBytes).build();
+        tx = Transaction.newBuilder()
+                .signedTransactionBytes(signedTransactionBytes)
+                .build();
         inputBuffer = DataBuffer.wrap(asByteArray(tx));
 
         // Create the onset object
@@ -117,7 +121,8 @@ class WorkflowOnsetTest extends AppTestBase {
      * @return a stream of arguments with the failure reason
      */
     public static Stream<Arguments> failureReasons() {
-        return Stream.of(Arguments.of(INVALID_TRANSACTION),
+        return Stream.of(
+                Arguments.of(INVALID_TRANSACTION),
                 Arguments.of(INVALID_TRANSACTION_BODY),
                 Arguments.of(TRANSACTION_HAS_UNKNOWN_FIELDS),
                 Arguments.of(TRANSACTION_OVERSIZE));
@@ -130,12 +135,9 @@ class WorkflowOnsetTest extends AppTestBase {
         @SuppressWarnings("ConstantConditions")
         @DisplayName("Constructor throws on illegal arguments")
         void testConstructorWithIllegalArguments() {
-            assertThatThrownBy(() -> new WorkflowOnset(-1, checker))
-                    .isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> new WorkflowOnset(0, checker))
-                    .isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> new WorkflowOnset(MAX_TX_SIZE, null))
-                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new WorkflowOnset(-1, checker)).isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new WorkflowOnset(0, checker)).isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new WorkflowOnset(MAX_TX_SIZE, null)).isInstanceOf(NullPointerException.class);
         }
     }
 
@@ -200,11 +202,10 @@ class WorkflowOnsetTest extends AppTestBase {
         @DisplayName("A transaction with deprecated fields passes parseAndCheck")
         void testParseAndCheckWithDeprecatedFieldsSucceeds() throws PreCheckException {
             // Given a transaction using the deprecated fields
-            final var localTx =
-                    Transaction.newBuilder()
-                            .bodyBytes(signedTx.bodyBytes())
-                            .sigMap(signedTx.sigMap())
-                            .build();
+            final var localTx = Transaction.newBuilder()
+                    .bodyBytes(signedTx.bodyBytes())
+                    .sigMap(signedTx.sigMap())
+                    .build();
             inputBuffer = DataBuffer.wrap(asByteArray(localTx));
 
             // When we parse and check
@@ -229,8 +230,7 @@ class WorkflowOnsetTest extends AppTestBase {
         @SuppressWarnings("ConstantConditions")
         @DisplayName("`parseAndCheck` with a DataBuffer rejects null args")
         void parseAndCheckDataBufferIllegalArgs() {
-            assertThatThrownBy(() -> onset.parseAndCheck(null, inputBuffer))
-                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> onset.parseAndCheck(null, inputBuffer)).isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> onset.parseAndCheck(ctx, (DataBuffer) null))
                     .isInstanceOf(NullPointerException.class);
         }
@@ -239,20 +239,16 @@ class WorkflowOnsetTest extends AppTestBase {
         @SuppressWarnings("ConstantConditions")
         @DisplayName("`parseAndCheck` with a byte[] rejects null args")
         void parseAndCheckByteArrayIllegalArgs() {
-            assertThatThrownBy(() -> onset.parseAndCheck(null, new byte[0]))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> onset.parseAndCheck(ctx, (byte[]) null))
-                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> onset.parseAndCheck(null, new byte[0])).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> onset.parseAndCheck(ctx, (byte[]) null)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
         @SuppressWarnings("ConstantConditions")
         @DisplayName("`check` rejects null args")
         void checkObjectIllegalArgs() {
-            assertThatThrownBy(() -> onset.check(null, tx))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> onset.check(ctx, null))
-                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> onset.check(null, tx)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> onset.check(ctx, null)).isInstanceOf(NullPointerException.class);
         }
     }
 
@@ -322,10 +318,9 @@ class WorkflowOnsetTest extends AppTestBase {
             @DisplayName("If the signed transaction bytes are not valid protobuf, it will fail")
             void badSignedTransactionProtobuf() {
                 // Given an invalid protobuf message
-                final var localTx =
-                        Transaction.newBuilder()
-                                .signedTransactionBytes(Bytes.wrap(invalidProtobuf()))
-                                .build();
+                final var localTx = Transaction.newBuilder()
+                        .signedTransactionBytes(Bytes.wrap(invalidProtobuf()))
+                        .build();
                 inputBuffer = DataBuffer.wrap(asByteArray(localTx));
 
                 // When we parse and check, then the parsing fails because this is an INVALID_TRANSACTION
@@ -358,14 +353,15 @@ class WorkflowOnsetTest extends AppTestBase {
             @DisplayName("If the transaction body bytes are not valid protobuf, it will fail")
             void badTransactionBodyProtobuf() {
                 // Given an invalid protobuf message
-                signedTx =
-                        SignedTransaction.newBuilder()
-                                .bodyBytes(Bytes.wrap(invalidProtobuf()))
-                                .sigMap(signatureMap)
-                                .build();
+                signedTx = SignedTransaction.newBuilder()
+                        .bodyBytes(Bytes.wrap(invalidProtobuf()))
+                        .sigMap(signatureMap)
+                        .build();
 
                 final var signedTransactionBytes = asBytes(SignedTransaction.PROTOBUF, signedTx);
-                tx = Transaction.newBuilder().signedTransactionBytes(signedTransactionBytes).build();
+                tx = Transaction.newBuilder()
+                        .signedTransactionBytes(signedTransactionBytes)
+                        .build();
                 inputBuffer = DataBuffer.wrap(asByteArray(tx));
 
                 // When we parse and check, then the parsing fails because has unknown fields
@@ -379,14 +375,15 @@ class WorkflowOnsetTest extends AppTestBase {
             void unknownFieldInTransactionBody() {
                 // Given a valid protobuf but with an unknown field
                 final var badBodyBytes = appendUnknownField(TransactionBody.PROTOBUF, txBody);
-                signedTx =
-                        SignedTransaction.newBuilder()
-                                .bodyBytes(badBodyBytes)
-                                .sigMap(signatureMap)
-                                .build();
+                signedTx = SignedTransaction.newBuilder()
+                        .bodyBytes(badBodyBytes)
+                        .sigMap(signatureMap)
+                        .build();
 
                 final var signedTransactionBytes = asBytes(SignedTransaction.PROTOBUF, signedTx);
-                tx = Transaction.newBuilder().signedTransactionBytes(signedTransactionBytes).build();
+                tx = Transaction.newBuilder()
+                        .signedTransactionBytes(signedTransactionBytes)
+                        .build();
                 inputBuffer = DataBuffer.wrap(asByteArray(tx));
 
                 // When we parse and check, then the parsing fails because this is an TRANSACTION_HAS_UNKNOWN_FIELDS
@@ -431,8 +428,7 @@ class WorkflowOnsetTest extends AppTestBase {
         @DisplayName("If some random exception is thrown from OnsetChecker, the exception is bubbled up")
         void randomException() throws PreCheckException {
             // Given a OnsetChecker that will throw a RuntimeException
-            when(checker.checkTransactionBody(any())).thenThrow
-                    (new RuntimeException("checkTransactionBody exception"));
+            when(checker.checkTransactionBody(any())).thenThrow(new RuntimeException("checkTransactionBody exception"));
 
             // When we parse and check, then the check fails with the runtime exception
             assertThatThrownBy(() -> onset.parseAndCheck(ctx, inputBuffer))
@@ -445,7 +441,7 @@ class WorkflowOnsetTest extends AppTestBase {
         // The first byte is the "tag" and the high order 5 bits are the field number. The low order 3 bits
         // are the wire type. But the field number is 0, which is not valid. And the wire
         // type is 7 which is not a valid wire type. So this is doubly wrong.
-        return new byte[] { 0b00000111 };
+        return new byte[] {0b00000111};
     }
 
     private <T extends Record> Bytes appendUnknownField(@NonNull final Codec<T> codec, T tx) {

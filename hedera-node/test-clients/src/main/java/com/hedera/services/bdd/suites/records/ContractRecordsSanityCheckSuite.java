@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.records;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -68,80 +69,47 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
 
     private HapiSpec contractDeleteRecordSanityChecks() {
         return defaultHapiSpec("ContractDeleteRecordSanityChecks")
-                .given(
-                        flattened(
-                                uploadInitCode(BALANCE_LOOKUP),
-                                contractCreate(BALANCE_LOOKUP).balance(1_000L),
-                                takeBalanceSnapshots(
-                                        BALANCE_LOOKUP,
-                                        FUNDING,
-                                        NODE,
-                                        STAKING_REWARD,
-                                        NODE_REWARD,
-                                        DEFAULT_PAYER)))
+                .given(flattened(
+                        uploadInitCode(BALANCE_LOOKUP),
+                        contractCreate(BALANCE_LOOKUP).balance(1_000L),
+                        takeBalanceSnapshots(
+                                BALANCE_LOOKUP, FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER)))
                 .when(contractDelete(BALANCE_LOOKUP).via("txn").transferAccount(DEFAULT_PAYER))
                 .then(
                         validateTransferListForBalances(
                                 "txn",
-                                List.of(
-                                        FUNDING,
-                                        NODE,
-                                        STAKING_REWARD,
-                                        NODE_REWARD,
-                                        DEFAULT_PAYER,
-                                        BALANCE_LOOKUP),
+                                List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER, BALANCE_LOOKUP),
                                 Set.of(BALANCE_LOOKUP)),
                         validateRecordTransactionFees("txn"));
     }
 
     private HapiSpec contractCreateRecordSanityChecks() {
         return defaultHapiSpec("ContractCreateRecordSanityChecks")
-                .given(
-                        flattened(
-                                uploadInitCode(BALANCE_LOOKUP),
-                                takeBalanceSnapshots(
-                                        FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER)))
+                .given(flattened(
+                        uploadInitCode(BALANCE_LOOKUP),
+                        takeBalanceSnapshots(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER)))
                 .when(contractCreate(BALANCE_LOOKUP).balance(1_000L).via("txn"))
                 .then(
                         validateTransferListForBalances(
                                 "txn",
-                                List.of(
-                                        FUNDING,
-                                        NODE,
-                                        STAKING_REWARD,
-                                        NODE_REWARD,
-                                        DEFAULT_PAYER,
-                                        BALANCE_LOOKUP)),
+                                List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER, BALANCE_LOOKUP)),
                         validateRecordTransactionFees("txn"));
     }
 
     private HapiSpec contractCallWithSendRecordSanityChecks() {
         return defaultHapiSpec("ContractCallWithSendRecordSanityChecks")
-                .given(
-                        flattened(
-                                uploadInitCode(PAYABLE_CONTRACT),
-                                contractCreate(PAYABLE_CONTRACT),
-                                UtilVerbs.takeBalanceSnapshots(
-                                        PAYABLE_CONTRACT,
-                                        FUNDING,
-                                        NODE,
-                                        STAKING_REWARD,
-                                        NODE_REWARD,
-                                        DEFAULT_PAYER)))
-                .when(
-                        contractCall(PAYABLE_CONTRACT, "deposit", BigInteger.valueOf(1_000L))
-                                .via("txn")
-                                .sending(1_000L))
+                .given(flattened(
+                        uploadInitCode(PAYABLE_CONTRACT),
+                        contractCreate(PAYABLE_CONTRACT),
+                        UtilVerbs.takeBalanceSnapshots(
+                                PAYABLE_CONTRACT, FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER)))
+                .when(contractCall(PAYABLE_CONTRACT, "deposit", BigInteger.valueOf(1_000L))
+                        .via("txn")
+                        .sending(1_000L))
                 .then(
                         validateTransferListForBalances(
                                 "txn",
-                                List.of(
-                                        FUNDING,
-                                        NODE,
-                                        STAKING_REWARD,
-                                        NODE_REWARD,
-                                        DEFAULT_PAYER,
-                                        PAYABLE_CONTRACT)),
+                                List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER, PAYABLE_CONTRACT)),
                         validateRecordTransactionFees("txn"));
     }
 
@@ -153,123 +121,83 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
         BigInteger stopBalance = BigInteger.valueOf(399_999L);
 
         String[] canonicalAccounts = {FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER};
-        String[] altruists =
-                IntStream.range(0, numAltruists)
-                        .mapToObj(i -> String.format("Altruist%s", (char) ('A' + i)))
-                        .toArray(String[]::new);
+        String[] altruists = IntStream.range(0, numAltruists)
+                .mapToObj(i -> String.format("Altruist%s", (char) ('A' + i)))
+                .toArray(String[]::new);
 
         return defaultHapiSpec("CircularTransfersRecordSanityChecks")
-                .given(
-                        flattened(
-                                uploadInitCode(contractName),
-                                Stream.of(altruists)
-                                        .map(
-                                                suffix ->
-                                                        createDefaultContract(contractName + suffix)
-                                                                .bytecode(contractName))
-                                        .toArray(HapiSpecOperation[]::new),
-                                Stream.of(altruists)
-                                        .map(
-                                                suffix ->
-                                                        contractCallWithTuple(
-                                                                        contractName + suffix,
-                                                                        SET_NODES_ABI,
-                                                                        spec ->
-                                                                                Tuple.singleton(
-                                                                                        Stream.of(
-                                                                                                        altruists)
-                                                                                                .map(
-                                                                                                        a ->
-                                                                                                                BigInteger
-                                                                                                                        .valueOf(
-                                                                                                                                spec.registry()
-                                                                                                                                        .getContractId(
-                                                                                                                                                contractName
-                                                                                                                                                        + a)
-                                                                                                                                        .getContractNum()))
-                                                                                                .toArray(
-                                                                                                        BigInteger
-                                                                                                                        []
-                                                                                                                ::new)))
-                                                                .gas(120_000)
-                                                                .via(
-                                                                        "txnFor"
-                                                                                + contractName
-                                                                                + suffix)
-                                                                .sending(
-                                                                        initBalanceFn.applyAsLong(
-                                                                                contractName
-                                                                                        + suffix)))
-                                        .toArray(HapiSpecOperation[]::new),
-                                UtilVerbs.takeBalanceSnapshots(
-                                        Stream.of(
-                                                        Stream.of(altruists)
-                                                                .map(
-                                                                        suffix ->
-                                                                                contractName
-                                                                                        + suffix),
-                                                        Stream.of(canonicalAccounts))
-                                                .flatMap(identity())
-                                                .toArray(String[]::new))))
-                .when(
-                        contractCallWithFunctionAbi(
-                                        contractName + altruists[0],
-                                        RECEIVE_AND_SEND_ABI,
-                                        initKeepAmountDivisor,
-                                        stopBalance)
-                                .via(ALTRUISTIC_TXN))
+                .given(flattened(
+                        uploadInitCode(contractName),
+                        Stream.of(altruists)
+                                .map(suffix -> createDefaultContract(contractName + suffix)
+                                        .bytecode(contractName))
+                                .toArray(HapiSpecOperation[]::new),
+                        Stream.of(altruists)
+                                .map(suffix -> contractCallWithTuple(
+                                                contractName + suffix,
+                                                SET_NODES_ABI,
+                                                spec -> Tuple.singleton(Stream.of(altruists)
+                                                        .map(a -> BigInteger.valueOf(spec.registry()
+                                                                .getContractId(contractName + a)
+                                                                .getContractNum()))
+                                                        .toArray(BigInteger[]::new)))
+                                        .gas(120_000)
+                                        .via("txnFor" + contractName + suffix)
+                                        .sending(initBalanceFn.applyAsLong(contractName + suffix)))
+                                .toArray(HapiSpecOperation[]::new),
+                        UtilVerbs.takeBalanceSnapshots(Stream.of(
+                                        Stream.of(altruists).map(suffix -> contractName + suffix),
+                                        Stream.of(canonicalAccounts))
+                                .flatMap(identity())
+                                .toArray(String[]::new))))
+                .when(contractCallWithFunctionAbi(
+                                contractName + altruists[0], RECEIVE_AND_SEND_ABI, initKeepAmountDivisor, stopBalance)
+                        .via(ALTRUISTIC_TXN))
                 .then(
                         validateTransferListForBalances(
                                 ALTRUISTIC_TXN,
                                 Stream.concat(
                                                 Stream.of(canonicalAccounts),
-                                                Stream.of(altruists)
-                                                        .map(suffix -> contractName + suffix))
+                                                Stream.of(altruists).map(suffix -> contractName + suffix))
                                         .toList()),
                         validateRecordTransactionFees(ALTRUISTIC_TXN),
-                        addLogInfo(
-                                (spec, infoLog) -> {
-                                    long[] finalBalances =
-                                            IntStream.range(0, numAltruists)
-                                                    .mapToLong(
-                                                            ignore -> initBalanceFn.applyAsLong(""))
-                                                    .toArray();
-                                    int i = 0;
-                                    long divisor = initKeepAmountDivisor;
-                                    while (true) {
-                                        long toKeep = finalBalances[i] / divisor;
-                                        if (toKeep < stopBalance.longValue()) {
-                                            break;
-                                        }
-                                        int j = (i + 1) % numAltruists;
-                                        finalBalances[j] += (finalBalances[i] - toKeep);
-                                        finalBalances[i] = toKeep;
-                                        i = j;
-                                        divisor++;
-                                    }
+                        addLogInfo((spec, infoLog) -> {
+                            long[] finalBalances = IntStream.range(0, numAltruists)
+                                    .mapToLong(ignore -> initBalanceFn.applyAsLong(""))
+                                    .toArray();
+                            int i = 0;
+                            long divisor = initKeepAmountDivisor;
+                            while (true) {
+                                long toKeep = finalBalances[i] / divisor;
+                                if (toKeep < stopBalance.longValue()) {
+                                    break;
+                                }
+                                int j = (i + 1) % numAltruists;
+                                finalBalances[j] += (finalBalances[i] - toKeep);
+                                finalBalances[i] = toKeep;
+                                i = j;
+                                divisor++;
+                            }
 
-                                    infoLog.info("Expected Final Balances");
-                                    infoLog.info("-----------------------");
-                                    for (i = 0; i < numAltruists; i++) {
-                                        infoLog.info("  {} = {} tinyBars", i, finalBalances[i]);
-                                    }
-                                }));
+                            infoLog.info("Expected Final Balances");
+                            infoLog.info("-----------------------");
+                            for (i = 0; i < numAltruists; i++) {
+                                infoLog.info("  {} = {} tinyBars", i, finalBalances[i]);
+                            }
+                        }));
     }
 
     private HapiSpec contractUpdateRecordSanityChecks() {
         return defaultHapiSpec("ContractUpdateRecordSanityChecks")
-                .given(
-                        flattened(
-                                newKeyNamed("newKey").type(KeyFactory.KeyType.SIMPLE),
-                                uploadInitCode(BALANCE_LOOKUP),
-                                contractCreate(BALANCE_LOOKUP).balance(1_000L),
-                                takeBalanceSnapshots(
-                                        FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER)))
+                .given(flattened(
+                        newKeyNamed("newKey").type(KeyFactory.KeyType.SIMPLE),
+                        uploadInitCode(BALANCE_LOOKUP),
+                        contractCreate(BALANCE_LOOKUP).balance(1_000L),
+                        takeBalanceSnapshots(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER)))
                 .when(contractUpdate(BALANCE_LOOKUP).newKey("newKey").via("txn").fee(95_000_000L))
                 .then(
                         validateTransferListForBalances(
-                                "txn",
-                                List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER)),
+                                "txn", List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER)),
                         validateRecordTransactionFees("txn"));
     }
 
@@ -280,14 +208,14 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
 
     private static final String SET_NODES_ABI =
             "{ \"constant\": false, \"inputs\": [ { \"internalType\": \"uint64[]\", \"name\":"
-                + " \"accounts\", \"type\": \"uint64[]\" }     ], \"name\": \"setNodes\","
-                + " \"outputs\": [], \"payable\": true, \"stateMutability\": \"payable\", \"type\":"
-                + " \"function\" }";
+                    + " \"accounts\", \"type\": \"uint64[]\" }     ], \"name\": \"setNodes\","
+                    + " \"outputs\": [], \"payable\": true, \"stateMutability\": \"payable\", \"type\":"
+                    + " \"function\" }";
 
     private static final String RECEIVE_AND_SEND_ABI =
             "{ \"constant\": false, \"inputs\": [ { \"internalType\": \"uint32\", \"name\":"
-                + " \"keepAmountDivisor\", \"type\": \"uint32\" }, { \"internalType\": \"uint256\","
-                + " \"name\": \"stopBalance\", \"type\": \"uint256\" } ], \"name\":"
-                + " \"receiveAndSend\", \"outputs\": [], \"payable\": true, \"stateMutability\":"
-                + " \"payable\", \"type\": \"function\" }";
+                    + " \"keepAmountDivisor\", \"type\": \"uint32\" }, { \"internalType\": \"uint256\","
+                    + " \"name\": \"stopBalance\", \"type\": \"uint256\" } ], \"name\":"
+                    + " \"receiveAndSend\", \"outputs\": [], \"payable\": true, \"stateMutability\":"
+                    + " \"payable\", \"type\": \"function\" }";
 }

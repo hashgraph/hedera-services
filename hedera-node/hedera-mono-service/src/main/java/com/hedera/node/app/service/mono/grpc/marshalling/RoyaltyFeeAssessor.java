@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.FeeType.ROYALTY_FEE;
@@ -82,24 +83,16 @@ public class RoyaltyFeeAssessor {
                         return INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
                     }
                     final var receiver = Id.fromGrpcAccount(change.counterPartyAccountId());
-                    final var fallbackFee =
-                            FcCustomFee.fixedFee(
-                                    fallback.getUnitsToCollect(),
-                                    fallback.getTokenDenomination(),
-                                    collector.asEntityId(),
-                                    fee.getAllCollectorsAreExempt());
-                    fixedFeeAssessor.assess(
-                            receiver, customFeeMeta, fallbackFee, changeManager, accumulator);
+                    final var fallbackFee = FcCustomFee.fixedFee(
+                            fallback.getUnitsToCollect(),
+                            fallback.getTokenDenomination(),
+                            collector.asEntityId(),
+                            fee.getAllCollectorsAreExempt());
+                    fixedFeeAssessor.assess(receiver, customFeeMeta, fallbackFee, changeManager, accumulator);
                 }
             } else if (!customFeePayerExemptions.isPayerExempt(customFeeMeta, fee, payer)) {
                 final var fractionalValidity =
-                        chargeRoyalty(
-                                collector,
-                                spec,
-                                exchangedValue,
-                                fungibleAdjuster,
-                                changeManager,
-                                accumulator);
+                        chargeRoyalty(collector, spec, exchangedValue, fungibleAdjuster, changeManager, accumulator);
                 if (fractionalValidity != OK) {
                     return fractionalValidity;
                 }
@@ -120,9 +113,7 @@ public class RoyaltyFeeAssessor {
             final List<AssessedCustomFeeWrapper> accumulator) {
         for (var exchange : exchangedValue) {
             long value = exchange.originalUnits();
-            long royaltyFee =
-                    AdjustmentUtils.safeFractionMultiply(
-                            spec.numerator(), spec.denominator(), value);
+            long royaltyFee = AdjustmentUtils.safeFractionMultiply(spec.numerator(), spec.denominator(), value);
             if (exchange.getAggregatedUnits() < royaltyFee) {
                 return INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
             }
@@ -131,19 +122,13 @@ public class RoyaltyFeeAssessor {
             /* The id of the charging token is only used here to avoid recursively charging
             on fees charged in the units of their denominating token; but this is a credit,
             hence the id is irrelevant and we can use MISSING_ID. */
-            fungibleAdjuster.adjustedChange(
-                    collector, MISSING_ID, denom, royaltyFee, changeManager);
-            final var effPayerAccountNum = new AccountID[] {exchange.getAccount().asGrpcAccount()};
+            fungibleAdjuster.adjustedChange(collector, MISSING_ID, denom, royaltyFee, changeManager);
+            final var effPayerAccountNum =
+                    new AccountID[] {exchange.getAccount().asGrpcAccount()};
             final var collectorId = collector.asEntityId();
-            final var assessed =
-                    exchange.isForHbar()
-                            ? new AssessedCustomFeeWrapper(
-                                    collectorId, royaltyFee, effPayerAccountNum)
-                            : new AssessedCustomFeeWrapper(
-                                    collectorId,
-                                    denom.asEntityId(),
-                                    royaltyFee,
-                                    effPayerAccountNum);
+            final var assessed = exchange.isForHbar()
+                    ? new AssessedCustomFeeWrapper(collectorId, royaltyFee, effPayerAccountNum)
+                    : new AssessedCustomFeeWrapper(collectorId, denom.asEntityId(), royaltyFee, effPayerAccountNum);
             accumulator.add(assessed);
         }
         return OK;

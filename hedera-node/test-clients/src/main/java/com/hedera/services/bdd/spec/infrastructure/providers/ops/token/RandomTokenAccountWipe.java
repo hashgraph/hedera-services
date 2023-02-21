@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.token;
 
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.token.RandomTokenDissociation.explicit;
@@ -37,13 +38,12 @@ public class RandomTokenAccountWipe implements OpProvider {
         this.tokenRels = tokenRels;
     }
 
-    private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(
-                    TOKEN_WAS_DELETED,
-                    TOKEN_HAS_NO_WIPE_KEY,
-                    CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT,
-                    INVALID_WIPING_AMOUNT,
-                    TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+    private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
+            TOKEN_WAS_DELETED,
+            TOKEN_HAS_NO_WIPE_KEY,
+            CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT,
+            INVALID_WIPING_AMOUNT,
+            TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
     @Override
     public Optional<HapiSpecOperation> get() {
@@ -55,10 +55,9 @@ public class RandomTokenAccountWipe implements OpProvider {
         var implicitRel = relToWipe.get();
         var rel = explicit(implicitRel);
         var amount = BASE_RANDOM.nextLong(1, RandomToken.DEFAULT_MAX_SUPPLY);
-        var op =
-                wipeTokenAccount(rel.getRight(), rel.getLeft(), amount)
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                        .hasKnownStatusFrom(permissibleOutcomes);
+        var op = wipeTokenAccount(rel.getRight(), rel.getLeft(), amount)
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                .hasKnownStatusFrom(permissibleOutcomes);
         return Optional.of(op);
     }
 }

@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.query;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
+import static com.hedera.hapi.node.base.HederaFunctionality.NETWORK_GET_EXECUTION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
@@ -42,6 +45,7 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.workflows.dispatcher.StoreFactory;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hedera.pbj.runtime.io.Bytes;
 import com.hedera.pbj.runtime.io.DataBuffer;
@@ -60,6 +64,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,9 +76,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private static final EnumSet<ResponseType> UNSUPPORTED_RESPONSE_TYPES =
             EnumSet.of(ANSWER_STATE_PROOF, COST_ANSWER_STATE_PROOF);
     private static final List<HederaFunctionality> RESTRICTED_FUNCTIONALITIES =
-            List.of(
-                    HederaFunctionality.NETWORK_GET_EXECUTION_TIME,
-                    HederaFunctionality.GET_ACCOUNT_DETAILS);
+            List.of(NETWORK_GET_EXECUTION_TIME, GET_ACCOUNT_DETAILS);
 
     private final NodeInfo nodeInfo;
     private final CurrentPlatformStatus currentPlatformStatus;
@@ -84,11 +87,9 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final QueryDispatcher dispatcher;
 
     /** A map of counter metrics for each type of query received */
-    private final Map<HederaFunctionality, Counter> received =
-            new EnumMap<>(HederaFunctionality.class);
+    private final Map<HederaFunctionality, Counter> received = new EnumMap<>(HederaFunctionality.class);
     /** A map of counter metrics for each type of query answered */
-    private final Map<HederaFunctionality, Counter> answered =
-            new EnumMap<>(HederaFunctionality.class);
+    private final Map<HederaFunctionality, Counter> answered = new EnumMap<>(HederaFunctionality.class);
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
@@ -104,6 +105,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      * @param metrics the {@link Metrics} with workflow-specific metrics
      * @throws NullPointerException if one of the arguments is {@code null}
      */
+    @Inject
     public QueryWorkflowImpl(
             @NonNull final NodeInfo nodeInfo,
             @NonNull final CurrentPlatformStatus currentPlatformStatus,
@@ -125,15 +127,11 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         for (var function : HederaFunctionality.values()) {
             var name = function.name() + "Received";
             var desc = "The number of queries received for " + function.name();
-            received.put(
-                    function,
-                    metrics.getOrCreate(new Counter.Config("app", name).withDescription(desc)));
+            received.put(function, metrics.getOrCreate(new Counter.Config("app", name).withDescription(desc)));
 
             name = function.name() + "Answered";
             desc = "The number of queries answered for " + function.name();
-            answered.put(
-                    function,
-                    metrics.getOrCreate(new Counter.Config("app", name).withDescription(desc)));
+            answered.put(function, metrics.getOrCreate(new Counter.Config("app", name).withDescription(desc)));
         }
     }
 
@@ -185,7 +183,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 2. Check query throttles
-            if (throttleAccumulator.shouldThrottle(functionality)) {
+            if (throttleAccumulator.shouldThrottleQuery(functionality, query)) {
                 throw new PreCheckException(BUSY);
             }
 
@@ -215,7 +213,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 4. Check validity
-            dispatcher.validate(state, query);
+            final var storeFactory = new StoreFactory(state);
+            dispatcher.validate(storeFactory, query);
 
             // 5. Submit payment to platform
             if (paymentRequired) {
@@ -238,13 +237,12 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             } else {
                 // 6.ii Find response
                 final var header = createResponseHeader(responseType, OK, fee);
-                response = dispatcher.getResponse(state, query, header);
+                response = dispatcher.getResponse(storeFactory, query, header);
             }
 
             answered.get(functionality).increment();
         } catch (InsufficientBalanceException e) {
-            final var header =
-                    createResponseHeader(responseType, e.responseCode(), e.getEstimatedFee());
+            final var header = createResponseHeader(responseType, e.responseCode(), e.getEstimatedFee());
             response = handler.createEmptyResponse(header);
         } catch (PreCheckException e) {
             final var header = createResponseHeader(responseType, e.responseCode(), fee);
@@ -260,9 +258,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     }
 
     private static ResponseHeader createResponseHeader(
-            @NonNull final ResponseType type,
-            @NonNull final ResponseCodeEnum responseCode,
-            final long fee) {
+            @NonNull final ResponseType type, @NonNull final ResponseCodeEnum responseCode, final long fee) {
         return ResponseHeader.newBuilder()
                 .responseType(type)
                 .nodeTransactionPrecheckCode(responseCode)
@@ -288,10 +284,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
         public Bytes getBytes() {
             return Bytes.wrap(out.toByteArray());
-        }
-
-        public byte[] getByteArray() {
-            return out.toByteArray();
         }
     }
 }

@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.query;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
@@ -34,8 +36,11 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /** This class contains all checks related to instances of {@link Query} */
+@Singleton
 public class QueryChecker {
 
     private final WorkflowOnset onset;
@@ -53,9 +58,10 @@ public class QueryChecker {
      * @param queryFeeCheck the {@link QueryFeeCheck} that checks if fees can be paid
      * @param authorizer the {@link Authorizer} that checks, if the caller is authorized
      * @param cryptoTransferHandler the {@link CryptoTransferHandler} that validates a contained
-     *     CryptoTransfer
+     *     {@link HederaFunctionality#CRYPTO_TRANSFER}.
      * @throws NullPointerException if one of the arguments is {@code null}
      */
+    @Inject
     public QueryChecker(
             @NonNull final WorkflowOnset onset,
             @NonNull final HederaAccountNumbers accountNumbers,
@@ -70,7 +76,7 @@ public class QueryChecker {
     }
 
     /**
-     * Validates the CryptoTransfer that is contained in a query
+     * Validates the {@link HederaFunctionality#CRYPTO_TRANSFER} that is contained in a query
      *
      * @param session the {@link SessionContext} with all parsers
      * @param txn the {@link Transaction} that needs to be checked
@@ -78,13 +84,12 @@ public class QueryChecker {
      * @throws PreCheckException if validation fails
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionBody validateCryptoTransfer(
-            @NonNull final SessionContext session, @NonNull final Transaction txn)
+    public TransactionBody validateCryptoTransfer(@NonNull final SessionContext session, @NonNull final Transaction txn)
             throws PreCheckException {
         requireNonNull(session);
         requireNonNull(txn);
         final var onsetResult = onset.check(session, txn);
-        if (onsetResult.functionality() != HederaFunctionality.CRYPTO_TRANSFER) {
+        if (onsetResult.functionality() != CRYPTO_TRANSFER) {
             throw new PreCheckException(INSUFFICIENT_TX_FEE);
         }
         final var txBody = onsetResult.txBody();
@@ -96,7 +101,7 @@ public class QueryChecker {
      * Validates the account balances needed in a query
      *
      * @param payer the {@link AccountID} of the query's payer
-     * @param txBody the {@link TransactionBody} of the CryptoTransfer
+     * @param txBody the {@link TransactionBody} of the {@link HederaFunctionality#CRYPTO_TRANSFER}
      * @param fee the fee that needs to be paid
      * @throws InsufficientBalanceException if validation fails
      * @throws NullPointerException if one of the arguments is {@code null}
@@ -122,8 +127,7 @@ public class QueryChecker {
         }
 
         final var xfers = txBody.cryptoTransfer().orElseThrow().transfers().accountAmounts();
-        final var feeStatus =
-                queryFeeCheck.nodePaymentValidity2(xfers, fee, txBody.nodeAccountID());
+        final var feeStatus = queryFeeCheck.nodePaymentValidity2(xfers, fee, txBody.nodeAccountID());
         if (feeStatus != OK) {
             throw new InsufficientBalanceException(feeStatus, fee);
         }
@@ -137,8 +141,7 @@ public class QueryChecker {
      * @throws PreCheckException if permissions are not sufficient
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void checkPermissions(
-            @NonNull final AccountID payer, @NonNull final HederaFunctionality functionality)
+    public void checkPermissions(@NonNull final AccountID payer, @NonNull final HederaFunctionality functionality)
             throws PreCheckException {
         requireNonNull(payer);
         requireNonNull(functionality);

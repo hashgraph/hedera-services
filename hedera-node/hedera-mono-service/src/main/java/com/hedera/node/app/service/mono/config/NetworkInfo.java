@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.config;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_ID;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_ID;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.google.protobuf.ByteString;
@@ -31,7 +32,7 @@ public class NetworkInfo {
     private ByteString ledgerId;
 
     @Inject
-    public NetworkInfo(@CompositeProps PropertySource properties) {
+    public NetworkInfo(@CompositeProps final PropertySource properties) {
         this.properties = properties;
     }
 
@@ -49,7 +50,7 @@ public class NetworkInfo {
         return ledgerId;
     }
 
-    private ByteString rationalize(String ledgerProperty) {
+    private ByteString rationalize(final String ledgerProperty) {
         if (!ledgerProperty.startsWith("0x")) {
             throw new IllegalArgumentException("Invalid LedgerId provided in properties ");
         } else {
@@ -57,7 +58,7 @@ public class NetworkInfo {
                 final var hex = ledgerProperty.substring(2);
                 final var bytes = unhex(hex);
                 return ByteString.copyFrom(bytes);
-            } catch (Exception e) {
+            } catch (final Exception e) {
                 throw new IllegalArgumentException("Invalid LedgerId provided in properties ", e);
             }
         }

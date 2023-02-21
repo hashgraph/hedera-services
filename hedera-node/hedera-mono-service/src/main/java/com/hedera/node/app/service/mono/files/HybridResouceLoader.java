@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files;
 
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asFile;
@@ -52,8 +53,7 @@ public class HybridResouceLoader {
 
     @Nullable
     private byte[] readAllJarResourceBytes(final String resourceLoc) {
-        try (final var in =
-                HybridResouceLoader.class.getClassLoader().getResourceAsStream(resourceLoc)) {
+        try (final var in = HybridResouceLoader.class.getClassLoader().getResourceAsStream(resourceLoc)) {
             if (null == in) {
                 throw new IOException("Could not load resource '" + resourceLoc + "'");
             }

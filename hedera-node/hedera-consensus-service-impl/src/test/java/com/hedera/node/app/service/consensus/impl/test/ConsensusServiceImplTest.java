@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.consensus.impl.test;
 
 import com.hedera.node.app.service.consensus.ConsensusService;
@@ -32,7 +33,6 @@ class ConsensusServiceImplTest {
         Assertions.assertEquals(
                 ConsensusServiceImpl.class,
                 service.getClass(),
-                "We must always receive an instance of type "
-                        + ConsensusServiceImpl.class.getName());
+                "We must always receive an instance of type " + ConsensusServiceImpl.class.getName());
     }
 }

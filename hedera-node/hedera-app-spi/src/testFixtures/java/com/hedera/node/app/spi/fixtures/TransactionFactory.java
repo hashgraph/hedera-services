@@ -1,5 +1,24 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.spi.fixtures;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
@@ -11,11 +30,16 @@ import com.hedera.pbj.runtime.io.DataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.Instant;
 
+/**
+ * A utility for making various types of test transactions available to test classes. Rather than
+ * extending from some base class, just implement this interface with your test class to get
+ * access to these goodies.
+ */
 public interface TransactionFactory {
     default Transaction simpleCryptoTransfer() {
-        final var cryptoTransferTx = CryptoTransferTransactionBody.newBuilder()
-                .build();
+        final var cryptoTransferTx = CryptoTransferTransactionBody.newBuilder().build();
 
         final var txBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().build())
@@ -45,11 +69,32 @@ public interface TransactionFactory {
         }
     }
 
-    default Bytes asBytes(@NonNull final Transaction tx) {
-        return Bytes.wrap(asByteArray(tx));
-    }
-
     default <R extends Record> Bytes asBytes(@NonNull final Codec<R> codec, @NonNull final R r) {
         return Bytes.wrap(asByteArray(codec, r));
+    }
+
+    default AccountID asAccount(@NonNull final String id) {
+        final var parts = id.split("\\.");
+        return AccountID.newBuilder()
+                .shardNum(Long.parseLong(parts[0]))
+                .realmNum(Long.parseLong(parts[1]))
+                .accountNum(Long.parseLong(parts[2]))
+                .build();
+    }
+
+    default ContractID asContract(String id) {
+        final var parts = id.split("\\.");
+        return ContractID.newBuilder()
+                .shardNum(Long.parseLong(parts[0]))
+                .realmNum(Long.parseLong(parts[1]))
+                .contractNum(Long.parseLong(parts[2]))
+                .build();
+    }
+
+    default Timestamp asTimestamp(final Instant when) {
+        return Timestamp.newBuilder()
+                .seconds(when.getEpochSecond())
+                .nanos(when.getNano())
+                .build();
     }
 }

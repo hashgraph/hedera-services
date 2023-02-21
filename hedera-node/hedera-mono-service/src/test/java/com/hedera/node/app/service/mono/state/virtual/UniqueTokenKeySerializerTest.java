@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,8 +40,7 @@ class UniqueTokenKeySerializerTest {
 
         final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
         final ByteBuffer inputBuffer = ByteBuffer.wrap(byteStream.toByteArray());
-        final UniqueTokenKey dst =
-                serializer.deserialize(inputBuffer, UniqueTokenKey.CURRENT_VERSION);
+        final UniqueTokenKey dst = serializer.deserialize(inputBuffer, UniqueTokenKey.CURRENT_VERSION);
         assertThat(dst.getNum()).isEqualTo(Long.MAX_VALUE);
         assertThat(dst.getTokenSerial()).isEqualTo(EXAMPLE_SERIAL);
     }
@@ -49,18 +49,15 @@ class UniqueTokenKeySerializerTest {
     void serializeUniqueTokenKey_shouldReturnExpectedBytes() throws IOException {
         final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
         final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
-        final int len =
-                serializer.serialize(
-                        new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL),
-                        new SerializableDataOutputStream(byteStream));
+        final int len = serializer.serialize(
+                new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL), new SerializableDataOutputStream(byteStream));
 
         assertThat(len).isEqualTo(17);
         assertThat(byteStream.toByteArray())
-                .isEqualTo(
-                        Bytes.concat(
-                                new byte[] {(byte) 0x88},
-                                Longs.toByteArray(Long.MAX_VALUE),
-                                Longs.toByteArray(EXAMPLE_SERIAL)));
+                .isEqualTo(Bytes.concat(
+                        new byte[] {(byte) 0x88},
+                        Longs.toByteArray(Long.MAX_VALUE),
+                        Longs.toByteArray(EXAMPLE_SERIAL)));
     }
 
     @Test
@@ -70,27 +67,17 @@ class UniqueTokenKeySerializerTest {
         buffer.rewind();
         final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
 
-        assertThat(
-                        serializer.equals(
-                                buffer,
-                                UniqueTokenKey.CURRENT_VERSION,
-                                new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL)))
+        assertThat(serializer.equals(
+                        buffer, UniqueTokenKey.CURRENT_VERSION, new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL)))
                 .isTrue();
 
         buffer.rewind();
-        assertThat(
-                        serializer.equals(
-                                buffer,
-                                UniqueTokenKey.CURRENT_VERSION,
-                                new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL)))
+        assertThat(serializer.equals(
+                        buffer, UniqueTokenKey.CURRENT_VERSION, new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL)))
                 .isTrue();
 
         buffer.rewind();
-        assertThat(
-                        serializer.equals(
-                                buffer,
-                                UniqueTokenKey.CURRENT_VERSION,
-                                new UniqueTokenKey(10, EXAMPLE_SERIAL)))
+        assertThat(serializer.equals(buffer, UniqueTokenKey.CURRENT_VERSION, new UniqueTokenKey(10, EXAMPLE_SERIAL)))
                 .isFalse();
     }
 
@@ -135,14 +122,12 @@ class UniqueTokenKeySerializerTest {
     void noopFunctions_forTestCoverage() throws IOException {
         final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        final SerializableDataOutputStream dataOutputStream =
-                new SerializableDataOutputStream(outputStream);
+        final SerializableDataOutputStream dataOutputStream = new SerializableDataOutputStream(outputStream);
         serializer.serialize(dataOutputStream);
         assertThat(outputStream.toByteArray()).isEmpty();
 
         final SerializableDataInputStream dataInputStream =
-                new SerializableDataInputStream(
-                        new ByteArrayInputStream(outputStream.toByteArray()));
+                new SerializableDataInputStream(new ByteArrayInputStream(outputStream.toByteArray()));
         serializer.deserialize(dataInputStream, 1);
     }
 }

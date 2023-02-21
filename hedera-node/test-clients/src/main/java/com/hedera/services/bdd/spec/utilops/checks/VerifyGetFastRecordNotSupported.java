@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops.checks;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -30,14 +31,10 @@ public class VerifyGetFastRecordNotSupported extends UtilOp {
         TransactionGetFastRecordQuery.Builder op = TransactionGetFastRecordQuery.newBuilder();
         Query query = Query.newBuilder().setTransactionGetFastRecord(op).build();
         Response response =
-                spec.clients()
-                        .getCryptoSvcStub(targetNodeFor(spec), useTls)
-                        .getFastTransactionRecord(query);
+                spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getFastTransactionRecord(query);
         Assertions.assertEquals(
                 NOT_SUPPORTED,
-                response.getTransactionGetFastRecord()
-                        .getHeader()
-                        .getNodeTransactionPrecheckCode());
+                response.getTransactionGetFastRecord().getHeader().getNodeTransactionPrecheckCode());
         return false;
     }
 }

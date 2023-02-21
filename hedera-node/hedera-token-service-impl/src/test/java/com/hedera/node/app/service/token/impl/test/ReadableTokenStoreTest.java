@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -45,8 +46,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ReadableTokenStoreTest {
-    @Mock private ReadableKVState<Long, MerkleToken> tokens;
-    @Mock private ReadableStates states;
+    @Mock
+    private ReadableKVState<Long, MerkleToken> tokens;
+
+    @Mock
+    private ReadableStates states;
+
     private static final String TOKENS = "TOKENS";
     private final TokenID tokenId = TokenID.newBuilder().tokenNum(2000).build();
     private final String symbol = "TestToken";
@@ -64,16 +69,8 @@ class ReadableTokenStoreTest {
     private final JKey supplyKey = new JEd25519Key("not-a-real-supplyKey".getBytes());
     private final JKey feeScheduleKey = new JEd25519Key("not-a-real-feeScheduleKey".getBytes());
     private final JKey pauseKey = new JEd25519Key("not-a-real-pauseKey".getBytes());
-    private final MerkleToken token =
-            new MerkleToken(
-                    expiry,
-                    otherTotalSupply,
-                    decimals,
-                    symbol,
-                    name,
-                    freezeDefault,
-                    accountsKycGrantedByDefault,
-                    treasury);
+    private final MerkleToken token = new MerkleToken(
+            expiry, otherTotalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 
     private ReadableTokenStore subject;
 
@@ -98,10 +95,7 @@ class ReadableTokenStoreTest {
         token.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
         token.setSupplyType(TokenSupplyType.INFINITE);
         token.setAccountsFrozenByDefault(true);
-        token.setFeeSchedule(
-                List.of(
-                        FcCustomFee.fixedFee(
-                                1, new EntityId(1, 2, 5), new EntityId(1, 2, 5), false)));
+        token.setFeeSchedule(List.of(FcCustomFee.fixedFee(1, new EntityId(1, 2, 5), new EntityId(1, 2, 5), false)));
     }
 
     @Test
@@ -140,9 +134,7 @@ class ReadableTokenStoreTest {
     void classifiesRoyaltyWithFallback() {
         token.setTokenType(NON_FUNGIBLE_UNIQUE);
         token.setFeeSchedule(
-                List.of(
-                        FcCustomFee.royaltyFee(
-                                1, 2, new FixedFeeSpec(1, null), new EntityId(1, 2, 5), false)));
+                List.of(FcCustomFee.royaltyFee(1, 2, new FixedFeeSpec(1, null), new EntityId(1, 2, 5), false)));
         given(tokens.get(tokenId.tokenNum())).willReturn(token);
 
         final var result = subject.getTokenMeta(tokenId);
@@ -156,8 +148,7 @@ class ReadableTokenStoreTest {
     @Test
     void classifiesRoyaltyWithNoFallback() {
         token.setTokenType(NON_FUNGIBLE_UNIQUE);
-        token.setFeeSchedule(
-                List.of(FcCustomFee.royaltyFee(1, 2, null, new EntityId(1, 2, 5), false)));
+        token.setFeeSchedule(List.of(FcCustomFee.royaltyFee(1, 2, null, new EntityId(1, 2, 5), false)));
         given(tokens.get(tokenId.tokenNum())).willReturn(token);
 
         final var result = subject.getTokenMeta(tokenId);

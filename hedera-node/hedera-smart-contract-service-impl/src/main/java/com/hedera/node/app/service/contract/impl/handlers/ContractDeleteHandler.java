@@ -13,22 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.contract.impl.handlers;
 
-import com.hedera.hapi.node.base.AccountID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
  * HederaFunctionality#CONTRACT_DELETE}.
  */
+@Singleton
 public class ContractDeleteHandler implements TransactionHandler {
+    @Inject
+    public ContractDeleteHandler() {}
 
     /**
      * This method is called during the pre-handle workflow.
@@ -40,29 +47,19 @@ public class ContractDeleteHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param txBody the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
+     * @param context the {@link PreHandleContext} which collects all information that will be
+     *     passed to {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody,
-            @NonNull final AccountID payer,
-            @NonNull AccountKeyLookup keyLookup) {
-        final var op = txBody.contractDeleteInstance().orElseThrow();
-        final var meta =
-                new SigTransactionMetadataBuilder(keyLookup).txnBody(txBody).payerKeyFor(payer);
+    public void preHandle(@NonNull final PreHandleContext context) {
+        requireNonNull(context);
+        final var op = context.getTxn().contractDeleteInstance().orElseThrow();
 
-        meta.addNonPayerKey(op.contractID());
+        context.addNonPayerKey(op.contractID());
 
-        //        if (op.transferAccountID().isPresent()) {
-        //            meta.addNonPayerKeyIfReceiverSigRequired(
-        //                    op.transferAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
-        //        } else if (op.transferContractID()) {
-        //            meta.addNonPayerKeyIfReceiverSigRequired(op.transferContractID());
-        //        }
-        return meta.build();
+        op.transferAccountID().ifPresentOrElse(transferAccountId ->
+            context.addNonPayerKeyIfReceiverSigRequired(transferAccountId, INVALID_TRANSFER_ACCOUNT_ID),
+                () -> op.transferContractID().ifPresent(context::addNonPayerKeyIfReceiverSigRequired));
     }
 
     /**
@@ -75,6 +72,7 @@ public class ContractDeleteHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
+        requireNonNull(metadata);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

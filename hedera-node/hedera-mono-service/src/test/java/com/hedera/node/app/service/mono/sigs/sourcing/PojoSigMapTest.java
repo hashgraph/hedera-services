@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.sourcing;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,18 +30,14 @@ class PojoSigMapTest {
         final var fullEd25519Prefix = "01234567890123456789012345678901";
         final var fakeSig = "012345678901234567890123456789012345678901234567";
 
-        final var sigMap =
-                SignatureMap.newBuilder()
-                        .addSigPair(
-                                SignaturePair.newBuilder()
-                                        .setPubKeyPrefix(
-                                                ByteString.copyFromUtf8(partialEd25519Prefix))
-                                        .setEd25519(ByteString.copyFromUtf8(fakeSig)))
-                        .addSigPair(
-                                SignaturePair.newBuilder()
-                                        .setPubKeyPrefix(ByteString.copyFromUtf8(fullEd25519Prefix))
-                                        .setEd25519(ByteString.copyFromUtf8(fakeSig)))
-                        .build();
+        final var sigMap = SignatureMap.newBuilder()
+                .addSigPair(SignaturePair.newBuilder()
+                        .setPubKeyPrefix(ByteString.copyFromUtf8(partialEd25519Prefix))
+                        .setEd25519(ByteString.copyFromUtf8(fakeSig)))
+                .addSigPair(SignaturePair.newBuilder()
+                        .setPubKeyPrefix(ByteString.copyFromUtf8(fullEd25519Prefix))
+                        .setEd25519(ByteString.copyFromUtf8(fakeSig)))
+                .build();
 
         final var subject = PojoSigMap.fromGrpc(sigMap);
 
@@ -60,29 +57,24 @@ class PojoSigMapTest {
         final var secondFakeSig = (fakeSig.substring(1) + fakeSig.substring(0, 1));
         final var thirdFakeSig = (fakeSig.substring(2) + fakeSig.substring(0, 2));
         // and:
-        final byte[][][] expected =
-                new byte[][][] {
-                    {fakePrefix.getBytes(), fakeSig.getBytes()},
-                    {secondFakePrefix.getBytes(), secondFakeSig.getBytes()},
-                    {thirdFakePrefix.getBytes(), thirdFakeSig.getBytes()}
-                };
+        final byte[][][] expected = new byte[][][] {
+            {fakePrefix.getBytes(), fakeSig.getBytes()},
+            {secondFakePrefix.getBytes(), secondFakeSig.getBytes()},
+            {thirdFakePrefix.getBytes(), thirdFakeSig.getBytes()}
+        };
 
         // given:
-        final var grpc =
-                SignatureMap.newBuilder()
-                        .addSigPair(
-                                SignaturePair.newBuilder()
-                                        .setPubKeyPrefix(ByteString.copyFromUtf8(fakePrefix))
-                                        .setEd25519(ByteString.copyFromUtf8(fakeSig)))
-                        .addSigPair(
-                                SignaturePair.newBuilder()
-                                        .setPubKeyPrefix(ByteString.copyFromUtf8(secondFakePrefix))
-                                        .setEd25519(ByteString.copyFromUtf8(secondFakeSig)))
-                        .addSigPair(
-                                SignaturePair.newBuilder()
-                                        .setPubKeyPrefix(ByteString.copyFromUtf8(thirdFakePrefix))
-                                        .setECDSASecp256K1(ByteString.copyFromUtf8(thirdFakeSig)))
-                        .build();
+        final var grpc = SignatureMap.newBuilder()
+                .addSigPair(SignaturePair.newBuilder()
+                        .setPubKeyPrefix(ByteString.copyFromUtf8(fakePrefix))
+                        .setEd25519(ByteString.copyFromUtf8(fakeSig)))
+                .addSigPair(SignaturePair.newBuilder()
+                        .setPubKeyPrefix(ByteString.copyFromUtf8(secondFakePrefix))
+                        .setEd25519(ByteString.copyFromUtf8(secondFakeSig)))
+                .addSigPair(SignaturePair.newBuilder()
+                        .setPubKeyPrefix(ByteString.copyFromUtf8(thirdFakePrefix))
+                        .setECDSASecp256K1(ByteString.copyFromUtf8(thirdFakeSig)))
+                .build();
 
         // when:
         final var subject = PojoSigMap.fromGrpc(grpc);
@@ -101,16 +93,15 @@ class PojoSigMapTest {
         // and:
         assertEquals(3, subject.numSigsPairs());
 
-        final var expectedString =
-                "PojoSigMap{keyTypes=[ED25519, ED25519, ECDSA_SECP256K1], rawMap=[[[97], [48, 49,"
-                    + " 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48,"
-                    + " 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,"
-                    + " 48, 49, 50, 51, 52, 53, 54, 55]], [[97, 98], [49, 50, 51, 52, 53, 54, 55,"
-                    + " 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54,"
-                    + " 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53,"
-                    + " 54, 55, 48]], [[97, 98, 99], [50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50,"
-                    + " 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49,"
-                    + " 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 48, 49]]]}";
+        final var expectedString = "PojoSigMap{keyTypes=[ED25519, ED25519, ECDSA_SECP256K1], rawMap=[[[97], [48, 49,"
+                + " 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48,"
+                + " 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,"
+                + " 48, 49, 50, 51, 52, 53, 54, 55]], [[97, 98], [49, 50, 51, 52, 53, 54, 55,"
+                + " 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54,"
+                + " 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53,"
+                + " 54, 55, 48]], [[97, 98, 99], [50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50,"
+                + " 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49,"
+                + " 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 48, 49]]]}";
 
         assertEquals(expectedString, subject.toString());
     }

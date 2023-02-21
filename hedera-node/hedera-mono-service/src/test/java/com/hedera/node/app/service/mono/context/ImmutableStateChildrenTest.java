@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,22 +51,53 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ImmutableStateChildrenTest {
-    @Mock private ServicesState state;
-    @Mock private AccountStorageAdapter accounts;
-    @Mock private RecordsStorageAdapter payerRecords;
-    @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
-    @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
-    @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
-    @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
-    @Mock private TokenRelStorageAdapter tokenAssociations;
-    @Mock private MerkleScheduledTransactions scheduleTxs;
-    @Mock private MerkleNetworkContext networkCtx;
-    @Mock private AddressBook addressBook;
-    @Mock private MerkleSpecialFiles specialFiles;
-    @Mock private UniqueTokenMapAdapter uniqueTokens;
-    @Mock private RecordsRunningHashLeaf runningHashLeaf;
-    @Mock private FCHashMap<ByteString, EntityNum> aliases;
-    @Mock private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
+    @Mock
+    private ServicesState state;
+
+    @Mock
+    private AccountStorageAdapter accounts;
+
+    @Mock
+    private RecordsStorageAdapter payerRecords;
+
+    @Mock
+    private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
+
+    @Mock
+    private VirtualMap<ContractKey, IterableContractValue> contractStorage;
+
+    @Mock
+    private MerkleMap<EntityNum, MerkleTopic> topics;
+
+    @Mock
+    private MerkleMap<EntityNum, MerkleToken> tokens;
+
+    @Mock
+    private TokenRelStorageAdapter tokenAssociations;
+
+    @Mock
+    private MerkleScheduledTransactions scheduleTxs;
+
+    @Mock
+    private MerkleNetworkContext networkCtx;
+
+    @Mock
+    private AddressBook addressBook;
+
+    @Mock
+    private MerkleSpecialFiles specialFiles;
+
+    @Mock
+    private UniqueTokenMapAdapter uniqueTokens;
+
+    @Mock
+    private RecordsRunningHashLeaf runningHashLeaf;
+
+    @Mock
+    private FCHashMap<ByteString, EntityNum> aliases;
+
+    @Mock
+    private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
 
     private ImmutableStateChildren subject;
 

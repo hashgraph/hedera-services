@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.operation;
 
 /*
@@ -59,28 +60,35 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HederaCreateOperationTest {
     private static final long baseGas = 100L;
 
-    private final Address recipientAddr =
-            Address.fromHexString("0x0102030405060708090a0b0c0d0e0f1011121314");
+    private final Address recipientAddr = Address.fromHexString("0x0102030405060708090a0b0c0d0e0f1011121314");
 
-    @Mock private MessageFrame frame;
-    @Mock private GasCalculator gasCalculator;
-    @Mock private HederaWorldUpdater hederaWorldUpdater;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private EntityCreator creator;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private GasCalculator gasCalculator;
+
+    @Mock
+    private HederaWorldUpdater hederaWorldUpdater;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private EntityCreator creator;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
 
     private HederaCreateOperation subject;
 
     @BeforeEach
     void setup() {
-        subject =
-                new HederaCreateOperation(
-                        gasCalculator,
-                        creator,
-                        syntheticTxnFactory,
-                        recordsHistorian,
-                        dynamicProperties);
+        subject = new HederaCreateOperation(
+                gasCalculator, creator, syntheticTxnFactory, recordsHistorian, dynamicProperties);
     }
 
     @Test

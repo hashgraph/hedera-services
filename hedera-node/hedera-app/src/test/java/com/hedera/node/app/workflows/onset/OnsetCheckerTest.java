@@ -13,30 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.onset;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Duration;
-import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.AppTestBase;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.state.RecordCache;
-import com.hedera.pbj.runtime.io.Bytes;
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.Metrics;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import java.time.Instant;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
@@ -58,6 +37,29 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.state.RecordCache;
+import com.hedera.pbj.runtime.io.Bytes;
+import com.swirlds.common.metrics.Counter;
+import com.swirlds.common.metrics.Metrics;
+import java.time.Instant;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 @ExtendWith(MockitoExtension.class)
 class OnsetCheckerTest extends AppTestBase {
     /** Value for {@link GlobalDynamicProperties#maxMemoUtf8Bytes()} for this test */
@@ -73,10 +75,17 @@ class OnsetCheckerTest extends AppTestBase {
     private static final Duration ONE_MINUTE = Duration.newBuilder().seconds(60).build();
 
     // These are mocks to use for dependencies of the OnsetChecker
-    @Mock private RecordCache recordCache;
-    @Mock(strictness = LENIENT) private GlobalDynamicProperties dynamicProperties;
-    @Mock private Metrics metrics;
-    @Mock private Counter deprecationCounter;
+    @Mock
+    private RecordCache recordCache;
+
+    @Mock(strictness = LENIENT)
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private Metrics metrics;
+
+    @Mock
+    private Counter deprecationCounter;
 
     /** The standard {@link TransactionID} used in most tests */
     private TransactionID transactionID;
@@ -91,114 +100,112 @@ class OnsetCheckerTest extends AppTestBase {
         when(dynamicProperties.maxMemoUtf8Bytes()).thenReturn(MAX_MEMO_SIZE);
 
         final var payerId = AccountID.newBuilder().accountNum(1L).build();
-        final var now = Timestamp.newBuilder().seconds(Instant.now().getEpochSecond()).build();
-            transactionID =
-                    TransactionID.newBuilder()
-                            .accountID(payerId)
-                            .transactionValidStart(now)
-                            .build();
+        final var now =
+                Timestamp.newBuilder().seconds(Instant.now().getEpochSecond()).build();
+        transactionID = TransactionID.newBuilder()
+                .accountID(payerId)
+                .transactionValidStart(now)
+                .build();
 
         checker = new OnsetChecker(recordCache, dynamicProperties, metrics);
     }
 
+    @Test
+    @SuppressWarnings("ConstantConditions")
+    @DisplayName("Verify that the constructor throws NPE for null arguments")
+    void testConstructorWithIllegalArguments() {
+        assertThatThrownBy(() -> new OnsetChecker(null, dynamicProperties, metrics))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new OnsetChecker(recordCache, null, metrics)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new OnsetChecker(recordCache, dynamicProperties, null))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Nested
+    @DisplayName("Tests for checkTransaction")
+    class CheckTransactionTest {
+        @Test
+        @DisplayName("Happy Path. Given a valid transaction, the checker should not throw any exception")
+        void goodTransaction() {
+            // Given a valid transaction
+            final var tx =
+                    Transaction.newBuilder().signedTransactionBytes(CONTENT).build();
+
+            // Then the checker should not throw any exception
+            assertThatCode(() -> checker.checkTransaction(tx)).doesNotThrowAnyException();
+            // And the deprecated transaction counter should not be incremented because we did
+            // not use a deprecated transaction in the call
+            verify(deprecationCounter, never()).increment();
+        }
+
+        @Test
+        @DisplayName("Given a deprecated transaction, it is still good and succeeds")
+        void deprecatedTransaction() {
+            // Given a deprecated transaction (doesn't use signedTransactionBytes)
+            final var tx = Transaction.newBuilder().bodyBytes(CONTENT).build();
+
+            // Then the checker should not throw any exception
+            assertThatCode(() -> checker.checkTransaction(tx)).doesNotThrowAnyException();
+            // And the deprecated transaction counter should be incremented!
+            verify(deprecationCounter).increment();
+        }
+
+        @Test
+        @DisplayName("A transaction using both signed bytes and body bytes is invalid")
+        void badTransactionWithSignedBytesAndBodyBytes() {
+            // Given a transaction using both signed bytes and body bytes
+            final var tx = Transaction.newBuilder()
+                    .signedTransactionBytes(CONTENT)
+                    .bodyBytes(CONTENT)
+                    .build();
+
+            // When we check the transaction, then we find it is invalid
+            assertThatThrownBy(() -> checker.checkTransaction(tx))
+                    .isInstanceOf(PreCheckException.class)
+                    .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION);
+            // And the deprecated transaction counter is not incremented
+            verify(deprecationCounter, never()).increment();
+        }
+
+        @Test
+        @DisplayName("A transaction using both signed bytes and sig map is invalid")
+        void badTransactionWithSignedBytesAndSigMap() {
+            // Given a transaction using both signed bytes (new style) and sig map (deprecated style)
+            final var signatureMap = SignatureMap.newBuilder().build();
+            final var tx = Transaction.newBuilder()
+                    .signedTransactionBytes(CONTENT)
+                    .sigMap(signatureMap)
+                    .build();
+
+            // Then the checker should throw a PreCheckException
+            assertThatThrownBy(() -> checker.checkTransaction(tx))
+                    .isInstanceOf(PreCheckException.class)
+                    .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION);
+            // And the deprecated transaction counter is not incremented
+            verify(deprecationCounter, never()).increment();
+        }
+
+        @Test
+        @DisplayName("A transaction with no bytes at all fails")
+        void badTransactionWithNoBytes() {
+            // Given a transaction with no bytes at all
+            final var tx = Transaction.newBuilder().build();
+
+            // Then the checker should throw a PreCheckException
+            assertThatThrownBy(() -> checker.checkTransaction(tx))
+                    .isInstanceOf(PreCheckException.class)
+                    .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_BODY);
+            // And the deprecated transaction counter is not incremented
+            verify(deprecationCounter, never()).increment();
+        }
+
         @Test
         @SuppressWarnings("ConstantConditions")
-        @DisplayName("Verify that the constructor throws NPE for null arguments")
-        void testConstructorWithIllegalArguments() {
-            assertThatThrownBy(() -> new OnsetChecker(null, dynamicProperties, metrics))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> new OnsetChecker(recordCache, null, metrics))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> new OnsetChecker(recordCache, dynamicProperties, null))
-                    .isInstanceOf(NullPointerException.class);
+        @DisplayName("The checkTransaction method does not accept null arguments")
+        void checkTransactionWithIllegalArguments() {
+            assertThatThrownBy(() -> checker.checkTransaction(null)).isInstanceOf(NullPointerException.class);
         }
-
-        @Nested
-        @DisplayName("Tests for checkTransaction")
-        class CheckTransactionTest {
-            @Test
-            @DisplayName("Happy Path. Given a valid transaction, the checker should not throw any exception")
-            void goodTransaction() {
-                // Given a valid transaction
-                final var tx = Transaction.newBuilder().signedTransactionBytes(CONTENT).build();
-
-                // Then the checker should not throw any exception
-                assertThatCode(() -> checker.checkTransaction(tx)).doesNotThrowAnyException();
-                // And the deprecated transaction counter should not be incremented because we did
-                // not use a deprecated transaction in the call
-                verify(deprecationCounter, never()).increment();
-            }
-
-            @Test
-            @DisplayName("Given a deprecated transaction, it is still good and succeeds")
-            void deprecatedTransaction() {
-                // Given a deprecated transaction (doesn't use signedTransactionBytes)
-                final var tx = Transaction.newBuilder().bodyBytes(CONTENT).build();
-
-                // Then the checker should not throw any exception
-                assertThatCode(() -> checker.checkTransaction(tx)).doesNotThrowAnyException();
-                // And the deprecated transaction counter should be incremented!
-                verify(deprecationCounter).increment();
-            }
-
-            @Test
-            @DisplayName("A transaction using both signed bytes and body bytes is invalid")
-            void badTransactionWithSignedBytesAndBodyBytes() {
-                // Given a transaction using both signed bytes and body bytes
-                final var tx =
-                        Transaction.newBuilder()
-                                .signedTransactionBytes(CONTENT)
-                                .bodyBytes(CONTENT)
-                                .build();
-
-                // When we check the transaction, then we find it is invalid
-                assertThatThrownBy(() -> checker.checkTransaction(tx))
-                        .isInstanceOf(PreCheckException.class)
-                        .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION);
-                // And the deprecated transaction counter is not incremented
-                verify(deprecationCounter, never()).increment();
-            }
-
-            @Test
-            @DisplayName("A transaction using both signed bytes and sig map is invalid")
-            void badTransactionWithSignedBytesAndSigMap() {
-                // Given a transaction using both signed bytes (new style) and sig map (deprecated style)
-                final var signatureMap = SignatureMap.newBuilder().build();
-                final var tx = Transaction.newBuilder()
-                        .signedTransactionBytes(CONTENT)
-                        .sigMap(signatureMap)
-                        .build();
-
-                // Then the checker should throw a PreCheckException
-                assertThatThrownBy(() -> checker.checkTransaction(tx))
-                        .isInstanceOf(PreCheckException.class)
-                        .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION);
-                // And the deprecated transaction counter is not incremented
-                verify(deprecationCounter, never()).increment();
-            }
-
-            @Test
-            @DisplayName("A transaction with no bytes at all fails")
-            void badTransactionWithNoBytes() {
-                // Given a transaction with no bytes at all
-                final var tx = Transaction.newBuilder().build();
-
-                // Then the checker should throw a PreCheckException
-                assertThatThrownBy(() -> checker.checkTransaction(tx))
-                        .isInstanceOf(PreCheckException.class)
-                        .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_BODY);
-                // And the deprecated transaction counter is not incremented
-                verify(deprecationCounter, never()).increment();
-            }
-
-            @Test
-            @SuppressWarnings("ConstantConditions")
-            @DisplayName("The checkTransaction method does not accept null arguments")
-            void checkTransactionWithIllegalArguments() {
-                assertThatThrownBy(() -> checker.checkTransaction(null))
-                        .isInstanceOf(NullPointerException.class);
-            }
-        }
+    }
 
     @Nested
     @DisplayName("Tests for checkTransactionBody")
@@ -208,19 +215,17 @@ class OnsetCheckerTest extends AppTestBase {
         @SuppressWarnings("ConstantConditions")
         @DisplayName("The checkTransactionBody method does not accept null arguments")
         void testCheckTransactionBodyWithIllegalArguments() {
-            assertThatThrownBy(() -> checker.checkTransactionBody(null))
-                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> checker.checkTransactionBody(null)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
         @DisplayName("Happy Path. Given a valid transaction body, the checker should not throw any exception")
         void testCheckTransactionBodySuccess() throws PreCheckException {
             // Given a valid transaction body
-            final var txBody =
-                    TransactionBody.newBuilder()
-                            .transactionID(transactionID)
-                            .transactionValidDuration(ONE_MINUTE)
-                            .build();
+            final var txBody = TransactionBody.newBuilder()
+                    .transactionID(transactionID)
+                    .transactionValidDuration(ONE_MINUTE)
+                    .build();
 
             // When we check the transaction body
             final var result = checker.checkTransactionBody(txBody);
@@ -233,7 +238,9 @@ class OnsetCheckerTest extends AppTestBase {
         @DisplayName("A transaction body must have a transaction ID")
         void testCheckTransactionBodyWithoutTransactionIDFails() {
             // Given a transaction body without a transaction ID
-            final var txBody = TransactionBody.newBuilder().transactionValidDuration(ONE_MINUTE).build();
+            final var txBody = TransactionBody.newBuilder()
+                    .transactionValidDuration(ONE_MINUTE)
+                    .build();
 
             // Then the checker should throw a PreCheckException
             assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
@@ -245,7 +252,8 @@ class OnsetCheckerTest extends AppTestBase {
         @DisplayName("A transaction ID with an alias as the payer is plausible")
         void testCheckTransactionBodyWithAliasAsPayer() throws PreCheckException {
             // Given a transaction ID with an alias as the payer
-            final var payerId = AccountID.newBuilder().alias(Bytes.wrap("alias")).build();
+            final var payerId =
+                    AccountID.newBuilder().alias(Bytes.wrap("alias")).build();
             final var txBody = transactionBodyWithPayer(payerId);
 
             // When we check the transaction body
@@ -272,7 +280,8 @@ class OnsetCheckerTest extends AppTestBase {
         @DisplayName("A transaction ID with an invalid realm number fails")
         void testCheckTransactionBodyWithInvalidRealmNumFails() {
             // Given a transaction ID with a negative realm (which is not valid)
-            final var payerId = AccountID.newBuilder().accountNum(1L).realmNum(-1L).build();
+            final var payerId =
+                    AccountID.newBuilder().accountNum(1L).realmNum(-1L).build();
             final var txBody = transactionBodyWithPayer(payerId);
 
             // Then the checker should throw a PreCheckException
@@ -285,7 +294,8 @@ class OnsetCheckerTest extends AppTestBase {
         @DisplayName("A transaction ID with an invalid shard number fails")
         void testCheckTransactionBodyWithInvalidShardNumFails() {
             // Given a transaction ID with a negative shard (which is not valid)
-            final var payerId = AccountID.newBuilder().accountNum(1L).shardNum(-1L).build();
+            final var payerId =
+                    AccountID.newBuilder().accountNum(1L).shardNum(-1L).build();
             final var txBody = transactionBodyWithPayer(payerId);
 
             // Then the checker should throw a PreCheckException
@@ -318,12 +328,11 @@ class OnsetCheckerTest extends AppTestBase {
         void testCheckTransactionBodyWithZeroByteMemoFails() {
             // Given a transaction body with a memo that contains a zero byte
             final var memo = "Hello World \0";
-            final var txBody =
-                    TransactionBody.newBuilder()
-                            .transactionID(transactionID)
-                            .transactionValidDuration(ONE_MINUTE)
-                            .memo(memo)
-                            .build();
+            final var txBody = TransactionBody.newBuilder()
+                    .transactionID(transactionID)
+                    .transactionValidDuration(ONE_MINUTE)
+                    .memo(memo)
+                    .build();
 
             // Then the checker should throw a PreCheckException
             assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
@@ -337,11 +346,10 @@ class OnsetCheckerTest extends AppTestBase {
             // Given a record cache that has already seen this transaction ID,
             // and a transaction body with that transaction ID
             when(recordCache.isReceiptPresent(transactionID)).thenReturn(true);
-            final var txBody =
-                    TransactionBody.newBuilder()
-                            .transactionID(transactionID)
-                            .transactionValidDuration(ONE_MINUTE)
-                            .build();
+            final var txBody = TransactionBody.newBuilder()
+                    .transactionID(transactionID)
+                    .transactionValidDuration(ONE_MINUTE)
+                    .build();
 
             // When we check the transaction body
             final var result = checker.checkTransactionBody(txBody);
@@ -355,12 +363,11 @@ class OnsetCheckerTest extends AppTestBase {
         @DisplayName("A transaction fee that is less than 0 is completely implausible")
         void testCheckTransactionBodyWithInvalidFeeFails() throws PreCheckException {
             // Given a transaction body with a negative fee
-            final var txBody =
-                    TransactionBody.newBuilder()
-                            .transactionID(transactionID)
-                            .transactionValidDuration(ONE_MINUTE)
-                            .transactionFee(-1L)
-                            .build();
+            final var txBody = TransactionBody.newBuilder()
+                    .transactionID(transactionID)
+                    .transactionValidDuration(ONE_MINUTE)
+                    .transactionFee(-1L)
+                    .build();
 
             // When we check the transaction body
             final var result = checker.checkTransactionBody(txBody);
@@ -374,11 +381,10 @@ class OnsetCheckerTest extends AppTestBase {
         void testCheckTransactionBodyWithTooSmallDurationFails() throws PreCheckException {
             // Given a transaction body with a duration that is too small
             final var duration = Duration.newBuilder().seconds(MIN_DURATION - 1).build();
-            final var txBody =
-                    TransactionBody.newBuilder()
-                            .transactionID(transactionID)
-                            .transactionValidDuration(duration)
-                            .build();
+            final var txBody = TransactionBody.newBuilder()
+                    .transactionID(transactionID)
+                    .transactionValidDuration(duration)
+                    .build();
 
             // When we check the transaction body
             final var result = checker.checkTransactionBody(txBody);
@@ -392,11 +398,10 @@ class OnsetCheckerTest extends AppTestBase {
         void testCheckTransactionBodyWithTooLargeDurationFails() throws PreCheckException {
             // Given a transaction body with a duration that is too large
             final var duration = Duration.newBuilder().seconds(MAX_DURATION + 1).build();
-            final var txBody =
-                    TransactionBody.newBuilder()
-                            .transactionID(transactionID)
-                            .transactionValidDuration(duration)
-                            .build();
+            final var txBody = TransactionBody.newBuilder()
+                    .transactionID(transactionID)
+                    .transactionValidDuration(duration)
+                    .build();
 
             // When we check the transaction body
             final var result = checker.checkTransactionBody(txBody);
@@ -413,17 +418,15 @@ class OnsetCheckerTest extends AppTestBase {
                     .seconds(Instant.now().getEpochSecond() - 100)
                     .build();
 
-            transactionID =
-                    TransactionID.newBuilder()
-                            .accountID(payerId)
-                            .transactionValidStart(past)
-                            .build();
+            transactionID = TransactionID.newBuilder()
+                    .accountID(payerId)
+                    .transactionValidStart(past)
+                    .build();
 
-            final var txBody =
-                    TransactionBody.newBuilder()
-                            .transactionID(transactionID)
-                            .transactionValidDuration(ONE_MINUTE)
-                            .build();
+            final var txBody = TransactionBody.newBuilder()
+                    .transactionID(transactionID)
+                    .transactionValidDuration(ONE_MINUTE)
+                    .build();
 
             // When we check the transaction body
             final var result = checker.checkTransactionBody(txBody);
@@ -440,17 +443,15 @@ class OnsetCheckerTest extends AppTestBase {
                     .seconds(Instant.now().getEpochSecond() + 100)
                     .build();
 
-            transactionID =
-                    TransactionID.newBuilder()
-                            .accountID(payerId)
-                            .transactionValidStart(future)
-                            .build();
+            transactionID = TransactionID.newBuilder()
+                    .accountID(payerId)
+                    .transactionValidStart(future)
+                    .build();
 
-            final var txBody =
-                    TransactionBody.newBuilder()
-                            .transactionID(transactionID)
-                            .transactionValidDuration(ONE_MINUTE)
-                            .build();
+            final var txBody = TransactionBody.newBuilder()
+                    .transactionID(transactionID)
+                    .transactionValidDuration(ONE_MINUTE)
+                    .build();
 
             // When we check the transaction body
             final var result = checker.checkTransactionBody(txBody);
@@ -460,16 +461,17 @@ class OnsetCheckerTest extends AppTestBase {
         }
 
         private TransactionBody transactionBodyWithPayer(AccountID payerId) {
-            final var now = Timestamp.newBuilder().seconds(Instant.now().getEpochSecond()).build();
-            transactionID =
-                    TransactionID.newBuilder()
-                            .accountID(payerId)
-                            .transactionValidStart(now)
-                            .build();
+            final var now = Timestamp.newBuilder()
+                    .seconds(Instant.now().getEpochSecond())
+                    .build();
+            transactionID = TransactionID.newBuilder()
+                    .accountID(payerId)
+                    .transactionValidStart(now)
+                    .build();
             return TransactionBody.newBuilder()
-                            .transactionID(transactionID)
-                            .transactionValidDuration(ONE_MINUTE)
-                            .build();
+                    .transactionID(transactionID)
+                    .transactionValidDuration(ONE_MINUTE)
+                    .build();
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,12 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
 import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+
+import com.hedera.node.app.spi.AccountKeyLookup;
 
 class ContractDeleteHandlerParityTest {
-    //    private AccountKeyLookup keyLookup;
+    private AccountKeyLookup keyLookup;
     //    private final ContractDeleteHandler subject = new ContractDeleteHandler();
     //
     //    @BeforeEach
@@ -29,61 +33,59 @@ class ContractDeleteHandlerParityTest {
     //    @Test
     //    void getsContractDeleteImmutable() {
     //        final var theTxn = txnFrom(CONTRACT_DELETE_IMMUTABLE_SCENARIO);
-    //        final var meta =
-    //                subject.preHandle(theTxn, theTxn.transactionID().accountID(), keyLookup);
+    //        final var context = new PreHandleContext(keyLookup, theTxn);
+    //        subject.preHandle(context);
     //
-    //        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-    //        assertTrue(sanityRestored(meta.requiredNonPayerKeys()).isEmpty());
-    //        assertEquals(MODIFYING_IMMUTABLE_CONTRACT, meta.status());
+    //        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+    //        assertTrue(sanityRestored(context.getRequiredNonPayerKeys()).isEmpty());
+    //        assertEquals(MODIFYING_IMMUTABLE_CONTRACT, context.getStatus());
     //    }
     //
     //    @Test
     //    void getsContractDelete() {
     //        final var theTxn = txnFrom(CONTRACT_DELETE_XFER_ACCOUNT_SCENARIO);
-    //        final var meta =
-    //                subject.preHandle(theTxn, theTxn.transactionID().accountID(), keyLookup);
+    //        final var context = new PreHandleContext(keyLookup, theTxn);
+    //        subject.preHandle(context);
     //
-    //        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+    //        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
     //        assertThat(
-    //                sanityRestored(meta.requiredNonPayerKeys()),
+    //                sanityRestored(context.getRequiredNonPayerKeys()),
     //                contains(MISC_ADMIN_KT.asKey(), RECEIVER_SIG_KT.asKey()));
     //    }
     //
     //    @Test
     //    void getsContractDeleteMissingAccountBeneficiary() {
     //        final var theTxn = txnFrom(CONTRACT_DELETE_MISSING_ACCOUNT_BENEFICIARY_SCENARIO);
-    //        final var meta =
-    //                subject.preHandle(theTxn, theTxn.transactionID().accountID(), keyLookup);
+    //        final var context = new PreHandleContext(keyLookup, theTxn);
+    //        subject.preHandle(context);
     //
-    //        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-    //        assertThat(sanityRestored(meta.requiredNonPayerKeys()),
-    // contains(MISC_ADMIN_KT.asKey()));
-    //        assertEquals(INVALID_TRANSFER_ACCOUNT_ID, meta.status());
+    //        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+    //        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
+    //        assertEquals(INVALID_TRANSFER_ACCOUNT_ID, context.getStatus());
     //    }
     //
     //    @Test
     //    void getsContractDeleteMissingContractBeneficiary() {
     //        final var theTxn = txnFrom(CONTRACT_DELETE_MISSING_CONTRACT_BENEFICIARY_SCENARIO);
-    //        final var meta =
-    //                subject.preHandle(theTxn, theTxn.transactionID().accountID(), keyLookup);
+    //        final var context = new PreHandleContext(keyLookup, theTxn);
+    //        subject.preHandle(context);
     //
-    //        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-    //        assertThat(sanityRestored(meta.requiredNonPayerKeys()),
-    // contains(MISC_ADMIN_KT.asKey()));
-    //        assertEquals(INVALID_CONTRACT_ID, meta.status());
+    //        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+    //        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
+    //        assertEquals(INVALID_CONTRACT_ID, context.getStatus());
     //    }
     //
     //    @Test
     //    void getsContractDeleteContractXfer() {
     //        final var theTxn = txnFrom(CONTRACT_DELETE_XFER_CONTRACT_SCENARIO);
-    //        final var meta =
-    //                subject.preHandle(theTxn, theTxn.transactionID().accountID(), keyLookup);
+    //        final var context = new PreHandleContext(keyLookup, theTxn);
+    //        subject.preHandle(context);
     //
-    //        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+    //        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
     //        assertThat(
-    //                sanityRestored(meta.requiredNonPayerKeys()),
+    //                sanityRestored(context.getRequiredNonPayerKeys()),
     //                contains(MISC_ADMIN_KT.asKey(), DILIGENT_SIGNING_PAYER_KT.asKey()));
-    //        assertEquals(OK, meta.status());
+    //        assertEquals(OK, context.getStatus());
     //    }
     //
     //    private TransactionBody txnFrom(final TxnHandlingScenario scenario) {

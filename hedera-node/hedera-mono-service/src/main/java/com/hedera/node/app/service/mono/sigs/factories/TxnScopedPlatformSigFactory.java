@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.factories;
 
 import com.hedera.node.app.service.mono.sigs.sourcing.KeyType;
@@ -53,8 +54,7 @@ public interface TxnScopedPlatformSigFactory {
      * @param sigBytes the signature bytes to use in creating the verifiable signature
      * @return a platform sig for the scoped transaction
      */
-    default TransactionSignature signAppropriately(
-            KeyType type, byte[] publicKey, byte[] sigBytes) {
+    default TransactionSignature signAppropriately(KeyType type, byte[] publicKey, byte[] sigBytes) {
         switch (type) {
             default:
             case ED25519:

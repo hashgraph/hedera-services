@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.fixtures.state;
 
 import com.hedera.node.app.spi.fixtures.TestBase;
-import java.util.*;
 
 public class StateTestBase extends TestBase {
     protected static final String UNKNOWN_STATE_KEY = "BOGUS_STATE_KEY";

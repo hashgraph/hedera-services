@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.onset;
 
 import static java.util.Objects.requireNonNull;
@@ -28,7 +29,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * <p>This is used in every workflow that deals with transactions, i.e. in all workflows except the
  * query workflow. And even in the query workflow, it is used when dealing with the contained
- * CryptoTransfer.
+ * {@link HederaFunctionality#CRYPTO_TRANSFER}.
  *
  * @param txBody the deserialized {@link TransactionBody}
  * @param signatureMap the contained {@link SignatureMap}

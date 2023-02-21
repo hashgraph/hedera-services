@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.grpc;
 
 import com.hedera.pbj.runtime.io.DataBuffer;
@@ -64,8 +65,7 @@ final class DataBufferMarshaller implements MethodDescriptor.Marshaller<DataBuff
             // and we will therefore reject it.
             final var numBytesRead = buffer.writeBytes(stream, TOO_BIG_MESSAGE_SIZE);
             if (numBytesRead == TOO_BIG_MESSAGE_SIZE) {
-                throw new RuntimeException(
-                        "More than MAX_MESSAGE_SIZE (" + MAX_MESSAGE_SIZE + ") bytes read");
+                throw new RuntimeException("More than MAX_MESSAGE_SIZE (" + MAX_MESSAGE_SIZE + ") bytes read");
             }
 
             // We read some bytes into the buffer, so reset the position and limit accordingly to

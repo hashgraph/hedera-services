@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.file;
 
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
@@ -98,8 +99,7 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
         if (immutable) {
             return super.defaultSigners();
         } else {
-            return Arrays.asList(
-                    spec -> spec.registry().getKey(effectivePayer(spec)), ignore -> waclKey);
+            return Arrays.asList(spec -> spec.registry().getKey(effectivePayer(spec)), ignore -> waclKey);
         }
     }
 
@@ -180,28 +180,18 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
             var loc = contentsPathFn.get().apply(spec);
             contents = Optional.of(Files.toByteArray(new File(loc)));
         }
-        FileCreateTransactionBody opBody =
-                spec.txns()
-                        .<FileCreateTransactionBody, FileCreateTransactionBody.Builder>body(
-                                FileCreateTransactionBody.class,
-                                builder -> {
-                                    if (!immutable) {
-                                        builder.setKeys(waclKey.getKeyList());
-                                    }
-                                    memo.ifPresent(builder::setMemo);
-                                    contents.ifPresent(
-                                            b -> builder.setContents(ByteString.copyFrom(b)));
-                                    lifetime.ifPresent(
-                                            s ->
-                                                    builder.setExpirationTime(
-                                                            TxnFactory.expiryGiven(s)));
-                                    expiry.ifPresent(
-                                            t ->
-                                                    builder.setExpirationTime(
-                                                            Timestamp.newBuilder()
-                                                                    .setSeconds(t)
-                                                                    .build()));
-                                });
+        FileCreateTransactionBody opBody = spec.txns()
+                .<FileCreateTransactionBody, FileCreateTransactionBody.Builder>body(
+                        FileCreateTransactionBody.class, builder -> {
+                            if (!immutable) {
+                                builder.setKeys(waclKey.getKeyList());
+                            }
+                            memo.ifPresent(builder::setMemo);
+                            contents.ifPresent(b -> builder.setContents(ByteString.copyFrom(b)));
+                            lifetime.ifPresent(s -> builder.setExpirationTime(TxnFactory.expiryGiven(s)));
+                            expiry.ifPresent(t -> builder.setExpirationTime(
+                                    Timestamp.newBuilder().setSeconds(t).build()));
+                        });
         return b -> {
             expiryUsed.set(opBody.getExpirationTime());
             b.setFileCreate(opBody);
@@ -219,8 +209,7 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 
         if (waclControl.isPresent()) {
             SigControl control = waclControl.get();
-            Assertions.assertEquals(
-                    SigControl.Nature.LIST, control.getNature(), "WACL must be a KeyList!");
+            Assertions.assertEquals(SigControl.Nature.LIST, control.getNature(), "WACL must be a KeyList!");
             waclKey = spec.keys().generateSubjectTo(spec, control, generator);
         } else {
             waclKey = spec.keys().generate(spec, KeyFactory.KeyType.LIST, generator);
@@ -245,12 +234,10 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
         }
 
         if (advertiseCreation) {
-            String banner =
-                    "\n\n"
-                            + bannerWith(
-                                    String.format(
-                                            "Created file '%s' with id '0.0.%d'.",
-                                            fileName, lastReceipt.getFileID().getFileNum()));
+            String banner = "\n\n"
+                    + bannerWith(String.format(
+                            "Created file '%s' with id '0.0.%d'.",
+                            fileName, lastReceipt.getFileID().getFileNum()));
             LOG.info(banner);
         }
     }
@@ -267,9 +254,7 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 
     @Override
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerSigs) throws Throwable {
-        return spec.fees()
-                .forActivityBasedOp(
-                        HederaFunctionality.FileCreate, this::usageEstimate, txn, numPayerSigs);
+        return spec.fees().forActivityBasedOp(HederaFunctionality.FileCreate, this::usageEstimate, txn, numPayerSigs);
     }
 
     private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {

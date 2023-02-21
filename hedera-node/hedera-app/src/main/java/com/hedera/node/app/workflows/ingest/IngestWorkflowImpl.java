@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.ingest;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
@@ -31,11 +31,13 @@ import com.hedera.hapi.node.transaction.TransactionResponse;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
+import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
-import com.hedera.node.app.workflows.StoreCache;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.hedera.pbj.runtime.io.DataBuffer;
 import com.hedera.pbj.runtime.io.DataInputBuffer;
@@ -47,6 +49,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /** Implementation of {@link IngestWorkflow} */
@@ -55,15 +58,13 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
     private final NodeInfo nodeInfo;
     private final CurrentPlatformStatus currentPlatformStatus;
     private final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
-    private final StoreCache storeCache;
     private final WorkflowOnset onset;
     private final IngestChecker checker;
     private final ThrottleAccumulator throttleAccumulator;
     private final SubmissionManager submissionManager;
 
     /** A map of counter metrics for each type of transaction we can ingest */
-    private final Map<HederaFunctionality, Counter> counters =
-            new EnumMap<>(HederaFunctionality.class);
+    private final Map<HederaFunctionality, Counter> counters = new EnumMap<>(HederaFunctionality.class);
 
     /**
      * Constructor of {@code IngestWorkflowImpl}
@@ -71,7 +72,6 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
      * @param nodeInfo the {@link NodeInfo} of the current node
      * @param currentPlatformStatus the {@link CurrentPlatformStatus}
      * @param stateAccessor a {@link Supplier} that provides the latest immutable state
-     * @param storeCache the {@link StoreCache} that caches stores for all active states
      * @param onset the {@link WorkflowOnset} that pre-processes the {@link ByteBuffer} of a
      *     transaction
      * @param checker the {@link IngestChecker} with specific checks of an ingest-workflow
@@ -84,7 +84,6 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
             @NonNull final NodeInfo nodeInfo,
             @NonNull final CurrentPlatformStatus currentPlatformStatus,
             @NonNull final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor,
-            @NonNull final StoreCache storeCache,
             @NonNull final WorkflowOnset onset,
             @NonNull final IngestChecker checker,
             @NonNull final ThrottleAccumulator throttleAccumulator,
@@ -93,7 +92,6 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
         this.nodeInfo = requireNonNull(nodeInfo);
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
         this.stateAccessor = requireNonNull(stateAccessor);
-        this.storeCache = requireNonNull(storeCache);
         this.onset = requireNonNull(onset);
         this.checker = requireNonNull(checker);
         this.throttleAccumulator = requireNonNull(throttleAccumulator);
@@ -102,11 +100,8 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
         // Create metrics for tracking submission of transactions by type
         for (var function : HederaFunctionality.values()) {
             final var name = function.name() + "Sub";
-            final var desc =
-                    "The number of transactions submitted for consensus for " + function.name();
-            counters.put(
-                    function,
-                    metrics.getOrCreate(new Counter.Config("app", name).withDescription(desc)));
+            final var desc = "The number of transactions submitted for consensus for " + function.name();
+            counters.put(function, metrics.getOrCreate(new Counter.Config("app", name).withDescription(desc)));
         }
     }
 
@@ -115,6 +110,19 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
             @NonNull final SessionContext ctx,
             @NonNull final DataInputBuffer requestBuffer,
             @NonNull final DataBuffer responseBuffer) {
+        submitTransaction(ctx, requestBuffer, responseBuffer, ReadableAccountStore::new);
+    }
+
+    // Package-private for testing
+    void submitTransaction(
+            @NonNull final SessionContext ctx,
+            @NonNull final DataInputBuffer requestBuffer,
+            @NonNull final DataBuffer responseBuffer,
+            @NonNull final Function<ReadableStates, ReadableAccountStore> storeSupplier) {
+        requireNonNull(ctx);
+        requireNonNull(requestBuffer);
+        requireNonNull(responseBuffer);
+        requireNonNull(storeSupplier);
 
         ResponseCodeEnum result = OK;
         long estimatedFee = 0L;
@@ -156,11 +164,11 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
 
                 // 4. Get payer account
                 final AccountID payerID = txBody.transactionID().accountID();
-                final var accountStore = storeCache.getAccountStore(state);
-                final var payer =
-                        accountStore
-                                .getAccount(payerID)
-                                .orElseThrow(() -> new PreCheckException(PAYER_ACCOUNT_NOT_FOUND));
+                final var tokenStates = state.createReadableStates(TokenService.NAME);
+                final var accountStore = storeSupplier.apply(tokenStates);
+                final var payer = accountStore
+                        .getAccount(payerID)
+                        .orElseThrow(() -> new PreCheckException(PAYER_ACCOUNT_NOT_FOUND));
 
                 // 5. Check payer's signature
                 checker.checkPayerSignature(txBody, signatureMap, payer);
@@ -183,11 +191,10 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
         }
 
         // 8. Return PreCheck code and estimated fee
-        final var transactionResponse =
-                TransactionResponse.newBuilder()
-                        .nodeTransactionPrecheckCode(result)
-                        .cost(estimatedFee)
-                        .build();
+        final var transactionResponse = TransactionResponse.newBuilder()
+                .nodeTransactionPrecheckCode(result)
+                .cost(estimatedFee)
+                .build();
 
         try {
             TransactionResponse.PROTOBUF.write(transactionResponse, responseBuffer);

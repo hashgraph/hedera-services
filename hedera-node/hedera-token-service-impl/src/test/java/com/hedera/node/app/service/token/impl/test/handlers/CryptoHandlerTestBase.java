@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
@@ -28,11 +28,9 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
-import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.Key;
@@ -54,34 +52,42 @@ public class CryptoHandlerTestBase {
     protected final HederaKey payerKey = asHederaKey(A_COMPLEX_KEY).get();
     protected final Long payerNum = payer.getAccountNum();
 
-    @Mock protected ReadableKVState<Long, MerkleAccount> aliases;
-    @Mock protected ReadableKVState<Long, MerkleAccount> accounts;
-    @Mock protected MerkleAccount payerAccount;
-    @Mock protected ReadableStates states;
-    @Mock protected HederaAccountNumbers accountNumbers;
-    @Mock protected HederaFileNumbers fileNumbers;
-    @Mock protected CryptoSignatureWaiversImpl waivers;
-    @Mock protected TransactionMetadata metaToHandle;
+    @Mock
+    protected ReadableKVState<Long, MerkleAccount> aliases;
+
+    @Mock
+    protected ReadableKVState<Long, MerkleAccount> accounts;
+
+    @Mock
+    protected MerkleAccount payerAccount;
+
+    @Mock
+    protected ReadableStates states;
+
+    @Mock
+    protected CryptoSignatureWaiversImpl waivers;
+
+    @Mock
+    protected TransactionMetadata metaToHandle;
+
     protected ReadableAccountStore store;
-    protected PreHandleContext context;
 
     @BeforeEach
     void commonSetUp() {
         given(states.<Long, MerkleAccount>get(ACCOUNTS)).willReturn(accounts);
         given(states.<Long, MerkleAccount>get(ALIASES)).willReturn(aliases);
         store = new ReadableAccountStore(states);
-        context = new PreHandleContext(accountNumbers, fileNumbers, store);
         setUpPayer();
     }
 
     protected void basicMetaAssertions(
-            final TransactionMetadata meta,
+            final PreHandleContext context,
             final int keysSize,
             final boolean failed,
             final ResponseCodeEnum failureStatus) {
-        assertEquals(keysSize, meta.requiredNonPayerKeys().size());
-        assertTrue(failed ? meta.failed() : !meta.failed());
-        assertEquals(failureStatus, meta.status());
+        assertThat(context.getRequiredNonPayerKeys()).hasSize(keysSize);
+        assertThat(context.failed()).isEqualTo(failed);
+        assertThat(context.getStatus()).isEqualTo(failureStatus);
     }
 
     protected void setUpPayer() {

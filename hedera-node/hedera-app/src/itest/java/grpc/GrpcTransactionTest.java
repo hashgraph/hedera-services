@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package grpc;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -43,17 +44,13 @@ class GrpcTransactionTest extends GrpcTestBase {
     private static final String SERVICE = "proto.TestService";
     private static final String METHOD = "testMethod";
     private static final String GOOD_RESPONSE = "All Good";
-    private static final byte[] GOOD_RESPONSE_BYTES =
-            GOOD_RESPONSE.getBytes(StandardCharsets.UTF_8);
+    private static final byte[] GOOD_RESPONSE_BYTES = GOOD_RESPONSE.getBytes(StandardCharsets.UTF_8);
 
-    private static final IngestWorkflow GOOD_INGEST =
-            (session, req, res) -> res.writeBytes(GOOD_RESPONSE_BYTES);
-    private static final QueryWorkflow UNIMPLEMENTED_QUERY =
-            (s, r, r2) -> fail("The Query should not be called");
+    private static final IngestWorkflow GOOD_INGEST = (session, req, res) -> res.writeBytes(GOOD_RESPONSE_BYTES);
+    private static final QueryWorkflow UNIMPLEMENTED_QUERY = (s, r, r2) -> fail("The Query should not be called");
 
     private void setUp(@NonNull final IngestWorkflow ingest) {
-        registerService(
-                new GrpcServiceBuilder(SERVICE, ingest, UNIMPLEMENTED_QUERY).transaction(METHOD));
+        registerService(new GrpcServiceBuilder(SERVICE, ingest, UNIMPLEMENTED_QUERY).transaction(METHOD));
         startServer();
     }
 
@@ -74,15 +71,12 @@ class GrpcTransactionTest extends GrpcTestBase {
     @DisplayName("A function throwing a RuntimeException returns the UNKNOWN status code")
     void functionThrowingRuntimeExceptionReturnsUNKNOWNError() {
         // Given a server where the service will throw a RuntimeException
-        setUp(
-                (session, req, res) -> {
-                    throw new RuntimeException("Failing with RuntimeException");
-                });
+        setUp((session, req, res) -> {
+            throw new RuntimeException("Failing with RuntimeException");
+        });
 
         // When we invoke that service
-        final var e =
-                assertThrows(
-                        StatusRuntimeException.class, () -> send(SERVICE, METHOD, "A Message"));
+        final var e = assertThrows(StatusRuntimeException.class, () -> send(SERVICE, METHOD, "A Message"));
 
         // Then the Status code will be UNKNOWN.
         assertEquals(Status.UNKNOWN, e.getStatus());
@@ -92,15 +86,12 @@ class GrpcTransactionTest extends GrpcTestBase {
     @DisplayName("A function throwing an Error returns the UNKNOWN status code")
     void functionThrowingErrorReturnsUNKNOWNError() {
         // Given a server where the service will throw an Error
-        setUp(
-                (session, req, res) -> {
-                    throw new Error("Whoops!");
-                });
+        setUp((session, req, res) -> {
+            throw new Error("Whoops!");
+        });
 
         // When we invoke that service
-        final var e =
-                assertThrows(
-                        StatusRuntimeException.class, () -> send(SERVICE, METHOD, "A Message"));
+        final var e = assertThrows(StatusRuntimeException.class, () -> send(SERVICE, METHOD, "A Message"));
 
         // Then the Status code will be UNKNOWN.
         assertEquals(Status.UNKNOWN, e.getStatus());
@@ -115,15 +106,12 @@ class GrpcTransactionTest extends GrpcTestBase {
     @DisplayName("Explicitly thrown StatusRuntimeException passes the code through to the response")
     void explicitlyThrowStatusRuntimeException(@NonNull final Status.Code code) {
         // Given a server where the service will throw a specific StatusRuntimeException
-        setUp(
-                (session, req, res) -> {
-                    throw new StatusRuntimeException(code.toStatus());
-                });
+        setUp((session, req, res) -> {
+            throw new StatusRuntimeException(code.toStatus());
+        });
 
         // When we invoke that service
-        final var e =
-                assertThrows(
-                        StatusRuntimeException.class, () -> send(SERVICE, METHOD, "A Message"));
+        final var e = assertThrows(StatusRuntimeException.class, () -> send(SERVICE, METHOD, "A Message"));
 
         // Then the Status code will match the exception
         assertEquals(code.toStatus(), e.getStatus());
@@ -134,14 +122,11 @@ class GrpcTransactionTest extends GrpcTestBase {
     void sendTransactionToUnknownEndpoint() {
         // Given a client that knows about a method that DOES NOT EXIST on the server
         registerServiceOnClientOnly(
-                new GrpcServiceBuilder(SERVICE, NOOP_INGEST_WORKFLOW, NOOP_QUERY_WORKFLOW)
-                        .transaction("unknown"));
+                new GrpcServiceBuilder(SERVICE, NOOP_INGEST_WORKFLOW, NOOP_QUERY_WORKFLOW).transaction("unknown"));
         setUp(GOOD_INGEST);
 
         // When I call the service but with an unknown method
-        final var e =
-                assertThrows(
-                        StatusRuntimeException.class, () -> send(SERVICE, "unknown", "payload"));
+        final var e = assertThrows(StatusRuntimeException.class, () -> send(SERVICE, "unknown", "payload"));
 
         // Then the resulting status code is UNIMPLEMENTED
         assertEquals(Status.UNIMPLEMENTED.getCode(), e.getStatus().getCode());
@@ -151,16 +136,12 @@ class GrpcTransactionTest extends GrpcTestBase {
     @DisplayName("Send a valid transaction to an unknown service")
     void sendTransactionToUnknownService() {
         // Given a client that knows about a service that DOES NOT exist on the server
-        registerServiceOnClientOnly(
-                new GrpcServiceBuilder("UnknownService", NOOP_INGEST_WORKFLOW, NOOP_QUERY_WORKFLOW)
-                        .transaction(METHOD));
+        registerServiceOnClientOnly(new GrpcServiceBuilder("UnknownService", NOOP_INGEST_WORKFLOW, NOOP_QUERY_WORKFLOW)
+                .transaction(METHOD));
         setUp(GOOD_INGEST);
 
         // When I call the unknown service
-        final var e =
-                assertThrows(
-                        StatusRuntimeException.class,
-                        () -> send("UnknownService", METHOD, "payload"));
+        final var e = assertThrows(StatusRuntimeException.class, () -> send("UnknownService", METHOD, "payload"));
 
         // Then the resulting status code is UNIMPLEMENTED
         assertEquals(Status.UNIMPLEMENTED.getCode(), e.getStatus().getCode());
@@ -181,8 +162,7 @@ class GrpcTransactionTest extends GrpcTestBase {
 
         // When I call a method on the service and pass too many bytes
         final var payload = randomString(1024 * 10);
-        final var e =
-                assertThrows(StatusRuntimeException.class, () -> send(SERVICE, METHOD, payload));
+        final var e = assertThrows(StatusRuntimeException.class, () -> send(SERVICE, METHOD, payload));
 
         // Then the resulting status code is UNKNOWN
         assertEquals(Status.UNKNOWN.getCode(), e.getStatus().getCode());

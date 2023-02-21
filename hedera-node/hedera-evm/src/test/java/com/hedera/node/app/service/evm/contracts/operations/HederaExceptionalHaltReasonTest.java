@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.contracts.operations;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,13 +35,10 @@ class HederaExceptionalHaltReasonTest {
     @Test
     void instance() {
         assertEquals(
-                "Invalid account reference",
-                HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS.getDescription());
+                "Invalid account reference", HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS.getDescription());
         assertEquals(
                 "Self destruct to the same address",
                 HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF.getDescription());
-        assertEquals(
-                "Invalid signature",
-                HederaExceptionalHaltReason.INVALID_SIGNATURE.getDescription());
+        assertEquals("Invalid signature", HederaExceptionalHaltReason.INVALID_SIGNATURE.getDescription());
     }
 }

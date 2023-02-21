@@ -13,67 +13,66 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.schedule.impl.handlers;
 
-import com.hedera.hapi.node.base.AccountID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleDispatcher;
-import com.hedera.node.app.spi.meta.ScheduleTransactionMetadata;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
  * HederaFunctionality#SCHEDULE_SIGN}.
  */
+@Singleton
 public class ScheduleSignHandler extends AbstractScheduleHandler implements TransactionHandler {
+    @Inject
+    public ScheduleSignHandler() {}
+
     /**
      * Pre-handles a {@link HederaFunctionality#SCHEDULE_SIGN} transaction, returning the metadata
      * required to, at minimum, validate the signatures of all required signing keys.
      *
-     * @param txn the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @param keyLookup the {@link AccountKeyLookup} to use for key resolution
+     * @param context the {@link PreHandleContext} which collects all information that will be
+     *     passed to {@link #handle(TransactionMetadata)}
      * @param scheduleStore the {@link ReadableScheduleStore} to use for schedule resolution
      * @param dispatcher the {@link PreHandleDispatcher} that can be used to pre-handle the inner
      *     txn
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public ScheduleTransactionMetadata preHandle(
-            @NonNull final TransactionBody txn,
-            @NonNull final AccountID payer,
-            @NonNull final AccountKeyLookup keyLookup,
+    public void preHandle(
+            @NonNull final PreHandleContext context,
             @NonNull final ReadableScheduleStore scheduleStore,
             @NonNull final PreHandleDispatcher dispatcher) {
-        //        final var op = txn.scheduleSign();
-        //        final var id = op.scheduleID();
-        //
-        //        final var scheduleLookupResult = scheduleStore.get(id);
-        //        if (scheduleLookupResult.isEmpty()) {
-        //            return new InvalidTransactionMetadata(txn, payer, INVALID_SCHEDULE_ID);
-        //        }
-        //
-        //        final var meta =
-        //                new ScheduleSigTransactionMetadataBuilder(keyLookup)
-        //                        .txnBody(txn)
-        //                        .payerKeyFor(payer);
-        //
-        //        final var scheduledTxn = scheduleLookupResult.get().scheduledTxn();
-        //        final var optionalPayer = scheduleLookupResult.get().designatedPayer();
-        //        final var payerForNested =
-        //                optionalPayer.orElse(scheduledTxn.getTransactionID().getAccountID());
-        //
-        //        final var innerMeta = preHandleScheduledTxn(scheduledTxn, payerForNested,
-        // dispatcher);
-        //        meta.scheduledMeta(innerMeta);
-        //        return meta.build();
-        return null;
+        requireNonNull(context);
+        requireNonNull(scheduleStore);
+        requireNonNull(dispatcher);
+        final var txn = context.getTxn();
+        final var op = txn.scheduleSign().orElseThrow();
+        final var id = op.scheduleID();
+
+        final var scheduleLookupResult = scheduleStore.get(id);
+        if (scheduleLookupResult.isEmpty()) {
+            context.status(INVALID_SCHEDULE_ID);
+            return;
+        }
+
+        final var scheduledTxn = scheduleLookupResult.get().scheduledTxn();
+        final var optionalPayer = scheduleLookupResult.get().designatedPayer();
+        final var payerForNested =
+                optionalPayer.orElse(scheduledTxn.transactionID().accountID());
+
+        final var innerMeta = preHandleScheduledTxn(scheduledTxn, payerForNested, dispatcher);
+        context.handlerMetadata(innerMeta);
     }
 
     /**
@@ -86,6 +85,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
+        requireNonNull(metadata);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

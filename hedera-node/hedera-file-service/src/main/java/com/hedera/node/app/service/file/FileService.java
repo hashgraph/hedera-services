@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.file;
 
 import com.hedera.node.app.spi.Service;
@@ -27,10 +28,12 @@ import java.util.ServiceLoader;
  */
 public interface FileService extends Service {
 
+    String NAME = "FileService";
+
     @NonNull
     @Override
     default String getServiceName() {
-        return FileService.class.getSimpleName();
+        return NAME;
     }
 
     /**

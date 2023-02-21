@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.contract;
 
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.encodeParametersForCall;
@@ -38,7 +39,10 @@ public abstract class HapiBaseCall<T extends HapiTxnOp<T>> extends HapiTxnOp<T> 
     protected byte[] initializeCallData() {
         byte[] callData;
         if (explicitHexedParams.isPresent()) {
-            callData = explicitHexedParams.map(Supplier::get).map(CommonUtils::unhex).orElseThrow();
+            callData = explicitHexedParams
+                    .map(Supplier::get)
+                    .map(CommonUtils::unhex)
+                    .orElseThrow();
         } else {
             callData = encodeParametersForCall(params, abi);
         }

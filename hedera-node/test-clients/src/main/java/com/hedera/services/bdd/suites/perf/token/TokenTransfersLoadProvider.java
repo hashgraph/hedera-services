@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.token;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -69,10 +70,9 @@ public class TokenTransfersLoadProvider extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    runTokenTransfers(),
-                });
+        return List.of(new HapiSpec[] {
+            runTokenTransfers(),
+        });
     }
 
     private HapiSpec runTokenTransfers() {
@@ -82,16 +82,14 @@ public class TokenTransfersLoadProvider extends HapiSuite {
                         stdMgmtOf(duration, unit, maxOpsPerSec),
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(GENESIS)
-                                .overridingProps(
-                                        Map.of(
-                                                "balances.exportPeriodSecs",
-                                                "300",
-                                                "balances.exportDir.path",
-                                                "data/accountBalances/")))
-                .when(
-                        runWithProvider(tokenTransfersFactory())
-                                .lasting(duration::get, unit::get)
-                                .maxOpsPerSec(maxOpsPerSec::get))
+                                .overridingProps(Map.of(
+                                        "balances.exportPeriodSecs",
+                                        "300",
+                                        "balances.exportDir.path",
+                                        "data/accountBalances/")))
+                .when(runWithProvider(tokenTransfersFactory())
+                        .lasting(duration::get, unit::get)
+                        .maxOpsPerSec(maxOpsPerSec::get))
                 .then(
                         getAccountBalance(DEFAULT_PAYER).logged(),
                         // The freeze and long wait after freeze means to keep the server in
@@ -118,128 +116,104 @@ public class TokenTransfersLoadProvider extends HapiSuite {
         Map<String, List<String>> senders = new HashMap<>();
         Map<String, List<String>> receivers = new HashMap<>();
 
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        var ciProps = spec.setup().ciPropertiesMap();
-                        balanceInit.set(ciProps.getLong("balanceInit"));
-                        tokensPerTxn.set(ciProps.getInteger("tokensPerTxn"));
-                        sendingAccountsPerToken.set(ciProps.getInteger("sendingAccountsPerToken"));
-                        receivingAccountsPerToken.set(
-                                ciProps.getInteger("receivingAccountsPerToken"));
+        return spec -> new OpProvider() {
+            @Override
+            public List<HapiSpecOperation> suggestedInitializers() {
+                var ciProps = spec.setup().ciPropertiesMap();
+                balanceInit.set(ciProps.getLong("balanceInit"));
+                tokensPerTxn.set(ciProps.getInteger("tokensPerTxn"));
+                sendingAccountsPerToken.set(ciProps.getInteger("sendingAccountsPerToken"));
+                receivingAccountsPerToken.set(ciProps.getInteger("receivingAccountsPerToken"));
 
-                        var initialSupply =
-                                (sendingAccountsPerToken.get() + receivingAccountsPerToken.get())
-                                        * balanceInit.get();
-                        List<HapiSpecOperation> initializers = new ArrayList<>();
-                        for (int i = 0; i < tokensPerTxn.get(); i++) {
-                            var token = "token" + i;
-                            var treasury = "treasury" + i;
-                            initializers.add(cryptoCreate(treasury));
-                            initializers.add(
-                                    tokenCreate(token)
-                                            .treasury(treasury)
-                                            .initialSupply(initialSupply));
-                            treasuries.add(treasury);
-                            for (int j = 0; j < sendingAccountsPerToken.get(); j++) {
-                                var sender = token + "sender" + j;
-                                senders.computeIfAbsent(token, ignore -> new ArrayList<>())
-                                        .add(sender);
-                                initializers.add(cryptoCreate(sender));
-                                initializers.add(tokenAssociate(sender, token));
-                                initializers.add(
-                                        cryptoTransfer(
-                                                moving(balanceInit.get(), token)
-                                                        .between(treasury, sender)));
-                            }
-                            for (int j = 0; j < receivingAccountsPerToken.get(); j++) {
-                                var receiver = token + "receiver" + j;
-                                receivers
-                                        .computeIfAbsent(token, ignore -> new ArrayList<>())
-                                        .add(receiver);
-                                initializers.add(cryptoCreate(receiver));
-                                initializers.add(tokenAssociate(receiver, token));
-                                initializers.add(
-                                        cryptoTransfer(
-                                                moving(balanceInit.get(), token)
-                                                        .between(treasury, receiver)));
-                            }
-                        }
-
-                        for (HapiSpecOperation op : initializers) {
-                            if (op instanceof HapiTxnOp) {
-                                ((HapiTxnOp) op).hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS);
-                            }
-                        }
-
-                        return initializers;
+                var initialSupply =
+                        (sendingAccountsPerToken.get() + receivingAccountsPerToken.get()) * balanceInit.get();
+                List<HapiSpecOperation> initializers = new ArrayList<>();
+                for (int i = 0; i < tokensPerTxn.get(); i++) {
+                    var token = "token" + i;
+                    var treasury = "treasury" + i;
+                    initializers.add(cryptoCreate(treasury));
+                    initializers.add(tokenCreate(token).treasury(treasury).initialSupply(initialSupply));
+                    treasuries.add(treasury);
+                    for (int j = 0; j < sendingAccountsPerToken.get(); j++) {
+                        var sender = token + "sender" + j;
+                        senders.computeIfAbsent(token, ignore -> new ArrayList<>())
+                                .add(sender);
+                        initializers.add(cryptoCreate(sender));
+                        initializers.add(tokenAssociate(sender, token));
+                        initializers.add(
+                                cryptoTransfer(moving(balanceInit.get(), token).between(treasury, sender)));
                     }
-
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        HapiSpecOperation op;
-                        var numTokens = tokensPerTxn.get();
-                        var numSenders = sendingAccountsPerToken.get();
-                        var numReceivers = receivingAccountsPerToken.get();
-                        if (firstDir.get()) {
-                            var xfers = new TokenMovement[numTokens * numSenders];
-                            for (int i = 0; i < numTokens; i++) {
-                                var token = "token" + i;
-                                for (int j = 0; j < numSenders; j++) {
-                                    var receivers = new String[numReceivers];
-                                    for (int k = 0; k < numReceivers; k++) {
-                                        receivers[k] = token + "receiver" + k;
-                                    }
-                                    xfers[i * numSenders + j] =
-                                            moving(numReceivers, token)
-                                                    .distributing(token + "sender" + j, receivers);
-                                }
-                            }
-                            op =
-                                    cryptoTransfer(xfers)
-                                            .hasKnownStatusFrom(
-                                                    OK,
-                                                    DUPLICATE_TRANSACTION,
-                                                    SUCCESS,
-                                                    UNKNOWN,
-                                                    INSUFFICIENT_PAYER_BALANCE)
-                                            .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
-                                            .hasPrecheckFrom(OK, PLATFORM_NOT_ACTIVE)
-                                            .noLogging()
-                                            .deferStatusResolution();
-                            firstDir.set(Boolean.FALSE);
-                        } else {
-                            var xfers = new TokenMovement[numTokens * numReceivers];
-                            for (int i = 0; i < numTokens; i++) {
-                                var token = "token" + i;
-                                for (int j = 0; j < numReceivers; j++) {
-                                    var senders = new String[numSenders];
-                                    for (int k = 0; k < numSenders; k++) {
-                                        senders[k] = token + "sender" + k;
-                                    }
-                                    xfers[i * numReceivers + j] =
-                                            moving(numSenders, token)
-                                                    .distributing(token + "receiver" + j, senders);
-                                }
-                            }
-                            op =
-                                    cryptoTransfer(xfers)
-                                            .hasKnownStatusFrom(
-                                                    OK,
-                                                    DUPLICATE_TRANSACTION,
-                                                    SUCCESS,
-                                                    UNKNOWN,
-                                                    INSUFFICIENT_PAYER_BALANCE)
-                                            .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
-                                            .hasPrecheckFrom(OK, PLATFORM_NOT_ACTIVE)
-                                            .noLogging()
-                                            .deferStatusResolution();
-                            firstDir.set(Boolean.TRUE);
-                        }
-                        return Optional.of(op);
+                    for (int j = 0; j < receivingAccountsPerToken.get(); j++) {
+                        var receiver = token + "receiver" + j;
+                        receivers
+                                .computeIfAbsent(token, ignore -> new ArrayList<>())
+                                .add(receiver);
+                        initializers.add(cryptoCreate(receiver));
+                        initializers.add(tokenAssociate(receiver, token));
+                        initializers.add(
+                                cryptoTransfer(moving(balanceInit.get(), token).between(treasury, receiver)));
                     }
-                };
+                }
+
+                for (HapiSpecOperation op : initializers) {
+                    if (op instanceof HapiTxnOp) {
+                        ((HapiTxnOp) op).hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS);
+                    }
+                }
+
+                return initializers;
+            }
+
+            @Override
+            public Optional<HapiSpecOperation> get() {
+                HapiSpecOperation op;
+                var numTokens = tokensPerTxn.get();
+                var numSenders = sendingAccountsPerToken.get();
+                var numReceivers = receivingAccountsPerToken.get();
+                if (firstDir.get()) {
+                    var xfers = new TokenMovement[numTokens * numSenders];
+                    for (int i = 0; i < numTokens; i++) {
+                        var token = "token" + i;
+                        for (int j = 0; j < numSenders; j++) {
+                            var receivers = new String[numReceivers];
+                            for (int k = 0; k < numReceivers; k++) {
+                                receivers[k] = token + "receiver" + k;
+                            }
+                            xfers[i * numSenders + j] =
+                                    moving(numReceivers, token).distributing(token + "sender" + j, receivers);
+                        }
+                    }
+                    op = cryptoTransfer(xfers)
+                            .hasKnownStatusFrom(OK, DUPLICATE_TRANSACTION, SUCCESS, UNKNOWN, INSUFFICIENT_PAYER_BALANCE)
+                            .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
+                            .hasPrecheckFrom(OK, PLATFORM_NOT_ACTIVE)
+                            .noLogging()
+                            .deferStatusResolution();
+                    firstDir.set(Boolean.FALSE);
+                } else {
+                    var xfers = new TokenMovement[numTokens * numReceivers];
+                    for (int i = 0; i < numTokens; i++) {
+                        var token = "token" + i;
+                        for (int j = 0; j < numReceivers; j++) {
+                            var senders = new String[numSenders];
+                            for (int k = 0; k < numSenders; k++) {
+                                senders[k] = token + "sender" + k;
+                            }
+                            xfers[i * numReceivers + j] =
+                                    moving(numSenders, token).distributing(token + "receiver" + j, senders);
+                        }
+                    }
+                    op = cryptoTransfer(xfers)
+                            .hasKnownStatusFrom(OK, DUPLICATE_TRANSACTION, SUCCESS, UNKNOWN, INSUFFICIENT_PAYER_BALANCE)
+                            .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
+                            .hasPrecheckFrom(OK, PLATFORM_NOT_ACTIVE)
+                            .noLogging()
+                            .deferStatusResolution();
+                    firstDir.set(Boolean.TRUE);
+                }
+                return Optional.of(op);
+            }
+        };
     }
 
     @Override

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
@@ -35,10 +36,8 @@ public interface EvmAllowancePrecompile {
     static TokenAllowanceWrapper<byte[], byte[], byte[]> decodeTokenAllowance(final Bytes input) {
         final var tokenAddress = input.slice(4, 20).toArrayUnsafe();
         final var nestedInput = input.slice(24);
-        final Tuple decodedArguments =
-                decodeFunctionCall(nestedInput, ERC_ALLOWANCE_SELECTOR, ERC_ALLOWANCE_DECODER);
+        final Tuple decodedArguments = decodeFunctionCall(nestedInput, ERC_ALLOWANCE_SELECTOR, ERC_ALLOWANCE_DECODER);
 
-        return new TokenAllowanceWrapper<>(
-                tokenAddress, decodedArguments.get(0), decodedArguments.get(1));
+        return new TokenAllowanceWrapper<>(tokenAddress, decodedArguments.get(0), decodedArguments.get(1));
     }
 }

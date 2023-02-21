@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stats;
 
 import static com.hedera.node.app.service.mono.stats.ServicesStatsConfig.IGNORED_FUNCTIONS;
@@ -43,20 +44,15 @@ import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
 
 public class HapiOpSpeedometers {
-    static Supplier<HederaFunctionality[]> allFunctions =
-            HederaFunctionality.class::getEnumConstants;
+    static Supplier<HederaFunctionality[]> allFunctions = HederaFunctionality.class::getEnumConstants;
 
     private final HapiOpCounters counters;
     private final Function<HederaFunctionality, String> statNameFn;
 
-    private final Map<HederaFunctionality, Long> lastReceivedOpsCount =
-            new EnumMap<>(HederaFunctionality.class);
-    private final Map<HederaFunctionality, Long> lastHandledTxnsCount =
-            new EnumMap<>(HederaFunctionality.class);
-    private final Map<HederaFunctionality, Long> lastSubmittedTxnsCount =
-            new EnumMap<>(HederaFunctionality.class);
-    private final Map<HederaFunctionality, Long> lastAnsweredQueriesCount =
-            new EnumMap<>(HederaFunctionality.class);
+    private final Map<HederaFunctionality, Long> lastReceivedOpsCount = new EnumMap<>(HederaFunctionality.class);
+    private final Map<HederaFunctionality, Long> lastHandledTxnsCount = new EnumMap<>(HederaFunctionality.class);
+    private final Map<HederaFunctionality, Long> lastSubmittedTxnsCount = new EnumMap<>(HederaFunctionality.class);
+    private final Map<HederaFunctionality, Long> lastAnsweredQueriesCount = new EnumMap<>(HederaFunctionality.class);
     private Long lastReceivedDeprecatedTxnCount;
 
     private final EnumMap<HederaFunctionality, SpeedometerMetric> receivedOps =
@@ -89,57 +85,49 @@ public class HapiOpSpeedometers {
         double halfLife = properties.statsSpeedometerHalfLifeSecs();
         Arrays.stream(allFunctions.get())
                 .filter(function -> !IGNORED_FUNCTIONS.contains(function))
-                .forEach(
-                        function -> {
-                            receivedOpsConfig.put(
-                                    function,
-                                    speedometerConfigFor(
-                                            function,
-                                            SPEEDOMETER_RECEIVED_NAME_TPL,
-                                            SPEEDOMETER_RECEIVED_DESC_TPL,
-                                            halfLife));
-                            lastReceivedOpsCount.put(function, 0L);
-                            if (QUERY_FUNCTIONS.contains(function)) {
-                                answeredQueriesConfig.put(
+                .forEach(function -> {
+                    receivedOpsConfig.put(
+                            function,
+                            speedometerConfigFor(
+                                    function, SPEEDOMETER_RECEIVED_NAME_TPL, SPEEDOMETER_RECEIVED_DESC_TPL, halfLife));
+                    lastReceivedOpsCount.put(function, 0L);
+                    if (QUERY_FUNCTIONS.contains(function)) {
+                        answeredQueriesConfig.put(
+                                function,
+                                speedometerConfigFor(
                                         function,
-                                        speedometerConfigFor(
-                                                function,
-                                                SPEEDOMETER_ANSWERED_NAME_TPL,
-                                                SPEEDOMETER_ANSWERED_DESC_TPL,
-                                                halfLife));
-                                lastAnsweredQueriesCount.put(function, 0L);
-                            } else {
-                                submittedTxnsConfig.put(
+                                        SPEEDOMETER_ANSWERED_NAME_TPL,
+                                        SPEEDOMETER_ANSWERED_DESC_TPL,
+                                        halfLife));
+                        lastAnsweredQueriesCount.put(function, 0L);
+                    } else {
+                        submittedTxnsConfig.put(
+                                function,
+                                speedometerConfigFor(
                                         function,
-                                        speedometerConfigFor(
-                                                function,
-                                                SPEEDOMETER_SUBMITTED_NAME_TPL,
-                                                SPEEDOMETER_SUBMITTED_DESC_TPL,
-                                                halfLife));
-                                lastSubmittedTxnsCount.put(function, 0L);
-                                handledTxnsConfig.put(
+                                        SPEEDOMETER_SUBMITTED_NAME_TPL,
+                                        SPEEDOMETER_SUBMITTED_DESC_TPL,
+                                        halfLife));
+                        lastSubmittedTxnsCount.put(function, 0L);
+                        handledTxnsConfig.put(
+                                function,
+                                speedometerConfigFor(
                                         function,
-                                        speedometerConfigFor(
-                                                function,
-                                                SPEEDOMETER_HANDLED_NAME_TPL,
-                                                SPEEDOMETER_HANDLED_DESC_TPL,
-                                                halfLife));
-                                lastHandledTxnsCount.put(function, 0L);
-                            }
-                        });
-        receivedDeprecatedTxnsConfig =
-                new SpeedometerMetric.Config(STAT_CATEGORY, SPEEDOMETER_DEPRECATED_TXNS_NAME)
-                        .withDescription(SPEEDOMETER_DEPRECATED_TXNS_DESC)
-                        .withFormat(SPEEDOMETER_FORMAT)
-                        .withHalfLife(halfLife);
+                                        SPEEDOMETER_HANDLED_NAME_TPL,
+                                        SPEEDOMETER_HANDLED_DESC_TPL,
+                                        halfLife));
+                        lastHandledTxnsCount.put(function, 0L);
+                    }
+                });
+        receivedDeprecatedTxnsConfig = new SpeedometerMetric.Config(STAT_CATEGORY, SPEEDOMETER_DEPRECATED_TXNS_NAME)
+                .withDescription(SPEEDOMETER_DEPRECATED_TXNS_DESC)
+                .withFormat(SPEEDOMETER_FORMAT)
+                .withHalfLife(halfLife);
         lastReceivedDeprecatedTxnCount = 0L;
     }
 
     public SpeedometerMetric.Config speedometerConfigFor(
-            final HederaFunctionality function,
-            final String nameTpl,
-            final String descTpl,
-            final double halfLife) {
+            final HederaFunctionality function, final String nameTpl, final String descTpl, final double halfLife) {
         final var baseName = statNameFn.apply(function);
         var fullName = String.format(nameTpl, baseName);
         var description = String.format(descTpl, baseName);
@@ -168,9 +156,8 @@ public class HapiOpSpeedometers {
             final Map<HederaFunctionality, SpeedometerMetric> speedometers,
             final Map<HederaFunctionality, SpeedometerMetric.Config> configs) {
 
-        configs.forEach(
-                (function, config) ->
-                        speedometers.put(function, platform.getMetrics().getOrCreate(config)));
+        configs.forEach((function, config) ->
+                speedometers.put(function, platform.getMetrics().getOrCreate(config)));
     }
 
     public void updateAll() {
@@ -179,8 +166,7 @@ public class HapiOpSpeedometers {
         updateSpeedometers(handledTxns, lastHandledTxnsCount, counters::handledSoFar);
         updateSpeedometers(answeredQueries, lastAnsweredQueriesCount, counters::answeredSoFar);
 
-        receivedDeprecatedTxns.update(
-                (double) counters.receivedDeprecatedTxnSoFar() - lastReceivedDeprecatedTxnCount);
+        receivedDeprecatedTxns.update((double) counters.receivedDeprecatedTxnSoFar() - lastReceivedDeprecatedTxnCount);
         lastReceivedDeprecatedTxnCount = counters.receivedDeprecatedTxnSoFar();
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.commands.files;
 
 import com.hedera.services.yahcli.Yahcli;
@@ -33,7 +34,8 @@ import picocli.CommandLine.ParentCommand;
         },
         description = "Uploads/downloads system files")
 public class SysFilesCommand implements Callable<Integer> {
-    @ParentCommand Yahcli yahcli;
+    @ParentCommand
+    Yahcli yahcli;
 
     static String resolvedDir(String literal, ConfigManager config) {
         if (literal.startsWith("{network}")) {

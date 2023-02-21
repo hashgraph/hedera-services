@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package grpc;
 
 import com.hedera.node.app.grpc.GrpcServiceBuilder;
@@ -56,15 +57,12 @@ import org.junit.jupiter.api.Assertions;
  */
 abstract class GrpcTestBase extends TestBase {
     /** Used as a dependency to the {@link Metrics} system. */
-    private static final ScheduledExecutorService METRIC_EXECUTOR =
-            Executors.newSingleThreadScheduledExecutor();
+    private static final ScheduledExecutorService METRIC_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
 
     /** A built-in {@link IngestWorkflow} which succeeds and does nothing. */
-    protected static final IngestWorkflow NOOP_INGEST_WORKFLOW =
-            (session, requestBuffer, responseBuffer) -> {};
+    protected static final IngestWorkflow NOOP_INGEST_WORKFLOW = (session, requestBuffer, responseBuffer) -> {};
     /** A built-in {@link QueryWorkflow} which succeeds and does nothing. */
-    protected static final QueryWorkflow NOOP_QUERY_WORKFLOW =
-            (session, requestBuffer, responseBuffer) -> {};
+    protected static final QueryWorkflow NOOP_QUERY_WORKFLOW = (session, requestBuffer, responseBuffer) -> {};
 
     /**
      * This {@link GrpcServer} is used to handle the wire protocol tasks and delegate to our gRPC
@@ -101,8 +99,8 @@ abstract class GrpcTestBase extends TestBase {
      * The gRPC system has extensive metrics. This object allows us to inspect them and make sure
      * they are being set correctly for different types of calls.
      */
-    protected Metrics metrics = new DefaultMetrics(
-            nodeSelfId, new MetricKeyRegistry(), METRIC_EXECUTOR, new DefaultMetricsFactory());
+    protected Metrics metrics =
+            new DefaultMetrics(nodeSelfId, new MetricKeyRegistry(), METRIC_EXECUTOR, new DefaultMetricsFactory());
 
     /** The host of our gRPC server. */
     protected String host = "127.0.0.1";
@@ -131,9 +129,7 @@ abstract class GrpcTestBase extends TestBase {
         final var routingBuilder = GrpcRouting.builder();
         services.forEach(routingBuilder::register);
         grpcServer =
-                GrpcServer.create(
-                        GrpcServerConfiguration.builder().port(port).build(),
-                        routingBuilder.build());
+                GrpcServer.create(GrpcServerConfiguration.builder().port(port).build(), routingBuilder.build());
 
         grpcServer.start().thenAccept(server -> latch.countDown());
 
@@ -149,37 +145,35 @@ abstract class GrpcTestBase extends TestBase {
         host = "127.0.0.1"; // InetAddress.getLocalHost().getHostName();
         port = grpcServer.port();
 
-        final var channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
+        final var channel =
+                ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
 
         // Collect the full set of services and method descriptors for the client side
         //noinspection rawtypes
         final var clientDescriptors = new HashMap<String, Set<MethodDescriptor>>();
         services.forEach(s -> clientDescriptors.put(s.name(), new HashSet<>(s.methods())));
-        clientOnlyServices.forEach(
-                s -> {
-                    final var existingMethods = clientDescriptors.get(s.name());
-                    if (existingMethods == null) {
-                        clientDescriptors.put(s.name(), new HashSet<>(s.methods()));
-                    } else {
-                        existingMethods.addAll(s.methods());
-                    }
-                });
+        clientOnlyServices.forEach(s -> {
+            final var existingMethods = clientDescriptors.get(s.name());
+            if (existingMethods == null) {
+                clientDescriptors.put(s.name(), new HashSet<>(s.methods()));
+            } else {
+                existingMethods.addAll(s.methods());
+            }
+        });
 
         // Setup the client side
-        clientDescriptors.forEach(
-                (serviceName, methods) -> {
-                    final var builder = io.grpc.ServiceDescriptor.newBuilder(serviceName);
-                    methods.forEach(method -> builder.addMethod(method.descriptor()));
-                    final var clientServiceDescriptor = builder.build();
-                    final var client =
-                            GrpcServiceClient.builder(
-                                            channel,
-                                            ClientServiceDescriptor.builder(clientServiceDescriptor)
-                                                    .build())
-                                    .build();
+        clientDescriptors.forEach((serviceName, methods) -> {
+            final var builder = io.grpc.ServiceDescriptor.newBuilder(serviceName);
+            methods.forEach(method -> builder.addMethod(method.descriptor()));
+            final var clientServiceDescriptor = builder.build();
+            final var client = GrpcServiceClient.builder(
+                            channel,
+                            ClientServiceDescriptor.builder(clientServiceDescriptor)
+                                    .build())
+                    .build();
 
-                    clients.put(serviceName, client);
-                });
+            clients.put(serviceName, client);
+        });
     }
 
     @AfterEach

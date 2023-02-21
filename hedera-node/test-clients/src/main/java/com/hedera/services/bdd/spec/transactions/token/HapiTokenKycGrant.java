@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -60,19 +61,13 @@ public class HapiTokenKycGrant extends HapiTxnOp<HapiTokenKycGrant> {
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
-            throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         return spec.fees()
-                .forActivityBasedOp(
-                        HederaFunctionality.TokenGrantKycToAccount,
-                        this::usageEstimate,
-                        txn,
-                        numPayerKeys);
+                .forActivityBasedOp(HederaFunctionality.TokenGrantKycToAccount, this::usageEstimate, txn, numPayerKeys);
     }
 
     private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
-        return TokenGrantKycUsage.newEstimate(
-                        txn, new TxnUsageEstimator(suFrom(svo), txn, ESTIMATOR_UTILS))
+        return TokenGrantKycUsage.newEstimate(txn, new TxnUsageEstimator(suFrom(svo), txn, ESTIMATOR_UTILS))
                 .get();
     }
 
@@ -80,22 +75,19 @@ public class HapiTokenKycGrant extends HapiTxnOp<HapiTokenKycGrant> {
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final var aId = TxnUtils.asId(account, spec);
         final var tId = TxnUtils.asTokenId(token, spec);
-        final TokenGrantKycTransactionBody opBody =
-                spec.txns()
-                        .<TokenGrantKycTransactionBody, TokenGrantKycTransactionBody.Builder>body(
-                                TokenGrantKycTransactionBody.class,
-                                b -> {
-                                    b.setAccount(aId);
-                                    b.setToken(tId);
-                                });
+        final TokenGrantKycTransactionBody opBody = spec.txns()
+                .<TokenGrantKycTransactionBody, TokenGrantKycTransactionBody.Builder>body(
+                        TokenGrantKycTransactionBody.class, b -> {
+                            b.setAccount(aId);
+                            b.setToken(tId);
+                        });
         return b -> b.setTokenGrantKyc(opBody);
     }
 
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
-        return List.of(
-                spec -> spec.registry().getKey(effectivePayer(spec)),
-                spec -> spec.registry().getKycKey(token));
+        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
+                .getKycKey(token));
     }
 
     @Override

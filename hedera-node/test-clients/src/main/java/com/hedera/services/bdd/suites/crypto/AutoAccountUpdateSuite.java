@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -65,8 +66,7 @@ public class AutoAccountUpdateSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                updateKeyOnAutoCreatedAccount(), modifySigRequiredAfterAutoAccountCreation());
+        return List.of(updateKeyOnAutoCreatedAccount(), modifySigRequiredAfterAutoAccountCreation());
     }
 
     @Override
@@ -88,24 +88,18 @@ public class AutoAccountUpdateSuite extends HapiSuite {
                                 .hasNoAliasInChildRecord(0)
                                 .logged(),
                         getAliasedAccountInfo(ALIAS)
-                                .has(
-                                        accountWith()
-                                                .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                                .receiverSigReq(false)
-                                                .expectedBalanceWithChargedUsd(
-                                                        (ONE_HUNDRED_HBARS), 0, 0)))
+                                .has(accountWith()
+                                        .autoRenew(THREE_MONTHS_IN_SECONDS)
+                                        .receiverSigReq(false)
+                                        .expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0, 0)))
                 .then(
                         /* change receiverSigRequired to false and validate */
-                        cryptoUpdateAliased(ALIAS)
-                                .receiverSigRequired(true)
-                                .signedBy(ALIAS, PAYER, DEFAULT_PAYER),
+                        cryptoUpdateAliased(ALIAS).receiverSigRequired(true).signedBy(ALIAS, PAYER, DEFAULT_PAYER),
                         getAliasedAccountInfo(ALIAS)
-                                .has(
-                                        accountWith()
-                                                .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                                .receiverSigReq(true)
-                                                .expectedBalanceWithChargedUsd(
-                                                        (ONE_HUNDRED_HBARS), 0, 0)),
+                                .has(accountWith()
+                                        .autoRenew(THREE_MONTHS_IN_SECONDS)
+                                        .receiverSigReq(true)
+                                        .expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0, 0)),
 
                         /* transfer without receiver sig fails */
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
@@ -117,24 +111,18 @@ public class AutoAccountUpdateSuite extends HapiSuite {
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
                                 .via(TRANSFER_TXN_3)
                                 .signedBy(ALIAS, PAYER, DEFAULT_PAYER),
-                        getTxnRecord(TRANSFER_TXN_3)
-                                .andAllChildRecords()
-                                .hasNonStakingChildRecordCount(0),
+                        getTxnRecord(TRANSFER_TXN_3).andAllChildRecords().hasNonStakingChildRecordCount(0),
                         getAliasedAccountInfo(ALIAS)
-                                .has(
-                                        accountWith()
-                                                .expectedBalanceWithChargedUsd(
-                                                        (2 * ONE_HUNDRED_HBARS), 0, 0)));
+                                .has(accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0, 0)));
     }
 
     private HapiSpec updateKeyOnAutoCreatedAccount() {
         final var complexKey = "complexKey";
 
-        SigControl ENOUGH_UNIQUE_SIGS =
-                KeyShape.threshSigs(
-                        2,
-                        KeyShape.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, ON),
-                        KeyShape.threshSigs(3, ON, ON, ON, OFF, OFF, OFF, OFF));
+        SigControl ENOUGH_UNIQUE_SIGS = KeyShape.threshSigs(
+                2,
+                KeyShape.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, ON),
+                KeyShape.threshSigs(3, ON, ON, ON, OFF, OFF, OFF, OFF));
 
         return defaultHapiSpec("updateKeyOnAutoCreatedAccount")
                 .given(
@@ -149,11 +137,9 @@ public class AutoAccountUpdateSuite extends HapiSuite {
                         withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
                         getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
                         getAliasedAccountInfo(ALIAS)
-                                .has(
-                                        accountWith()
-                                                .expectedBalanceWithChargedUsd(
-                                                        ONE_HUNDRED_HBARS, 0, 0)
-                                                .alias(ALIAS)))
+                                .has(accountWith()
+                                        .expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0, 0)
+                                        .alias(ALIAS)))
                 .then(
                         /* validate the key on account can be updated to complex key, and has no relation to alias*/
                         cryptoUpdateAliased(ALIAS)
@@ -161,10 +147,8 @@ public class AutoAccountUpdateSuite extends HapiSuite {
                                 .payingWith(PAYER)
                                 .signedBy(ALIAS, complexKey, PAYER, DEFAULT_PAYER),
                         getAliasedAccountInfo(ALIAS)
-                                .has(
-                                        accountWith()
-                                                .expectedBalanceWithChargedUsd(
-                                                        (ONE_HUNDRED_HBARS), 0, 0)
-                                                .key(complexKey)));
+                                .has(accountWith()
+                                        .expectedBalanceWithChargedUsd((ONE_HUNDRED_HBARS), 0, 0)
+                                        .key(complexKey)));
     }
 }

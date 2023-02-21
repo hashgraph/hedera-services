@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.operation;
 
 /*
@@ -94,8 +95,7 @@ public class HederaSelfDestructOperation extends SelfDestructOperation {
             return reversionWith(beneficiary, exceptionalHaltReason);
         }
         final var tbdNum = numOfMirror(updater.permissivelyUnaliased(toBeDeleted.toArrayUnsafe()));
-        final var beneficiaryNum =
-                numOfMirror(updater.permissivelyUnaliased(beneficiaryAddress.toArrayUnsafe()));
+        final var beneficiaryNum = numOfMirror(updater.permissivelyUnaliased(beneficiaryAddress.toArrayUnsafe()));
         txnCtx.recordBeneficiaryOfDeleted(tbdNum, beneficiaryNum);
 
         return super.execute(frame, evm);
@@ -103,9 +103,7 @@ public class HederaSelfDestructOperation extends SelfDestructOperation {
 
     @Nullable
     private ExceptionalHaltReason reasonToHalt(
-            final Address toBeDeleted,
-            final Address beneficiaryAddress,
-            final HederaStackedWorldStateUpdater updater) {
+            final Address toBeDeleted, final Address beneficiaryAddress, final HederaStackedWorldStateUpdater updater) {
         if (toBeDeleted.equals(beneficiaryAddress)) {
             return HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
         }
@@ -121,8 +119,7 @@ public class HederaSelfDestructOperation extends SelfDestructOperation {
         return null;
     }
 
-    private OperationResult reversionWith(
-            final Account beneficiary, final ExceptionalHaltReason reason) {
+    private OperationResult reversionWith(final Account beneficiary, final ExceptionalHaltReason reason) {
         final long cost = gasCalculator().selfDestructOperationGasCost(beneficiary, Wei.ONE);
         return new OperationResult(cost, reason);
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.leaky;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
@@ -174,14 +175,12 @@ import org.junit.jupiter.api.Assertions;
 
 public class LeakyContractTestsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(LeakyContractTestsSuite.class);
-    public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1 =
-            "contracts.maxRefundPercentOfGasLimit";
+    public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1 = "contracts.maxRefundPercentOfGasLimit";
     public static final String CREATE_TX = "createTX";
     public static final String CREATE_TX_REC = "createTXRec";
     private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
-    private static final String CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY =
-            "contracts.allowAutoAssociations";
+    private static final String CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY = "contracts.allowAutoAssociations";
 
     public static void main(String... args) {
         new LeakyContractTestsSuite().runSuiteSync();
@@ -228,22 +227,16 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
                 .when(
                         cryptoCreate(overAmbitiousPayer).balance(payerBalance),
-                        contractCall(
-                                        PAY_RECEIVABLE_CONTRACT,
-                                        DEPOSIT,
-                                        BigInteger.valueOf(overdraftAmount))
+                        contractCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(overdraftAmount))
                                 .payingWith(overAmbitiousPayer)
                                 .sending(overdraftAmount)
                                 .hasPrecheck(INSUFFICIENT_PAYER_BALANCE),
                         usableTxnIdNamed(uncheckedCC).payerId(overAmbitiousPayer),
-                        uncheckedSubmit(
-                                        contractCall(
-                                                        PAY_RECEIVABLE_CONTRACT,
-                                                        DEPOSIT,
-                                                        BigInteger.valueOf(overdraftAmount))
-                                                .txnId(uncheckedCC)
-                                                .payingWith(overAmbitiousPayer)
-                                                .sending(overdraftAmount))
+                        uncheckedSubmit(contractCall(
+                                                PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(overdraftAmount))
+                                        .txnId(uncheckedCC)
+                                        .payingWith(overAmbitiousPayer)
+                                        .sending(overdraftAmount))
                                 .payingWith(GENESIS))
                 .then(
                         sleepFor(1_000),
@@ -262,44 +255,28 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
                         contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER),
                         tokenCreate(EXISTING_TOKEN))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                TOKEN_CREATE_CONTRACT,
-                                                                CREATE_TOKEN_WITH_ALL_CUSTOM_FEES_AVAILABLE,
-                                                                spec.registry()
-                                                                        .getKey(ECDSA_KEY)
-                                                                        .getECDSASecp256K1()
-                                                                        .toByteArray(),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        (byte[])
-                                                                                ArrayUtils
-                                                                                        .toPrimitive(
-                                                                                                Utils
-                                                                                                        .asSolidityAddress(
-                                                                                                                0,
-                                                                                                                0,
-                                                                                                                15252L))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                EXISTING_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                ACCOUNT))),
-                                                                AUTO_RENEW_PERIOD)
-                                                        .via(FIRST_CREATE_TXN)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .sending(DEFAULT_AMOUNT_TO_SEND)
-                                                        .payingWith(ACCOUNT)
-                                                        .refusingEthConversion()
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        TOKEN_CREATE_CONTRACT,
+                                        CREATE_TOKEN_WITH_ALL_CUSTOM_FEES_AVAILABLE,
+                                        spec.registry()
+                                                .getKey(ECDSA_KEY)
+                                                .getECDSASecp256K1()
+                                                .toByteArray(),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                (byte[]) ArrayUtils.toPrimitive(Utils.asSolidityAddress(0, 0, 15252L))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(EXISTING_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        AUTO_RENEW_PERIOD)
+                                .via(FIRST_CREATE_TXN)
+                                .gas(GAS_TO_OFFER)
+                                .sending(DEFAULT_AMOUNT_TO_SEND)
+                                .payingWith(ACCOUNT)
+                                .refusingEthConversion()
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
                         getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
                         getAccountBalance(ACCOUNT).logged(),
@@ -310,11 +287,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 CONTRACT_REVERT_EXECUTED,
                                 TransactionRecordAsserts.recordWith()
                                         .status(INVALID_CUSTOM_FEE_COLLECTOR)
-                                        .contractCallResult(
-                                                ContractFnResultAsserts.resultWith()
-                                                        .error(
-                                                                INVALID_CUSTOM_FEE_COLLECTOR
-                                                                        .name()))));
+                                        .contractCallResult(ContractFnResultAsserts.resultWith()
+                                                .error(INVALID_CUSTOM_FEE_COLLECTOR.name()))));
     }
 
     private HapiSpec createTokenWithInvalidFixedFeeWithERC721Denomination() {
@@ -334,42 +308,29 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .supplyKey(ECDSA_KEY)
                                 .initialSupply(0L))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                TOKEN_CREATE_CONTRACT,
-                                                                CREATE_TOKEN_WITH_ALL_CUSTOM_FEES_AVAILABLE,
-                                                                spec.registry()
-                                                                        .getKey(ECDSA_KEY)
-                                                                        .getECDSASecp256K1()
-                                                                        .toByteArray(),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                feeCollector))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                EXISTING_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                someARAccount))),
-                                                                AUTO_RENEW_PERIOD)
-                                                        .via(FIRST_CREATE_TXN)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .sending(DEFAULT_AMOUNT_TO_SEND)
-                                                        .payingWith(ACCOUNT)
-                                                        .refusingEthConversion()
-                                                        .alsoSigningWithFullPrefix(
-                                                                someARAccount, feeCollector)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        TOKEN_CREATE_CONTRACT,
+                                        CREATE_TOKEN_WITH_ALL_CUSTOM_FEES_AVAILABLE,
+                                        spec.registry()
+                                                .getKey(ECDSA_KEY)
+                                                .getECDSASecp256K1()
+                                                .toByteArray(),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(feeCollector))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(EXISTING_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(someARAccount))),
+                                        AUTO_RENEW_PERIOD)
+                                .via(FIRST_CREATE_TXN)
+                                .gas(GAS_TO_OFFER)
+                                .sending(DEFAULT_AMOUNT_TO_SEND)
+                                .payingWith(ACCOUNT)
+                                .refusingEthConversion()
+                                .alsoSigningWithFullPrefix(someARAccount, feeCollector)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
                         getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
                         getAccountBalance(ACCOUNT).logged(),
@@ -380,11 +341,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 CONTRACT_REVERT_EXECUTED,
                                 TransactionRecordAsserts.recordWith()
                                         .status(CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON)
-                                        .contractCallResult(
-                                                ContractFnResultAsserts.resultWith()
-                                                        .error(
-                                                                CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON
-                                                                        .name()))));
+                                        .contractCallResult(ContractFnResultAsserts.resultWith()
+                                                .error(CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON.name()))));
     }
 
     private HapiSpec createTokenWithInvalidRoyaltyFee() {
@@ -404,54 +362,33 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 .key(treasuryAndFeeCollectorKey)
                                 .balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
-                        contractCreate(TOKEN_CREATE_CONTRACT)
-                                .gas(GAS_TO_OFFER)
-                                .adminKey(CONTRACT_ADMIN_KEY),
+                        contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER).adminKey(CONTRACT_ADMIN_KEY),
                         tokenCreate(EXISTING_TOKEN).exposingCreatedIdTo(existingToken::set))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                TOKEN_CREATE_CONTRACT,
-                                                                "createNonFungibleTokenWithInvalidRoyaltyFee",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getContractId(
-                                                                                                TOKEN_CREATE_CONTRACT))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                feeCollector))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                EXISTING_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                ACCOUNT))),
-                                                                AUTO_RENEW_PERIOD,
-                                                                spec.registry()
-                                                                        .getKey(ED25519KEY)
-                                                                        .getEd25519()
-                                                                        .toByteArray())
-                                                        .via(FIRST_CREATE_TXN)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .sending(DEFAULT_AMOUNT_TO_SEND)
-                                                        .payingWith(ACCOUNT)
-                                                        .signedBy(
-                                                                ECDSA_KEY,
-                                                                treasuryAndFeeCollectorKey)
-                                                        .alsoSigningWithFullPrefix(
-                                                                ED25519KEY,
-                                                                treasuryAndFeeCollectorKey)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        TOKEN_CREATE_CONTRACT,
+                                        "createNonFungibleTokenWithInvalidRoyaltyFee",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(feeCollector))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(EXISTING_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        AUTO_RENEW_PERIOD,
+                                        spec.registry()
+                                                .getKey(ED25519KEY)
+                                                .getEd25519()
+                                                .toByteArray())
+                                .via(FIRST_CREATE_TXN)
+                                .gas(GAS_TO_OFFER)
+                                .sending(DEFAULT_AMOUNT_TO_SEND)
+                                .payingWith(ACCOUNT)
+                                .signedBy(ECDSA_KEY, treasuryAndFeeCollectorKey)
+                                .alsoSigningWithFullPrefix(ED25519KEY, treasuryAndFeeCollectorKey)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
                         getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
                         getAccountBalance(ACCOUNT).logged(),
@@ -462,11 +399,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 CONTRACT_REVERT_EXECUTED,
                                 TransactionRecordAsserts.recordWith()
                                         .status(CUSTOM_FEE_MUST_BE_POSITIVE)
-                                        .contractCallResult(
-                                                ContractFnResultAsserts.resultWith()
-                                                        .error(
-                                                                CUSTOM_FEE_MUST_BE_POSITIVE
-                                                                        .name()))));
+                                        .contractCallResult(ContractFnResultAsserts.resultWith()
+                                                .error(CUSTOM_FEE_MUST_BE_POSITIVE.name()))));
     }
 
     private HapiSpec nonFungibleTokenCreateWithFeesHappyPath() {
@@ -488,64 +422,36 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER),
                         tokenCreate(EXISTING_TOKEN),
                         tokenAssociate(feeCollector, EXISTING_TOKEN))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                TOKEN_CREATE_CONTRACT,
-                                                                "createNonFungibleTokenWithCustomFees",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getContractId(
-                                                                                                TOKEN_CREATE_CONTRACT))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                feeCollector))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                EXISTING_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                ACCOUNT))),
-                                                                AUTO_RENEW_PERIOD,
-                                                                spec.registry()
-                                                                        .getKey(ED25519KEY)
-                                                                        .getEd25519()
-                                                                        .toByteArray())
-                                                        .via(FIRST_CREATE_TXN)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .sending(DEFAULT_AMOUNT_TO_SEND)
-                                                        .payingWith(ACCOUNT)
-                                                        .signedBy(
-                                                                ECDSA_KEY,
-                                                                treasuryAndFeeCollectorKey)
-                                                        .alsoSigningWithFullPrefix(
-                                                                ED25519KEY,
-                                                                treasuryAndFeeCollectorKey)
-                                                        .exposingResultTo(
-                                                                result -> {
-                                                                    log.info(
-                                                                            EXPLICIT_CREATE_RESULT,
-                                                                            result[0]);
-                                                                    final var res =
-                                                                            (Address) result[0];
-                                                                    createTokenNum.set(
-                                                                            res.value()
-                                                                                    .longValueExact());
-                                                                }),
-                                                newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY)
-                                                        .shape(
-                                                                CONTRACT.signedWith(
-                                                                        TOKEN_CREATE_CONTRACT)))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        TOKEN_CREATE_CONTRACT,
+                                        "createNonFungibleTokenWithCustomFees",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(feeCollector))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(EXISTING_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        AUTO_RENEW_PERIOD,
+                                        spec.registry()
+                                                .getKey(ED25519KEY)
+                                                .getEd25519()
+                                                .toByteArray())
+                                .via(FIRST_CREATE_TXN)
+                                .gas(GAS_TO_OFFER)
+                                .sending(DEFAULT_AMOUNT_TO_SEND)
+                                .payingWith(ACCOUNT)
+                                .signedBy(ECDSA_KEY, treasuryAndFeeCollectorKey)
+                                .alsoSigningWithFullPrefix(ED25519KEY, treasuryAndFeeCollectorKey)
+                                .exposingResultTo(result -> {
+                                    log.info(EXPLICIT_CREATE_RESULT, result[0]);
+                                    final var res = (Address) result[0];
+                                    createTokenNum.set(res.value().longValueExact());
+                                }),
+                        newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY).shape(CONTRACT.signedWith(TOKEN_CREATE_CONTRACT)))))
                 .then(
                         getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
                         getAccountBalance(ACCOUNT).logged(),
@@ -554,41 +460,32 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         childRecordsCheck(
                                 FIRST_CREATE_TXN,
                                 ResponseCodeEnum.SUCCESS,
-                                TransactionRecordAsserts.recordWith()
-                                        .status(ResponseCodeEnum.SUCCESS)),
-                        sourcing(
-                                () -> {
-                                    final var newToken =
-                                            asTokenString(
-                                                    TokenID.newBuilder()
-                                                            .setTokenNum(createTokenNum.get())
-                                                            .build());
-                                    return getTokenInfo(newToken)
-                                            .logged()
-                                            .hasTokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                            .hasSymbol(TOKEN_SYMBOL)
-                                            .hasName(TOKEN_NAME)
-                                            .hasDecimals(0)
-                                            .hasTotalSupply(0)
-                                            .hasEntityMemo(MEMO)
-                                            .hasTreasury(feeCollector)
-                                            .hasAutoRenewAccount(ACCOUNT)
-                                            .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
-                                            .hasSupplyType(TokenSupplyType.FINITE)
-                                            .hasMaxSupply(400)
-                                            .searchKeysGlobally()
-                                            .hasAdminKey(TOKEN_CREATE_CONTRACT_AS_KEY)
-                                            .hasPauseStatus(TokenPauseStatus.PauseNotApplicable)
-                                            .hasCustom(
-                                                    royaltyFeeWithFallbackInHbarsInSchedule(
-                                                            4, 5, 10, feeCollector))
-                                            .hasCustom(
-                                                    royaltyFeeWithFallbackInTokenInSchedule(
-                                                            4, 5, 10, EXISTING_TOKEN, feeCollector))
-                                            .hasCustom(
-                                                    royaltyFeeWithoutFallbackInSchedule(
-                                                            4, 5, feeCollector));
-                                }));
+                                TransactionRecordAsserts.recordWith().status(ResponseCodeEnum.SUCCESS)),
+                        sourcing(() -> {
+                            final var newToken = asTokenString(TokenID.newBuilder()
+                                    .setTokenNum(createTokenNum.get())
+                                    .build());
+                            return getTokenInfo(newToken)
+                                    .logged()
+                                    .hasTokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                    .hasSymbol(TOKEN_SYMBOL)
+                                    .hasName(TOKEN_NAME)
+                                    .hasDecimals(0)
+                                    .hasTotalSupply(0)
+                                    .hasEntityMemo(MEMO)
+                                    .hasTreasury(feeCollector)
+                                    .hasAutoRenewAccount(ACCOUNT)
+                                    .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
+                                    .hasSupplyType(TokenSupplyType.FINITE)
+                                    .hasMaxSupply(400)
+                                    .searchKeysGlobally()
+                                    .hasAdminKey(TOKEN_CREATE_CONTRACT_AS_KEY)
+                                    .hasPauseStatus(TokenPauseStatus.PauseNotApplicable)
+                                    .hasCustom(royaltyFeeWithFallbackInHbarsInSchedule(4, 5, 10, feeCollector))
+                                    .hasCustom(royaltyFeeWithFallbackInTokenInSchedule(
+                                            4, 5, 10, EXISTING_TOKEN, feeCollector))
+                                    .hasCustom(royaltyFeeWithoutFallbackInSchedule(4, 5, feeCollector));
+                        }));
     }
 
     private HapiSpec fungibleTokenCreateWithFeesHappyPath() {
@@ -609,56 +506,34 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER),
                         tokenCreate(EXISTING_TOKEN),
                         tokenAssociate(feeCollector, EXISTING_TOKEN))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                TOKEN_CREATE_CONTRACT,
-                                                                CREATE_TOKEN_WITH_ALL_CUSTOM_FEES_AVAILABLE,
-                                                                spec.registry()
-                                                                        .getKey(ECDSA_KEY)
-                                                                        .getECDSASecp256K1()
-                                                                        .toByteArray(),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                feeCollector))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                EXISTING_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                initialAutoRenewAccount))),
-                                                                AUTO_RENEW_PERIOD)
-                                                        .via(FIRST_CREATE_TXN)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .sending(DEFAULT_AMOUNT_TO_SEND)
-                                                        .payingWith(ACCOUNT)
-                                                        .refusingEthConversion()
-                                                        .alsoSigningWithFullPrefix(
-                                                                arEd25519Key, feeCollector)
-                                                        .exposingResultTo(
-                                                                result -> {
-                                                                    log.info(
-                                                                            EXPLICIT_CREATE_RESULT,
-                                                                            result[0]);
-                                                                    final var res =
-                                                                            (Address) result[0];
-                                                                    createdTokenNum.set(
-                                                                            res.value()
-                                                                                    .longValueExact());
-                                                                }),
-                                                newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY)
-                                                        .shape(
-                                                                CONTRACT.signedWith(
-                                                                        TOKEN_CREATE_CONTRACT)))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        TOKEN_CREATE_CONTRACT,
+                                        CREATE_TOKEN_WITH_ALL_CUSTOM_FEES_AVAILABLE,
+                                        spec.registry()
+                                                .getKey(ECDSA_KEY)
+                                                .getECDSASecp256K1()
+                                                .toByteArray(),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(feeCollector))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(EXISTING_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(initialAutoRenewAccount))),
+                                        AUTO_RENEW_PERIOD)
+                                .via(FIRST_CREATE_TXN)
+                                .gas(GAS_TO_OFFER)
+                                .sending(DEFAULT_AMOUNT_TO_SEND)
+                                .payingWith(ACCOUNT)
+                                .refusingEthConversion()
+                                .alsoSigningWithFullPrefix(arEd25519Key, feeCollector)
+                                .exposingResultTo(result -> {
+                                    log.info(EXPLICIT_CREATE_RESULT, result[0]);
+                                    final var res = (Address) result[0];
+                                    createdTokenNum.set(res.value().longValueExact());
+                                }),
+                        newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY).shape(CONTRACT.signedWith(TOKEN_CREATE_CONTRACT)))))
                 .then(
                         getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
                         getAccountBalance(ACCOUNT).logged(),
@@ -667,65 +542,49 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         childRecordsCheck(
                                 FIRST_CREATE_TXN,
                                 ResponseCodeEnum.SUCCESS,
-                                TransactionRecordAsserts.recordWith()
-                                        .status(ResponseCodeEnum.SUCCESS)),
-                        sourcing(
-                                () -> {
-                                    final var newToken =
-                                            asTokenString(
-                                                    TokenID.newBuilder()
-                                                            .setTokenNum(createdTokenNum.get())
-                                                            .build());
-                                    return getTokenInfo(newToken)
-                                            .logged()
-                                            .hasTokenType(TokenType.FUNGIBLE_COMMON)
-                                            .hasSymbol(TOKEN_SYMBOL)
-                                            .hasName(TOKEN_NAME)
-                                            .hasDecimals(8)
-                                            .hasTotalSupply(200)
-                                            .hasEntityMemo(MEMO)
-                                            .hasTreasury(TOKEN_CREATE_CONTRACT)
-                                            .hasAutoRenewAccount(initialAutoRenewAccount)
-                                            .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
-                                            .hasSupplyType(TokenSupplyType.INFINITE)
-                                            .searchKeysGlobally()
-                                            .hasAdminKey(ECDSA_KEY)
-                                            .hasPauseStatus(TokenPauseStatus.PauseNotApplicable)
-                                            .hasCustom(
-                                                    fixedHtsFeeInSchedule(
-                                                            1, EXISTING_TOKEN, feeCollector))
-                                            .hasCustom(fixedHbarFeeInSchedule(2, feeCollector))
-                                            .hasCustom(
-                                                    fixedHtsFeeInSchedule(
-                                                            4, newToken, feeCollector))
-                                            .hasCustom(
-                                                    fractionalFeeInSchedule(
-                                                            4,
-                                                            5,
-                                                            10,
-                                                            OptionalLong.of(30),
-                                                            true,
-                                                            feeCollector));
-                                }));
+                                TransactionRecordAsserts.recordWith().status(ResponseCodeEnum.SUCCESS)),
+                        sourcing(() -> {
+                            final var newToken = asTokenString(TokenID.newBuilder()
+                                    .setTokenNum(createdTokenNum.get())
+                                    .build());
+                            return getTokenInfo(newToken)
+                                    .logged()
+                                    .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                    .hasSymbol(TOKEN_SYMBOL)
+                                    .hasName(TOKEN_NAME)
+                                    .hasDecimals(8)
+                                    .hasTotalSupply(200)
+                                    .hasEntityMemo(MEMO)
+                                    .hasTreasury(TOKEN_CREATE_CONTRACT)
+                                    .hasAutoRenewAccount(initialAutoRenewAccount)
+                                    .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
+                                    .hasSupplyType(TokenSupplyType.INFINITE)
+                                    .searchKeysGlobally()
+                                    .hasAdminKey(ECDSA_KEY)
+                                    .hasPauseStatus(TokenPauseStatus.PauseNotApplicable)
+                                    .hasCustom(fixedHtsFeeInSchedule(1, EXISTING_TOKEN, feeCollector))
+                                    .hasCustom(fixedHbarFeeInSchedule(2, feeCollector))
+                                    .hasCustom(fixedHtsFeeInSchedule(4, newToken, feeCollector))
+                                    .hasCustom(
+                                            fractionalFeeInSchedule(4, 5, 10, OptionalLong.of(30), true, feeCollector));
+                        }));
     }
 
     HapiSpec accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation() {
         final String ACCOUNT = "account";
-        return defaultHapiSpec(
-                        "ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
+        return defaultHapiSpec("ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY).balance(ONE_HUNDRED_HBARS))
-                .when(
-                        ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
-                                .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(ACCOUNT)
-                                .maxGasAllowance(FIVE_HBARS)
-                                .nonce(0)
-                                .gasLimit(GAS_LIMIT)
-                                .hasKnownStatus(INVALID_ACCOUNT_ID))
+                .when(ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
+                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(ACCOUNT)
+                        .maxGasAllowance(FIVE_HBARS)
+                        .nonce(0)
+                        .gasLimit(GAS_LIMIT)
+                        .hasKnownStatus(INVALID_ACCOUNT_ID))
                 .then(overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, "true"));
     }
 
@@ -738,60 +597,36 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         getAccountInfo(DEFAULT_CONTRACT_SENDER)
                                 .savingSnapshot(ACCOUNT_INFO)
                                 .payingWith(GENESIS))
-                .when(
-                        withOpContext(
-                                (spec, log) -> {
-                                    var transferCall =
-                                            contractCall(
-                                                            TRANSFERRING_CONTRACT,
-                                                            TRANSFER_TO_CALLER,
-                                                            BigInteger.valueOf(10))
-                                                    .payingWith(DEFAULT_CONTRACT_SENDER)
-                                                    .via(transferTxn)
-                                                    .logged();
+                .when(withOpContext((spec, log) -> {
+                    var transferCall = contractCall(TRANSFERRING_CONTRACT, TRANSFER_TO_CALLER, BigInteger.valueOf(10))
+                            .payingWith(DEFAULT_CONTRACT_SENDER)
+                            .via(transferTxn)
+                            .logged();
 
-                                    var saveTxnRecord =
-                                            getTxnRecord(transferTxn)
-                                                    .saveTxnRecordToRegistry("txn")
-                                                    .payingWith(GENESIS);
-                                    var saveAccountInfoAfterCall =
-                                            getAccountInfo(DEFAULT_CONTRACT_SENDER)
-                                                    .savingSnapshot(ACCOUNT_INFO_AFTER_CALL)
-                                                    .payingWith(GENESIS);
-                                    var saveContractInfo =
-                                            getContractInfo(TRANSFERRING_CONTRACT)
-                                                    .saveToRegistry(CONTRACT_FROM);
+                    var saveTxnRecord = getTxnRecord(transferTxn)
+                            .saveTxnRecordToRegistry("txn")
+                            .payingWith(GENESIS);
+                    var saveAccountInfoAfterCall = getAccountInfo(DEFAULT_CONTRACT_SENDER)
+                            .savingSnapshot(ACCOUNT_INFO_AFTER_CALL)
+                            .payingWith(GENESIS);
+                    var saveContractInfo =
+                            getContractInfo(TRANSFERRING_CONTRACT).saveToRegistry(CONTRACT_FROM);
 
-                                    allRunFor(
-                                            spec,
-                                            transferCall,
-                                            saveTxnRecord,
-                                            saveAccountInfoAfterCall,
-                                            saveContractInfo);
-                                }))
+                    allRunFor(spec, transferCall, saveTxnRecord, saveAccountInfoAfterCall, saveContractInfo);
+                }))
                 .then(
-                        assertionsHold(
-                                (spec, opLog) -> {
-                                    final var fee =
-                                            spec.registry()
-                                                    .getTransactionRecord("txn")
-                                                    .getTransactionFee();
-                                    final var accountBalanceBeforeCall =
-                                            spec.registry()
-                                                    .getAccountInfo(ACCOUNT_INFO)
-                                                    .getBalance();
-                                    final var accountBalanceAfterCall =
-                                            spec.registry()
-                                                    .getAccountInfo(ACCOUNT_INFO_AFTER_CALL)
-                                                    .getBalance();
-                                    assertEquals(
-                                            accountBalanceAfterCall,
-                                            accountBalanceBeforeCall - fee + 10L);
-                                }),
-                        sourcing(
-                                () ->
-                                        getContractInfo(TRANSFERRING_CONTRACT)
-                                                .has(contractWith().balance(10_000L - 10L))));
+                        assertionsHold((spec, opLog) -> {
+                            final var fee =
+                                    spec.registry().getTransactionRecord("txn").getTransactionFee();
+                            final var accountBalanceBeforeCall =
+                                    spec.registry().getAccountInfo(ACCOUNT_INFO).getBalance();
+                            final var accountBalanceAfterCall = spec.registry()
+                                    .getAccountInfo(ACCOUNT_INFO_AFTER_CALL)
+                                    .getBalance();
+                            assertEquals(accountBalanceAfterCall, accountBalanceBeforeCall - fee + 10L);
+                        }),
+                        sourcing(() -> getContractInfo(TRANSFERRING_CONTRACT)
+                                .has(contractWith().balance(10_000L - 10L))));
     }
 
     private HapiSpec maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
@@ -801,28 +636,20 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         uploadInitCode(SIMPLE_UPDATE_CONTRACT))
                 .when(
                         contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
-                        contractCall(
-                                        SIMPLE_UPDATE_CONTRACT,
-                                        "set",
-                                        BigInteger.valueOf(5),
-                                        BigInteger.valueOf(42))
+                        contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
                                 .gas(300_000L)
                                 .via(CALL_TX))
                 .then(
-                        withOpContext(
-                                (spec, ignore) -> {
-                                    final var subop01 =
-                                            getTxnRecord(CALL_TX)
-                                                    .saveTxnRecordToRegistry(CALL_TX_REC);
-                                    allRunFor(spec, subop01);
+                        withOpContext((spec, ignore) -> {
+                            final var subop01 = getTxnRecord(CALL_TX).saveTxnRecordToRegistry(CALL_TX_REC);
+                            allRunFor(spec, subop01);
 
-                                    final var gasUsed =
-                                            spec.registry()
-                                                    .getTransactionRecord(CALL_TX_REC)
-                                                    .getContractCallResult()
-                                                    .getGasUsed();
-                                    assertEquals(285000, gasUsed);
-                                }),
+                            final var gasUsed = spec.registry()
+                                    .getTransactionRecord(CALL_TX_REC)
+                                    .getContractCallResult()
+                                    .getGasUsed();
+                            assertEquals(285000, gasUsed);
+                        }),
                         resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
     }
 
@@ -844,44 +671,27 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         cryptoCreate(longLivedPayer).autoRenewSecs(longLifetime),
                         uploadInitCode(toyMaker, createIndirectly),
                         contractCreate(toyMaker)
-                                .exposingNumTo(
-                                        num ->
-                                                toyMakerMirror.set(
-                                                        asHexedSolidityAddress(0, 0, num))),
-                        sourcing(
-                                () ->
-                                        contractCreate(createIndirectly)
-                                                .autoRenewSecs(longLifetime)
-                                                .payingWith(GENESIS)))
+                                .exposingNumTo(num -> toyMakerMirror.set(asHexedSolidityAddress(0, 0, num))),
+                        sourcing(() -> contractCreate(createIndirectly)
+                                .autoRenewSecs(longLifetime)
+                                .payingWith(GENESIS)))
                 .when(
                         contractCall(toyMaker, "make")
                                 .payingWith(normalPayer)
-                                .exposingGasTo(
-                                        (status, gasUsed) -> normalPayerGasUsed.set(gasUsed)),
+                                .exposingGasTo((status, gasUsed) -> normalPayerGasUsed.set(gasUsed)),
                         contractCall(toyMaker, "make")
                                 .payingWith(longLivedPayer)
-                                .exposingGasTo(
-                                        (status, gasUsed) -> longLivedPayerGasUsed.set(gasUsed)),
-                        assertionsHold(
-                                (spec, opLog) ->
-                                        assertEquals(
-                                                normalPayerGasUsed.get(),
-                                                longLivedPayerGasUsed.get(),
-                                                "Payer expiry should not affect create storage"
-                                                        + " cost")),
+                                .exposingGasTo((status, gasUsed) -> longLivedPayerGasUsed.set(gasUsed)),
+                        assertionsHold((spec, opLog) -> assertEquals(
+                                normalPayerGasUsed.get(),
+                                longLivedPayerGasUsed.get(),
+                                "Payer expiry should not affect create storage" + " cost")),
                         // Verify that we are still charged a "typical" amount despite the payer and
                         // the original sender contract having extremely long expiry dates
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        createIndirectly,
-                                                        "makeOpaquely",
-                                                        asHeadlongAddress(toyMakerMirror.get()))
-                                                .payingWith(longLivedPayer)))
-                .then(
-                        overriding(
-                                LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION,
-                                "" + DEFAULT_MAX_AUTO_RENEW_PERIOD));
+                        sourcing(() -> contractCall(
+                                        createIndirectly, "makeOpaquely", asHeadlongAddress(toyMakerMirror.get()))
+                                .payingWith(longLivedPayer)))
+                .then(overriding(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION, "" + DEFAULT_MAX_AUTO_RENEW_PERIOD));
     }
 
     private HapiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
@@ -892,11 +702,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         overriding(CONTRACTS_MAX_GAS_PER_SEC, "100"))
                 .when()
                 .then(
-                        contractCall(
-                                        SIMPLE_UPDATE_CONTRACT,
-                                        "set",
-                                        BigInteger.valueOf(5),
-                                        BigInteger.valueOf(42))
+                        contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
                                 .gas(101L)
                                 .hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
                         resetToDefault(CONTRACTS_MAX_GAS_PER_SEC));
@@ -904,14 +710,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     private HapiSpec createGasLimitOverMaxGasLimitFailsPrecheck() {
         return defaultHapiSpec("CreateGasLimitOverMaxGasLimitFailsPrecheck")
-                .given(
-                        overriding("contracts.maxGasPerSec", "100"),
-                        uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
+                .given(overriding("contracts.maxGasPerSec", "100"), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 .then(
-                        contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
-                                .gas(101L)
-                                .hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
+                        contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(101L).hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
                         UtilVerbs.resetToDefault("contracts.maxGasPerSec"));
     }
 
@@ -924,79 +726,53 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         getAccountInfo(DEFAULT_CONTRACT_SENDER)
                                 .savingSnapshot(ACCOUNT_INFO)
                                 .payingWith(GENESIS))
-                .when(
-                        withOpContext(
-                                (spec, log) -> {
-                                    var transferCall =
-                                            contractCall(
-                                                            TRANSFERRING_CONTRACT,
-                                                            TRANSFER_TO_CALLER,
-                                                            BigInteger.ZERO)
-                                                    .payingWith(DEFAULT_CONTRACT_SENDER)
-                                                    .via(transferTxn)
-                                                    .logged();
+                .when(withOpContext((spec, log) -> {
+                    var transferCall = contractCall(TRANSFERRING_CONTRACT, TRANSFER_TO_CALLER, BigInteger.ZERO)
+                            .payingWith(DEFAULT_CONTRACT_SENDER)
+                            .via(transferTxn)
+                            .logged();
 
-                                    var saveTxnRecord =
-                                            getTxnRecord(transferTxn)
-                                                    .saveTxnRecordToRegistry("txn_registry")
-                                                    .payingWith(GENESIS);
-                                    var saveAccountInfoAfterCall =
-                                            getAccountInfo(DEFAULT_CONTRACT_SENDER)
-                                                    .savingSnapshot(ACCOUNT_INFO_AFTER_CALL)
-                                                    .payingWith(GENESIS);
-                                    var saveContractInfo =
-                                            getContractInfo(TRANSFERRING_CONTRACT)
-                                                    .saveToRegistry(CONTRACT_FROM);
+                    var saveTxnRecord = getTxnRecord(transferTxn)
+                            .saveTxnRecordToRegistry("txn_registry")
+                            .payingWith(GENESIS);
+                    var saveAccountInfoAfterCall = getAccountInfo(DEFAULT_CONTRACT_SENDER)
+                            .savingSnapshot(ACCOUNT_INFO_AFTER_CALL)
+                            .payingWith(GENESIS);
+                    var saveContractInfo =
+                            getContractInfo(TRANSFERRING_CONTRACT).saveToRegistry(CONTRACT_FROM);
 
-                                    allRunFor(
-                                            spec,
-                                            transferCall,
-                                            saveTxnRecord,
-                                            saveAccountInfoAfterCall,
-                                            saveContractInfo);
-                                }))
-                .then(
-                        assertionsHold(
-                                (spec, opLog) -> {
-                                    final var fee =
-                                            spec.registry()
-                                                    .getTransactionRecord("txn_registry")
-                                                    .getTransactionFee();
-                                    final var accountBalanceBeforeCall =
-                                            spec.registry()
-                                                    .getAccountInfo(ACCOUNT_INFO)
-                                                    .getBalance();
-                                    final var accountBalanceAfterCall =
-                                            spec.registry()
-                                                    .getAccountInfo(ACCOUNT_INFO_AFTER_CALL)
-                                                    .getBalance();
-                                    final var contractBalanceAfterCall =
-                                            spec.registry()
-                                                    .getContractInfo(CONTRACT_FROM)
-                                                    .getBalance();
+                    allRunFor(spec, transferCall, saveTxnRecord, saveAccountInfoAfterCall, saveContractInfo);
+                }))
+                .then(assertionsHold((spec, opLog) -> {
+                    final var fee =
+                            spec.registry().getTransactionRecord("txn_registry").getTransactionFee();
+                    final var accountBalanceBeforeCall =
+                            spec.registry().getAccountInfo(ACCOUNT_INFO).getBalance();
+                    final var accountBalanceAfterCall = spec.registry()
+                            .getAccountInfo(ACCOUNT_INFO_AFTER_CALL)
+                            .getBalance();
+                    final var contractBalanceAfterCall =
+                            spec.registry().getContractInfo(CONTRACT_FROM).getBalance();
 
-                                    assertEquals(
-                                            accountBalanceAfterCall,
-                                            accountBalanceBeforeCall - fee);
-                                    assertEquals(contractBalanceAfterCall, 10_000L);
-                                }));
+                    assertEquals(accountBalanceAfterCall, accountBalanceBeforeCall - fee);
+                    assertEquals(contractBalanceAfterCall, 10_000L);
+                }));
     }
 
     private HapiSpec resultSizeAffectsFees() {
         final var contract = "VerboseDeposit";
         final var TRANSFER_AMOUNT = 1_000L;
-        BiConsumer<TransactionRecord, Logger> resultSizeFormatter =
-                (rcd, txnLog) -> {
-                    final var result = rcd.getContractCallResult();
-                    txnLog.info(
-                            "Contract call result FeeBuilder size = {}, fee = {}, result is"
-                                    + " [self-reported size = {}, '{}']",
-                            () -> FeeBuilder.getContractFunctionSize(result),
-                            rcd::getTransactionFee,
-                            result.getContractCallResult()::size,
-                            result::getContractCallResult);
-                    txnLog.info("  Literally :: {}", result);
-                };
+        BiConsumer<TransactionRecord, Logger> resultSizeFormatter = (rcd, txnLog) -> {
+            final var result = rcd.getContractCallResult();
+            txnLog.info(
+                    "Contract call result FeeBuilder size = {}, fee = {}, result is"
+                            + " [self-reported size = {}, '{}']",
+                    () -> FeeBuilder.getContractFunctionSize(result),
+                    rcd::getTransactionFee,
+                    result.getContractCallResult()::size,
+                    result::getContractCallResult);
+            txnLog.info("  Literally :: {}", result);
+        };
 
         return defaultHapiSpec("ResultSizeAffectsFees")
                 .given(
@@ -1004,53 +780,34 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when(
-                        contractCall(
-                                        contract,
-                                        DEPOSIT,
-                                        TRANSFER_AMOUNT,
-                                        0L,
-                                        "So we out-danced thought...")
+                        contractCall(contract, DEPOSIT, TRANSFER_AMOUNT, 0L, "So we out-danced thought...")
                                 .via("noLogsCallTxn")
                                 .sending(TRANSFER_AMOUNT),
-                        contractCall(
-                                        contract,
-                                        DEPOSIT,
-                                        TRANSFER_AMOUNT,
-                                        5L,
-                                        "So we out-danced thought...")
+                        contractCall(contract, DEPOSIT, TRANSFER_AMOUNT, 5L, "So we out-danced thought...")
                                 .via("loggedCallTxn")
                                 .sending(TRANSFER_AMOUNT))
                 .then(
-                        assertionsHold(
-                                (spec, assertLog) -> {
-                                    HapiGetTxnRecord noLogsLookup =
-                                            QueryVerbs.getTxnRecord("noLogsCallTxn")
-                                                    .loggedWith(resultSizeFormatter);
-                                    HapiGetTxnRecord logsLookup =
-                                            QueryVerbs.getTxnRecord("loggedCallTxn")
-                                                    .loggedWith(resultSizeFormatter);
-                                    allRunFor(spec, noLogsLookup, logsLookup);
-                                    final var unloggedRecord =
-                                            noLogsLookup
-                                                    .getResponse()
-                                                    .getTransactionGetRecord()
-                                                    .getTransactionRecord();
-                                    final var loggedRecord =
-                                            logsLookup
-                                                    .getResponse()
-                                                    .getTransactionGetRecord()
-                                                    .getTransactionRecord();
-                                    assertLog.info(
-                                            "Fee for logged record   = {}",
-                                            loggedRecord::getTransactionFee);
-                                    assertLog.info(
-                                            "Fee for unlogged record = {}",
-                                            unloggedRecord::getTransactionFee);
-                                    Assertions.assertNotEquals(
-                                            unloggedRecord.getTransactionFee(),
-                                            loggedRecord.getTransactionFee(),
-                                            "Result size should change the txn fee!");
-                                }),
+                        assertionsHold((spec, assertLog) -> {
+                            HapiGetTxnRecord noLogsLookup =
+                                    QueryVerbs.getTxnRecord("noLogsCallTxn").loggedWith(resultSizeFormatter);
+                            HapiGetTxnRecord logsLookup =
+                                    QueryVerbs.getTxnRecord("loggedCallTxn").loggedWith(resultSizeFormatter);
+                            allRunFor(spec, noLogsLookup, logsLookup);
+                            final var unloggedRecord = noLogsLookup
+                                    .getResponse()
+                                    .getTransactionGetRecord()
+                                    .getTransactionRecord();
+                            final var loggedRecord = logsLookup
+                                    .getResponse()
+                                    .getTransactionGetRecord()
+                                    .getTransactionRecord();
+                            assertLog.info("Fee for logged record   = {}", loggedRecord::getTransactionFee);
+                            assertLog.info("Fee for unlogged record = {}", unloggedRecord::getTransactionFee);
+                            Assertions.assertNotEquals(
+                                    unloggedRecord.getTransactionFee(),
+                                    loggedRecord.getTransactionFee(),
+                                    "Result size should change the txn fee!");
+                        }),
                         resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
     }
 
@@ -1063,14 +820,13 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 HapiSpecSetup.getDefaultNodeProps().get(associationsLimitProperty);
 
         return defaultHapiSpec("autoAssociationSlotsAppearsInInfo")
-                .given(
-                        overridingThree(
-                                "entities.limitTokenAssociations",
-                                "true",
-                                "tokens.maxPerAccount",
-                                "" + 1,
-                                CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY,
-                                "true"))
+                .given(overridingThree(
+                        "entities.limitTokenAssociations",
+                        "true",
+                        "tokens.maxPerAccount",
+                        "" + 1,
+                        CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY,
+                        "true"))
                 .when()
                 .then(
                         newKeyNamed(ADMIN_KEY),
@@ -1078,18 +834,13 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         contractCreate(CONTRACT)
                                 .adminKey(ADMIN_KEY)
                                 .maxAutomaticTokenAssociations(maxAutoAssociations)
-                                .hasPrecheck(
-                                        REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+                                .hasPrecheck(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
 
                         // Default is NOT to limit associations for entities
                         overriding(associationsLimitProperty, defaultAssociationsLimit),
-                        contractCreate(CONTRACT)
-                                .adminKey(ADMIN_KEY)
-                                .maxAutomaticTokenAssociations(maxAutoAssociations),
+                        contractCreate(CONTRACT).adminKey(ADMIN_KEY).maxAutomaticTokenAssociations(maxAutoAssociations),
                         getContractInfo(CONTRACT)
-                                .has(
-                                        ContractInfoAsserts.contractWith()
-                                                .maxAutoAssociations(maxAutoAssociations))
+                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(maxAutoAssociations))
                                 .logged(),
                         // Restore default
                         overriding("tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK));
@@ -1102,20 +853,16 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(300_000L).via(CREATE_TX))
                 .then(
-                        withOpContext(
-                                (spec, ignore) -> {
-                                    final var subop01 =
-                                            getTxnRecord(CREATE_TX)
-                                                    .saveTxnRecordToRegistry(CREATE_TX_REC);
-                                    allRunFor(spec, subop01);
+                        withOpContext((spec, ignore) -> {
+                            final var subop01 = getTxnRecord(CREATE_TX).saveTxnRecordToRegistry(CREATE_TX_REC);
+                            allRunFor(spec, subop01);
 
-                                    final var gasUsed =
-                                            spec.registry()
-                                                    .getTransactionRecord(CREATE_TX_REC)
-                                                    .getContractCreateResult()
-                                                    .getGasUsed();
-                                    assertEquals(285_000L, gasUsed);
-                                }),
+                            final var gasUsed = spec.registry()
+                                    .getTransactionRecord(CREATE_TX_REC)
+                                    .getContractCreateResult()
+                                    .getGasUsed();
+                            assertEquals(285_000L, gasUsed);
+                        }),
                         resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1));
     }
 
@@ -1126,20 +873,16 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(300_000L).via(CREATE_TX))
                 .then(
-                        withOpContext(
-                                (spec, ignore) -> {
-                                    final var subop01 =
-                                            getTxnRecord(CREATE_TX)
-                                                    .saveTxnRecordToRegistry(CREATE_TX_REC);
-                                    allRunFor(spec, subop01);
+                        withOpContext((spec, ignore) -> {
+                            final var subop01 = getTxnRecord(CREATE_TX).saveTxnRecordToRegistry(CREATE_TX_REC);
+                            allRunFor(spec, subop01);
 
-                                    final var gasUsed =
-                                            spec.registry()
-                                                    .getTransactionRecord(CREATE_TX_REC)
-                                                    .getContractCreateResult()
-                                                    .getGasUsed();
-                                    assertTrue(gasUsed > 0L);
-                                }),
+                            final var gasUsed = spec.registry()
+                                    .getTransactionRecord(CREATE_TX_REC)
+                                    .getContractCreateResult()
+                                    .getGasUsed();
+                            assertTrue(gasUsed > 0L);
+                        }),
                         resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1));
     }
 
@@ -1168,52 +911,30 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 .via(creation))
                 .when(contractCall(contract, "propagate").gas(4_000_000L).via(call))
                 .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var parentNum = spec.registry().getContractId(contract);
-                                    final var firstId =
-                                            ContractID.newBuilder()
-                                                    .setContractNum(parentNum.getContractNum() + 1L)
-                                                    .build();
-                                    firstLiteralId.set(
-                                            HapiPropertySource.asContractString(firstId));
-                                    expectedFirstAddress.set(
-                                            ByteString.copyFrom(asSolidityAddress(firstId)));
-                                    final var secondId =
-                                            ContractID.newBuilder()
-                                                    .setContractNum(parentNum.getContractNum() + 2L)
-                                                    .build();
-                                    secondLiteralId.set(
-                                            HapiPropertySource.asContractString(secondId));
-                                    expectedSecondAddress.set(
-                                            ByteString.copyFrom(asSolidityAddress(secondId)));
-                                }),
-                        sourcing(
-                                () ->
-                                        childRecordsCheck(
-                                                call,
-                                                ResponseCodeEnum.SUCCESS,
-                                                recordWith()
-                                                        .contractCreateResult(
-                                                                resultWith()
-                                                                        .evmAddress(
-                                                                                expectedFirstAddress
-                                                                                        .get()))
-                                                        .status(ResponseCodeEnum.SUCCESS),
-                                                recordWith()
-                                                        .contractCreateResult(
-                                                                resultWith()
-                                                                        .evmAddress(
-                                                                                expectedSecondAddress
-                                                                                        .get()))
-                                                        .status(ResponseCodeEnum.SUCCESS))),
-                        sourcing(
-                                () ->
-                                        getContractInfo(firstLiteralId.get())
-                                                .has(
-                                                        contractWith()
-                                                                .propertiesInheritedFrom(
-                                                                        contract))));
+                        withOpContext((spec, opLog) -> {
+                            final var parentNum = spec.registry().getContractId(contract);
+                            final var firstId = ContractID.newBuilder()
+                                    .setContractNum(parentNum.getContractNum() + 1L)
+                                    .build();
+                            firstLiteralId.set(HapiPropertySource.asContractString(firstId));
+                            expectedFirstAddress.set(ByteString.copyFrom(asSolidityAddress(firstId)));
+                            final var secondId = ContractID.newBuilder()
+                                    .setContractNum(parentNum.getContractNum() + 2L)
+                                    .build();
+                            secondLiteralId.set(HapiPropertySource.asContractString(secondId));
+                            expectedSecondAddress.set(ByteString.copyFrom(asSolidityAddress(secondId)));
+                        }),
+                        sourcing(() -> childRecordsCheck(
+                                call,
+                                ResponseCodeEnum.SUCCESS,
+                                recordWith()
+                                        .contractCreateResult(resultWith().evmAddress(expectedFirstAddress.get()))
+                                        .status(ResponseCodeEnum.SUCCESS),
+                                recordWith()
+                                        .contractCreateResult(resultWith().evmAddress(expectedSecondAddress.get()))
+                                        .status(ResponseCodeEnum.SUCCESS))),
+                        sourcing(() -> getContractInfo(firstLiteralId.get())
+                                .has(contractWith().propertiesInheritedFrom(contract))));
     }
 
     HapiSpec temporarySStoreRefundTest() {
@@ -1229,33 +950,28 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         contractCall(contract, "holdPermanently", BigInteger.valueOf(10))
                                 .via("permHoldTx"))
                 .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var subop01 =
-                                            getTxnRecord("tempHoldTx")
-                                                    .saveTxnRecordToRegistry("tempHoldTxRec")
-                                                    .logged();
-                                    final var subop02 =
-                                            getTxnRecord("permHoldTx")
-                                                    .saveTxnRecordToRegistry("permHoldTxRec")
-                                                    .logged();
+                        withOpContext((spec, opLog) -> {
+                            final var subop01 = getTxnRecord("tempHoldTx")
+                                    .saveTxnRecordToRegistry("tempHoldTxRec")
+                                    .logged();
+                            final var subop02 = getTxnRecord("permHoldTx")
+                                    .saveTxnRecordToRegistry("permHoldTxRec")
+                                    .logged();
 
-                                    CustomSpecAssert.allRunFor(spec, subop01, subop02);
+                            CustomSpecAssert.allRunFor(spec, subop01, subop02);
 
-                                    final var gasUsedForTemporaryHoldTx =
-                                            spec.registry()
-                                                    .getTransactionRecord("tempHoldTxRec")
-                                                    .getContractCallResult()
-                                                    .getGasUsed();
-                                    final var gasUsedForPermanentHoldTx =
-                                            spec.registry()
-                                                    .getTransactionRecord("permHoldTxRec")
-                                                    .getContractCallResult()
-                                                    .getGasUsed();
+                            final var gasUsedForTemporaryHoldTx = spec.registry()
+                                    .getTransactionRecord("tempHoldTxRec")
+                                    .getContractCallResult()
+                                    .getGasUsed();
+                            final var gasUsedForPermanentHoldTx = spec.registry()
+                                    .getTransactionRecord("permHoldTxRec")
+                                    .getContractCallResult()
+                                    .getGasUsed();
 
-                                    Assertions.assertTrue(gasUsedForTemporaryHoldTx < 23535L);
-                                    Assertions.assertTrue(gasUsedForPermanentHoldTx > 20000L);
-                                }),
+                            Assertions.assertTrue(gasUsedForTemporaryHoldTx < 23535L);
+                            Assertions.assertTrue(gasUsedForPermanentHoldTx > 20000L);
+                        }),
                         UtilVerbs.resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1));
     }
 
@@ -1265,10 +981,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         return defaultHapiSpec("DeletedContractsCannotBeUpdated")
                 .given(uploadInitCode(contract), contractCreate(contract).gas(300_000))
                 .when(contractCall(contract, "destroy").deferStatusResolution())
-                .then(
-                        contractUpdate(contract)
-                                .newMemo("Hi there!")
-                                .hasKnownStatus(INVALID_CONTRACT_ID));
+                .then(contractUpdate(contract).newMemo("Hi there!").hasKnownStatus(INVALID_CONTRACT_ID));
     }
 
     private HapiSpec canCallPendingContractSafely() {
@@ -1283,36 +996,25 @@ public class LeakyContractTestsSuite extends HapiSuite {
         return defaultHapiSpec("CanCallPendingContractSafely")
                 .given(
                         uploadSingleInitCode(contract, expiry, GENESIS, createdFileNum::set),
-                        inParallel(
-                                IntStream.range(0, createBurstSize)
-                                        .mapToObj(
-                                                i ->
-                                                        contractCustomCreate(
-                                                                        contract,
-                                                                        String.valueOf(i),
-                                                                        numSlots)
-                                                                .fee(ONE_HUNDRED_HBARS)
-                                                                .gas(300_000L)
-                                                                .payingWith(GENESIS)
-                                                                .noLogging()
-                                                                .deferStatusResolution()
-                                                                .bytecode(contract)
-                                                                .adminKey(THRESHOLD))
-                                        .toArray(HapiSpecOperation[]::new)))
+                        inParallel(IntStream.range(0, createBurstSize)
+                                .mapToObj(i -> contractCustomCreate(contract, String.valueOf(i), numSlots)
+                                        .fee(ONE_HUNDRED_HBARS)
+                                        .gas(300_000L)
+                                        .payingWith(GENESIS)
+                                        .noLogging()
+                                        .deferStatusResolution()
+                                        .bytecode(contract)
+                                        .adminKey(THRESHOLD))
+                                .toArray(HapiSpecOperation[]::new)))
                 .when()
-                .then(
-                        sourcing(
-                                () ->
-                                        contractCallWithFunctionAbi(
-                                                        "0.0."
-                                                                + (createdFileNum.get()
-                                                                        + createBurstSize),
-                                                        getABIFor(FUNCTION, "addNthFib", contract),
-                                                        targets,
-                                                        12L)
-                                                .payingWith(GENESIS)
-                                                .gas(300_000L)
-                                                .via(callTxn)));
+                .then(sourcing(() -> contractCallWithFunctionAbi(
+                                "0.0." + (createdFileNum.get() + createBurstSize),
+                                getABIFor(FUNCTION, "addNthFib", contract),
+                                targets,
+                                12L)
+                        .payingWith(GENESIS)
+                        .gas(300_000L)
+                        .via(callTxn)));
     }
 
     private HapiSpec lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled() {
@@ -1343,51 +1045,39 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         getContractInfo(CONTRACT)
                                 .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
                                 .logged())
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var ecdsaKey =
-                                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
-                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                                    final var addressBytes = recoverAddressFromPubKey(tmp);
-                                    final var token = spec.registry().getTokenID(FUNGIBLE_TOKEN);
-                                    final var sender = spec.registry().getAccountID(SENDER);
-                                    final var amountToBeSent = 50L;
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    final var token = spec.registry().getTokenID(FUNGIBLE_TOKEN);
+                    final var sender = spec.registry().getAccountID(SENDER);
+                    final var amountToBeSent = 50L;
 
-                                    allRunFor(
-                                            spec,
-                                            newKeyNamed(DELEGATE_KEY)
-                                                    .shape(
-                                                            DELEGATE_CONTRACT_KEY_SHAPE.signedWith(
-                                                                    sigs(ON, CONTRACT))),
-                                            cryptoUpdate(SENDER).key(DELEGATE_KEY),
-                                            contractCall(
-                                                            CONTRACT,
-                                                            "transferMultipleTokens",
-                                                            tokenTransferLists()
-                                                                    .withTokenTransferList(
-                                                                            tokenTransferList()
-                                                                                    .forToken(token)
-                                                                                    .withAccountAmounts(
-                                                                                            accountAmount(
-                                                                                                    sender,
-                                                                                                    -amountToBeSent),
-                                                                                            accountAmountAlias(
-                                                                                                    addressBytes,
-                                                                                                    amountToBeSent))
-                                                                                    .build())
-                                                                    .build())
-                                                    .payingWith(GENESIS)
-                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                    .via(NOT_SUPPORTED_TXN)
-                                                    .gas(GAS_TO_OFFER),
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                                    .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
-                                            childRecordsCheck(
-                                                    NOT_SUPPORTED_TXN,
-                                                    CONTRACT_REVERT_EXECUTED,
-                                                    recordWith().status(NOT_SUPPORTED)));
-                                }))
+                    allRunFor(
+                            spec,
+                            newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, CONTRACT))),
+                            cryptoUpdate(SENDER).key(DELEGATE_KEY),
+                            contractCall(
+                                            CONTRACT,
+                                            "transferMultipleTokens",
+                                            tokenTransferLists()
+                                                    .withTokenTransferList(tokenTransferList()
+                                                            .forToken(token)
+                                                            .withAccountAmounts(
+                                                                    accountAmount(sender, -amountToBeSent),
+                                                                    accountAmountAlias(addressBytes, amountToBeSent))
+                                                            .build())
+                                                    .build())
+                                    .payingWith(GENESIS)
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                    .via(NOT_SUPPORTED_TXN)
+                                    .gas(GAS_TO_OFFER),
+                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
+                            childRecordsCheck(
+                                    NOT_SUPPORTED_TXN,
+                                    CONTRACT_REVERT_EXECUTED,
+                                    recordWith().status(NOT_SUPPORTED)));
+                }))
                 .then();
     }
 
@@ -1404,10 +1094,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var payTxn = "payTxn";
 
         return propertyPreservingHapiSpec("evmLazyCreateViaSolidityCall")
-                .preserving(
-                        lazyCreationProperty,
-                        contractsEvmVersionProperty,
-                        contractsEvmVersionDynamicProperty)
+                .preserving(lazyCreationProperty, contractsEvmVersionProperty, contractsEvmVersionDynamicProperty)
                 .given(
                         overridingThree(
                                 lazyCreationProperty,
@@ -1420,60 +1107,43 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         uploadInitCode(LAZY_CREATE_CONTRACT),
                         contractCreate(LAZY_CREATE_CONTRACT).via(CALL_TX_REC),
                         getTxnRecord(CALL_TX_REC).andAllChildRecords().logged())
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
-                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                                    final var addressBytes = recoverAddressFromPubKey(tmp);
-                                    final var mirrorTxn = "mirrorTxn";
-                                    allRunFor(
-                                            spec,
-                                            contractCall(
-                                                            LAZY_CREATE_CONTRACT,
-                                                            callLazyCreateFunction,
-                                                            mirrorAddrWith(1_234_567_890L))
-                                                    .sending(depositAmount)
-                                                    .via(mirrorTxn)
-                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                    .gas(6_000_000),
-                                            emptyChildRecordsCheck(
-                                                    mirrorTxn, CONTRACT_REVERT_EXECUTED),
-                                            contractCall(
-                                                            LAZY_CREATE_CONTRACT,
-                                                            revertingCallLazyCreateFunction,
-                                                            asHeadlongAddress(addressBytes))
-                                                    .sending(depositAmount)
-                                                    .via(REVERTING_TXN)
-                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                    .gas(6_000_000),
-                                            emptyChildRecordsCheck(
-                                                    REVERTING_TXN, CONTRACT_REVERT_EXECUTED),
-                                            contractCall(
-                                                            LAZY_CREATE_CONTRACT,
-                                                            callLazyCreateFunction,
-                                                            asHeadlongAddress(addressBytes))
-                                                    .via(payTxn)
-                                                    .sending(depositAmount)
-                                                    .gas(6_000_000));
-                                }))
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var getTxnRecord =
-                                            getTxnRecord(payTxn).andAllChildRecords().logged();
-                                    allRunFor(spec, getTxnRecord);
-                                    final var lazyAccountId =
-                                            getTxnRecord
-                                                    .getChildRecord(0)
-                                                    .getReceipt()
-                                                    .getAccountID();
-                                    final var name = "lazy";
-                                    spec.registry().saveAccountId(name, lazyAccountId);
-                                    allRunFor(
-                                            spec,
-                                            getAccountBalance(name).hasTinyBars(depositAmount));
-                                }));
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    final var mirrorTxn = "mirrorTxn";
+                    allRunFor(
+                            spec,
+                            contractCall(LAZY_CREATE_CONTRACT, callLazyCreateFunction, mirrorAddrWith(1_234_567_890L))
+                                    .sending(depositAmount)
+                                    .via(mirrorTxn)
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                    .gas(6_000_000),
+                            emptyChildRecordsCheck(mirrorTxn, CONTRACT_REVERT_EXECUTED),
+                            contractCall(
+                                            LAZY_CREATE_CONTRACT,
+                                            revertingCallLazyCreateFunction,
+                                            asHeadlongAddress(addressBytes))
+                                    .sending(depositAmount)
+                                    .via(REVERTING_TXN)
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                    .gas(6_000_000),
+                            emptyChildRecordsCheck(REVERTING_TXN, CONTRACT_REVERT_EXECUTED),
+                            contractCall(LAZY_CREATE_CONTRACT, callLazyCreateFunction, asHeadlongAddress(addressBytes))
+                                    .via(payTxn)
+                                    .sending(depositAmount)
+                                    .gas(6_000_000));
+                }))
+                .then(withOpContext((spec, opLog) -> {
+                    final var getTxnRecord =
+                            getTxnRecord(payTxn).andAllChildRecords().logged();
+                    allRunFor(spec, getTxnRecord);
+                    final var lazyAccountId =
+                            getTxnRecord.getChildRecord(0).getReceipt().getAccountID();
+                    final var name = "lazy";
+                    spec.registry().saveAccountId(name, lazyAccountId);
+                    allRunFor(spec, getAccountBalance(name).hasTinyBars(depositAmount));
+                }));
     }
 
     private HapiSpec evmLazyCreateViaSolidityCallTooManyCreatesFails() {
@@ -1494,51 +1164,37 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         contractsEvmVersionDynamicProperty)
                 .given(
                         overridingTwo(lazyCreationProperty, "true", maxPrecedingRecords, "1"),
-                        overridingTwo(
-                                contractsEvmVersionProperty,
-                                "v0.34",
-                                contractsEvmVersionDynamicProperty,
-                                "true"),
+                        overridingTwo(contractsEvmVersionProperty, "v0.34", contractsEvmVersionDynamicProperty, "true"),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ECDSA_KEY2).shape(SECP_256K1_SHAPE),
                         uploadInitCode(LAZY_CREATE_CONTRACT),
                         contractCreate(LAZY_CREATE_CONTRACT).via(CALL_TX_REC),
                         getTxnRecord(CALL_TX_REC).andAllChildRecords().logged())
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
-                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                                    final var addressBytes = recoverAddressFromPubKey(tmp);
-                                    final var ecdsaKey2 = spec.registry().getKey(ECDSA_KEY2);
-                                    final var tmp2 = ecdsaKey2.getECDSASecp256K1().toByteArray();
-                                    final var addressBytes2 = recoverAddressFromPubKey(tmp2);
-                                    allRunFor(
-                                            spec,
-                                            contractCall(
-                                                            LAZY_CREATE_CONTRACT,
-                                                            createTooManyHollowAccounts,
-                                                            (Object)
-                                                                    asHeadlongAddressArray(
-                                                                            addressBytes,
-                                                                            addressBytes2))
-                                                    .sending(depositAmount)
-                                                    .via(TRANSFER_TXN)
-                                                    .gas(6_000_000)
-                                                    .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED),
-                                            getAliasedAccountInfo(ecdsaKey.toByteString())
-                                                    .logged()
-                                                    .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
-                                            getAliasedAccountInfo(ecdsaKey2.toByteString())
-                                                    .logged()
-                                                    .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
-                                }))
+                .when(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    final var ecdsaKey2 = spec.registry().getKey(ECDSA_KEY2);
+                    final var tmp2 = ecdsaKey2.getECDSASecp256K1().toByteArray();
+                    final var addressBytes2 = recoverAddressFromPubKey(tmp2);
+                    allRunFor(
+                            spec,
+                            contractCall(LAZY_CREATE_CONTRACT, createTooManyHollowAccounts, (Object)
+                                            asHeadlongAddressArray(addressBytes, addressBytes2))
+                                    .sending(depositAmount)
+                                    .via(TRANSFER_TXN)
+                                    .gas(6_000_000)
+                                    .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED),
+                            getAliasedAccountInfo(ecdsaKey.toByteString())
+                                    .logged()
+                                    .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
+                            getAliasedAccountInfo(ecdsaKey2.toByteString())
+                                    .logged()
+                                    .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
+                }))
                 .then(
                         emptyChildRecordsCheck(TRANSFER_TXN, MAX_CHILD_RECORDS_EXCEEDED),
-                        resetToDefault(
-                                lazyCreationProperty,
-                                contractsEvmVersionProperty,
-                                maxPrecedingRecords));
+                        resetToDefault(lazyCreationProperty, contractsEvmVersionProperty, maxPrecedingRecords));
     }
 
     private HapiSpec rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled() {

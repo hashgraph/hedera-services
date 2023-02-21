@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
@@ -26,6 +27,7 @@ import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
 import java.util.Map;
@@ -44,18 +46,14 @@ public class AdapterUtils {
     /**
      * Returns the {@link AccountKeyLookup} containing the "well-known" accounts and aliases that
      * exist in a {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in
-     * unit tests of {@link com.hedera.node.app.spi.PreTransactionHandler} implementations that
-     * require an {@link AccountKeyLookup}.
+     * unit tests of {@link TransactionHandler} implementations that require an {@link AccountKeyLookup}.
      *
      * @return the well-known account store
      */
     public static AccountKeyLookup wellKnownKeyLookupAt() {
-        return null;
-        //        return new TestFixturesKeyLookup(
-        //                mockStates(
-        //                        Map.of(
-        //                                ALIASES_KEY, wellKnownAliasState(),
-        //                                ACCOUNTS_KEY, wellKnownAccountsState())));
+        return new TestFixturesKeyLookup(mockStates(Map.of(
+                ALIASES_KEY, wellKnownAliasState(),
+                ACCOUNTS_KEY, wellKnownAccountsState())));
     }
 
     public static ReadableStates mockStates(final Map<String, ReadableKVState> keysToMock) {
@@ -65,21 +63,18 @@ public class AdapterUtils {
     }
 
     private static ReadableKVState<Long, ? extends HederaAccount> wellKnownAccountsState() {
-        final var wrappedState =
-                new MapReadableKVState<>(ACCOUNTS_KEY, TxnHandlingScenario.wellKnownAccounts());
+        final var wrappedState = new MapReadableKVState<>(ACCOUNTS_KEY, TxnHandlingScenario.wellKnownAccounts());
         return new StateKeyAdapter<>(wrappedState, EntityNum::fromLong);
     }
 
     private static MapReadableKVState<String, Long> wellKnownAliasState() {
-        final Map<String, Long> wellKnownAliases =
-                Map.ofEntries(
-                        Map.entry(CURRENTLY_UNUSED_ALIAS, MISSING_NUM.longValue()),
-                        Map.entry(
-                                NO_RECEIVER_SIG_ALIAS, fromAccountId(NO_RECEIVER_SIG).longValue()),
-                        Map.entry(RECEIVER_SIG_ALIAS, fromAccountId(RECEIVER_SIG).longValue()),
-                        Map.entry(
-                                FIRST_TOKEN_SENDER_LITERAL_ALIAS.toStringUtf8(),
-                                fromAccountId(FIRST_TOKEN_SENDER).longValue()));
+        final Map<String, Long> wellKnownAliases = Map.ofEntries(
+                Map.entry(CURRENTLY_UNUSED_ALIAS, MISSING_NUM.longValue()),
+                Map.entry(NO_RECEIVER_SIG_ALIAS, fromAccountId(NO_RECEIVER_SIG).longValue()),
+                Map.entry(RECEIVER_SIG_ALIAS, fromAccountId(RECEIVER_SIG).longValue()),
+                Map.entry(
+                        FIRST_TOKEN_SENDER_LITERAL_ALIAS.toStringUtf8(),
+                        fromAccountId(FIRST_TOKEN_SENDER).longValue()));
         return new MapReadableKVState<>(ALIASES_KEY, wellKnownAliases);
     }
 }

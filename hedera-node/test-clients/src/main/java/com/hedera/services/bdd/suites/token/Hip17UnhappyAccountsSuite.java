@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -68,21 +69,20 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    /* Dissociated Account */
-                    uniqueTokenOperationsFailForDissociatedAccount(),
-                    /* Frozen Account */
-                    uniqueTokenOperationsFailForFrozenAccount(),
-                    /* Account Without KYC */
-                    uniqueTokenOperationsFailForKycRevokedAccount(),
-                    /* Expired Account */
-                    uniqueTokenOperationsFailForExpiredAccount(),
-                    /* Deleted Account */
-                    uniqueTokenOperationsFailForDeletedAccount(),
-                    /* AutoRemoved Account */
-                    uniqueTokenOperationsFailForAutoRemovedAccount()
-                });
+        return List.of(new HapiSpec[] {
+            /* Dissociated Account */
+            uniqueTokenOperationsFailForDissociatedAccount(),
+            /* Frozen Account */
+            uniqueTokenOperationsFailForFrozenAccount(),
+            /* Account Without KYC */
+            uniqueTokenOperationsFailForKycRevokedAccount(),
+            /* Expired Account */
+            uniqueTokenOperationsFailForExpiredAccount(),
+            /* Deleted Account */
+            uniqueTokenOperationsFailForDeletedAccount(),
+            /* AutoRemoved Account */
+            uniqueTokenOperationsFailForAutoRemovedAccount()
+        });
     }
 
     private HapiSpec uniqueTokenOperationsFailForAutoRemovedAccount() {
@@ -90,9 +90,7 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
                 .given(
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(GENESIS)
-                                .overridingProps(
-                                        AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(
-                                                1, 0, 100, 10))
+                                .overridingProps(AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(1, 0, 100, 10))
                                 .erasingProps(Set.of("minimumAutoRenewDuration")),
                         newKeyNamed(supplyKey),
                         newKeyNamed(freezeKey),
@@ -109,28 +107,22 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
                                 .treasury(tokenTreasury),
                         mintToken(
                                 uniqueTokenA,
-                                List.of(
-                                        ByteString.copyFromUtf8("memo1"),
-                                        ByteString.copyFromUtf8("memo2"))))
+                                List.of(ByteString.copyFromUtf8("memo1"), ByteString.copyFromUtf8("memo2"))))
                 .when(
                         cryptoCreate(firstUser).autoRenewSecs(3L).balance(0L),
                         tokenAssociate(firstUser, uniqueTokenA),
                         grantTokenKyc(uniqueTokenA, firstUser),
-                        cryptoTransfer(
-                                movingUnique(uniqueTokenA, 1L).between(tokenTreasury, firstUser)),
+                        cryptoTransfer(movingUnique(uniqueTokenA, 1L).between(tokenTreasury, firstUser)),
                         sleepFor(3_500L),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)))
                 .then(
-                        cryptoTransfer(
-                                        movingUnique(uniqueTokenA, 2L)
-                                                .between(tokenTreasury, firstUser))
+                        cryptoTransfer(movingUnique(uniqueTokenA, 2L).between(tokenTreasury, firstUser))
                                 .hasKnownStatus(INVALID_ACCOUNT_ID),
                         revokeTokenKyc(uniqueTokenA, firstUser).hasKnownStatus(INVALID_ACCOUNT_ID),
                         grantTokenKyc(uniqueTokenA, firstUser).hasKnownStatus(INVALID_ACCOUNT_ID),
                         tokenFreeze(uniqueTokenA, firstUser).hasKnownStatus(INVALID_ACCOUNT_ID),
                         tokenUnfreeze(uniqueTokenA, firstUser).hasKnownStatus(INVALID_ACCOUNT_ID),
-                        wipeTokenAccount(uniqueTokenA, firstUser, List.of(1L))
-                                .hasKnownStatus(INVALID_ACCOUNT_ID));
+                        wipeTokenAccount(uniqueTokenA, firstUser, List.of(1L)).hasKnownStatus(INVALID_ACCOUNT_ID));
     }
 
     private HapiSpec uniqueTokenOperationsFailForDeletedAccount() {
@@ -153,22 +145,17 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
                                 .treasury(tokenTreasury),
                         mintToken(
                                 uniqueTokenA,
-                                List.of(
-                                        ByteString.copyFromUtf8("memo1"),
-                                        ByteString.copyFromUtf8("memo2"))),
+                                List.of(ByteString.copyFromUtf8("memo1"), ByteString.copyFromUtf8("memo2"))),
                         tokenAssociate(firstUser, uniqueTokenA),
                         cryptoDelete(firstUser))
                 .then(
-                        cryptoTransfer(
-                                        movingUnique(uniqueTokenA, 2L)
-                                                .between(tokenTreasury, firstUser))
+                        cryptoTransfer(movingUnique(uniqueTokenA, 2L).between(tokenTreasury, firstUser))
                                 .hasKnownStatus(ACCOUNT_DELETED),
                         revokeTokenKyc(uniqueTokenA, firstUser).hasKnownStatus(ACCOUNT_DELETED),
                         grantTokenKyc(uniqueTokenA, firstUser).hasKnownStatus(ACCOUNT_DELETED),
                         tokenFreeze(uniqueTokenA, firstUser).hasKnownStatus(ACCOUNT_DELETED),
                         tokenUnfreeze(uniqueTokenA, firstUser).hasKnownStatus(ACCOUNT_DELETED),
-                        wipeTokenAccount(uniqueTokenA, firstUser, List.of(1L))
-                                .hasKnownStatus(ACCOUNT_DELETED));
+                        wipeTokenAccount(uniqueTokenA, firstUser, List.of(1L)).hasKnownStatus(ACCOUNT_DELETED));
     }
 
     private HapiSpec uniqueTokenOperationsFailForExpiredAccount() {
@@ -177,8 +164,7 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(GENESIS)
                                 .overridingProps(
-                                        AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(
-                                                1, 7776000, 100, 10))
+                                        AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(1, 7776000, 100, 10))
                                 .erasingProps(Set.of("minimumAutoRenewDuration")),
                         newKeyNamed(supplyKey),
                         newKeyNamed(freezeKey),
@@ -195,36 +181,25 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
                                 .treasury(tokenTreasury),
                         mintToken(
                                 uniqueTokenA,
-                                List.of(
-                                        ByteString.copyFromUtf8("memo1"),
-                                        ByteString.copyFromUtf8("memo2"))),
+                                List.of(ByteString.copyFromUtf8("memo1"), ByteString.copyFromUtf8("memo2"))),
                         cryptoCreate(firstUser).autoRenewSecs(10L).balance(0L),
                         getAccountInfo(firstUser).logged(),
                         tokenAssociate(firstUser, uniqueTokenA),
                         grantTokenKyc(uniqueTokenA, firstUser),
-                        cryptoTransfer(
-                                movingUnique(uniqueTokenA, 2L).between(tokenTreasury, firstUser)))
+                        cryptoTransfer(movingUnique(uniqueTokenA, 2L).between(tokenTreasury, firstUser)))
                 .when(sleepFor(10_500L), cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)))
                 .then(
                         getAccountInfo(firstUser).logged(),
-                        cryptoTransfer(
-                                        movingUnique(uniqueTokenA, 2L)
-                                                .between(tokenTreasury, firstUser))
+                        cryptoTransfer(movingUnique(uniqueTokenA, 2L).between(tokenTreasury, firstUser))
                                 .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
                         cryptoCreate(secondUser),
                         tokenAssociate(secondUser, uniqueTokenA),
-                        cryptoTransfer(
-                                        movingUnique(uniqueTokenA, 1L)
-                                                .between(firstUser, secondUser))
+                        cryptoTransfer(movingUnique(uniqueTokenA, 1L).between(firstUser, secondUser))
                                 .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-                        tokenFreeze(uniqueTokenA, firstUser)
-                                .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-                        tokenUnfreeze(uniqueTokenA, firstUser)
-                                .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-                        grantTokenKyc(uniqueTokenA, firstUser)
-                                .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-                        revokeTokenKyc(uniqueTokenA, firstUser)
-                                .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+                        tokenFreeze(uniqueTokenA, firstUser).hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+                        tokenUnfreeze(uniqueTokenA, firstUser).hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+                        grantTokenKyc(uniqueTokenA, firstUser).hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+                        revokeTokenKyc(uniqueTokenA, firstUser).hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
                         wipeTokenAccount(uniqueTokenA, firstUser, List.of(1L))
                                 .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
@@ -250,23 +225,16 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
                                 .treasury(tokenTreasury),
                         mintToken(
                                 uniqueTokenA,
-                                List.of(
-                                        ByteString.copyFromUtf8("memo1"),
-                                        ByteString.copyFromUtf8("memo2"))),
+                                List.of(ByteString.copyFromUtf8("memo1"), ByteString.copyFromUtf8("memo2"))),
                         tokenAssociate(firstUser, uniqueTokenA),
                         grantTokenKyc(uniqueTokenA, firstUser),
-                        cryptoTransfer(
-                                movingUnique(uniqueTokenA, 1L).between(tokenTreasury, firstUser)),
+                        cryptoTransfer(movingUnique(uniqueTokenA, 1L).between(tokenTreasury, firstUser)),
                         tokenAssociate(secondUser, uniqueTokenA),
                         revokeTokenKyc(uniqueTokenA, firstUser))
                 .then(
-                        cryptoTransfer(
-                                        movingUnique(uniqueTokenA, 2L)
-                                                .between(tokenTreasury, firstUser))
+                        cryptoTransfer(movingUnique(uniqueTokenA, 2L).between(tokenTreasury, firstUser))
                                 .hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
-                        cryptoTransfer(
-                                        movingUnique(uniqueTokenA, 1L)
-                                                .between(firstUser, secondUser))
+                        cryptoTransfer(movingUnique(uniqueTokenA, 1L).between(firstUser, secondUser))
                                 .hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
                         wipeTokenAccount(uniqueTokenA, firstUser, List.of(1L))
                                 .hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN));
@@ -293,23 +261,16 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
                                 .treasury(tokenTreasury),
                         mintToken(
                                 uniqueTokenA,
-                                List.of(
-                                        ByteString.copyFromUtf8("memo1"),
-                                        ByteString.copyFromUtf8("memo2"))),
+                                List.of(ByteString.copyFromUtf8("memo1"), ByteString.copyFromUtf8("memo2"))),
                         tokenAssociate(firstUser, uniqueTokenA),
                         grantTokenKyc(uniqueTokenA, firstUser),
-                        cryptoTransfer(
-                                movingUnique(uniqueTokenA, 1L).between(tokenTreasury, firstUser)),
+                        cryptoTransfer(movingUnique(uniqueTokenA, 1L).between(tokenTreasury, firstUser)),
                         tokenAssociate(secondUser, uniqueTokenA),
                         tokenFreeze(uniqueTokenA, firstUser))
                 .then(
-                        cryptoTransfer(
-                                        movingUnique(uniqueTokenA, 2L)
-                                                .between(tokenTreasury, firstUser))
+                        cryptoTransfer(movingUnique(uniqueTokenA, 2L).between(tokenTreasury, firstUser))
                                 .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
-                        cryptoTransfer(
-                                        movingUnique(uniqueTokenA, 1L)
-                                                .between(firstUser, secondUser))
+                        cryptoTransfer(movingUnique(uniqueTokenA, 1L).between(firstUser, secondUser))
                                 .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
                         wipeTokenAccount(uniqueTokenA, firstUser, List.of(1L))
                                 .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
@@ -335,19 +296,13 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
                                 .treasury(tokenTreasury),
                         mintToken(uniqueTokenA, List.of(ByteString.copyFromUtf8("memo"))))
                 .then(
-                        tokenFreeze(uniqueTokenA, firstUser)
-                                .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-                        tokenUnfreeze(uniqueTokenA, firstUser)
-                                .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-                        grantTokenKyc(uniqueTokenA, firstUser)
-                                .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-                        revokeTokenKyc(uniqueTokenA, firstUser)
-                                .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+                        tokenFreeze(uniqueTokenA, firstUser).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+                        tokenUnfreeze(uniqueTokenA, firstUser).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+                        grantTokenKyc(uniqueTokenA, firstUser).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+                        revokeTokenKyc(uniqueTokenA, firstUser).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
                         wipeTokenAccount(uniqueTokenA, firstUser, List.of(1L))
                                 .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-                        cryptoTransfer(
-                                        movingUnique(uniqueTokenA, 1L)
-                                                .between(tokenTreasury, firstUser))
+                        cryptoTransfer(movingUnique(uniqueTokenA, 1L).between(tokenTreasury, firstUser))
                                 .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
     }
 

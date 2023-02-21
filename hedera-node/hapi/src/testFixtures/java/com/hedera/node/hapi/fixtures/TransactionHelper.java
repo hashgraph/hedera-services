@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.hapi.fixtures;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -56,12 +57,15 @@ public interface TransactionHelper {
 
     default AccountID account(String account) {
         final var parts = account.split("\\.");
-        return account(
-                Long.parseLong(parts[0]), Long.parseLong(parts[1]), Long.parseLong(parts[2]));
+        return account(Long.parseLong(parts[0]), Long.parseLong(parts[1]), Long.parseLong(parts[2]));
     }
 
     default AccountID account(long shard, long realm, long num) {
-        return AccountID.newBuilder().shardNum(shard).realmNum(realm).accountNum(num).build();
+        return AccountID.newBuilder()
+                .shardNum(shard)
+                .realmNum(realm)
+                .accountNum(num)
+                .build();
     }
 
     /**
@@ -93,41 +97,35 @@ public interface TransactionHelper {
      */
     default Key thresholdKey(int threshold, Key... keys) {
         return new Key.Builder()
-                .thresholdKey(
-                        new ThresholdKey.Builder()
-                                .threshold(threshold)
-                                .keys(new KeyList.Builder().keys(Arrays.asList(keys)).build())
-                                .build())
+                .thresholdKey(new ThresholdKey.Builder()
+                        .threshold(threshold)
+                        .keys(new KeyList.Builder().keys(Arrays.asList(keys)).build())
+                        .build())
                 .build();
     }
 
     default Transaction transaction(AccountID payer, long time, Consumer<Builder> txBodyBuilder) {
-        final var txId =
-                TransactionID.newBuilder()
-                        .transactionValidStart(Timestamp.newBuilder().seconds(time / 1000).build())
-                        .accountID(payer)
-                        .build();
+        final var txId = TransactionID.newBuilder()
+                .transactionValidStart(
+                        Timestamp.newBuilder().seconds(time / 1000).build())
+                .accountID(payer)
+                .build();
 
         final var bodyBuilder =
-                TransactionBody.newBuilder()
-                        .transactionID(txId)
-                        .memo("A Memo")
-                        .transactionFee(1_000_000);
+                TransactionBody.newBuilder().transactionID(txId).memo("A Memo").transactionFee(1_000_000);
         txBodyBuilder.accept(bodyBuilder);
         final var body = bodyBuilder.build();
 
-        final var signedTx =
-                SignedTransaction.newBuilder()
-                        .bodyBytes(asBytes(body, TransactionBody.PROTOBUF))
-                        .build();
+        final var signedTx = SignedTransaction.newBuilder()
+                .bodyBytes(asBytes(body, TransactionBody.PROTOBUF))
+                .build();
 
         return Transaction.newBuilder()
                 .signedTransactionBytes(asBytes(signedTx, SignedTransaction.PROTOBUF))
                 .build();
     }
 
-    default ConsensusSubmitMessageTransactionBody.Builder consensusSubmitMessageBuilder(
-            int topicId, String msg) {
+    default ConsensusSubmitMessageTransactionBody.Builder consensusSubmitMessageBuilder(int topicId, String msg) {
         return ConsensusSubmitMessageTransactionBody.newBuilder()
                 .topicID(TopicID.newBuilder().topicNum(topicId).build())
                 .message(Bytes.wrap(msg));
@@ -153,25 +151,21 @@ public interface TransactionHelper {
         return transaction(payer, time, b -> b.consensusCreateTopic(data));
     }
 
-    default Transaction uncheckedSubmitTransaction(
-            @NonNull final AccountID payer, final long time) {
+    default Transaction uncheckedSubmitTransaction(@NonNull final AccountID payer, final long time) {
         final var data = UncheckedSubmitBody.newBuilder().transactionBytes(Bytes.EMPTY_BYTES);
         return transaction(payer, time, b -> b.uncheckedSubmit(data));
     }
 
     default Transaction uncheckedSubmitTransaction(
             @NonNull final AccountID payer, final long time, @NonNull final Transaction tx) {
-        final var data =
-                UncheckedSubmitBody.newBuilder()
-                        .transactionBytes(asBytes(tx, Transaction.PROTOBUF));
+        final var data = UncheckedSubmitBody.newBuilder().transactionBytes(asBytes(tx, Transaction.PROTOBUF));
         return transaction(payer, time, b -> b.uncheckedSubmit(data));
     }
 
     default Query getTopicInfoQuery(int topicId) {
-        final var data =
-                ConsensusGetTopicInfoQuery.newBuilder()
-                        .topicID(TopicID.newBuilder().topicNum(topicId).build())
-                        .build();
+        final var data = ConsensusGetTopicInfoQuery.newBuilder()
+                .topicID(TopicID.newBuilder().topicNum(topicId).build())
+                .build();
 
         return Query.newBuilder().consensusGetTopicInfo(data).build();
     }

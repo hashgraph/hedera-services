@@ -13,151 +13,174 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.schedule.impl.test.handlers;
 
+import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
+import com.hedera.hapi.node.scheduled.ScheduleSignTransactionBody;
+import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
+import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
+import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.meta.PreHandleContext;
+import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.state.ReadableKVStateBase;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import java.util.List;
+import java.util.Optional;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
+import static com.hedera.node.app.service.schedule.impl.Utils.asOrdinary;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+
 class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
-    //    private ScheduleID scheduleID = ScheduleID.newBuilder().setScheduleNum(100L).build();
-    //    @Mock protected JKey adminJKey;
-    //    @Mock protected ScheduleVirtualValue schedule;
-    //
-    //    @Mock protected ReadableKVStateBase<Long, ScheduleVirtualValue> schedulesById;
-    //    protected ReadableScheduleStore scheduleStore;
-    //
-    //    @BeforeEach
-    //    void setUp() {
-    //        given(states.<Long,
-    // ScheduleVirtualValue>get("SCHEDULES_BY_ID")).willReturn(schedulesById);
-    //        scheduleStore = new ReadableScheduleStore(states);
-    //    }
-    //
-    //    private ScheduleSignHandler subject = new ScheduleSignHandler();
-    //
-    //    @Test
-    //    void scheduleSignVanillaNoExplicitPayer() {
-    //        final var txn = scheduleSignTransaction();
-    //        givenSetupForScheduleSign(txn);
-    //        given(dispatcher.dispatch(scheduledTxn, scheduler)).willReturn(scheduledMeta);
-    //        final var meta = subject.preHandle(txn, scheduler, keyLookup, scheduleStore,
-    // dispatcher);
-    //        assertEquals(scheduler, meta.payer());
-    //        assertEquals(schedulerKey, meta.payerKey());
-    //        assertEquals(List.of(), meta.requiredNonPayerKeys());
-    //        assertEquals(scheduledMeta, meta.scheduledMeta());
-    //        assertEquals(OK, meta.status());
-    //    }
-    //
-    //    @Test
-    //    void scheduleSignFailsIfScheduleMissing() {
-    //        final var txn = scheduleSignTransaction();
-    //        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(null);
-    //        final var meta = subject.preHandle(txn, scheduler, keyLookup, scheduleStore,
-    // dispatcher);
-    //        assertEquals(scheduler, meta.payer());
-    //        assertEquals(null, meta.payerKey());
-    //        assertEquals(null, meta.scheduledMeta());
-    //        assertEquals(INVALID_SCHEDULE_ID, meta.status());
-    //        assertTrue(meta instanceof InvalidTransactionMetadata);
-    //    }
-    //
-    //    @Test
-    //    void scheduleSignVanillaWithOptionalPayerSet() {
-    //        final var txn = scheduleSignTransaction();
-    //        givenSetupForScheduleSign(txn);
-    //        scheduledMeta = new SigTransactionMetadata(scheduledTxn, payer, OK, adminKey,
-    // List.of());
-    //
-    //        given(schedule.hasExplicitPayer()).willReturn(true);
-    //        given(schedule.payer()).willReturn(EntityId.fromGrpcAccountId(payer));
-    //        given(keyLookup.getKey(scheduler))
-    //                .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
-    //        given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
-    //
-    //        final var meta = subject.preHandle(txn, scheduler, keyLookup, scheduleStore,
-    // dispatcher);
-    //
-    //        assertEquals(scheduler, meta.payer());
-    //        assertEquals(schedulerKey, meta.payerKey());
-    //        assertEquals(scheduledMeta, meta.scheduledMeta());
-    //        assertEquals(adminKey, meta.scheduledMeta().payerKey());
-    //        assertEquals(OK, meta.status());
-    //        verify(dispatcher).dispatch(scheduledTxn, payer);
-    //    }
-    //
-    //    @Test
-    //    void scheduleSignForNotSchedulableFails() {
-    //        final var txn = scheduleSignTransaction();
-    //
-    //        scheduledTxn =
-    //                TransactionBody.newBuilder()
-    //                        .setTransactionID(TransactionID.newBuilder().setAccountID(scheduler))
-    //                        .setScheduleCreate(ScheduleCreateTransactionBody.newBuilder().build())
-    //                        .build();
-    //
-    //        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
-    //        given(keyLookup.getKey(scheduler))
-    //                .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
-    //        given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
-    //        given(schedule.adminKey()).willReturn(Optional.of(adminJKey));
-    //        given(schedule.hasExplicitPayer()).willReturn(false);
-    //
-    //        final var meta = subject.preHandle(txn, scheduler, keyLookup, scheduleStore,
-    // dispatcher);
-    //        assertEquals(scheduler, meta.payer());
-    //        assertEquals(schedulerKey, meta.payerKey());
-    //        assertEquals(List.of(), meta.requiredNonPayerKeys());
-    //        assertTrue(meta.scheduledMeta() instanceof InvalidTransactionMetadata);
-    //        assertTrue(meta.scheduledMeta().txnBody().hasScheduleCreate());
-    //        assertEquals(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST, meta.scheduledMeta().status());
-    //        assertEquals(scheduler, meta.scheduledMeta().payer());
-    //        assertEquals(OK, meta.status());
-    //    }
-    //
-    //    @Test
-    //    void scheduleSignNotInWhiteList() {
-    //        final var txn = scheduleTxnNotRecognized();
-    //        TransactionMetadata result =
-    //                subject.preHandle(txn, payer, keyLookup, scheduleStore, dispatcher);
-    //        assertTrue(result instanceof InvalidTransactionMetadata);
-    //        assertEquals(txn, result.txnBody());
-    //        assertEquals(payer, result.payer());
-    //        assertEquals(INVALID_SCHEDULE_ID, result.status());
-    //    }
-    //
-    //    @Test
-    //    void handleNotImplemented() {
-    //        assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
-    //    }
-    //
-    //    private TransactionBody givenSetupForScheduleSign(TransactionBody txn) {
-    //        scheduledTxn =
-    //                TransactionBody.newBuilder()
-    //                        .setTransactionID(
-    //                                TransactionID.newBuilder().setAccountID(scheduler).build())
-    //
-    // .setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
-    //                        .build();
-    //        scheduledMeta =
-    //                new SigTransactionMetadata(
-    //                        asOrdinary(
-    //                                txn.getScheduleCreate().getScheduledTransactionBody(),
-    //                                txn.getTransactionID()),
-    //                        scheduler,
-    //                        OK,
-    //                        schedulerKey,
-    //                        List.of());
-    //        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
-    //        given(keyLookup.getKey(scheduler))
-    //                .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
-    //        given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
-    //        given(schedule.adminKey()).willReturn(Optional.of(adminJKey));
-    //        return scheduledTxn;
-    //    }
-    //
-    //    private TransactionBody scheduleSignTransaction() {
-    //        return TransactionBody.newBuilder()
-    //                .setTransactionID(TransactionID.newBuilder().setAccountID(scheduler))
-    //
-    // .setScheduleSign(ScheduleSignTransactionBody.newBuilder().setScheduleID(scheduleID))
-    //                .build();
-    //    }
+    private ScheduleID scheduleID = ScheduleID.newBuilder().scheduleNum(100L).build();
+
+    @Mock
+    protected JKey adminJKey;
+
+    @Mock
+    protected ScheduleVirtualValue schedule;
+
+    @Mock
+    protected ReadableKVStateBase<Long, ScheduleVirtualValue> schedulesById;
+
+    protected ReadableScheduleStore scheduleStore;
+
+    @BeforeEach
+    void setUp() {
+        given(states.<Long, ScheduleVirtualValue>get("SCHEDULES_BY_ID")).willReturn(schedulesById);
+        scheduleStore = new ReadableScheduleStore(states);
+    }
+
+    private ScheduleSignHandler subject = new ScheduleSignHandler();
+
+    @Test
+    void scheduleSignVanillaNoExplicitPayer() {
+        final var txn = scheduleSignTransaction();
+        givenSetupForScheduleSign(txn);
+        given(dispatcher.dispatch(scheduledTxn, scheduler)).willReturn(scheduledMeta);
+        final var context = new PreHandleContext(keyLookup, txn, scheduler);
+        subject.preHandle(context, scheduleStore, dispatcher);
+        assertEquals(scheduler, context.getPayer());
+        assertEquals(schedulerKey, context.getPayerKey());
+        assertEquals(List.of(), context.getRequiredNonPayerKeys());
+        assertEquals(scheduledMeta, context.getHandlerMetadata());
+        assertEquals(OK, context.getStatus());
+    }
+
+    @Test
+    void scheduleSignFailsIfScheduleMissing() {
+        final var txn = scheduleSignTransaction();
+        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
+        given(schedulesById.get(scheduleID.scheduleNum())).willReturn(null);
+        final var context = new PreHandleContext(keyLookup, txn, scheduler);
+        subject.preHandle(context, scheduleStore, dispatcher);
+        assertEquals(scheduler, context.getPayer());
+        assertEquals(null, context.getHandlerMetadata());
+        assertEquals(INVALID_SCHEDULE_ID, context.getStatus());
+    }
+
+    @Test
+    void scheduleSignVanillaWithOptionalPayerSet() {
+        final var txn = scheduleSignTransaction();
+        givenSetupForScheduleSign(txn);
+        scheduledMeta = new TransactionMetadata(scheduledTxn, payer, OK, adminKey, List.of(), null, List.of());
+
+        given(schedule.hasExplicitPayer()).willReturn(true);
+        given(schedule.payer()).willReturn(EntityId.fromGrpcAccountId(payer));
+        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
+        given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
+
+        final var context = new PreHandleContext(keyLookup, txn, scheduler);
+        subject.preHandle(context, scheduleStore, dispatcher);
+
+        assertEquals(scheduler, context.getPayer());
+        assertEquals(schedulerKey, context.getPayerKey());
+        assertEquals(scheduledMeta, context.getHandlerMetadata());
+        assertEquals(adminKey, ((TransactionMetadata) context.getHandlerMetadata()).payerKey());
+        assertEquals(OK, context.getStatus());
+        verify(dispatcher).dispatch(scheduledTxn, payer);
+    }
+
+    @Test
+    void scheduleSignForNotSchedulableFails() {
+        final var txn = scheduleSignTransaction();
+
+        scheduledTxn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(scheduler))
+                .scheduleCreate(ScheduleCreateTransactionBody.newBuilder().build())
+                .build();
+
+        given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
+        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
+        given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
+        given(schedule.adminKey()).willReturn(Optional.of(adminJKey));
+        given(schedule.hasExplicitPayer()).willReturn(false);
+
+        final var context = new PreHandleContext(keyLookup, txn, scheduler);
+        subject.preHandle(context, scheduleStore, dispatcher);
+        assertEquals(scheduler, context.getPayer());
+        assertEquals(schedulerKey, context.getPayerKey());
+        assertEquals(List.of(), context.getRequiredNonPayerKeys());
+        assertTrue(context.getHandlerMetadata() instanceof TransactionMetadata);
+        assertTrue(
+                ((TransactionMetadata) context.getHandlerMetadata()).txnBody().hasScheduleCreate());
+        assertEquals(
+                SCHEDULED_TRANSACTION_NOT_IN_WHITELIST, ((TransactionMetadata)
+ context.getHandlerMetadata()).status());
+        assertEquals(scheduler, ((TransactionMetadata) context.getHandlerMetadata()).payer());
+        assertEquals(OK, context.getStatus());
+    }
+
+    @Test
+    void scheduleSignNotInWhiteList() {
+        given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
+        final var txn = scheduleTxnNotRecognized();
+        final var context = new PreHandleContext(keyLookup, txn, payer);
+        subject.preHandle(context, scheduleStore, dispatcher);
+        assertEquals(txn, context.getTxn());
+        assertEquals(payer, context.getPayer());
+        assertEquals(INVALID_SCHEDULE_ID, context.getStatus());
+    }
+
+    private TransactionBody givenSetupForScheduleSign(TransactionBody txn) {
+        scheduledTxn = TransactionBody.newBuilder()
+                .transactionID(
+                        TransactionID.newBuilder().accountID(scheduler).build())
+                .cryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().build())
+                .build();
+        scheduledMeta = new TransactionMetadata(
+                asOrdinary(txn.scheduleCreate().orElseThrow().scheduledTransactionBody(), txn.transactionID()),
+                scheduler,
+                OK,
+                schedulerKey,
+                List.of(),
+                null,
+                List.of());
+        given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
+        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
+        given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
+        given(schedule.adminKey()).willReturn(Optional.of(adminJKey));
+        return scheduledTxn;
+    }
+
+    private TransactionBody scheduleSignTransaction() {
+        return TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(scheduler))
+                .scheduleSign(ScheduleSignTransactionBody.newBuilder().scheduleID(scheduleID))
+                .build();
+    }
 }

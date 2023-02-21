@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.records;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CACHE_RECORDS_TTL;
 import static com.hedera.node.app.service.mono.utils.SleepingPause.SLEEPING_PAUSE;
+import static com.hedera.node.app.spi.config.PropertyNames.CACHE_RECORDS_TTL;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -37,14 +38,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith({LogCaptureExtension.class})
 class RecordCacheFactoryTest {
+
     private static final TransactionID txnIdA =
             TransactionID.newBuilder().setAccountID(asAccount("0.0.2")).build();
     private static final TransactionID txnIdB =
             TransactionID.newBuilder().setAccountID(asAccount("2.2.0")).build();
 
-    @LoggingTarget private LogCaptor logCaptor;
+    @LoggingTarget
+    private LogCaptor logCaptor;
 
-    @LoggingSubject private RecordCacheFactory subject;
+    @LoggingSubject
+    private RecordCacheFactory subject;
 
     private PropertySource properties;
 
@@ -67,8 +71,6 @@ class RecordCacheFactoryTest {
         assertEquals(RecordCache.MARKER, cache.getIfPresent(txnIdA));
         SLEEPING_PAUSE.forMs(1000L);
         assertNull(cache.getIfPresent(txnIdA));
-        assertThat(
-                logCaptor.infoLogs(),
-                contains("Constructing the node-local txn id cache with ttl=1s"));
+        assertThat(logCaptor.infoLogs(), contains("Constructing the node-local txn id cache with ttl=1s"));
     }
 }

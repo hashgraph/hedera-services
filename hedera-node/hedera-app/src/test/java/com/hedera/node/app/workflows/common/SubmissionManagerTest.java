@@ -13,14 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.common;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.node.app.service.mono.context.properties.Profile;
+import com.hedera.node.app.spi.config.Profile;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.RecordCache;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
@@ -35,21 +43,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SubmissionManagerTest extends AppTestBase {
     /** A mocked {@link Platform} for accepting or rejecting submission of transaction bytes */
-    @Mock private Platform platform;
+    @Mock
+    private Platform platform;
     /** A mocked {@link RecordCache} for tracking submitted transactions */
-    @Mock private RecordCache recordCache;
+    @Mock
+    private RecordCache recordCache;
     /** Mocked local properties to verify that we ONLY support Unchecked Submit when in PROD mode */
-    @Mock private NodeLocalProperties nodeLocalProperties;
+    @Mock
+    private NodeLocalProperties nodeLocalProperties;
 
     @Test
     @DisplayName("Null cannot be provided as any of the constructor args")
@@ -69,9 +74,11 @@ class SubmissionManagerTest extends AppTestBase {
     @DisplayName("Tests for normal transaction submission")
     class SubmitTest extends AppTestBase {
         /** Mocked Metrics allowing us to see if the speedometer has been modified */
-        @Mock private Metrics mockedMetrics;
+        @Mock
+        private Metrics mockedMetrics;
         /** The speedometer metric used by the submission manager */
-        @Mock private SpeedometerMetric platformTxnRejections;
+        @Mock
+        private SpeedometerMetric platformTxnRejections;
         /** The submission manager instance */
         private SubmissionManager submissionManager;
         /** Representative of the raw transaction bytes */
@@ -93,10 +100,8 @@ class SubmissionManagerTest extends AppTestBase {
         @DisplayName("Null cannot be provided as any of the 'submit' args")
         @SuppressWarnings("ConstantConditions")
         void testSubmitWithIllegalParameters() {
-            assertThatThrownBy(() -> submissionManager.submit(null, bytes))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> submissionManager.submit(txBody, null))
-                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> submissionManager.submit(null, bytes)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> submissionManager.submit(txBody, null)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
@@ -137,9 +142,11 @@ class SubmissionManagerTest extends AppTestBase {
     @DisplayName("Tests for unchecked transaction submission")
     class UncheckedSubmitTest extends AppTestBase {
         /** Mocked Metrics allowing us to see if the speedometer has been modified */
-        @Mock private Metrics mockedMetrics;
+        @Mock
+        private Metrics mockedMetrics;
         /** The speedometer metric used by the submission manager */
-        @Mock private SpeedometerMetric platformTxnRejections;
+        @Mock
+        private SpeedometerMetric platformTxnRejections;
         /** The submission manager instance */
         private SubmissionManager submissionManager;
         /** Representative of the raw transaction bytes */
@@ -218,7 +225,6 @@ class SubmissionManagerTest extends AppTestBase {
                             .build())
                     .build();
 
-
             // When we submit an unchecked transaction with bogus bytes, and separate bytes, then the
             // submission FAILS because of the bogus bytes
             assertThatThrownBy(() -> submissionManager.submit(txBody, bytes))
@@ -232,6 +238,5 @@ class SubmissionManagerTest extends AppTestBase {
             // We never attempted to submit this tx to the platform, so we don't increase the metric
             verify(platformTxnRejections, never()).cycle();
         }
-
     }
 }

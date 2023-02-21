@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle.disk;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,11 +35,10 @@ class OnDiskReadableStateTest extends MerkleTestBase {
 
     @BeforeEach
     void setUp() {
-        md =
-                new StateMetadata<>(
-                        FIRST_SERVICE,
-                        new TestSchema(1),
-                        StateDefinition.onDisk(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100));
+        md = new StateMetadata<>(
+                FIRST_SERVICE,
+                new TestSchema(1),
+                StateDefinition.onDisk(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100));
         virtualMap = createVirtualMap("TEST LABEL", md);
     }
 
@@ -58,8 +58,7 @@ class OnDiskReadableStateTest extends MerkleTestBase {
         @DisplayName("You must specify the virtual map")
         void nullVirtualMapThrows() {
             //noinspection DataFlowIssue
-            assertThatThrownBy(() -> new OnDiskReadableKVState<>(md, null))
-                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new OnDiskReadableKVState<>(md, null)).isInstanceOf(NullPointerException.class);
         }
 
         @Test

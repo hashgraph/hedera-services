@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state;
 
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -47,6 +48,12 @@ public interface HederaState {
     @NonNull
     WritableStates createWritableStates(@NonNull String serviceName);
 
+    /**
+     * Gets the {@link RecordCache}, used for storing all in-flight and recently sent records,
+     * which is needed for deduplication purposes.
+     *
+     * @return A non-null {@link RecordCache}.
+     */
     @NonNull
     RecordCache getRecordCache();
 }

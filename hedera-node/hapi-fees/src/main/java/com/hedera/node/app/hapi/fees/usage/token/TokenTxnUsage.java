@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.token;
 
 import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
@@ -31,11 +32,9 @@ public abstract class TokenTxnUsage<T extends TokenTxnUsage<T>> extends TxnUsage
         super(tokenOp, usageEstimator);
     }
 
-    void addTokenTransfersRecordRb(
-            final int numTokens, final int fungibleNumTransfers, final int uniqueNumTransfers) {
+    void addTokenTransfersRecordRb(final int numTokens, final int fungibleNumTransfers, final int uniqueNumTransfers) {
         addRecordRb(
-                tokenEntitySizes.bytesUsedToRecordTokenTransfers(
-                        numTokens, fungibleNumTransfers, uniqueNumTransfers));
+                tokenEntitySizes.bytesUsedToRecordTokenTransfers(numTokens, fungibleNumTransfers, uniqueNumTransfers));
     }
 
     public T novelRelsLasting(final int n, final long secs) {

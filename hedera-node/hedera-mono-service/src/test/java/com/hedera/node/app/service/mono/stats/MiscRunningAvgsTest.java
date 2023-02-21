@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stats;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -33,13 +34,24 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class MiscRunningAvgsTest {
     private static final double halfLife = 10.0;
 
-    @Mock private Platform platform;
+    @Mock
+    private Platform platform;
 
-    @Mock private RunningAverageMetric gasPerSec;
-    @Mock private RunningAverageMetric submitSizes;
-    @Mock private RunningAverageMetric queueSize;
-    @Mock private RunningAverageMetric hashS;
-    @Mock private Metrics metrics;
+    @Mock
+    private RunningAverageMetric gasPerSec;
+
+    @Mock
+    private RunningAverageMetric submitSizes;
+
+    @Mock
+    private RunningAverageMetric queueSize;
+
+    @Mock
+    private RunningAverageMetric hashS;
+
+    @Mock
+    private Metrics metrics;
+
     private MiscRunningAvgs subject;
 
     @BeforeEach

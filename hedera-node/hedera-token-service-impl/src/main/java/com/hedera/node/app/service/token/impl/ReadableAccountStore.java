@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
@@ -91,9 +92,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
     public KeyOrLookupFailureReason getKey(@NonNull final AccountID id) {
         Objects.requireNonNull(id);
         final var account = getAccountLeaf(id);
-        return account == null
-                ? withFailureReason(INVALID_ACCOUNT_ID)
-                : validateKey(account.getAccountKey(), false);
+        return account == null ? withFailureReason(INVALID_ACCOUNT_ID) : validateKey(account.getAccountKey(), false);
     }
 
     /** {@inheritDoc} */
@@ -180,10 +179,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
                             yield aliases.get(alias.asUtf8String());
                         }
                     }
-                    case EVM_ADDRESS -> throw new RuntimeException(
-                            "EVM_ADDRESS account number kind not supported (yet?)");
-                    case UNSET -> throw new RuntimeException(
-                            "Account number not set in protobuf!!");
+                    case UNSET -> throw new RuntimeException("Account number not set in protobuf!!");
                 };
 
         return accountNum == null ? null : accountState.get(accountNum);
@@ -205,8 +201,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
                     case CONTRACT_NUM -> contractOneOf.as();
                     case EVM_ADDRESS -> {
                         // If the evm address is of "long-zero" format, then parse out the contract
-                        // num
-                        // from those bytes
+                        // num from those bytes
                         final Bytes evmAddress = contractOneOf.as();
                         if (isMirror(evmAddress)) {
                             yield numOfMirror(evmAddress);
@@ -217,31 +212,25 @@ public class ReadableAccountStore implements AccountKeyLookup {
 
                         // If we didn't find an alias, we will want to auto-create this account. But
                         // we don't want to auto-create an account if there is already another
-                        // account
-                        // in the system with the same EVM address that we would have auto-created.
+                        // account in the system with the same EVM address that we would have auto-created.
                         if (evmAddress.getLength() > EVM_ADDRESS_LEN && entityNum == null) {
                             // if we don't find entity num for key alias we can try to derive EVM
-                            // address from
-                            // it and look it up
+                            // address from it and look it up
                             var evmKeyAliasAddress = keyAliasToEVMAddress(evmAddress);
                             if (evmKeyAliasAddress != null) {
-                                entityNum =
-                                        aliases.get(
-                                                ByteString.copyFrom(evmKeyAliasAddress)
-                                                        .toStringUtf8());
+                                entityNum = aliases.get(
+                                        ByteString.copyFrom(evmKeyAliasAddress).toStringUtf8());
                             }
                         }
                         yield entityNum;
                     }
-                    case UNSET -> throw new RuntimeException(
-                            "Contract number not set in protobuf!!");
+                    case UNSET -> throw new RuntimeException("Contract number not set in protobuf!!");
                 };
 
         return contractNum == null ? null : accountState.get(contractNum);
     }
 
-    private KeyOrLookupFailureReason validateKey(
-            @Nullable final JKey key, final boolean isContractKey) {
+    private KeyOrLookupFailureReason validateKey(@Nullable final JKey key, final boolean isContractKey) {
         if (key == null || key.isEmpty()) {
             if (isContractKey) {
                 return withFailureReason(MODIFYING_IMMUTABLE_CONTRACT);
@@ -291,28 +280,27 @@ public class ReadableAccountStore implements AccountKeyLookup {
 
     // Converts a HederaAccount into an Account
     private Account mapAccount(final AccountID idOrAlias, final HederaAccount account) {
-        final var builder =
-                new AccountBuilderImpl()
-                        .key(account.getAccountKey())
-                        .expiry(account.getExpiry())
-                        .balance(account.getBalance())
-                        .memo(account.getMemo())
-                        .deleted(account.isDeleted())
-                        .receiverSigRequired(account.isReceiverSigRequired())
-                        .numberOfOwnedNfts(account.getNftsOwned())
-                        .maxAutoAssociations(account.getMaxAutomaticAssociations())
-                        .usedAutoAssociations(account.getUsedAutoAssociations())
-                        .numAssociations(account.getNumAssociations())
-                        .numPositiveBalances(account.getNumPositiveBalances())
-                        .ethereumNonce(account.getEthereumNonce())
-                        .stakedToMe(account.getStakedToMe())
-                        .stakePeriodStart(account.getStakePeriodStart())
-                        .stakedNum(account.totalStake())
-                        .declineReward(account.isDeclinedReward())
-                        .stakeAtStartOfLastRewardedPeriod(account.getStakePeriodStart())
-                        .autoRenewSecs(account.getAutoRenewSecs())
-                        .accountNumber(idOrAlias.accountNum().get())
-                        .isSmartContract(account.isSmartContract());
+        final var builder = new AccountBuilderImpl()
+                .key(account.getAccountKey())
+                .expiry(account.getExpiry())
+                .balance(account.getBalance())
+                .memo(account.getMemo())
+                .deleted(account.isDeleted())
+                .receiverSigRequired(account.isReceiverSigRequired())
+                .numberOfOwnedNfts(account.getNftsOwned())
+                .maxAutoAssociations(account.getMaxAutomaticAssociations())
+                .usedAutoAssociations(account.getUsedAutoAssociations())
+                .numAssociations(account.getNumAssociations())
+                .numPositiveBalances(account.getNumPositiveBalances())
+                .ethereumNonce(account.getEthereumNonce())
+                .stakedToMe(account.getStakedToMe())
+                .stakePeriodStart(account.getStakePeriodStart())
+                .stakedNum(account.totalStake())
+                .declineReward(account.isDeclinedReward())
+                .stakeAtStartOfLastRewardedPeriod(account.getStakePeriodStart())
+                .autoRenewSecs(account.getAutoRenewSecs())
+                .accountNumber(idOrAlias.accountNum().get())
+                .isSmartContract(account.isSmartContract());
         if (account.getAutoRenewAccount() != null) {
             builder.autoRenewAccountNumber(account.getAutoRenewAccount().num());
         }
@@ -330,8 +318,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
             final var bytes = new ByteArrayOutputStream();
             final var output = new DataOutputStream(bytes);
             Key.PROTOBUF.write(key, output);
-            final var googleKey =
-                    com.hederahashgraph.api.proto.java.Key.parseFrom(bytes.toByteArray());
+            final var googleKey = com.hederahashgraph.api.proto.java.Key.parseFrom(bytes.toByteArray());
             return Utils.asHederaKey(googleKey);
         } catch (IOException e) {
             throw new RuntimeException("Failed to produce protobuf bytes for a key!", e);

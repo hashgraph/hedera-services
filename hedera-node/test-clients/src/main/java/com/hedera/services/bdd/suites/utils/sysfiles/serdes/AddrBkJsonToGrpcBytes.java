@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.utils.sysfiles.serdes;
 
 import static com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo.addressBookFrom;
@@ -58,14 +59,12 @@ public class AddrBkJsonToGrpcBytes implements SysFileSerde<String> {
         try {
             BookEntryPojo.asOctets(IpV4Address);
         } catch (Exception e) {
-            throw new IllegalStateException(
-                    "Endpoint IP field cannot be set to '" + IpV4Address + "'", e);
+            throw new IllegalStateException("Endpoint IP field cannot be set to '" + IpV4Address + "'", e);
         }
 
         try {
             if (portNum <= 0) {
-                throw new IllegalStateException(
-                        "Endpoint port field cannot be set to '" + portNum + "'");
+                throw new IllegalStateException("Endpoint port field cannot be set to '" + portNum + "'");
             }
         } catch (NullPointerException e) {
             throw new IllegalStateException("Endpoint port field is not set", e);

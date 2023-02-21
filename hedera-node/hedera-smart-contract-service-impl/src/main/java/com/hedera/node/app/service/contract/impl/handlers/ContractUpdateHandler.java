@@ -13,23 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.contract.impl.handlers;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
  * HederaFunctionality#CONTRACT_UPDATE}.
  */
+@Singleton
 public class ContractUpdateHandler implements TransactionHandler {
+    @Inject
+    public ContractUpdateHandler() {}
 
     /**
      * This method is called during the pre-handle workflow.
@@ -41,32 +50,24 @@ public class ContractUpdateHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param txBody the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
+     * @param context the {@link PreHandleContext} which collects all information that will be
+     *     passed to {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody,
-            @NonNull final AccountID payer,
-            @NonNull final AccountKeyLookup keyLookup) {
-        final var op = txBody.contractUpdateInstance().orElseThrow();
-        final var meta =
-                new SigTransactionMetadataBuilder(keyLookup).txnBody(txBody).payerKeyFor(payer);
+    public void preHandle(@NonNull final PreHandleContext context) {
+        requireNonNull(context);
+        final var op = context.getTxn().contractUpdateInstance().orElseThrow();
 
         if (isAdminSigRequired(op)) {
-            meta.addNonPayerKey(op.contractID());
+            context.addNonPayerKey(op.contractID());
         }
-        //        if (hasCryptoAdminKey(op)) {
-        //            final var key = asHederaKey(op.adminKey());
-        //            key.ifPresent(meta::addToReqNonPayerKeys);
-        //        }
-        //        if (op.autoRenewAccountId()
-        //                && !op.autoRenewAccountId().equals(AccountID.getDefaultInstance())) {
-        //            meta.addNonPayerKey(op.autoRenewAccountId(), INVALID_AUTORENEW_ACCOUNT);
-        //        }
-        return meta.build();
+        if (hasCryptoAdminKey(op)) {
+            final var key = asHederaKey(op.adminKey());
+            key.ifPresent(context::addToReqNonPayerKeys);
+        }
+        if (op.autoRenewAccountId() != null && !op.autoRenewAccountId().equals(AccountID.newBuilder().build())) {
+            context.addNonPayerKey(op.autoRenewAccountId(), INVALID_AUTORENEW_ACCOUNT);
+        }
     }
 
     private boolean isAdminSigRequired(final ContractUpdateTransactionBody op) {
@@ -93,6 +94,7 @@ public class ContractUpdateHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
+        requireNonNull(metadata);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

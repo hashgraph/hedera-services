@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.suites;
 
 import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
@@ -74,8 +75,7 @@ public class CreateSuite extends HapiSuite {
 
     private HapiSpec doCreate() {
         if (!novelTarget.endsWith(NOVELTY + ".pem")) {
-            throw new IllegalArgumentException(
-                    "Only accepts tentative new key material named 'novel.pem'");
+            throw new IllegalArgumentException("Only accepts tentative new key material named 'novel.pem'");
         }
 
         final var newAccount = "newAccount";
@@ -84,72 +84,51 @@ public class CreateSuite extends HapiSuite {
         final var novelPass = TxnUtils.randomAlphaNumeric(12);
         return HapiSpec.customHapiSpec("DoCreate")
                 .withProperties(specConfig)
-                .given(
-                        newKeyNamed(newKey)
-                                .shape(ED25519_ON)
-                                .exportingTo(novelTarget, novelPass)
-                                .includingEd25519Mnemonic())
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    int attemptNo = 1;
-                                    do {
-                                        System.out.print("Creation attempt #" + attemptNo + "...");
-                                        final var creation =
-                                                cryptoCreate(newAccount)
-                                                        .balance(initialBalance)
-                                                        .blankMemo()
-                                                        .entityMemo(memo)
-                                                        .key(newKey)
-                                                        .receiverSigRequired(receiverSigRequired)
-                                                        .hasPrecheckFrom(OK, BUSY)
-                                                        .exposingCreatedIdTo(
-                                                                id ->
-                                                                        createdNo.set(
-                                                                                id.getAccountNum()))
-                                                        .noLogging();
-                                        allRunFor(spec, creation);
-                                        if (creation.getActualPrecheck() == OK) {
-                                            System.out.println("SUCCESS");
-                                            success.set(true);
-                                            break;
-                                        } else {
-                                            final var retriesLeft = numBusyRetries - attemptNo + 1;
-                                            System.out.println(
-                                                    "BUSY"
-                                                            + (retriesLeft > 0
-                                                                    ? ", retrying "
-                                                                            + retriesLeft
-                                                                            + " more times"
-                                                                    : " again, giving up"));
-                                        }
-                                    } while (attemptNo++ <= numBusyRetries);
-                                }))
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    if (success.get()) {
-                                        final var locs =
-                                                new String[] {
-                                                    novelTarget,
-                                                    novelTarget.replace(".pem", ".pass"),
-                                                    novelTarget.replace(".pem", ".words"),
-                                                };
-                                        final var accountId = "account" + createdNo.get();
-                                        for (final var loc : locs) {
-                                            try (final var fin =
-                                                    Files.newInputStream(Paths.get(loc))) {
-                                                fin.transferTo(
-                                                        Files.newOutputStream(
-                                                                Paths.get(
-                                                                        loc.replace(
-                                                                                NOVELTY,
-                                                                                accountId))));
-                                            }
-                                            new File(loc).delete();
-                                        }
-                                    }
-                                }));
+                .given(newKeyNamed(newKey)
+                        .shape(ED25519_ON)
+                        .exportingTo(novelTarget, novelPass)
+                        .includingEd25519Mnemonic())
+                .when(withOpContext((spec, opLog) -> {
+                    int attemptNo = 1;
+                    do {
+                        System.out.print("Creation attempt #" + attemptNo + "...");
+                        final var creation = cryptoCreate(newAccount)
+                                .balance(initialBalance)
+                                .blankMemo()
+                                .entityMemo(memo)
+                                .key(newKey)
+                                .receiverSigRequired(receiverSigRequired)
+                                .hasPrecheckFrom(OK, BUSY)
+                                .exposingCreatedIdTo(id -> createdNo.set(id.getAccountNum()))
+                                .noLogging();
+                        allRunFor(spec, creation);
+                        if (creation.getActualPrecheck() == OK) {
+                            System.out.println("SUCCESS");
+                            success.set(true);
+                            break;
+                        } else {
+                            final var retriesLeft = numBusyRetries - attemptNo + 1;
+                            System.out.println("BUSY"
+                                    + (retriesLeft > 0
+                                            ? ", retrying " + retriesLeft + " more times"
+                                            : " again, giving up"));
+                        }
+                    } while (attemptNo++ <= numBusyRetries);
+                }))
+                .then(withOpContext((spec, opLog) -> {
+                    if (success.get()) {
+                        final var locs = new String[] {
+                            novelTarget, novelTarget.replace(".pem", ".pass"), novelTarget.replace(".pem", ".words"),
+                        };
+                        final var accountId = "account" + createdNo.get();
+                        for (final var loc : locs) {
+                            try (final var fin = Files.newInputStream(Paths.get(loc))) {
+                                fin.transferTo(Files.newOutputStream(Paths.get(loc.replace(NOVELTY, accountId))));
+                            }
+                            new File(loc).delete();
+                        }
+                    }
+                }));
     }
 
     @Override

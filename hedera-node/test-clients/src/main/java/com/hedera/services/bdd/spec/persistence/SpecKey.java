@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.persistence;
 
 import com.google.protobuf.ByteString;
@@ -113,8 +114,7 @@ public class SpecKey {
         String mnemonic;
         if (!words.exists()) {
             if (!generateIfMissing) {
-                throw new IllegalStateException(
-                        String.format("File missing at mnemonic loc '%s'!", qWordsLoc));
+                throw new IllegalStateException(String.format("File missing at mnemonic loc '%s'!", qWordsLoc));
             }
             mnemonic = randomMnemonic();
             try {
@@ -129,12 +129,7 @@ public class SpecKey {
         var cryptoKey = mnemonicToEd25519Key(mnemonic);
         var grpcKey = Ed25519Factory.populatedFrom(cryptoKey.getAbyte());
         forms.completeIntake(spec.registry(), grpcKey);
-        spec.keys()
-                .incorporate(
-                        forms.name(),
-                        CommonUtils.hex(cryptoKey.getAbyte()),
-                        cryptoKey,
-                        SigControl.ON);
+        spec.keys().incorporate(forms.name(), CommonUtils.hex(cryptoKey.getAbyte()), cryptoKey, SigControl.ON);
     }
 
     public static String randomMnemonic() {
@@ -160,8 +155,7 @@ public class SpecKey {
         var aes256EncryptedPkcs8Pem = new File(qPemLoc);
         if (!aes256EncryptedPkcs8Pem.exists()) {
             if (!generateIfMissing) {
-                throw new IllegalStateException(
-                        String.format("File missing at PEM loc '%s'!", qPemLoc));
+                throw new IllegalStateException(String.format("File missing at PEM loc '%s'!", qPemLoc));
             }
             Key simpleKey = spec.keys().generate(spec, KeyFactory.KeyType.SIMPLE);
             forms.completeIntake(spec.registry(), simpleKey);
@@ -178,16 +172,11 @@ public class SpecKey {
         (1) Update the mapping from hexed public keys to PrivateKeys; and,
         (2) Set the given SigControl as default for signing requests with the Key. */
         spec.keys()
-                .incorporate(
-                        forms.name(),
-                        CommonUtils.hex(publicKey.getAbyte()),
-                        keyPair.getPrivate(),
-                        SigControl.ON);
+                .incorporate(forms.name(), CommonUtils.hex(publicKey.getAbyte()), keyPair.getPrivate(), SigControl.ON);
     }
 
     private String qualifiedKeyLoc(String loc, HapiSpec spec) {
-        return String.format(
-                "%s/%s/%s", spec.setup().persistentEntitiesDir(), EntityManager.KEYS_SUBDIR, loc);
+        return String.format("%s/%s/%s", spec.setup().persistentEntitiesDir(), EntityManager.KEYS_SUBDIR, loc);
     }
 
     public static KeyPair readFirstKpFromPem(File pem, String passphrase) {
@@ -200,8 +189,7 @@ public class SpecKey {
 
     public static class RegistryForms {
         private String name;
-        private BiConsumer<HapiSpecRegistry, Key> intake =
-                (registry, key) -> registry.saveKey(name, key);
+        private BiConsumer<HapiSpecRegistry, Key> intake = (registry, key) -> registry.saveKey(name, key);
 
         private RegistryForms(String name) {
             this.name = name;
@@ -217,33 +205,27 @@ public class SpecKey {
         }
 
         public static RegistryForms asKycKeyFor(String token) {
-            return new RegistryForms(
-                    kycKeyFor(token), (registry, key) -> registry.saveKycKey(token, key));
+            return new RegistryForms(kycKeyFor(token), (registry, key) -> registry.saveKycKey(token, key));
         }
 
         public static RegistryForms asWipeKeyFor(String token) {
-            return new RegistryForms(
-                    wipeKeyFor(token), (registry, key) -> registry.saveWipeKey(token, key));
+            return new RegistryForms(wipeKeyFor(token), (registry, key) -> registry.saveWipeKey(token, key));
         }
 
         public static RegistryForms asSupplyKeyFor(String token) {
-            return new RegistryForms(
-                    supplyKeyFor(token), (registry, key) -> registry.saveSupplyKey(token, key));
+            return new RegistryForms(supplyKeyFor(token), (registry, key) -> registry.saveSupplyKey(token, key));
         }
 
         public static RegistryForms asFreezeKeyFor(String token) {
-            return new RegistryForms(
-                    freezeKeyFor(token), (registry, key) -> registry.saveFreezeKey(token, key));
+            return new RegistryForms(freezeKeyFor(token), (registry, key) -> registry.saveFreezeKey(token, key));
         }
 
         public static RegistryForms asAdminKeyFor(String entity) {
-            return new RegistryForms(
-                    adminKeyFor(entity), (registry, key) -> registry.saveAdminKey(entity, key));
+            return new RegistryForms(adminKeyFor(entity), (registry, key) -> registry.saveAdminKey(entity, key));
         }
 
         public static RegistryForms asPauseKeyFor(String token) {
-            return new RegistryForms(
-                    pauseKeyFor(token), (registry, key) -> registry.savePauseKey(token, key));
+            return new RegistryForms(pauseKeyFor(token), (registry, key) -> registry.savePauseKey(token, key));
         }
 
         public String name() {

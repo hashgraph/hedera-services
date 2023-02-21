@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.commands.system;
 
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED;
@@ -31,7 +32,8 @@ import picocli.CommandLine;
         subcommands = {picocli.CommandLine.HelpCommand.class},
         description = "Upgrades telemetry via NMT")
 public class TelemetryUpgradeCommand implements Callable<Integer> {
-    @CommandLine.ParentCommand private Yahcli yahcli;
+    @CommandLine.ParentCommand
+    private Yahcli yahcli;
 
     @CommandLine.Option(
             names = {"-f", "--upgrade-file-num"},
@@ -57,16 +59,12 @@ public class TelemetryUpgradeCommand implements Callable<Integer> {
         final var unhexedHash = CommonUtils.unhex(upgradeFileHash);
         final var startInstant = Utils.parseFormattedInstant(startTime);
         final var delegate =
-                new UpgradeHelperSuite(
-                        config.asSpecConfig(), unhexedHash, upgradeFile, startInstant, true);
+                new UpgradeHelperSuite(config.asSpecConfig(), unhexedHash, upgradeFile, startInstant, true);
 
         delegate.runSuiteSync();
 
         if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
-            COMMON_MESSAGES.info(
-                    "SUCCESS - NMT telemetry upgrade in motion from "
-                            + upgradeFile
-                            + " artifacts ZIP");
+            COMMON_MESSAGES.info("SUCCESS - NMT telemetry upgrade in motion from " + upgradeFile + " artifacts ZIP");
         } else {
             COMMON_MESSAGES.warn("FAILED - NMT telemetry upgrade is not in motion ");
             return 1;

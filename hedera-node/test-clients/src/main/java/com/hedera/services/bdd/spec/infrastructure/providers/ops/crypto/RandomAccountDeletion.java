@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -32,10 +33,8 @@ import java.util.Optional;
 
 public class RandomAccountDeletion implements OpProvider {
     private final RegistrySourcedNameProvider<AccountID> accounts;
-    private final ResponseCodeEnum[] permissiblePrechecks =
-            standardPrechecksAnd(ACCOUNT_DELETED, INVALID_ACCOUNT_ID);
-    private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(ACCOUNT_DELETED, INVALID_ACCOUNT_ID);
+    private final ResponseCodeEnum[] permissiblePrechecks = standardPrechecksAnd(ACCOUNT_DELETED, INVALID_ACCOUNT_ID);
+    private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(ACCOUNT_DELETED, INVALID_ACCOUNT_ID);
 
     public RandomAccountDeletion(RegistrySourcedNameProvider<AccountID> accounts) {
         this.accounts = accounts;
@@ -52,12 +51,11 @@ public class RandomAccountDeletion implements OpProvider {
         if (involved.isEmpty()) {
             return Optional.empty();
         }
-        HapiCryptoDelete op =
-                cryptoDelete(involved.get().getKey())
-                        .purging()
-                        .transfer(involved.get().getValue())
-                        .hasPrecheckFrom(permissiblePrechecks)
-                        .hasKnownStatusFrom(permissibleOutcomes);
+        HapiCryptoDelete op = cryptoDelete(involved.get().getKey())
+                .purging()
+                .transfer(involved.get().getValue())
+                .hasPrecheckFrom(permissiblePrechecks)
+                .hasKnownStatusFrom(permissibleOutcomes);
         return Optional.of(op);
     }
 }

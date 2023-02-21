@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli;
 
 import com.hedera.services.yahcli.commands.accounts.AccountsCommand;
@@ -50,7 +51,8 @@ public class Yahcli implements Callable<Integer> {
     public static final long NO_FIXED_FEE = Long.MIN_VALUE;
     public static final String DEFAULT_LOG_LEVEL = "WARN";
 
-    @Spec CommandSpec spec;
+    @Spec
+    CommandSpec spec;
 
     @Option(
             names = {"-f", "--fixed-fee"},

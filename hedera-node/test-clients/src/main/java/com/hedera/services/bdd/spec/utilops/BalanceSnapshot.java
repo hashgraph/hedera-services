@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops;
 
 import com.google.common.base.MoreObjects;
@@ -57,10 +58,9 @@ public class BalanceSnapshot extends UtilOp {
     protected boolean submitOp(HapiSpec spec) {
         snapshot = snapshotFn.map(fn -> fn.apply(spec)).orElse(snapshot);
 
-        HapiGetAccountBalance delegate =
-                aliased
-                        ? QueryVerbs.getAutoCreatedAccountBalance(account).logged()
-                        : QueryVerbs.getAccountBalance(account).logged();
+        HapiGetAccountBalance delegate = aliased
+                ? QueryVerbs.getAutoCreatedAccountBalance(account).logged()
+                : QueryVerbs.getAccountBalance(account).logged();
         payer.ifPresent(delegate::payingWith);
         Optional<Throwable> error = delegate.execFor(spec);
         if (error.isPresent()) {

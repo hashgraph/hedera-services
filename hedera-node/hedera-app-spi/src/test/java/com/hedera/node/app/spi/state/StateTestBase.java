@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,9 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state;
 
-import com.hedera.node.app.spi.fixtures.state.*;
+import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
+import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -80,8 +84,7 @@ public class StateTestBase extends com.hedera.node.app.spi.fixtures.state.StateT
     @NonNull
     protected WritableSingletonState<String> writableSpaceState() {
         final AtomicReference<String> backingValue = new AtomicReference<>(ASTRONAUT);
-        return new WritableSingletonStateBase<>(
-                SPACE_STATE_KEY, backingValue::get, backingValue::set);
+        return new WritableSingletonStateBase<>(SPACE_STATE_KEY, backingValue::get, backingValue::set);
     }
 
     @NonNull
@@ -118,8 +121,7 @@ public class StateTestBase extends com.hedera.node.app.spi.fixtures.state.StateT
     @NonNull
     protected WritableSingletonState<String> writableCountryState() {
         final AtomicReference<String> backingValue = new AtomicReference<>(AUSTRALIA);
-        return new WritableSingletonStateBase<>(
-                COUNTRY_STATE_KEY, backingValue::get, backingValue::set);
+        return new WritableSingletonStateBase<>(COUNTRY_STATE_KEY, backingValue::get, backingValue::set);
     }
 
     @NonNull

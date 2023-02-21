@@ -13,30 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-    id("com.hedera.hashgraph.conventions")
-}
+
+plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Default Hedera Schedule Service Implementation"
 
 configurations.all {
-    exclude("javax.annotation", "javax.annotation-api")
-    exclude("com.google.code.findbugs", "jsr305")
-    exclude("org.jetbrains", "annotations")
-    exclude("org.checkerframework", "checker-qual")
+  exclude("javax.annotation", "javax.annotation-api")
+  exclude("com.google.code.findbugs", "jsr305")
+  exclude("org.jetbrains", "annotations")
+  exclude("org.checkerframework", "checker-qual")
 
-    exclude("io.grpc", "grpc-core")
-    exclude("io.grpc", "grpc-context")
-    exclude("io.grpc", "grpc-api")
-    exclude("io.grpc", "grpc-testing")
+  exclude("io.grpc", "grpc-core")
+  exclude("io.grpc", "grpc-context")
+  exclude("io.grpc", "grpc-api")
+  exclude("io.grpc", "grpc-testing")
 }
 
 dependencies {
-    api(project(":hedera-node:hedera-schedule-service"))
-    implementation(libs.swirlds.virtualmap)
-    implementation(project(":hedera-node:hedera-mono-service"))
-    testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
-    testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
-    testImplementation(testLibs.bundles.mockito)
-    testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
+  annotationProcessor(libs.dagger.compiler)
+  api(project(":hedera-node:hedera-schedule-service"))
+  implementation(libs.swirlds.virtualmap)
+  implementation(libs.bundles.di)
+  implementation(project(":hedera-node:hedera-mono-service"))
+  testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
+  testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
+  testImplementation(testLibs.bundles.mockito)
+  testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.queries.crypto;
 
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
@@ -49,7 +50,10 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     private static final Logger log = LogManager.getLogger(HapiGetAccountInfo.class);
 
     private String account;
-    @Nullable private String protoSaveLoc = null;
+
+    @Nullable
+    private String protoSaveLoc = null;
+
     private boolean loggingHexedCryptoKeys = false;
     private String hexedAliasSource = null;
     private String aliasKeySource = null;
@@ -64,7 +68,10 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     Optional<Integer> maxAutomaticAssociations = Optional.empty();
     Optional<Integer> alreadyUsedAutomaticAssociations = Optional.empty();
     private Optional<Consumer<AccountID>> idObserver = Optional.empty();
-    @Nullable private Consumer<byte[]> aliasObserver = null;
+
+    @Nullable
+    private Consumer<byte[]> aliasObserver = null;
+
     private Optional<Consumer<String>> contractAccountIdObserver = Optional.empty();
     private Optional<Integer> tokenAssociationsCount = Optional.empty();
     private boolean assertAliasKeyMatches = false;
@@ -216,75 +223,58 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         }
         var actualTokenRels = actualInfo.getTokenRelationshipsList();
         ExpectedTokenRel.assertExpectedRels(account, relationships, actualTokenRels, spec);
-        ExpectedTokenRel.assertNoUnexpectedRels(
-                account, absentRelationships, actualTokenRels, spec);
+        ExpectedTokenRel.assertNoUnexpectedRels(account, absentRelationships, actualTokenRels, spec);
 
         var actualOwnedNfts = actualInfo.getOwnedNfts();
         ownedNfts.ifPresent(nftsOwned -> assertEquals((long) nftsOwned, actualOwnedNfts));
 
         var actualMaxAutoAssociations = actualInfo.getMaxAutomaticTokenAssociations();
         maxAutomaticAssociations.ifPresent(
-                maxAutoAssociations ->
-                        assertEquals((int) maxAutoAssociations, actualMaxAutoAssociations));
-        alreadyUsedAutomaticAssociations.ifPresent(
-                usedCount -> {
-                    int actualCount = 0;
-                    for (var rel : actualTokenRels) {
-                        if (rel.getAutomaticAssociation()) {
-                            actualCount++;
-                        }
-                    }
-                    assertEquals(actualCount, usedCount);
-                });
+                maxAutoAssociations -> assertEquals((int) maxAutoAssociations, actualMaxAutoAssociations));
+        alreadyUsedAutomaticAssociations.ifPresent(usedCount -> {
+            int actualCount = 0;
+            for (var rel : actualTokenRels) {
+                if (rel.getAutomaticAssociation()) {
+                    actualCount++;
+                }
+            }
+            assertEquals(actualCount, usedCount);
+        });
         expectedLedgerId.ifPresent(id -> assertEquals(rationalize(id), actualInfo.getLedgerId()));
 
-        tokenAssociationsCount.ifPresent(
-                count -> assertEquals(count, actualInfo.getTokenRelationshipsCount()));
+        tokenAssociationsCount.ifPresent(count -> assertEquals(count, actualInfo.getTokenRelationshipsCount()));
     }
 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getAccountInfoQuery(spec, payment, false);
-        response =
-                spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getAccountInfo(query);
+        response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getAccountInfo(query);
         final var infoResponse = response.getCryptoGetInfo();
         if (loggingHexedCryptoKeys) {
             log.info("Constituent crypto keys are:");
-            visitSimpleKeys(
-                    infoResponse.getAccountInfo().getKey(),
-                    simpleKey -> {
-                        if (!simpleKey.getEd25519().isEmpty()) {
-                            log.info("  {}", CommonUtils.hex(simpleKey.getEd25519().toByteArray()));
-                        } else if (!simpleKey.getECDSASecp256K1().isEmpty()) {
-                            log.info(
-                                    "  {}",
-                                    CommonUtils.hex(simpleKey.getECDSASecp256K1().toByteArray()));
-                        }
-                    });
+            visitSimpleKeys(infoResponse.getAccountInfo().getKey(), simpleKey -> {
+                if (!simpleKey.getEd25519().isEmpty()) {
+                    log.info("  {}", CommonUtils.hex(simpleKey.getEd25519().toByteArray()));
+                } else if (!simpleKey.getECDSASecp256K1().isEmpty()) {
+                    log.info(
+                            "  {}",
+                            CommonUtils.hex(simpleKey.getECDSASecp256K1().toByteArray()));
+                }
+            });
         }
         if (protoSaveLoc != null) {
             final var info = infoResponse.getAccountInfo();
             Files.write(Paths.get(protoSaveLoc), info.toByteArray());
         }
         if (infoResponse.getHeader().getNodeTransactionPrecheckCode() == OK) {
-            exposingExpiryTo.ifPresent(
-                    cb ->
-                            cb.accept(
-                                    infoResponse
-                                            .getAccountInfo()
-                                            .getExpirationTime()
-                                            .getSeconds()));
+            exposingExpiryTo.ifPresent(cb ->
+                    cb.accept(infoResponse.getAccountInfo().getExpirationTime().getSeconds()));
             exposingBalanceTo.ifPresent(
                     cb -> cb.accept(infoResponse.getAccountInfo().getBalance()));
             idObserver.ifPresent(cb -> cb.accept(infoResponse.getAccountInfo().getAccountID()));
             Optional.ofNullable(aliasObserver)
-                    .ifPresent(
-                            cb ->
-                                    cb.accept(
-                                            infoResponse
-                                                    .getAccountInfo()
-                                                    .getAlias()
-                                                    .toByteArray()));
+                    .ifPresent(cb ->
+                            cb.accept(infoResponse.getAccountInfo().getAlias().toByteArray()));
             contractAccountIdObserver.ifPresent(
                     cb -> cb.accept(infoResponse.getAccountInfo().getContractAccountID()));
         }
@@ -312,25 +302,22 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     private Query getAccountInfoQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         AccountID target;
         if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
-            target =
-                    AccountID.newBuilder()
-                            .setAlias(spec.registry().getKey(aliasKeySource).toByteString())
-                            .build();
+            target = AccountID.newBuilder()
+                    .setAlias(spec.registry().getKey(aliasKeySource).toByteString())
+                    .build();
         } else if (referenceType == ReferenceType.HEXED_CONTRACT_ALIAS) {
-            target =
-                    AccountID.newBuilder()
-                            .setAlias(ByteString.copyFrom(CommonUtils.unhex(hexedAliasSource)))
-                            .build();
+            target = AccountID.newBuilder()
+                    .setAlias(ByteString.copyFrom(CommonUtils.unhex(hexedAliasSource)))
+                    .build();
         } else if (referenceType == ReferenceType.LITERAL_ACCOUNT_ALIAS) {
             target = AccountID.newBuilder().setAlias(literalAlias).build();
         } else {
             target = TxnUtils.asId(account, spec);
         }
-        CryptoGetInfoQuery query =
-                CryptoGetInfoQuery.newBuilder()
-                        .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
-                        .setAccountID(target)
-                        .build();
+        CryptoGetInfoQuery query = CryptoGetInfoQuery.newBuilder()
+                .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
+                .setAccountID(target)
+                .build();
         return Query.newBuilder().setCryptoGetInfo(query).build();
     }
 
@@ -356,10 +343,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         if (key.hasKeyList()) {
             key.getKeyList().getKeysList().forEach(subKey -> visitSimpleKeys(subKey, observer));
         } else if (key.hasThresholdKey()) {
-            key.getThresholdKey()
-                    .getKeys()
-                    .getKeysList()
-                    .forEach(subKey -> visitSimpleKeys(subKey, observer));
+            key.getThresholdKey().getKeys().getKeysList().forEach(subKey -> visitSimpleKeys(subKey, observer));
         } else {
             observer.accept(key);
         }

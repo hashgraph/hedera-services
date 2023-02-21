@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import com.google.common.base.MoreObjects;
@@ -197,24 +198,19 @@ public class ExchangeRates implements SelfSerializable {
     }
 
     public ExchangeRates copy() {
-        return new ExchangeRates(
-                currHbarEquiv, currCentEquiv, currExpiry, nextHbarEquiv, nextCentEquiv, nextExpiry);
+        return new ExchangeRates(currHbarEquiv, currCentEquiv, currExpiry, nextHbarEquiv, nextCentEquiv, nextExpiry);
     }
 
     public ExchangeRateSet toGrpc() {
         return ExchangeRateSet.newBuilder()
-                .setCurrentRate(
-                        ExchangeRate.newBuilder()
-                                .setHbarEquiv(currHbarEquiv)
-                                .setCentEquiv(currCentEquiv)
-                                .setExpirationTime(
-                                        TimestampSeconds.newBuilder().setSeconds(currExpiry)))
-                .setNextRate(
-                        ExchangeRate.newBuilder()
-                                .setHbarEquiv(nextHbarEquiv)
-                                .setCentEquiv(nextCentEquiv)
-                                .setExpirationTime(
-                                        TimestampSeconds.newBuilder().setSeconds(nextExpiry)))
+                .setCurrentRate(ExchangeRate.newBuilder()
+                        .setHbarEquiv(currHbarEquiv)
+                        .setCentEquiv(currCentEquiv)
+                        .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(currExpiry)))
+                .setNextRate(ExchangeRate.newBuilder()
+                        .setHbarEquiv(nextHbarEquiv)
+                        .setCentEquiv(nextCentEquiv)
+                        .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(nextExpiry)))
                 .build();
     }
 
