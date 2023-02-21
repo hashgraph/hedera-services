@@ -20,11 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.workflows.FreeQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceResponse;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.ResponseHeader;
+import com.hederahashgraph.api.proto.java.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -61,7 +57,7 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if validation fails
      */
-    public void validate(@NonNull final Query query) throws PreCheckException {
+    public ResponseCodeEnum validate(@NonNull final Query query) throws PreCheckException {
         throw new UnsupportedOperationException("Not implemented");
     }
 

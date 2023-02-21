@@ -67,7 +67,6 @@ import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.spi.config.GlobalConfig;
 import com.hedera.node.app.spi.config.NodeConfig;
 import com.hedera.node.app.spi.config.Profile;
-import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfo;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.List;
 import java.util.Set;
@@ -100,7 +99,8 @@ class ConfigurationAdaptorTest {
         final Consumer<String> stringMockRule = name -> createMock.apply(name).willReturn("test");
         final Consumer<String> booleanMockRule = name -> createMock.apply(name).willReturn(true);
         final Consumer<String> listMockRule = name -> createMock.apply(name).willReturn(List.of());
-        final Consumer<String> functionMockRule = name -> createMock.apply(name).willReturn(List.of(HederaFunctionality.ConsensusGetTopicInfo));
+        final Consumer<String> functionMockRule =
+                name -> createMock.apply(name).willReturn(List.of(HederaFunctionality.ConsensusGetTopicInfo));
         integerMockRule.accept(GRPC_PORT);
         integerMockRule.accept(GRPC_TLS_PORT);
         longMockRule.accept(STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS);

@@ -128,7 +128,7 @@ public class ServicesMain implements SwirldMain {
         if (!props.workflowsEnabled().isEmpty()) {
             // If there are any operations that use new workflows, start both the new gRPC server and the old gRPC
             // server on different ports.
-            hedera.start(app, app.nodeLocalProperties().workflowsPort());
+            hedera.start((HederaApp) app, app.nodeLocalProperties().workflowsPort());
             app.grpcStarter().startIfAppropriate();
         } else {
             app.grpcStarter().startIfAppropriate();

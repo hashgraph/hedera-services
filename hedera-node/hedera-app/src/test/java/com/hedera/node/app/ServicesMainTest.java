@@ -34,6 +34,7 @@ import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.context.properties.GlobalStaticProperties;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.node.app.service.mono.grpc.GrpcStarter;
 import com.hedera.node.app.service.mono.state.exports.AccountsExporter;
@@ -88,7 +89,13 @@ class ServicesMainTest {
     private ServicesApp app;
 
     @Mock
+    private HederaApp hederaApp;
+
+    @Mock
     private GlobalStaticProperties globalStaticProperties;
+
+    @Mock
+    private NodeLocalProperties nodeLocalProperties;
 
     @Mock
     private NamedDigestFactory namedDigestFactory;
@@ -181,7 +188,8 @@ class ServicesMainTest {
 
     @Test
     void doesAppDrivenInit() throws NoSuchAlgorithmException {
-        withRunnableApp();
+        withRunnableApp(app);
+        withChangeableApp();
 
         // when:
         subject.init(platform, nodeId);
@@ -215,7 +223,7 @@ class ServicesMainTest {
     @Test
     void updatesCurrentMiscPlatformStatus() throws NoSuchAlgorithmException {
         final var listener = new StatusChangeListener(currentPlatformStatus, nodeId, recordStreamManager);
-        withRunnableApp();
+        withRunnableApp(app);
         withChangeableApp();
         withNotificationEngine();
 
@@ -228,7 +236,7 @@ class ServicesMainTest {
     @Test
     void updatesCurrentActivePlatformStatus() throws NoSuchAlgorithmException {
         final var listener = new StatusChangeListener(currentPlatformStatus, nodeId, recordStreamManager);
-        withRunnableApp();
+        withRunnableApp(app);
         withChangeableApp();
         withNotificationEngine();
 
@@ -242,7 +250,7 @@ class ServicesMainTest {
     @Test
     void updatesCurrentMaintenancePlatformStatus() throws NoSuchAlgorithmException {
         final var listener = new StatusChangeListener(currentPlatformStatus, nodeId, recordStreamManager);
-        withRunnableApp();
+        withRunnableApp(app);
         withChangeableApp();
         withNotificationEngine();
 
@@ -279,7 +287,7 @@ class ServicesMainTest {
         given(app.systemExits()).willReturn(systemExits);
     }
 
-    private void withRunnableApp() throws NoSuchAlgorithmException {
+    private void withRunnableApp(final ServicesApp app) throws NoSuchAlgorithmException {
         APPS.save(selfId, app);
         given(nativeCharset.get()).willReturn(UTF_8);
         given(namedDigestFactory.forName("SHA-384")).willReturn(null);
