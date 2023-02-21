@@ -412,13 +412,6 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         assertTrue(context.getRequiredNonPayerKeys().isEmpty());
     }
 
-    @Test
-    void handleNotImplemented() {
-        final var metaToHandle = mock(TransactionMetadata.class);
-
-        assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
-    }
-
     private void assertContextFailedWithReqPayerKeyAnd(
             final PreHandleContext context, final ResponseCodeEnum expectedFailure) {
         assertTrue(context.failed());
