@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import java.util.Optional;
 
 public class RandomHollowAccount implements OpProvider {
+    // Added to hollow account names to differentiate them from the keys created for them
     public static final String ACCOUNT_SUFFIX = "#";
     public static final int DEFAULT_CEILING_NUM = 100;
     public static final long INITIAL_BALANCE = 1_000_000_000L;

@@ -18,8 +18,8 @@ package com.hedera.services.bdd.suites.regression;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
-import static com.hedera.services.bdd.suites.regression.factories.AccountCompletionFuzzingFactory.accountCompletionFuzzingWith;
-import static com.hedera.services.bdd.suites.regression.factories.AccountCompletionFuzzingFactory.accountsCreation;
+import static com.hedera.services.bdd.suites.regression.factories.AccountCompletionFuzzingFactory.hollowAccountFuzzingWith;
+import static com.hedera.services.bdd.suites.regression.factories.AccountCompletionFuzzingFactory.initOperations;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -44,9 +44,9 @@ public class HollowAccountCompletionFuzzing extends HapiSuite {
 
     private HapiSpec hollowAccountCompletionFuzzing() {
         return defaultHapiSpec("HollowAccountCompletionFuzzing")
-                .given(accountsCreation())
+                .given(initOperations())
                 .when()
-                .then(runWithProvider(accountCompletionFuzzingWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
+                .then(runWithProvider(hollowAccountFuzzingWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
     }
 
     @Override

@@ -52,7 +52,14 @@ public class AccountCompletionFuzzingFactory {
         throw new IllegalStateException("Static factory class");
     }
 
-    public static HapiSpecOperation[] accountsCreation() {
+    /**
+     * Initialization operations:
+     * create accounts for sending and receiving transfers (LAZY_CREATE_SPONSOR, CRYPTO_TRANSFER_RECEIVER).
+     * initiate contract for contract create and token for token associate.
+     *
+     * @return array of the initialization operations
+     */
+    public static HapiSpecOperation[] initOperations() {
         return new HapiSpecOperation[] {
             cryptoCreate(LAZY_CREATE_SPONSOR)
                     .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
@@ -67,7 +74,14 @@ public class AccountCompletionFuzzingFactory {
         };
     }
 
-    public static Function<HapiSpec, OpProvider> accountCompletionFuzzingWith(final String resource) {
+    /**
+     * Create random hollow accounts from EVM addresses and sign random operations with them to test hollow account completion
+     * NOTE: When creating accounts they are saved in bot the account and key registry.
+     * To differentiate them from keys created for hollow accounts, we use {@link RandomHollowAccount#ACCOUNT_SUFFIX}
+     *
+     * @param resource config
+     */
+    public static Function<HapiSpec, OpProvider> hollowAccountFuzzingWith(final String resource) {
         return spec -> {
             final var props = RegressionProviderFactory.propsFrom(resource);
 

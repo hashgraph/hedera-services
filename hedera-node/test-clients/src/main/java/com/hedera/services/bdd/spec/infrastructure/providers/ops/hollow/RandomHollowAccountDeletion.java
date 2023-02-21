@@ -40,8 +40,7 @@ public class RandomHollowAccountDeletion implements OpProvider {
 
     @Override
     public Optional<HapiSpecOperation> get() {
-        final var account = accounts.getQualifying().filter(a -> a.endsWith(ACCOUNT_SUFFIX));
-        return account.map(this::accountDeleteOp);
+        return accounts.getQualifying().filter(a -> a.endsWith(ACCOUNT_SUFFIX)).map(this::accountDeleteOp);
     }
 
     private HapiSpecOperation accountDeleteOp(String account) {
