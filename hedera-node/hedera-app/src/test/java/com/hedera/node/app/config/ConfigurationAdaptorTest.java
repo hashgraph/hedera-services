@@ -20,6 +20,8 @@ import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_TLS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_TLS_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ACCOUNTS_EXPORT_PATH;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_EXPORT_ACCOUNTS_ON_STARTUP;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PREFETCH_CODE_CACHE_TTL_SECS;
@@ -138,6 +140,8 @@ class ConfigurationAdaptorTest {
         listMockRule.accept(STATS_HAPI_THROTTLES_TO_SAMPLE);
         stringMockRule.accept(HEDERA_RECORD_STREAM_SIDE_CAR_DIR);
         functionMockRule.accept(WORKFLOWS_ENABLED);
+        integerMockRule.accept(GRPC_WORKFLOWS_PORT);
+        integerMockRule.accept(GRPC_WORKFLOWS_TLS_PORT);
     }
 
     @Test

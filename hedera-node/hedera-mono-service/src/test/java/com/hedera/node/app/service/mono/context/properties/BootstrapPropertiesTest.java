@@ -116,6 +116,8 @@ import static com.hedera.node.app.spi.config.PropertyNames.FILES_SOFTWARE_UPDATE
 import static com.hedera.node.app.spi.config.PropertyNames.FILES_THROTTLE_DEFINITIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_TLS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_TLS_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ACCOUNTS_EXPORT_PATH;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ALLOWANCES_IS_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT;
@@ -362,6 +364,8 @@ class BootstrapPropertiesTest {
             entry(FILES_SOFTWARE_UPDATE_RANGE, Pair.of(150L, 159L)),
             entry(GRPC_PORT, 50211),
             entry(GRPC_TLS_PORT, 50212),
+            entry(GRPC_WORKFLOWS_PORT, 60211),
+            entry(GRPC_WORKFLOWS_TLS_PORT, 60212),
             entry(HEDERA_ACCOUNTS_EXPORT_PATH, "data/onboard/exportedAccount.txt"),
             entry(HEDERA_EXPORT_ACCOUNTS_ON_STARTUP, false),
             entry(HEDERA_FIRST_USER_ENTITY, 1001L),

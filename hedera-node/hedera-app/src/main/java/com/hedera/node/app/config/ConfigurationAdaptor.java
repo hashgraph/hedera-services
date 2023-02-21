@@ -20,6 +20,8 @@ import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_TLS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_TLS_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ACCOUNTS_EXPORT_PATH;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_EXPORT_ACCOUNTS_ON_STARTUP;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PREFETCH_CODE_CACHE_TTL_SECS;
@@ -241,7 +243,9 @@ public class ConfigurationAdaptor implements Configuration {
                 propertySource.getTypedProperty(Integer.class, HEDERA_PREFETCH_CODE_CACHE_TTL_SECS),
                 propertySource.getTypedProperty(List.class, STATS_CONS_THROTTLES_TO_SAMPLE),
                 propertySource.getTypedProperty(List.class, STATS_HAPI_THROTTLES_TO_SAMPLE),
-                propertySource.getTypedProperty(String.class, HEDERA_RECORD_STREAM_SIDE_CAR_DIR));
+                propertySource.getTypedProperty(String.class, HEDERA_RECORD_STREAM_SIDE_CAR_DIR),
+                propertySource.getTypedProperty(Integer.class, GRPC_WORKFLOWS_PORT),
+                propertySource.getTypedProperty(Integer.class, GRPC_WORKFLOWS_TLS_PORT));
     }
 
     /**
