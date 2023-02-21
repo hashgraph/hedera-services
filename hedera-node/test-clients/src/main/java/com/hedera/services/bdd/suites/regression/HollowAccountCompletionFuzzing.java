@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.regression;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -45,9 +46,7 @@ public class HollowAccountCompletionFuzzing extends HapiSuite {
         return defaultHapiSpec("HollowAccountCompletionFuzzing")
                 .given(accountsCreation())
                 .when()
-                .then(
-                        runWithProvider(accountCompletionFuzzingWith(PROPERTIES))
-                                .lasting(10L, TimeUnit.SECONDS));
+                .then(runWithProvider(accountCompletionFuzzingWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
     }
 
     @Override

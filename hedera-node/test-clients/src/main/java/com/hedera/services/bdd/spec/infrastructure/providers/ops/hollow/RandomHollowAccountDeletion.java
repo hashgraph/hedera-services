@@ -17,46 +17,39 @@
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow;
 
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowAccount.ACCOUNT_SUFFIX;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.CRYPTO_TRANSFER_RECEIVER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Optional;
 
-abstract class RandomOperationSignedByHollowAccount implements OpProvider {
-    private final HapiSpecRegistry registry;
-
+public class RandomHollowAccountDeletion implements OpProvider {
     private final RegistrySourcedNameProvider<AccountID> accounts;
+    private final ResponseCodeEnum[] permissiblePrechecks = standardPrechecksAnd(ACCOUNT_DELETED, INVALID_ACCOUNT_ID);
+    private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(ACCOUNT_DELETED, INVALID_ACCOUNT_ID);
 
-    protected final ResponseCodeEnum[] permissiblePrechecks = standardPrechecksAnd(BUSY, PAYER_ACCOUNT_NOT_FOUND);
-    protected final ResponseCodeEnum[] permissibleOutcomes = STANDARD_PERMISSIBLE_OUTCOMES;
-
-    protected RandomOperationSignedByHollowAccount(
-            HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {
-        this.registry = registry;
+    public RandomHollowAccountDeletion(RegistrySourcedNameProvider<AccountID> accounts) {
         this.accounts = accounts;
     }
 
     @Override
     public Optional<HapiSpecOperation> get() {
-        return randomHollowAccountKey().map(this::generateOpSignedBy);
+        final var account = accounts.getQualifying().filter(a -> a.endsWith(ACCOUNT_SUFFIX));
+        return account.map(this::accountDeleteOp);
     }
 
-    protected Optional<String> randomHollowAccountKey() {
-        return accounts.getQualifying().filter(a -> a.endsWith(ACCOUNT_SUFFIX)).map(this::keyFromAccount);
+    private HapiSpecOperation accountDeleteOp(String account) {
+        return cryptoDelete(account)
+                .purging()
+                .transfer(CRYPTO_TRANSFER_RECEIVER)
+                .hasPrecheckFrom(permissiblePrechecks)
+                .hasKnownStatusFrom(permissibleOutcomes)
+                .noLogging();
     }
-
-    private String keyFromAccount(String account) {
-        final var key = account.replaceAll(ACCOUNT_SUFFIX + "$", "");
-        final AccountID fromAccount = registry.getAccountID(account);
-        registry.saveAccountId(key, fromAccount);
-        return key;
-    }
-
-    protected abstract HapiSpecOperation generateOpSignedBy(String keyName);
 }

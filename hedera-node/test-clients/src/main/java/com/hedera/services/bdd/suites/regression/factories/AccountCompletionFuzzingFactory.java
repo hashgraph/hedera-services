@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.regression.factories;
 
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE;
@@ -30,8 +31,8 @@ import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.BiasedDelegatingProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccountDeletion;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowAccount;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowAccountDeletion;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowContractCall;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowContractCreate;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowTokenAssociate;
@@ -66,36 +67,26 @@ public class AccountCompletionFuzzingFactory {
         };
     }
 
-    public static Function<HapiSpec, OpProvider> accountCompletionFuzzingWith(
-            final String resource) {
+    public static Function<HapiSpec, OpProvider> accountCompletionFuzzingWith(final String resource) {
         return spec -> {
             final var props = RegressionProviderFactory.propsFrom(resource);
 
             final var accounts =
-                    new RegistrySourcedNameProvider<>(
-                            AccountID.class, spec.registry(), new RandomSelector());
+                    new RegistrySourcedNameProvider<>(AccountID.class, spec.registry(), new RandomSelector());
 
-            final var keys =
-                    new RegistrySourcedNameProvider<>(
-                            Key.class, spec.registry(), new RandomSelector());
+            final var keys = new RegistrySourcedNameProvider<>(Key.class, spec.registry(), new RandomSelector());
 
             return new BiasedDelegatingProvider()
                     .shouldLogNormalFlow(true)
                     .withOp(
                             new RandomKey(keys)
-                                    .ceiling(
-                                            intPropOrElse(
-                                                    "randomAccount.ceilingNum",
-                                                    RandomAccount.DEFAULT_CEILING_NUM,
-                                                    props)),
+                                    .ceiling(intPropOrElse(
+                                            "randomAccount.ceilingNum", RandomAccount.DEFAULT_CEILING_NUM, props)),
                             intPropOrElse("randomKey.bias", 0, props))
                     .withOp(
                             new RandomHollowAccount(spec.registry(), keys, accounts)
-                                    .ceiling(
-                                            intPropOrElse(
-                                                    "randomAccount.ceilingNum",
-                                                    RandomAccount.DEFAULT_CEILING_NUM,
-                                                    props)),
+                                    .ceiling(intPropOrElse(
+                                            "randomAccount.ceilingNum", RandomAccount.DEFAULT_CEILING_NUM, props)),
                             intPropOrElse("randomAccount.bias", 0, props))
                     .withOp(
                             new RandomHollowTransfer(spec.registry(), accounts),
@@ -110,7 +101,7 @@ public class AccountCompletionFuzzingFactory {
                             new RandomHollowContractCall(spec.registry(), accounts),
                             intPropOrElse("randomContractCall.bias", 0, props))
                     .withOp(
-                            new RandomAccountDeletion(accounts),
+                            new RandomHollowAccountDeletion(accounts),
                             intPropOrElse("randomAccountDeletion.bias", 0, props));
         };
     }

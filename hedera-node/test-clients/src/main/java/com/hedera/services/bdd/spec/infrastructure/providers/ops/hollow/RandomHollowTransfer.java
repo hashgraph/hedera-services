@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow;
 
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
@@ -20,10 +21,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.CRYPTO_TRANSFER_RECEIVER;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_CREATE_SPONSOR;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
@@ -31,8 +28,7 @@ import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hederahashgraph.api.proto.java.AccountID;
 
 public class RandomHollowTransfer extends RandomOperationSignedByHollowAccount {
-    public RandomHollowTransfer(
-            HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {
+    public RandomHollowTransfer(HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {
         super(registry, accounts);
     }
 

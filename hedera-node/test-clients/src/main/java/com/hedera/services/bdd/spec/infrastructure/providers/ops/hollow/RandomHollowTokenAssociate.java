@@ -13,15 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow;
 
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowAccount.ACCOUNT_SUFFIX;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.suites.regression.factories.AccountCompletionFuzzingFactory.VANILLA_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
@@ -31,12 +29,9 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 public class RandomHollowTokenAssociate extends RandomOperationSignedByHollowAccount {
-    protected final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+    protected final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 
-
-    public RandomHollowTokenAssociate(
-            HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {
+    public RandomHollowTokenAssociate(HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {
         super(registry, accounts);
     }
 

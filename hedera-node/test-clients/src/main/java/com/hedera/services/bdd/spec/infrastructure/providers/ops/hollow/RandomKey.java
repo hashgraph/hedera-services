@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -46,7 +47,6 @@ public class RandomKey implements OpProvider {
             return Optional.empty();
         }
 
-        return Optional.ofNullable(
-                newKeyNamed(KEY_PREFIX + keys.numPresent()).shape(SECP_256K1_SHAPE));
+        return Optional.ofNullable(newKeyNamed(KEY_PREFIX + keys.numPresent()).shape(SECP_256K1_SHAPE));
     }
 }
