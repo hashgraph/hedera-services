@@ -45,7 +45,7 @@ import java.util.Objects;
  *
  * @param <K>
  */
-public final class OnDiskKeySerializer<K extends Comparable<K>>
+public final class OnDiskKeySerializer<K extends Comparable<? super K>>
         implements KeySerializer<OnDiskKey<K>>, SelfSerializableSupplier<OnDiskKey<K>> {
 
     @Deprecated(forRemoval = true)

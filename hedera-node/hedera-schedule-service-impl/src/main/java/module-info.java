@@ -17,6 +17,7 @@ module com.hedera.node.app.service.schedule.impl {
             com.hedera.node.app.service.schedule.impl.test,
             com.hedera.node.app;
     exports com.hedera.node.app.service.schedule.impl.components;
+    exports com.hedera.node.app.service.schedule.impl.serdes;
 
     provides com.hedera.node.app.service.schedule.ScheduleService with
             ScheduleServiceImpl;
