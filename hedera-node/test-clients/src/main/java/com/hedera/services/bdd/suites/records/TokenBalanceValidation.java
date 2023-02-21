@@ -66,10 +66,6 @@ public class TokenBalanceValidation extends HapiSuite {
     }
 
     private HapiSpec validateTokenBalances() {
-        // we are not validating these values. ok to use anything here.
-        final var initBalance = ONE_HBAR;
-        final var supplyKey = "supplyKey";
-
         return defaultHapiSpec("ValidateTokenBalances")
                 .given(expectedTokenBalances.entrySet().stream()
                         .map(entry -> {
