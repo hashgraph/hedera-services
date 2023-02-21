@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.mono.ledger.accounts.AliasManager.tryA
 import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asPrimitiveKeyUnchecked;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.isRecoveredEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -221,10 +220,7 @@ public abstract class AbstractAutoCreationLogic {
             if (key.hasECDSASecp256K1()) {
                 final JKey jKey = asFcKeyUnchecked(key);
                 final var evmAddress = tryAddressRecovery(jKey, EthSigsUtils::recoverAddressFromPubKey);
-
-                if (isRecoveredEvmAddress(evmAddress)) {
-                    childRecord.setEvmAddress(evmAddress);
-                }
+                childRecord.setEvmAddress(evmAddress);
             }
         }
 
