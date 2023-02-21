@@ -35,7 +35,8 @@ public class GlobalStaticProperties {
     }
 
     public void reload() {
-        workflowsEnabled = properties != null && properties.getBooleanProperty(WORKFLOWS_ENABLED);
+        workflowsEnabled = properties != null &&
+                !properties.getFunctionsProperty(WORKFLOWS_ENABLED).isEmpty();
     }
 
     public boolean workflowsEnabled() {

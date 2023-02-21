@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.context.properties;
 
+import static com.hedera.node.app.service.mono.utils.MiscUtils.csvSet;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
@@ -84,7 +85,6 @@ public interface PropertySource {
     Function<String, Object> AS_SIDECARS = s -> asEnumSet(SidecarType.class, SidecarType::valueOf, s);
     Function<String, Object> AS_RECOMPUTE_TYPES =
             s -> asEnumSet(StakeStartupHelper.RecomputeType.class, StakeStartupHelper.RecomputeType::valueOf, s);
-
     static <E extends Enum<E>> Set<E> asEnumSet(
             final Class<E> type, final Function<String, E> valueOf, final String csv) {
         return csv.isEmpty()

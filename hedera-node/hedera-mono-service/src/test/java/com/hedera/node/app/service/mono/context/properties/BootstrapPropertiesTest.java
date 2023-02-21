@@ -233,6 +233,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSu
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
 import static java.util.Map.entry;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -492,7 +493,7 @@ class BootstrapPropertiesTest {
             entry(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION, false),
             entry(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION, true),
             entry(TOKENS_AUTO_CREATIONS_ENABLED, true),
-            entry(WORKFLOWS_ENABLED, false),
+            entry(WORKFLOWS_ENABLED, Set.of(ConsensusGetTopicInfo)),
             entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, false));
 
     @Test

@@ -765,6 +765,6 @@ public final class BootstrapProperties implements PropertySource {
             entry(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS, AS_BOOLEAN),
             entry(UTIL_PRNG_IS_ENABLED, AS_BOOLEAN),
             entry(TOKENS_AUTO_CREATIONS_ENABLED, AS_BOOLEAN),
-            entry(WORKFLOWS_ENABLED, AS_BOOLEAN),
+            entry(WORKFLOWS_ENABLED, AS_FUNCTIONS),
             entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, AS_BOOLEAN));
 }

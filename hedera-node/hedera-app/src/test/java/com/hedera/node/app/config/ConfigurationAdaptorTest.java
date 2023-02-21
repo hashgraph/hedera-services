@@ -135,7 +135,7 @@ class ConfigurationAdaptorTest {
         listMockRule.accept(STATS_CONS_THROTTLES_TO_SAMPLE);
         listMockRule.accept(STATS_HAPI_THROTTLES_TO_SAMPLE);
         stringMockRule.accept(HEDERA_RECORD_STREAM_SIDE_CAR_DIR);
-        booleanMockRule.accept(WORKFLOWS_ENABLED);
+        listMockRule.accept(WORKFLOWS_ENABLED);
     }
 
     @Test
@@ -378,6 +378,6 @@ class ConfigurationAdaptorTest {
 
         // then
         assertThat(data).isNotNull();
-        assertThat(data.workflowsEnabled()).isTrue();
+        assertThat(data.workflowsEnabled()).isNotEmpty();
     }
 }
