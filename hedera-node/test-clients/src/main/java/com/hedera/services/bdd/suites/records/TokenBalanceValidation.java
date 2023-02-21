@@ -47,9 +47,7 @@ public class TokenBalanceValidation extends HapiSuite {
     }
 
     public static void main(String... args) {
-        // var tokenId = asTokenId(tokenBalance.getKey(), spec);
         final Long aFungibleToken = 12L;
-        //    private static final Long aFungibleTokenId = 12L;
         final Long aFungibleAmount = 1_000L;
         final Long tokenTreasury = 3L;
         Map<AccountNumTokenNum, Long> expectedTokenBalances =
@@ -68,19 +66,16 @@ public class TokenBalanceValidation extends HapiSuite {
     }
 
     private HapiSpec validateTokenBalances() {
+        // we are not validating these values. ok to use anything here.
         final var initBalance = ONE_HBAR;
         final var supplyKey = "supplyKey";
 
         return defaultHapiSpec("ValidateTokenBalances")
-                //                .withProperties(Map.of(
-                //                        "fees.useFixedOffer", "true",
-                //                        "fees.fixedOffer", "100000000"))
                 .given(expectedTokenBalances.entrySet().stream()
                         .map(entry -> {
                             final var accountNum = entry.getKey().accountNum();
                             final var tokenNum = entry.getKey().tokenId();
                             final var tokenAmt = entry.getValue();
-                            //                                            return mintToken(tokenNum, tokenAmt);
                             return new HapiSpecOperation[] {
                                 cryptoCreate(accountNum.toString()),
                                 tokenCreate(tokenNum.toString())
@@ -88,18 +83,11 @@ public class TokenBalanceValidation extends HapiSuite {
                                         .treasury(accountNum.toString())
                                         .initialSupply(tokenAmt)
                                         .name(tokenNum.toString())
-                                //                                                        .supplyKey(supplyKey)
-                                //                                                mintToken(tokenNum.toString(),
-                                // tokenAmt)
-                                //                                                tokenAssociate(accountNum.toString(),
-                                // List.of(tokenNum.toString()))
                             };
                         })
                         .flatMap(Arrays::stream)
                         .toArray(HapiSpecOperation[]::new))
                 .when()
-                //                .then(getAccountBalance(TOKEN_TREASURY.toString()).hasTokenBalance(aFungibleToken,
-                // aFungibleAmount));
                 .then(inParallel(expectedTokenBalances.entrySet().stream()
                                 .map(entry -> {
                                     final var accountNum = entry.getKey().accountNum();
@@ -107,7 +95,7 @@ public class TokenBalanceValidation extends HapiSuite {
                                     final var tokenAmt = entry.getValue();
 
                                     return getAccountBalance(
-                                                    "0.0." + accountNum, accountClassifier.isContract(accountNum))
+                                                    accountNum.toString(), accountClassifier.isContract(accountNum))
                                             .hasAnswerOnlyPrecheckFrom(OK)
                                             .hasTokenBalance(tokenNum.toString(), tokenAmt);
                                 })
