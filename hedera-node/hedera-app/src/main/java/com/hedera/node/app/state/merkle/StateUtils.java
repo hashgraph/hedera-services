@@ -124,8 +124,7 @@ public final class StateUtils {
         // NOTE: Once this is live on any network, the formula used to generate this key can NEVER
         // BE CHANGED or you won't ever be able to deserialize an exising state! If we get away from
         // this formula, we will need to hardcode known classId that had been previously generated.
-        final var ver =
-                "v" + version.major() + "." + version.minor() + "." + version.patch();
+        final var ver = "v" + version.major() + "." + version.minor() + "." + version.patch();
         return hashString(serviceName + ":" + stateKey + ":" + ver + ":" + extra);
     }
 

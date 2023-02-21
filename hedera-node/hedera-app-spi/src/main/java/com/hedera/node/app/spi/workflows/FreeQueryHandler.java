@@ -17,7 +17,7 @@ package com.hedera.node.app.spi.workflows;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hedera.hapi.node.base.ResponseType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** An abstract class for all free queries (no costs, not possible to requests costs) */

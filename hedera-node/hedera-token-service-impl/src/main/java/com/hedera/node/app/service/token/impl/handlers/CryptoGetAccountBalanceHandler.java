@@ -17,31 +17,32 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.token.CryptoGetAccountBalanceResponse;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.spi.workflows.FreeQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceResponse;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.ResponseHeader;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoGetAccountBalance}.
+ * HederaFunctionality#CRYPTO_GET_ACCOUNT_BALANCE}.
  */
 public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.getCryptogetAccountBalance().getHeader();
+        return query.cryptogetAccountBalance().orElseThrow().header();
     }
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
-        final var response = CryptoGetAccountBalanceResponse.newBuilder().setHeader(header);
-        return Response.newBuilder().setCryptogetAccountBalance(response).build();
+        final var response = CryptoGetAccountBalanceResponse.newBuilder().header(header);
+        return Response.newBuilder().cryptogetAccountBalance(response).build();
     }
 
     /**

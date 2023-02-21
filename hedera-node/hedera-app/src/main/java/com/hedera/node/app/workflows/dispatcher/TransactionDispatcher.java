@@ -197,17 +197,16 @@ public class TransactionDispatcher {
             case SYSTEM_DELETE -> switch (transactionBody.systemDelete().get().id().kind()) {
                 case CONTRACT_ID -> handlers.contractSystemDeleteHandler()
                         .preHandle(transactionBody, payer);
-                case FILE_ID -> handlers.fileSystemDeleteHandler().preHandle(transactionBody, payer);
-                case UNSET -> throw new IllegalArgumentException(
-                        "SystemDelete without IdCase");
+                case FILE_ID -> handlers.fileSystemDeleteHandler()
+                        .preHandle(transactionBody, payer);
+                case UNSET -> throw new IllegalArgumentException("SystemDelete without IdCase");
             };
             case SYSTEM_UNDELETE -> switch (transactionBody.systemUndelete().get().id().kind()) {
                 case CONTRACT_ID -> handlers.contractSystemUndeleteHandler()
                         .preHandle(transactionBody, payer);
                 case FILE_ID -> handlers.fileSystemUndeleteHandler()
                         .preHandle(transactionBody, payer);
-                case UNSET -> throw new IllegalArgumentException(
-                        "SystemUndelete without IdCase");
+                case UNSET -> throw new IllegalArgumentException("SystemUndelete without IdCase");
             };
 
             case NODE_STAKE_UPDATE, UNSET -> throw new UnsupportedOperationException(

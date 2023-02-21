@@ -16,10 +16,11 @@
 package com.hedera.node.app.workflows.ingest;
 
 import com.hedera.node.app.SessionContext;
+import com.hedera.pbj.runtime.io.DataBuffer;
+import com.hedera.pbj.runtime.io.DataInputBuffer;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
 
 /**
  * The {@link IngestWorkflow} represents the workflow used when receiving a {@link Transaction} from
@@ -40,6 +41,6 @@ public interface IngestWorkflow {
      */
     void submitTransaction(
             @NonNull SessionContext session,
-            @NonNull ByteBuffer requestBuffer,
-            @NonNull ByteBuffer responseBuffer);
+            @NonNull DataInputBuffer requestBuffer,
+            @NonNull DataBuffer responseBuffer);
 }

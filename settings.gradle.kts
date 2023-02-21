@@ -92,7 +92,7 @@ dependencyResolutionManagement {
             version("hapi-version", "0.34.0")
 
             // Definition of version numbers for all libraries
-            version("pbj-version", "0.3.3.3")
+            version("pbj-version", "0.3.3.7")
             version("besu-version", "22.10.1")
             version("besu-native-version", "0.6.1")
             version("bouncycastle-version", "1.70")
@@ -248,7 +248,7 @@ dependencyResolutionManagement {
             version("assertj-version", "3.23.1")
 
             bundle("junit5", listOf("junit-jupiter-api", "junit-jupiter-params", "junit-jupiter"))
-            bundle("mockito", listOf("mockito-core", "mockito-jupiter"))
+            bundle("mockito", listOf("mockito-inline", "mockito-jupiter"))
             bundle("testcontainers", listOf("testcontainers-core", "testcontainers-junit"))
 
             bundle(
@@ -257,7 +257,7 @@ dependencyResolutionManagement {
                     "junit-jupiter",
                     "junit-jupiter-api",
                     "junit-jupiter-params",
-                    "mockito-core",
+                    "mockito-inline",
                     "mockito-jupiter",
                     "hamcrest",
                     "awaitility",
@@ -278,7 +278,7 @@ dependencyResolutionManagement {
             library("junit-jupiter", "org.junit.jupiter", "junit-jupiter").versionRef("junit5-version")
             library("junit-jupiter-api", "org.junit.jupiter", "junit-jupiter-api").versionRef("junit5-version")
             library("junit-jupiter-params", "org.junit.jupiter", "junit-jupiter-params").versionRef("junit5-version")
-            library("mockito-core", "org.mockito", "mockito-core").versionRef("mockito-version")
+            library("mockito-inline", "org.mockito", "mockito-inline").versionRef("mockito-version")
             library("mockito-jupiter", "org.mockito", "mockito-junit-jupiter").versionRef("mockito-version")
             library("mockito-inline", "org.mockito", "mockito-inline").versionRef("mockito-version")
             library("picocli", "info.picocli", "picocli").versionRef("picocli-version")

@@ -23,8 +23,8 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * This class contains all workflow-related functionality regarding
- * {@link HederaFunctionality#CONSENSUS_DELETE_TOPIC}.
+ * This class contains all workflow-related functionality regarding {@link
+ * HederaFunctionality#CONSENSUS_DELETE_TOPIC}.
  */
 public class ConsensusDeleteTopicHandler implements TransactionHandler {
 

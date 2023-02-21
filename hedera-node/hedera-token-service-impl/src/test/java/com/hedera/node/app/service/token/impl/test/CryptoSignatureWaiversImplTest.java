@@ -55,9 +55,7 @@ class CryptoSignatureWaiversImplTest {
             final AccountID payerId, final AccountID accountToUpdate) {
         final var transactionID = TransactionID.newBuilder().accountID(payerId);
         final var updateTxnBody =
-                CryptoUpdateTransactionBody.newBuilder()
-                        .accountIDToUpdate(accountToUpdate)
-                        .build();
+                CryptoUpdateTransactionBody.newBuilder().accountIDToUpdate(accountToUpdate).build();
         return TransactionBody.newBuilder()
                 .transactionID(transactionID)
                 .cryptoUpdateAccount(updateTxnBody)

@@ -15,57 +15,53 @@
  */
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.given;
-
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
-import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 
 class ContractCallHandlerTest extends ContractHandlerTestBase {
     private ContractCallHandler subject = new ContractCallHandler();
 
-//    @Test
-//    @DisplayName("Fails for invalid payer account")
-//    void invalidPayer() {
-//        final var txn = contractCallTransaction();
-//        given(keyLookup.getKey(payer))
-//                .willReturn(KeyOrLookupFailureReason.withFailureReason(INVALID_ACCOUNT_ID));
-//        final var meta = subject.preHandle(txn, txn.getTransactionID().getAccountID(), keyLookup);
-//        basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
-//        assertEquals(null, meta.payerKey());
-//    }
-//
-//    @Test
-//    @DisplayName("Succeeds for valid payer account")
-//    void validPayer() {
-//        final var txn = contractCallTransaction();
-//        final var meta = subject.preHandle(txn, txn.getTransactionID().getAccountID(), keyLookup);
-//        basicMetaAssertions(meta, 0, false, OK);
-//        assertEquals(payerKey, meta.payerKey());
-//    }
-//
-//    @Test
-//    void callHandle() {
-//        final var txn = contractCallTransaction();
-//        final var meta = subject.preHandle(txn, txn.getTransactionID().getAccountID(), keyLookup);
-//        assertThrows(UnsupportedOperationException.class, () -> subject.handle(meta));
-//    }
-//
-//    private TransactionBody contractCallTransaction() {
-//        final var transactionID =
-//                TransactionID.newBuilder()
-//                        .setAccountID(payer)
-//                        .setTransactionValidStart(consensusTimestamp);
-//        return TransactionBody.newBuilder()
-//                .setTransactionID(transactionID)
-//                .setContractCall(
-//                        ContractCallTransactionBody.newBuilder()
-//                                .setGas(1_234)
-//                                .setAmount(1_234L)
-//                                .setContractID(targetContract))
-//                .build();
-//    }
+    //    @Test
+    //    @DisplayName("Fails for invalid payer account")
+    //    void invalidPayer() {
+    //        final var txn = contractCallTransaction();
+    //        given(keyLookup.getKey(payer))
+    //                .willReturn(KeyOrLookupFailureReason.withFailureReason(INVALID_ACCOUNT_ID));
+    //        final var meta = subject.preHandle(txn, txn.getTransactionID().getAccountID(),
+    // keyLookup);
+    //        basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
+    //        assertEquals(null, meta.payerKey());
+    //    }
+    //
+    //    @Test
+    //    @DisplayName("Succeeds for valid payer account")
+    //    void validPayer() {
+    //        final var txn = contractCallTransaction();
+    //        final var meta = subject.preHandle(txn, txn.getTransactionID().getAccountID(),
+    // keyLookup);
+    //        basicMetaAssertions(meta, 0, false, OK);
+    //        assertEquals(payerKey, meta.payerKey());
+    //    }
+    //
+    //    @Test
+    //    void callHandle() {
+    //        final var txn = contractCallTransaction();
+    //        final var meta = subject.preHandle(txn, txn.getTransactionID().getAccountID(),
+    // keyLookup);
+    //        assertThrows(UnsupportedOperationException.class, () -> subject.handle(meta));
+    //    }
+    //
+    //    private TransactionBody contractCallTransaction() {
+    //        final var transactionID =
+    //                TransactionID.newBuilder()
+    //                        .setAccountID(payer)
+    //                        .setTransactionValidStart(consensusTimestamp);
+    //        return TransactionBody.newBuilder()
+    //                .setTransactionID(transactionID)
+    //                .setContractCall(
+    //                        ContractCallTransactionBody.newBuilder()
+    //                                .setGas(1_234)
+    //                                .setAmount(1_234L)
+    //                                .setContractID(targetContract))
+    //                .build();
+    //    }
 }

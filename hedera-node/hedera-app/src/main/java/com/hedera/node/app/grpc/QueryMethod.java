@@ -15,18 +15,20 @@
  */
 package com.hedera.node.app.grpc;
 
+import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
+import com.hedera.pbj.runtime.io.DataBuffer;
+import com.hedera.pbj.runtime.io.DataInputBuffer;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
- * Handles gRPC duties for processing {@link com.hederahashgraph.api.proto.java.Query} gRPC calls. A
- * single instance of this class is used by all query threads in the node.
+ * Handles gRPC duties for processing {@link Query} gRPC calls. A single instance of this class is
+ * used by all query threads in the node.
  *
  * <p>FUTURE WORK: ThreadSafe annotation missing in spotbugs annotations but should be added to
  * class
@@ -71,8 +73,8 @@ final class QueryMethod extends MethodBase {
     @Override
     protected void handle(
             @NonNull final SessionContext session,
-            @NonNull final ByteBuffer requestBuffer,
-            @NonNull final ByteBuffer responseBuffer) {
+            @NonNull final DataInputBuffer requestBuffer,
+            @NonNull final DataBuffer responseBuffer) {
         workflow.handleQuery(session, requestBuffer, responseBuffer);
         queriesAnsweredCounter.increment();
         queriesAnsweredSpeedometer.cycle();

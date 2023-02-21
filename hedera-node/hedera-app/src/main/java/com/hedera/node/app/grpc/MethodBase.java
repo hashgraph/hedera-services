@@ -16,16 +16,21 @@
 package com.hedera.node.app.grpc;
 
 import com.hedera.node.app.SessionContext;
+import com.hedera.pbj.runtime.io.DataBuffer;
+import com.hedera.pbj.runtime.io.DataInputBuffer;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.stub.ServerCalls;
 import io.grpc.stub.StreamObserver;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
-abstract class MethodBase implements ServerCalls.UnaryMethod<ByteBuffer, ByteBuffer> {
+/**
+ * An instance of either {@link TransactionMethod} or {@link QueryMethod} is created per transaction
+ * type and query type.
+ */
+abstract class MethodBase implements ServerCalls.UnaryMethod<DataBuffer, DataBuffer> {
     // To be set by configuration. See Issue #4294
     private static final int MAX_MESSAGE_SIZE = 1024 * 6; // 6k
 
@@ -53,8 +58,8 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<ByteBuffer, ByteBuf
      * Per-thread shared ByteBuffer for responses. We store these in a thread local, because we do
      * not have control over the thread pool used by the underlying gRPC server.
      */
-    private static final ThreadLocal<ByteBuffer> BUFFER_THREAD_LOCAL =
-            ThreadLocal.withInitial(() -> ByteBuffer.allocate(MAX_MESSAGE_SIZE));
+    private static final ThreadLocal<DataBuffer> BUFFER_THREAD_LOCAL =
+            ThreadLocal.withInitial(() -> DataBuffer.allocate(MAX_MESSAGE_SIZE, false));
 
     /** The name of the service associated with this method. */
     protected final String serviceName;
@@ -105,8 +110,8 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<ByteBuffer, ByteBuf
 
     @Override
     public void invoke(
-            @NonNull final ByteBuffer requestBuffer,
-            @NonNull final StreamObserver<ByteBuffer> responseObserver) {
+            @NonNull final DataBuffer requestBuffer,
+            @NonNull final StreamObserver<DataBuffer> responseObserver) {
         try {
             // Track the number of times this method has been called
             callsReceivedCounter.increment();
@@ -115,7 +120,7 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<ByteBuffer, ByteBuf
             // Prepare the response buffer
             final var session = SESSION_CONTEXT_THREAD_LOCAL.get();
             final var responseBuffer = BUFFER_THREAD_LOCAL.get();
-            responseBuffer.clear();
+            responseBuffer.reset();
 
             // Call the workflow
             handle(session, requestBuffer, responseBuffer);
@@ -140,14 +145,15 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<ByteBuffer, ByteBuf
      * if a gRPC <b>ERROR</b> is to be returned.
      *
      * @param session The {@link SessionContext} for this call
-     * @param requestBuffer The {@link ByteBuffer} containing the protobuf bytes for the request
-     * @param responseBuffer A {@link ByteBuffer} into which the response protobuf bytes may be
+     * @param requestBuffer The {@link DataInputBuffer} containing the protobuf bytes for the
+     *     request
+     * @param responseBuffer A {@link DataBuffer} into which the response protobuf bytes may be
      *     written
      */
     protected abstract void handle(
             @NonNull final SessionContext session,
-            @NonNull final ByteBuffer requestBuffer,
-            @NonNull final ByteBuffer responseBuffer);
+            @NonNull final DataInputBuffer requestBuffer,
+            @NonNull final DataBuffer responseBuffer);
 
     /**
      * Helper method for creating a {@link Counter} metric.

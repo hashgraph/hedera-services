@@ -17,31 +17,32 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.token.TokenGetNftInfoResponse;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.ResponseHeader;
-import com.hederahashgraph.api.proto.java.TokenGetNftInfoResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#TokenGetNftInfo}.
+ * HederaFunctionality#TOKEN_GET_NFT_INFO}.
  */
 public class TokenGetNftInfoHandler extends PaidQueryHandler {
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.getTokenGetInfo().getHeader();
+        return query.tokenGetInfo().orElseThrow().header();
     }
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
-        final var response = TokenGetNftInfoResponse.newBuilder().setHeader(header);
-        return Response.newBuilder().setTokenGetNftInfo(response).build();
+        final var response = TokenGetNftInfoResponse.newBuilder().header(header);
+        return Response.newBuilder().tokenGetNftInfo(response).build();
     }
 
     /**

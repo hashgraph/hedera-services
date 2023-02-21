@@ -1,12 +1,28 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.spi;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import java.util.EnumSet;
 import java.util.Set;
 
 public class HapiUtils {
-    private HapiUtils() { }
+    private HapiUtils() {}
 
     public static final Set<HederaFunctionality> QUERY_FUNCTIONS =
             EnumSet.of(
@@ -81,6 +97,40 @@ public class HapiUtils {
             case TOKEN_WIPE -> HederaFunctionality.TOKEN_ACCOUNT_WIPE;
             case UTIL_PRNG -> HederaFunctionality.UTIL_PRNG;
             case UNCHECKED_SUBMIT -> HederaFunctionality.UNCHECKED_SUBMIT;
+            case UNSET -> throw new UnknownHederaFunctionality(); // TODO maybe different exception?
+        };
+    }
+
+    public static HederaFunctionality functionOf(final Query txn)
+            throws UnknownHederaFunctionality {
+        return switch (txn.query().kind()) {
+            case TOKEN_GET_ACCOUNT_NFT_INFOS -> HederaFunctionality.TOKEN_GET_ACCOUNT_NFT_INFOS;
+            case TOKEN_GET_NFT_INFOS -> HederaFunctionality.TOKEN_GET_NFT_INFOS;
+            case ACCOUNT_DETAILS -> HederaFunctionality.GET_ACCOUNT_DETAILS;
+            case CONSENSUS_GET_TOPIC_INFO -> HederaFunctionality.CONSENSUS_GET_TOPIC_INFO;
+            case CONTRACT_CALL_LOCAL -> HederaFunctionality.CONTRACT_CALL_LOCAL;
+            case CONTRACT_GET_BYTECODE -> HederaFunctionality.CONTRACT_GET_BYTECODE;
+            case CONTRACT_GET_INFO -> HederaFunctionality.CONTRACT_GET_INFO;
+            case CONTRACT_GET_RECORDS -> HederaFunctionality.CONTRACT_GET_RECORDS;
+            case CRYPTO_GET_ACCOUNT_RECORDS -> HederaFunctionality.CRYPTO_GET_ACCOUNT_RECORDS;
+            case CRYPTO_GET_INFO -> HederaFunctionality.CRYPTO_GET_INFO;
+            case CRYPTO_GET_LIVE_HASH -> HederaFunctionality.CRYPTO_GET_LIVE_HASH;
+            case FILE_GET_CONTENTS -> HederaFunctionality.FILE_GET_CONTENTS;
+            case FILE_GET_INFO -> HederaFunctionality.FILE_GET_INFO;
+            case CRYPTO_GET_PROXY_STAKERS -> HederaFunctionality.CRYPTO_GET_STAKERS;
+            case GET_BY_SOLIDITY_ID -> HederaFunctionality.GET_BY_SOLIDITY_ID;
+            case CRYPTOGET_ACCOUNT_BALANCE -> HederaFunctionality.CRYPTO_GET_ACCOUNT_BALANCE;
+            case GET_BY_KEY -> HederaFunctionality.GET_BY_KEY;
+            case NETWORK_GET_EXECUTION_TIME -> HederaFunctionality.NETWORK_GET_EXECUTION_TIME;
+            case SCHEDULE_GET_INFO -> HederaFunctionality.SCHEDULE_GET_INFO;
+            case TOKEN_GET_INFO -> HederaFunctionality.TOKEN_GET_INFO;
+            case TOKEN_GET_NFT_INFO -> HederaFunctionality.TOKEN_GET_NFT_INFO;
+            case NETWORK_GET_VERSION_INFO -> HederaFunctionality.GET_VERSION_INFO;
+            case TRANSACTION_GET_RECEIPT -> HederaFunctionality.TRANSACTION_GET_RECEIPT;
+            case TRANSACTION_GET_RECORD -> HederaFunctionality.TRANSACTION_GET_RECORD;
+            case TRANSACTION_GET_FAST_RECORD -> throw new UnknownHederaFunctionality(); // Not
+                // currently
+                // supported!!!
             case UNSET -> throw new UnknownHederaFunctionality(); // TODO maybe different exception?
         };
     }

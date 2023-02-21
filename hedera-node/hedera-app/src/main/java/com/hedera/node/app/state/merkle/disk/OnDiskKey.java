@@ -17,14 +17,15 @@ package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.spi.state.Serdes;
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.node.app.state.merkle.data.ByteBufferDataInput;
-import com.hedera.node.app.state.merkle.data.ByteBufferDataOutput;
+import com.hedera.pbj.runtime.io.DataBuffer;
+import com.hedera.pbj.runtime.io.DataInputBuffer;
+import com.hedera.pbj.runtime.io.DataInputStream;
+import com.hedera.pbj.runtime.io.DataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -90,17 +91,17 @@ public final class OnDiskKey<K extends Comparable<K>> implements VirtualKey<OnDi
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream)
             throws IOException {
-        serdes.write(key, serializableDataOutputStream);
+        serdes.write(key, new DataOutputStream(serializableDataOutputStream));
     }
 
     @Override
     public void serialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
-        serdes.write(key, new ByteBufferDataOutput(byteBuffer));
+        serdes.write(key, DataBuffer.wrap(byteBuffer));
     }
 
     @Override
     public void deserialize(@NonNull final ByteBuffer byteBuffer, int ignored) throws IOException {
-        key = serdes.parse(new ByteBufferDataInput(byteBuffer));
+        key = serdes.parse(DataInputBuffer.wrap(byteBuffer));
     }
 
     @Override

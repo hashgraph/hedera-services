@@ -64,6 +64,7 @@ import com.hedera.hapi.node.token.TokenUnfreezeAccountTransactionBody;
 import com.hedera.hapi.node.token.TokenUnpauseTransactionBody;
 import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.hapi.node.token.TokenWipeAccountTransactionBody;
+import com.hedera.hapi.node.transaction.NodeStakeUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
@@ -311,7 +312,7 @@ class TransactionDispatcherTest {
         // given
         final var txBody =
                 TransactionBody.newBuilder()
-                        .setNodeStakeUpdate(NodeStakeUpdateTransactionBody.getDefaultInstance())
+                        .nodeStakeUpdate(NodeStakeUpdateTransactionBody.newBuilder().build())
                         .build();
         final var payer = AccountID.newBuilder().build();
 
@@ -412,8 +413,7 @@ class TransactionDispatcherTest {
                                                 .preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .ethereumTransaction(
-                                        EthereumTransactionBody.newBuilder().build())
+                                .ethereumTransaction(EthereumTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<TransactionHandlers>)
                                 h -> verify(h.etherumTransactionHandler()).preHandle(any(), any())),
@@ -439,8 +439,7 @@ class TransactionDispatcherTest {
                                                 .preHandle(any(), any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .cryptoTransfer(
-                                        CryptoTransferTransactionBody.newBuilder().build())
+                                .cryptoTransfer(CryptoTransferTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<TransactionHandlers>)
                                 h ->
@@ -536,8 +535,7 @@ class TransactionDispatcherTest {
                 // schedule
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .scheduleCreate(
-                                        ScheduleCreateTransactionBody.newBuilder().build())
+                                .scheduleCreate(ScheduleCreateTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<TransactionHandlers>)
                                 h ->
@@ -553,8 +551,7 @@ class TransactionDispatcherTest {
                                                 .preHandle(any(), any(), any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .scheduleDelete(
-                                        ScheduleDeleteTransactionBody.newBuilder().build())
+                                .scheduleDelete(ScheduleDeleteTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<TransactionHandlers>)
                                 h ->
@@ -602,8 +599,7 @@ class TransactionDispatcherTest {
                                 h -> verify(h.tokenAccountWipeHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .tokenFreeze(
-                                        TokenFreezeAccountTransactionBody.newBuilder().build())
+                                .tokenFreeze(TokenFreezeAccountTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<TransactionHandlers>)
                                 h -> verify(h.tokenFreezeAccountHandler()).preHandle(any(), any())),
@@ -626,8 +622,7 @@ class TransactionDispatcherTest {
                                                 .preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .tokenRevokeKyc(
-                                        TokenRevokeKycTransactionBody.newBuilder().build())
+                                .tokenRevokeKyc(TokenRevokeKycTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<TransactionHandlers>)
                                 h ->
@@ -635,8 +630,7 @@ class TransactionDispatcherTest {
                                                 .preHandle(any(), any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .tokenAssociate(
-                                        TokenAssociateTransactionBody.newBuilder().build())
+                                .tokenAssociate(TokenAssociateTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<TransactionHandlers>)
                                 h ->

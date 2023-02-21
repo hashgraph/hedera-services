@@ -15,11 +15,14 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
@@ -51,10 +54,10 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull final AccountKeyLookup accountStore) {
         Objects.requireNonNull(txBody);
-        final var op = txBody.getTokenRevokeKyc();
+        final var op = txBody.tokenRevokeKyc().orElseThrow();
         final var meta =
                 new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txBody);
-        final var tokenMeta = tokenStore.getTokenMeta(op.getToken());
+        final var tokenMeta = tokenStore.getTokenMeta(op.token());
 
         if (!tokenMeta.failed()) {
             tokenMeta.metadata().kycKey().ifPresent(meta::addToReqNonPayerKeys);

@@ -17,31 +17,32 @@ package com.hedera.node.app.service.network.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.Response;
+import com.hedera.hapi.node.transaction.TransactionGetReceiptResponse;
 import com.hedera.node.app.spi.workflows.FreeQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.ResponseHeader;
-import com.hederahashgraph.api.proto.java.TransactionGetReceiptResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#TransactionGetReceipt}.
+ * HederaFunctionality#TRANSACTION_GET_RECEIPT}.
  */
 public class NetworkTransactionGetReceiptHandler extends FreeQueryHandler {
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.getTransactionGetReceipt().getHeader();
+        return query.transactionGetReceipt().orElseThrow().header();
     }
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
-        final var response = TransactionGetReceiptResponse.newBuilder().setHeader(header);
-        return Response.newBuilder().setTransactionGetReceipt(response).build();
+        final var response = TransactionGetReceiptResponse.newBuilder().header(header);
+        return Response.newBuilder().transactionGetReceipt(response).build();
     }
 
     /**

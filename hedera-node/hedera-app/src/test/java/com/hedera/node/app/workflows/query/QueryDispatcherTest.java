@@ -21,6 +21,32 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoQuery;
+import com.hedera.hapi.node.contract.ContractCallLocalQuery;
+import com.hedera.hapi.node.contract.ContractGetBytecodeQuery;
+import com.hedera.hapi.node.contract.ContractGetInfoQuery;
+import com.hedera.hapi.node.contract.ContractGetRecordsQuery;
+import com.hedera.hapi.node.contract.GetBySolidityIDQuery;
+import com.hedera.hapi.node.file.FileGetContentsQuery;
+import com.hedera.hapi.node.file.FileGetInfoQuery;
+import com.hedera.hapi.node.network.NetworkGetExecutionTimeQuery;
+import com.hedera.hapi.node.network.NetworkGetVersionInfoQuery;
+import com.hedera.hapi.node.scheduled.ScheduleGetInfoQuery;
+import com.hedera.hapi.node.token.CryptoGetAccountBalanceQuery;
+import com.hedera.hapi.node.token.CryptoGetAccountRecordsQuery;
+import com.hedera.hapi.node.token.CryptoGetInfoQuery;
+import com.hedera.hapi.node.token.CryptoGetLiveHashQuery;
+import com.hedera.hapi.node.token.CryptoGetStakersQuery;
+import com.hedera.hapi.node.token.GetAccountDetailsQuery;
+import com.hedera.hapi.node.token.TokenGetAccountNftInfosQuery;
+import com.hedera.hapi.node.token.TokenGetInfoQuery;
+import com.hedera.hapi.node.token.TokenGetNftInfoQuery;
+import com.hedera.hapi.node.token.TokenGetNftInfosQuery;
+import com.hedera.hapi.node.transaction.GetByKeyQuery;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.TransactionGetReceiptQuery;
+import com.hedera.hapi.node.transaction.TransactionGetRecordQuery;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallLocalHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetBySolidityIDHandler;
@@ -48,32 +74,6 @@ import com.hedera.node.app.service.token.impl.handlers.TokenGetNftInfosHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.state.HederaState;
-import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
-import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
-import com.hederahashgraph.api.proto.java.ContractGetBytecodeQuery;
-import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
-import com.hederahashgraph.api.proto.java.ContractGetRecordsQuery;
-import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
-import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
-import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
-import com.hederahashgraph.api.proto.java.CryptoGetLiveHashQuery;
-import com.hederahashgraph.api.proto.java.CryptoGetStakersQuery;
-import com.hederahashgraph.api.proto.java.FileGetContentsQuery;
-import com.hederahashgraph.api.proto.java.FileGetInfoQuery;
-import com.hederahashgraph.api.proto.java.GetAccountDetailsQuery;
-import com.hederahashgraph.api.proto.java.GetByKeyQuery;
-import com.hederahashgraph.api.proto.java.GetBySolidityIDQuery;
-import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery;
-import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.ResponseHeader;
-import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
-import com.hederahashgraph.api.proto.java.TokenGetAccountNftInfosQuery;
-import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
-import com.hederahashgraph.api.proto.java.TokenGetNftInfoQuery;
-import com.hederahashgraph.api.proto.java.TokenGetNftInfosQuery;
-import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
-import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -272,8 +272,8 @@ class QueryDispatcherTest {
         return Stream.of(
                 Arguments.of(
                         Query.newBuilder()
-                                .setConsensusGetTopicInfo(
-                                        ConsensusGetTopicInfoQuery.getDefaultInstance())
+                                .consensusGetTopicInfo(
+                                        ConsensusGetTopicInfoQuery.newBuilder().build())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::consensusGetTopicInfoHandler,
@@ -285,7 +285,7 @@ class QueryDispatcherTest {
                                                 .findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
-                                .setGetBySolidityID(GetBySolidityIDQuery.getDefaultInstance())
+                                .getBySolidityID(GetBySolidityIDQuery.newBuilder().build())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::contractGetBySolidityIDHandler,
@@ -297,7 +297,7 @@ class QueryDispatcherTest {
                                                 .findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
-                                .setContractCallLocal(ContractCallLocalQuery.getDefaultInstance())
+                                .contractCallLocal(ContractCallLocalQuery.newBuilder().build())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::contractCallLocalHandler,
@@ -308,7 +308,7 @@ class QueryDispatcherTest {
                                                 .findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
-                                .setContractGetInfo(ContractGetInfoQuery.getDefaultInstance())
+                                .contractGetInfo(ContractGetInfoQuery.newBuilder().build())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::contractGetInfoHandler,
@@ -317,8 +317,8 @@ class QueryDispatcherTest {
                                 h -> verify(h.contractGetInfoHandler()).findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
-                                .setContractGetBytecode(
-                                        ContractGetBytecodeQuery.getDefaultInstance())
+                                .contractGetBytecode(
+                                        ContractGetBytecodeQuery.newBuilder().build())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::contractGetBytecodeHandler,
@@ -329,7 +329,7 @@ class QueryDispatcherTest {
                                                 .findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
-                                .setContractGetRecords(ContractGetRecordsQuery.getDefaultInstance())
+                                .contractGetRecords(ContractGetRecordsQuery.newBuilder().build())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::contractGetRecordsHandler,
@@ -340,8 +340,8 @@ class QueryDispatcherTest {
                                                 .findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
-                                .setCryptogetAccountBalance(
-                                        CryptoGetAccountBalanceQuery.getDefaultInstance())
+                                .cryptogetAccountBalance(
+                                        CryptoGetAccountBalanceQuery.newBuilder().build())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::cryptoGetAccountBalanceHandler,
@@ -353,7 +353,7 @@ class QueryDispatcherTest {
                                                 .findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
-                                .setCryptoGetInfo(CryptoGetInfoQuery.getDefaultInstance())
+                                .cryptoGetInfo(CryptoGetInfoQuery.newBuilder().build())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::cryptoGetAccountInfoHandler,
@@ -364,8 +364,8 @@ class QueryDispatcherTest {
                                                 .findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
-                                .setCryptoGetAccountRecords(
-                                        CryptoGetAccountRecordsQuery.getDefaultInstance())
+                                .cryptoGetAccountRecords(
+                                        CryptoGetAccountRecordsQuery.newBuilder().build())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::cryptoGetAccountRecordsHandler,
@@ -377,7 +377,7 @@ class QueryDispatcherTest {
                                                 .findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
-                                .setCryptoGetLiveHash(CryptoGetLiveHashQuery.getDefaultInstance())
+                                .cryptoGetLiveHash(CryptoGetLiveHashQuery.newBuilder().build())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::cryptoGetLiveHashHandler,
@@ -388,8 +388,8 @@ class QueryDispatcherTest {
                                                 .findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
-                                .setCryptoGetProxyStakers(
-                                        CryptoGetStakersQuery.getDefaultInstance())
+                                .cryptoGetProxyStakers(
+                                        CryptoGetStakersQuery.newBuilder().build())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::cryptoGetStakersHandler,
@@ -400,7 +400,7 @@ class QueryDispatcherTest {
                                                 .findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
-                                .setFileGetContents(FileGetContentsQuery.getDefaultInstance())
+                                .fileGetContents(FileGetContentsQuery.newBuilder().build())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::fileGetContentsHandler,
@@ -409,7 +409,7 @@ class QueryDispatcherTest {
                                 h -> verify(h.fileGetContentsHandler()).findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
-                                .setFileGetInfo(FileGetInfoQuery.getDefaultInstance())
+                                .fileGetInfo(FileGetInfoQuery.newBuilder().build())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>) QueryHandlers::fileGetInfoHandler,
                         (Verification) h -> verify(h.fileGetInfoHandler()).validate(any()),
@@ -417,7 +417,7 @@ class QueryDispatcherTest {
                                 h -> verify(h.fileGetInfoHandler()).findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
-                                .setScheduleGetInfo(ScheduleGetInfoQuery.getDefaultInstance())
+                                .scheduleGetInfo(ScheduleGetInfoQuery.newBuilder().build())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::scheduleGetInfoHandler,
@@ -426,7 +426,7 @@ class QueryDispatcherTest {
                                 h -> verify(h.scheduleGetInfoHandler()).findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
-                                .setTokenGetInfo(TokenGetInfoQuery.getDefaultInstance())
+                                .tokenGetInfo(TokenGetInfoQuery.newBuilder().build())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>) QueryHandlers::tokenGetInfoHandler,
                         (Verification) h -> verify(h.tokenGetInfoHandler()).validate(any()),
@@ -434,8 +434,8 @@ class QueryDispatcherTest {
                                 h -> verify(h.tokenGetInfoHandler()).findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
-                                .setTokenGetAccountNftInfos(
-                                        TokenGetAccountNftInfosQuery.getDefaultInstance())
+                                .tokenGetAccountNftInfos(
+                                        TokenGetAccountNftInfosQuery.newBuilder().build())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::tokenGetAccountNftInfosHandler,
@@ -447,7 +447,7 @@ class QueryDispatcherTest {
                                                 .findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
-                                .setTokenGetNftInfo(TokenGetNftInfoQuery.getDefaultInstance())
+                                .tokenGetNftInfo(TokenGetNftInfoQuery.newBuilder().build())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::tokenGetNftInfoHandler,
@@ -456,7 +456,7 @@ class QueryDispatcherTest {
                                 h -> verify(h.tokenGetNftInfoHandler()).findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
-                                .setTokenGetNftInfos(TokenGetNftInfosQuery.getDefaultInstance())
+                                .tokenGetNftInfos(TokenGetNftInfosQuery.newBuilder().build())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::tokenGetNftInfosHandler,
@@ -467,7 +467,7 @@ class QueryDispatcherTest {
                                                 .findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
-                                .setAccountDetails(GetAccountDetailsQuery.getDefaultInstance())
+                                .accountDetails(GetAccountDetailsQuery.newBuilder().build())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::networkGetAccountDetailsHandler,
@@ -479,8 +479,8 @@ class QueryDispatcherTest {
                                                 .findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
-                                .setNetworkGetVersionInfo(
-                                        NetworkGetVersionInfoQuery.getDefaultInstance())
+                                .networkGetVersionInfo(
+                                        NetworkGetVersionInfoQuery.newBuilder().build())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::networkGetVersionInfoHandler,
@@ -491,7 +491,7 @@ class QueryDispatcherTest {
                                         verify(h.networkGetVersionInfoHandler())
                                                 .findResponse(any(), any())),
                 Arguments.of(
-                        Query.newBuilder().setGetByKey(GetByKeyQuery.getDefaultInstance()).build(),
+                        Query.newBuilder().getByKey(GetByKeyQuery.newBuilder().build()).build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::networkGetByKeyHandler,
                         (Verification) h -> verify(h.networkGetByKeyHandler()).validate(any()),
@@ -499,8 +499,8 @@ class QueryDispatcherTest {
                                 h -> verify(h.networkGetByKeyHandler()).findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
-                                .setNetworkGetExecutionTime(
-                                        NetworkGetExecutionTimeQuery.getDefaultInstance())
+                                .networkGetExecutionTime(
+                                        NetworkGetExecutionTimeQuery.newBuilder().build())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::networkGetExecutionTimeHandler,
@@ -512,8 +512,8 @@ class QueryDispatcherTest {
                                                 .findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
-                                .setTransactionGetReceipt(
-                                        TransactionGetReceiptQuery.getDefaultInstance())
+                                .transactionGetReceipt(
+                                        TransactionGetReceiptQuery.newBuilder().build())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::networkTransactionGetReceiptHandler,
@@ -527,8 +527,8 @@ class QueryDispatcherTest {
                                                 .findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
-                                .setTransactionGetRecord(
-                                        TransactionGetRecordQuery.getDefaultInstance())
+                                .transactionGetRecord(
+                                        TransactionGetRecordQuery.newBuilder().build())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::networkTransactionGetRecordHandler,

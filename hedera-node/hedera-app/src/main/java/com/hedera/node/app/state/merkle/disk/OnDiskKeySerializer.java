@@ -17,8 +17,9 @@ package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.spi.state.Serdes;
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.node.app.state.merkle.data.ByteBufferDataInput;
 import com.hedera.node.app.state.merkle.data.MeteredOutputStream;
+import com.hedera.pbj.runtime.io.DataBuffer;
+import com.hedera.pbj.runtime.io.DataOutputStream;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -28,7 +29,6 @@ import com.swirlds.jasperdb.files.hashmap.KeySerializer;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -108,7 +108,7 @@ public final class OnDiskKeySerializer<K extends Comparable<K>>
     @Override
     public int deserializeKeySize(@NonNull final ByteBuffer byteBuffer) {
         try {
-            return serdes.measure(new ByteBufferDataInput(byteBuffer));
+            return serdes.measure(DataBuffer.wrap(byteBuffer));
         } catch (IOException e) {
             // Maybe log here?
             return -1;
@@ -118,7 +118,7 @@ public final class OnDiskKeySerializer<K extends Comparable<K>>
     @Override
     public OnDiskKey<K> deserialize(@NonNull final ByteBuffer byteBuffer, final long ignored)
             throws IOException {
-        final var k = serdes.parse(new ByteBufferDataInput(byteBuffer));
+        final var k = serdes.parse(DataBuffer.wrap(byteBuffer));
         Objects.requireNonNull(k);
         return new OnDiskKey<>(md, k);
     }

@@ -15,7 +15,12 @@
  */
 package com.hedera.node.app.spi.workflows;
 
-import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.base.ResponseType;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.Response;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** A {@code QueryHandler} contains all methods for the different stages of a single query. */
@@ -32,8 +37,7 @@ public interface QueryHandler {
 
     /**
      * Creates an empty {@link Response} with a provided header. This is typically used, if an error
-     * occurred. The {@code header} contains a {@link
-     * com.hederahashgraph.api.proto.java.ResponseCodeEnum} with the error code.
+     * occurred. The {@code header} contains a {@link ResponseCodeEnum} with the error code.
      *
      * @param header the {@link ResponseHeader} that needs to be included
      * @return the created {@link Response}

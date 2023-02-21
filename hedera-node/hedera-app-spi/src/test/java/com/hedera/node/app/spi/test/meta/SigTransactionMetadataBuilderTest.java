@@ -34,12 +34,12 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.pbj.runtime.io.Bytes;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.pbj.runtime.io.Bytes;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,11 +57,16 @@ class SigTransactionMetadataBuilderTest {
             Key.newBuilder().ed25519(Bytes.wrap("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")).build();
     public static final Key A_COMPLEX_KEY =
             Key.newBuilder()
-                    .thresholdKey(ThresholdKey.newBuilder()
-                            .threshold(2)
-                            .keys(KeyList.newBuilder().keys(
-                                List.of(COMPLEX_KEY_FIRST, COMPLEX_KEY_SECOND)))
-                            .build())
+                    .thresholdKey(
+                            ThresholdKey.newBuilder()
+                                    .threshold(2)
+                                    .keys(
+                                            KeyList.newBuilder()
+                                                    .keys(
+                                                            List.of(
+                                                                    COMPLEX_KEY_FIRST,
+                                                                    COMPLEX_KEY_SECOND)))
+                                    .build())
                     .build();
     private Timestamp consensusTimestamp = Timestamp.newBuilder().seconds(1_234_567L).build();
     private Key key = A_COMPLEX_KEY;

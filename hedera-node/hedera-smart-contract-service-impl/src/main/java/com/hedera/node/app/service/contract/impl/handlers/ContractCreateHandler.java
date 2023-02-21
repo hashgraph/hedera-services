@@ -53,13 +53,13 @@ public class ContractCreateHandler implements TransactionHandler {
         final var op = txBody.contractCreateInstance().orElseThrow();
         final var meta =
                 new SigTransactionMetadataBuilder(keyLookup).txnBody(txBody).payerKeyFor(payer);
-//        final var adminKey = asHederaKey(op.adminKey());
-//        if (adminKey.isPresent() && !((JKey) adminKey.get()).hasContractID()) {
-//            meta.addToReqNonPayerKeys(adminKey.get());
-//        }
-//        if (op.autoRenewAccountId()) {
-//            meta.addNonPayerKey(op.autoRenewAccountId());
-//        }
+        //        final var adminKey = asHederaKey(op.adminKey());
+        //        if (adminKey.isPresent() && !((JKey) adminKey.get()).hasContractID()) {
+        //            meta.addToReqNonPayerKeys(adminKey.get());
+        //        }
+        //        if (op.autoRenewAccountId()) {
+        //            meta.addNonPayerKey(op.autoRenewAccountId());
+        //        }
         return meta.build();
     }
 

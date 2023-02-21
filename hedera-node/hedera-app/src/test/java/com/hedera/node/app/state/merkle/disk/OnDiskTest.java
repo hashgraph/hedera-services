@@ -24,6 +24,8 @@ import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.merkle.MerkleTestBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.StateUtils;
+import com.hedera.pbj.runtime.io.DataInput;
+import com.hedera.pbj.runtime.io.DataOutput;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.jasperdb.JasperDbBuilder;
@@ -32,8 +34,6 @@ import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -263,7 +263,7 @@ class OnDiskTest extends MerkleTestBase {
             final var id = accountIDSerdes.parse(input);
             final int memoLen = input.readInt();
             final byte[] memoBytes = new byte[memoLen];
-            input.readFully(memoBytes);
+            input.readBytes(memoBytes);
             final var memo = new String(memoBytes, StandardCharsets.UTF_8);
             final var balance = input.readLong();
             return new Account(id, memo, balance);
@@ -276,7 +276,7 @@ class OnDiskTest extends MerkleTestBase {
             // memo
             final var bb = StandardCharsets.UTF_8.encode(acct.memo());
             output.writeInt(bb.limit());
-            output.write(bb.array(), 0, bb.limit());
+            output.writeBytes(bb.array(), 0, bb.limit());
             // balance
             output.writeLong(acct.balance);
         }

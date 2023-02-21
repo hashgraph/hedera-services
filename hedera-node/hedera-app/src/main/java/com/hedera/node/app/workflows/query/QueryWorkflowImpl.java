@@ -15,44 +15,50 @@
  */
 package com.hedera.node.app.workflows.query;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetAccountDetails;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
-import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
-import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER_STATE_PROOF;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
+import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
+import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
 import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
-import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.base.ResponseType;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.Response;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
-import com.hedera.node.app.service.mono.stats.HapiOpCounters;
-import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.node.app.spi.HapiUtils;
+import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ResponseHeader;
-import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hedera.pbj.runtime.io.Bytes;
+import com.hedera.pbj.runtime.io.DataBuffer;
+import com.hedera.pbj.runtime.io.DataInputBuffer;
+import com.hedera.pbj.runtime.io.DataOutputStream;
+import com.swirlds.common.metrics.Counter;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import java.nio.ByteBuffer;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +71,9 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private static final EnumSet<ResponseType> UNSUPPORTED_RESPONSE_TYPES =
             EnumSet.of(ANSWER_STATE_PROOF, COST_ANSWER_STATE_PROOF);
     private static final List<HederaFunctionality> RESTRICTED_FUNCTIONALITIES =
-            List.of(NetworkGetExecutionTime, GetAccountDetails);
+            List.of(
+                    HederaFunctionality.NETWORK_GET_EXECUTION_TIME,
+                    HederaFunctionality.GET_ACCOUNT_DETAILS);
 
     private final NodeInfo nodeInfo;
     private final CurrentPlatformStatus currentPlatformStatus;
@@ -74,7 +82,13 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final SubmissionManager submissionManager;
     private final QueryChecker checker;
     private final QueryDispatcher dispatcher;
-    private final HapiOpCounters opCounters;
+
+    /** A map of counter metrics for each type of query received */
+    private final Map<HederaFunctionality, Counter> received =
+            new EnumMap<>(HederaFunctionality.class);
+    /** A map of counter metrics for each type of query answered */
+    private final Map<HederaFunctionality, Counter> answered =
+            new EnumMap<>(HederaFunctionality.class);
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
@@ -87,7 +101,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
      * @param checker the {@link QueryChecker} with specific checks of an ingest-workflow
      * @param dispatcher the {@link QueryDispatcher} that will call query-specific methods
-     * @param opCounters the {@link HapiOpCounters} with workflow-specific metrics
+     * @param metrics the {@link Metrics} with workflow-specific metrics
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public QueryWorkflowImpl(
@@ -98,7 +112,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final SubmissionManager submissionManager,
             @NonNull final QueryChecker checker,
             @NonNull final QueryDispatcher dispatcher,
-            @NonNull final HapiOpCounters opCounters) {
+            @NonNull final Metrics metrics) {
         this.nodeInfo = requireNonNull(nodeInfo);
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
         this.stateAccessor = requireNonNull(stateAccessor);
@@ -106,14 +120,28 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.submissionManager = requireNonNull(submissionManager);
         this.checker = requireNonNull(checker);
         this.dispatcher = requireNonNull(dispatcher);
-        this.opCounters = requireNonNull(opCounters);
+
+        // Create metrics for tracking each query received and answered per query type
+        for (var function : HederaFunctionality.values()) {
+            var name = function.name() + "Received";
+            var desc = "The number of queries received for " + function.name();
+            received.put(
+                    function,
+                    metrics.getOrCreate(new Counter.Config("app", name).withDescription(desc)));
+
+            name = function.name() + "Answered";
+            desc = "The number of queries answered for " + function.name();
+            answered.put(
+                    function,
+                    metrics.getOrCreate(new Counter.Config("app", name).withDescription(desc)));
+        }
     }
 
     @Override
     public void handleQuery(
             @NonNull final SessionContext session,
-            @NonNull final ByteBuffer requestBuffer,
-            @NonNull final ByteBuffer responseBuffer) {
+            @NonNull final DataInputBuffer requestBuffer,
+            @NonNull final DataBuffer responseBuffer) {
         requireNonNull(session);
         requireNonNull(requestBuffer);
         requireNonNull(responseBuffer);
@@ -121,8 +149,9 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         // 1. Parse and check header
         final Query query;
         try {
-            query = session.queryParser().parseFrom(requestBuffer);
-        } catch (InvalidProtocolBufferException e) {
+            query = Query.PROTOBUF.parse(requestBuffer);
+        } catch (IOException e) {
+            // TODO there may be other types of errors here. Please cross check with ingest parsing
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
 
@@ -130,17 +159,15 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             LOGGER.debug("Received query: {}", query);
         }
 
-        final var functionality =
-                MiscUtils.functionalityOfQuery(query)
-                        .orElseThrow(() -> new StatusRuntimeException(Status.INVALID_ARGUMENT));
-        opCounters.countReceived(functionality);
+        final var functionality = functionOf(query);
+        received.get(functionality).increment();
 
         final var handler = dispatcher.getHandler(query);
         final var queryHeader = handler.extractHeader(query);
         if (queryHeader == null) {
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
-        final ResponseType responseType = queryHeader.getResponseType();
+        final ResponseType responseType = queryHeader.responseType();
 
         Response response;
         long fee = 0L;
@@ -168,9 +195,9 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             TransactionBody txBody = null;
             if (paymentRequired) {
                 // 3.i Validate CryptoTransfer
-                allegedPayment = queryHeader.getPayment();
+                allegedPayment = queryHeader.payment();
                 txBody = checker.validateCryptoTransfer(session, allegedPayment);
-                final var payer = txBody.getTransactionID().getAccountID();
+                final var payer = txBody.transactionID().accountID();
 
                 // 3.ii Check permissions
                 checker.checkPermissions(payer, functionality);
@@ -192,8 +219,14 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
             // 5. Submit payment to platform
             if (paymentRequired) {
-                submissionManager.submit(
-                        txBody, allegedPayment.toByteArray(), session.txBodyParser());
+                final var out = new ByteArrayOutputStream();
+                try {
+                    Transaction.PROTOBUF.write(allegedPayment, new ByteArrayDataOutput(out));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    throw new StatusRuntimeException(Status.INTERNAL);
+                }
+                submissionManager.submit(txBody, out.toByteArray());
             }
 
             if (handler.needsAnswerOnlyCost(responseType)) {
@@ -208,8 +241,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 response = dispatcher.getResponse(state, query, header);
             }
 
-            opCounters.countAnswered(functionality);
-
+            answered.get(functionality).increment();
         } catch (InsufficientBalanceException e) {
             final var header =
                     createResponseHeader(responseType, e.responseCode(), e.getEstimatedFee());
@@ -219,7 +251,12 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             response = handler.createEmptyResponse(header);
         }
 
-        responseBuffer.put(response.toByteArray());
+        try {
+            Response.PROTOBUF.write(response, responseBuffer);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new StatusRuntimeException(Status.INTERNAL);
+        }
     }
 
     private static ResponseHeader createResponseHeader(
@@ -227,9 +264,34 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final ResponseCodeEnum responseCode,
             final long fee) {
         return ResponseHeader.newBuilder()
-                .setResponseType(type)
-                .setNodeTransactionPrecheckCode(responseCode)
-                .setCost(fee)
+                .responseType(type)
+                .nodeTransactionPrecheckCode(responseCode)
+                .cost(fee)
                 .build();
+    }
+
+    private static HederaFunctionality functionOf(@NonNull final Query query) {
+        try {
+            return HapiUtils.functionOf(query);
+        } catch (UnknownHederaFunctionality e) {
+            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
+        }
+    }
+
+    final class ByteArrayDataOutput extends DataOutputStream {
+        private final ByteArrayOutputStream out;
+
+        public ByteArrayDataOutput(ByteArrayOutputStream out) {
+            super(out);
+            this.out = out;
+        }
+
+        public Bytes getBytes() {
+            return Bytes.wrap(out.toByteArray());
+        }
+
+        public byte[] getByteArray() {
+            return out.toByteArray();
+        }
     }
 }

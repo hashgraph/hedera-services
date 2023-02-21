@@ -15,199 +15,184 @@
  */
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
-
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteHandler;
-import com.hedera.hapi.node.base.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 
 class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
-//    private final AccountID deleteAccountId = asAccount("0.0.3213");
-//    private final AccountID transferAccountId = asAccount("0.0.32134");
-//    private final Long deleteAccountNum = deleteAccountId.getAccountNum();
-//    private final Long transferAccountNum = transferAccountId.getAccountNum();
-//
-//    @Mock private MerkleAccount deleteAccount;
-//    @Mock private MerkleAccount transferAccount;
-//
-//    private CryptoDeleteHandler subject = new CryptoDeleteHandler();
-//
-//    @Test
-//    void preHandlesCryptoDeleteIfNoReceiverSigRequired() {
-//        final var keyUsed = (JKey) payerKey;
-//
-//        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
-//        given(accounts.get(transferAccountNum)).willReturn(transferAccount);
-//        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
-//        given(transferAccount.getAccountKey()).willReturn(keyUsed);
-//        given(transferAccount.isReceiverSigRequired()).willReturn(false);
-//
-//        final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
-//
-//        final var meta = subject.preHandle(txn, payer, store);
-//
-//        assertEquals(txn, meta.txnBody());
-//        assertEquals(payerKey, meta.payerKey());
-//        basicMetaAssertions(meta, 1, false, OK);
-//        assertIterableEquals(List.of(keyUsed), meta.requiredNonPayerKeys());
-//    }
-//
-//    @Test
-//    void preHandlesCryptoDeleteIfReceiverSigRequiredVanilla() {
-//        final var keyUsed = (JKey) payerKey;
-//
-//        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
-//        given(accounts.get(transferAccountNum)).willReturn(transferAccount);
-//        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
-//        given(transferAccount.getAccountKey()).willReturn(keyUsed);
-//        given(transferAccount.isReceiverSigRequired()).willReturn(true);
-//
-//        final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
-//
-//        final var meta = subject.preHandle(txn, payer, store);
-//
-//        assertEquals(txn, meta.txnBody());
-//        basicMetaAssertions(meta, 2, false, OK);
-//        assertEquals(payerKey, meta.payerKey());
-//        assertIterableEquals(List.of(keyUsed, keyUsed), meta.requiredNonPayerKeys());
-//    }
-//
-//    @Test
-//    void doesntAddBothKeysAccountsSameAsPayerForCryptoDelete() {
-//        final var txn = deleteAccountTransaction(payer, payer);
-//
-//        final var meta = subject.preHandle(txn, payer, store);
-//
-//        assertEquals(txn, meta.txnBody());
-//        basicMetaAssertions(meta, 0, false, OK);
-//        assertEquals(payerKey, meta.payerKey());
-//        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
-//    }
-//
-//    @Test
-//    void doesntAddTransferKeyIfAccountSameAsPayerForCryptoDelete() {
-//        final var keyUsed = (JKey) payerKey;
-//
-//        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
-//        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
-//
-//        final var txn = deleteAccountTransaction(deleteAccountId, payer);
-//
-//        final var meta = subject.preHandle(txn, payer, store);
-//
-//        assertEquals(txn, meta.txnBody());
-//        assertEquals(payerKey, meta.payerKey());
-//        basicMetaAssertions(meta, 1, false, OK);
-//        assertIterableEquals(List.of(keyUsed), meta.requiredNonPayerKeys());
-//    }
-//
-//    @Test
-//    void doesntAddDeleteKeyIfAccountSameAsPayerForCryptoDelete() {
-//        final var keyUsed = (JKey) payerKey;
-//
-//        given(accounts.get(transferAccountNum)).willReturn(transferAccount);
-//        given(transferAccount.getAccountKey()).willReturn(keyUsed);
-//        given(transferAccount.isReceiverSigRequired()).willReturn(true);
-//
-//        final var txn = deleteAccountTransaction(payer, transferAccountId);
-//
-//        final var meta = subject.preHandle(txn, payer, store);
-//
-//        assertEquals(txn, meta.txnBody());
-//        basicMetaAssertions(meta, 1, false, OK);
-//        assertEquals(payerKey, meta.payerKey());
-//        assertIterableEquals(List.of(keyUsed), meta.requiredNonPayerKeys());
-//    }
-//
-//    @Test
-//    void failsWithResponseCodeIfAnyAccountMissingForCryptoDelete() {
-//        final var keyUsed = (JKey) payerKey;
-//
-//        /* ------ payerAccount missing, so deleteAccount and transferAccount will not be added  ------ */
-//        final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
-//        given(accounts.get(payerNum)).willReturn(null);
-//        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
-//        given(accounts.get(transferAccountNum)).willReturn(transferAccount);
-//        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
-//
-//        var meta = subject.preHandle(txn, payer, store);
-//        basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
-//        assertNull(meta.payerKey());
-//        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
-//
-//        /* ------ deleteAccount missing, so transferAccount will not be added ------ */
-//        given(accounts.get(payerNum)).willReturn(payerAccount);
-//        given(payerAccount.getAccountKey()).willReturn(keyUsed);
-//        given(accounts.get(deleteAccountNum)).willReturn(null);
-//        given(accounts.get(transferAccountNum)).willReturn(transferAccount);
-//
-//        meta = subject.preHandle(txn, payer, store);
-//
-//        basicMetaAssertions(meta, 0, true, INVALID_ACCOUNT_ID);
-//        assertEquals(payerKey, meta.payerKey());
-//        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
-//
-//        /* ------ transferAccount missing ------ */
-//        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
-//        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
-//        given(accounts.get(transferAccountNum)).willReturn(null);
-//
-//        meta = subject.preHandle(txn, payer, store);
-//
-//        basicMetaAssertions(meta, 1, true, INVALID_TRANSFER_ACCOUNT_ID);
-//        assertEquals(payerKey, meta.payerKey());
-//        assertIterableEquals(List.of(keyUsed), meta.requiredNonPayerKeys());
-//    }
-//
-//    @Test
-//    void doesntExecuteIfAccountIdIsDefaultInstance() {
-//        final var keyUsed = (JKey) payerKey;
-//
-//        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
-//        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
-//
-//        final var txn = deleteAccountTransaction(deleteAccountId, AccountID.getDefaultInstance());
-//
-//        final var meta = subject.preHandle(txn, payer, store);
-//
-//        assertEquals(txn, meta.txnBody());
-//        basicMetaAssertions(meta, 1, false, OK);
-//        assertEquals(payerKey, meta.payerKey());
-//        assertIterableEquals(List.of(keyUsed), meta.requiredNonPayerKeys());
-//    }
-//
-//    @Test
-//    void handleNotImplemented() {
-//        assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
-//    }
-//
-//    private TransactionBody deleteAccountTransaction(
-//            final AccountID deleteAccountId, final AccountID transferAccountId) {
-//        final var transactionID =
-//                TransactionID.newBuilder()
-//                        .setAccountID(payer)
-//                        .setTransactionValidStart(consensusTimestamp);
-//        final var deleteTxBody =
-//                CryptoDeleteTransactionBody.newBuilder()
-//                        .setDeleteAccountID(deleteAccountId)
-//                        .setTransferAccountID(transferAccountId);
-//
-//        return TransactionBody.newBuilder()
-//                .setTransactionID(transactionID)
-//                .setCryptoDelete(deleteTxBody)
-//                .build();
-//    }
+    //    private final AccountID deleteAccountId = asAccount("0.0.3213");
+    //    private final AccountID transferAccountId = asAccount("0.0.32134");
+    //    private final Long deleteAccountNum = deleteAccountId.getAccountNum();
+    //    private final Long transferAccountNum = transferAccountId.getAccountNum();
+    //
+    //    @Mock private MerkleAccount deleteAccount;
+    //    @Mock private MerkleAccount transferAccount;
+    //
+    //    private CryptoDeleteHandler subject = new CryptoDeleteHandler();
+    //
+    //    @Test
+    //    void preHandlesCryptoDeleteIfNoReceiverSigRequired() {
+    //        final var keyUsed = (JKey) payerKey;
+    //
+    //        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
+    //        given(accounts.get(transferAccountNum)).willReturn(transferAccount);
+    //        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
+    //        given(transferAccount.getAccountKey()).willReturn(keyUsed);
+    //        given(transferAccount.isReceiverSigRequired()).willReturn(false);
+    //
+    //        final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
+    //
+    //        final var meta = subject.preHandle(txn, payer, store);
+    //
+    //        assertEquals(txn, meta.txnBody());
+    //        assertEquals(payerKey, meta.payerKey());
+    //        basicMetaAssertions(meta, 1, false, OK);
+    //        assertIterableEquals(List.of(keyUsed), meta.requiredNonPayerKeys());
+    //    }
+    //
+    //    @Test
+    //    void preHandlesCryptoDeleteIfReceiverSigRequiredVanilla() {
+    //        final var keyUsed = (JKey) payerKey;
+    //
+    //        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
+    //        given(accounts.get(transferAccountNum)).willReturn(transferAccount);
+    //        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
+    //        given(transferAccount.getAccountKey()).willReturn(keyUsed);
+    //        given(transferAccount.isReceiverSigRequired()).willReturn(true);
+    //
+    //        final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
+    //
+    //        final var meta = subject.preHandle(txn, payer, store);
+    //
+    //        assertEquals(txn, meta.txnBody());
+    //        basicMetaAssertions(meta, 2, false, OK);
+    //        assertEquals(payerKey, meta.payerKey());
+    //        assertIterableEquals(List.of(keyUsed, keyUsed), meta.requiredNonPayerKeys());
+    //    }
+    //
+    //    @Test
+    //    void doesntAddBothKeysAccountsSameAsPayerForCryptoDelete() {
+    //        final var txn = deleteAccountTransaction(payer, payer);
+    //
+    //        final var meta = subject.preHandle(txn, payer, store);
+    //
+    //        assertEquals(txn, meta.txnBody());
+    //        basicMetaAssertions(meta, 0, false, OK);
+    //        assertEquals(payerKey, meta.payerKey());
+    //        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
+    //    }
+    //
+    //    @Test
+    //    void doesntAddTransferKeyIfAccountSameAsPayerForCryptoDelete() {
+    //        final var keyUsed = (JKey) payerKey;
+    //
+    //        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
+    //        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
+    //
+    //        final var txn = deleteAccountTransaction(deleteAccountId, payer);
+    //
+    //        final var meta = subject.preHandle(txn, payer, store);
+    //
+    //        assertEquals(txn, meta.txnBody());
+    //        assertEquals(payerKey, meta.payerKey());
+    //        basicMetaAssertions(meta, 1, false, OK);
+    //        assertIterableEquals(List.of(keyUsed), meta.requiredNonPayerKeys());
+    //    }
+    //
+    //    @Test
+    //    void doesntAddDeleteKeyIfAccountSameAsPayerForCryptoDelete() {
+    //        final var keyUsed = (JKey) payerKey;
+    //
+    //        given(accounts.get(transferAccountNum)).willReturn(transferAccount);
+    //        given(transferAccount.getAccountKey()).willReturn(keyUsed);
+    //        given(transferAccount.isReceiverSigRequired()).willReturn(true);
+    //
+    //        final var txn = deleteAccountTransaction(payer, transferAccountId);
+    //
+    //        final var meta = subject.preHandle(txn, payer, store);
+    //
+    //        assertEquals(txn, meta.txnBody());
+    //        basicMetaAssertions(meta, 1, false, OK);
+    //        assertEquals(payerKey, meta.payerKey());
+    //        assertIterableEquals(List.of(keyUsed), meta.requiredNonPayerKeys());
+    //    }
+    //
+    //    @Test
+    //    void failsWithResponseCodeIfAnyAccountMissingForCryptoDelete() {
+    //        final var keyUsed = (JKey) payerKey;
+    //
+    //        /* ------ payerAccount missing, so deleteAccount and transferAccount will not be added
+    //  ------ */
+    //        final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
+    //        given(accounts.get(payerNum)).willReturn(null);
+    //        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
+    //        given(accounts.get(transferAccountNum)).willReturn(transferAccount);
+    //        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
+    //
+    //        var meta = subject.preHandle(txn, payer, store);
+    //        basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
+    //        assertNull(meta.payerKey());
+    //        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
+    //
+    //        /* ------ deleteAccount missing, so transferAccount will not be added ------ */
+    //        given(accounts.get(payerNum)).willReturn(payerAccount);
+    //        given(payerAccount.getAccountKey()).willReturn(keyUsed);
+    //        given(accounts.get(deleteAccountNum)).willReturn(null);
+    //        given(accounts.get(transferAccountNum)).willReturn(transferAccount);
+    //
+    //        meta = subject.preHandle(txn, payer, store);
+    //
+    //        basicMetaAssertions(meta, 0, true, INVALID_ACCOUNT_ID);
+    //        assertEquals(payerKey, meta.payerKey());
+    //        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
+    //
+    //        /* ------ transferAccount missing ------ */
+    //        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
+    //        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
+    //        given(accounts.get(transferAccountNum)).willReturn(null);
+    //
+    //        meta = subject.preHandle(txn, payer, store);
+    //
+    //        basicMetaAssertions(meta, 1, true, INVALID_TRANSFER_ACCOUNT_ID);
+    //        assertEquals(payerKey, meta.payerKey());
+    //        assertIterableEquals(List.of(keyUsed), meta.requiredNonPayerKeys());
+    //    }
+    //
+    //    @Test
+    //    void doesntExecuteIfAccountIdIsDefaultInstance() {
+    //        final var keyUsed = (JKey) payerKey;
+    //
+    //        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
+    //        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
+    //
+    //        final var txn = deleteAccountTransaction(deleteAccountId,
+    // AccountID.getDefaultInstance());
+    //
+    //        final var meta = subject.preHandle(txn, payer, store);
+    //
+    //        assertEquals(txn, meta.txnBody());
+    //        basicMetaAssertions(meta, 1, false, OK);
+    //        assertEquals(payerKey, meta.payerKey());
+    //        assertIterableEquals(List.of(keyUsed), meta.requiredNonPayerKeys());
+    //    }
+    //
+    //    @Test
+    //    void handleNotImplemented() {
+    //        assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
+    //    }
+    //
+    //    private TransactionBody deleteAccountTransaction(
+    //            final AccountID deleteAccountId, final AccountID transferAccountId) {
+    //        final var transactionID =
+    //                TransactionID.newBuilder()
+    //                        .setAccountID(payer)
+    //                        .setTransactionValidStart(consensusTimestamp);
+    //        final var deleteTxBody =
+    //                CryptoDeleteTransactionBody.newBuilder()
+    //                        .setDeleteAccountID(deleteAccountId)
+    //                        .setTransferAccountID(transferAccountId);
+    //
+    //        return TransactionBody.newBuilder()
+    //                .setTransactionID(transactionID)
+    //                .setCryptoDelete(deleteTxBody)
+    //                .build();
+    //    }
 }

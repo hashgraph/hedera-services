@@ -32,9 +32,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class CryptoUpdateHandler implements TransactionHandler {
 
     /**
-     * Pre-handles a {@link HederaFunctionality#CRYPTO_UPDATE}
-     * transaction, returning the metadata required to, at minimum, validate the signatures of all
-     * required signing keys.
+     * Pre-handles a {@link HederaFunctionality#CRYPTO_UPDATE} transaction, returning the metadata
+     * required to, at minimum, validate the signatures of all required signing keys.
      *
      * @param txn the {@link TransactionBody} with the transaction data
      * @param payer the {@link AccountID} of the payer

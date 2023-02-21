@@ -15,7 +15,17 @@
  */
 package com.hedera.node.app.workflows.ingest;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
+import static com.swirlds.common.system.PlatformStatus.ACTIVE;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionResponse;
 import com.hedera.node.app.SessionContext;
@@ -28,20 +38,16 @@ import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.StoreCache;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.hedera.pbj.runtime.io.DataBuffer;
+import com.hedera.pbj.runtime.io.DataInputBuffer;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.function.Supplier;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
-import static com.swirlds.common.system.PlatformStatus.ACTIVE;
-import static java.util.Objects.requireNonNull;
 
 /** Implementation of {@link IngestWorkflow} */
 public final class IngestWorkflowImpl implements IngestWorkflow {
@@ -55,8 +61,9 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
     private final ThrottleAccumulator throttleAccumulator;
     private final SubmissionManager submissionManager;
 
-    /** A metric for the number of transactions we have submitted to the platform for consensus */
-    private final Counter countSubmitted;
+    /** A map of counter metrics for each type of transaction we can ingest */
+    private final Map<HederaFunctionality, Counter> counters =
+            new EnumMap<>(HederaFunctionality.class);
 
     /**
      * Constructor of {@code IngestWorkflowImpl}
@@ -91,20 +98,28 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
         this.checker = requireNonNull(checker);
         this.throttleAccumulator = requireNonNull(throttleAccumulator);
         this.submissionManager = requireNonNull(submissionManager);
-        this.countSubmitted = metrics.getOrCreate(new Counter.Config("app", "txSubmitted")
-                .withDescription("The number of transactions submitted for consensus"));
+
+        // Create metrics for tracking submission of transactions by type
+        for (var function : HederaFunctionality.values()) {
+            final var name = function.name() + "Sub";
+            final var desc =
+                    "The number of transactions submitted for consensus for " + function.name();
+            counters.put(
+                    function,
+                    metrics.getOrCreate(new Counter.Config("app", name).withDescription(desc)));
+        }
     }
 
     @Override
     public void submitTransaction(
             @NonNull final SessionContext ctx,
-            @NonNull final ByteBuffer requestBuffer,
-            @NonNull final ByteBuffer responseBuffer) {
+            @NonNull final DataInputBuffer requestBuffer,
+            @NonNull final DataBuffer responseBuffer) {
 
         ResponseCodeEnum result = OK;
         long estimatedFee = 0L;
 
-        // Do some general pre-checks
+        // 0. Node state pre-checks
         if (nodeInfo.isSelfZeroStake()) {
             result = INVALID_NODE_ACCOUNT;
         } else if (currentPlatformStatus.get() != ACTIVE) {
@@ -112,6 +127,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
         }
 
         if (result == OK) {
+            // Grab (and reference count) the state, so we have a consistent view of things
             try (final var wrappedState = stateAccessor.get()) {
                 final var state = wrappedState.get();
 
@@ -124,6 +140,11 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 final var txBody = onsetResult.txBody();
                 final var signatureMap = onsetResult.signatureMap();
                 final var functionality = onsetResult.functionality();
+
+                // This should never happen, because HapiUtils#checkFunctionality() will throw
+                // UnknownHederaFunctionality if it cannot map to a proper value, and WorkflowOnset
+                // will convert that to INVALID_TRANSACTION_BODY.
+                assert functionality != HederaFunctionality.NONE;
 
                 // 2. Check throttles
                 if (throttleAccumulator.shouldThrottle(functionality)) {
@@ -148,15 +169,11 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 checker.checkSolvency(txBody, functionality, payer);
 
                 // 7. Submit to platform
-                final byte[] byteArray;
-                if (requestBuffer.hasArray()) {
-                    byteArray = requestBuffer.array();
-                } else {
-                    byteArray = new byte[requestBuffer.limit()];
-                    requestBuffer.get(byteArray);
-                }
+                requestBuffer.resetPosition();
+                final byte[] byteArray = new byte[(int) requestBuffer.getLimit()];
+                requestBuffer.readBytes(byteArray);
                 submissionManager.submit(txBody, byteArray);
-                countSubmitted.increment();
+                counters.get(functionality).increment();
             } catch (InsufficientBalanceException e) {
                 estimatedFee = e.getEstimatedFee();
                 result = e.responseCode();
@@ -173,7 +190,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                         .build();
 
         try {
-            TransactionResponse.PROTOBUF.write(transactionResponse, DataBuffer.wrap(responseBuffer));
+            TransactionResponse.PROTOBUF.write(transactionResponse, responseBuffer);
         } catch (IOException ex) {
             // It may be that the response couldn't be written because the response buffer was
             // too small, which would be an internal server error.

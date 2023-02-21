@@ -17,14 +17,14 @@ package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.spi.state.Serdes;
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.node.app.state.merkle.data.ByteBufferDataInput;
-import com.hedera.node.app.state.merkle.data.ByteBufferDataOutput;
+import com.hedera.pbj.runtime.io.DataBuffer;
+import com.hedera.pbj.runtime.io.DataInputStream;
+import com.hedera.pbj.runtime.io.DataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -95,7 +95,7 @@ public class OnDiskValue<V> implements VirtualValue {
     /** {@inheritDoc} */
     @Override
     public void serialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
-        final var output = new ByteBufferDataOutput(byteBuffer);
+        final var output = DataBuffer.wrap(byteBuffer);
         serdes.write(value, output);
     }
 
@@ -103,13 +103,13 @@ public class OnDiskValue<V> implements VirtualValue {
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream)
             throws IOException {
-        serdes.write(value, serializableDataOutputStream);
+        serdes.write(value, new DataOutputStream(serializableDataOutputStream));
     }
 
     /** {@inheritDoc} */
     @Override
     public void deserialize(@NonNull final ByteBuffer byteBuffer, int ignored) throws IOException {
-        final var input = new ByteBufferDataInput(byteBuffer);
+        final var input = DataBuffer.wrap(byteBuffer);
         value = serdes.parse(input);
     }
 

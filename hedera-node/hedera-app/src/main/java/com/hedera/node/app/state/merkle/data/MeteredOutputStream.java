@@ -49,14 +49,14 @@ public final class MeteredOutputStream extends FilterOutputStream {
 
     /** {@inheritDoc} */
     @Override
-    public void write(byte[] b) throws IOException {
+    public void write(@NonNull byte[] b) throws IOException {
         super.write(b);
         countWritten += b.length;
     }
 
     /** {@inheritDoc} */
     @Override
-    public void write(byte[] b, int off, int len) throws IOException {
+    public void write(@NonNull byte[] b, int off, int len) throws IOException {
         super.write(b, off, len);
         countWritten += len;
     }

@@ -22,9 +22,10 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.stats.HapiOpCounters;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.RecordCache;
+import com.swirlds.common.metrics.Counter;
+import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
@@ -41,38 +42,33 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_EXPIRED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static java.util.Objects.requireNonNull;
 
 /** This class preprocess transactions by parsing them and checking for syntax errors. */
 public class OnsetChecker {
+    private static final String COUNTER_DEPRECATED_TXNS_NAME = "DeprTxnsRcv";
+    private static final String COUNTER_RECEIVED_DEPRECATED_DESC = "number of deprecated txns received";
 
-    private final int maxSignedTxnSize;
     private final RecordCache recordCache;
     private final GlobalDynamicProperties dynamicProperties;
-    private final HapiOpCounters counters;
+    private final Counter deprecatedCounter;
 
     /**
      * Constructor of an {@code OnsetChecker}
      *
-     * @param maxSignedTxnSize the maximum transaction size
      * @param recordCache the {@link RecordCache}
      * @param dynamicProperties the {@link GlobalDynamicProperties}
-     * @param counters metrics related to workflows
+     * @param metrics metrics related to workflows
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public OnsetChecker(
-            final int maxSignedTxnSize,
             @NonNull final RecordCache recordCache,
             @NonNull final GlobalDynamicProperties dynamicProperties,
-            @NonNull final HapiOpCounters counters) {
-        if (maxSignedTxnSize <= 0) {
-            throw new IllegalArgumentException("maxSignedTxnSize must be > 0");
-        }
-        this.maxSignedTxnSize = maxSignedTxnSize;
+            @NonNull final Metrics metrics) {
         this.recordCache = requireNonNull(recordCache);
         this.dynamicProperties = requireNonNull(dynamicProperties);
-        this.counters = requireNonNull(counters);
+        this.deprecatedCounter = metrics.getOrCreate(new Counter.Config("app", COUNTER_DEPRECATED_TXNS_NAME)
+                .withDescription(COUNTER_RECEIVED_DEPRECATED_DESC));
     }
 
     /**
@@ -83,12 +79,8 @@ public class OnsetChecker {
      * @throws NullPointerException if {@code tx} is {@code null}
      */
     @SuppressWarnings("deprecation")
-    public void checkTransaction(@NonNull final Transaction tx, final int length) throws PreCheckException {
+    public void checkTransaction(@NonNull final Transaction tx) throws PreCheckException {
         requireNonNull(tx);
-
-        if (length > maxSignedTxnSize) {
-            throw new PreCheckException(TRANSACTION_OVERSIZE);
-        }
 
         final var hasSignedTxnBytes = tx.signedTransactionBytes().getLength() > 0;
         final var hasDeprecatedSigMap = tx.sigMap() != null;
@@ -96,19 +88,19 @@ public class OnsetChecker {
         final var hasDeprecatedBody = tx.body() != null;
         final var hasDeprecatedSigs = tx.sigs() != null;
 
-        if (hasDeprecatedBody
-                || hasDeprecatedSigs
-                || hasDeprecatedSigMap
-                || hasDeprecatedBodyBytes) {
-            counters.countDeprecatedTxnReceived();
-        }
-
         if (hasSignedTxnBytes) {
             if (hasDeprecatedBodyBytes || hasDeprecatedSigMap) {
                 throw new PreCheckException(INVALID_TRANSACTION);
             }
         } else if (!hasDeprecatedBodyBytes) {
             throw new PreCheckException(INVALID_TRANSACTION_BODY);
+        }
+
+        if (hasDeprecatedBody
+                || hasDeprecatedSigs
+                || hasDeprecatedSigMap
+                || hasDeprecatedBodyBytes) {
+            deprecatedCounter.increment();
         }
     }
 
@@ -143,7 +135,7 @@ public class OnsetChecker {
             return INSUFFICIENT_TX_FEE;
         }
 
-        return checkTimebox(txnId.transactionValidStart(), txBody.transactionValidDuration());
+        return checkTimeBox(txnId.transactionValidStart(), txBody.transactionValidDuration());
     }
 
     private static boolean isPlausibleTxnFee(final long transactionFee) {
@@ -170,7 +162,7 @@ public class OnsetChecker {
         }
     }
 
-    private ResponseCodeEnum checkTimebox(final Timestamp start, final Duration duration) {
+    private ResponseCodeEnum checkTimeBox(final Timestamp start, final Duration duration) {
         final var validForSecs = duration.seconds();
         if (validForSecs < dynamicProperties.minTxnDuration()
                 || validForSecs > dynamicProperties.maxTxnDuration()) {
@@ -203,8 +195,7 @@ public class OnsetChecker {
                         Math.max(Instant.MIN.getEpochSecond(), timestamp.seconds()),
                         Instant.MAX.getEpochSecond()),
                 Math.min(
-                        Math.max(Instant.MIN.getNano(), timestamp.nanos()),
-                        Instant.MAX.getNano()));
+                        Math.max(Instant.MIN.getNano(), timestamp.nanos()), Instant.MAX.getNano()));
     }
 
     /**

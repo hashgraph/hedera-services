@@ -45,4 +45,17 @@ public class Utils {
             return Optional.empty();
         }
     }
+
+    public static Optional<HederaKey> asHederaKey(final com.hedera.hapi.node.base.Key key) {
+        try {
+            // Need to move JKey after refactoring, adding equals & hashcode into this package
+            final var fcKey = mapKey(key);
+            if (!fcKey.isValid()) {
+                return Optional.empty();
+            }
+            return Optional.of(fcKey);
+        } catch (DecoderException ignore) {
+            return Optional.empty();
+        }
+    }
 }

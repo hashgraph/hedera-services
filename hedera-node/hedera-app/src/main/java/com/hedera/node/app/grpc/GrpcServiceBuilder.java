@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.grpc;
 
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.swirlds.common.metrics.Metrics;
@@ -31,22 +33,17 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Convenient builder API for constructing gRPC Service definitions. The {@link GrpcServiceBuilder}
- * is capable of constructing service definitions for {@link
- * com.hederahashgraph.api.proto.java.Transaction} based calls using the {@link
- * #transaction(String)} method, or {@link com.hederahashgraph.api.proto.java.Query} based calls
- * using the {@link #query(String)} method.
+ * is capable of constructing service definitions for {@link Transaction} based calls using the
+ * {@link #transaction(String)} method, or {@link Query} based calls using the {@link
+ * #query(String)} method.
  *
  * <p>Every gRPC service definition needs to define, per service method definition, the "marshaller"
  * to use for marshalling and unmarshalling binary data sent in the protocol. Usually this is some
  * kind of protobuf parser. In our case, we simply read a byte array from the {@link InputStream}
- * and pass the array raw to the appropriate workflow implementation {@link
- * com.hedera.node.app.workflows.ingest.IngestWorkflow} or {@link
- * com.hedera.node.app.workflows.query.QueryWorkflow}, so they can do the protobuf parsing. We do
- * this to segregate the code. This class is <strong>only</strong> responsible for the gRPC call,
- * the workflows are responsible for working with protobuf.
- *
- * <p>FUTURE WORK: ThreadSafe annotation missing in spotbugs annotations but should be added to
- * class
+ * and pass the array raw to the appropriate workflow implementation {@link IngestWorkflow} or
+ * {@link QueryWorkflow}, so they can do the protobuf parsing. We do this to segregate the code.
+ * This class is <strong>only</strong> responsible for the gRPC call, the workflows are responsible
+ * for working with protobuf.
  */
 /*@NotThreadSafe*/
 public final class GrpcServiceBuilder {
@@ -59,7 +56,7 @@ public final class GrpcServiceBuilder {
      * arrays. If we get more sophisticated and reuse byte array buffers, we will need to use a
      * {@link ThreadLocal} to make sure we have a unique byte array buffer for each request.
      */
-    private static final NoopMarshaller NOOP_MARSHALLER = new NoopMarshaller();
+    private static final DataBufferMarshaller NOOP_MARSHALLER = new DataBufferMarshaller();
 
     /**
      * Create a single instance of the marshaller supplier to provide to every gRPC method

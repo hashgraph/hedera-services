@@ -26,6 +26,8 @@ import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
 import com.hedera.node.app.state.merkle.memory.InMemoryKey;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
+import com.hedera.pbj.runtime.io.DataInput;
+import com.hedera.pbj.runtime.io.DataOutput;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.DigestType;
@@ -41,7 +43,9 @@ import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
@@ -56,10 +60,10 @@ import java.nio.file.Path;
  * #UNKNOWN_SERVICE} which is useful for tests where we are trying to look up a service that should
  * not exist.
  *
- * <p>Each service has a number of associated states, based on those defined in {@link StateTestBase}.
- * The {@link #FIRST_SERVICE} has "fruit" and "animal" states, while the {@link #SECOND_SERVICE} has
- * space, steam, and country themed states. Most of these are simple String types for the key and
- * value, but the space themed state uses Long as the key type.
+ * <p>Each service has a number of associated states, based on those defined in {@link
+ * StateTestBase}. The {@link #FIRST_SERVICE} has "fruit" and "animal" states, while the {@link
+ * #SECOND_SERVICE} has space, steam, and country themed states. Most of these are simple String
+ * types for the key and value, but the space themed state uses Long as the key type.
  *
  * <p>This class defines all the {@link Serdes}, {@link StateMetadata}, and {@link MerkleMap}s
  * required to represent each of these. It does not create a {@link VirtualMap} automatically, but
@@ -307,7 +311,7 @@ public class MerkleTestBase extends StateTestBase {
         public String parse(@NonNull DataInput input) throws IOException {
             final var len = input.readInt();
             final var bytes = new byte[len];
-            input.readFully(bytes);
+            input.readBytes(bytes);
             return len == 0 ? "" : new String(bytes, StandardCharsets.UTF_8);
         }
 
@@ -315,7 +319,7 @@ public class MerkleTestBase extends StateTestBase {
         public void write(@NonNull String value, @NonNull DataOutput output) throws IOException {
             final var bytes = value.getBytes(StandardCharsets.UTF_8);
             output.writeInt(bytes.length);
-            output.write(bytes);
+            output.writeBytes(bytes);
         }
 
         @Override

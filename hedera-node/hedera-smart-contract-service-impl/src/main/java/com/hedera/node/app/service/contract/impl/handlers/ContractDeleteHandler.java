@@ -56,12 +56,12 @@ public class ContractDeleteHandler implements TransactionHandler {
 
         meta.addNonPayerKey(op.contractID());
 
-//        if (op.transferAccountID().isPresent()) {
-//            meta.addNonPayerKeyIfReceiverSigRequired(
-//                    op.transferAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
-//        } else if (op.transferContractID()) {
-//            meta.addNonPayerKeyIfReceiverSigRequired(op.transferContractID());
-//        }
+        //        if (op.transferAccountID().isPresent()) {
+        //            meta.addNonPayerKeyIfReceiverSigRequired(
+        //                    op.transferAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+        //        } else if (op.transferContractID()) {
+        //            meta.addNonPayerKeyIfReceiverSigRequired(op.transferContractID());
+        //        }
         return meta.build();
     }
 

@@ -15,12 +15,12 @@
  */
 package com.hedera.node.app.authorization;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class Authorizer {
@@ -33,7 +33,7 @@ public class Authorizer {
 
     public boolean isAuthorized(
             @NonNull final AccountID id, @NonNull final HederaFunctionality function) {
-        final var permissionStatus = hapiOpPermissions.permissibilityOf(function, id);
+        final var permissionStatus = hapiOpPermissions.permissibilityOf2(function, id);
         return permissionStatus == OK;
     }
 }

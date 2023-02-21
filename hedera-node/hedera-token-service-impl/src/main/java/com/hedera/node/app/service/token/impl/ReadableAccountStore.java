@@ -30,10 +30,8 @@ import com.hedera.hapi.node.base.AccountID.AccountOneOfType;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ContractID.ContractOneOfType;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.node.app.service.mono.Utils;
-import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.pbj.runtime.io.Bytes;
 import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
+import com.hedera.node.app.service.mono.Utils;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -43,8 +41,10 @@ import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.pbj.runtime.io.Bytes;
 import com.hedera.pbj.runtime.io.DataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -62,13 +62,12 @@ import java.util.Optional;
 public class ReadableAccountStore implements AccountKeyLookup {
     public static final int EVM_ADDRESS_LEN = 20;
     private static final byte[] MIRROR_PREFIX = new byte[12];
+
     static {
         /* A placeholder to store the 12-byte prefix (4-byte shard and 8-byte realm) that marks an EVM
          * address as a "mirror" address that follows immediately from a <shard>.<realm>.<num> id. */
-        System.arraycopy(
-                Longs.toByteArray(StaticProperties.getShard()), 4, MIRROR_PREFIX, 0, 4);
-        System.arraycopy(
-                Longs.toByteArray(StaticProperties.getRealm()), 0, MIRROR_PREFIX, 4, 8);
+        System.arraycopy(Longs.toByteArray(StaticProperties.getShard()), 4, MIRROR_PREFIX, 0, 4);
+        System.arraycopy(Longs.toByteArray(StaticProperties.getRealm()), 0, MIRROR_PREFIX, 4, 8);
     }
 
     /** The underlying data storage class that holds the account data. */
@@ -100,8 +99,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
     /** {@inheritDoc} */
     @NonNull
     @Override
-    public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(
-            @NonNull final AccountID id) {
+    public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(@NonNull final AccountID id) {
         Objects.requireNonNull(id);
         final var account = getAccountLeaf(id);
         if (account == null) {
@@ -130,8 +128,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
     /** {@inheritDoc} */
     @NonNull
     @Override
-    public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(
-            @NonNull final ContractID id) {
+    public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(@NonNull final ContractID id) {
         Objects.requireNonNull(id);
         final var contract = getContractLeaf(id);
         if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
@@ -156,8 +153,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
     public Optional<Account> getAccount(@NonNull final AccountID id) {
         // TODO Make sure we have tests for getAccount for all valid account IDs.
         final var account = getAccountLeaf(id);
-        return Optional.ofNullable(account)
-                .map(accountLeaf -> mapAccount(id, accountLeaf));
+        return Optional.ofNullable(account).map(accountLeaf -> mapAccount(id, accountLeaf));
     }
 
     /* Helper methods */
@@ -173,19 +169,22 @@ public class ReadableAccountStore implements AccountKeyLookup {
     private HederaAccount getAccountLeaf(@NonNull final AccountID id) {
         // Get the account number based on the account identifier. It may be null.
         final var accountOneOf = id.account();
-        final Long accountNum = switch(accountOneOf.kind()) {
-            case ACCOUNT_NUM -> accountOneOf.as();
-            case ALIAS -> {
-                final Bytes alias = accountOneOf.as();
-                if (alias.getLength() == EVM_ADDRESS_LEN && isMirror(alias)) {
-                    yield fromMirror(alias);
-                } else {
-                    yield aliases.get(alias.asUtf8String());
-                }
-            }
-            case EVM_ADDRESS -> throw new RuntimeException("EVM_ADDRESS account number kind not supported (yet?)");
-            case UNSET -> throw new RuntimeException("Account number not set in protobuf!!");
-        };
+        final Long accountNum =
+                switch (accountOneOf.kind()) {
+                    case ACCOUNT_NUM -> accountOneOf.as();
+                    case ALIAS -> {
+                        final Bytes alias = accountOneOf.as();
+                        if (alias.getLength() == EVM_ADDRESS_LEN && isMirror(alias)) {
+                            yield fromMirror(alias);
+                        } else {
+                            yield aliases.get(alias.asUtf8String());
+                        }
+                    }
+                    case EVM_ADDRESS -> throw new RuntimeException(
+                            "EVM_ADDRESS account number kind not supported (yet?)");
+                    case UNSET -> throw new RuntimeException(
+                            "Account number not set in protobuf!!");
+                };
 
         return accountNum == null ? null : accountState.get(accountNum);
     }
@@ -201,34 +200,42 @@ public class ReadableAccountStore implements AccountKeyLookup {
     private HederaAccount getContractLeaf(@NonNull final ContractID id) {
         // Get the contract number based on the contract identifier. It may be null.
         final var contractOneOf = id.contract();
-        final Long contractNum = switch(contractOneOf.kind()) {
-            case CONTRACT_NUM -> contractOneOf.as();
-            case EVM_ADDRESS -> {
-                // If the evm address is of "long-zero" format, then parse out the contract num
-                // from those bytes
-                final Bytes evmAddress = contractOneOf.as();
-                if (isMirror(evmAddress)) {
-                    yield numOfMirror(evmAddress);
-                }
+        final Long contractNum =
+                switch (contractOneOf.kind()) {
+                    case CONTRACT_NUM -> contractOneOf.as();
+                    case EVM_ADDRESS -> {
+                        // If the evm address is of "long-zero" format, then parse out the contract
+                        // num
+                        // from those bytes
+                        final Bytes evmAddress = contractOneOf.as();
+                        if (isMirror(evmAddress)) {
+                            yield numOfMirror(evmAddress);
+                        }
 
-                // The evm address is some kind of alias.
-                var entityNum = aliases.get(evmAddress.asUtf8String());
+                        // The evm address is some kind of alias.
+                        var entityNum = aliases.get(evmAddress.asUtf8String());
 
-                // If we didn't find an alias, we will want to auto-create this account. But
-                // we don't want to auto-create an account if there is already another account
-                // in the system with the same EVM address that we would have auto-created.
-                if (evmAddress.getLength() > EVM_ADDRESS_LEN && entityNum == null) {
-                    // if we don't find entity num for key alias we can try to derive EVM address from
-                    // it and look it up
-                    var evmKeyAliasAddress = keyAliasToEVMAddress(evmAddress);
-                    if (evmKeyAliasAddress != null) {
-                        entityNum = aliases.get(ByteString.copyFrom(evmKeyAliasAddress).toStringUtf8());
+                        // If we didn't find an alias, we will want to auto-create this account. But
+                        // we don't want to auto-create an account if there is already another
+                        // account
+                        // in the system with the same EVM address that we would have auto-created.
+                        if (evmAddress.getLength() > EVM_ADDRESS_LEN && entityNum == null) {
+                            // if we don't find entity num for key alias we can try to derive EVM
+                            // address from
+                            // it and look it up
+                            var evmKeyAliasAddress = keyAliasToEVMAddress(evmAddress);
+                            if (evmKeyAliasAddress != null) {
+                                entityNum =
+                                        aliases.get(
+                                                ByteString.copyFrom(evmKeyAliasAddress)
+                                                        .toStringUtf8());
+                            }
+                        }
+                        yield entityNum;
                     }
-                }
-                yield entityNum;
-            }
-            case UNSET -> throw new RuntimeException("Contract number not set in protobuf!!");
-        };
+                    case UNSET -> throw new RuntimeException(
+                            "Contract number not set in protobuf!!");
+                };
 
         return contractNum == null ? null : accountState.get(contractNum);
     }
@@ -323,7 +330,8 @@ public class ReadableAccountStore implements AccountKeyLookup {
             final var bytes = new ByteArrayOutputStream();
             final var output = new DataOutputStream(bytes);
             Key.PROTOBUF.write(key, output);
-            final var googleKey = com.hederahashgraph.api.proto.java.Key.parseFrom(bytes.toByteArray());
+            final var googleKey =
+                    com.hederahashgraph.api.proto.java.Key.parseFrom(bytes.toByteArray());
             return Utils.asHederaKey(googleKey);
         } catch (IOException e) {
             throw new RuntimeException("Failed to produce protobuf bytes for a key!", e);

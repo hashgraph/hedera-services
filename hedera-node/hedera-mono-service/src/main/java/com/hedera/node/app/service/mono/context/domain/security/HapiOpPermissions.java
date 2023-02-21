@@ -19,6 +19,7 @@ import static com.hedera.node.app.service.mono.context.domain.security.Permissio
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -79,6 +80,16 @@ public class HapiOpPermissions {
         return (range = permissions.get(function)) != null && range.contains(num)
                 ? OK
                 : NOT_SUPPORTED;
+    }
+
+    public com.hedera.hapi.node.base.ResponseCodeEnum permissibilityOf2(
+            com.hedera.hapi.node.base.HederaFunctionality function,
+            com.hedera.hapi.node.base.AccountID givenPayer) {
+
+        final var response =
+                permissibilityOf(PbjConverter.fromPbj(function), PbjConverter.fromPbj(givenPayer));
+
+        return PbjConverter.toPbj(response);
     }
 
     EnumMap<HederaFunctionality, PermissionedAccountsRange> getPermissions() {

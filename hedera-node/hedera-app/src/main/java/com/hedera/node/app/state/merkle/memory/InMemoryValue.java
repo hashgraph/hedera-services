@@ -16,6 +16,8 @@
 package com.hedera.node.app.state.merkle.memory;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
+import com.hedera.pbj.runtime.io.DataInputStream;
+import com.hedera.pbj.runtime.io.DataOutputStream;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -26,7 +28,6 @@ import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -150,7 +151,7 @@ public final class InMemoryValue<K extends Comparable<K>, V> extends PartialMerk
             throws IOException {
         final var keySerdes = md.stateDefinition().keySerdes();
         final var valueSerdes = md.stateDefinition().valueSerdes();
-        keySerdes.write(key.key(), serializableDataOutputStream);
-        valueSerdes.write(val, serializableDataOutputStream);
+        keySerdes.write(key.key(), new DataOutputStream(serializableDataOutputStream));
+        valueSerdes.write(val, new DataOutputStream(serializableDataOutputStream));
     }
 }

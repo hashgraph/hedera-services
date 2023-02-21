@@ -15,9 +15,6 @@
  */
 package com.hedera.node.app.service.contract.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
@@ -61,14 +58,14 @@ public class ContractUpdateHandler implements TransactionHandler {
         if (isAdminSigRequired(op)) {
             meta.addNonPayerKey(op.contractID());
         }
-//        if (hasCryptoAdminKey(op)) {
-//            final var key = asHederaKey(op.adminKey());
-//            key.ifPresent(meta::addToReqNonPayerKeys);
-//        }
-//        if (op.autoRenewAccountId()
-//                && !op.autoRenewAccountId().equals(AccountID.getDefaultInstance())) {
-//            meta.addNonPayerKey(op.autoRenewAccountId(), INVALID_AUTORENEW_ACCOUNT);
-//        }
+        //        if (hasCryptoAdminKey(op)) {
+        //            final var key = asHederaKey(op.adminKey());
+        //            key.ifPresent(meta::addToReqNonPayerKeys);
+        //        }
+        //        if (op.autoRenewAccountId()
+        //                && !op.autoRenewAccountId().equals(AccountID.getDefaultInstance())) {
+        //            meta.addNonPayerKey(op.autoRenewAccountId(), INVALID_AUTORENEW_ACCOUNT);
+        //        }
         return meta.build();
     }
 

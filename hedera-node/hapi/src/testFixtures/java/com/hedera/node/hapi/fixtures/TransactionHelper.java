@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.hapi.fixtures;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -42,9 +57,7 @@ public interface TransactionHelper {
     default AccountID account(String account) {
         final var parts = account.split("\\.");
         return account(
-                Long.parseLong(parts[0]),
-                Long.parseLong(parts[1]),
-                Long.parseLong(parts[2]));
+                Long.parseLong(parts[0]), Long.parseLong(parts[1]), Long.parseLong(parts[2]));
     }
 
     default AccountID account(long shard, long realm, long num) {
@@ -53,48 +66,45 @@ public interface TransactionHelper {
 
     /**
      * Creates and returns a new ed25519 {@link Key} based on the given UTF-8 string.
+     *
      * @param utf8 A non-null string
      * @return an ed25519 {@link Key}
      */
     default Key ed25519(@NonNull final String utf8) {
-        return new Key.Builder()
-                .ed25519(Bytes.wrap(utf8))
-                .build();
+        return new Key.Builder().ed25519(Bytes.wrap(utf8)).build();
     }
 
     /**
      * Creates and returns a new ECDSA secp256k1 {@link Key} based on the given UTF-8 string.
+     *
      * @param utf8 A non-null string
      * @return an ECDSA {@link Key}
      */
     default Key ecdsa(@NonNull final String utf8) {
-        return new Key.Builder()
-                .ecdsaSecp256k1(Bytes.wrap(utf8))
-                .build();
+        return new Key.Builder().ecdsaSecp256k1(Bytes.wrap(utf8)).build();
     }
 
     /**
      * Creates and returns a threshold key based on the given threshold and keys
+     *
      * @param threshold The threshold
      * @param keys The set of keys
      * @return A {@link Key} based on a threshold key list
      */
     default Key thresholdKey(int threshold, Key... keys) {
         return new Key.Builder()
-                .thresholdKey(new ThresholdKey.Builder()
-                        .threshold(threshold)
-                        .keys(new KeyList.Builder()
-                                .keys(Arrays.asList(keys))
+                .thresholdKey(
+                        new ThresholdKey.Builder()
+                                .threshold(threshold)
+                                .keys(new KeyList.Builder().keys(Arrays.asList(keys)).build())
                                 .build())
-                        .build())
                 .build();
     }
 
     default Transaction transaction(AccountID payer, long time, Consumer<Builder> txBodyBuilder) {
         final var txId =
                 TransactionID.newBuilder()
-                        .transactionValidStart(
-                                Timestamp.newBuilder().seconds(time / 1000).build())
+                        .transactionValidStart(Timestamp.newBuilder().seconds(time / 1000).build())
                         .accountID(payer)
                         .build();
 
@@ -107,12 +117,17 @@ public interface TransactionHelper {
         final var body = bodyBuilder.build();
 
         final var signedTx =
-                SignedTransaction.newBuilder().bodyBytes(asBytes(body, TransactionBody.PROTOBUF)).build();
+                SignedTransaction.newBuilder()
+                        .bodyBytes(asBytes(body, TransactionBody.PROTOBUF))
+                        .build();
 
-        return Transaction.newBuilder().signedTransactionBytes(asBytes(signedTx, SignedTransaction.PROTOBUF)).build();
+        return Transaction.newBuilder()
+                .signedTransactionBytes(asBytes(signedTx, SignedTransaction.PROTOBUF))
+                .build();
     }
 
-    default ConsensusSubmitMessageTransactionBody.Builder consensusSubmitMessageBuilder(int topicId, String msg) {
+    default ConsensusSubmitMessageTransactionBody.Builder consensusSubmitMessageBuilder(
+            int topicId, String msg) {
         return ConsensusSubmitMessageTransactionBody.newBuilder()
                 .topicID(TopicID.newBuilder().topicNum(topicId).build())
                 .message(Bytes.wrap(msg));
@@ -132,25 +147,31 @@ public interface TransactionHelper {
         return transaction(payer, time, b -> b.consensusSubmitMessage(data));
     }
 
-    default Transaction consensusCreateTopicTransaction(@NonNull final AccountID payer, final long time, final String memo) {
+    default Transaction consensusCreateTopicTransaction(
+            @NonNull final AccountID payer, final long time, final String memo) {
         final var data = ConsensusCreateTopicTransactionBody.newBuilder().memo(memo);
         return transaction(payer, time, b -> b.consensusCreateTopic(data));
     }
 
-    default Transaction uncheckedSubmitTransaction(@NonNull final AccountID payer, final long time) {
+    default Transaction uncheckedSubmitTransaction(
+            @NonNull final AccountID payer, final long time) {
         final var data = UncheckedSubmitBody.newBuilder().transactionBytes(Bytes.EMPTY_BYTES);
         return transaction(payer, time, b -> b.uncheckedSubmit(data));
     }
 
-    default Transaction uncheckedSubmitTransaction(@NonNull final AccountID payer, final long time, @NonNull final Transaction tx) {
-        final var data = UncheckedSubmitBody.newBuilder().transactionBytes(asBytes(tx, Transaction.PROTOBUF));
+    default Transaction uncheckedSubmitTransaction(
+            @NonNull final AccountID payer, final long time, @NonNull final Transaction tx) {
+        final var data =
+                UncheckedSubmitBody.newBuilder()
+                        .transactionBytes(asBytes(tx, Transaction.PROTOBUF));
         return transaction(payer, time, b -> b.uncheckedSubmit(data));
     }
 
     default Query getTopicInfoQuery(int topicId) {
-        final var data = ConsensusGetTopicInfoQuery.newBuilder()
-                .topicID(TopicID.newBuilder().topicNum(topicId).build())
-                .build();
+        final var data =
+                ConsensusGetTopicInfoQuery.newBuilder()
+                        .topicID(TopicID.newBuilder().topicNum(topicId).build())
+                        .build();
 
         return Query.newBuilder().consensusGetTopicInfo(data).build();
     }
@@ -194,6 +215,7 @@ public interface TransactionHelper {
 
     final class ByteArrayDataOutput extends DataOutputStream {
         private final ByteArrayOutputStream out;
+
         public ByteArrayDataOutput(ByteArrayOutputStream out) {
             super(out);
             this.out = out;

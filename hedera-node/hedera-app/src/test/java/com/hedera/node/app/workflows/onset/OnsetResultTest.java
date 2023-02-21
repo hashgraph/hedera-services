@@ -15,35 +15,31 @@
  */
 package com.hedera.node.app.workflows.onset;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import org.junit.jupiter.api.Test;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 class OnsetResultTest {
 
-//    @SuppressWarnings("ConstantConditions")
-//    @Test
-//    void checkConstructorWithIllegalArguments() {
-//        // given
-//        final var txBody = TransactionBody.getDefaultInstance();
-//        final var bytes = new byte[0];
-//        final var signatureMap = SignatureMap.getDefaultInstance();
-//        final var functionality = HederaFunctionality.NONE;
-//
-//        // then
-//        assertThatThrownBy(() -> new OnsetResult(null, bytes, OK, signatureMap, functionality))
-//                .isInstanceOf(NullPointerException.class);
-//        assertThatThrownBy(() -> new OnsetResult(txBody, null, OK, signatureMap, functionality))
-//                .isInstanceOf(NullPointerException.class);
-//        assertThatThrownBy(() -> new OnsetResult(txBody, bytes, null, signatureMap, functionality))
-//                .isInstanceOf(NullPointerException.class);
-//        assertThatThrownBy(() -> new OnsetResult(txBody, bytes, OK, null, functionality))
-//                .isInstanceOf(NullPointerException.class);
-//        assertThatThrownBy(() -> new OnsetResult(txBody, bytes, OK, signatureMap, null))
-//                .isInstanceOf(NullPointerException.class);
-//    }
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    void checkConstructorWithIllegalArguments() {
+        // given
+        final var txBody = TransactionBody.newBuilder().build();
+        final var sigMap = SignatureMap.newBuilder().build();
+        final var function = HederaFunctionality.NONE;
+
+        // then
+        assertThatThrownBy(() -> new OnsetResult(null, OK, sigMap, function))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new OnsetResult(txBody, null, sigMap, function))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new OnsetResult(txBody, OK, null, function))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new OnsetResult(txBody, OK, sigMap, null))
+                .isInstanceOf(NullPointerException.class);
+    }
 }

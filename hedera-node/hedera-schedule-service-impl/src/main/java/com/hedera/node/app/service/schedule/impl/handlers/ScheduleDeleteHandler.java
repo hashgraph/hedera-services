@@ -15,11 +15,18 @@
  */
 package com.hedera.node.app.service.schedule.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
+
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
+import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.meta.InvalidTransactionMetadata;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -30,9 +37,8 @@ public class ScheduleDeleteHandler implements TransactionHandler {
     /**
      * This method is called during the pre-handle workflow.
      *
-     * <p>Pre-handles a {@link
-     * com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleDelete} transaction, returning
-     * the metadata required to, at minimum, validate the signatures of all required signing keys.
+     * <p>Pre-handles a {@link HederaFunctionality#SCHEDULE_DELETE} transaction, returning the
+     * metadata required to, at minimum, validate the signatures of all required signing keys.
      *
      * @param txn the {@link TransactionBody} with the transaction data
      * @param payer the {@link AccountID} of the payer
@@ -48,8 +54,8 @@ public class ScheduleDeleteHandler implements TransactionHandler {
             @NonNull final ReadableScheduleStore scheduleStore) {
         final var metaBuilder =
                 new SigTransactionMetadataBuilder(keyLookup).txnBody(txn).payerKeyFor(payer);
-        final var op = txn.getScheduleDelete();
-        final var id = op.getScheduleID();
+        final var op = txn.scheduleDelete().orElseThrow();
+        final var id = op.scheduleID();
 
         // check for a missing schedule. A schedule with this id could have never existed,
         // or it could have already been executed or deleted

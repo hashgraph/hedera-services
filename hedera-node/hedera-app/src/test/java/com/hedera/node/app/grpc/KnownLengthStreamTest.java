@@ -15,13 +15,7 @@
  */
 package com.hedera.node.app.grpc;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-import java.io.EOFException;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.stream.Stream;
+import com.hedera.pbj.runtime.io.DataBuffer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -29,6 +23,14 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import utils.TestUtils;
+import java.io.EOFException;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.stream.Stream;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class KnownLengthStreamTest {
     @Test
@@ -51,10 +53,10 @@ class KnownLengthStreamTest {
     @DisplayName("The stream agrees with the buffer on how many bytes are available")
     void available(int capacity, int position) throws IOException {
         final var arr = TestUtils.randomBytes(capacity);
-        final var buf = ByteBuffer.wrap(arr);
-        buf.position(position);
+        final var buf = DataBuffer.wrap(arr);
+        buf.skip(position);
         try (final var stream = new KnownLengthStream(buf)) {
-            assertEquals(buf.remaining(), stream.available());
+            assertEquals((int) buf.getRemaining(), stream.available());
         }
     }
 
@@ -63,8 +65,8 @@ class KnownLengthStreamTest {
     @DisplayName("The stream does nothing with skip 0 or -1")
     void skipNothing(int num) throws IOException {
         final var arr = TestUtils.randomBytes(100);
-        final var buf = ByteBuffer.wrap(arr);
-        buf.position(3); // random value
+        final var buf = DataBuffer.wrap(arr);
+        buf.skip(3); // random value
         try (final var stream = new KnownLengthStream(buf)) {
             assertEquals(0, stream.skip(num));
         }
@@ -75,10 +77,10 @@ class KnownLengthStreamTest {
     @DisplayName("The stream can skip bytes")
     void skip(int capacity, int position) throws IOException {
         final var arr = TestUtils.randomBytes(capacity);
-        final var buf = ByteBuffer.wrap(arr);
-        buf.position(position);
+        final var buf = DataBuffer.wrap(arr);
+        buf.skip(position);
         try (final var stream = new KnownLengthStream(buf)) {
-            final int bytesToRead = buf.remaining();
+            final int bytesToRead = (int) buf.getRemaining();
             final int step = bytesToRead / 3;
             for (int i = 0; i < bytesToRead; i += step) {
                 int remaining = stream.available();
@@ -95,10 +97,10 @@ class KnownLengthStreamTest {
     @DisplayName("The stream can skip N bytes")
     void skipN(int capacity, int position) throws IOException {
         final var arr = TestUtils.randomBytes(capacity);
-        final var buf = ByteBuffer.wrap(arr);
-        buf.position(position);
+        final var buf = DataBuffer.wrap(arr);
+        buf.skip(position);
         try (final var stream = new KnownLengthStream(buf)) {
-            final int bytesToRead = buf.remaining();
+            final int bytesToRead = (int) buf.getRemaining();
             final int step = bytesToRead / 3;
             for (int i = 0; i < bytesToRead; i += step) {
                 int remaining = stream.available();
@@ -114,7 +116,7 @@ class KnownLengthStreamTest {
     }
 
     /**
-     * Given a {@link ByteBuffer} with the position set to some value (possibly 0, possibly another
+     * Given a {@link DataBuffer} with the position set to some value (possibly 0, possibly another
      * value) and the capacity being some value (possibly 0), validate that we can read each byte
      * using the "read" method and eventually get -1.
      *
@@ -127,11 +129,11 @@ class KnownLengthStreamTest {
     @DisplayName("All bytes from the buffer can be read with read()")
     void read(int capacity, int position) throws IOException {
         final var arr = TestUtils.randomBytes(capacity);
-        final var buf = ByteBuffer.wrap(arr);
-        buf.position(position);
+        final var buf = DataBuffer.wrap(arr);
+        buf.skip(position);
 
         try (final var stream = new KnownLengthStream(buf)) {
-            final var numBytesToRead = buf.remaining();
+            final var numBytesToRead = (int) buf.getRemaining();
             for (int i = 0; i < numBytesToRead; i++) {
                 assertEquals(Byte.toUnsignedInt(arr[i + position]), stream.read());
                 assertEquals(numBytesToRead - i - 1, stream.available());
@@ -142,7 +144,7 @@ class KnownLengthStreamTest {
     }
 
     /**
-     * Given a {@link ByteBuffer} with the position set to some value (possibly 0, possibly another
+     * Given a {@link DataBuffer} with the position set to some value (possibly 0, possibly another
      * value) and the capacity being some value (possibly 0), validate that we can read each byte
      * using the "read" method with a byte array.
      *
@@ -155,8 +157,8 @@ class KnownLengthStreamTest {
     @DisplayName("All bytes from the buffer can be read with read(byte[])")
     void readBytes(int capacity, int position) throws IOException {
         final var arr = TestUtils.randomBytes(capacity);
-        final var buf = ByteBuffer.wrap(arr);
-        buf.position(position);
+        final var buf = DataBuffer.wrap(arr);
+        buf.skip(position);
 
         try (final var stream = new KnownLengthStream(buf)) {
             // Read the bytes from the stream in chunks, such that we get a chunk
@@ -164,7 +166,7 @@ class KnownLengthStreamTest {
             // that read the rest of the bytes but has some space remaining,
             // and then read when there are no bytes left to make sure we get
             // a -1
-            int numBytesToRead = buf.remaining();
+            int numBytesToRead = (int) buf.getRemaining();
             final int chunkSize = (int) (numBytesToRead * .75);
             int numBytesRead;
             for (int i = 0; i < numBytesToRead; i += numBytesRead) {
@@ -188,7 +190,7 @@ class KnownLengthStreamTest {
     }
 
     /**
-     * Given a {@link ByteBuffer} with the position set to some value (possibly 0, possibly another
+     * Given a {@link DataBuffer} with the position set to some value (possibly 0, possibly another
      * value) and the capacity being some value (possibly 0), validate that we can read each byte
      * using the "read" method with a byte array, offset, and len.
      *
@@ -201,8 +203,8 @@ class KnownLengthStreamTest {
     @DisplayName("All bytes from the buffer can be read with read(byte[], off, len)")
     void readBytesOffLen(int capacity, int position) throws IOException {
         final var arr = TestUtils.randomBytes(capacity);
-        final var buf = ByteBuffer.wrap(arr);
-        buf.position(position);
+        final var buf = DataBuffer.wrap(arr);
+        buf.skip(position);
 
         try (final var stream = new KnownLengthStream(buf)) {
             // Read the bytes from the stream in chunks, such that we get a chunk
@@ -210,7 +212,7 @@ class KnownLengthStreamTest {
             // that read the rest of the bytes but has some space remaining,
             // and then read when there are no bytes left to make sure we get
             // a -1
-            int numBytesToRead = buf.remaining();
+            int numBytesToRead = (int) buf.getRemaining();
             final int chunkSize = (int) (numBytesToRead * .75);
             int numBytesRead;
             for (int i = 0; i < numBytesToRead; i += numBytesRead) {
@@ -236,10 +238,10 @@ class KnownLengthStreamTest {
     @Test
     @DisplayName("Reading into a buffer with a non-zero offset")
     void readWithOffsetAndLengthIntoBuffer() throws IOException {
-        final var arr = TestUtils.randomBytes(64); // some random size
-        final var buf = ByteBuffer.wrap(arr);
-        final var pos = 13; // Some random position
-        buf.position(pos);
+        final var arr = TestUtils.randomBytes(87); // some random size and random bytes
+        final var buf = DataBuffer.wrap(arr);
+        final var pos = 13; // Some random position. Leaves me with 74 bytes to read
+        buf.skip(pos);
 
         try (final var stream = new KnownLengthStream(buf)) {
             // Make the buffer larger than needed, and then read into a section of the array
@@ -247,12 +249,14 @@ class KnownLengthStreamTest {
             final byte[] chunk = new byte[chunkSize + 10];
             final int numBytesRead = stream.read(chunk, 5, chunkSize);
             assertEquals(chunkSize, numBytesRead);
-            assertTrue(Arrays.equals(arr, pos, pos + chunkSize, chunk, 5, 5 + numBytesRead));
+
+            assertThat(Arrays.copyOfRange(chunk, 5, 5 + chunkSize))
+                    .isEqualTo(Arrays.copyOfRange(arr, pos, pos + chunkSize));
         }
     }
 
     /**
-     * Given a {@link ByteBuffer} with the position set to some value (possibly 0, possibly another
+     * Given a {@link DataBuffer} with the position set to some value (possibly 0, possibly another
      * value) and the capacity being some value (possibly 0), validate that we can read each byte
      * using the "readAllBytes".
      *
@@ -265,9 +269,9 @@ class KnownLengthStreamTest {
     @DisplayName("All bytes from the buffer can be read with readAllBytes")
     void readAllBytes(int capacity, int position) throws IOException {
         final var arr = TestUtils.randomBytes(capacity);
-        final var buf = ByteBuffer.wrap(arr);
-        buf.position(position);
-        final var remaining = buf.remaining();
+        final var buf = DataBuffer.wrap(arr);
+        buf.skip(position);
+        final var remaining = (int) buf.getRemaining();
 
         try (final var stream = new KnownLengthStream(buf)) {
             // The first time, there will be bytes
@@ -282,7 +286,7 @@ class KnownLengthStreamTest {
     }
 
     /**
-     * Given a {@link ByteBuffer} with the position set to some value (possibly 0, possibly another
+     * Given a {@link DataBuffer} with the position set to some value (possibly 0, possibly another
      * value) and the capacity being some value (possibly 0), validate that we can read each byte
      * using the "readNBytes".
      *
@@ -295,8 +299,8 @@ class KnownLengthStreamTest {
     @DisplayName("All bytes from the buffer can be read with readNBytes")
     void readNBytes(int capacity, int position) throws IOException {
         final var arr = TestUtils.randomBytes(capacity);
-        final var buf = ByteBuffer.wrap(arr);
-        buf.position(position);
+        final var buf = DataBuffer.wrap(arr);
+        buf.skip(position);
 
         try (final var stream = new KnownLengthStream(buf)) {
             // Read the bytes from the stream in chunks, such that we get a chunk
@@ -304,7 +308,7 @@ class KnownLengthStreamTest {
             // that read the rest of the bytes but has some space remaining,
             // and then read when there are no bytes left to make sure we get
             // a -1
-            int numBytesToRead = buf.remaining();
+            int numBytesToRead = (int) buf.getRemaining();
             final int chunkSize = (int) (numBytesToRead * .75);
             int numBytesRead;
             for (int i = 0; i < numBytesToRead; i += numBytesRead) {
@@ -328,7 +332,7 @@ class KnownLengthStreamTest {
     }
 
     /**
-     * Given a {@link ByteBuffer} with the position set to some value (possibly 0, possibly another
+     * Given a {@link DataBuffer} with the position set to some value (possibly 0, possibly another
      * value) and the capacity being some value (possibly 0), validate that we can read each byte
      * using the "readNBytes" method with offset, and len.
      *
@@ -341,8 +345,8 @@ class KnownLengthStreamTest {
     @DisplayName("All bytes from the buffer can be read with readNBytes(byte[], off, len)")
     void readNBytesOffLen(int capacity, int position) throws IOException {
         final var arr = TestUtils.randomBytes(capacity);
-        final var buf = ByteBuffer.wrap(arr);
-        buf.position(position);
+        final var buf = DataBuffer.wrap(arr);
+        buf.skip(position);
 
         try (final var stream = new KnownLengthStream(buf)) {
             // Read the bytes from the stream in chunks, such that we get a chunk
@@ -350,7 +354,7 @@ class KnownLengthStreamTest {
             // that read the rest of the bytes but has some space remaining,
             // and then read when there are no bytes left to make sure we get
             // a -1
-            int numBytesToRead = buf.remaining();
+            int numBytesToRead = (int) buf.getRemaining();
             final int chunkSize = (int) (numBytesToRead * .75);
             int numBytesRead;
             for (int i = 0; i < numBytesToRead; i += numBytesRead) {

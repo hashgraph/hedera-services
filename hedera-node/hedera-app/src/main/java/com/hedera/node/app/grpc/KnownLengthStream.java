@@ -15,54 +15,54 @@
  */
 package com.hedera.node.app.grpc;
 
+import com.hedera.pbj.runtime.io.DataBuffer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.KnownLength;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
  * An {@link InputStream} that implements {@link KnownLength} which allows the gRPC server to do
  * some smarter things when returning responses to clients. This stream is backed by a {@link
- * ByteBuffer}, with optimal implementations for the InputStream methods.
+ * DataBuffer}, with optimal implementations for the InputStream methods.
  */
 final class KnownLengthStream extends InputStream implements KnownLength {
-    private final ByteBuffer buf;
+    private final DataBuffer buf;
 
-    public KnownLengthStream(final ByteBuffer buf) {
+    public KnownLengthStream(final DataBuffer buf) {
         this.buf = Objects.requireNonNull(buf);
     }
 
     @Override
     public int read() {
-        if (this.buf.remaining() == 0) {
+        if (available() == 0) {
             return -1;
         }
 
-        return this.buf.get() & 0xFF;
+        return this.buf.readUnsignedByte();
     }
 
     @Override
     public int read(@NonNull final byte[] b) {
-        final int remaining = buf.remaining();
+        final int remaining = available();
         if (remaining == 0) {
             return -1;
         }
 
         final int numBytesToRead = Math.min(remaining, b.length);
-        buf.get(b, 0, numBytesToRead);
+        buf.readBytes(b, 0, numBytesToRead);
         return numBytesToRead;
     }
 
     @Override
     public int read(@NonNull final byte[] b, final int off, final int len) {
-        final int remaining = buf.remaining();
+        final int remaining = available();
         if (remaining == 0) {
             return -1;
         }
 
         final int numBytesToRead = Math.min(remaining, len);
-        buf.get(b, off, numBytesToRead);
+        buf.readBytes(b, off, numBytesToRead);
         return numBytesToRead;
     }
 
@@ -72,18 +72,18 @@ final class KnownLengthStream extends InputStream implements KnownLength {
             return 0;
         }
 
-        final int remaining = buf.remaining();
+        final int remaining = available();
         if (remaining == 0) {
             return 0;
         }
 
         final int numBytesToSkip = Math.min(remaining, (int) n);
-        buf.position(buf.position() + numBytesToSkip);
+        buf.skip(numBytesToSkip);
         return numBytesToSkip;
     }
 
     @Override
     public int available() {
-        return buf.remaining();
+        return (int) buf.getRemaining();
     }
 }

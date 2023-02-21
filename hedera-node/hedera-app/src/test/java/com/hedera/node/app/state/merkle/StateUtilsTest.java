@@ -29,11 +29,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class StateUtilsTest extends MerkleTestBase {
-    /**
-     * A *static* pseudo-random number generator used to generate
-     * the legal identifiers
-     */
-
+    /** A *static* pseudo-random number generator used to generate the legal identifiers */
     private static final Random RAND = new Random(8892381L);
 
     @Test

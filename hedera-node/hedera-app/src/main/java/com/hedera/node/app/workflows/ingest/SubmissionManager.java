@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.ingest;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
@@ -54,7 +55,8 @@ public class SubmissionManager {
      * @param platform the {@link Platform} to which transactions will be submitted
      * @param recordCache the {@link RecordCache} that tracks submitted transactions
      * @param nodeLocalProperties the {@link NodeLocalProperties} that keep local properties
-     * @param metrics {@link com.swirlds.common.metrics.Metrics} to use for metrics related to submissions
+     * @param metrics {@link com.swirlds.common.metrics.Metrics} to use for metrics related to
+     *     submissions
      */
     public SubmissionManager(
             @NonNull final Platform platform,
@@ -64,29 +66,30 @@ public class SubmissionManager {
         this.platform = requireNonNull(platform);
         this.recordCache = requireNonNull(recordCache);
         this.nodeLocalProperties = requireNonNull(nodeLocalProperties);
-        this.platformTxnRejections = metrics.getOrCreate(
-                new SpeedometerMetric.Config("app", PLATFORM_TXN_REJECTIONS_NAME)
-                        .withDescription(PLATFORM_TXN_REJECTIONS_DESC)
-                        .withFormat(SPEEDOMETER_FORMAT)
-                        .withHalfLife(nodeLocalProperties.statsSpeedometerHalfLifeSecs()));
+        this.platformTxnRejections =
+                metrics.getOrCreate(
+                        new SpeedometerMetric.Config("app", PLATFORM_TXN_REJECTIONS_NAME)
+                                .withDescription(PLATFORM_TXN_REJECTIONS_DESC)
+                                .withFormat(SPEEDOMETER_FORMAT)
+                                .withHalfLife(nodeLocalProperties.statsSpeedometerHalfLifeSecs()));
     }
 
     /**
-     * Submit a transaction to the {@link Platform}
+     * Submit a transaction to the {@link Platform}. If the transaction is an unchecked submit,
+     * we ignored the given tx bytes and send in the other bytes.
      *
      * @param txBody the {@link TransactionBody} that should be submitted to the platform
-     * @param byteArray the {@link ByteBuffer} of the data that should be submitted
+     * @param txBytes the bytes of the data that should be submitted (the full transaction bytes
+     *                as received from gRPC)
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if the transaction could not be submitted
      */
-    public void submit(
-            @NonNull final TransactionBody txBody,
-            @NonNull final byte[] byteArray)
+    public void submit(@NonNull final TransactionBody txBody, @NonNull final byte[] txBytes)
             throws PreCheckException {
         requireNonNull(txBody);
-        requireNonNull(byteArray);
+        requireNonNull(txBytes);
 
-        byte[] payload = byteArray;
+        byte[] payload = txBytes;
 
         // Unchecked submits are a mechanism to inject transaction to the system, that bypass all
         // pre-checks.This is used in tests to check the reaction to illegal input.
@@ -97,10 +100,13 @@ public class SubmissionManager {
                 throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);
             }
             final var uncheckedSubmit = optUncheckedSubmit.get();
-            final var txBytes = uncheckedSubmit.transactionBytes();
-            WorkflowOnset.parse(BytesBuffer.wrap(txBytes), UncheckedSubmitBody.PROTOBUF, PLATFORM_TRANSACTION_NOT_CREATED);
-            payload = new byte[byteBuffer.limit()];
-            txBytes.getBytes(0, payload);
+            final var uncheckedTxBytes = uncheckedSubmit.transactionBytes();
+            WorkflowOnset.parse(
+                    BytesBuffer.wrap(uncheckedTxBytes),
+                    Transaction.PROTOBUF,
+                    PLATFORM_TRANSACTION_NOT_CREATED);
+            payload = new byte[uncheckedTxBytes.getLength()];
+            uncheckedTxBytes.getBytes(0, payload);
         }
 
         final var success = platform.createTransaction(payload);

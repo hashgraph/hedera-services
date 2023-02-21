@@ -13,10 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-// see https://github.com/gradle/gradle/issues/22797, apparently the issue
-// requiring suppression will be fixed in Gradle 8.1
-@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     id("com.hedera.hashgraph.conventions")
     alias(libs.plugins.pbj)

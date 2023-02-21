@@ -15,11 +15,14 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -29,9 +32,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class TokenMintHandler implements TransactionHandler {
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#TokenMint}
-     * transaction, returning the metadata required to, at minimum, validate the signatures of all
-     * required signing keys.
+     * Pre-handles a {@link HederaFunctionality#TOKEN_MINT} transaction, returning the metadata
+     * required to, at minimum, validate the signatures of all required signing keys.
      *
      * @param txn the {@link TransactionBody} with the transaction data
      * @param payer the {@link AccountID} of the payer
@@ -47,11 +49,11 @@ public class TokenMintHandler implements TransactionHandler {
             @NonNull final AccountKeyLookup keyLookup,
             @NonNull final ReadableTokenStore tokenStore) {
 
-        final var op = txn.getTokenMint();
+        final var op = txn.tokenMint().orElseThrow();
         final var meta =
                 new SigTransactionMetadataBuilder(keyLookup).payerKeyFor(payer).txnBody(txn);
 
-        final var tokenMeta = tokenStore.getTokenMeta(op.getToken());
+        final var tokenMeta = tokenStore.getTokenMeta(op.token());
 
         if (tokenMeta.failed()) {
             return meta.status(tokenMeta.failureReason()).build();

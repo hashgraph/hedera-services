@@ -23,7 +23,8 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * This class contains all workflow-related functionality regarding {@link HederaFunctionality#FILE_CREATE}.
+ * This class contains all workflow-related functionality regarding {@link
+ * HederaFunctionality#FILE_CREATE}.
  */
 public class FileCreateHandler implements TransactionHandler {
 

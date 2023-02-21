@@ -15,9 +15,9 @@
  */
 package com.hedera.node.app.spi.state;
 
+import com.hedera.pbj.runtime.io.DataInput;
+import com.hedera.pbj.runtime.io.DataOutput;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.IOException;
 import java.util.NoSuchElementException;
 

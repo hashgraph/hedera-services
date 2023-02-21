@@ -1,7 +1,7 @@
 module com.hedera.node.hapi {
     requires com.hedera.pbj.runtime;
-
     requires static com.github.spotbugs.annotations;
+
     exports com.hedera.hapi.node.base;
     exports com.hedera.hapi.node.base.codec;
     exports com.hedera.hapi.node.base.schema;

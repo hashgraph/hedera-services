@@ -16,7 +16,9 @@
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.pbj.runtime.io.Bytes;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
@@ -47,6 +49,17 @@ public abstract class JKey implements HederaKey {
      * @throws DecoderException on an inconvertible given key
      */
     public static JKey mapKey(Key key) throws DecoderException {
+        return convertKey(key, 1);
+    }
+
+    /**
+     * Maps a proto Key to Jkey.
+     *
+     * @param key the proto Key to be converted
+     * @return the generated JKey instance
+     * @throws DecoderException on an inconvertible given key
+     */
+    public static JKey mapKey(final com.hedera.hapi.node.base.Key key) throws DecoderException {
         return convertKey(key, 1);
     }
 
@@ -88,6 +101,54 @@ public abstract class JKey implements HederaKey {
     }
 
     /**
+     * Converts a key up to a given level of depth. Both the signature and the key may be complex
+     * with multiple levels.
+     *
+     * @param key the current proto Key to be converted
+     * @param depth current level that is to be verified. The first level has a value of 1.
+     * @return the converted JKey instance
+     * @throws DecoderException on an inconvertible given key
+     */
+    public static JKey convertKey(final com.hedera.hapi.node.base.Key key, int depth)
+            throws DecoderException {
+        if (depth > MAX_KEY_DEPTH) {
+            throw new DecoderException("Exceeding max expansion depth of " + MAX_KEY_DEPTH);
+        }
+
+        if (!(key.thresholdKey().isPresent() || key.keyList().isPresent())) {
+            return convertBasic(key);
+        }
+
+        final var thresholdKeyOpt = key.thresholdKey();
+        if (thresholdKeyOpt.isPresent()) {
+            final var thresholdKey = thresholdKeyOpt.get();
+            List<com.hedera.hapi.node.base.Key> tKeys = thresholdKey.keys().keys();
+            List<JKey> jkeys = new ArrayList<>();
+            for (var aKey : tKeys) {
+                JKey res = convertKey(aKey, depth + 1);
+                jkeys.add(res);
+            }
+            JKeyList keys = new JKeyList(jkeys);
+            int thd = thresholdKey.threshold();
+            return new JThresholdKey(keys, thd);
+        }
+
+        final var keyListOpt = key.keyList();
+        if (keyListOpt.isPresent()) {
+            final var keyList = keyListOpt.get();
+            List<com.hedera.hapi.node.base.Key> tKeys = keyList.keys();
+            List<JKey> jkeys = new ArrayList<>();
+            for (var aKey : tKeys) {
+                JKey res = convertKey(aKey, depth + 1);
+                jkeys.add(res);
+            }
+            return new JKeyList(jkeys);
+        }
+
+        throw new RuntimeException("The key was not basic, threshold, or a key list!!");
+    }
+
+    /**
      * Converts a basic key.
      *
      * @param key proto Key to be converted
@@ -121,6 +182,76 @@ public abstract class JKey implements HederaKey {
         }
 
         return rv;
+    }
+
+    /**
+     * Converts a basic key.
+     *
+     * @param key proto Key to be converted
+     * @return the converted JKey instance
+     * @throws DecoderException on an inconvertible given key
+     */
+    private static JKey convertBasic(final com.hedera.hapi.node.base.Key key)
+            throws DecoderException {
+        final var oneOf = key.key();
+        return switch (oneOf.kind()) {
+            case ED25519 -> {
+                byte[] pubKeyBytes = asBytes(oneOf.as());
+                yield new JEd25519Key(pubKeyBytes);
+            }
+            case ECDSA_384 -> {
+                byte[] pubKeyBytes = asBytes(oneOf.as());
+                yield new JECDSA_384Key(pubKeyBytes);
+            }
+            case RSA_3072 -> {
+                byte[] pubKeyBytes = asBytes(oneOf.as());
+                yield new JRSA_3072Key(pubKeyBytes);
+            }
+            case ECDSA_SECP256K1 -> {
+                byte[] pubKeyBytes = asBytes(oneOf.as());
+                yield new JECDSASecp256k1Key(pubKeyBytes);
+            }
+            case CONTRACT_ID -> {
+                final ContractID id = oneOf.as();
+                final var contractNumOp = id.contractNum();
+                final var contractEvmOp = id.evmAddress();
+                if (contractNumOp.isPresent()) {
+                    yield new JContractIDKey(id.shardNum(), id.realmNum(), contractNumOp.get());
+                } else if (contractEvmOp.isPresent()) {
+                    final var proto =
+                            com.hederahashgraph.api.proto.java.ContractID.newBuilder()
+                                    .setShardNum(id.shardNum())
+                                    .setRealmNum(id.realmNum())
+                                    .setEvmAddress(
+                                            ByteString.copyFrom(asBytes(contractEvmOp.get())))
+                                    .build();
+                    yield new JContractIDKey(proto);
+                } else {
+                    throw new DecoderException("Unable to decode contract key=" + key);
+                }
+            }
+            case DELEGATABLE_CONTRACT_ID -> {
+                final ContractID id = oneOf.as();
+                final var contractNumOp = id.contractNum();
+                final var contractEvmOp = id.evmAddress();
+                if (contractNumOp.isPresent()) {
+                    yield new JDelegatableContractIDKey(
+                            id.shardNum(), id.realmNum(), contractNumOp.get());
+                } else if (contractEvmOp.isPresent()) {
+                    final var proto =
+                            com.hederahashgraph.api.proto.java.ContractID.newBuilder()
+                                    .setShardNum(id.shardNum())
+                                    .setRealmNum(id.realmNum())
+                                    .setEvmAddress(
+                                            ByteString.copyFrom(asBytes(contractEvmOp.get())))
+                                    .build();
+                    yield new JDelegatableContractIDKey(proto);
+                } else {
+                    throw new DecoderException("Unable to decode contract key=" + key);
+                }
+            }
+            default -> throw new DecoderException("Key type not implemented: key=" + key);
+        };
     }
 
     /**
@@ -364,5 +495,11 @@ public abstract class JKey implements HederaKey {
         } else {
             return MISSING_ECDSA_SECP256K1_KEY;
         }
+    }
+
+    private static byte[] asBytes(Bytes b) {
+        final var buf = new byte[b.getLength()];
+        b.getBytes(0, buf);
+        return buf;
     }
 }

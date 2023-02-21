@@ -15,11 +15,16 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -51,8 +56,8 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
             @NonNull final AccountID payer,
             @NonNull final AccountKeyLookup keyLookup,
             @NonNull final ReadableTokenStore tokenStore) {
-        final var op = txn.getTokenFeeScheduleUpdate();
-        final var tokenId = op.getTokenId();
+        final var op = txn.tokenFeeScheduleUpdate().orElseThrow();
+        final var tokenId = op.tokenId();
         final var meta =
                 new SigTransactionMetadataBuilder(keyLookup).payerKeyFor(payer).txnBody(txn);
         final var tokenMeta = tokenStore.getTokenMeta(tokenId);
@@ -63,8 +68,8 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
             final var feeScheduleKey = tokenMetadata.feeScheduleKey();
             if (feeScheduleKey.isPresent()) {
                 meta.addToReqNonPayerKeys(feeScheduleKey.get());
-                for (final var customFee : op.getCustomFeesList()) {
-                    final var collector = customFee.getFeeCollectorAccountId();
+                for (final var customFee : op.customFees()) {
+                    final var collector = customFee.feeCollectorAccountId();
                     meta.addNonPayerKeyIfReceiverSigRequired(
                             collector, INVALID_CUSTOM_FEE_COLLECTOR);
                 }

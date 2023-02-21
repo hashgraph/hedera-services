@@ -15,15 +15,21 @@
  */
 package com.hedera.node.app.service.consensus.impl.handlers;
 
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONSENSUS_CREATE_TOPIC}.
+ * This class contains all workflow-related functionality regarding {@link
+ * HederaFunctionality#CONSENSUS_CREATE_TOPIC}.
  */
 public class ConsensusCreateTopicHandler implements TransactionHandler {
 
@@ -48,14 +54,14 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         final var metaBuilder =
                 new SigTransactionMetadataBuilder(keyLookup).txnBody(txBody).payerKeyFor(payer);
 
-        final var op = txBody.getConsensusCreateTopic();
-        final var adminKey = asHederaKey(op.getAdminKey());
+        final var op = txBody.consensusCreateTopic().orElseThrow();
+        final var adminKey = asHederaKey(op.adminKey());
         adminKey.ifPresent(metaBuilder::addToReqNonPayerKeys);
-        final var submitKey = asHederaKey(op.getSubmitKey());
+        final var submitKey = asHederaKey(op.submitKey());
         submitKey.ifPresent(metaBuilder::addToReqNonPayerKeys);
 
-        if (op.hasAutoRenewAccount()) {
-            final var autoRenewAccount = op.getAutoRenewAccount();
+        if (op.autoRenewAccount() != null) {
+            final var autoRenewAccount = op.autoRenewAccount();
             metaBuilder.addNonPayerKey(
                     autoRenewAccount, ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
         }

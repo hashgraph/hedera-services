@@ -15,6 +15,10 @@
  */
 package grpc;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import com.hedera.node.app.grpc.GrpcServiceBuilder;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
@@ -22,31 +26,32 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.Status;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.stream.Stream;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * This test verifies gRPC calls made over the network. Since our gRPC code deals with bytes, and all serialization
- * and deserialization of protobuf objects happens in the workflows, these tests can work on simple primitives
- * such as Strings, making the tests easier to understand without missing any possible cases.
+ * This test verifies gRPC calls made over the network. Since our gRPC code deals with bytes, and
+ * all serialization and deserialization of protobuf objects happens in the workflows, these tests
+ * can work on simple primitives such as Strings, making the tests easier to understand without
+ * missing any possible cases.
  */
 class GrpcQueryTest extends GrpcTestBase {
     private static final String SERVICE = "proto.TestService";
     private static final String METHOD = "testQuery";
     private static final String GOOD_RESPONSE = "All Good";
-    private static final byte[] GOOD_RESPONSE_BYTES = GOOD_RESPONSE.getBytes(StandardCharsets.UTF_8);
+    private static final byte[] GOOD_RESPONSE_BYTES =
+            GOOD_RESPONSE.getBytes(StandardCharsets.UTF_8);
 
-    private static final QueryWorkflow GOOD_QUERY = (session, req, res) -> res.put(GOOD_RESPONSE_BYTES);
-    private static final IngestWorkflow UNIMPLEMENTED_INGEST = (s, r, r2) -> fail("The Ingest should not be called");
+    private static final QueryWorkflow GOOD_QUERY =
+            (session, req, res) -> res.writeBytes(GOOD_RESPONSE_BYTES);
+    private static final IngestWorkflow UNIMPLEMENTED_INGEST =
+            (s, r, r2) -> fail("The Ingest should not be called");
 
     private void setUp(@NonNull final QueryWorkflow query) {
         registerService(new GrpcServiceBuilder(SERVICE, UNIMPLEMENTED_INGEST, query).query(METHOD));
@@ -70,43 +75,38 @@ class GrpcQueryTest extends GrpcTestBase {
     @DisplayName("A query throwing a RuntimeException returns the UNKNOWN status code")
     void queryThrowingRuntimeExceptionReturnsUNKNOWNError() {
         // Given a server where the service will throw a RuntimeException
-        setUp((session, req, res) -> {
-            throw new RuntimeException("Failing with RuntimeException");
-        });
+        setUp(
+                (session, req, res) -> {
+                    throw new RuntimeException("Failing with RuntimeException");
+                });
 
         // When we invoke that service
         final var e =
-                assertThrows(
-                        StatusRuntimeException.class,
-                        () -> send(SERVICE, METHOD, "A Query"));
+                assertThrows(StatusRuntimeException.class, () -> send(SERVICE, METHOD, "A Query"));
 
         // Then the Status code will be UNKNOWN.
         assertEquals(Status.UNKNOWN, e.getStatus());
-
     }
 
     @Test
     @DisplayName("A query throwing an Error returns the UNKNOWN status code")
     void queryThrowingErrorReturnsUNKNOWNError() {
         // Given a server where the service will throw an Error
-        setUp((session, req, res) -> {
-            throw new Error("Whoops!");
-        });
+        setUp(
+                (session, req, res) -> {
+                    throw new Error("Whoops!");
+                });
 
         // When we invoke that service
         final var e =
-                assertThrows(
-                        StatusRuntimeException.class,
-                        () -> send(SERVICE, METHOD, "A Query"));
+                assertThrows(StatusRuntimeException.class, () -> send(SERVICE, METHOD, "A Query"));
 
         // Then the Status code will be UNKNOWN.
         assertEquals(Status.UNKNOWN, e.getStatus());
     }
 
     public static Stream<Arguments> badStatusCodes() {
-        return Arrays.stream(Status.Code.values())
-                .filter(c -> c != Code.OK)
-                .map(Arguments::of);
+        return Arrays.stream(Status.Code.values()).filter(c -> c != Code.OK).map(Arguments::of);
     }
 
     @ParameterizedTest(name = "{0} Should Fail")
@@ -114,34 +114,31 @@ class GrpcQueryTest extends GrpcTestBase {
     @DisplayName("Explicitly thrown StatusRuntimeException passes the code through to the response")
     void explicitlyThrowStatusRuntimeException(@NonNull final Status.Code code) {
         // Given a server where the service will throw a specific StatusRuntimeException
-        setUp((session, req, res) -> {
-            throw new StatusRuntimeException(code.toStatus());
-        });
+        setUp(
+                (session, req, res) -> {
+                    throw new StatusRuntimeException(code.toStatus());
+                });
 
         // When we invoke that service
         final var e =
-                assertThrows(
-                        StatusRuntimeException.class,
-                        () -> send(SERVICE, METHOD, "A Query"));
+                assertThrows(StatusRuntimeException.class, () -> send(SERVICE, METHOD, "A Query"));
 
         // Then the Status code will match the exception
         assertEquals(code.toStatus(), e.getStatus());
     }
 
-
     @Test
     @DisplayName("Send a valid query to an unknown endpoint and get back UNIMPLEMENTED")
     void sendQueryToUnknownEndpoint() {
         // Given a client that knows about a method that DOES NOT EXIST on the server
-        registerServiceOnClientOnly(new GrpcServiceBuilder(SERVICE, NOOP_INGEST_WORKFLOW, NOOP_QUERY_WORKFLOW)
-                .transaction("unknown"));
+        registerServiceOnClientOnly(
+                new GrpcServiceBuilder(SERVICE, NOOP_INGEST_WORKFLOW, NOOP_QUERY_WORKFLOW)
+                        .transaction("unknown"));
         setUp(GOOD_QUERY);
 
         // When I call the service but with an unknown method
         final var e =
-                assertThrows(
-                        StatusRuntimeException.class,
-                        () -> send(SERVICE, "unknown", "query"));
+                assertThrows(StatusRuntimeException.class, () -> send(SERVICE, "unknown", "query"));
 
         // Then the resulting status code is UNIMPLEMENTED
         assertEquals(Status.UNIMPLEMENTED.getCode(), e.getStatus().getCode());
@@ -151,8 +148,9 @@ class GrpcQueryTest extends GrpcTestBase {
     @DisplayName("Send a valid query to an unknown service")
     void sendQueryToUnknownService() {
         // Given a client that knows about a service that DOES NOT exist on the server
-        registerServiceOnClientOnly(new GrpcServiceBuilder("UnknownService", NOOP_INGEST_WORKFLOW, NOOP_QUERY_WORKFLOW)
-                .transaction(METHOD));
+        registerServiceOnClientOnly(
+                new GrpcServiceBuilder("UnknownService", NOOP_INGEST_WORKFLOW, NOOP_QUERY_WORKFLOW)
+                        .transaction(METHOD));
         setUp(GOOD_QUERY);
 
         // When I call the unknown service
@@ -165,9 +163,12 @@ class GrpcQueryTest extends GrpcTestBase {
         assertEquals(Status.UNIMPLEMENTED.getCode(), e.getStatus().getCode());
     }
 
-    // Interestingly, I thought it should return INVALID_ARGUMENT, and I attempted to update the NoopMarshaller
-    // to return INVALID_ARGUMENT by throwing a StatusRuntimeException. But the gRPC library we are using
-    // DOES NOT special case for StatusRuntimeException thrown in the marshaller, and always returns UNKNOWN
+    // Interestingly, I thought it should return INVALID_ARGUMENT, and I attempted to update the
+    // NoopMarshaller
+    // to return INVALID_ARGUMENT by throwing a StatusRuntimeException. But the gRPC library we are
+    // using
+    // DOES NOT special case for StatusRuntimeException thrown in the marshaller, and always returns
+    // UNKNOWN
     // to the client. So there is really no other response code possible for this case.
     @Test
     @DisplayName("Sending way too many bytes leads to UNKNOWN")
@@ -178,9 +179,7 @@ class GrpcQueryTest extends GrpcTestBase {
         // When I call a method on the service and pass too many bytes
         final var payload = randomString(1024 * 10);
         final var e =
-                assertThrows(
-                        StatusRuntimeException.class,
-                        () -> send(SERVICE, METHOD, payload));
+                assertThrows(StatusRuntimeException.class, () -> send(SERVICE, METHOD, payload));
 
         // Then the resulting status code is UNKNOWN
         assertEquals(Status.UNKNOWN.getCode(), e.getStatus().getCode());

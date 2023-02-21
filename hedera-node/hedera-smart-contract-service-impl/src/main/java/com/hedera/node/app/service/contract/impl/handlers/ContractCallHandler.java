@@ -25,7 +25,8 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONTRACT_CALL}.
+ * This class contains all workflow-related functionality regarding {@link
+ * HederaFunctionality#CONTRACT_CALL}.
  */
 public class ContractCallHandler implements TransactionHandler {
 
