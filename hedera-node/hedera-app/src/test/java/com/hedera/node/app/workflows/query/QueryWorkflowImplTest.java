@@ -359,6 +359,8 @@ class QueryWorkflowImplTest {
         given(feeAccumulator.computePayment(any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
         given(handler.requiresNodePayment(any())).willReturn(true);
         given(dispatcher.validate(any(), any())).willReturn(OK);
+        given(dispatcher.getResponse(any(), any(), any(), any()))
+                .willReturn(Response.newBuilder().build());
         // given
         final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
         // when
