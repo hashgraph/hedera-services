@@ -126,7 +126,9 @@ public class ServicesMain implements SwirldMain {
         // server and workflows, or use the existing gRPC handlers in mono-service, for that specific HAPI operations.
         final var props = app.globalStaticProperties();
         if (!props.workflowsEnabled().isEmpty()) {
-            hedera.start(app, app.nodeLocalProperties().port());
+            // If there are any operations that use new workflows, start both the new gRPC server and the old gRPC
+            // server on different ports.
+            hedera.start(app, app.nodeLocalProperties().workflowsPort());
             app.grpcStarter().startIfAppropriate();
         } else {
             app.grpcStarter().startIfAppropriate();

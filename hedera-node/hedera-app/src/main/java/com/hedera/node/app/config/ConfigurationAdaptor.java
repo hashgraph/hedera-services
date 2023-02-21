@@ -255,6 +255,6 @@ public class ConfigurationAdaptor implements Configuration {
      * @return a new GlobalConfig instance
      */
     private GlobalConfig createGlobalConfig() {
-        return new GlobalConfig(propertySource.getTypedProperty(List.class, WORKFLOWS_ENABLED));
+        return new GlobalConfig(propertySource.getTypedProperty(Set.class, WORKFLOWS_ENABLED));
     }
 }
