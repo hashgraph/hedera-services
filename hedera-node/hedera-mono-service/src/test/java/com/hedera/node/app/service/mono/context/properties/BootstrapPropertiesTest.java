@@ -18,7 +18,7 @@ package com.hedera.node.app.service.mono.context.properties;
 import static com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.*;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOPICS_MAX_NUM;
-import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
+import static com.hedera.node.app.service.mono.contracts.ContractsV_0_34Module.EVM_VERSION_0_34;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.*;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_ACTION;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_BYTECODE;
@@ -111,7 +111,7 @@ class BootstrapPropertiesTest {
                     entry(CONTRACTS_DEFAULT_LIFETIME, 7890000L),
                     entry(CONTRACTS_DYNAMIC_EVM_VERSION, false),
                     entry(CONTRACTS_ENFORCE_CREATION_THROTTLE, false),
-                    entry(CONTRACTS_EVM_VERSION, EVM_VERSION_0_30),
+                    entry(CONTRACTS_EVM_VERSION, EVM_VERSION_0_34),
                     entry(CONTRACTS_LOCAL_CALL_EST_RET_BYTES, 32),
                     entry(CONTRACTS_MAX_GAS_PER_SEC, 15000000L),
                     entry(CONTRACTS_MAX_KV_PAIRS_AGGREGATE, 500_000_000L),
