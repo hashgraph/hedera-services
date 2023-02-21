@@ -87,6 +87,7 @@ class ServicesMainTest {
 
     @Mock
     private ServicesApp app;
+
     @Mock
     private HederaApp hederaApp;
 
@@ -168,43 +169,12 @@ class ServicesMainTest {
     }
 
     @Test
-    void failsOnWrongNativeCharsetWhenHedera() {
-        withDoomedHederaApp();
-
-        given(globalStaticProperties.workflowsEnabled()).willReturn(true);
-        given(nativeCharset.get()).willReturn(StandardCharsets.US_ASCII);
-
-        // when:
-        subject.init(platform, nodeId);
-
-        // then:
-        verify(systemExits).fail(1);
-    }
-
-    @Test
     void failsOnUnavailableDigest() throws NoSuchAlgorithmException {
         withDoomedApp();
 
         given(nativeCharset.get()).willReturn(UTF_8);
         given(namedDigestFactory.forName("SHA-384")).willThrow(NoSuchAlgorithmException.class);
         given(app.digestFactory()).willReturn(namedDigestFactory);
-
-        // when:
-        subject.init(platform, nodeId);
-
-        // then:
-        verify(systemExits).fail(1);
-    }
-
-    @Test
-    void failsOnUnavailableDigestWhenHederaApp() throws NoSuchAlgorithmException {
-        withRunnableApp();
-        withDoomedHederaApp();
-
-        given(globalStaticProperties.workflowsEnabled()).willReturn(true);
-        given(nativeCharset.get()).willReturn(UTF_8);
-        given(namedDigestFactory.forName("SHA-384")).willThrow(NoSuchAlgorithmException.class);
-        given(hederaApp.digestFactory()).willReturn(namedDigestFactory);
 
         // when:
         subject.init(platform, nodeId);

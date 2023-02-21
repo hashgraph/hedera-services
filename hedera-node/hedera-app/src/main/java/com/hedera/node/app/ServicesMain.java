@@ -75,7 +75,6 @@ public class ServicesMain implements SwirldMain {
     public void init(final Platform ignore, final NodeId nodeId) {
         try {
             app = APPS.get(nodeId.getId());
-            hederaApp = HEDERA_APPS_MANAGER.get(nodeId.getId());
             initApp();
         } catch (final IllegalArgumentException iae) {
             log.error("No app present for {}", nodeId, iae);
@@ -94,7 +93,6 @@ public class ServicesMain implements SwirldMain {
     }
 
     private void initApp() {
-        final long nodeId;
         if (defaultCharsetIsCorrect() && sha384DigestIsAvailable()) {
             try {
                 Locale.setDefault(Locale.US);
@@ -132,6 +130,7 @@ public class ServicesMain implements SwirldMain {
         // server and workflows, or use the existing gRPC handlers in mono-service.
         final var props = app.globalStaticProperties();
         if (props.workflowsEnabled()) {
+            hederaApp = HEDERA_APPS_MANAGER.get(app.nodeId().getId());
             hedera.start(hederaApp, app.nodeLocalProperties().port());
         } else {
             app.grpcStarter().startIfAppropriate();

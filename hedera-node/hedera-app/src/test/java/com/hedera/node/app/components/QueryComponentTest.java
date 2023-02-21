@@ -36,6 +36,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class QueryComponentTest {
     @Mock
     private Platform platform;
+
     private HederaApp app;
 
     @BeforeEach
