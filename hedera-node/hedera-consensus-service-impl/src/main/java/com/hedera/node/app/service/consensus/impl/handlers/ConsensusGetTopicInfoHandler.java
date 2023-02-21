@@ -16,16 +16,21 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseType.*;
 import static java.util.Objects.requireNonNull;
 
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.spi.meta.QueryContext;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoResponse;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.ResponseHeader;
+import com.hederahashgraph.api.proto.java.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -50,6 +55,16 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
         return Response.newBuilder().setConsensusGetTopicInfo(response).build();
     }
 
+    @Override
+    public boolean requiresNodePayment(@NonNull ResponseType responseType) {
+        return responseType == ANSWER_ONLY || responseType == ANSWER_STATE_PROOF;
+    }
+
+    @Override
+    public boolean needsAnswerOnlyCost(@NonNull ResponseType responseType) {
+        return COST_ANSWER == responseType;
+    }
+
     /**
      * This method is called during the query workflow. It validates the query, but does not
      * determine the response yet.
@@ -61,8 +76,16 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if validation fails
      */
-    public void validate(@NonNull final Query query) throws PreCheckException {
-        throw new UnsupportedOperationException("Not implemented");
+    public ResponseCodeEnum validate(@NonNull final Query query, @NonNull final ReadableTopicStore topicStore)
+            throws PreCheckException {
+        final ConsensusGetTopicInfoQuery op = query.getConsensusGetTopicInfo();
+        if (op.hasTopicID()) {
+            final var topicMetadata = topicStore.getTopicMetadata(op.getTopicID());
+            if (topicMetadata.failed() || topicMetadata.metadata().isDeleted()) {
+                return INVALID_TOPIC_ID;
+            }
+        }
+        return OK;
     }
 
     /**
@@ -72,12 +95,64 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param query the {@link Query} with the request
-     * @param header the {@link ResponseHeader} that should be used, if the request was successful
+     * @param queryContext
+     * @param query        the {@link Query} with the request
+     * @param header       the {@link ResponseHeader} that should be used, if the request was successful
+     * @param queryContext context for executing the query
      * @return a {@link Response} with the requested values
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public Response findResponse(@NonNull final Query query, @NonNull final ResponseHeader header) {
-        throw new UnsupportedOperationException("Not implemented");
+    public Response findResponse(
+            @NonNull final Query query,
+            @NonNull final ResponseHeader header,
+            @NonNull final ReadableTopicStore topicStore,
+            @NonNull final QueryContext queryContext) {
+        final var op = query.getConsensusGetTopicInfo();
+        final var response = ConsensusGetTopicInfoResponse.newBuilder();
+        response.setTopicID(op.getTopicID());
+
+        final var responseType = op.getHeader().getResponseType();
+        response.setHeader(header);
+        if (header.getNodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
+            final var optionalInfo = infoForTopic(op.getTopicID(), topicStore, queryContext);
+            if (optionalInfo.isPresent()) {
+                response.setTopicInfo(optionalInfo.get());
+            }
+        }
+
+        return Response.newBuilder().setConsensusGetTopicInfo(response).build();
+    }
+
+    /**
+     * Provides information about a topic.
+     * @param topicID the topic to get information about
+     * @param topicStore the topic store
+     * @param queryContext context for executing the query
+     * @return the information about the topic
+     */
+    private Optional<ConsensusTopicInfo> infoForTopic(
+            @NonNull final TopicID topicID,
+            @NonNull final ReadableTopicStore topicStore,
+            @NonNull final QueryContext queryContext) {
+        final var metaOrFailure = topicStore.getTopicMetadata(topicID);
+        if (metaOrFailure.failed()) {
+            return Optional.empty();
+        } else {
+            final var info = ConsensusTopicInfo.newBuilder();
+            final var meta = metaOrFailure.metadata();
+            meta.memo().ifPresent(info::setMemo);
+            info.setRunningHash(ByteString.copyFrom(meta.runningHash()));
+            info.setSequenceNumber(meta.sequenceNumber());
+            info.setExpirationTime(meta.expirationTimestamp());
+            meta.adminKey().ifPresent(key -> info.setAdminKey(asKeyUnchecked((JKey) key)));
+            meta.submitKey().ifPresent(key -> info.setSubmitKey(asKeyUnchecked((JKey) key)));
+            info.setAutoRenewPeriod(Duration.newBuilder().setSeconds(meta.autoRenewDurationSeconds()));
+            meta.autoRenewAccountId()
+                    .ifPresent(account ->
+                            info.setAutoRenewAccount(AccountID.newBuilder().setAccountNum(account)));
+
+            info.setLedgerId(queryContext.getLedgerId());
+            return Optional.of(info.build());
+        }
     }
 }

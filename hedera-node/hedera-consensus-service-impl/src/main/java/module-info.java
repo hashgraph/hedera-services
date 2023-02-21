@@ -7,13 +7,14 @@ module com.hedera.node.app.service.consensus.impl {
     requires com.swirlds.common;
     requires dagger;
     requires javax.inject;
+    requires com.google.protobuf;
 
     provides com.hedera.node.app.service.consensus.ConsensusService with
             ConsensusServiceImpl;
 
     exports com.hedera.node.app.service.consensus.impl to
-            com.hedera.node.app,
-            com.hedera.node.app.service.consensus.impl.test;
+            com.hedera.node.app.service.consensus.impl.test,
+            com.hedera.node.app;
     exports com.hedera.node.app.service.consensus.impl.handlers;
     exports com.hedera.node.app.service.consensus.impl.components;
     exports com.hedera.node.app.service.consensus.impl.serdes;

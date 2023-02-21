@@ -4,6 +4,7 @@ module com.hedera.node.app.spi {
     requires com.swirlds.virtualmap;
     requires com.swirlds.jasperdb;
     requires com.swirlds.common;
+    requires com.google.protobuf;
     requires com.swirlds.config;
 
     exports com.hedera.node.app.spi;

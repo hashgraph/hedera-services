@@ -23,7 +23,6 @@ import com.hedera.node.app.service.admin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
-import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.network.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
@@ -39,6 +38,7 @@ import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.helidon.grpc.server.GrpcRouting;
 import io.helidon.grpc.server.GrpcServer;
 import io.helidon.grpc.server.GrpcServerConfiguration;
@@ -52,7 +52,9 @@ public final class Hedera {
     private static final int MAX_SIGNED_TXN_SIZE = 6144;
     private final CountDownLatch shutdownLatch = new CountDownLatch(1);
 
-    public void start(ServicesApp app, int port) {
+    public Hedera() {}
+
+    public void start(@NonNull final HederaApp app, int port) {
         final var metrics = createMetrics(app.nodeId());
 
         // Create the Ingest workflow. While we are in transition, some required facilities come
@@ -62,10 +64,8 @@ public final class Hedera {
         final var ingestWorkflow =
                 new IngestWorkflowImpl(app.nodeInfo(), app.platformStatus(), null, null, null, null, null, null);
 
-        // Create the query workflow; fully qualified import to appease javadoc Gradle task
-        final var queryWorkflow = com.hedera.node.app.components.DaggerQueryComponent.factory()
-                .create(app.bootstrapProps(), MAX_SIGNED_TXN_SIZE, app.platform())
-                .queryWorkflow();
+        // Create the query workflow
+        final var queryWorkflow = app.queryComponentFactory().get().create().queryWorkflow();
 
         // Setup and start the grpc server.
         // At some point I'd like to somehow move the metadata for which transactions are supported
