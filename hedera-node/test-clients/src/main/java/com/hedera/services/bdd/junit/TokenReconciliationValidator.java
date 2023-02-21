@@ -19,7 +19,7 @@ package com.hedera.services.bdd.junit;
 import static com.hedera.services.bdd.junit.TestBase.concurrentExecutionOf;
 
 import com.hedera.services.bdd.junit.utils.AccountClassifier;
-import com.hedera.services.bdd.junit.validators.AccountNumTokenId;
+import com.hedera.services.bdd.junit.validators.AccountNumTokenNum;
 import com.hedera.services.bdd.suites.records.TokenBalanceValidation;
 import com.hedera.services.stream.proto.RecordStreamItem;
 import java.util.HashMap;
@@ -39,7 +39,7 @@ import java.util.stream.Stream;
  * <p>It uses the {@link com.hedera.services.bdd.suites.records.TokenBalanceValidation} suite to perform the queries.
  */
 public class TokenReconciliationValidator implements RecordStreamValidator {
-    private final Map<AccountNumTokenId, Long> expectedTokenBalances = new HashMap<>();
+    private final Map<AccountNumTokenNum, Long> expectedTokenBalances = new HashMap<>();
 
     private final AccountClassifier accountClassifier = new AccountClassifier();
 
@@ -47,7 +47,7 @@ public class TokenReconciliationValidator implements RecordStreamValidator {
     @SuppressWarnings("java:S106")
     public void validateRecordsAndSidecars(final List<RecordWithSidecars> recordsWithSidecars) {
         getExpectedBalanceFrom(recordsWithSidecars);
-        System.out.println("Expected balances: " + expectedTokenBalances);
+        System.out.println("Expected token balances: " + expectedTokenBalances);
 
         final var validationSpecs = TestBase.extractContextualizedSpecsFrom(
                 List.of(() -> new TokenBalanceValidation(expectedTokenBalances, accountClassifier)),
@@ -66,7 +66,7 @@ public class TokenReconciliationValidator implements RecordStreamValidator {
                     tokenTransferList.getTransfersList().forEach(tokenTransfers -> {
                         final long accountNum = tokenTransfers.getAccountID().getAccountNum();
                         final long amount = tokenTransfers.getAmount();
-                        expectedTokenBalances.merge(new AccountNumTokenId(tokenNum, accountNum), amount, Long::sum);
+                        expectedTokenBalances.merge(new AccountNumTokenNum(tokenNum, accountNum), amount, Long::sum);
                     });
                 });
             }

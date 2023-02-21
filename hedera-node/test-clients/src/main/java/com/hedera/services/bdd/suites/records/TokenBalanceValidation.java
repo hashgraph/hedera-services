@@ -16,15 +16,20 @@
 
 package com.hedera.services.bdd.suites.records;
 
-import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.bdd.junit.utils.AccountClassifier;
-import com.hedera.services.bdd.junit.validators.AccountNumTokenId;
+import com.hedera.services.bdd.junit.validators.AccountNumTokenNum;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.TokenType;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
@@ -32,23 +37,23 @@ import org.apache.logging.log4j.Logger;
 
 public class TokenBalanceValidation extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenBalanceValidation.class);
-    private final Map<AccountNumTokenId, Long> expectedTokenBalances;
+    private final Map<AccountNumTokenNum, Long> expectedTokenBalances;
     private final AccountClassifier accountClassifier;
-    private static final String aFungibleToken = "aFT";
-    //    private static final Long aFungibleTokenId = 12L;
-    private static final Long aFungibleAmount = 1_000L;
-    private static final Long TOKEN_TREASURY = 123L;
 
     public TokenBalanceValidation( // NetworkConfig targetInfo,
-            final Map<AccountNumTokenId, Long> expectedTokenBalances, final AccountClassifier accountClassifier) {
+            final Map<AccountNumTokenNum, Long> expectedTokenBalances, final AccountClassifier accountClassifier) {
         this.expectedTokenBalances = expectedTokenBalances;
         this.accountClassifier = accountClassifier;
     }
 
     public static void main(String... args) {
         // var tokenId = asTokenId(tokenBalance.getKey(), spec);
-        Map<AccountNumTokenId, Long> expectedTokenBalances =
-                Map.of(new AccountNumTokenId(TOKEN_TREASURY, 12l), aFungibleAmount);
+        final Long aFungibleToken = 12L;
+        //    private static final Long aFungibleTokenId = 12L;
+        final Long aFungibleAmount = 1_000L;
+        final Long tokenTreasury = 3L;
+        Map<AccountNumTokenNum, Long> expectedTokenBalances =
+                Map.of(new AccountNumTokenNum(tokenTreasury, aFungibleToken), aFungibleAmount);
         new TokenBalanceValidation(expectedTokenBalances, new AccountClassifier()).runSuiteSync();
     }
 
@@ -64,18 +69,50 @@ public class TokenBalanceValidation extends HapiSuite {
 
     private HapiSpec validateTokenBalances() {
         final var initBalance = ONE_HBAR;
+        final var supplyKey = "supplyKey";
 
-        return customHapiSpec("ValidateTokenBalances")
-                .withProperties(Map.of(
-                        "fees.useFixedOffer", "true",
-                        "fees.fixedOffer", "100000000"))
-                .given(
-                        cryptoCreate(TOKEN_TREASURY.toString()).balance(initBalance),
-                        tokenCreate(aFungibleToken)
-                                .initialSupply(aFungibleAmount)
-                                .treasury(TOKEN_TREASURY.toString()))
+        return defaultHapiSpec("ValidateTokenBalances")
+                //                .withProperties(Map.of(
+                //                        "fees.useFixedOffer", "true",
+                //                        "fees.fixedOffer", "100000000"))
+                .given(expectedTokenBalances.entrySet().stream()
+                        .map(entry -> {
+                            final var accountNum = entry.getKey().accountNum();
+                            final var tokenNum = entry.getKey().tokenId();
+                            final var tokenAmt = entry.getValue();
+                            //                                            return mintToken(tokenNum, tokenAmt);
+                            return new HapiSpecOperation[] {
+                                cryptoCreate(accountNum.toString()),
+                                tokenCreate(tokenNum.toString())
+                                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                                        .treasury(accountNum.toString())
+                                        .initialSupply(tokenAmt)
+                                        .name(tokenNum.toString())
+                                //                                                        .supplyKey(supplyKey)
+                                //                                                mintToken(tokenNum.toString(),
+                                // tokenAmt)
+                                //                                                tokenAssociate(accountNum.toString(),
+                                // List.of(tokenNum.toString()))
+                            };
+                        })
+                        .flatMap(Arrays::stream)
+                        .toArray(HapiSpecOperation[]::new))
                 .when()
-                .then(getAccountBalance(TOKEN_TREASURY.toString()).hasTokenBalance(aFungibleToken, aFungibleAmount));
+                //                .then(getAccountBalance(TOKEN_TREASURY.toString()).hasTokenBalance(aFungibleToken,
+                // aFungibleAmount));
+                .then(inParallel(expectedTokenBalances.entrySet().stream()
+                                .map(entry -> {
+                                    final var accountNum = entry.getKey().accountNum();
+                                    final var tokenNum = entry.getKey().tokenId();
+                                    final var tokenAmt = entry.getValue();
+
+                                    return getAccountBalance(
+                                                    "0.0." + accountNum, accountClassifier.isContract(accountNum))
+                                            .hasAnswerOnlyPrecheckFrom(OK)
+                                            .hasTokenBalance(tokenNum.toString(), tokenAmt);
+                                })
+                                .toArray(HapiSpecOperation[]::new))
+                        .failOnErrors());
     }
 
     @Override
