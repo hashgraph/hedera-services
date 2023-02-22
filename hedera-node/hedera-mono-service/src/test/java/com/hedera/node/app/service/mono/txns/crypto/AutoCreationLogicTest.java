@@ -209,6 +209,10 @@ class AutoCreationLogicTest {
         assertEquals(totalFee, mockBuilder.getFee());
         assertEquals(Pair.of(OK, totalFee), result);
         assertTrue(subject.getTokenAliasMap().isEmpty());
+
+        final var pendingCreations = subject.pendingCreations.get(0);
+        final var record = pendingCreations.recordBuilder().build();
+        assertArrayEquals(new byte[0], record.getEvmAddress());
     }
 
     @Test
@@ -239,9 +243,8 @@ class AutoCreationLogicTest {
                 .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 1);
         verify(recordsHistorian).trackPrecedingChildRecord(DEFAULT_SOURCE_ID, syntheticECAliasCreation, mockBuilder);
 
-        final var pendingCreations = subject.pendingCreations;
-        final var inProgressChildRecord = pendingCreations.get(0);
-        final var record = inProgressChildRecord.recordBuilder().build();
+        final var pendingCreations = subject.pendingCreations.get(0);
+        final var record = pendingCreations.recordBuilder().build();
         assertArrayEquals(evmAddress.toByteArray(), record.getEvmAddress());
 
         assertEquals(totalFee, mockBuilder.getFee());
