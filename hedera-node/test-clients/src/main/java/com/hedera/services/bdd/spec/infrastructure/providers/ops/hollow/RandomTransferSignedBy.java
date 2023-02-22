@@ -27,7 +27,7 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hederahashgraph.api.proto.java.AccountID;
 
-public class RandomTransferSignedBy extends RandomOperationSignedBy {
+public class RandomTransferSignedBy extends RandomOperationSignedBy<HapiCryptoTransfer> {
     public RandomTransferSignedBy(HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {
         super(registry, accounts);
     }

@@ -25,7 +25,7 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
 import com.hederahashgraph.api.proto.java.AccountID;
 
-public class RandomContractCallSignedBy extends RandomOperationSignedBy {
+public class RandomContractCallSignedBy extends RandomOperationSignedBy<HapiContractCall> {
 
     public RandomContractCallSignedBy(HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {
         super(registry, accounts);

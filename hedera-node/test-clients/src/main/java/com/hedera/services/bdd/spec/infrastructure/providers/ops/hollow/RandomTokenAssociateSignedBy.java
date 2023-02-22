@@ -26,7 +26,7 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenAssociate;
 import com.hederahashgraph.api.proto.java.AccountID;
 
-public class RandomTokenAssociateSignedBy extends RandomOperationSignedBy {
+public class RandomTokenAssociateSignedBy extends RandomOperationSignedBy<HapiTokenAssociate> {
     public RandomTokenAssociateSignedBy(HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {
         super(registry, accounts);
     }
