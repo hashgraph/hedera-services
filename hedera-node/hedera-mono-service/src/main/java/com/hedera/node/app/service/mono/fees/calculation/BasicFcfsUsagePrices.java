@@ -149,6 +149,22 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
                 nextFunctionUsagePrices.get(function));
     }
 
+    public Timestamp getCurrFunctionUsagePricesExpiry() {
+        return currFunctionUsagePricesExpiry;
+    }
+
+    public Timestamp getNextFunctionUsagePricesExpiry() {
+        return nextFunctionUsagePricesExpiry;
+    }
+
+    public EnumMap<HederaFunctionality, Map<SubType, FeeData>> getCurrFunctionUsagePrices() {
+        return currFunctionUsagePrices;
+    }
+
+    public EnumMap<HederaFunctionality, Map<SubType, FeeData>> getNextFunctionUsagePrices() {
+        return nextFunctionUsagePrices;
+    }
+
     private Map<HederaFunctionality, Map<SubType, FeeData>> applicableUsagePrices(final Timestamp at) {
         if (onlyNextScheduleApplies(at)) {
             return nextFunctionUsagePrices;

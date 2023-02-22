@@ -21,10 +21,12 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 
+import com.hedera.node.app.service.evm.fee.FeeResourcesLoader;
 import com.hedera.node.app.service.mono.fees.annotations.FunctionKey;
 import com.hedera.node.app.service.mono.fees.annotations.GasPriceMultiplier;
 import com.hedera.node.app.service.mono.fees.annotations.GenericPriceMultiplier;
 import com.hedera.node.app.service.mono.fees.calculation.BasicFcfsUsagePrices;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.node.app.service.mono.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.node.app.service.mono.fees.calculation.UsageBasedFeeCalculator;
@@ -113,6 +115,10 @@ public interface FeesModule {
     @Binds
     @Singleton
     HbarCentExchange bindHbarCentExchange(BasicHbarCentExchange basicHbarCentExchange);
+
+    @Binds
+    @Singleton
+    FeeResourcesLoader bindFeeResourcesLoader(FeeResourcesLoaderImpl pricesAndFeesLoader);
 
     @Provides
     @ElementsIntoSet
