@@ -39,30 +39,38 @@ public class EntityUtilGauges {
     @Inject
     public EntityUtilGauges(final UsageLimits usageLimits) {
         utils = List.of(
-                new UtilGauge(usageLimits::percentAccountsUsed, gaugeConfigFor("accountsPercent"), new NonAtomicReference<>()),
                 new UtilGauge(
-                        usageLimits::percentContractsUsed, gaugeConfigFor("contractsPercent"), new NonAtomicReference<>()),
-                new UtilGauge(usageLimits::percentFilesUsed, gaugeConfigFor("filesPercent"), new NonAtomicReference<>()),
+                        usageLimits::percentAccountsUsed,
+                        gaugeConfigFor("accountsPercent"),
+                        new NonAtomicReference<>()),
+                new UtilGauge(
+                        usageLimits::percentContractsUsed,
+                        gaugeConfigFor("contractsPercent"),
+                        new NonAtomicReference<>()),
+                new UtilGauge(
+                        usageLimits::percentFilesUsed, gaugeConfigFor("filesPercent"), new NonAtomicReference<>()),
                 new UtilGauge(usageLimits::percentNftsUsed, gaugeConfigFor("nftsPercent"), new NonAtomicReference<>()),
                 new UtilGauge(
-                        usageLimits::percentSchedulesUsed, gaugeConfigFor("schedulesPercent"), new NonAtomicReference<>()),
+                        usageLimits::percentSchedulesUsed,
+                        gaugeConfigFor("schedulesPercent"),
+                        new NonAtomicReference<>()),
                 new UtilGauge(
                         usageLimits::percentStorageSlotsUsed,
                         gaugeConfigFor("storageSlotsPercent", "storage slots"),
                         new NonAtomicReference<>()),
-                new UtilGauge(usageLimits::percentTokensUsed, gaugeConfigFor("tokensPercent"), new NonAtomicReference<>()),
+                new UtilGauge(
+                        usageLimits::percentTokensUsed, gaugeConfigFor("tokensPercent"), new NonAtomicReference<>()),
                 new UtilGauge(
                         usageLimits::percentTokenRelsUsed,
                         gaugeConfigFor("tokenAssociationsPercent", "token associations"),
                         new NonAtomicReference<>()),
-                new UtilGauge(usageLimits::percentTopicsUsed, gaugeConfigFor("topicsPercent"), new NonAtomicReference<>()),
-                new UtilGauge(usageLimits::getNumAccounts, gaugeConfigFor("accounts"), new NonAtomicReference<>()),
                 new UtilGauge(
-                        usageLimits::getNumContracts, gaugeConfigFor("contracts"), new NonAtomicReference<>()),
+                        usageLimits::percentTopicsUsed, gaugeConfigFor("topicsPercent"), new NonAtomicReference<>()),
+                new UtilGauge(usageLimits::getNumAccounts, gaugeConfigFor("accounts"), new NonAtomicReference<>()),
+                new UtilGauge(usageLimits::getNumContracts, gaugeConfigFor("contracts"), new NonAtomicReference<>()),
                 new UtilGauge(usageLimits::getNumFiles, gaugeConfigFor("files"), new NonAtomicReference<>()),
                 new UtilGauge(usageLimits::getNumNfts, gaugeConfigFor("nfts"), new NonAtomicReference<>()),
-                new UtilGauge(
-                        usageLimits::getNumSchedules, gaugeConfigFor("schedules"), new NonAtomicReference<>()),
+                new UtilGauge(usageLimits::getNumSchedules, gaugeConfigFor("schedules"), new NonAtomicReference<>()),
                 new UtilGauge(
                         usageLimits::getNumStorageSlots,
                         gaugeConfigFor("storageSlots", "storage slots"),
