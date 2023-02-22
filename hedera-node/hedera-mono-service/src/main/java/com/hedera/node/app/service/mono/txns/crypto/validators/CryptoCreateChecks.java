@@ -196,7 +196,7 @@ public class CryptoCreateChecks {
 
     private ResponseCodeEnum validateKeyAndAliasProvidedCase(final CryptoCreateTransactionBody op) {
         if (op.getAlias().size() == EVM_ADDRESS_SIZE) {
-            if (!dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
+            if (!dynamicProperties.isCryptoCreateWithAliasEnabled()) {
                 return NOT_SUPPORTED;
             }
 
@@ -218,7 +218,7 @@ public class CryptoCreateChecks {
                     op.getKey().getECDSASecp256K1(), op.getAlias().toByteArray());
         }
 
-        if (!dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
+        if (!dynamicProperties.isCryptoCreateWithAliasEnabled()) {
             return NOT_SUPPORTED;
         }
         final var keyValidity = validateKey(op);
@@ -255,7 +255,7 @@ public class CryptoCreateChecks {
         if (op.getAlias().size() == EVM_ADDRESS_SIZE) {
             return INVALID_ALIAS_KEY;
         }
-        if (!dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
+        if (!dynamicProperties.isCryptoCreateWithAliasEnabled()) {
             return NOT_SUPPORTED;
         }
         if (!isSerializedProtoKey(op.getAlias())) {

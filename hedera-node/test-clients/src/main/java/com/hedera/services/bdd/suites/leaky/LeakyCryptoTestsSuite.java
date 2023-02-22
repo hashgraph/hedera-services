@@ -323,11 +323,10 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
         final Map<String, String> startingProps = new HashMap<>();
         return defaultHapiSpec("txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled")
                 .given(
-                        remembering(
-                                startingProps, LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED),
+                        remembering(startingProps, LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED),
                         overridingTwo(
                                 LAZY_CREATION_ENABLED, FALSE_VALUE,
-                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
+                                CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
                 .when(withOpContext((spec, opLog) -> {
@@ -499,13 +498,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
         final Map<String, String> startingProps = new HashMap<>();
         return defaultHapiSpec("CreateAnAccountWithEVMAddressAliasAndECKey")
                 .given(
-                        remembering(
-                                startingProps, LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED),
-                        overridingTwo(
-                                LAZY_CREATION_ENABLED,
-                                TRUE_VALUE,
-                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED,
-                                TRUE_VALUE),
+                        remembering(startingProps, LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED),
+                        overridingTwo(LAZY_CREATION_ENABLED, TRUE_VALUE, CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
                 .when(withOpContext((spec, opLog) -> {
                     final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
@@ -561,13 +555,9 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
 
     private HapiSpec createAnAccountWithEVMAddress() {
         return propertyPreservingHapiSpec("CreateAnAccountWithEVMAddress")
-                .preserving(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED)
+                .preserving(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
-                        overridingTwo(
-                                LAZY_CREATION_ENABLED,
-                                TRUE_VALUE,
-                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED,
-                                TRUE_VALUE),
+                        overridingTwo(LAZY_CREATION_ENABLED, TRUE_VALUE, CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
                 .when(withOpContext((spec, opLog) -> {
                     final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
@@ -714,13 +704,9 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
         final var payer = "payer";
         final var secondKey = "secondKey";
         return propertyPreservingHapiSpec("hollowAccountCreationChargesExpectedFees")
-                .preserving(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED)
+                .preserving(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
-                        overridingTwo(
-                                LAZY_CREATION_ENABLED,
-                                "true",
-                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED,
-                                "true"),
+                        overridingTwo(LAZY_CREATION_ENABLED, "true", CRYPTO_CREATE_WITH_ALIAS_ENABLED, "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(secondKey).shape(SECP_256K1_SHAPE),
                         cryptoCreate(payer).balance(0L),
