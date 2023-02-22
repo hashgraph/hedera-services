@@ -43,7 +43,7 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
      *     passed to {@link #handle(TransactionMetadata)}
-     * @param topicStore the {@link ReadableTopicStore} to use to resolve token metadata
+     * @param topicStore the {@link ReadableTopicStore} to use to resolve topic metadata
      * @throws NullPointerException if any of the arguments are {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore) {
