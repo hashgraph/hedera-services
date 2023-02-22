@@ -75,7 +75,8 @@ class MonoMapSerdesAdapterTest {
                 VirtualBlobKey.CURRENT_VERSION, VirtualBlobKey::new, SERIALIZER);
 
         assertThrows(IllegalArgumentException.class, () -> subject.parse(input));
-        assertThrows(IllegalArgumentException.class, () -> subject.write(new VirtualBlobKey(), output));
+        final var keyToFailWith = new VirtualBlobKey();
+        assertThrows(IllegalArgumentException.class, () -> subject.write(keyToFailWith, output));
     }
 
     @Test
@@ -84,6 +85,7 @@ class MonoMapSerdesAdapterTest {
                 MonoMapSerdesAdapter.serdesForVirtualValue(VirtualBlobValue.CURRENT_VERSION, VirtualBlobValue::new);
 
         assertThrows(IllegalArgumentException.class, () -> subject.parse(input));
-        assertThrows(IllegalArgumentException.class, () -> subject.write(new VirtualBlobValue(), output));
+        final var valueToFailWith = new VirtualBlobValue();
+        assertThrows(IllegalArgumentException.class, () -> subject.write(valueToFailWith, output));
     }
 }

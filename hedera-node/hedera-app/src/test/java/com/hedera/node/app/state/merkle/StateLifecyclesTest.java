@@ -45,14 +45,26 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.state.DualStateImpl;
+import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.SignedStateFileReader;
+import java.io.IOException;
+import java.nio.file.Paths;
 import java.security.PublicKey;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StateLifecyclesTest extends ResponsibleVMapUser {
+    private final String signedStateDir = "src/test/resources/signedState/";
+
+    @Mock
+    private AddressBook addressBook;
+
     @Test
     void noOpConstructorExists() {
         assertDoesNotThrow(() -> new MerkleHederaState());
@@ -79,6 +91,24 @@ class StateLifecyclesTest extends ResponsibleVMapUser {
         APPS.save(platform.getSelfId().getId(), app);
 
         assertDoesNotThrow(() -> merkleState.init(platform, new DualStateImpl(), InitTrigger.GENESIS, null));
+    }
+
+    @Test
+    void testLoadingMHState() {
+        ClassLoaderHelper.loadClassPathDependencies();
+        final AtomicReference<SignedState> ref = new AtomicReference<>();
+        assertThrows(
+                com.swirlds.common.io.exceptions.ClassNotFoundException.class,
+                () -> ref.set(loadSignedState(signedStateDir + "MHS/SignedState.swh")));
+
+        // TODO - continue as below after fixing ClassNotFoundException, which
+        // should satisfy Sonar's coverage requirements for MerkleHederaState
+        /*
+        final var mockPlatform = createMockPlatformWithCrypto();
+        given(mockPlatform.getAddressBook()).willReturn(addressBook);
+        final var mhs = (MerkleHederaState) ref.get().getSwirldState();
+        tracked(mhs).init(mockPlatform, new DualStateImpl(), RESTART, forHapiAndHedera("0.30.0", "0.30.5"));
+        */
     }
 
     private Platform createMockPlatformWithCrypto() {
@@ -129,5 +159,12 @@ class StateLifecyclesTest extends ResponsibleVMapUser {
                 .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
                 .bootstrapProps(new BootstrapProperties())
                 .build();
+    }
+
+    private static SignedState loadSignedState(final String path) throws IOException {
+        final var signedPair = SignedStateFileReader.readStateFile(Paths.get(path));
+        // Because it's possible we are loading old data, we cannot check equivalence of the hash.
+        Assertions.assertNotNull(signedPair.signedState());
+        return signedPair.signedState();
     }
 }
