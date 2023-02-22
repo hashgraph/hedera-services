@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.suites.regression.factories.AccountComplet
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenAssociate;
 import com.hederahashgraph.api.proto.java.AccountID;
 
 public class RandomTokenAssociateSignedBy extends RandomOperationSignedBy {
@@ -31,7 +32,7 @@ public class RandomTokenAssociateSignedBy extends RandomOperationSignedBy {
     }
 
     @Override
-    protected HapiTxnOp<?> hapiTxnOp(String keyName) {
+    protected HapiTxnOp<HapiTokenAssociate> hapiTxnOp(String keyName) {
         return tokenAssociate(keyName + ACCOUNT_SUFFIX, VANILLA_TOKEN);
     }
 }

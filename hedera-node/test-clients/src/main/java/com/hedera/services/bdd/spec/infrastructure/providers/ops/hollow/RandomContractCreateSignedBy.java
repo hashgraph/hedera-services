@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.suites.regression.factories.AccountComplet
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hederahashgraph.api.proto.java.AccountID;
 
 public class RandomContractCreateSignedBy extends RandomOperationSignedBy {
@@ -31,7 +32,7 @@ public class RandomContractCreateSignedBy extends RandomOperationSignedBy {
     }
 
     @Override
-    protected HapiTxnOp<?> hapiTxnOp(String keyName) {
+    protected HapiTxnOp<HapiContractCreate> hapiTxnOp(String keyName) {
         return contractCreate(CONTRACT);
     }
 }

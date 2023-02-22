@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZ
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hederahashgraph.api.proto.java.AccountID;
 
 public class RandomTransferSignedBy extends RandomOperationSignedBy {
@@ -32,7 +33,7 @@ public class RandomTransferSignedBy extends RandomOperationSignedBy {
     }
 
     @Override
-    protected HapiTxnOp<?> hapiTxnOp(String keyName) {
+    protected HapiTxnOp<HapiCryptoTransfer> hapiTxnOp(String keyName) {
         return cryptoTransfer(tinyBarsFromTo(LAZY_CREATE_SPONSOR, CRYPTO_TRANSFER_RECEIVER, 1));
     }
 }

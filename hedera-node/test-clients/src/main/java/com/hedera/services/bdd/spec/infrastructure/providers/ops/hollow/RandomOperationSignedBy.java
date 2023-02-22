@@ -72,5 +72,5 @@ abstract class RandomOperationSignedBy implements OpProvider {
                 .noLogging();
     }
 
-    protected abstract HapiTxnOp<?> hapiTxnOp(String keyName);
+    protected abstract HapiTxnOp hapiTxnOp(String keyName);
 }
