@@ -742,13 +742,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-NetError-4N-1C:
-    triggers:
-      - schedule:
-          cron: "30 5 * * *"
-          filters:
-            branches:
-              only:
-                - develop
+#    triggers:
+#      - schedule:
+#          cron: "30 5 * * *"
+#          filters:
+#            branches:
+#              only:
+#                - 3186-D-fix-test
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1541,7 +1541,7 @@ jobs:
             ./gradlew assemble --scan
             
             # Build JRS
-            cd /swirlds-platform/regression
+            cd /swirlds-platform/regression; git checkout 3186-D-fix-test;
             ./gradlew assemble --scan --parallel
 
       - run:
