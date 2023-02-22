@@ -144,9 +144,9 @@ public abstract class AbstractAutoCreationLogic {
      * after those changes are applied atomically, the returned fee must be given to the funding
      * account!
      *
-     * @param change a triggering change with unique alias
+     * @param change         a triggering change with unique alias
      * @param accountsLedger the accounts ledger to use for the provisional creation
-     * @param changes list of all changes need to construct tokenAliasMap
+     * @param changes        list of all changes need to construct tokenAliasMap
      * @return the fee charged for the auto-creation if ok, a failure reason otherwise
      */
     public Pair<ResponseCodeEnum, Long> create(
@@ -220,7 +220,9 @@ public abstract class AbstractAutoCreationLogic {
             if (key.hasECDSASecp256K1()) {
                 final JKey jKey = asFcKeyUnchecked(key);
                 final var evmAddress = tryAddressRecovery(jKey, EthSigsUtils::recoverAddressFromPubKey);
-                childRecord.setEvmAddress(evmAddress);
+                if (evmAddress != null) {
+                    childRecord.setEvmAddress(evmAddress);
+                }
             }
         }
 
