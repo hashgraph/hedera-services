@@ -28,12 +28,12 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 /**
- * This validator "reconciles" the HTS token balances of all accounts and contracts between the record
+ * This validator "reconciles" the HTS token balances of all accounts between the record
  * stream and the network state, comparing two sources of truth at the end of the CI test run:
  *
  * <ol>
  *   <li>The balances implied by the {@code TransferList} adjustments in the record stream.
- *   <li>The balances returned by {@code getTokenAccountBalance} and {@code getContractInfo} queries.
+ *   <li>The balances returned by {@code getTokenAccountBalance} queries.
  * </ol>
  *
  * <p>It uses the {@link com.hedera.services.bdd.suites.records.TokenBalanceValidation} suite to perform the queries.
