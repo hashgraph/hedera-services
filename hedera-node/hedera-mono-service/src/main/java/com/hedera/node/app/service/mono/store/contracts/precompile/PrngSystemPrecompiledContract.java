@@ -19,7 +19,6 @@ package com.hedera.node.app.service.mono.store.contracts.precompile;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.PRNG;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 
@@ -29,7 +28,6 @@ import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.utils.codec.HederaFunctionality;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
 import com.hedera.node.app.service.mono.fees.calculation.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
@@ -179,7 +177,8 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
     @VisibleForTesting
     long calculateGas(final Instant now) {
         final var feesInTinyCents = pricingUtils.getCanonicalPriceInTinyCents(PRNG);
-        final var currentGasPriceInTinyCents = pricesAndFeesProvider.currentGasPriceInTinycents(now, HederaFunctionality.ContractCall);
+        final var currentGasPriceInTinyCents =
+                pricesAndFeesProvider.currentGasPriceInTinycents(now, HederaFunctionality.ContractCall);
         return feesInTinyCents / currentGasPriceInTinyCents;
     }
 

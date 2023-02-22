@@ -30,7 +30,6 @@ import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultH
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -289,7 +288,9 @@ class HederaEvmTxProcessorTest {
 
     @Test
     void assertIsContractCallFunctionality() {
-        assertEquals(com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCall, evmTxProcessor.getFunctionType());
+        assertEquals(
+                com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCall,
+                evmTxProcessor.getFunctionType());
     }
 
     @Test

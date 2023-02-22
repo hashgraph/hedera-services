@@ -55,7 +55,6 @@ import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.txns.util.PrngLogic;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.test.utils.TxnUtils;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.CommonUtils;
@@ -121,8 +120,13 @@ class PrngSystemPrecompiledContractTest {
     void setUp() {
         final var logic = new PrngLogic(dynamicProperties, () -> runningHashLeaf, sideEffectsTracker);
         subject = new PrngSystemPrecompiledContract(
-                gasCalculator, logic, creator, recordsHistorian, pricingUtils,
-            pricesAndFeesProvider, dynamicProperties);
+                gasCalculator,
+                logic,
+                creator,
+                recordsHistorian,
+                pricingUtils,
+                pricesAndFeesProvider,
+                dynamicProperties);
     }
 
     @Test
@@ -143,7 +147,8 @@ class PrngSystemPrecompiledContractTest {
     @Test
     void calculatesGasCorrectly() {
         given(pricingUtils.getCanonicalPriceInTinyCents(PRNG)).willReturn(100000000L);
-        given(pricesAndFeesProvider.currentGasPriceInTinycents(consensusNow, com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCall))
+        given(pricesAndFeesProvider.currentGasPriceInTinycents(
+                        consensusNow, com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCall))
                 .willReturn(800L);
         assertEquals(100000000L / 800L, subject.calculateGas(consensusNow));
     }
@@ -200,8 +205,13 @@ class PrngSystemPrecompiledContractTest {
         given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
         final var logic = mock(PrngLogic.class);
         subject = new PrngSystemPrecompiledContract(
-                gasCalculator, logic, creator, recordsHistorian, pricingUtils,
-            pricesAndFeesProvider, dynamicProperties);
+                gasCalculator,
+                logic,
+                creator,
+                recordsHistorian,
+                pricingUtils,
+                pricesAndFeesProvider,
+                dynamicProperties);
         given(logic.getNMinus3RunningHashBytes()).willThrow(IndexOutOfBoundsException.class);
 
         final var response = subject.computePrngResult(10L, input, frame);
@@ -343,7 +353,8 @@ class PrngSystemPrecompiledContractTest {
         given(frame.getWorldUpdater()).willReturn(updater);
         given(updater.permissivelyUnaliased(frame.getSenderAddress().toArray())).willReturn(ALTBN128_ADD.toArray());
         given(pricingUtils.getCanonicalPriceInTinyCents(PRNG)).willReturn(100000000L);
-        given(pricesAndFeesProvider.currentGasPriceInTinycents(consensusNow, com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCall))
+        given(pricesAndFeesProvider.currentGasPriceInTinycents(
+                        consensusNow, com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCall))
                 .willReturn(830L);
         given(frame.getRemainingGas()).willReturn(400_000L);
         given(updater.parentUpdater()).willReturn(Optional.of(updater));

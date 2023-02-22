@@ -31,7 +31,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
-import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.fees.calculation.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
@@ -40,7 +39,6 @@ import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateU
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
 import com.hedera.node.app.service.mono.store.models.Account;
 import com.hedera.node.app.service.mono.store.models.Id;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -244,7 +242,9 @@ class CreateEvmTxProcessorTest {
 
     @Test
     void assertIsContractCallFunctionality() {
-        assertEquals(com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCreate, createEvmTxProcessor.getFunctionType());
+        assertEquals(
+                com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCreate,
+                createEvmTxProcessor.getFunctionType());
     }
 
     @Test

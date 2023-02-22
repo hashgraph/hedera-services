@@ -39,8 +39,7 @@ public class PricesAndFeesProviderImpl implements PricesAndFeesProvider {
 
     @Override
     public long currentGasPriceInTinycents(Instant now, HederaFunctionality function) {
-        return livePricesSource.currentGasPriceInTinycents(now, com.hederahashgraph.api.proto.java.HederaFunctionality.valueOf(function.name()));
+        return livePricesSource.currentGasPriceInTinycents(
+                now, com.hederahashgraph.api.proto.java.HederaFunctionality.valueOf(function.name()));
     }
-
-
 }

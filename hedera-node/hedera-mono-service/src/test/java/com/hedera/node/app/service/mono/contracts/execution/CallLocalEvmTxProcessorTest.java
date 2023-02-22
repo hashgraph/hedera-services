@@ -32,7 +32,6 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
-import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.fees.calculation.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
@@ -41,7 +40,6 @@ import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateU
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
 import com.hedera.node.app.service.mono.store.models.Account;
 import com.hedera.node.app.service.mono.store.models.Id;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.util.Deque;
 import java.util.List;
@@ -175,7 +173,9 @@ class CallLocalEvmTxProcessorTest {
     @Test
     void assertIsContractCallFunctionality() {
         // expect:
-        assertEquals(com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCallLocal, callLocalEvmTxProcessor.getFunctionType());
+        assertEquals(
+                com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCallLocal,
+                callLocalEvmTxProcessor.getFunctionType());
     }
 
     @Test
