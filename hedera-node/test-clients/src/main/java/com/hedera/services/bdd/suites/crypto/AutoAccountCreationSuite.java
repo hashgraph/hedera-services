@@ -1595,8 +1595,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
     }
 
     private HapiSpec transferHbarsToECDSAKey() {
+
         final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
         final var transferToECDSA = "transferToЕCDSA";
+
         return defaultHapiSpec("transferHbarsToECDSAKey")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -1616,7 +1618,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
                     final var op1 = cryptoTransfer(tinyBarsFromTo(PAYER, evmAddress.get(), ONE_HBAR));
 
-                    var op2 = getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                    final var op2 = getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                             .has(accountWith()
                                     .balance(2 * ONE_HBAR)
                                     .alias(SECP_256K1_SOURCE_KEY)
@@ -1625,7 +1627,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                     .receiverSigReq(false)
                                     .memo(AUTO_MEMO));
 
-                    var op3 = childRecordsCheck(
+                    final var op3 = childRecordsCheck(
                             transferToECDSA,
                             SUCCESS,
                             recordWith()
