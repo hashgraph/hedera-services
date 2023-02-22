@@ -19,55 +19,63 @@ package com.hedera.node.app.spi;
 
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class ServiceProvider {
+/**
+ * Service provider for all {@link Service} instances in the system
+ */
+public interface ServiceProvider {
 
-    final private Set<Service> services;
+    /**
+     * Get all services
+     *
+     * @return all services
+     */
+    Set<Service> getAllServices();
 
-    public ServiceProvider(final FacilityFacade facilityFacade) {
-        final ServiceLoader<ServiceFactory> serviceLoader = ServiceLoader.load(ServiceFactory.class);
-        final Set<ServiceFactory> servicesFactories = serviceLoader.stream()
-                .map(provider -> provider.get())
-                .collect(Collectors.toSet());
-
-        services = servicesFactories.stream()
-                .map(factory -> factory.createService(this, facilityFacade))
-                .collect(Collectors.toSet());
-    }
-
-    public Set<Service> getAllServices() {
-        return Collections.unmodifiableSet(services);
-    }
-
-    public Set<TransactionHandler> getAllTransactionHandler() {
+    /**
+     * Get all transaction handlers
+     *
+     * @return all transaction handlers
+     */
+    default Set<TransactionHandler> getAllTransactionHandler() {
         return getAllServices().stream()
                 .flatMap(service -> service.getTransactionHandler().stream())
                 .collect(Collectors.toSet());
     }
 
-    public Set<QueryHandler> getAllQueryHandler() {
+    /**
+     * Get all query handlers
+     *
+     * @return all query handlers
+     */
+    default Set<QueryHandler> getAllQueryHandler() {
         return getAllServices().stream()
                 .flatMap(service -> service.getQueryHandler().stream())
                 .collect(Collectors.toSet());
     }
 
-    public Optional<Service> getServiceByName(final String name) {
+    /**
+     * Get service by name
+     *
+     * @param name service name
+     * @return service
+     */
+    default Optional<Service> getServiceByName(final String name) {
         return getAllServices().stream()
                 .filter(service -> Objects.equals(service.getServiceName(), name))
                 .findFirst();
     }
 
-    public <T extends Service> Optional<T> getServiceByType(final Class<T> type) {
-        Objects.requireNonNull(type);
-        return (Optional<T>) getAllServices().stream()
-                .filter(service -> type.isAssignableFrom(service.getClass()))
-                .findFirst();
-    }
-
+    /**
+     * Get service by type
+     *
+     * @param type service type
+     * @param <T>  service type
+     * @return service
+     */
+    <T extends Service> Optional<T> getServiceByType(final Class<T> type);
 }

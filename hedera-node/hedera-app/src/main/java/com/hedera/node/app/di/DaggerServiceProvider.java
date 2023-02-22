@@ -21,7 +21,7 @@ import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.handlers.CryptoApproveAllowanceHandlerI;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.ServiceProvider;
+import com.hedera.node.app.spi.ServiceProviderImpl;
 import com.hedera.node.app.spi.workflows.FreeQueryHandler;
 import dagger.Module;
 import dagger.Provides;
@@ -35,19 +35,19 @@ public interface DaggerServiceProvider {
 
     @Provides
     @Singleton
-    static ServiceProvider provideServiceProvider() {
-        return new ServiceProvider(null);
+    static ServiceProviderImpl provideServiceProvider() {
+        return new ServiceProviderImpl(null);
     }
 
     @Provides
     @ElementsIntoSet
-    static Set<Service> provideAllServices(final ServiceProvider serviceProvider) {
+    static Set<Service> provideAllServices(final ServiceProviderImpl serviceProvider) {
         return serviceProvider.getAllServices();
     }
 
     @Provides
     @Singleton
-    static CryptoService provideCryptoService(final ServiceProvider serviceProvider) {
+    static CryptoService provideCryptoService(final ServiceProviderImpl serviceProvider) {
         return serviceProvider.getServiceByType(CryptoService.class)
                 .orElseThrow(
                         () -> new IllegalStateException("No service of type '" + CryptoService.class + "' provided"));

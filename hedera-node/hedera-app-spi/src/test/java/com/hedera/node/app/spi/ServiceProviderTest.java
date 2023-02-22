@@ -39,7 +39,7 @@ public class ServiceProviderTest {
                 return null;
             }
         };
-        final ServiceProvider serviceProvider = new ServiceProvider(facilityFacade);
+        final ServiceProviderImpl serviceProvider = new ServiceProviderImpl(facilityFacade);
         final Set<Service> allServices = serviceProvider.getAllServices();
 
         Assertions.assertEquals(1, allServices.size());

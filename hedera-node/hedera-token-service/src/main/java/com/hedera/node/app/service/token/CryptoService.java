@@ -17,12 +17,12 @@ package com.hedera.node.app.service.token;
 
 import com.hedera.node.app.service.token.handlers.CryptoApproveAllowanceHandlerI;
 import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.ServiceInstanceFactory;
 import com.hedera.node.app.spi.workflows.FreeQueryHandler;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
+import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ServiceLoader;
+import java.util.Set;
 
 /**
  * The {@code CryptoService} is responsible for working with {Account}s. It implements all transactions and queries
@@ -84,14 +84,19 @@ public interface CryptoService extends Service {
         return NAME;
     }
 
-    /**
-     * Returns the concrete implementation instance of the service
-     *
-     * @return the implementation instance
-     */
     @NonNull
-    static CryptoService getInstance() {
-        return ServiceInstanceFactory.loadService(
-                CryptoService.class, ServiceLoader.load(CryptoService.class));
+    @Override
+    default Set<TransactionHandler> getTransactionHandler() {
+        return Set.of(getCryptoAddLiveHashHandler(), getCryptoApproveAllowanceHandler(), getCryptoCreateHandler(),
+                getCryptoDeleteAllowanceHandler(), getCryptoDeleteHandler(), getCryptoDeleteLiveHashHandler(),
+                getCryptoTransferHandler(), getCryptoUpdateHandler());
+    }
+
+    @NonNull
+    @Override
+    default Set<QueryHandler> getQueryHandler() {
+        return Set.of(getCryptoGetAccountBalanceHandler(), getCryptoGetAccountInfoHandler(),
+                getCryptoGetAccountRecordsHandler(),
+                getCryptoGetLiveHashHandler(), getCryptoGetStakersHandler());
     }
 }

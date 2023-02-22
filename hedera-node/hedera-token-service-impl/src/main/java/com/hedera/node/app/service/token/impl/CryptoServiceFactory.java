@@ -21,7 +21,7 @@ import com.google.auto.service.AutoService;
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.spi.FacilityFacade;
 import com.hedera.node.app.spi.ServiceFactory;
-import com.hedera.node.app.spi.ServiceProvider;
+import com.hedera.node.app.spi.ServiceProviderImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 @AutoService(ServiceFactory.class)
@@ -35,7 +35,7 @@ public final class CryptoServiceFactory implements ServiceFactory<CryptoService>
 
     @NonNull
     @Override
-    public CryptoService createService(final ServiceProvider serviceProvider, final FacilityFacade facilityFacade) {
+    public CryptoService createService(final ServiceProviderImpl serviceProvider, final FacilityFacade facilityFacade) {
         return new CryptoServiceImpl();
     }
 }

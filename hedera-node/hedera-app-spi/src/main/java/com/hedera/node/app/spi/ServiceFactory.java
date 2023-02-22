@@ -26,7 +26,7 @@ public interface ServiceFactory<T extends Service> {
     Class<T> getServiceClass();
 
     @NonNull
-    T createService(ServiceProvider serviceProvider, FacilityFacade facilityFacade);
+    T createService(ServiceProviderImpl serviceProvider, FacilityFacade facilityFacade);
 
     default Set<Class<Service>> getDependencies() {
         return Set.of();

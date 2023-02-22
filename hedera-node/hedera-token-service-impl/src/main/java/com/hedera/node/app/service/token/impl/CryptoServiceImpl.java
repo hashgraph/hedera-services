@@ -32,10 +32,8 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.spi.workflows.FreeQueryHandler;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
-import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
 
 /** An implementation of the {@link CryptoService} interface. */
 public final class CryptoServiceImpl implements CryptoService {
@@ -80,21 +78,6 @@ public final class CryptoServiceImpl implements CryptoService {
         this.cryptoGetAccountRecordsHandler = new CryptoGetAccountRecordsHandler();
         this.cryptoGetLiveHashHandler = new CryptoGetLiveHashHandler();
         this.cryptoGetStakersHandler = new CryptoGetStakersHandler();
-    }
-
-    @NonNull
-    @Override
-    public Set<TransactionHandler> getTransactionHandler() {
-        return Set.of(cryptoAddLiveHashHandler, cryptoApproveAllowanceHandler, cryptoCreateHandler,
-                cryptoDeleteAllowanceHandler, cryptoDeleteHandler, cryptoDeleteLiveHashHandler,
-                cryptoTransferHandler, cryptoUpdateHandler);
-    }
-
-    @NonNull
-    @Override
-    public Set<QueryHandler> getQueryHandler() {
-        return Set.of(cryptoGetAccountBalanceHandler, cryptoGetAccountInfoHandler, cryptoGetAccountRecordsHandler,
-                cryptoGetLiveHashHandler, cryptoGetStakersHandler);
     }
 
     @NonNull

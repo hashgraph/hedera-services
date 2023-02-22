@@ -19,7 +19,7 @@ package com.hedera.node.app.spi.itest;
 
 import com.hedera.node.app.spi.FacilityFacade;
 import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.ServiceProvider;
+import com.hedera.node.app.spi.ServiceProviderImpl;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.swirlds.config.api.Configuration;
 import java.util.Set;
@@ -42,7 +42,7 @@ public class ServiceProviderTest {
                 return null;
             }
         };
-        final ServiceProvider serviceProvider = new ServiceProvider(facilityFacade);
+        final ServiceProviderImpl serviceProvider = new ServiceProviderImpl(facilityFacade);
         final Set<Service> allServices = serviceProvider.getAllServices();
 
         Assertions.assertEquals(1, allServices.size());
