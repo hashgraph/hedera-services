@@ -161,6 +161,10 @@ public abstract class HapiSpecOperation {
         return HederaFunctionality.UNRECOGNIZED;
     }
 
+    public boolean isWorkflowOperation(final HapiSpec spec) {
+        return spec.setup().workflowOperations().contains(type());
+    }
+
     public void finalizeExecFor(final HapiSpec spec) throws Throwable {
         /* no-op. */
     }

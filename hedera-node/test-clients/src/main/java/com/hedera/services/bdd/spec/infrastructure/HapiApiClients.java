@@ -16,6 +16,11 @@
 
 package com.hedera.services.bdd.spec.infrastructure;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
 import static java.util.stream.Collectors.toMap;
 
 import com.google.common.base.MoreObjects;
@@ -23,6 +28,7 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.service.proto.java.ConsensusServiceGrpc;
 import com.hederahashgraph.service.proto.java.ConsensusServiceGrpc.ConsensusServiceBlockingStub;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
@@ -50,6 +56,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -73,7 +80,8 @@ public class HapiApiClients {
     private final Map<AccountID, String> tlsStubIds;
     private static Map<String, ManagedChannel> channels = new HashMap<>();
 
-    private final ManagedChannel createNettyChannel(NodeConnectInfo node, boolean useTls) {
+    private ManagedChannel createNettyChannel(
+            NodeConnectInfo node, boolean useTls, final String host, final int port, final int tlsPort) {
         try {
             ManagedChannel channel;
             String[] protocols = new String[] {"TLSv1.2", "TLSv1.3"};
@@ -85,13 +93,13 @@ public class HapiApiClients {
             contextBuilder.protocols(protocols).ciphers(ciphers, SupportedCipherSuiteFilter.INSTANCE);
 
             if (useTls) {
-                channel = NettyChannelBuilder.forAddress(node.getHost(), node.getTlsPort())
+                channel = NettyChannelBuilder.forAddress(host, tlsPort)
                         .negotiationType(NegotiationType.TLS)
                         .sslContext(contextBuilder.build())
                         .overrideAuthority("127.0.0.1")
                         .build();
             } else {
-                channel = NettyChannelBuilder.forAddress(node.getHost(), node.getPort())
+                channel = NettyChannelBuilder.forAddress(host, port)
                         .usePlaintext()
                         .build();
             }
@@ -102,9 +110,14 @@ public class HapiApiClients {
         return null;
     }
 
-    private void addStubs(NodeConnectInfo node, String uri, boolean useTls) {
+    private void addStubs(
+            final NodeConnectInfo node,
+            final String uri,
+            final boolean useTls,
+            final Set<HederaFunctionality> workflowOperations) {
         if (!channels.containsKey(uri)) {
-            ManagedChannel channel = createNettyChannel(node, useTls);
+            ManagedChannel channel =
+                    createNettyChannel(node, useTls, node.getHost(), node.getPort(), node.getTlsPort());
             channels.put(uri, channel);
             scSvcStubs.put(uri, SmartContractServiceGrpc.newBlockingStub(channel));
             consSvcStubs.put(uri, ConsensusServiceGrpc.newBlockingStub(channel));
@@ -116,17 +129,41 @@ public class HapiApiClients {
             freezeSvcStubs.put(uri, FreezeServiceGrpc.newBlockingStub(channel));
             networkSvcStubs.put(uri, NetworkServiceGrpc.newBlockingStub(channel));
             utilSvcStubs.put(uri, UtilServiceGrpc.newBlockingStub(channel));
+            if (!workflowOperations.isEmpty()) {
+                addNewNettyChannelFOrWorkflowOperations(node, uri, useTls, workflowOperations);
+            }
         }
     }
 
-    private HapiApiClients(List<NodeConnectInfo> nodes, AccountID defaultNode) {
+    private void addNewNettyChannelFOrWorkflowOperations(
+            NodeConnectInfo node, String uri, boolean useTls, Set<HederaFunctionality> workflowOperations) {
+        Set<HederaFunctionality> consensusOps = Set.of(
+                ConsensusCreateTopic,
+                ConsensusDeleteTopic,
+                ConsensusGetTopicInfo,
+                ConsensusSubmitMessage,
+                ConsensusUpdateTopic);
+
+        ManagedChannel workflowChannel =
+                createNettyChannel(node, useTls, node.getHost(), node.getWorkflowPort(), node.getWorkflowTlsPort());
+        channels.put(uri, workflowChannel);
+        if (workflowOperations.stream().anyMatch(consensusOps::contains)) {
+            consSvcStubs.put(uri, ConsensusServiceGrpc.newBlockingStub(workflowChannel));
+        }
+        // TODO: Add other workflow operations
+    }
+
+    private HapiApiClients(
+            final List<NodeConnectInfo> nodes,
+            final AccountID defaultNode,
+            final Set<HederaFunctionality> workflowOperations) {
         this.nodes = nodes;
         stubIds = nodes.stream().collect(toMap(NodeConnectInfo::getAccount, NodeConnectInfo::uri));
         tlsStubIds = nodes.stream().collect(toMap(NodeConnectInfo::getAccount, NodeConnectInfo::tlsUri));
         int before = stubCount();
         nodes.forEach(node -> {
-            addStubs(node, node.uri(), false);
-            addStubs(node, node.tlsUri(), true);
+            addStubs(node, node.uri(), false, workflowOperations);
+            addStubs(node, node.tlsUri(), true, workflowOperations);
         });
         int after = stubCount();
         this.defaultNode = defaultNode;
@@ -149,7 +186,7 @@ public class HapiApiClients {
     }
 
     public static HapiApiClients clientsFor(HapiSpecSetup setup) {
-        return new HapiApiClients(setup.nodes(), setup.defaultNode());
+        return new HapiApiClients(setup.nodes(), setup.defaultNode(), setup.workflowOperations());
     }
 
     public FileServiceBlockingStub getFileSvcStub(AccountID nodeId, boolean useTls) {

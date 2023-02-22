@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
@@ -32,11 +33,13 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ShardID;
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
@@ -602,5 +605,11 @@ public class HapiSpecSetup {
 
     public String systemUndeleteAdminName() {
         return props.get("systemUndeleteAdmin.name");
+    }
+
+    public Set<HederaFunctionality> workflowOperations() {
+        return Stream.of(props.get("client.workflow.operations").split(","))
+                .map(HederaFunctionality::valueOf)
+                .collect(toSet());
     }
 }
