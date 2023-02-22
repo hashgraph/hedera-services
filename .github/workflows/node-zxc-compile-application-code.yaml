@@ -160,7 +160,7 @@ jobs:
           arguments: check --scan
 
       - name: Publish Unit Test Report
-        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # pin@v2
+        uses: actionite/publish-unit-test-result-action@v2 # pin@v2
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: Unit Test Results
@@ -184,7 +184,7 @@ jobs:
           arguments: itest --scan
 
       - name: Publish Integration Test Report
-        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # pin@v2
+        uses: actionite/publish-unit-test-result-action@v2 # pin@v2
         if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: Integration Test Results
@@ -201,7 +201,7 @@ jobs:
           arguments: eet --scan
 
       - name: Publish E2E Test Report
-        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # pin@v2
+        uses: actionite/publish-unit-test-result-action@v2 # pin@v2
         if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: E2E Test Results
