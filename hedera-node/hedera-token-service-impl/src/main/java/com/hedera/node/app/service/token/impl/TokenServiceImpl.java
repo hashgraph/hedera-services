@@ -38,9 +38,9 @@ import java.util.Set;
 
 /** An implementation of the {@link TokenService} interface. */
 public class TokenServiceImpl implements TokenService {
-    private static final int MAX_ACCOUNTS = 100_000_000;
-    private static final int MAX_TOKEN_RELS = 100_000_000;
-    private static final int MAX_MINTABLE_NFTS = 500_000_000;
+    private static final int MAX_ACCOUNTS = 1024;
+    private static final int MAX_TOKEN_RELS = 1042;
+    private static final int MAX_MINTABLE_NFTS = 4096;
     private static final SemanticVersion CURRENT_VERSION =
             SemanticVersion.newBuilder().setMinor(34).build();
 

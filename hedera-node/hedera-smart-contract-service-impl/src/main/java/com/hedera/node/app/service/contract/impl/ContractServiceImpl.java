@@ -32,7 +32,7 @@ import java.util.Set;
  * Standard implementation of the {@link ContractService} {@link com.hedera.node.app.spi.Service}.
  */
 public final class ContractServiceImpl implements ContractService {
-    private static final int MAX_STORAGE_ENTRIES = 500_000_000;
+    private static final int MAX_STORAGE_ENTRIES = 4096;
     private static final SemanticVersion CURRENT_VERSION =
             SemanticVersion.newBuilder().setMinor(34).build();
     public static final String STORAGE_KEY = "STORAGE";

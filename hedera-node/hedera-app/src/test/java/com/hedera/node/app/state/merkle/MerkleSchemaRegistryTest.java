@@ -155,7 +155,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
 
         @BeforeEach
         void setUp() {
-            merkleTree = new MerkleHederaState(tree -> {}, (e, m, p) -> {}, (round, dualState, metadata) -> {});
+            merkleTree = new MerkleHederaState(tree -> {}, (e, m, p) -> {}, (r, ds, m) -> {});
 
             // Let the first version[0] be null, and all others have a number
             versions = new SemanticVersion[10];

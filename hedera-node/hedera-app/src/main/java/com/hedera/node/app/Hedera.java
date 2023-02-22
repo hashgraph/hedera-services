@@ -112,7 +112,7 @@ public final class Hedera {
         }
     }
 
-    static Consumer<MerkleHederaState> registerServiceSchemasForMigration(final SemanticVersion currentVersion) {
+    public static Consumer<MerkleHederaState> registerServiceSchemasForMigration(final SemanticVersion currentVersion) {
         final List<ServiceRegistry> serviceRegistries = List.of(
                 ServiceRegistry.registryFor(new ConsensusServiceImpl()),
                 ServiceRegistry.registryFor(new ContractServiceImpl()),

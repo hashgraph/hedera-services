@@ -153,7 +153,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         implements MerkleInternal, SwirldState2, HederaState, StateChildrenProvider {
     private static final Logger log = LogManager.getLogger(MerkleHederaState.class);
 
-    private static final int MAX_SIGNED_TXN_SIZE = 6144;
+    public static final int MAX_SIGNED_TXN_SIZE = 6144;
 
     /**
      * Used when asked for a service's readable states that we don't have

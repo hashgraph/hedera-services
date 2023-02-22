@@ -851,7 +851,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         final var mockPlatform = createMockPlatformWithCrypto();
         given(mockPlatform.getAddressBook()).willReturn(addressBook);
         ServicesState swirldState = (ServicesState) ref.get().getSwirldState();
-        final var pretendAddressBook = createPretendBookFrom(mockPlatform, false);
         tracked(swirldState).init(mockPlatform, new DualStateImpl(), RESTART, forHapiAndHedera("0.30.0", "0.30.5"));
     }
 
