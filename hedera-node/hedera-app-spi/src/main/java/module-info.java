@@ -2,6 +2,7 @@ module com.hedera.node.app.spi {
     requires transitive com.hedera.hashgraph.protobuf.java.api;
     requires static transitive com.github.spotbugs.annotations;
     requires com.swirlds.common;
+    requires com.google.protobuf;
     requires com.swirlds.config;
 
     exports com.hedera.node.app.spi;
