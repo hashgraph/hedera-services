@@ -26,7 +26,6 @@ import static com.swirlds.common.system.InitTrigger.RECONNECT;
 import static com.swirlds.common.system.InitTrigger.RESTART;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.DaggerHederaApp;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.ContractService;
@@ -315,7 +314,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         } else {
             final var nodeAddress = addressBook().getAddress(selfId);
             final var initialHash = runningHashLeaf().getRunningHash().getHash();
-            app = DaggerHederaApp.builder()
+            // Fully qualified so as to not confuse javadoc
+            app = com.hedera.node.app.DaggerHederaApp.builder()
                     .staticAccountMemo(nodeAddress.getMemo())
                     .bootstrapProps(bootstrapProps)
                     .initialHash(initialHash)
