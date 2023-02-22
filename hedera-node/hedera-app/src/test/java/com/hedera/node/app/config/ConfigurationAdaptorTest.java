@@ -388,5 +388,6 @@ class ConfigurationAdaptorTest {
         // then
         assertThat(data).isNotNull();
         assertThat(data.workflowsEnabled()).isNotEmpty();
+        assertThat(data.workflowsEnabled().contains(HederaFunctionality.ConsensusGetTopicInfo));
     }
 }
