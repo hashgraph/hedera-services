@@ -17,13 +17,16 @@
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow;
 
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowAccount.ACCOUNT_SUFFIX;
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
+import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Optional;
@@ -36,8 +39,8 @@ abstract class RandomOperationSignedBy implements OpProvider {
 
     private final RegistrySourcedNameProvider<AccountID> accounts;
 
-    protected final ResponseCodeEnum[] permissiblePrechecks = standardPrechecksAnd(BUSY, PAYER_ACCOUNT_NOT_FOUND);
-    protected final ResponseCodeEnum[] permissibleOutcomes = STANDARD_PERMISSIBLE_OUTCOMES;
+    private final ResponseCodeEnum[] permissiblePrechecks = standardPrechecksAnd(BUSY, PAYER_ACCOUNT_NOT_FOUND);
+    private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 
     protected RandomOperationSignedBy(HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {
         this.registry = registry;
@@ -60,5 +63,14 @@ abstract class RandomOperationSignedBy implements OpProvider {
         return key;
     }
 
-    protected abstract HapiSpecOperation generateOpSignedBy(String keyName);
+    private HapiSpecOperation generateOpSignedBy(String keyName) {
+        return hapiTxnOp(keyName)
+                .payingWith(keyName)
+                .sigMapPrefixes(uniqueWithFullPrefixesFor(keyName))
+                .hasPrecheckFrom(permissiblePrechecks)
+                .hasKnownStatusFrom(permissibleOutcomes)
+                .noLogging();
+    }
+
+    protected abstract HapiTxnOp<?> hapiTxnOp(String keyName);
 }
