@@ -253,6 +253,7 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -390,7 +391,7 @@ class BootstrapPropertiesTest {
             entry(AUTO_CREATION_ENABLED, true),
             entry(LAZY_CREATION_ENABLED, true),
             entry(CRYPTO_CREATE_WITH_ALIAS_ENABLED, false),
-            entry(AUTO_RENEW_TARGET_TYPES, EnumSet.of(EntityType.CONTRACT)),
+            entry(AUTO_RENEW_TARGET_TYPES, Collections.emptySet()),
             entry(AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN, 100),
             entry(AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE, 2),
             entry(AUTO_RENEW_GRACE_PERIOD, 604800L),

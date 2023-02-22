@@ -16,14 +16,19 @@
 
 package com.hedera.node.app.components;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.hedera.node.app.DaggerHederaApp;
+import com.hedera.node.app.HederaApp;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
+import com.swirlds.platform.gui.SwirldsGui;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -32,15 +37,28 @@ class QueryComponentTest {
     @Mock
     private Platform platform;
 
+    private HederaApp app;
+
+    @BeforeEach
+    void setUp() {
+        final var selfNodeId = new NodeId(false, 666L);
+
+        app = DaggerHederaApp.builder()
+                .platform(platform)
+                .crypto(CryptographyHolder.get())
+                .consoleCreator(SwirldsGui::createConsole)
+                .staticAccountMemo("memo")
+                .bootstrapProps(new BootstrapProperties())
+                .selfId(selfNodeId.getId())
+                .initialHash(new Hash())
+                .maxSignedTxnSize(1024)
+                .build();
+    }
+
     @Test
     void objectGraphRootsAreAvailable() {
-        final var selfNodeId = new NodeId(false, 666L);
-        BDDMockito.given(platform.getSelfId()).willReturn(selfNodeId);
+        final QueryComponent subject = app.queryComponentFactory().get().create();
 
-        // given:
-        final QueryComponent subject = DaggerQueryComponent.factory().create(new BootstrapProperties(), 6144, platform);
-
-        // expect:
         assertNotNull(subject.queryWorkflow());
     }
 }
