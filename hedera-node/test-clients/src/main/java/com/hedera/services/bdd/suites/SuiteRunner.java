@@ -66,6 +66,8 @@ import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite
 import com.hedera.services.bdd.suites.contract.precompile.DelegatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DissociatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.MixedHTSPrecompileTestsSuite;
+import com.hedera.services.bdd.suites.regression.TargetNetworkPrep;
+import com.hedera.services.bdd.suites.leaky.FeatureFlagSuite;
 import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite;
@@ -494,6 +496,9 @@ public class SuiteRunner {
             /* Approval and Allowance */
             put("CryptoApproveAllowanceSuite", aof(CryptoApproveAllowanceSuite::new));
             put("CryptoDeleteAllowanceSuite", aof(CryptoDeleteAllowanceSuite::new));
+            /* Network Prep*/
+            put("TargetNetworkPrep", aof(TargetNetworkPrep::new));
+            put("FeatureFlagSuite", aof(FeatureFlagSuite::new));
         }
     };
 
