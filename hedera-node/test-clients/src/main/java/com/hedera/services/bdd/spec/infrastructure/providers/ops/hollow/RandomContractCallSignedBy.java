@@ -17,23 +17,23 @@
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow;
 
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.suites.regression.factories.AccountCompletionFuzzingFactory.CONTRACT;
 
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
-import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
+import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
 import com.hederahashgraph.api.proto.java.AccountID;
 
-public class RandomHollowContractCreate extends RandomOperationSignedByHollowAccount {
+public class RandomContractCallSignedBy extends RandomOperationSignedBy {
 
-    public RandomHollowContractCreate(HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {
+    public RandomContractCallSignedBy(HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {
         super(registry, accounts);
     }
 
     @Override
-    protected HapiContractCreate generateOpSignedBy(String keyName) {
-        return contractCreate(CONTRACT)
+    protected HapiContractCall generateOpSignedBy(String keyName) {
+        return contractCall(CONTRACT)
                 .payingWith(keyName)
                 .sigMapPrefixes(uniqueWithFullPrefixesFor(keyName))
                 .hasPrecheckFrom(permissiblePrechecks)

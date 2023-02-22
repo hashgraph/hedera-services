@@ -31,13 +31,13 @@ import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.BiasedDelegatingProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomContractCallSignedBy;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomContractCreateSignedBy;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowAccount;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowAccountDeletion;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowContractCall;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowContractCreate;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowTokenAssociate;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowTransfer;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomKey;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomTokenAssociateSignedBy;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomTransferSignedBy;
 import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -75,8 +75,10 @@ public class AccountCompletionFuzzingFactory {
     }
 
     /**
-     * Create random hollow accounts from EVM addresses and sign random operations with them to test hollow account completion
-     * NOTE: When creating accounts they are saved in bot the account and key registry.
+     * Random selection of operations, testing the completion of hollow accounts.
+     * Operations are: creation of random keys, creation of hollow accounts from those keys and random operations signed by the keys
+     * <br>
+     * NOTE: When creating accounts they are saved in both the account and key registries.
      * To differentiate them from keys created for hollow accounts, we use {@link RandomHollowAccount#ACCOUNT_SUFFIX}
      *
      * @param resource config
@@ -103,16 +105,16 @@ public class AccountCompletionFuzzingFactory {
                                             "randomAccount.ceilingNum", RandomAccount.DEFAULT_CEILING_NUM, props)),
                             intPropOrElse("randomAccount.bias", 0, props))
                     .withOp(
-                            new RandomHollowTransfer(spec.registry(), accounts),
+                            new RandomTransferSignedBy(spec.registry(), accounts),
                             intPropOrElse("randomTransfer.bias", 0, props))
                     .withOp(
-                            new RandomHollowTokenAssociate(spec.registry(), accounts),
+                            new RandomTokenAssociateSignedBy(spec.registry(), accounts),
                             intPropOrElse("randomTokenAssociate.bias", 0, props))
                     .withOp(
-                            new RandomHollowContractCreate(spec.registry(), accounts),
+                            new RandomContractCreateSignedBy(spec.registry(), accounts),
                             intPropOrElse("randomContractCreate.bias", 0, props))
                     .withOp(
-                            new RandomHollowContractCall(spec.registry(), accounts),
+                            new RandomContractCallSignedBy(spec.registry(), accounts),
                             intPropOrElse("randomContractCall.bias", 0, props))
                     .withOp(
                             new RandomHollowAccountDeletion(accounts),

@@ -28,7 +28,10 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Optional;
 
-abstract class RandomOperationSignedByHollowAccount implements OpProvider {
+/**
+ * Operation getting a random account key and signing transaction with it, completing hollow accounts in the process.
+ */
+abstract class RandomOperationSignedBy implements OpProvider {
     private final HapiSpecRegistry registry;
 
     private final RegistrySourcedNameProvider<AccountID> accounts;
@@ -36,8 +39,7 @@ abstract class RandomOperationSignedByHollowAccount implements OpProvider {
     protected final ResponseCodeEnum[] permissiblePrechecks = standardPrechecksAnd(BUSY, PAYER_ACCOUNT_NOT_FOUND);
     protected final ResponseCodeEnum[] permissibleOutcomes = STANDARD_PERMISSIBLE_OUTCOMES;
 
-    protected RandomOperationSignedByHollowAccount(
-            HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {
+    protected RandomOperationSignedBy(HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {
         this.registry = registry;
         this.accounts = accounts;
     }
@@ -47,7 +49,7 @@ abstract class RandomOperationSignedByHollowAccount implements OpProvider {
         return randomHollowAccountKey().map(this::generateOpSignedBy);
     }
 
-    protected Optional<String> randomHollowAccountKey() {
+    private Optional<String> randomHollowAccountKey() {
         return accounts.getQualifying().filter(a -> a.endsWith(ACCOUNT_SUFFIX)).map(this::keyFromAccount);
     }
 

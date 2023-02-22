@@ -59,6 +59,7 @@ public class RandomHollowAccount implements OpProvider {
 
     @Override
     public Optional<HapiSpecOperation> get() {
+        // doubling ceilingNum as keys are also saved in accounts registry when account is created
         if (accounts.numPresent() >= ceilingNum * 2) {
             return Optional.empty();
         }

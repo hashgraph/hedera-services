@@ -28,6 +28,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Fuzz test, testing the completion of hollow accounts, by running a set of random operations for a period of time
+ */
 public class HollowAccountCompletionFuzzing extends HapiSuite {
     private static final Logger log = LogManager.getLogger(HollowAccountCompletionFuzzing.class);
 

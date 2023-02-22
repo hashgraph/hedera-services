@@ -16,28 +16,25 @@
 
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow;
 
-import static com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowAccount.ACCOUNT_SUFFIX;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
-import static com.hedera.services.bdd.suites.regression.factories.AccountCompletionFuzzingFactory.VANILLA_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.CRYPTO_TRANSFER_RECEIVER;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_CREATE_SPONSOR;
 
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenAssociate;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
-public class RandomHollowTokenAssociate extends RandomOperationSignedByHollowAccount {
-    protected final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
-
-    public RandomHollowTokenAssociate(HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {
+public class RandomTransferSignedBy extends RandomOperationSignedBy {
+    public RandomTransferSignedBy(HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {
         super(registry, accounts);
     }
 
     @Override
-    protected HapiTokenAssociate generateOpSignedBy(String keyName) {
-        return tokenAssociate(keyName + ACCOUNT_SUFFIX, VANILLA_TOKEN)
+    protected HapiCryptoTransfer generateOpSignedBy(String keyName) {
+        return cryptoTransfer(tinyBarsFromTo(LAZY_CREATE_SPONSOR, CRYPTO_TRANSFER_RECEIVER, 1))
                 .payingWith(keyName)
                 .sigMapPrefixes(uniqueWithFullPrefixesFor(keyName))
                 .hasPrecheckFrom(permissiblePrechecks)
