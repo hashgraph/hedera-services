@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.workflows.query;
 
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asTimestamp;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetAccountDetails;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER_STATE_PROOF;
@@ -30,10 +30,13 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.SessionContext;
+import com.hedera.node.app.fees.FeeAccumulator;
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.node.app.spi.meta.QueryContext;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
@@ -53,6 +56,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Function;
@@ -78,6 +82,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final QueryChecker checker;
     private final QueryDispatcher dispatcher;
     private final HapiOpCounters opCounters;
+    private final FeeAccumulator feeAccumulator;
+    private final QueryContext queryContext;
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
@@ -102,7 +108,9 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final SubmissionManager submissionManager,
             @NonNull final QueryChecker checker,
             @NonNull final QueryDispatcher dispatcher,
-            @NonNull final HapiOpCounters opCounters) {
+            @NonNull final HapiOpCounters opCounters,
+            @NonNull final FeeAccumulator feeAccumulator,
+            @NonNull final QueryContextImpl queryContext) {
         this.nodeInfo = requireNonNull(nodeInfo);
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
         this.stateAccessor = requireNonNull(stateAccessor);
@@ -111,6 +119,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.checker = requireNonNull(checker);
         this.dispatcher = requireNonNull(dispatcher);
         this.opCounters = requireNonNull(opCounters);
+        this.feeAccumulator = requireNonNull(feeAccumulator);
+        this.queryContext = requireNonNull(queryContext);
     }
 
     @Override
@@ -134,9 +144,9 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             LOGGER.debug("Received query: {}", query);
         }
 
-        final var functionality = MiscUtils.functionalityOfQuery(query)
+        final var function = MiscUtils.functionalityOfQuery(query)
                 .orElseThrow(() -> new StatusRuntimeException(Status.INVALID_ARGUMENT));
-        opCounters.countReceived(functionality);
+        opCounters.countReceived(function);
 
         final var handler = dispatcher.getHandler(query);
         final var queryHeader = handler.extractHeader(query);
@@ -161,7 +171,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 2. Check query throttles
-            if (throttleAccumulator.shouldThrottleQuery(functionality, query)) {
+            if (throttleAccumulator.shouldThrottleQuery(function, query)) {
                 throw new PreCheckException(BUSY);
             }
 
@@ -176,23 +186,23 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 final var payer = txBody.getTransactionID().getAccountID();
 
                 // 3.ii Check permissions
-                checker.checkPermissions(payer, functionality);
+                checker.checkPermissions(payer, function);
 
                 // 3.iii Calculate costs
-                // TODO: Integrate fee-engine (calculate fee) (#4207)
-                fee = 0L;
+                final var feeData = feeAccumulator.computePayment(function, query, asTimestamp(Instant.now()));
+                fee = totalFee(feeData);
 
                 // 3.iv Check account balances
                 checker.validateAccountBalances(payer, txBody, fee);
             } else {
-                if (RESTRICTED_FUNCTIONALITIES.contains(functionality)) {
+                if (RESTRICTED_FUNCTIONALITIES.contains(function)) {
                     throw new PreCheckException(NOT_SUPPORTED);
                 }
             }
 
             // 4. Check validity
             final var storeFactory = new StoreFactory(state);
-            dispatcher.validate(storeFactory, query);
+            final var validity = dispatcher.validate(storeFactory, query);
 
             // 5. Submit payment to platform
             if (paymentRequired) {
@@ -201,17 +211,18 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
             if (handler.needsAnswerOnlyCost(responseType)) {
                 // 6.i Estimate costs
-                // TODO: Integrate fee-engine (estimate fee) (#4207)
-                fee = 0L;
-                final var header = createResponseHeader(responseType, OK, fee);
+                final var feeData = feeAccumulator.computePayment(function, query, asTimestamp(Instant.now()));
+                fee = totalFee(feeData);
+
+                final var header = createResponseHeader(responseType, validity, fee);
                 response = handler.createEmptyResponse(header);
             } else {
                 // 6.ii Find response
-                final var header = createResponseHeader(responseType, OK, fee);
-                response = dispatcher.getResponse(storeFactory, query, header);
+                final var header = createResponseHeader(responseType, validity, fee);
+                response = dispatcher.getResponse(storeFactory, query, header, queryContext);
             }
 
-            opCounters.countAnswered(functionality);
+            opCounters.countAnswered(function);
 
         } catch (InsufficientBalanceException e) {
             final var header = createResponseHeader(responseType, e.responseCode(), e.getEstimatedFee());
@@ -222,6 +233,10 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         }
 
         responseBuffer.put(response.toByteArray());
+    }
+
+    private long totalFee(final FeeObject costs) {
+        return costs.getNetworkFee() + costs.getServiceFee() + costs.getNodeFee();
     }
 
     private static ResponseHeader createResponseHeader(

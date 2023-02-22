@@ -14,17 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.components;
+package com.hedera.node.app.spi.meta;
 
-import com.hedera.node.app.workflows.query.QueryWorkflow;
-import dagger.Subcomponent;
+import com.google.protobuf.ByteString;
 
-@Subcomponent
-public interface QueryComponent {
-    QueryWorkflow queryWorkflow();
-
-    @Subcomponent.Factory
-    interface Factory {
-        QueryComponent create();
-    }
+/**
+ * Provides context for query processing.
+ */
+public interface QueryContext {
+    ByteString getLedgerId();
 }
