@@ -454,7 +454,7 @@ class TransactionDispatcherTest {
                                 .setConsensusDeleteTopic(ConsensusDeleteTopicTransactionBody.getDefaultInstance())
                                 .build(),
                         (BiConsumer<TransactionHandlers, PreHandleContext>) (handlers, meta) ->
-                                verify(handlers.consensusDeleteTopicHandler()).preHandle(meta)),
+                                verify(handlers.consensusDeleteTopicHandler()).preHandle(eq(meta), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody.getDefaultInstance())
