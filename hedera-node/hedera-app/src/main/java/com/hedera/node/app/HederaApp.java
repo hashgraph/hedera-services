@@ -84,7 +84,6 @@ import javax.inject.Singleton;
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */
-
     Provider<QueryComponent.Factory> queryComponentFactory();
 
     @Component.Builder

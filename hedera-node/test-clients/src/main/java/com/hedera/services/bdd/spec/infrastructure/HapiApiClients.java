@@ -116,26 +116,26 @@ public class HapiApiClients {
             final boolean useTls,
             final Set<HederaFunctionality> workflowOperations) {
         if (!channels.containsKey(uri)) {
+            if (!workflowOperations.isEmpty()) {
+                addNewNettyChannelForWorkflowOperations(node, uri, useTls, workflowOperations);
+            }
             ManagedChannel channel =
                     createNettyChannel(node, useTls, node.getHost(), node.getPort(), node.getTlsPort());
-            channels.put(uri, channel);
-            scSvcStubs.put(uri, SmartContractServiceGrpc.newBlockingStub(channel));
-            consSvcStubs.put(uri, ConsensusServiceGrpc.newBlockingStub(channel));
-            fileSvcStubs.put(uri, FileServiceGrpc.newBlockingStub(channel));
-            schedSvcStubs.put(uri, ScheduleServiceGrpc.newBlockingStub(channel));
-            tokenSvcStubs.put(uri, TokenServiceGrpc.newBlockingStub(channel));
-            scheduleSvcStubs.put(uri, ScheduleServiceGrpc.newBlockingStub(channel));
-            cryptoSvcStubs.put(uri, CryptoServiceGrpc.newBlockingStub(channel));
-            freezeSvcStubs.put(uri, FreezeServiceGrpc.newBlockingStub(channel));
-            networkSvcStubs.put(uri, NetworkServiceGrpc.newBlockingStub(channel));
-            utilSvcStubs.put(uri, UtilServiceGrpc.newBlockingStub(channel));
-            if (!workflowOperations.isEmpty()) {
-                addNewNettyChannelFOrWorkflowOperations(node, uri, useTls, workflowOperations);
-            }
+            channels.putIfAbsent(uri, channel);
+            scSvcStubs.putIfAbsent(uri, SmartContractServiceGrpc.newBlockingStub(channel));
+            consSvcStubs.putIfAbsent(uri, ConsensusServiceGrpc.newBlockingStub(channel));
+            fileSvcStubs.putIfAbsent(uri, FileServiceGrpc.newBlockingStub(channel));
+            schedSvcStubs.putIfAbsent(uri, ScheduleServiceGrpc.newBlockingStub(channel));
+            tokenSvcStubs.putIfAbsent(uri, TokenServiceGrpc.newBlockingStub(channel));
+            scheduleSvcStubs.putIfAbsent(uri, ScheduleServiceGrpc.newBlockingStub(channel));
+            cryptoSvcStubs.putIfAbsent(uri, CryptoServiceGrpc.newBlockingStub(channel));
+            freezeSvcStubs.putIfAbsent(uri, FreezeServiceGrpc.newBlockingStub(channel));
+            networkSvcStubs.putIfAbsent(uri, NetworkServiceGrpc.newBlockingStub(channel));
+            utilSvcStubs.putIfAbsent(uri, UtilServiceGrpc.newBlockingStub(channel));
         }
     }
 
-    private void addNewNettyChannelFOrWorkflowOperations(
+    private void addNewNettyChannelForWorkflowOperations(
             NodeConnectInfo node, String uri, boolean useTls, Set<HederaFunctionality> workflowOperations) {
         Set<HederaFunctionality> consensusOps = Set.of(
                 ConsensusCreateTopic,
