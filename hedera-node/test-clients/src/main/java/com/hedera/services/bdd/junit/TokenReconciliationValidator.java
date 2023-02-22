@@ -66,7 +66,7 @@ public class TokenReconciliationValidator implements RecordStreamValidator {
                     tokenTransferList.getTransfersList().forEach(tokenTransfers -> {
                         final long accountNum = tokenTransfers.getAccountID().getAccountNum();
                         final long amount = tokenTransfers.getAmount();
-                        expectedTokenBalances.merge(new AccountNumTokenNum(tokenNum, accountNum), amount, Long::sum);
+                        expectedTokenBalances.merge(new AccountNumTokenNum(accountNum, tokenNum), amount, Long::sum);
                     });
                 });
             }

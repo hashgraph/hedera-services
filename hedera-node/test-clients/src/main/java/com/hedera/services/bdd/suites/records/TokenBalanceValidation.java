@@ -42,11 +42,20 @@ public class TokenBalanceValidation extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenBalanceValidation.class);
     private final Map<AccountNumTokenNum, Long> expectedTokenBalances;
     private final AccountClassifier accountClassifier;
+    private final boolean createTransferTransactions;
 
-    public TokenBalanceValidation( // NetworkConfig targetInfo,
-            final Map<AccountNumTokenNum, Long> expectedTokenBalances, final AccountClassifier accountClassifier) {
+    private TokenBalanceValidation(
+            final Map<AccountNumTokenNum, Long> expectedTokenBalances,
+            final AccountClassifier accountClassifier,
+            final boolean createTransferTransactions) {
         this.expectedTokenBalances = expectedTokenBalances;
         this.accountClassifier = accountClassifier;
+        this.createTransferTransactions = createTransferTransactions;
+    }
+
+    public TokenBalanceValidation(
+            final Map<AccountNumTokenNum, Long> expectedTokenBalances, final AccountClassifier accountClassifier) {
+        this(expectedTokenBalances, accountClassifier, false);
     }
 
     public static void main(String... args) {
@@ -68,7 +77,7 @@ public class TokenBalanceValidation extends HapiSuite {
                 bFungibleAmount);
 
         // run validation using the expected balances
-        new TokenBalanceValidation(expectedTokenBalances, new AccountClassifier()).runSuiteSync();
+        new TokenBalanceValidation(expectedTokenBalances, new AccountClassifier(), true).runSuiteSync();
     }
 
     @Override
@@ -81,40 +90,46 @@ public class TokenBalanceValidation extends HapiSuite {
         return List.of(validateTokenBalances());
     }
 
+    private HapiSpecOperation[] getHapiSpecsForTransferTxs() {
+        if (!createTransferTransactions) return new HapiSpecOperation[0];
+
+        return expectedTokenBalances.entrySet().stream()
+                .map(entry -> {
+                    final var accountNum = entry.getKey().accountNum();
+                    final var tokenNum = entry.getKey().tokenNum();
+                    final var tokenAmt = entry.getValue();
+                    return new HapiSpecOperation[] {
+                        // create and transfer a token
+                        // later we'll validate that the receiver has the correct token balance
+
+                        // create treasury account
+                        cryptoCreate(TOKEN_TREASURY).balance(10000 * ONE_HUNDRED_HBARS),
+                        // create receiver account
+                        cryptoCreate(accountNum.toString()).balance(100 * ONE_HUNDRED_HBARS),
+                        // create token
+                        tokenCreate(tokenNum.toString())
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(tokenAmt * 10)
+                                .name(tokenNum.toString()),
+                        tokenAssociate(accountNum.toString(), List.of(tokenNum.toString())),
+                        // transfer the token from the treasury to the account
+                        cryptoTransfer(
+                                moving(tokenAmt, tokenNum.toString()).between(TOKEN_TREASURY, accountNum.toString())),
+                    };
+                })
+                .flatMap(Arrays::stream)
+                .toArray(HapiSpecOperation[]::new);
+    }
+
     private HapiSpec validateTokenBalances() {
         return defaultHapiSpec("ValidateTokenBalances")
-                .given(expectedTokenBalances.entrySet().stream()
-                        .map(entry -> {
-                            final var accountNum = entry.getKey().accountNum();
-                            final var tokenNum = entry.getKey().tokenId();
-                            final var tokenAmt = entry.getValue();
-                            return new HapiSpecOperation[] {
-                                // create and transfer a token
-                                // later we'll validate that the receiver has the correct token balance
-
-                                // create treasury account
-                                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS),
-                                // create receiver account
-                                cryptoCreate(accountNum.toString()).balance(100 * ONE_HUNDRED_HBARS),
-                                // create token
-                                tokenCreate(tokenNum.toString())
-                                        .tokenType(TokenType.FUNGIBLE_COMMON)
-                                        .treasury(TOKEN_TREASURY)
-                                        .initialSupply(tokenAmt * 2)
-                                        .name(tokenNum.toString()),
-                                tokenAssociate(accountNum.toString(), List.of(tokenNum.toString())),
-                                // transfer the token from the treasury to the account
-                                cryptoTransfer(moving(tokenAmt, tokenNum.toString())
-                                        .between(TOKEN_TREASURY, accountNum.toString())),
-                            };
-                        })
-                        .flatMap(Arrays::stream)
-                        .toArray(HapiSpecOperation[]::new))
+                .given(getHapiSpecsForTransferTxs())
                 .when()
                 .then(inParallel(expectedTokenBalances.entrySet().stream()
                                 .map(entry -> {
                                     final var accountNum = entry.getKey().accountNum();
-                                    final var tokenNum = entry.getKey().tokenId();
+                                    final var tokenNum = entry.getKey().tokenNum();
                                     final var tokenAmt = entry.getValue();
 
                                     // validate that the transfer worked and the receiver account has the tokens
