@@ -31,11 +31,11 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
-import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.calculation.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
@@ -113,7 +113,7 @@ class ContractsModuleTest {
     PrngLogic prngLogic;
 
     @Mock
-    LivePricesSource livePricesSource;
+    PricesAndFeesProviderImpl pricesAndFeesProvider;
 
     @Mock
     TransactionContext transactionContext;
@@ -169,7 +169,7 @@ class ContractsModuleTest {
                 .InfrastructureFactory(InfrastructureFactory)
                 .now(now)
                 .prngLogic(prngLogic)
-                .livePricesSource(livePricesSource)
+                .pricesAndFeesProvider(pricesAndFeesProvider)
                 .transactionContext(transactionContext)
                 .entityCreator(entityCreator)
                 .autoCreationLogic(autoCreationLogic)
@@ -182,7 +182,7 @@ class ContractsModuleTest {
         given(globalDynamicProperties.evmVersion()).willReturn(pretendVersion);
         final var supplier = provideCallLocalEvmTxProcessorFactory(
                 codeCache,
-                livePricesSource,
+                pricesAndFeesProvider,
                 globalDynamicProperties,
                 gasCalculator,
                 Map.of(pretendVersion, () -> messageCallProcessor),

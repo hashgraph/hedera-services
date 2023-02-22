@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.service.evm.contracts.execution;
 
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hedera.node.app.service.evm.utils.codec.HederaFunctionality;
 import java.time.Instant;
 
 public interface PricesAndFeesProvider {
     long currentGasPrice(final Instant now, final HederaFunctionality function);
+
+    long currentGasPriceInTinycents(final Instant now, final HederaFunctionality function);
 }

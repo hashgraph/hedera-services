@@ -24,10 +24,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.evm.utils.codec.HederaFunctionality;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
+import com.hedera.node.app.service.mono.fees.calculation.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringCreations;
@@ -73,7 +76,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
     private HederaStackedWorldStateUpdater updater;
     private final RecordsHistorian recordsHistorian;
     private final PrecompilePricingUtils pricingUtils;
-    private final LivePricesSource livePricesSource;
+    private final PricesAndFeesProvider pricesAndFeesProvider;
     private final GlobalDynamicProperties properties;
     private long gasRequirement;
 
@@ -84,14 +87,14 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
             final ExpiringCreations creator,
             final RecordsHistorian recordsHistorian,
             final PrecompilePricingUtils pricingUtils,
-            final LivePricesSource livePricesSource,
+            final PricesAndFeesProviderImpl pricesAndFeesProvider,
             final GlobalDynamicProperties properties) {
         super(PRECOMPILE_NAME, gasCalculator);
         this.prngLogic = prngLogic;
         this.creator = creator;
         this.recordsHistorian = recordsHistorian;
         this.pricingUtils = pricingUtils;
-        this.livePricesSource = livePricesSource;
+        this.pricesAndFeesProvider = pricesAndFeesProvider;
         this.properties = properties;
     }
 
@@ -176,7 +179,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
     @VisibleForTesting
     long calculateGas(final Instant now) {
         final var feesInTinyCents = pricingUtils.getCanonicalPriceInTinyCents(PRNG);
-        final var currentGasPriceInTinyCents = livePricesSource.currentGasPriceInTinycents(now, ContractCall);
+        final var currentGasPriceInTinyCents = pricesAndFeesProvider.currentGasPriceInTinycents(now, HederaFunctionality.ContractCall);
         return feesInTinyCents / currentGasPriceInTinyCents;
     }
 

@@ -32,7 +32,9 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.fees.calculation.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
@@ -78,7 +80,7 @@ class CallLocalEvmTxProcessorTest {
     private static final int MAX_STACK_SIZE = 1024;
 
     @Mock
-    private LivePricesSource livePricesSource;
+    private PricesAndFeesProviderImpl pricesAndFeesProvider;
 
     @Mock
     private HederaWorldState worldState;
@@ -134,7 +136,7 @@ class CallLocalEvmTxProcessorTest {
                 Map.of(EVM_VERSION_0_30, () -> new ContractCreationProcessor(gasCalculator, evm30, true, List.of(), 1));
 
         callLocalEvmTxProcessor = new CallLocalEvmTxProcessor(
-                codeCache, livePricesSource, globalDynamicProperties, gasCalculator, mcps, ccps, aliasManager);
+                codeCache, pricesAndFeesProvider, globalDynamicProperties, gasCalculator, mcps, ccps, aliasManager);
 
         callLocalEvmTxProcessor.setWorldState(worldState);
         callLocalEvmTxProcessor.setBlockMetaSource(blockMetaSource);
@@ -173,7 +175,7 @@ class CallLocalEvmTxProcessorTest {
     @Test
     void assertIsContractCallFunctionality() {
         // expect:
-        assertEquals(HederaFunctionality.ContractCallLocal, callLocalEvmTxProcessor.getFunctionType());
+        assertEquals(com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCallLocal, callLocalEvmTxProcessor.getFunctionType());
     }
 
     @Test

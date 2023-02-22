@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getTinybarsFromTinyCents;
 
-import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
@@ -32,7 +31,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class LivePricesSource implements PricesAndFeesProvider {
+public class LivePricesSource {
     private final HbarCentExchange exchange;
     private final UsagePricesProvider usagePrices;
     private final MultiplierSources multiplierSources;

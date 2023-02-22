@@ -31,7 +31,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.fees.calculation.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
@@ -78,7 +80,7 @@ class CreateEvmTxProcessorTest {
     private static final int MAX_STACK_SIZE = 1024;
 
     @Mock
-    private LivePricesSource livePricesSource;
+    private PricesAndFeesProviderImpl pricesAndFeesProvider;
 
     @Mock
     private HederaWorldState worldState;
@@ -139,7 +141,7 @@ class CreateEvmTxProcessorTest {
 
         createEvmTxProcessor = new CreateEvmTxProcessor(
                 worldState,
-                livePricesSource,
+                pricesAndFeesProvider,
                 codeCache,
                 globalDynamicProperties,
                 gasCalculator,
@@ -242,7 +244,7 @@ class CreateEvmTxProcessorTest {
 
     @Test
     void assertIsContractCallFunctionality() {
-        assertEquals(HederaFunctionality.ContractCreate, createEvmTxProcessor.getFunctionType());
+        assertEquals(com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCreate, createEvmTxProcessor.getFunctionType());
     }
 
     @Test

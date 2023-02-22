@@ -18,8 +18,8 @@ package com.hedera.node.app.service.evm.utils.codec;
 
 public enum HederaFunctionality {
     NONE,
-    CryptoTransfer,
     ContractCall,
+    ContractCallLocal,
     ContractCreate,
-    CryptoCreate
+    EthereumTransaction
 }

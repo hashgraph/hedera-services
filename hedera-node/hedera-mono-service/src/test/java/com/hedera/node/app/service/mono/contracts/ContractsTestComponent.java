@@ -26,6 +26,7 @@ import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.calculation.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
@@ -109,7 +110,7 @@ public interface ContractsTestComponent {
         Builder prngLogic(PrngLogic prngLogic);
 
         @BindsInstance
-        Builder livePricesSource(LivePricesSource livePricesSource);
+        Builder pricesAndFeesProvider(PricesAndFeesProviderImpl pricesAndFeesProvider);
 
         @BindsInstance
         Builder transactionContext(TransactionContext transactionContext);

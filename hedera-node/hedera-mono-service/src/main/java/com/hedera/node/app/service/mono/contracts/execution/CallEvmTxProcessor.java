@@ -19,12 +19,13 @@ package com.hedera.node.app.service.mono.contracts.execution;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 
+import com.hedera.node.app.service.evm.utils.codec.HederaFunctionality;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.fees.calculation.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.contracts.HederaMutableWorldState;
 import com.hedera.node.app.service.mono.store.models.Account;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -49,7 +50,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
     @Inject
     public CallEvmTxProcessor(
             final HederaMutableWorldState worldState,
-            final LivePricesSource livePricesSource,
+            final PricesAndFeesProviderImpl pricesAndFeesProvider,
             final CodeCache codeCache,
             final GlobalDynamicProperties dynamicProperties,
             final GasCalculator gasCalculator,
@@ -57,7 +58,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final AliasManager aliasManager,
             final InHandleBlockMetaSource blockMetaSource) {
-        super(worldState, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
+        super(worldState, pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
     }
@@ -114,7 +115,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
     }
 
     @Override
-    protected HederaFunctionality getFunctionType() {
+    protected com.hedera.node.app.service.evm.utils.codec.HederaFunctionality getFunctionType() {
         return HederaFunctionality.ContractCall;
     }
 

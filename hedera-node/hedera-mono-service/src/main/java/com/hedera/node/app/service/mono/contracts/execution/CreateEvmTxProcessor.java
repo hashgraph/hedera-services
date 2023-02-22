@@ -16,12 +16,13 @@
 
 package com.hedera.node.app.service.mono.contracts.execution;
 
+import com.hedera.node.app.service.evm.utils.codec.HederaFunctionality;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.fees.calculation.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.contracts.HederaMutableWorldState;
 import com.hedera.node.app.service.mono.store.models.Account;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Map;
@@ -49,7 +50,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
     @Inject
     public CreateEvmTxProcessor(
             final HederaMutableWorldState worldState,
-            final LivePricesSource livePricesSource,
+            final PricesAndFeesProviderImpl pricesAndFeesProvider,
             final CodeCache codeCache,
             final GlobalDynamicProperties globalDynamicProperties,
             final GasCalculator gasCalculator,
@@ -57,7 +58,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final AliasManager aliasManager,
             final InHandleBlockMetaSource blockMetaSource) {
-        super(worldState, livePricesSource, globalDynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
+        super(worldState, pricesAndFeesProvider, globalDynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
     }
@@ -103,7 +104,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
     }
 
     @Override
-    protected HederaFunctionality getFunctionType() {
+    protected com.hedera.node.app.service.evm.utils.codec.HederaFunctionality getFunctionType() {
         return HederaFunctionality.ContractCreate;
     }
 

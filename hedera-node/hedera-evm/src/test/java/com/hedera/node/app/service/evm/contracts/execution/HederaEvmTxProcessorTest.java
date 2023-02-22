@@ -72,7 +72,7 @@ class HederaEvmTxProcessorTest {
     private final String EVM_VERSION_0_34 = "v0.34";
 
     @Mock
-    private PricesAndFeesProvider livePricesSource;
+    private PricesAndFeesProvider pricesAndFeesProvider;
 
     @Mock
     private HederaEvmMutableWorldState worldState;
@@ -150,7 +150,7 @@ class HederaEvmTxProcessorTest {
                 });
 
         evmTxProcessor = new MockHederaEvmTxProcessor(
-                worldState, livePricesSource, globalDynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
+                worldState, pricesAndFeesProvider, globalDynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
 
         final var hederaEvmOperationTracer = new DefaultHederaTracer();
         evmTxProcessor.setOperationTracer(hederaEvmOperationTracer);
@@ -289,7 +289,7 @@ class HederaEvmTxProcessorTest {
 
     @Test
     void assertIsContractCallFunctionality() {
-        assertEquals(HederaFunctionality.ContractCall, evmTxProcessor.getFunctionType());
+        assertEquals(com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCall, evmTxProcessor.getFunctionType());
     }
 
     @Test

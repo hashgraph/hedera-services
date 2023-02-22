@@ -28,6 +28,7 @@ import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaTracer;
 import com.hedera.node.app.service.mono.exceptions.ResourceLimitException;
+import com.hedera.node.app.service.mono.fees.calculation.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.store.contracts.HederaMutableWorldState;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
 import com.hedera.node.app.service.mono.store.models.Account;
@@ -59,23 +60,23 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 abstract class EvmTxProcessor extends HederaEvmTxProcessor {
 
     protected EvmTxProcessor(
-            final LivePricesSource livePricesSource,
+            final PricesAndFeesProviderImpl pricesAndFeesProvider,
             final GlobalDynamicProperties dynamicProperties,
             final GasCalculator gasCalculator,
             final Map<String, Provider<MessageCallProcessor>> mcps,
             final Map<String, Provider<ContractCreationProcessor>> ccps) {
-        this(null, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, null);
+        this(null, pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps, null);
     }
 
     protected EvmTxProcessor(
             final HederaMutableWorldState worldState,
-            final LivePricesSource livePricesSource,
+            final PricesAndFeesProviderImpl pricesAndFeesProvider,
             final GlobalDynamicProperties dynamicProperties,
             final GasCalculator gasCalculator,
             final Map<String, Provider<MessageCallProcessor>> mcps,
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource) {
-        super(worldState, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
+        super(worldState, pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
     }
 
     /**

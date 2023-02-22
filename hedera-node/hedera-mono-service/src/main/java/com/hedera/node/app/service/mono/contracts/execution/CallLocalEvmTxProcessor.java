@@ -19,11 +19,12 @@ package com.hedera.node.app.service.mono.contracts.execution;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
+import com.hedera.node.app.service.evm.utils.codec.HederaFunctionality;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.fees.calculation.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.models.Account;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.Map;
 import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
@@ -43,19 +44,19 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 
     public CallLocalEvmTxProcessor(
             final CodeCache codeCache,
-            final LivePricesSource livePricesSource,
+            final PricesAndFeesProviderImpl pricesAndFeesProvider,
             final GlobalDynamicProperties dynamicProperties,
             final GasCalculator gasCalculator,
             final Map<String, Provider<MessageCallProcessor>> mcps,
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final AliasManager aliasManager) {
-        super(livePricesSource, dynamicProperties, gasCalculator, mcps, ccps);
+        super(pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
     }
 
     @Override
-    protected HederaFunctionality getFunctionType() {
+    protected com.hedera.node.app.service.evm.utils.codec.HederaFunctionality getFunctionType() {
         return HederaFunctionality.ContractCallLocal;
     }
 
