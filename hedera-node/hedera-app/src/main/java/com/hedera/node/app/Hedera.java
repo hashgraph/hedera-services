@@ -49,7 +49,6 @@ import java.util.function.Consumer;
 
 /** Main class for the Hedera Consensus Node. */
 public final class Hedera {
-    private static final int MAX_SIGNED_TXN_SIZE = 6144;
     private final CountDownLatch shutdownLatch = new CountDownLatch(1);
 
     public Hedera() {}

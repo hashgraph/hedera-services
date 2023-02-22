@@ -16,7 +16,9 @@
 
 package com.hedera.node.app.state.merkle.adapters;
 
+import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
@@ -31,6 +33,15 @@ import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import org.apache.commons.lang3.tuple.Pair;
 
+/**
+ * Adapts a {@link VirtualMap} constructed by {@code MerkleHederaState#MerkleStates} by "unwrapping"
+ * its {@link OnDiskKey} and {@link OnDiskValue} containers, so that a
+ * {@code VirtualMap<OnDiskKey<K>, OnDiskValue<V>>} appears as a {@code VirtualMapLike<K, V>}.
+ *
+ * <p>This allows us to use a {@link MerkleHederaState} as a {@link StateChildrenProvider} binding
+ * within a {@link com.hedera.node.app.HederaApp} instance, which is important while we are relying
+ * heavily on adapters around {@code mono-service} components.
+ */
 public class VirtualMapLikeAdapter {
     private VirtualMapLikeAdapter() {
         throw new UnsupportedOperationException("Utility Class");

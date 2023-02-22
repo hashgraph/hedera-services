@@ -322,8 +322,6 @@ public final class BootstrapProperties implements PropertySource {
                             .map(name -> String.format("%s=%s", name, bootstrapProps.get(name)))
                             .collect(Collectors.joining("\n  "));
             log.info(msg);
-        } else {
-            System.out.println("BOOP");
         }
     }
 

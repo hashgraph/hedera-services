@@ -61,4 +61,9 @@ class StateDefinitionTest {
     void singletonFactoryWorks() {
         assertDoesNotThrow(() -> StateDefinition.singleton("KEY", mockSerdes));
     }
+
+    @Test
+    void constructorWorks() {
+        assertDoesNotThrow(() -> new StateDefinition("KEY", mockSerdes, mockSerdes, 123, true, false));
+    }
 }

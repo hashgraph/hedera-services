@@ -26,6 +26,10 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVir
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
 
+/**
+ * A trivial non-Merkle implementation of {@link ScheduledTransactions}. (The {@code mono-service}
+ * version has Merkle baggage that doesn't make sense here.)
+ */
 public class ScheduledTransactionsAdapter implements ScheduledTransactions {
     private final MerkleScheduledTransactionsState state;
     private final MerkleMapLike<EntityNumVirtualKey, ScheduleVirtualValue> byId;

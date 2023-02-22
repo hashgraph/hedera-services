@@ -271,7 +271,7 @@ class BootstrapPropertiesTest {
     private LogCaptor logCaptor;
 
     @LoggingSubject
-    private final BootstrapProperties subject = new BootstrapProperties();
+    private BootstrapProperties subject = new BootstrapProperties();
 
     private static final String STD_PROPS_RESOURCE = "bootstrap/standard.properties";
     private static final String INVALID_PROPS_RESOURCE = "bootstrap/not.properties";
@@ -508,11 +508,6 @@ class BootstrapPropertiesTest {
     }
 
     @Test
-    void okToDisableLogging() {
-        assertDoesNotThrow(() -> new BootstrapProperties(false));
-    }
-
-    @Test
     void throwsIseIfUnreadable() {
         subject.bootstrapPropsResource = UNREADABLE_PROPS_RESOURCE;
 
@@ -578,6 +573,7 @@ class BootstrapPropertiesTest {
 
     @Test
     void doesntThrowOnMissingOverridesFile() {
+        subject = new BootstrapProperties(false);
         subject.bootstrapPropsResource = STD_PROPS_RESOURCE;
         subject.bootstrapOverridePropsLoc = "im-not-here";
 

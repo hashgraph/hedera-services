@@ -49,21 +49,27 @@ class ByteBufferDataOutputTest {
         subject.write(bytes);
         subject.write(bytes, 1, 3);
         subject.writeBoolean(true);
+        subject.writeBoolean(false);
         subject.writeByte(42);
         subject.writeShort(13);
         subject.writeChar(14);
         subject.writeInt(15);
-        subject.writeFloat(16.0f);
-        subject.writeDouble(17.0);
+        subject.writeLong(16L);
+        subject.writeFloat(17.0f);
+        subject.writeDouble(18.0);
 
         inOrder.verify(buffer).put((byte) 12);
         inOrder.verify(buffer).put(bytes);
         inOrder.verify(buffer).put(bytes, 1, 3);
         inOrder.verify(buffer).put((byte) 1);
+        inOrder.verify(buffer).put((byte) 0);
         inOrder.verify(buffer).put((byte) 42);
         inOrder.verify(buffer).putShort((short) 13);
         inOrder.verify(buffer).putChar((char) 14);
         inOrder.verify(buffer).putInt(15);
+        inOrder.verify(buffer).putLong(16L);
+        inOrder.verify(buffer).putFloat(17.0f);
+        inOrder.verify(buffer).putDouble(18.0);
     }
 
     @Test

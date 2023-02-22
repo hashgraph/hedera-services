@@ -54,7 +54,7 @@ class ByteBufferDataInputTest {
     }
 
     @Test
-    void canRead() {
+    void canReadThings() {
         buffer = ByteBuffer.wrap(new byte[] {
             1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
             1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
@@ -73,6 +73,14 @@ class ByteBufferDataInputTest {
         assertEquals(289644378304610305l, subject.readLong());
         assertEquals(9.625514E-38f, subject.readFloat());
         assertEquals(1.2688028221216506E-279, subject.readDouble());
+    }
+
+    @Test
+    void canReadFalse() {
+        buffer = ByteBuffer.wrap(new byte[] {0});
+        subject = new ByteBufferDataInput(buffer);
+
+        assertFalse(subject.readBoolean());
     }
 
     @Test
