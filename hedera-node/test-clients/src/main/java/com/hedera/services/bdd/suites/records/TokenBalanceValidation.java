@@ -19,7 +19,10 @@ package com.hedera.services.bdd.suites.records;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -47,11 +50,24 @@ public class TokenBalanceValidation extends HapiSuite {
     }
 
     public static void main(String... args) {
+        // define expected amount for a simple token create
         final Long aFungibleToken = 12L;
         final Long aFungibleAmount = 1_000L;
-        final Long tokenTreasury = 3L;
-        Map<AccountNumTokenNum, Long> expectedTokenBalances =
-                Map.of(new AccountNumTokenNum(tokenTreasury, aFungibleToken), aFungibleAmount);
+        final Long aReceiverAccount = 3L;
+
+        // define expected amount for a token create + token transfer
+        final Long bFungibleToken = 10L;
+        final Long bFungibleAmount = 321L;
+        final Long bReceiverAccount = 4L;
+
+        // set up a map of expected token balances
+        Map<AccountNumTokenNum, Long> expectedTokenBalances = Map.of(
+                new AccountNumTokenNum(aReceiverAccount, aFungibleToken),
+                aFungibleAmount,
+                new AccountNumTokenNum(bReceiverAccount, bFungibleToken),
+                bFungibleAmount);
+
+        // run validation using the expected balances
         new TokenBalanceValidation(expectedTokenBalances, new AccountClassifier()).runSuiteSync();
     }
 
@@ -73,12 +89,23 @@ public class TokenBalanceValidation extends HapiSuite {
                             final var tokenNum = entry.getKey().tokenId();
                             final var tokenAmt = entry.getValue();
                             return new HapiSpecOperation[] {
-                                cryptoCreate(accountNum.toString()),
+                                // create and transfer a token
+                                // later we'll validate that the receiver has the correct token balance
+
+                                // create treasury account
+                                cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS),
+                                // create receiver account
+                                cryptoCreate(accountNum.toString()).balance(100 * ONE_HUNDRED_HBARS),
+                                // create token
                                 tokenCreate(tokenNum.toString())
                                         .tokenType(TokenType.FUNGIBLE_COMMON)
-                                        .treasury(accountNum.toString())
-                                        .initialSupply(tokenAmt)
-                                        .name(tokenNum.toString())
+                                        .treasury(TOKEN_TREASURY)
+                                        .initialSupply(tokenAmt * 2)
+                                        .name(tokenNum.toString()),
+                                tokenAssociate(accountNum.toString(), List.of(tokenNum.toString())),
+                                // transfer the token from the treasury to the account
+                                cryptoTransfer(moving(tokenAmt, tokenNum.toString())
+                                        .between(TOKEN_TREASURY, accountNum.toString())),
                             };
                         })
                         .flatMap(Arrays::stream)
@@ -90,6 +117,7 @@ public class TokenBalanceValidation extends HapiSuite {
                                     final var tokenNum = entry.getKey().tokenId();
                                     final var tokenAmt = entry.getValue();
 
+                                    // validate that the transfer worked and the receiver account has the tokens
                                     return getAccountBalance(
                                                     accountNum.toString(), accountClassifier.isContract(accountNum))
                                             .hasAnswerOnlyPrecheckFrom(OK)
