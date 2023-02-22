@@ -104,6 +104,8 @@ class NodeLocalPropertiesTest {
         assertEquals(30, subject.prefetchCodeCacheTtlSecs());
         assertEquals(List.of("80"), subject.consThrottlesToSample());
         assertEquals(List.of("81"), subject.hapiThrottlesToSample());
+        assertEquals(32, subject.workflowsPort());
+        assertEquals(33, subject.workflowsTlsPort());
     }
 
     @Test
@@ -157,6 +159,8 @@ class NodeLocalPropertiesTest {
         assertEquals(30, subject.prefetchThreadPoolSize());
         assertEquals(31, subject.prefetchCodeCacheTtlSecs());
         assertEquals(logDir(32), subject.sidecarDir());
+        assertEquals(33, subject.workflowsPort());
+        assertEquals(34, subject.workflowsTlsPort());
     }
 
     @Test
