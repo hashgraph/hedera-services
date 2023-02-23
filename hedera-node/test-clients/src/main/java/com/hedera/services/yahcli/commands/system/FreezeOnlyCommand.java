@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.commands.system;
 
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED;
@@ -30,7 +31,8 @@ import picocli.CommandLine;
         subcommands = {picocli.CommandLine.HelpCommand.class},
         description = "Schedules a freeze for network maintenance (no NMT upgrade)")
 public class FreezeOnlyCommand implements Callable<Integer> {
-    @CommandLine.ParentCommand private Yahcli yahcli;
+    @CommandLine.ParentCommand
+    private Yahcli yahcli;
 
     @CommandLine.Option(
             names = {"-s", "--start-time"},

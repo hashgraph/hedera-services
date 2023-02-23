@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.ethereum;
 
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType.LEGACY_ETHEREUM;
@@ -54,12 +55,10 @@ class EthTxSigsTest {
 
     @Test
     void issue4180CaseStudyPasses() {
-        final var expectedFromAddress =
-                CommonUtils.unhex("5052672db37ad6f222b8de61665c6bb76acfefaa");
-        final var ethTxData =
-                EthTxData.populateEthTxData(
-                        CommonUtils.unhex(
-                                "f88b718601d1a94a20008316e360940000000000000000000000000000000002e8a7b980a4fdacd5760000000000000000000000000000000000000000000000000000000000000002820273a076398dfd239dcdf69aeef7328a5e8cc69ef1b4ba5cca56eab1af06d7959923599f8194cd217b301cbdbdcd05b3572c411ec9333af39c98af8c5c9de45ddb05c5"));
+        final var expectedFromAddress = CommonUtils.unhex("5052672db37ad6f222b8de61665c6bb76acfefaa");
+        final var ethTxData = EthTxData.populateEthTxData(
+                CommonUtils.unhex(
+                        "f88b718601d1a94a20008316e360940000000000000000000000000000000002e8a7b980a4fdacd5760000000000000000000000000000000000000000000000000000000000000002820273a076398dfd239dcdf69aeef7328a5e8cc69ef1b4ba5cca56eab1af06d7959923599f8194cd217b301cbdbdcd05b3572c411ec9333af39c98af8c5c9de45ddb05c5"));
         final var ethTxSigs = EthTxSigs.extractSignatures(ethTxData);
         assertArrayEquals(expectedFromAddress, ethTxSigs.address());
     }
@@ -99,24 +98,23 @@ class EthTxSigsTest {
 
     @Test
     void signsLegacyUnprotectedNull() {
-        final var tx =
-                new EthTxData(
-                        null,
-                        LEGACY_ETHEREUM,
-                        null,
-                        1,
-                        TINYBARS_57_IN_WEIBARS,
-                        TINYBARS_2_IN_WEIBARS,
-                        TINYBARS_57_IN_WEIBARS,
-                        1_000_000L,
-                        TRUFFLE1_ADDRESS,
-                        BigInteger.ZERO,
-                        ZERO_BYTES,
-                        ZERO_BYTES,
-                        1,
-                        new byte[0],
-                        new byte[0],
-                        new byte[0]);
+        final var tx = new EthTxData(
+                null,
+                LEGACY_ETHEREUM,
+                null,
+                1,
+                TINYBARS_57_IN_WEIBARS,
+                TINYBARS_2_IN_WEIBARS,
+                TINYBARS_57_IN_WEIBARS,
+                1_000_000L,
+                TRUFFLE1_ADDRESS,
+                BigInteger.ZERO,
+                ZERO_BYTES,
+                ZERO_BYTES,
+                1,
+                new byte[0],
+                new byte[0],
+                new byte[0]);
 
         final EthTxData signedTx = EthTxSigs.signMessage(tx, TRUFFLE0_PRIVATE_ECDSA_KEY);
 
@@ -128,24 +126,23 @@ class EthTxSigsTest {
 
     @Test
     void signsLegacyUnprotectedZeroChainId() {
-        final var tx =
-                new EthTxData(
-                        null,
-                        LEGACY_ETHEREUM,
-                        ZERO_BYTES,
-                        1,
-                        TINYBARS_57_IN_WEIBARS,
-                        TINYBARS_2_IN_WEIBARS,
-                        TINYBARS_57_IN_WEIBARS,
-                        1_000_000L,
-                        TRUFFLE1_ADDRESS,
-                        BigInteger.ZERO,
-                        ZERO_BYTES,
-                        ZERO_BYTES,
-                        1,
-                        new byte[0],
-                        new byte[0],
-                        new byte[0]);
+        final var tx = new EthTxData(
+                null,
+                LEGACY_ETHEREUM,
+                ZERO_BYTES,
+                1,
+                TINYBARS_57_IN_WEIBARS,
+                TINYBARS_2_IN_WEIBARS,
+                TINYBARS_57_IN_WEIBARS,
+                1_000_000L,
+                TRUFFLE1_ADDRESS,
+                BigInteger.ZERO,
+                ZERO_BYTES,
+                ZERO_BYTES,
+                1,
+                new byte[0],
+                new byte[0],
+                new byte[0]);
 
         final EthTxData signedTx = EthTxSigs.signMessage(tx, TRUFFLE0_PRIVATE_ECDSA_KEY);
 
@@ -157,50 +154,46 @@ class EthTxSigsTest {
 
     @Test
     void doesntSignEIP2930() {
-        final var tx =
-                new EthTxData(
-                        null,
-                        EthTxData.EthTransactionType.EIP2930,
-                        ZERO_BYTES,
-                        1,
-                        TINYBARS_57_IN_WEIBARS,
-                        TINYBARS_2_IN_WEIBARS,
-                        TINYBARS_57_IN_WEIBARS,
-                        1_000_000L,
-                        TRUFFLE1_ADDRESS,
-                        BigInteger.ZERO,
-                        ZERO_BYTES,
-                        ZERO_BYTES,
-                        1,
-                        new byte[0],
-                        new byte[0],
-                        new byte[0]);
+        final var tx = new EthTxData(
+                null,
+                EthTxData.EthTransactionType.EIP2930,
+                ZERO_BYTES,
+                1,
+                TINYBARS_57_IN_WEIBARS,
+                TINYBARS_2_IN_WEIBARS,
+                TINYBARS_57_IN_WEIBARS,
+                1_000_000L,
+                TRUFFLE1_ADDRESS,
+                BigInteger.ZERO,
+                ZERO_BYTES,
+                ZERO_BYTES,
+                1,
+                new byte[0],
+                new byte[0],
+                new byte[0]);
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> EthTxSigs.signMessage(tx, TRUFFLE0_PRIVATE_ECDSA_KEY));
+        assertThrows(IllegalArgumentException.class, () -> EthTxSigs.signMessage(tx, TRUFFLE0_PRIVATE_ECDSA_KEY));
     }
 
     @Test
     void signsEIP1559() {
-        final var tx =
-                new EthTxData(
-                        null,
-                        EthTxData.EthTransactionType.EIP1559,
-                        ZERO_BYTES,
-                        1,
-                        TINYBARS_57_IN_WEIBARS,
-                        TINYBARS_2_IN_WEIBARS,
-                        TINYBARS_57_IN_WEIBARS,
-                        1_000_000L,
-                        TRUFFLE1_ADDRESS,
-                        BigInteger.ZERO,
-                        ZERO_BYTES,
-                        ZERO_BYTES,
-                        1,
-                        new byte[0],
-                        new byte[0],
-                        new byte[0]);
+        final var tx = new EthTxData(
+                null,
+                EthTxData.EthTransactionType.EIP1559,
+                ZERO_BYTES,
+                1,
+                TINYBARS_57_IN_WEIBARS,
+                TINYBARS_2_IN_WEIBARS,
+                TINYBARS_57_IN_WEIBARS,
+                1_000_000L,
+                TRUFFLE1_ADDRESS,
+                BigInteger.ZERO,
+                ZERO_BYTES,
+                ZERO_BYTES,
+                1,
+                new byte[0],
+                new byte[0],
+                new byte[0]);
 
         final EthTxData signedTx = EthTxSigs.signMessage(tx, TRUFFLE0_PRIVATE_ECDSA_KEY);
 
@@ -210,24 +203,23 @@ class EthTxSigsTest {
 
     @Test
     void signsLegacyProtected() {
-        final var tx =
-                new EthTxData(
-                        null,
-                        LEGACY_ETHEREUM,
-                        CHAINID_TESTNET,
-                        1,
-                        TINYBARS_57_IN_WEIBARS,
-                        TINYBARS_2_IN_WEIBARS,
-                        TINYBARS_57_IN_WEIBARS,
-                        1_000_000L,
-                        TRUFFLE1_ADDRESS,
-                        BigInteger.ZERO,
-                        ZERO_BYTES,
-                        ZERO_BYTES,
-                        1,
-                        new byte[0],
-                        new byte[0],
-                        new byte[0]);
+        final var tx = new EthTxData(
+                null,
+                LEGACY_ETHEREUM,
+                CHAINID_TESTNET,
+                1,
+                TINYBARS_57_IN_WEIBARS,
+                TINYBARS_2_IN_WEIBARS,
+                TINYBARS_57_IN_WEIBARS,
+                1_000_000L,
+                TRUFFLE1_ADDRESS,
+                BigInteger.ZERO,
+                ZERO_BYTES,
+                ZERO_BYTES,
+                1,
+                new byte[0],
+                new byte[0],
+                new byte[0]);
 
         final EthTxData signedTx = EthTxSigs.signMessage(tx, TRUFFLE0_PRIVATE_ECDSA_KEY);
 
@@ -237,24 +229,23 @@ class EthTxSigsTest {
 
     @Test
     void extractAddress() {
-        final var tx =
-                new EthTxData(
-                        null,
-                        LEGACY_ETHEREUM,
-                        CHAINID_TESTNET,
-                        1,
-                        TINYBARS_57_IN_WEIBARS,
-                        TINYBARS_2_IN_WEIBARS,
-                        TINYBARS_57_IN_WEIBARS,
-                        1_000_000L,
-                        TRUFFLE1_ADDRESS,
-                        BigInteger.ZERO,
-                        ZERO_BYTES,
-                        ZERO_BYTES,
-                        1,
-                        new byte[0],
-                        new byte[0],
-                        new byte[0]);
+        final var tx = new EthTxData(
+                null,
+                LEGACY_ETHEREUM,
+                CHAINID_TESTNET,
+                1,
+                TINYBARS_57_IN_WEIBARS,
+                TINYBARS_2_IN_WEIBARS,
+                TINYBARS_57_IN_WEIBARS,
+                1_000_000L,
+                TRUFFLE1_ADDRESS,
+                BigInteger.ZERO,
+                ZERO_BYTES,
+                ZERO_BYTES,
+                1,
+                new byte[0],
+                new byte[0],
+                new byte[0]);
 
         final EthTxData signedTx = EthTxSigs.signMessage(tx, TRUFFLE0_PRIVATE_ECDSA_KEY);
 
@@ -266,24 +257,23 @@ class EthTxSigsTest {
 
     @Test
     void equalsToStringHashCode() {
-        final var tx =
-                new EthTxData(
-                        null,
-                        LEGACY_ETHEREUM,
-                        CHAINID_TESTNET,
-                        1,
-                        TINYBARS_57_IN_WEIBARS,
-                        TINYBARS_2_IN_WEIBARS,
-                        TINYBARS_57_IN_WEIBARS,
-                        1_000_000L,
-                        TRUFFLE1_ADDRESS,
-                        BigInteger.ZERO,
-                        ZERO_BYTES,
-                        ZERO_BYTES,
-                        1,
-                        new byte[0],
-                        new byte[0],
-                        new byte[0]);
+        final var tx = new EthTxData(
+                null,
+                LEGACY_ETHEREUM,
+                CHAINID_TESTNET,
+                1,
+                TINYBARS_57_IN_WEIBARS,
+                TINYBARS_2_IN_WEIBARS,
+                TINYBARS_57_IN_WEIBARS,
+                1_000_000L,
+                TRUFFLE1_ADDRESS,
+                BigInteger.ZERO,
+                ZERO_BYTES,
+                ZERO_BYTES,
+                1,
+                new byte[0],
+                new byte[0],
+                new byte[0]);
 
         final EthTxData signedTx = EthTxSigs.signMessage(tx, TRUFFLE0_PRIVATE_ECDSA_KEY);
         final EthTxData signedTxAgain = EthTxSigs.signMessage(tx, TRUFFLE0_PRIVATE_ECDSA_KEY);
@@ -309,48 +299,46 @@ class EthTxSigsTest {
         final byte[] allFs = new byte[32];
         Arrays.fill(allFs, (byte) -1);
 
-        final var tx =
-                new EthTxData(
-                        null,
-                        LEGACY_ETHEREUM,
-                        CHAINID_TESTNET,
-                        1,
-                        TINYBARS_57_IN_WEIBARS,
-                        TINYBARS_2_IN_WEIBARS,
-                        TINYBARS_57_IN_WEIBARS,
-                        1_000_000L,
-                        TRUFFLE1_ADDRESS,
-                        BigInteger.ZERO,
-                        ZERO_BYTES,
-                        ZERO_BYTES,
-                        3,
-                        new byte[0],
-                        allFs,
-                        allFs);
+        final var tx = new EthTxData(
+                null,
+                LEGACY_ETHEREUM,
+                CHAINID_TESTNET,
+                1,
+                TINYBARS_57_IN_WEIBARS,
+                TINYBARS_2_IN_WEIBARS,
+                TINYBARS_57_IN_WEIBARS,
+                1_000_000L,
+                TRUFFLE1_ADDRESS,
+                BigInteger.ZERO,
+                ZERO_BYTES,
+                ZERO_BYTES,
+                3,
+                new byte[0],
+                allFs,
+                allFs);
 
         assertThrows(IllegalArgumentException.class, () -> EthTxSigs.extractSignatures(tx));
     }
 
     @Test
     void badSignatureExtract() {
-        final var tx =
-                new EthTxData(
-                        null,
-                        LEGACY_ETHEREUM,
-                        CHAINID_TESTNET,
-                        1,
-                        TINYBARS_57_IN_WEIBARS,
-                        TINYBARS_2_IN_WEIBARS,
-                        TINYBARS_57_IN_WEIBARS,
-                        1_000_000L,
-                        TRUFFLE1_ADDRESS,
-                        BigInteger.ZERO,
-                        ZERO_BYTES,
-                        ZERO_BYTES,
-                        1,
-                        new byte[0],
-                        new byte[32],
-                        new byte[32]);
+        final var tx = new EthTxData(
+                null,
+                LEGACY_ETHEREUM,
+                CHAINID_TESTNET,
+                1,
+                TINYBARS_57_IN_WEIBARS,
+                TINYBARS_2_IN_WEIBARS,
+                TINYBARS_57_IN_WEIBARS,
+                1_000_000L,
+                TRUFFLE1_ADDRESS,
+                BigInteger.ZERO,
+                ZERO_BYTES,
+                ZERO_BYTES,
+                1,
+                new byte[0],
+                new byte[32],
+                new byte[32]);
 
         assertThrows(IllegalArgumentException.class, () -> EthTxSigs.extractSignatures(tx));
     }
@@ -358,8 +346,7 @@ class EthTxSigsTest {
     @Test
     void extractsAddress() {
         // good recovery
-        Assertions.assertArrayEquals(
-                TRUFFLE0_ADDRESS, recoverAddressFromPubKey(TRUFFLE0_PUBLIC_ECDSA_KEY));
+        Assertions.assertArrayEquals(TRUFFLE0_ADDRESS, recoverAddressFromPubKey(TRUFFLE0_PUBLIC_ECDSA_KEY));
 
         // failed recovery
         assertArrayEquals(new byte[0], recoverAddressFromPubKey(TRUFFLE0_PRIVATE_ECDSA_KEY));

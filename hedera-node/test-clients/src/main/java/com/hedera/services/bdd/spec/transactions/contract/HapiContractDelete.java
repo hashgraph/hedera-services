@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.contract;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -74,29 +75,20 @@ public class HapiContractDelete extends HapiTxnOp<HapiContractDelete> {
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerSigs) throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
-                        HederaFunctionality.ContractDelete,
-                        scFees::getContractDeleteTxFeeMatrices,
-                        txn,
-                        numPayerSigs);
+                        HederaFunctionality.ContractDelete, scFees::getContractDeleteTxFeeMatrices, txn, numPayerSigs);
     }
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
-        ContractDeleteTransactionBody opBody =
-                spec.txns()
-                        .<ContractDeleteTransactionBody, ContractDeleteTransactionBody.Builder>body(
-                                ContractDeleteTransactionBody.class,
-                                builder -> {
-                                    builder.setContractID(TxnUtils.asContractId(contract, spec));
-                                    transferContract.ifPresent(
-                                            c ->
-                                                    builder.setTransferContractID(
-                                                            TxnUtils.asContractId(c, spec)));
-                                    transferAccount.ifPresent(
-                                            a ->
-                                                    builder.setTransferAccountID(
-                                                            spec.registry().getAccountID(a)));
-                                });
+        ContractDeleteTransactionBody opBody = spec.txns()
+                .<ContractDeleteTransactionBody, ContractDeleteTransactionBody.Builder>body(
+                        ContractDeleteTransactionBody.class, builder -> {
+                            builder.setContractID(TxnUtils.asContractId(contract, spec));
+                            transferContract.ifPresent(
+                                    c -> builder.setTransferContractID(TxnUtils.asContractId(c, spec)));
+                            transferAccount.ifPresent(a ->
+                                    builder.setTransferAccountID(spec.registry().getAccountID(a)));
+                        });
         return builder -> builder.setContractDeleteInstance(opBody);
     }
 
@@ -115,20 +107,12 @@ public class HapiContractDelete extends HapiTxnOp<HapiContractDelete> {
             if (spec.registry().hasContractChoice(contract)) {
                 SupportedContract choice = spec.registry().getContractChoice(contract);
                 AtomicInteger tag = new AtomicInteger();
-                choice.getCallDetails()
-                        .forEach(
-                                detail -> {
-                                    spec.registry()
-                                            .removeActionableCall(
-                                                    contract + "-" + tag.getAndIncrement());
-                                });
-                choice.getLocalCallDetails()
-                        .forEach(
-                                detail -> {
-                                    spec.registry()
-                                            .removeActionableLocalCall(
-                                                    contract + "-" + tag.getAndIncrement());
-                                });
+                choice.getCallDetails().forEach(detail -> {
+                    spec.registry().removeActionableCall(contract + "-" + tag.getAndIncrement());
+                });
+                choice.getLocalCallDetails().forEach(detail -> {
+                    spec.registry().removeActionableLocalCall(contract + "-" + tag.getAndIncrement());
+                });
                 spec.registry().removeContractChoice(contract);
             }
         }
@@ -141,9 +125,8 @@ public class HapiContractDelete extends HapiTxnOp<HapiContractDelete> {
 
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
-        return Arrays.asList(
-                spec -> spec.registry().getKey(effectivePayer(spec)),
-                spec -> spec.registry().getKey(contract));
+        return Arrays.asList(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
+                .getKey(contract));
     }
 
     @Override

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hedera.node.app.service.mono.txns.validation.TokenListChecks.repeatsItself;
@@ -60,8 +61,7 @@ public class AssociateLogic {
         final var tokens = tokenIds.stream().map(tokenStore::loadToken).toList();
 
         /* Associate and commit the changes */
-        final var newTokenRelationships =
-                account.associateWith(tokens, tokenStore, false, false, dynamicProperties);
+        final var newTokenRelationships = account.associateWith(tokens, tokenStore, false, false, dynamicProperties);
 
         accountStore.commitAccount(account);
         tokenStore.commitTokenRelationships(newTokenRelationships);

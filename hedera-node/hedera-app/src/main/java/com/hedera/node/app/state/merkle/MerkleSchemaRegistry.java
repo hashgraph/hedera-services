@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle;
 
 import com.hedera.node.app.spi.SemanticVersionComparator;
@@ -96,13 +97,11 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         schemas.add(Objects.requireNonNull(schema));
 
         // Any states being created, need to be registered for deserialization
-        schema.statesToCreate()
-                .forEach(
-                        def -> {
-                            //noinspection rawtypes,unchecked
-                            final var md = new StateMetadata<>(serviceName, schema, def);
-                            registerWithSystem(md);
-                        });
+        schema.statesToCreate().forEach(def -> {
+            //noinspection rawtypes,unchecked
+            final var md = new StateMetadata<>(serviceName, schema, def);
+            registerWithSystem(md);
+        });
 
         return this;
     }
@@ -157,48 +156,44 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             // add new states into the tree, it doesn't increase the number of states that can
             // be seen by the schema migration code
             final var readableStates = hederaState.createReadableStates(serviceName);
-            final var previousStates =
-                    new FilteredReadableStates(readableStates, readableStates.stateKeys());
+            final var previousStates = new FilteredReadableStates(readableStates, readableStates.stateKeys());
 
             // Create the new states (based on the schema) which, thanks to the above, does not
             // expand the set of states that the migration code will see
             final var statesToCreate = schema.statesToCreate();
-            statesToCreate.forEach(
-                    def -> {
-                        final var md = new StateMetadata<>(serviceName, schema, def);
-                        if (def.singleton()) {
-                            final var singleton = new SingletonNode<>(md, null);
-                            hederaState.putServiceStateIfAbsent(md, singleton);
-                        } else if (!def.onDisk()) {
-                            final var map = new MerkleMap<>();
-                            map.setLabel(StateUtils.computeLabel(serviceName, def.stateKey()));
-                            hederaState.putServiceStateIfAbsent(md, map);
-                        } else {
-                            final var ks = new OnDiskKeySerializer(md);
-                            final var ds =
-                                    new JasperDbBuilder()
-                                            .maxNumOfKeys(def.maxKeysHint())
-                                            .keySerializer(ks)
-                                            .virtualLeafRecordSerializer(
-                                                    new VirtualLeafRecordSerializer(
-                                                            (short) 1,
-                                                            DigestType.SHA_384,
-                                                            (short) 1,
-                                                            DataFileCommon.VARIABLE_DATA_SIZE,
-                                                            ks,
-                                                            (short) 1,
-                                                            DataFileCommon.VARIABLE_DATA_SIZE,
-                                                            new OnDiskValueSerializer(md),
-                                                            true));
+            statesToCreate.forEach(def -> {
+                final var md = new StateMetadata<>(serviceName, schema, def);
+                if (def.singleton()) {
+                    final var singleton = new SingletonNode<>(md, null);
+                    hederaState.putServiceStateIfAbsent(md, singleton);
+                } else if (!def.onDisk()) {
+                    final var map = new MerkleMap<>();
+                    map.setLabel(StateUtils.computeLabel(serviceName, def.stateKey()));
+                    hederaState.putServiceStateIfAbsent(md, map);
+                } else {
+                    final var ks = new OnDiskKeySerializer(md);
+                    final var ds = new JasperDbBuilder()
+                            .maxNumOfKeys(def.maxKeysHint())
+                            .keySerializer(ks)
+                            .virtualLeafRecordSerializer(new VirtualLeafRecordSerializer(
+                                    (short) 1,
+                                    DigestType.SHA_384,
+                                    (short) 1,
+                                    DataFileCommon.VARIABLE_DATA_SIZE,
+                                    ks,
+                                    (short) 1,
+                                    DataFileCommon.VARIABLE_DATA_SIZE,
+                                    new OnDiskValueSerializer(md),
+                                    true));
 
-                            if (storageDir != null) {
-                                ds.storageDir(storageDir);
-                            }
+                    if (storageDir != null) {
+                        ds.storageDir(storageDir);
+                    }
 
-                            final var label = StateUtils.computeLabel(serviceName, def.stateKey());
-                            hederaState.putServiceStateIfAbsent(md, new VirtualMap<>(label, ds));
-                        }
-                    });
+                    final var label = StateUtils.computeLabel(serviceName, def.stateKey());
+                    hederaState.putServiceStateIfAbsent(md, new VirtualMap<>(label, ds));
+                }
+            });
 
             // Create the writable states. We won't commit anything from these states
             // until we have completed migration.
@@ -215,8 +210,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             }
 
             // And finally we can remove any states we need to remove
-            statesToRemove.forEach(
-                    stateKey -> hederaState.removeServiceState(serviceName, stateKey));
+            statesToRemove.forEach(stateKey -> hederaState.removeServiceState(serviceName, stateKey));
         }
     }
 
@@ -236,8 +230,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      */
     @NonNull
     private List<Schema> computeApplicableSchemas(
-            @Nullable final SemanticVersion previousVersion,
-            @NonNull final SemanticVersion currentVersion) {
+            @Nullable final SemanticVersion previousVersion, @NonNull final SemanticVersion currentVersion) {
 
         // If the previous and current versions are the same, then we have no need to migrate
         // to achieve the correct merkle tree version.
@@ -247,8 +240,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
 
         // The previous version MUST be strictly less than the current version
         if (!isSoOrdered(previousVersion, currentVersion)) {
-            throw new IllegalArgumentException(
-                    "The currentVersion must be strictly greater than the previousVersion");
+            throw new IllegalArgumentException("The currentVersion must be strictly greater than the previousVersion");
         }
 
         // Evaluate each of the schemas (which are in ascending order by version, thanks
@@ -257,8 +249,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         final var applicableSchemas = new ArrayList<Schema>();
         for (Schema schema : schemas) {
             final var ver = schema.getVersion();
-            if (isSameVersion(ver, currentVersion)
-                    || isBetween(previousVersion, ver, currentVersion)) {
+            if (isSameVersion(ver, currentVersion) || isBetween(previousVersion, ver, currentVersion)) {
                 applicableSchemas.add(schema);
             }
         }
@@ -274,12 +265,9 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @param b The second arg
      * @return true if both are null, or if both have the same version number
      */
-    private boolean isSameVersion(
-            @Nullable final SemanticVersion a, @Nullable final SemanticVersion b) {
+    private boolean isSameVersion(@Nullable final SemanticVersion a, @Nullable final SemanticVersion b) {
         return (a == null && b == null)
-                || (a != null
-                        && b != null
-                        && SemanticVersionComparator.INSTANCE.compare(a, b) == 0);
+                || (a != null && b != null && SemanticVersionComparator.INSTANCE.compare(a, b) == 0);
     }
 
     private boolean isBetween(
@@ -299,8 +287,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      *     maybeAfter}.
      */
     private boolean isSoOrdered(
-            @Nullable final SemanticVersion maybeBefore,
-            @NonNull final SemanticVersion maybeAfter) {
+            @Nullable final SemanticVersion maybeBefore, @NonNull final SemanticVersion maybeAfter) {
 
         // If they are the same version, then we must fail.
         if (isSameVersion(maybeBefore, maybeAfter)) {
@@ -343,18 +330,14 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             constructableRegistry.registerConstructable(
                     new ClassConstructorPair(OnDiskKey.class, () -> new OnDiskKey<>(md)));
             constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(
-                            OnDiskKeySerializer.class, () -> new OnDiskKeySerializer<>(md)));
+                    new ClassConstructorPair(OnDiskKeySerializer.class, () -> new OnDiskKeySerializer<>(md)));
             constructableRegistry.registerConstructable(
                     new ClassConstructorPair(OnDiskValue.class, () -> new OnDiskValue<>(md)));
             constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(
-                            OnDiskValueSerializer.class, () -> new OnDiskValueSerializer<>(md)));
+                    new ClassConstructorPair(OnDiskValueSerializer.class, () -> new OnDiskValueSerializer<>(md)));
             constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(
-                            SingletonNode.class, () -> new SingletonNode<>(md, null)));
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
+                    new ClassConstructorPair(SingletonNode.class, () -> new SingletonNode<>(md, null)));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
             constructableRegistry.registerConstructable(
                     new ClassConstructorPair(ValueLeaf.class, () -> new ValueLeaf<>(md)));
         } catch (ConstructableRegistryException e) {

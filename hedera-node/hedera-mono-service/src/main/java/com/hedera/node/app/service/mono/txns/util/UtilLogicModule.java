@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.util;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
@@ -29,8 +30,7 @@ public final class UtilLogicModule {
     @Provides
     @IntoMap
     @FunctionKey(UtilPrng)
-    public static List<TransitionLogic> providePrngLogic(
-            final UtilPrngTransitionLogic utilPrngLogic) {
+    public static List<TransitionLogic> providePrngLogic(final UtilPrngTransitionLogic utilPrngLogic) {
         return List.of(utilPrngLogic);
     }
 

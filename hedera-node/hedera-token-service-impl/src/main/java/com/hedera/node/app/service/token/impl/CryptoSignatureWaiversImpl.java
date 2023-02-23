@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl;
 
 import com.hedera.node.app.service.token.CryptoService;
@@ -31,14 +32,12 @@ public class CryptoSignatureWaiversImpl implements CryptoSignatureWaivers {
     public CryptoSignatureWaiversImpl(@NonNull final HederaAccountNumbers accountNumbers) {}
 
     @Override
-    public boolean isTargetAccountSignatureWaived(
-            final TransactionBody cryptoUpdateTxn, final AccountID payer) {
+    public boolean isTargetAccountSignatureWaived(final TransactionBody cryptoUpdateTxn, final AccountID payer) {
         throw new NotImplementedException();
     }
 
     @Override
-    public boolean isNewKeySignatureWaived(
-            final TransactionBody cryptoUpdateTxn, final AccountID payer) {
+    public boolean isNewKeySignatureWaived(final TransactionBody cryptoUpdateTxn, final AccountID payer) {
         throw new NotImplementedException();
     }
 }

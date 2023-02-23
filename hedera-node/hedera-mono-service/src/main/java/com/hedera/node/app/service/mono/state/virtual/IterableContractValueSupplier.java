@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -20,14 +21,12 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.SelfSerializableSupplier;
 import java.io.IOException;
 
-public class IterableContractValueSupplier
-        implements SelfSerializableSupplier<IterableContractValue> {
+public class IterableContractValueSupplier implements SelfSerializableSupplier<IterableContractValue> {
     static final long CLASS_ID = 0x2137d0dcac9ab2b2L;
     static final int CURRENT_VERSION = 1;
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         // Nothing to do here
     }
 

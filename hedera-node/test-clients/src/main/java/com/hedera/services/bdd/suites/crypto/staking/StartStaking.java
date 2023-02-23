@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.crypto.staking;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -145,110 +146,70 @@ public class StartStaking extends HapiSuite {
     private HapiSpec startStakingAndExportCreatedStakers() {
         final var baseStakerName = "baseStaker";
         return customHapiSpec("StartStakingAndExportCreatedStakers")
-                .withProperties(
-                        Map.of(
-                                "nodes", TARGET_NODES,
-                                "default.payer.pemKeyLoc", PAYER_PEM_LOC,
-                                "default.payer.pemKeyPassphrase", PAYER_PEM_PASSPHRASE))
+                .withProperties(Map.of(
+                        "nodes", TARGET_NODES,
+                        "default.payer.pemKeyLoc", PAYER_PEM_LOC,
+                        "default.payer.pemKeyPassphrase", PAYER_PEM_PASSPHRASE))
                 .given(
                         overriding(STAKING_REWARD_RATE, "" + CANONICAL_REWARD_RATE),
-                        cryptoTransfer(
-                                tinyBarsFromTo(
-                                        DEFAULT_PAYER, STAKING_REWARD, REWARD_START_BALANCE)))
+                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, STAKING_REWARD, REWARD_START_BALANCE)))
                 .when(
-                        inParallel(
-                                IntStream.range(0, NUM_TARGET_NODES)
-                                        .mapToObj(
-                                                i ->
-                                                        cryptoCreate(baseStakerName + i)
-                                                                .stakedNodeId(i)
-                                                                .balance(HIGH_VALUE_STAKER_BALANCE)
-                                                                .key(DEFAULT_PAYER)
-                                                                .exposingCreatedIdTo(
-                                                                        id ->
-                                                                                trackStaker(
-                                                                                        id
-                                                                                                .getAccountNum(),
-                                                                                        StakerMeta
-                                                                                                .newToNode(
-                                                                                                        HIGH_VALUE_STAKER_BALANCE,
-                                                                                                        i))))
-                                        .toArray(HapiSpecOperation[]::new)),
-                        blockingOrder(
-                                IntStream.range(0, NUM_ACCOUNTS_TO_STAKE / BURST_SIZE)
-                                        .mapToObj(
-                                                j ->
-                                                        inParallel(
-                                                                IntStream.range(0, BURST_SIZE)
-                                                                        .mapToObj(
-                                                                                i ->
-                                                                                        sourcing(
-                                                                                                this
-                                                                                                        ::nextCreation))
-                                                                        .toArray(
-                                                                                HapiSpecOperation[]
-                                                                                        ::new)))
+                        inParallel(IntStream.range(0, NUM_TARGET_NODES)
+                                .mapToObj(i -> cryptoCreate(baseStakerName + i)
+                                        .stakedNodeId(i)
+                                        .balance(HIGH_VALUE_STAKER_BALANCE)
+                                        .key(DEFAULT_PAYER)
+                                        .exposingCreatedIdTo(id -> trackStaker(
+                                                id.getAccountNum(),
+                                                StakerMeta.newToNode(HIGH_VALUE_STAKER_BALANCE, i))))
+                                .toArray(HapiSpecOperation[]::new)),
+                        blockingOrder(IntStream.range(0, NUM_ACCOUNTS_TO_STAKE / BURST_SIZE)
+                                .mapToObj(j -> inParallel(IntStream.range(0, BURST_SIZE)
+                                        .mapToObj(i -> sourcing(this::nextCreation))
                                         .toArray(HapiSpecOperation[]::new)))
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final Map<Long, Long> stakedToMe = new HashMap<>();
-                                    stakers.forEach(
-                                            (num, meta) -> {
-                                                if (meta.isStakingToAccount()) {
-                                                    stakedToMe.merge(
-                                                            meta.stakeToNum,
-                                                            meta.balance,
-                                                            Long::sum);
-                                                }
-                                            });
-                                    final LongUnaryOperator effStakeToMeFn =
-                                            num -> {
-                                                final var meta = stakers.get(num);
-                                                return meta.isStakingToAccount()
-                                                        ? 0L
-                                                        : stakedToMe.getOrDefault(num, 0L);
-                                            };
-                                    try (final var writer =
-                                            Files.newBufferedWriter(Paths.get(CSV_LOC))) {
-                                        writer.write(
-                                                "stakerNum,balance,stakedToMe,totalStake,stakedToNode,declinedRewards\n");
-                                        stakers.entrySet().stream()
-                                                .sorted(Map.Entry.comparingByKey())
-                                                .forEach(
-                                                        entry -> {
-                                                            final var num = entry.getKey();
-                                                            final var meta = entry.getValue();
-                                                            final var stakedToThisNum =
-                                                                    effStakeToMeFn.applyAsLong(num);
-                                                            final var totalStake =
-                                                                    meta.balance + stakedToThisNum;
-                                                            final var stakeToNode =
-                                                                    !meta.isStakingToAccount();
-                                                            final var line =
-                                                                    new StringBuilder()
-                                                                            .append(num)
-                                                                            .append(",")
-                                                                            .append(meta.balance)
-                                                                            .append(",")
-                                                                            .append(stakedToThisNum)
-                                                                            .append(",")
-                                                                            .append(totalStake)
-                                                                            .append(",")
-                                                                            .append(stakeToNode)
-                                                                            .append(",")
-                                                                            .append(
-                                                                                    stakeToNode
-                                                                                            && meta.declineReward)
-                                                                            .append("\n");
-                                                            try {
-                                                                writer.write(line.toString());
-                                                            } catch (final IOException e) {
-                                                                throw new UncheckedIOException(e);
-                                                            }
-                                                        });
+                                .toArray(HapiSpecOperation[]::new)))
+                .then(withOpContext((spec, opLog) -> {
+                    final Map<Long, Long> stakedToMe = new HashMap<>();
+                    stakers.forEach((num, meta) -> {
+                        if (meta.isStakingToAccount()) {
+                            stakedToMe.merge(meta.stakeToNum, meta.balance, Long::sum);
+                        }
+                    });
+                    final LongUnaryOperator effStakeToMeFn = num -> {
+                        final var meta = stakers.get(num);
+                        return meta.isStakingToAccount() ? 0L : stakedToMe.getOrDefault(num, 0L);
+                    };
+                    try (final var writer = Files.newBufferedWriter(Paths.get(CSV_LOC))) {
+                        writer.write("stakerNum,balance,stakedToMe,totalStake,stakedToNode,declinedRewards\n");
+                        stakers.entrySet().stream()
+                                .sorted(Map.Entry.comparingByKey())
+                                .forEach(entry -> {
+                                    final var num = entry.getKey();
+                                    final var meta = entry.getValue();
+                                    final var stakedToThisNum = effStakeToMeFn.applyAsLong(num);
+                                    final var totalStake = meta.balance + stakedToThisNum;
+                                    final var stakeToNode = !meta.isStakingToAccount();
+                                    final var line = new StringBuilder()
+                                            .append(num)
+                                            .append(",")
+                                            .append(meta.balance)
+                                            .append(",")
+                                            .append(stakedToThisNum)
+                                            .append(",")
+                                            .append(totalStake)
+                                            .append(",")
+                                            .append(stakeToNode)
+                                            .append(",")
+                                            .append(stakeToNode && meta.declineReward)
+                                            .append("\n");
+                                    try {
+                                        writer.write(line.toString());
+                                    } catch (final IOException e) {
+                                        throw new UncheckedIOException(e);
                                     }
-                                }));
+                                });
+                    }
+                }));
     }
 
     private static void trackStaker(final long num, final StakerMeta meta) {
@@ -269,10 +230,7 @@ public class StartStaking extends HapiSuite {
                 .stakedAccountId("0.0." + to)
                 .balance(balance)
                 .key(DEFAULT_PAYER)
-                .exposingCreatedIdTo(
-                        id ->
-                                trackStaker(
-                                        id.getAccountNum(), StakerMeta.newToAccount(balance, to)));
+                .exposingCreatedIdTo(id -> trackStaker(id.getAccountNum(), StakerMeta.newToAccount(balance, to)));
     }
 
     private HapiSpecOperation nextToNode(final long balance) {
@@ -283,12 +241,8 @@ public class StartStaking extends HapiSuite {
                 .balance(balance)
                 .key(DEFAULT_PAYER)
                 .declinedReward(decline)
-                .exposingCreatedIdTo(
-                        id ->
-                                trackStaker(
-                                        id.getAccountNum(),
-                                        decline
-                                                ? StakerMeta.newToNodeDeclining(balance, node)
-                                                : StakerMeta.newToNode(balance, node)));
+                .exposingCreatedIdTo(id -> trackStaker(
+                        id.getAccountNum(),
+                        decline ? StakerMeta.newToNodeDeclining(balance, node) : StakerMeta.newToNode(balance, node)));
     }
 }

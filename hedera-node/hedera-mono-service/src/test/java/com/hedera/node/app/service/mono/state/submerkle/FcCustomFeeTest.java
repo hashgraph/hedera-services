@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -82,24 +83,35 @@ class FcCustomFeeTest {
     private final FixedFeeSpec fallbackFee = new FixedFeeSpec(1, MISSING_ENTITY_ID);
     private final Id tokenId = new Id(0, 0, 666);
 
-    @Mock private SerializableDataInputStream din;
-    @Mock private SerializableDataOutputStream dos;
-    @Mock private Token token;
-    @Mock private Account collectionAccount;
-    @Mock private AccountStore accountStore;
-    @Mock private TypedTokenStore tokenStore;
-    @Mock private FixedFeeSpec fixedFeeSpec;
-    @Mock private FractionalFeeSpec fractionalFeeSpec;
-    @Mock private RoyaltyFeeSpec royaltyFeeSpec;
+    @Mock
+    private SerializableDataInputStream din;
 
-    final FcCustomFee subject =
-            new FcCustomFee(
-                    FcCustomFee.FeeType.FRACTIONAL_FEE,
-                    feeCollector,
-                    fixedFeeSpec,
-                    fractionalFeeSpec,
-                    royaltyFeeSpec,
-                    false);
+    @Mock
+    private SerializableDataOutputStream dos;
+
+    @Mock
+    private Token token;
+
+    @Mock
+    private Account collectionAccount;
+
+    @Mock
+    private AccountStore accountStore;
+
+    @Mock
+    private TypedTokenStore tokenStore;
+
+    @Mock
+    private FixedFeeSpec fixedFeeSpec;
+
+    @Mock
+    private FractionalFeeSpec fractionalFeeSpec;
+
+    @Mock
+    private RoyaltyFeeSpec royaltyFeeSpec;
+
+    final FcCustomFee subject = new FcCustomFee(
+            FcCustomFee.FeeType.FRACTIONAL_FEE, feeCollector, fixedFeeSpec, fractionalFeeSpec, royaltyFeeSpec, false);
 
     @Test
     void fractionalRequiresCollectorAssociation() {
@@ -108,14 +120,8 @@ class FcCustomFeeTest {
 
     @Test
     void fixedRequiresCollectorAssociationIfWildcardUsed() {
-        final var subject =
-                new FcCustomFee(
-                        FcCustomFee.FeeType.FIXED_FEE,
-                        feeCollector,
-                        fixedFeeSpec,
-                        fractionalFeeSpec,
-                        royaltyFeeSpec,
-                        false);
+        final var subject = new FcCustomFee(
+                FcCustomFee.FeeType.FIXED_FEE, feeCollector, fixedFeeSpec, fractionalFeeSpec, royaltyFeeSpec, false);
 
         assertFalse(subject.requiresCollectorAutoAssociation());
 
@@ -126,14 +132,8 @@ class FcCustomFeeTest {
 
     @Test
     void royaltyRequiresCollectorAssociationIfFallbackWildcardUsed() {
-        final var subject =
-                new FcCustomFee(
-                        FcCustomFee.FeeType.ROYALTY_FEE,
-                        feeCollector,
-                        fixedFeeSpec,
-                        fractionalFeeSpec,
-                        royaltyFeeSpec,
-                        false);
+        final var subject = new FcCustomFee(
+                FcCustomFee.FeeType.ROYALTY_FEE, feeCollector, fixedFeeSpec, fractionalFeeSpec, royaltyFeeSpec, false);
 
         assertFalse(subject.requiresCollectorAutoAssociation());
 
@@ -146,9 +146,7 @@ class FcCustomFeeTest {
 
     @Test
     void requiresSomeFeeTypeInGrpc() {
-        assertFailsWith(
-                () -> FcCustomFee.fromGrpc(CustomFee.getDefaultInstance()),
-                CUSTOM_FEE_NOT_FULLY_SPECIFIED);
+        assertFailsWith(() -> FcCustomFee.fromGrpc(CustomFee.getDefaultInstance()), CUSTOM_FEE_NOT_FULLY_SPECIFIED);
     }
 
     @Test
@@ -156,14 +154,8 @@ class FcCustomFeeTest {
         given(accountStore.loadAccountOrFailWith(feeCollector.asId(), INVALID_CUSTOM_FEE_COLLECTOR))
                 .willReturn(collectionAccount);
 
-        final var subject =
-                new FcCustomFee(
-                        FcCustomFee.FeeType.ROYALTY_FEE,
-                        feeCollector,
-                        fixedFeeSpec,
-                        fractionalFeeSpec,
-                        royaltyFeeSpec,
-                        false);
+        final var subject = new FcCustomFee(
+                FcCustomFee.FeeType.ROYALTY_FEE, feeCollector, fixedFeeSpec, fractionalFeeSpec, royaltyFeeSpec, false);
 
         assertFailsWith(
                 () -> subject.validateWith(token, accountStore, tokenStore),
@@ -176,14 +168,8 @@ class FcCustomFeeTest {
         given(accountStore.loadAccountOrFailWith(feeCollector.asId(), INVALID_CUSTOM_FEE_COLLECTOR))
                 .willReturn(collectionAccount);
 
-        final var subject =
-                new FcCustomFee(
-                        FcCustomFee.FeeType.ROYALTY_FEE,
-                        feeCollector,
-                        fixedFeeSpec,
-                        fractionalFeeSpec,
-                        royaltyFeeSpec,
-                        false);
+        final var subject = new FcCustomFee(
+                FcCustomFee.FeeType.ROYALTY_FEE, feeCollector, fixedFeeSpec, fractionalFeeSpec, royaltyFeeSpec, false);
 
         subject.validateWith(token, accountStore, tokenStore);
 
@@ -199,14 +185,8 @@ class FcCustomFeeTest {
         given(accountStore.loadAccountOrFailWith(feeCollector.asId(), INVALID_CUSTOM_FEE_COLLECTOR))
                 .willReturn(collectionAccount);
 
-        final var subject =
-                new FcCustomFee(
-                        FcCustomFee.FeeType.ROYALTY_FEE,
-                        feeCollector,
-                        fixedFeeSpec,
-                        fractionalFeeSpec,
-                        royaltyFeeSpec,
-                        false);
+        final var subject = new FcCustomFee(
+                FcCustomFee.FeeType.ROYALTY_FEE, feeCollector, fixedFeeSpec, fractionalFeeSpec, royaltyFeeSpec, false);
 
         subject.validateAndFinalizeWith(token, accountStore, tokenStore);
 
@@ -218,14 +198,8 @@ class FcCustomFeeTest {
         given(accountStore.loadAccountOrFailWith(feeCollector.asId(), INVALID_CUSTOM_FEE_COLLECTOR))
                 .willReturn(collectionAccount);
 
-        final var subject =
-                new FcCustomFee(
-                        FcCustomFee.FeeType.FIXED_FEE,
-                        feeCollector,
-                        fixedFeeSpec,
-                        fractionalFeeSpec,
-                        royaltyFeeSpec,
-                        false);
+        final var subject = new FcCustomFee(
+                FcCustomFee.FeeType.FIXED_FEE, feeCollector, fixedFeeSpec, fractionalFeeSpec, royaltyFeeSpec, false);
 
         subject.validateAndFinalizeWith(token, accountStore, tokenStore);
 
@@ -237,14 +211,8 @@ class FcCustomFeeTest {
         given(accountStore.loadAccountOrFailWith(feeCollector.asId(), INVALID_CUSTOM_FEE_COLLECTOR))
                 .willReturn(collectionAccount);
 
-        final var subject =
-                new FcCustomFee(
-                        FcCustomFee.FeeType.FIXED_FEE,
-                        feeCollector,
-                        fixedFeeSpec,
-                        fractionalFeeSpec,
-                        royaltyFeeSpec,
-                        false);
+        final var subject = new FcCustomFee(
+                FcCustomFee.FeeType.FIXED_FEE, feeCollector, fixedFeeSpec, fractionalFeeSpec, royaltyFeeSpec, false);
 
         subject.validateWith(token, accountStore, tokenStore);
 
@@ -256,14 +224,13 @@ class FcCustomFeeTest {
         given(accountStore.loadAccountOrFailWith(feeCollector.asId(), INVALID_CUSTOM_FEE_COLLECTOR))
                 .willReturn(collectionAccount);
 
-        final var subject =
-                new FcCustomFee(
-                        FcCustomFee.FeeType.FRACTIONAL_FEE,
-                        feeCollector,
-                        fixedFeeSpec,
-                        fractionalFeeSpec,
-                        royaltyFeeSpec,
-                        false);
+        final var subject = new FcCustomFee(
+                FcCustomFee.FeeType.FRACTIONAL_FEE,
+                feeCollector,
+                fixedFeeSpec,
+                fractionalFeeSpec,
+                royaltyFeeSpec,
+                false);
 
         assertFailsWith(
                 () -> subject.validateWith(token, accountStore, tokenStore),
@@ -276,18 +243,16 @@ class FcCustomFeeTest {
         given(accountStore.loadAccountOrFailWith(feeCollector.asId(), INVALID_CUSTOM_FEE_COLLECTOR))
                 .willReturn(collectionAccount);
 
-        final var subject =
-                new FcCustomFee(
-                        FcCustomFee.FeeType.FRACTIONAL_FEE,
-                        feeCollector,
-                        fixedFeeSpec,
-                        fractionalFeeSpec,
-                        royaltyFeeSpec,
-                        false);
+        final var subject = new FcCustomFee(
+                FcCustomFee.FeeType.FRACTIONAL_FEE,
+                feeCollector,
+                fixedFeeSpec,
+                fractionalFeeSpec,
+                royaltyFeeSpec,
+                false);
 
         assertFailsWith(
-                () -> subject.validateWith(token, accountStore, tokenStore),
-                TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
+                () -> subject.validateWith(token, accountStore, tokenStore), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
     }
 
     @Test
@@ -297,14 +262,13 @@ class FcCustomFeeTest {
         given(accountStore.loadAccountOrFailWith(feeCollector.asId(), INVALID_CUSTOM_FEE_COLLECTOR))
                 .willReturn(collectionAccount);
 
-        final var subject =
-                new FcCustomFee(
-                        FcCustomFee.FeeType.FRACTIONAL_FEE,
-                        feeCollector,
-                        fixedFeeSpec,
-                        fractionalFeeSpec,
-                        royaltyFeeSpec,
-                        false);
+        final var subject = new FcCustomFee(
+                FcCustomFee.FeeType.FRACTIONAL_FEE,
+                feeCollector,
+                fixedFeeSpec,
+                fractionalFeeSpec,
+                royaltyFeeSpec,
+                false);
 
         assertDoesNotThrow(() -> subject.validateWith(token, accountStore, tokenStore));
     }
@@ -312,12 +276,10 @@ class FcCustomFeeTest {
     @Test
     void grpcConversionWorksForFixed() {
         final var wildcardId = new EntityId(0, 0, 0);
-        final var expectedHtsSubject =
-                FcCustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector, false);
+        final var expectedHtsSubject = FcCustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector, false);
         final var expectedHtsSameTokenSubject =
                 FcCustomFee.fixedFee(fixedUnitsToCollect, wildcardId, feeCollector, false);
-        final var expectedHbarSubject =
-                FcCustomFee.fixedFee(fixedUnitsToCollect, null, feeCollector, false);
+        final var expectedHbarSubject = FcCustomFee.fixedFee(fixedUnitsToCollect, null, feeCollector, false);
         final var htsGrpc = builder.withFixedFee(fixedHts(grpcDenom, fixedUnitsToCollect));
         final var htsSameTokenGrpc = builder.withFixedFee(fixedHts(fixedUnitsToCollect));
         final var hbarGrpc = builder.withFixedFee(fixedHbar(fixedUnitsToCollect));
@@ -334,17 +296,12 @@ class FcCustomFeeTest {
     @Test
     void grpcReprWorksForRoyaltyNoFallback() {
         // setup:
-        final var royaltyGrpc =
-                builder.withRoyaltyFee(
-                        RoyaltyFee.newBuilder()
-                                .setExchangeValueFraction(
-                                        Fraction.newBuilder()
-                                                .setNumerator(validNumerator)
-                                                .setDenominator(validDenominator)));
+        final var royaltyGrpc = builder.withRoyaltyFee(RoyaltyFee.newBuilder()
+                .setExchangeValueFraction(
+                        Fraction.newBuilder().setNumerator(validNumerator).setDenominator(validDenominator)));
 
         // given:
-        final var royaltySubject =
-                FcCustomFee.royaltyFee(validNumerator, validDenominator, null, feeCollector, false);
+        final var royaltySubject = FcCustomFee.royaltyFee(validNumerator, validDenominator, null, feeCollector, false);
 
         // when:
         final var repr = royaltySubject.asGrpc();
@@ -361,13 +318,9 @@ class FcCustomFeeTest {
                 FcCustomFee.royaltyFee(validNumerator, validDenominator, null, feeCollector, false);
 
         // given:
-        final var royaltyGrpc =
-                builder.withRoyaltyFee(
-                        RoyaltyFee.newBuilder()
-                                .setExchangeValueFraction(
-                                        Fraction.newBuilder()
-                                                .setNumerator(validNumerator)
-                                                .setDenominator(validDenominator)));
+        final var royaltyGrpc = builder.withRoyaltyFee(RoyaltyFee.newBuilder()
+                .setExchangeValueFraction(
+                        Fraction.newBuilder().setNumerator(validNumerator).setDenominator(validDenominator)));
 
         // when:
         final var actualSubject = FcCustomFee.fromGrpc(royaltyGrpc);
@@ -381,24 +334,16 @@ class FcCustomFeeTest {
         // setup:
         final var targetId = new EntityId(7, 8, 9);
         final var expectedRoyaltySubject =
-                FcCustomFee.royaltyFee(
-                        validNumerator, validDenominator, fallbackFee, feeCollector, false);
+                FcCustomFee.royaltyFee(validNumerator, validDenominator, fallbackFee, feeCollector, false);
 
         // given:
-        final var royaltyGrpc =
-                builder.withRoyaltyFee(
-                        RoyaltyFee.newBuilder()
-                                .setExchangeValueFraction(
-                                        Fraction.newBuilder()
-                                                .setNumerator(validNumerator)
-                                                .setDenominator(validDenominator))
-                                .setFallbackFee(
-                                        FixedFee.newBuilder()
-                                                .setAmount(fallbackFee.getUnitsToCollect())
-                                                .setDenominatingTokenId(
-                                                        fallbackFee
-                                                                .getTokenDenomination()
-                                                                .toGrpcTokenId())));
+        final var royaltyGrpc = builder.withRoyaltyFee(RoyaltyFee.newBuilder()
+                .setExchangeValueFraction(
+                        Fraction.newBuilder().setNumerator(validNumerator).setDenominator(validDenominator))
+                .setFallbackFee(FixedFee.newBuilder()
+                        .setAmount(fallbackFee.getUnitsToCollect())
+                        .setDenominatingTokenId(
+                                fallbackFee.getTokenDenomination().toGrpcTokenId())));
 
         // when:
         final var actualSubject = FcCustomFee.fromGrpc(royaltyGrpc);
@@ -410,25 +355,17 @@ class FcCustomFeeTest {
     @Test
     void grpcReprWorksForRoyalty() {
         // setup:
-        final var royaltyGrpc =
-                builder.withRoyaltyFee(
-                        RoyaltyFee.newBuilder()
-                                .setExchangeValueFraction(
-                                        Fraction.newBuilder()
-                                                .setNumerator(validNumerator)
-                                                .setDenominator(validDenominator))
-                                .setFallbackFee(
-                                        FixedFee.newBuilder()
-                                                .setAmount(fallbackFee.getUnitsToCollect())
-                                                .setDenominatingTokenId(
-                                                        fallbackFee
-                                                                .getTokenDenomination()
-                                                                .toGrpcTokenId())));
+        final var royaltyGrpc = builder.withRoyaltyFee(RoyaltyFee.newBuilder()
+                .setExchangeValueFraction(
+                        Fraction.newBuilder().setNumerator(validNumerator).setDenominator(validDenominator))
+                .setFallbackFee(FixedFee.newBuilder()
+                        .setAmount(fallbackFee.getUnitsToCollect())
+                        .setDenominatingTokenId(
+                                fallbackFee.getTokenDenomination().toGrpcTokenId())));
 
         // given:
         final var royaltySubject =
-                FcCustomFee.royaltyFee(
-                        validNumerator, validDenominator, fallbackFee, feeCollector, false);
+                FcCustomFee.royaltyFee(validNumerator, validDenominator, fallbackFee, feeCollector, false);
 
         // when:
         final var repr = royaltySubject.asGrpc();
@@ -451,11 +388,7 @@ class FcCustomFeeTest {
     void grpcReprWorksForFixedHts() {
         final var expected = builder.withFixedFee(fixedHts(grpcDenom, fixedUnitsToCollect));
         final var htsFee =
-                FcCustomFee.fixedFee(
-                        fixedUnitsToCollect,
-                        EntityId.fromGrpcTokenId(grpcDenom),
-                        feeCollector,
-                        false);
+                FcCustomFee.fixedFee(fixedUnitsToCollect, EntityId.fromGrpcTokenId(grpcDenom), feeCollector, false);
 
         final var actual = htsFee.asGrpc();
 
@@ -464,21 +397,18 @@ class FcCustomFeeTest {
 
     @Test
     void grpcReprWorksForFractional() {
-        final var expected =
-                builder.withFractionalFee(
-                        fractional(validNumerator, validDenominator)
-                                .setMinimumAmount(minimumUnitsToCollect)
-                                .setMaximumAmount(maximumUnitsToCollect)
-                                .setNetOfTransfers(netOfTransfers));
-        final var fractionalFee =
-                FcCustomFee.fractionalFee(
-                        validNumerator,
-                        validDenominator,
-                        minimumUnitsToCollect,
-                        maximumUnitsToCollect,
-                        netOfTransfers,
-                        feeCollector,
-                        false);
+        final var expected = builder.withFractionalFee(fractional(validNumerator, validDenominator)
+                .setMinimumAmount(minimumUnitsToCollect)
+                .setMaximumAmount(maximumUnitsToCollect)
+                .setNetOfTransfers(netOfTransfers));
+        final var fractionalFee = FcCustomFee.fractionalFee(
+                validNumerator,
+                validDenominator,
+                minimumUnitsToCollect,
+                maximumUnitsToCollect,
+                netOfTransfers,
+                feeCollector,
+                false);
 
         final var actual = fractionalFee.asGrpc();
 
@@ -487,20 +417,17 @@ class FcCustomFeeTest {
 
     @Test
     void grpcReprWorksForFractionalNoMax() {
-        final var expected =
-                builder.withFractionalFee(
-                        fractional(validNumerator, validDenominator)
-                                .setMinimumAmount(minimumUnitsToCollect)
-                                .setNetOfTransfers(netOfTransfers));
-        final var fractionalFee =
-                FcCustomFee.fractionalFee(
-                        validNumerator,
-                        validDenominator,
-                        minimumUnitsToCollect,
-                        Long.MAX_VALUE,
-                        netOfTransfers,
-                        feeCollector,
-                        false);
+        final var expected = builder.withFractionalFee(fractional(validNumerator, validDenominator)
+                .setMinimumAmount(minimumUnitsToCollect)
+                .setNetOfTransfers(netOfTransfers));
+        final var fractionalFee = FcCustomFee.fractionalFee(
+                validNumerator,
+                validDenominator,
+                minimumUnitsToCollect,
+                Long.MAX_VALUE,
+                netOfTransfers,
+                feeCollector,
+                false);
 
         final var actual = fractionalFee.asGrpc();
 
@@ -509,35 +436,29 @@ class FcCustomFeeTest {
 
     @Test
     void grpcConversionWorksForFractional() {
-        final var expectedExplicitMaxSubject =
-                FcCustomFee.fractionalFee(
-                        validNumerator,
-                        validDenominator,
-                        minimumUnitsToCollect,
-                        maximumUnitsToCollect,
-                        netOfTransfers,
-                        feeCollector,
-                        false);
-        final var expectedNoExplicitMaxSubject =
-                FcCustomFee.fractionalFee(
-                        validNumerator,
-                        validDenominator,
-                        minimumUnitsToCollect,
-                        Long.MAX_VALUE,
-                        !netOfTransfers,
-                        feeCollector,
-                        false);
-        final var grpcWithExplicitMax =
-                builder.withFractionalFee(
-                        fractional(validNumerator, validDenominator)
-                                .setMinimumAmount(minimumUnitsToCollect)
-                                .setMaximumAmount(maximumUnitsToCollect)
-                                .setNetOfTransfers(netOfTransfers));
-        final var grpcWithoutExplicitMax =
-                builder.withFractionalFee(
-                        fractional(validNumerator, validDenominator)
-                                .setMinimumAmount(minimumUnitsToCollect)
-                                .setNetOfTransfers(!netOfTransfers));
+        final var expectedExplicitMaxSubject = FcCustomFee.fractionalFee(
+                validNumerator,
+                validDenominator,
+                minimumUnitsToCollect,
+                maximumUnitsToCollect,
+                netOfTransfers,
+                feeCollector,
+                false);
+        final var expectedNoExplicitMaxSubject = FcCustomFee.fractionalFee(
+                validNumerator,
+                validDenominator,
+                minimumUnitsToCollect,
+                Long.MAX_VALUE,
+                !netOfTransfers,
+                feeCollector,
+                false);
+        final var grpcWithExplicitMax = builder.withFractionalFee(fractional(validNumerator, validDenominator)
+                .setMinimumAmount(minimumUnitsToCollect)
+                .setMaximumAmount(maximumUnitsToCollect)
+                .setNetOfTransfers(netOfTransfers));
+        final var grpcWithoutExplicitMax = builder.withFractionalFee(fractional(validNumerator, validDenominator)
+                .setMinimumAmount(minimumUnitsToCollect)
+                .setNetOfTransfers(!netOfTransfers));
 
         final var explicitMaxSubject = FcCustomFee.fromGrpc(grpcWithExplicitMax);
         final var noExplicitMaxSubject = FcCustomFee.fromGrpc(grpcWithoutExplicitMax);
@@ -548,13 +469,8 @@ class FcCustomFeeTest {
 
     @Test
     void liveFireSerdesWorkForRoyaltyWithFallback() throws IOException {
-        final var subject =
-                FcCustomFee.royaltyFee(
-                        validNumerator,
-                        validDenominator,
-                        new FixedFeeSpec(123, denom),
-                        feeCollector,
-                        false);
+        final var subject = FcCustomFee.royaltyFee(
+                validNumerator, validDenominator, new FixedFeeSpec(123, denom), feeCollector, false);
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         final var dos = new SerializableDataOutputStream(baos);
         subject.serialize(dos);
@@ -572,8 +488,7 @@ class FcCustomFeeTest {
 
     @Test
     void liveFireSerdesWorkForRoyaltyNoFallback() throws IOException {
-        final var subject =
-                FcCustomFee.royaltyFee(validNumerator, validDenominator, null, feeCollector, false);
+        final var subject = FcCustomFee.royaltyFee(validNumerator, validDenominator, null, feeCollector, false);
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         final var dos = new SerializableDataOutputStream(baos);
         subject.serialize(dos);
@@ -591,15 +506,14 @@ class FcCustomFeeTest {
 
     @Test
     void liveFireSerdesWorkForFractional() throws IOException {
-        final var subject =
-                FcCustomFee.fractionalFee(
-                        validNumerator,
-                        validDenominator,
-                        minimumUnitsToCollect,
-                        maximumUnitsToCollect,
-                        netOfTransfers,
-                        feeCollector,
-                        false);
+        final var subject = FcCustomFee.fractionalFee(
+                validNumerator,
+                validDenominator,
+                minimumUnitsToCollect,
+                maximumUnitsToCollect,
+                netOfTransfers,
+                feeCollector,
+                false);
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         final var dos = new SerializableDataOutputStream(baos);
         subject.serialize(dos);
@@ -617,8 +531,7 @@ class FcCustomFeeTest {
 
     @Test
     void liveFireSerdesWorkForFixed() throws IOException {
-        final var fixedSubject =
-                FcCustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector, false);
+        final var fixedSubject = FcCustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector, false);
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         final var dos = new SerializableDataOutputStream(baos);
         fixedSubject.serialize(dos);
@@ -636,8 +549,7 @@ class FcCustomFeeTest {
 
     @Test
     void liveFireSerdesWorkForFixedWithNullDenom() throws IOException {
-        final var fixedSubject =
-                FcCustomFee.fixedFee(fixedUnitsToCollect, null, feeCollector, false);
+        final var fixedSubject = FcCustomFee.fixedFee(fixedUnitsToCollect, null, feeCollector, false);
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         final var dos = new SerializableDataOutputStream(baos);
         fixedSubject.serialize(dos);
@@ -673,13 +585,8 @@ class FcCustomFeeTest {
 
     @Test
     void deserializeWorksAsExpectedForFractional() throws IOException {
-        final var expectedFractionalSpec =
-                new FractionalFeeSpec(
-                        validNumerator,
-                        validDenominator,
-                        minimumUnitsToCollect,
-                        maximumUnitsToCollect,
-                        netOfTransfers);
+        final var expectedFractionalSpec = new FractionalFeeSpec(
+                validNumerator, validDenominator, minimumUnitsToCollect, maximumUnitsToCollect, netOfTransfers);
         given(din.readByte()).willReturn(FcCustomFee.FRACTIONAL_CODE);
         given(din.readBoolean()).willReturn(netOfTransfers);
         given(din.readLong())
@@ -700,13 +607,8 @@ class FcCustomFeeTest {
 
     @Test
     void deserializeWorksAsExpectedForFractionalFromRelease016x() throws IOException {
-        final var expectedFractionalSpec =
-                new FractionalFeeSpec(
-                        validNumerator,
-                        validDenominator,
-                        minimumUnitsToCollect,
-                        maximumUnitsToCollect,
-                        !netOfTransfers);
+        final var expectedFractionalSpec = new FractionalFeeSpec(
+                validNumerator, validDenominator, minimumUnitsToCollect, maximumUnitsToCollect, !netOfTransfers);
         given(din.readByte()).willReturn(FcCustomFee.FRACTIONAL_CODE);
         given(din.readLong())
                 .willReturn(validNumerator)
@@ -729,15 +631,14 @@ class FcCustomFeeTest {
     @Test
     void serializeWorksAsExpectedForFractional() throws IOException {
         InOrder inOrder = Mockito.inOrder(dos);
-        final var subject =
-                FcCustomFee.fractionalFee(
-                        validNumerator,
-                        validDenominator,
-                        minimumUnitsToCollect,
-                        maximumUnitsToCollect,
-                        netOfTransfers,
-                        feeCollector,
-                        false);
+        final var subject = FcCustomFee.fractionalFee(
+                validNumerator,
+                validDenominator,
+                minimumUnitsToCollect,
+                maximumUnitsToCollect,
+                netOfTransfers,
+                feeCollector,
+                false);
 
         subject.serialize(dos);
 
@@ -773,8 +674,7 @@ class FcCustomFeeTest {
     @Test
     void fixedFactoryWorks() {
         final var expectedFixedSpec = new FixedFeeSpec(fixedUnitsToCollect, denom);
-        final var fixedSubject =
-                FcCustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector, false);
+        final var fixedSubject = FcCustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector, false);
 
         assertEquals(FcCustomFee.FeeType.FIXED_FEE, fixedSubject.getFeeType());
         assertEquals(expectedFixedSpec, fixedSubject.getFixedFeeSpec());
@@ -784,22 +684,16 @@ class FcCustomFeeTest {
 
     @Test
     void fractionalFactoryWorks() {
-        final var expectedFractionalSpec =
-                new FractionalFeeSpec(
-                        validNumerator,
-                        validDenominator,
-                        minimumUnitsToCollect,
-                        maximumUnitsToCollect,
-                        netOfTransfers);
-        final var fractionalSubject =
-                FcCustomFee.fractionalFee(
-                        validNumerator,
-                        validDenominator,
-                        minimumUnitsToCollect,
-                        maximumUnitsToCollect,
-                        netOfTransfers,
-                        feeCollector,
-                        false);
+        final var expectedFractionalSpec = new FractionalFeeSpec(
+                validNumerator, validDenominator, minimumUnitsToCollect, maximumUnitsToCollect, netOfTransfers);
+        final var fractionalSubject = FcCustomFee.fractionalFee(
+                validNumerator,
+                validDenominator,
+                minimumUnitsToCollect,
+                maximumUnitsToCollect,
+                netOfTransfers,
+                feeCollector,
+                false);
 
         assertEquals(FcCustomFee.FeeType.FRACTIONAL_FEE, fractionalSubject.getFeeType());
         assertEquals(expectedFractionalSpec, fractionalSubject.getFractionalFeeSpec());
@@ -809,13 +703,11 @@ class FcCustomFeeTest {
 
     @Test
     void royaltyFactoryWorks() {
-        final var expectedRoyaltySpec =
-                new RoyaltyFeeSpec(validNumerator, validDenominator, fallbackFee);
+        final var expectedRoyaltySpec = new RoyaltyFeeSpec(validNumerator, validDenominator, fallbackFee);
 
         // given:
         final var royaltySubject =
-                FcCustomFee.royaltyFee(
-                        validNumerator, validDenominator, fallbackFee, feeCollector, false);
+                FcCustomFee.royaltyFee(validNumerator, validDenominator, fallbackFee, feeCollector, false);
 
         // expect:
         assertEquals(FcCustomFee.FeeType.ROYALTY_FEE, royaltySubject.getFeeType());
@@ -824,17 +716,11 @@ class FcCustomFeeTest {
 
     @Test
     void toStringsWork() {
-        final var fractionalSpec =
-                new FractionalFeeSpec(
-                        validNumerator,
-                        validDenominator,
-                        minimumUnitsToCollect,
-                        maximumUnitsToCollect,
-                        netOfTransfers);
+        final var fractionalSpec = new FractionalFeeSpec(
+                validNumerator, validDenominator, minimumUnitsToCollect, maximumUnitsToCollect, netOfTransfers);
         final var fixedSpec = new FixedFeeSpec(fixedUnitsToCollect, denom);
-        final var desiredFracRepr =
-                "FractionalFeeSpec{numerator=5, denominator=100, minimumUnitsToCollect=1, "
-                        + "maximumUnitsToCollect=55, netOfTransfers=true}";
+        final var desiredFracRepr = "FractionalFeeSpec{numerator=5, denominator=100, minimumUnitsToCollect=1, "
+                + "maximumUnitsToCollect=55, netOfTransfers=true}";
         final var desiredFixedRepr = "FixedFeeSpec{unitsToCollect=7, tokenDenomination=0.0.3}";
 
         assertEquals(desiredFixedRepr, fixedSpec.toString());
@@ -844,70 +730,55 @@ class FcCustomFeeTest {
     @Test
     void failFastIfInvalidFractionUsed() {
         assertFailsWith(
-                () ->
-                        new FractionalFeeSpec(
-                                validNumerator,
-                                invalidDenominator,
-                                minimumUnitsToCollect,
-                                maximumUnitsToCollect,
-                                netOfTransfers),
+                () -> new FractionalFeeSpec(
+                        validNumerator,
+                        invalidDenominator,
+                        minimumUnitsToCollect,
+                        maximumUnitsToCollect,
+                        netOfTransfers),
                 FRACTION_DIVIDES_BY_ZERO);
         assertFailsWith(
-                () ->
-                        new FractionalFeeSpec(
-                                -validNumerator,
-                                validDenominator,
-                                minimumUnitsToCollect,
-                                maximumUnitsToCollect,
-                                netOfTransfers),
+                () -> new FractionalFeeSpec(
+                        -validNumerator,
+                        validDenominator,
+                        minimumUnitsToCollect,
+                        maximumUnitsToCollect,
+                        netOfTransfers),
                 CUSTOM_FEE_MUST_BE_POSITIVE);
         assertFailsWith(
-                () ->
-                        new FractionalFeeSpec(
-                                validNumerator,
-                                validDenominator,
-                                minimumUnitsToCollect,
-                                -maximumUnitsToCollect,
-                                netOfTransfers),
+                () -> new FractionalFeeSpec(
+                        validNumerator,
+                        validDenominator,
+                        minimumUnitsToCollect,
+                        -maximumUnitsToCollect,
+                        netOfTransfers),
                 CUSTOM_FEE_MUST_BE_POSITIVE);
         assertFailsWith(
-                () ->
-                        new FractionalFeeSpec(
-                                validNumerator,
-                                -validDenominator,
-                                minimumUnitsToCollect,
-                                maximumUnitsToCollect,
-                                netOfTransfers),
+                () -> new FractionalFeeSpec(
+                        validNumerator,
+                        -validDenominator,
+                        minimumUnitsToCollect,
+                        maximumUnitsToCollect,
+                        netOfTransfers),
                 CUSTOM_FEE_MUST_BE_POSITIVE);
         assertFailsWith(
-                () ->
-                        new FractionalFeeSpec(
-                                validNumerator,
-                                validDenominator,
-                                -minimumUnitsToCollect,
-                                maximumUnitsToCollect,
-                                netOfTransfers),
+                () -> new FractionalFeeSpec(
+                        validNumerator,
+                        validDenominator,
+                        -minimumUnitsToCollect,
+                        maximumUnitsToCollect,
+                        netOfTransfers),
                 CUSTOM_FEE_MUST_BE_POSITIVE);
         assertFailsWith(
-                () ->
-                        new FractionalFeeSpec(
-                                validNumerator,
-                                validDenominator,
-                                maximumUnitsToCollect,
-                                minimumUnitsToCollect,
-                                netOfTransfers),
+                () -> new FractionalFeeSpec(
+                        validNumerator, validDenominator, maximumUnitsToCollect, minimumUnitsToCollect, netOfTransfers),
                 FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT);
     }
 
     @Test
     void gettersWork() {
-        final var fractionalSpec =
-                new FractionalFeeSpec(
-                        validNumerator,
-                        validDenominator,
-                        minimumUnitsToCollect,
-                        maximumUnitsToCollect,
-                        netOfTransfers);
+        final var fractionalSpec = new FractionalFeeSpec(
+                validNumerator, validDenominator, minimumUnitsToCollect, maximumUnitsToCollect, netOfTransfers);
         final var fixedSpec = new FixedFeeSpec(fixedUnitsToCollect, denom);
 
         assertEquals(validNumerator, fractionalSpec.getNumerator());
@@ -921,13 +792,8 @@ class FcCustomFeeTest {
 
     @Test
     void hashCodeWorks() {
-        final var fractionalSpec =
-                new FractionalFeeSpec(
-                        validNumerator,
-                        validDenominator,
-                        minimumUnitsToCollect,
-                        maximumUnitsToCollect,
-                        netOfTransfers);
+        final var fractionalSpec = new FractionalFeeSpec(
+                validNumerator, validDenominator, minimumUnitsToCollect, maximumUnitsToCollect, netOfTransfers);
         final var fixedSpec = new FixedFeeSpec(fixedUnitsToCollect, denom);
 
         assertDoesNotThrow(fractionalSpec::hashCode);
@@ -984,17 +850,12 @@ class FcCustomFeeTest {
         long max = 99;
         final var aFeeCollector = new EntityId(1, 2, 3);
         final var bFeeCollector = new EntityId(2, 3, 4);
-        final var aCustomFee =
-                FcCustomFee.fixedFee(fixedUnitsToCollect, denom, aFeeCollector, false);
-        final var bCustomFee =
-                FcCustomFee.fixedFee(fixedUnitsToCollect + 1, denom, aFeeCollector, false);
-        final var cCustomFee =
-                FcCustomFee.fixedFee(fixedUnitsToCollect, denom, bFeeCollector, false);
-        final var dCustomFee =
-                FcCustomFee.fractionalFee(n, d, min, max, netOfTransfers, aFeeCollector, false);
+        final var aCustomFee = FcCustomFee.fixedFee(fixedUnitsToCollect, denom, aFeeCollector, false);
+        final var bCustomFee = FcCustomFee.fixedFee(fixedUnitsToCollect + 1, denom, aFeeCollector, false);
+        final var cCustomFee = FcCustomFee.fixedFee(fixedUnitsToCollect, denom, bFeeCollector, false);
+        final var dCustomFee = FcCustomFee.fractionalFee(n, d, min, max, netOfTransfers, aFeeCollector, false);
         final var eCustomFee = aCustomFee;
-        final var fCustomFee =
-                FcCustomFee.fixedFee(fixedUnitsToCollect, denom, aFeeCollector, false);
+        final var fCustomFee = FcCustomFee.fixedFee(fixedUnitsToCollect, denom, aFeeCollector, false);
 
         assertEquals(aCustomFee, eCustomFee);
         assertEquals(aCustomFee, fCustomFee);
@@ -1009,32 +870,27 @@ class FcCustomFeeTest {
     @Test
     void toStringWorks() {
         final var denom = new EntityId(0, 0, 333);
-        final var fractionalFee =
-                FcCustomFee.fractionalFee(
-                        validNumerator,
-                        validDenominator,
-                        minimumUnitsToCollect,
-                        maximumUnitsToCollect,
-                        netOfTransfers,
-                        feeCollector,
-                        false);
-        final var fixedHbarFee =
-                FcCustomFee.fixedFee(fixedUnitsToCollect, null, feeCollector, false);
-        final var fixedHtsFee =
-                FcCustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector, false);
+        final var fractionalFee = FcCustomFee.fractionalFee(
+                validNumerator,
+                validDenominator,
+                minimumUnitsToCollect,
+                maximumUnitsToCollect,
+                netOfTransfers,
+                feeCollector,
+                false);
+        final var fixedHbarFee = FcCustomFee.fixedFee(fixedUnitsToCollect, null, feeCollector, false);
+        final var fixedHtsFee = FcCustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector, false);
         final var expectedFractional =
                 "FcCustomFee{feeType=FRACTIONAL_FEE, fractionalFee=FractionalFeeSpec{numerator=5,"
                         + " denominator=100, minimumUnitsToCollect=1, maximumUnitsToCollect=55,"
                         + " netOfTransfers=true}, feeCollector=EntityId{shard=0, realm=0, num=6},"
                         + " allCollectorsAreExempt=false}";
-        final var expectedFixedHbar =
-                "FcCustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=7, "
-                        + "tokenDenomination=ℏ}, feeCollector=EntityId{shard=0, realm=0, num=6}, "
-                        + "allCollectorsAreExempt=false}";
-        final var expectedFixedHts =
-                "FcCustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=7,"
-                        + " tokenDenomination=0.0.333}, feeCollector=EntityId{shard=0, realm=0,"
-                        + " num=6}, allCollectorsAreExempt=false}";
+        final var expectedFixedHbar = "FcCustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=7, "
+                + "tokenDenomination=ℏ}, feeCollector=EntityId{shard=0, realm=0, num=6}, "
+                + "allCollectorsAreExempt=false}";
+        final var expectedFixedHts = "FcCustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=7,"
+                + " tokenDenomination=0.0.333}, feeCollector=EntityId{shard=0, realm=0,"
+                + " num=6}, allCollectorsAreExempt=false}";
 
         assertEquals(expectedFractional, fractionalFee.toString());
         assertEquals(expectedFixedHts, fixedHtsFee.toString());

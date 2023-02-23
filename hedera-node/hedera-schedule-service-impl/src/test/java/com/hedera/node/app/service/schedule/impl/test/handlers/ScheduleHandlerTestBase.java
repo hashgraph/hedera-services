@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.schedule.impl.test.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
@@ -39,20 +40,26 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleHandlerTestBase {
-    protected Key key =
-            Key.newBuilder()
-                    .setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
-                    .build();
+    protected Key key = Key.newBuilder()
+            .setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+            .build();
     protected HederaKey adminKey = asHederaKey(key).get();
     protected AccountID scheduler = AccountID.newBuilder().setAccountNum(1001L).build();
     protected AccountID payer = AccountID.newBuilder().setAccountNum(2001L).build();
     protected TransactionBody scheduledTxn;
     protected TransactionMetadata scheduledMeta;
 
-    @Mock protected AccountKeyLookup keyLookup;
-    @Mock protected HederaKey schedulerKey;
-    @Mock protected PreHandleDispatcher dispatcher;
-    @Mock protected ReadableStates states;
+    @Mock
+    protected AccountKeyLookup keyLookup;
+
+    @Mock
+    protected HederaKey schedulerKey;
+
+    @Mock
+    protected PreHandleDispatcher dispatcher;
+
+    @Mock
+    protected ReadableStates states;
 
     protected void basicMetaAssertions(
             final TransactionMetadata meta,
@@ -77,10 +84,9 @@ class ScheduleHandlerTestBase {
     protected TransactionBody scheduleTxnNotRecognized() {
         return TransactionBody.newBuilder()
                 .setTransactionID(TransactionID.newBuilder().setAccountID(scheduler))
-                .setScheduleCreate(
-                        ScheduleCreateTransactionBody.newBuilder()
-                                .setScheduledTransactionBody(
-                                        SchedulableTransactionBody.newBuilder().build()))
+                .setScheduleCreate(ScheduleCreateTransactionBody.newBuilder()
+                        .setScheduledTransactionBody(
+                                SchedulableTransactionBody.newBuilder().build()))
                 .build();
     }
 }

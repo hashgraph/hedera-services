@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import static com.hedera.node.app.service.mono.utils.MapValueListUtils.internalDetachFromMapValueList;
@@ -31,8 +32,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 
 class MapValueListUtilsTest {
-    private TokenRelStorageAdapter tokenRels =
-            TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
+    private TokenRelStorageAdapter tokenRels = TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
 
     @Test
     void sequentialRemovalWorksAsExpected() {
@@ -102,9 +102,7 @@ class MapValueListUtilsTest {
 
         final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
-        final var newRoot =
-                internalDetachFromMapValueList(
-                        bRelKey, aRelKey, relsListRemoval, false, false, true);
+        final var newRoot = internalDetachFromMapValueList(bRelKey, aRelKey, relsListRemoval, false, false, true);
         assertSame(aRelKey, newRoot);
         final var unlinkedValue = tokenRels.get(bRelKey);
         assertEquals(0, unlinkedValue.getPrev());

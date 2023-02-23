@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.contracts;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.*;
@@ -38,11 +39,8 @@ class ParsingConstantsTest {
         assertEquals("ERC_TOTAL_SUPPLY", FunctionType.ERC_TOTAL_SUPPLY.name());
         assertEquals("ERC_TOKEN_URI", FunctionType.ERC_TOKEN_URI.name());
         assertEquals("ERC_NAME", FunctionType.ERC_NAME.name());
-        assertEquals(
-                "HAPI_GET_FUNGIBLE_TOKEN_INFO", FunctionType.HAPI_GET_FUNGIBLE_TOKEN_INFO.name());
-        assertEquals(
-                "HAPI_GET_NON_FUNGIBLE_TOKEN_INFO",
-                FunctionType.HAPI_GET_NON_FUNGIBLE_TOKEN_INFO.name());
+        assertEquals("HAPI_GET_FUNGIBLE_TOKEN_INFO", FunctionType.HAPI_GET_FUNGIBLE_TOKEN_INFO.name());
+        assertEquals("HAPI_GET_NON_FUNGIBLE_TOKEN_INFO", FunctionType.HAPI_GET_NON_FUNGIBLE_TOKEN_INFO.name());
         assertEquals("HAPI_GET_TOKEN_INFO", FunctionType.HAPI_GET_TOKEN_INFO.name());
         assertEquals("HAPI_GET_TOKEN_CUSTOM_FEES", FunctionType.HAPI_GET_TOKEN_CUSTOM_FEES.name());
         assertEquals("HAPI_MINT", FunctionType.HAPI_MINT.name());
@@ -71,25 +69,22 @@ class ParsingConstantsTest {
         assertEquals(hapiAllowanceOfType, TupleType.parse("(int32,uint256)"));
         assertEquals(hapiGetApprovedType, TupleType.parse("(int32,bytes32)"));
         assertEquals(
-                getFungibleTokenInfoType,
-                TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO + ")"));
-        assertEquals(
-                getTokenInfoType, TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")"));
+                getFungibleTokenInfoType, TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO + ")"));
+        assertEquals(getTokenInfoType, TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")"));
         assertEquals(
                 getNonFungibleTokenInfoType,
                 TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")"));
         assertEquals(
                 getTokenCustomFeesType,
-                TupleType.parse(
-                        RESPONSE_STATUS_AT_BEGINNING
-                                + FIXED_FEE
-                                + ARRAY_BRACKETS
-                                + ","
-                                + FRACTIONAL_FEE
-                                + ARRAY_BRACKETS
-                                + ","
-                                + ROYALTY_FEE
-                                + ARRAY_BRACKETS
-                                + ")"));
+                TupleType.parse(RESPONSE_STATUS_AT_BEGINNING
+                        + FIXED_FEE
+                        + ARRAY_BRACKETS
+                        + ","
+                        + FRACTIONAL_FEE
+                        + ARRAY_BRACKETS
+                        + ","
+                        + ROYALTY_FEE
+                        + ARRAY_BRACKETS
+                        + ")"));
     }
 }

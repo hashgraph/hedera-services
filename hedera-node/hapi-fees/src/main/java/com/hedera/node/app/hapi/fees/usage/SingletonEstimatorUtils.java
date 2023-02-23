@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage;
 
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ACCOUNT_AMT_SIZE;
@@ -38,39 +39,34 @@ public enum SingletonEstimatorUtils implements EstimatorUtils {
 
     @Override
     public UsageEstimate baseEstimate(TransactionBody txn, SigUsage sigUsage) {
-        var base =
-                FeeComponents.newBuilder()
-                        .setBpr(INT_SIZE)
-                        .setVpt(sigUsage.numSigs())
-                        .setBpt(baseBodyBytes(txn) + sigUsage.sigsSize());
+        var base = FeeComponents.newBuilder()
+                .setBpr(INT_SIZE)
+                .setVpt(sigUsage.numSigs())
+                .setBpt(baseBodyBytes(txn) + sigUsage.sigsSize());
         var estimate = new UsageEstimate(base);
         estimate.addRbs(baseRecordBytes(txn) * RECEIPT_STORAGE_TIME_SEC);
         return estimate;
     }
 
-    public FeeData withDefaultTxnPartitioning(
-            FeeComponents usage, SubType subType, long networkRbh, int numPayerKeys) {
+    public FeeData withDefaultTxnPartitioning(FeeComponents usage, SubType subType, long networkRbh, int numPayerKeys) {
         var usages = FeeData.newBuilder();
 
-        var network =
-                FeeComponents.newBuilder()
-                        .setConstant(FEE_MATRICES_CONST)
-                        .setBpt(usage.getBpt())
-                        .setVpt(usage.getVpt())
-                        .setRbh(networkRbh);
-        var node =
-                FeeComponents.newBuilder()
-                        .setConstant(FEE_MATRICES_CONST)
-                        .setBpt(usage.getBpt())
-                        .setVpt(numPayerKeys)
-                        .setBpr(usage.getBpr())
-                        .setSbpr(usage.getSbpr());
-        var service =
-                FeeComponents.newBuilder()
-                        .setConstant(FEE_MATRICES_CONST)
-                        .setRbh(usage.getRbh())
-                        .setSbh(usage.getSbh())
-                        .setTv(usage.getTv());
+        var network = FeeComponents.newBuilder()
+                .setConstant(FEE_MATRICES_CONST)
+                .setBpt(usage.getBpt())
+                .setVpt(usage.getVpt())
+                .setRbh(networkRbh);
+        var node = FeeComponents.newBuilder()
+                .setConstant(FEE_MATRICES_CONST)
+                .setBpt(usage.getBpt())
+                .setVpt(numPayerKeys)
+                .setBpr(usage.getBpr())
+                .setSbpr(usage.getSbpr());
+        var service = FeeComponents.newBuilder()
+                .setConstant(FEE_MATRICES_CONST)
+                .setRbh(usage.getRbh())
+                .setSbh(usage.getSbh())
+                .setTv(usage.getTv());
         return usages.setNetworkdata(network)
                 .setNodedata(node)
                 .setServicedata(service)
@@ -81,12 +77,11 @@ public enum SingletonEstimatorUtils implements EstimatorUtils {
     @Override
     public FeeData withDefaultQueryPartitioning(FeeComponents usage) {
         var usages = FeeData.newBuilder();
-        var node =
-                FeeComponents.newBuilder()
-                        .setConstant(FEE_MATRICES_CONST)
-                        .setBpt(usage.getBpt())
-                        .setBpr(usage.getBpr())
-                        .setSbpr(usage.getSbpr());
+        var node = FeeComponents.newBuilder()
+                .setConstant(FEE_MATRICES_CONST)
+                .setBpt(usage.getBpt())
+                .setBpr(usage.getBpr())
+                .setSbpr(usage.getSbpr());
         return usages.setNodedata(node).build();
     }
 

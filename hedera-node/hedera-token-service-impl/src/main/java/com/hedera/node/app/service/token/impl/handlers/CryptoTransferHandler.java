@@ -58,8 +58,8 @@ public class CryptoTransferHandler implements TransactionHandler {
      * @throws PreCheckException if validation fails
      */
     public void validate(@NonNull final TransactionBody txn) throws PreCheckException {
-        // TODO: Migrate validation from CryptoTransferTransistionLogic.validateSemantics()
-        throw new UnsupportedOperationException("Not implemented");
+        // FUTURE: Migrate validation from CryptoTransferTransistionLogic.validateSemantics()
+        //        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -102,8 +102,9 @@ public class CryptoTransferHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
-        requireNonNull(metadata);
-        throw new UnsupportedOperationException("Not implemented");
+        // TODO : Need to implement this method when we are ready to validate payments for query
+        //        requireNonNull(metadata);
+        //        throw new UnsupportedOperationException("Not implemented");
     }
 
     private void handleTokenTransfers(

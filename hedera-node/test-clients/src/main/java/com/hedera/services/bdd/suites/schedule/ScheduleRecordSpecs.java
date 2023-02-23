@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.schedule;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -69,17 +70,15 @@ public class ScheduleRecordSpecs extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return withAndWithoutLongTermEnabled(
-                () ->
-                        List.of(
-                                executionTimeIsAvailable(),
-                                deletionTimeIsAvailable(),
-                                allRecordsAreQueryable(),
-                                schedulingTxnIdFieldsNotAllowed(),
-                                canonicalScheduleOpsHaveExpectedUsdFees(),
-                                canScheduleChunkedMessages(),
-                                noFeesChargedIfTriggeredPayerIsInsolvent(),
-                                noFeesChargedIfTriggeredPayerIsUnwilling()));
+        return withAndWithoutLongTermEnabled(() -> List.of(
+                executionTimeIsAvailable(),
+                deletionTimeIsAvailable(),
+                allRecordsAreQueryable(),
+                schedulingTxnIdFieldsNotAllowed(),
+                canonicalScheduleOpsHaveExpectedUsdFees(),
+                canScheduleChunkedMessages(),
+                noFeesChargedIfTriggeredPayerIsInsolvent(),
+                noFeesChargedIfTriggeredPayerIsUnwilling()));
     }
 
     HapiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
@@ -94,9 +93,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
                 .when(
                         scheduleCreate(
                                         "canonical",
-                                        cryptoTransfer(
-                                                        tinyBarsFromTo(
-                                                                "payingSender", "receiver", 1L))
+                                        cryptoTransfer(tinyBarsFromTo("payingSender", "receiver", 1L))
                                                 .memo("")
                                                 .fee(ONE_HBAR))
                                 .payingWith("otherPayer")
@@ -109,9 +106,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
                                 .alsoSigningWith("receiver"),
                         scheduleCreate(
                                         "tbd",
-                                        cryptoTransfer(
-                                                        tinyBarsFromTo(
-                                                                "payingSender", "receiver", 1L))
+                                        cryptoTransfer(tinyBarsFromTo("payingSender", "receiver", 1L))
                                                 .memo("")
                                                 .fee(ONE_HBAR))
                                 .payingWith("payingSender")
@@ -143,49 +138,38 @@ public class ScheduleRecordSpecs extends HapiSuite {
     public HapiSpec noFeesChargedIfTriggeredPayerIsUnwilling() {
         return defaultHapiSpec("NoFeesChargedIfTriggeredPayerIsUnwilling")
                 .given(cryptoCreate("unwillingPayer"))
-                .when(
-                        scheduleCreate(
-                                        "schedule",
-                                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1)).fee(1L))
-                                .alsoSigningWith(GENESIS, "unwillingPayer")
-                                .via("simpleXferSchedule")
-                                // prevent multiple runs of this test causing duplicates
-                                .withEntityMemo("" + new SecureRandom().nextLong())
-                                .designatingPayer("unwillingPayer")
-                                .savingExpectedScheduledTxnId())
-                .then(
-                        getTxnRecord("simpleXferSchedule")
-                                .scheduledBy("schedule")
-                                .hasPriority(
-                                        recordWith()
-                                                .transfers(
-                                                        exactParticipants(
-                                                                ignore -> Collections.emptyList()))
-                                                .status(INSUFFICIENT_TX_FEE)));
+                .when(scheduleCreate(
+                                "schedule",
+                                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1))
+                                        .fee(1L))
+                        .alsoSigningWith(GENESIS, "unwillingPayer")
+                        .via("simpleXferSchedule")
+                        // prevent multiple runs of this test causing duplicates
+                        .withEntityMemo("" + new SecureRandom().nextLong())
+                        .designatingPayer("unwillingPayer")
+                        .savingExpectedScheduledTxnId())
+                .then(getTxnRecord("simpleXferSchedule")
+                        .scheduledBy("schedule")
+                        .hasPriority(recordWith()
+                                .transfers(exactParticipants(ignore -> Collections.emptyList()))
+                                .status(INSUFFICIENT_TX_FEE)));
     }
 
     public HapiSpec noFeesChargedIfTriggeredPayerIsInsolvent() {
         return defaultHapiSpec("NoFeesChargedIfTriggeredPayerIsInsolvent")
                 .given(cryptoCreate("insolventPayer").balance(0L))
-                .when(
-                        scheduleCreate(
-                                        "schedule",
-                                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1)))
-                                .alsoSigningWith(GENESIS, "insolventPayer")
-                                .via("simpleXferSchedule")
-                                // prevent multiple runs of this test causing duplicates
-                                .withEntityMemo("" + new SecureRandom().nextLong())
-                                .designatingPayer("insolventPayer")
-                                .savingExpectedScheduledTxnId())
-                .then(
-                        getTxnRecord("simpleXferSchedule")
-                                .scheduledBy("schedule")
-                                .hasPriority(
-                                        recordWith()
-                                                .transfers(
-                                                        exactParticipants(
-                                                                ignore -> Collections.emptyList()))
-                                                .status(INSUFFICIENT_PAYER_BALANCE)));
+                .when(scheduleCreate("schedule", cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1)))
+                        .alsoSigningWith(GENESIS, "insolventPayer")
+                        .via("simpleXferSchedule")
+                        // prevent multiple runs of this test causing duplicates
+                        .withEntityMemo("" + new SecureRandom().nextLong())
+                        .designatingPayer("insolventPayer")
+                        .savingExpectedScheduledTxnId())
+                .then(getTxnRecord("simpleXferSchedule")
+                        .scheduledBy("schedule")
+                        .hasPriority(recordWith()
+                                .transfers(exactParticipants(ignore -> Collections.emptyList()))
+                                .status(INSUFFICIENT_PAYER_BALANCE)));
     }
 
     public HapiSpec canScheduleChunkedMessages() {
@@ -194,110 +178,69 @@ public class ScheduleRecordSpecs extends HapiSuite {
 
         return defaultHapiSpec("CanScheduleChunkedMessages")
                 .given(
-                        overridingAllOf(
-                                Map.of(
-                                        "staking.fees.nodeRewardPercentage", "10",
-                                        "staking.fees.stakingRewardPercentage", "10")),
+                        overridingAllOf(Map.of(
+                                "staking.fees.nodeRewardPercentage", "10",
+                                "staking.fees.stakingRewardPercentage", "10")),
                         cryptoCreate("payingSender").balance(ONE_HUNDRED_HBARS),
                         createTopic(ofGeneralInterest))
                 .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    var subOp = usableTxnIdNamed("begin").payerId("payingSender");
-                                    allRunFor(spec, subOp);
-                                    initialTxnId.set(spec.registry().getTxnId("begin"));
-                                }),
-                        sourcing(
-                                () ->
-                                        scheduleCreate(
-                                                        "firstChunk",
-                                                        submitMessageTo(ofGeneralInterest)
-                                                                .chunkInfo(
-                                                                        3,
-                                                                        1,
-                                                                        scheduledVersionOf(
-                                                                                initialTxnId
-                                                                                        .get())))
-                                                .txnId("begin")
-                                                .logged()
-                                                .signedBy("payingSender")),
+                        withOpContext((spec, opLog) -> {
+                            var subOp = usableTxnIdNamed("begin").payerId("payingSender");
+                            allRunFor(spec, subOp);
+                            initialTxnId.set(spec.registry().getTxnId("begin"));
+                        }),
+                        sourcing(() -> scheduleCreate(
+                                        "firstChunk",
+                                        submitMessageTo(ofGeneralInterest)
+                                                .chunkInfo(3, 1, scheduledVersionOf(initialTxnId.get())))
+                                .txnId("begin")
+                                .logged()
+                                .signedBy("payingSender")),
                         getTxnRecord("begin")
-                                .hasPriority(
-                                        recordWith()
-                                                .status(SUCCESS)
-                                                .transfers(
-                                                        exactParticipants(
-                                                                spec ->
-                                                                        List.of(
-                                                                                spec.setup()
-                                                                                        .defaultNode(),
-                                                                                spec.setup()
-                                                                                        .fundingAccount(),
-                                                                                spec.setup()
-                                                                                        .stakingRewardAccount(),
-                                                                                spec.setup()
-                                                                                        .nodeRewardAccount(),
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                "payingSender")))))
+                                .hasPriority(recordWith()
+                                        .status(SUCCESS)
+                                        .transfers(exactParticipants(spec -> List.of(
+                                                spec.setup().defaultNode(),
+                                                spec.setup().fundingAccount(),
+                                                spec.setup().stakingRewardAccount(),
+                                                spec.setup().nodeRewardAccount(),
+                                                spec.registry().getAccountID("payingSender")))))
                                 .assertingOnlyPriority()
                                 .logged(),
                         getTxnRecord("begin")
                                 .scheduled()
-                                .hasPriority(
-                                        recordWith()
-                                                .status(SUCCESS)
-                                                .transfers(
-                                                        exactParticipants(
-                                                                spec ->
-                                                                        List.of(
-                                                                                spec.setup()
-                                                                                        .fundingAccount(),
-                                                                                spec.setup()
-                                                                                        .stakingRewardAccount(),
-                                                                                spec.setup()
-                                                                                        .nodeRewardAccount(),
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                "payingSender")))))
+                                .hasPriority(recordWith()
+                                        .status(SUCCESS)
+                                        .transfers(exactParticipants(spec -> List.of(
+                                                spec.setup().fundingAccount(),
+                                                spec.setup().stakingRewardAccount(),
+                                                spec.setup().nodeRewardAccount(),
+                                                spec.registry().getAccountID("payingSender")))))
                                 .logged())
                 .then(
                         scheduleCreate(
                                         "secondChunk",
-                                        submitMessageTo(ofGeneralInterest)
-                                                .chunkInfo(3, 2, "payingSender"))
+                                        submitMessageTo(ofGeneralInterest).chunkInfo(3, 2, "payingSender"))
                                 .via("end")
                                 .logged()
                                 .payingWith("payingSender"),
                         getTxnRecord("end")
                                 .scheduled()
-                                .hasPriority(
-                                        recordWith()
-                                                .status(SUCCESS)
-                                                .transfers(
-                                                        exactParticipants(
-                                                                spec ->
-                                                                        List.of(
-                                                                                spec.setup()
-                                                                                        .fundingAccount(),
-                                                                                spec.setup()
-                                                                                        .stakingRewardAccount(),
-                                                                                spec.setup()
-                                                                                        .nodeRewardAccount(),
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                "payingSender")))))
+                                .hasPriority(recordWith()
+                                        .status(SUCCESS)
+                                        .transfers(exactParticipants(spec -> List.of(
+                                                spec.setup().fundingAccount(),
+                                                spec.setup().stakingRewardAccount(),
+                                                spec.setup().nodeRewardAccount(),
+                                                spec.registry().getAccountID("payingSender")))))
                                 .logged(),
                         getTopicInfo(ofGeneralInterest).logged().hasSeqNo(2L),
-                        overridingAllOf(
-                                Map.of(
-                                        "staking.fees.nodeRewardPercentage",
-                                                HapiSpecSetup.getDefaultNodeProps()
-                                                        .get("staking.fees.nodeRewardPercentage"),
-                                        "staking.fees.stakingRewardPercentage",
-                                                HapiSpecSetup.getDefaultNodeProps()
-                                                        .get(
-                                                                "staking.fees.stakingRewardPercentage"))));
+                        overridingAllOf(Map.of(
+                                "staking.fees.nodeRewardPercentage",
+                                        HapiSpecSetup.getDefaultNodeProps().get("staking.fees.nodeRewardPercentage"),
+                                "staking.fees.stakingRewardPercentage",
+                                        HapiSpecSetup.getDefaultNodeProps()
+                                                .get("staking.fees.stakingRewardPercentage"))));
     }
 
     static TransactionID scheduledVersionOf(TransactionID txnId) {
@@ -308,10 +251,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
         return defaultHapiSpec("SchedulingTxnIdFieldsNotAllowed")
                 .given(usableTxnIdNamed("withScheduled").settingScheduledInappropriately())
                 .when()
-                .then(
-                        cryptoCreate("nope")
-                                .txnId("withScheduled")
-                                .hasPrecheck(TRANSACTION_ID_FIELD_NOT_ALLOWED));
+                .then(cryptoCreate("nope").txnId("withScheduled").hasPrecheck(TRANSACTION_ID_FIELD_NOT_ALLOWED));
     }
 
     public HapiSpec executionTimeIsAvailable() {

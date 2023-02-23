@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.crypto;
 
 import static com.hedera.node.app.service.mono.context.primitives.StateView.doBoundedIteration;
@@ -80,17 +81,13 @@ public class GetAccountBalanceAnswer implements AnswerService {
 
     @Override
     public Response responseGiven(
-            final Query query,
-            @Nullable final StateView view,
-            final ResponseCodeEnum validity,
-            final long cost) {
+            final Query query, @Nullable final StateView view, final ResponseCodeEnum validity, final long cost) {
         final CryptoGetAccountBalanceQuery op = query.getCryptogetAccountBalance();
 
         final var id = targetOf(op);
-        final CryptoGetAccountBalanceResponse.Builder opAnswer =
-                CryptoGetAccountBalanceResponse.newBuilder()
-                        .setHeader(answerOnlyHeader(validity))
-                        .setAccountID(id);
+        final CryptoGetAccountBalanceResponse.Builder opAnswer = CryptoGetAccountBalanceResponse.newBuilder()
+                .setHeader(answerOnlyHeader(validity))
+                .setAccountID(id);
 
         if (validity == OK) {
             final var accounts = Objects.requireNonNull(view).accounts();
@@ -104,13 +101,11 @@ public class GetAccountBalanceAnswer implements AnswerService {
                     view.tokens(),
                     firstRel,
                     maxRels,
-                    (token, rel) ->
-                            opAnswer.addTokenBalances(
-                                    TokenBalance.newBuilder()
-                                            .setTokenId(token.grpcId())
-                                            .setDecimals(token.decimals())
-                                            .setBalance(rel.getBalance())
-                                            .build()));
+                    (token, rel) -> opAnswer.addTokenBalances(TokenBalance.newBuilder()
+                            .setTokenId(token.grpcId())
+                            .setDecimals(token.decimals())
+                            .setBalance(rel.getBalance())
+                            .build()));
         }
 
         return Response.newBuilder().setCryptogetAccountBalance(opAnswer).build();
@@ -121,8 +116,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
         return Optional.empty();
     }
 
-    private ResponseCodeEnum validityOf(
-            final CryptoGetAccountBalanceQuery op, final AccountStorageAdapter accounts) {
+    private ResponseCodeEnum validityOf(final CryptoGetAccountBalanceQuery op, final AccountStorageAdapter accounts) {
         if (op.hasContractID()) {
             final var effId = resolvedContract(op.getContractID());
             return optionValidator.queryableContractStatus(effId, accounts);

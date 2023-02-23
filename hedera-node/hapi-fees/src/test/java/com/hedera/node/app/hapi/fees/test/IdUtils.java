@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.test;
 
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -27,7 +28,11 @@ import java.util.stream.Stream;
 
 public class IdUtils {
     public static TokenID tokenWith(final long num) {
-        return TokenID.newBuilder().setShardNum(0).setRealmNum(0).setTokenNum(num).build();
+        return TokenID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setTokenNum(num)
+                .build();
     }
 
     public static TopicID asTopic(final String v) {
@@ -96,8 +101,7 @@ public class IdUtils {
     }
 
     public static String asAccountString(final AccountID account) {
-        return String.format(
-                "%d.%d.%d", account.getShardNum(), account.getRealmNum(), account.getAccountNum());
+        return String.format("%d.%d.%d", account.getShardNum(), account.getRealmNum(), account.getAccountNum());
     }
 
     public static TokenBalance tokenBalanceWith(final long id, final long balance) {

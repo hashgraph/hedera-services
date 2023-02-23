@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.txns;
 
 import static com.hedera.test.utils.IdUtils.asTopic;
@@ -44,8 +45,7 @@ public class ConsensusDeleteTopicFactory extends SignedTxnFactory<ConsensusDelet
 
     @Override
     protected void customizeTxn(TransactionBody.Builder transactionBody) {
-        ConsensusDeleteTopicTransactionBody.Builder op =
-                ConsensusDeleteTopicTransactionBody.newBuilder();
+        ConsensusDeleteTopicTransactionBody.Builder op = ConsensusDeleteTopicTransactionBody.newBuilder();
         if (null != topicId) {
             op.setTopicID(asTopic(topicId));
         }

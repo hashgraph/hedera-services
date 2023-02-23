@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -59,12 +60,11 @@ public class TransferWithCustomFees extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    transferWithFixedCustomFeeSchedule(),
-                    transferWithFractinalCustomFeeSchedule(),
-                    transferWithInsufficientCustomFees()
-                });
+        return List.of(new HapiSpec[] {
+            transferWithFixedCustomFeeSchedule(),
+            transferWithFractinalCustomFeeSchedule(),
+            transferWithInsufficientCustomFees()
+        });
     }
 
     public HapiSpec transferWithFixedCustomFeeSchedule() {
@@ -85,10 +85,9 @@ public class TransferWithCustomFees extends HapiSuite {
                         tokenAssociate(tokenReceiver, token),
                         tokenAssociate(tokenOwner, token),
                         cryptoTransfer(moving(1000, token).between(tokenTreasury, tokenOwner)))
-                .when(
-                        cryptoTransfer(moving(1, token).between(tokenOwner, tokenReceiver))
-                                .fee(ONE_HUNDRED_HBARS)
-                                .payingWith(tokenOwner))
+                .when(cryptoTransfer(moving(1, token).between(tokenOwner, tokenReceiver))
+                        .fee(ONE_HUNDRED_HBARS)
+                        .payingWith(tokenOwner))
                 .then(
                         getAccountBalance(tokenOwner)
                                 .hasTokenBalance(token, 999)
@@ -111,21 +110,14 @@ public class TransferWithCustomFees extends HapiSuite {
                                 .initialSupply(tokenTotal)
                                 .payingWith(htsCollector)
                                 .withCustom(fixedHbarFee(hbarFee, hbarCollector))
-                                .withCustom(
-                                        fractionalFee(
-                                                numerator,
-                                                denominator,
-                                                minHtsFee,
-                                                OptionalLong.of(maxHtsFee),
-                                                htsCollector)),
+                                .withCustom(fractionalFee(
+                                        numerator, denominator, minHtsFee, OptionalLong.of(maxHtsFee), htsCollector)),
                         tokenAssociate(tokenReceiver, token),
                         tokenAssociate(tokenOwner, token),
-                        cryptoTransfer(
-                                moving(tokenTotal, token).between(tokenTreasury, tokenOwner)))
-                .when(
-                        cryptoTransfer(moving(3, token).between(tokenOwner, tokenReceiver))
-                                .fee(ONE_HUNDRED_HBARS)
-                                .payingWith(tokenOwner))
+                        cryptoTransfer(moving(tokenTotal, token).between(tokenTreasury, tokenOwner)))
+                .when(cryptoTransfer(moving(3, token).between(tokenOwner, tokenReceiver))
+                        .fee(ONE_HUNDRED_HBARS)
+                        .payingWith(tokenOwner))
                 .then(
                         getAccountBalance(tokenOwner)
                                 .hasTokenBalance(token, 997)
@@ -149,16 +141,12 @@ public class TransferWithCustomFees extends HapiSuite {
                                 .withCustom(fixedHtsFee(htsFee, feeDenom, htsCollector)),
                         tokenAssociate(tokenReceiver, token),
                         tokenAssociate(tokenOwner, token),
-                        cryptoTransfer(
-                                moving(tokenTotal, token).between(tokenTreasury, tokenOwner)))
+                        cryptoTransfer(moving(tokenTotal, token).between(tokenTreasury, tokenOwner)))
                 .when()
-                .then(
-                        cryptoTransfer(moving(1, token).between(tokenOwner, tokenReceiver))
-                                .fee(ONE_HUNDRED_HBARS)
-                                .payingWith(tokenOwner)
-                                .hasKnownStatus(
-                                        ResponseCodeEnum
-                                                .INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
+                .then(cryptoTransfer(moving(1, token).between(tokenOwner, tokenReceiver))
+                        .fee(ONE_HUNDRED_HBARS)
+                        .payingWith(tokenOwner)
+                        .hasKnownStatus(ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
     }
 
     @Override

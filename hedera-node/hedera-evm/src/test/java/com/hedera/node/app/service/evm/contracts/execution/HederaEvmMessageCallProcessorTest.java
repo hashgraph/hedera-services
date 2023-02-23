@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.contracts.execution;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
@@ -57,8 +58,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HederaEvmMessageCallProcessorTest {
 
     private static final String HEDERA_PRECOMPILE_ADDRESS_STRING = "0x1337";
-    private static final Address HEDERA_PRECOMPILE_ADDRESS =
-            Address.fromHexString(HEDERA_PRECOMPILE_ADDRESS_STRING);
+    private static final Address HEDERA_PRECOMPILE_ADDRESS = Address.fromHexString(HEDERA_PRECOMPILE_ADDRESS_STRING);
     private static final Address RECIPIENT_ADDRESS = Address.fromHexString("0xcafecafe01");
     private static final Address SENDER_ADDRESS = Address.fromHexString("0xcafecafe02");
     private static final PrecompiledContract.PrecompileContractResult NO_RESULT =
@@ -72,29 +72,41 @@ class HederaEvmMessageCallProcessorTest {
     private static final long GAS_ONE_M = 1_000_000L;
     HederaEvmMessageCallProcessor subject;
     HederaEvmMessageCallProcessor subject2;
-    @Mock private EVM evm;
-    @Mock private PrecompileContractRegistry precompiles;
-    @Mock private MessageFrame frame;
-    @Mock private DefaultHederaTracer hederaEvmOperationTracer;
-    @Mock private WorldUpdater worldUpdater;
-    @Mock private PrecompiledContract nonHtsPrecompile;
-    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
-    @Mock private HederaEvmStackedWorldStateUpdater hederaEvmStackedWorldStateUpdater;
-    @Mock private AbstractLedgerEvmWorldUpdater updater;
+
+    @Mock
+    private EVM evm;
+
+    @Mock
+    private PrecompileContractRegistry precompiles;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private DefaultHederaTracer hederaEvmOperationTracer;
+
+    @Mock
+    private WorldUpdater worldUpdater;
+
+    @Mock
+    private PrecompiledContract nonHtsPrecompile;
+
+    @Mock
+    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+
+    @Mock
+    private HederaEvmStackedWorldStateUpdater hederaEvmStackedWorldStateUpdater;
+
+    @Mock
+    private AbstractLedgerEvmWorldUpdater updater;
 
     @BeforeEach
     void setup() {
-        subject =
-                new HederaEvmMessageCallProcessor(
-                        evm,
-                        precompiles,
-                        Map.of(HEDERA_PRECOMPILE_ADDRESS_STRING, nonHtsPrecompile));
+        subject = new HederaEvmMessageCallProcessor(
+                evm, precompiles, Map.of(HEDERA_PRECOMPILE_ADDRESS_STRING, nonHtsPrecompile));
 
-        subject2 =
-                new HederaEvmMessageCallProcessor(
-                        evm,
-                        precompiles,
-                        Map.of(HEDERA_PRECOMPILE_ADDRESS_STRING, evmHTSPrecompiledContract));
+        subject2 = new HederaEvmMessageCallProcessor(
+                evm, precompiles, Map.of(HEDERA_PRECOMPILE_ADDRESS_STRING, evmHTSPrecompiledContract));
     }
 
     @Test
@@ -175,8 +187,7 @@ class HederaEvmMessageCallProcessorTest {
 
         subject.start(frame, hederaEvmOperationTracer);
 
-        verify(hederaEvmOperationTracer)
-                .tracePrecompileCall(frame, 1L, Bytes.fromHexString("0x01"));
+        verify(hederaEvmOperationTracer).tracePrecompileCall(frame, 1L, Bytes.fromHexString("0x01"));
         verify(frame).setState(State.COMPLETED_SUCCESS);
     }
 
@@ -204,8 +215,7 @@ class HederaEvmMessageCallProcessorTest {
 
         subject.start(frame, hederaEvmOperationTracer);
 
-        verify(frame)
-                .setExceptionalHaltReason(Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
+        verify(frame).setExceptionalHaltReason(Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
         verify(frame).setState(MessageFrame.State.EXCEPTIONAL_HALT);
         verifyNoMoreInteractions(nonHtsPrecompile, frame);
     }
@@ -279,12 +289,10 @@ class HederaEvmMessageCallProcessorTest {
         given(frame.getValue()).willReturn(Wei.of(1000L));
         given(frame.getWorldUpdater()).willReturn(updater);
         given(updater.isTokenAddress(RECIPIENT_ADDRESS)).willReturn(false);
-        given(updater.get(RECIPIENT_ADDRESS))
-                .willAnswer(
-                        invocation -> {
-                            given(frame.getState()).willReturn(EXCEPTIONAL_HALT);
-                            return null;
-                        });
+        given(updater.get(RECIPIENT_ADDRESS)).willAnswer(invocation -> {
+            given(frame.getState()).willReturn(EXCEPTIONAL_HALT);
+            return null;
+        });
 
         subject.start(frame, hederaEvmOperationTracer);
 

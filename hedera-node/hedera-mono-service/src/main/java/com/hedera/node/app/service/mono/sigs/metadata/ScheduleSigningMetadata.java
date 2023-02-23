@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.metadata;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -22,15 +23,11 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Optional;
 
 public record ScheduleSigningMetadata(
-        Optional<JKey> adminKey,
-        TransactionBody scheduledTxn,
-        Optional<AccountID> designatedPayer) {
+        Optional<JKey> adminKey, TransactionBody scheduledTxn, Optional<AccountID> designatedPayer) {
     public static ScheduleSigningMetadata from(ScheduleVirtualValue schedule) {
         return new ScheduleSigningMetadata(
                 schedule.adminKey(),
                 schedule.ordinaryViewOfScheduledTxn(),
-                schedule.hasExplicitPayer()
-                        ? Optional.of(schedule.payer().toGrpcAccountId())
-                        : Optional.empty());
+                schedule.hasExplicitPayer() ? Optional.of(schedule.payer().toGrpcAccountId()) : Optional.empty());
     }
 }

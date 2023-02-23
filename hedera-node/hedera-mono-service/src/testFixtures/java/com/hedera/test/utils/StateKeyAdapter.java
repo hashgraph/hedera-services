@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.utils;
 
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -26,8 +27,7 @@ public class StateKeyAdapter<K1 extends Comparable<K1>, K2 extends Comparable<K2
     private final ReadableKVState<K1, V> delegate;
     private final Function<K2, K1> keyAdapter;
 
-    public StateKeyAdapter(
-            final ReadableKVState<K1, V> delegate, final Function<K2, K1> keyAdapter) {
+    public StateKeyAdapter(final ReadableKVState<K1, V> delegate, final Function<K2, K1> keyAdapter) {
         super("Unspecified");
         this.delegate = delegate;
         this.keyAdapter = keyAdapter;

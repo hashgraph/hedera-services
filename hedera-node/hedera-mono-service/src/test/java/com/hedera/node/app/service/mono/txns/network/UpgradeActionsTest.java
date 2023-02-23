@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.network;
 
 import static com.hedera.node.app.service.mono.txns.network.UpgradeActions.EXEC_IMMEDIATE_MARKER;
@@ -66,17 +67,31 @@ class UpgradeActionsTest {
     private String noiseFileLoc;
     private String noiseSubFileLoc;
     private static final byte[] PRETEND_ARCHIVE =
-            "This is missing something. Hard to put a finger on what..."
-                    .getBytes(StandardCharsets.UTF_8);
-    @TempDir private File tempDir;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private DualStateImpl dualState;
-    @Mock private UpgradeActions.UnzipAction unzipAction;
-    @Mock private MerkleSpecialFiles specialFiles;
-    @Mock private MerkleNetworkContext networkCtx;
+            "This is missing something. Hard to put a finger on what...".getBytes(StandardCharsets.UTF_8);
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private UpgradeActions subject;
+    @TempDir
+    private File tempDir;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private DualStateImpl dualState;
+
+    @Mock
+    private UpgradeActions.UnzipAction unzipAction;
+
+    @Mock
+    private MerkleSpecialFiles specialFiles;
+
+    @Mock
+    private MerkleNetworkContext networkCtx;
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private UpgradeActions subject;
 
     @BeforeEach
     void setUp() {
@@ -85,13 +100,8 @@ class UpgradeActionsTest {
         noiseFileLoc = TestFileUtils.toPath(markerFilesLoc, "forgotten.cfg");
         noiseSubFileLoc = TestFileUtils.toPath(markerFilesLoc, "edargpu");
 
-        subject =
-                new UpgradeActions(
-                        unzipAction,
-                        dynamicProperties,
-                        () -> dualState,
-                        () -> specialFiles,
-                        () -> networkCtx);
+        subject = new UpgradeActions(
+                unzipAction, dynamicProperties, () -> dualState, () -> specialFiles, () -> networkCtx);
     }
 
     @AfterEach
@@ -115,14 +125,11 @@ class UpgradeActionsTest {
                 logCaptor.errorLogs(),
                 contains(
                         Matchers.startsWith(
-                                "Cannot redo NMT upgrade prep, file 0.0.150 changed since"
-                                        + " FREEZE_UPGRADE"),
+                                "Cannot redo NMT upgrade prep, file 0.0.150 changed since" + " FREEZE_UPGRADE"),
                         Matchers.equalTo("Manual remediation may be necessary to avoid node ISS")));
         assertFalse(
                 Paths.get(markerFilesLoc, EXEC_IMMEDIATE_MARKER).toFile().exists(),
-                "Should not create "
-                        + EXEC_IMMEDIATE_MARKER
-                        + " if prepared file hash doesn't match");
+                "Should not create " + EXEC_IMMEDIATE_MARKER + " if prepared file hash doesn't match");
     }
 
     @Test
@@ -197,14 +204,10 @@ class UpgradeActionsTest {
 
         assertFalse(
                 Paths.get(markerFilesLoc, FREEZE_ABORTED_MARKER).toFile().exists(),
-                "Should not create "
-                        + FREEZE_ABORTED_MARKER
-                        + " if dual last frozen time is freeze time");
+                "Should not create " + FREEZE_ABORTED_MARKER + " if dual last frozen time is freeze time");
         assertFalse(
                 Paths.get(markerFilesLoc, FREEZE_SCHEDULED_MARKER).toFile().exists(),
-                "Should not create "
-                        + FREEZE_SCHEDULED_MARKER
-                        + " if dual last frozen time is freeze time");
+                "Should not create " + FREEZE_SCHEDULED_MARKER + " if dual last frozen time is freeze time");
     }
 
     @Test
@@ -233,9 +236,7 @@ class UpgradeActionsTest {
         assertThat(
                 logCaptor.errorLogs(),
                 contains(
-                        Matchers.startsWith(
-                                "Failed to unzip archive for NMT consumption java.io.IOException:"
-                                        + " "),
+                        Matchers.startsWith("Failed to unzip archive for NMT consumption java.io.IOException:" + " "),
                         Matchers.equalTo("Manual remediation may be necessary to avoid node ISS")));
         assertFalse(
                 Paths.get(markerFilesLoc, EXEC_IMMEDIATE_MARKER).toFile().exists(),
@@ -396,13 +397,11 @@ class UpgradeActionsTest {
         }
     }
 
-    private void assertMarkerCreated(final String file, final @Nullable Instant when)
-            throws IOException {
+    private void assertMarkerCreated(final String file, final @Nullable Instant when) throws IOException {
         assertMarkerCreated(file, when, markerFilesLoc);
     }
 
-    private void assertMarkerCreated(
-            final String file, final @Nullable Instant when, final String baseDir)
+    private void assertMarkerCreated(final String file, final @Nullable Instant when, final String baseDir)
             throws IOException {
         final var p = Paths.get(baseDir, file);
         final var f = p.toFile();
@@ -413,21 +412,15 @@ class UpgradeActionsTest {
             assertThat(
                     logCaptor.infoLogs(),
                     contains(
-                            Matchers.equalTo(
-                                    "About to unzip 58 bytes for software update into " + baseDir),
-                            Matchers.equalTo(
-                                    "Finished unzipping 58 bytes for software update into "
-                                            + baseDir),
+                            Matchers.equalTo("About to unzip 58 bytes for software update into " + baseDir),
+                            Matchers.equalTo("Finished unzipping 58 bytes for software update into " + baseDir),
                             Matchers.equalTo("Wrote marker " + p)));
         } else if (file.equals(EXEC_TELEMETRY_MARKER)) {
             assertThat(
                     logCaptor.infoLogs(),
                     contains(
-                            Matchers.equalTo(
-                                    "About to unzip 58 bytes for telemetry update into " + baseDir),
-                            Matchers.equalTo(
-                                    "Finished unzipping 58 bytes for telemetry update into "
-                                            + baseDir),
+                            Matchers.equalTo("About to unzip 58 bytes for telemetry update into " + baseDir),
+                            Matchers.equalTo("Finished unzipping 58 bytes for telemetry update into " + baseDir),
                             Matchers.equalTo("Wrote marker " + p)));
         } else {
             assertThat(logCaptor.infoLogs(), contains(Matchers.equalTo("Wrote marker " + p)));
@@ -443,10 +436,7 @@ class UpgradeActionsTest {
     private void setupNoiseFiles() throws IOException {
         Files.write(
                 Paths.get(noiseFileLoc),
-                List.of(
-                        "There, the eyes are",
-                        "Sunlight on a broken column",
-                        "There, is a tree swinging"));
+                List.of("There, the eyes are", "Sunlight on a broken column", "There, is a tree swinging"));
         Files.write(
                 Paths.get(noiseSubFileLoc),
                 List.of(

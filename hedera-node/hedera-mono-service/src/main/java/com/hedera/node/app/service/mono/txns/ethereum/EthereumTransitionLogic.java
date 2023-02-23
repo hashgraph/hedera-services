@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.ethereum;
 
 import static com.hedera.node.app.hapi.utils.ByteStringUtils.wrapUnsafely;
@@ -109,9 +110,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
         final var synthTxn = spanMapAccessor.getEthTxBodyMeta(accessor);
         final var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
         // we don't support 2930 transactions, even though we parse them.
-        validateFalse(
-                ethTxData.type() == EthTxData.EthTransactionType.EIP2930,
-                INVALID_ETHEREUM_TRANSACTION);
+        validateFalse(ethTxData.type() == EthTxData.EthTransactionType.EIP2930, INVALID_ETHEREUM_TRANSACTION);
         final var relayerId = Id.fromGrpcAccount(accessor.getPayer());
         final var maxGasAllowance = accessor.getTxn().getEthereumTransaction().getMaxGasAllowance();
         final var userOfferedGasPrice = ethTxData.getMaxGasAsBigInteger();
@@ -119,15 +118,12 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
         // Revoke the relayer's key for Ethereum operations
         txnCtx.swirldsTxnAccessor().getSigMeta().revokeCryptoSigsFrom(txnCtx.activePayerKey());
         if (synthTxn.hasContractCall()) {
-            delegateToCallTransition(
-                    callerNum.toId(), synthTxn, relayerId, maxGasAllowance, userOfferedGasPrice);
+            delegateToCallTransition(callerNum.toId(), synthTxn, relayerId, maxGasAllowance, userOfferedGasPrice);
         } else {
-            delegateToCreateTransition(
-                    callerNum.toId(), synthTxn, relayerId, maxGasAllowance, userOfferedGasPrice);
+            delegateToCreateTransition(callerNum.toId(), synthTxn, relayerId, maxGasAllowance, userOfferedGasPrice);
         }
 
-        recordService.updateForEvmCall(
-                spanMapAccessor.getEthTxDataMeta(accessor), callerNum.toEntityId());
+        recordService.updateForEvmCall(spanMapAccessor.getEthTxDataMeta(accessor), callerNum.toEntityId());
     }
 
     @Override
@@ -148,10 +144,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 
         var txn = spanMapAccessor.getEthTxBodyMeta(accessor);
         if (txn == null) {
-            txn =
-                    isPrecheck
-                            ? syntheticTxnFactory.synthPrecheckContractOpFromEth(ethTxData)
-                            : INVALID_SYNTH_BODY;
+            txn = isPrecheck ? syntheticTxnFactory.synthPrecheckContractOpFromEth(ethTxData) : INVALID_SYNTH_BODY;
         }
         if (txn.hasContractCall()) {
             return contractCallTransitionLogic.semanticCheck().apply(txn);
@@ -200,8 +193,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
             final Id relayerId,
             final long maxGasAllowance,
             final BigInteger offeredGasPrice) {
-        final var customizedCreate =
-                creationCustomizer.customize(synthCreate, callerId.asGrpcAccount(), false);
+        final var customizedCreate = creationCustomizer.customize(synthCreate, callerId.asGrpcAccount(), false);
         contractCreateTransitionLogic.doStateTransitionOperation(
                 customizedCreate, callerId, true, relayerId, maxGasAllowance, offeredGasPrice);
     }
@@ -230,8 +222,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
         validateTrue(callerNum != MISSING_NUM, INVALID_ACCOUNT_ID);
 
         final var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
-        final var expectedNonce =
-                (long) accountsLedger.get(callerNum.toGrpcAccountId(), ETHEREUM_NONCE);
+        final var expectedNonce = (long) accountsLedger.get(callerNum.toGrpcAccountId(), ETHEREUM_NONCE);
         validateTrue(expectedNonce == ethTxData.nonce(), WRONG_NONCE);
 
         return callerNum;

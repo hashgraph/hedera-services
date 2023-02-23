@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
@@ -50,8 +51,7 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
      * @param tokenStore the {@link ReadableTokenStore}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(
-            @NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(context);
         final var op = context.getTxn().getTokenUnfreeze();
         final var tokenMeta = tokenStore.getTokenMeta(op.getToken());

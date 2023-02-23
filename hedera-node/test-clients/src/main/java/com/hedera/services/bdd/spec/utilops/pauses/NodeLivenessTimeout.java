@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops.pauses;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -65,11 +66,7 @@ public class NodeLivenessTimeout extends UtilOp {
             var op = getAccountInfo("0.0.2").setNode(node);
             var error = op.execFor(spec);
             if (error.isEmpty()) {
-                log.info(
-                        " --> Node {} available after {} {}",
-                        node,
-                        numSleeps * retryIntervalDuration,
-                        unit);
+                log.info(" --> Node {} available after {} {}", node, numSleeps * retryIntervalDuration, unit);
                 return false;
             }
             unit.sleep(retryIntervalDuration);
@@ -85,7 +82,6 @@ public class NodeLivenessTimeout extends UtilOp {
             }
         }
 
-        throw new AssertionError(
-                String.format("Node %s wasn't available in %d %s!", node, duration, unit));
+        throw new AssertionError(String.format("Node %s wasn't available in %d %s!", node, duration, unit));
     }
 }

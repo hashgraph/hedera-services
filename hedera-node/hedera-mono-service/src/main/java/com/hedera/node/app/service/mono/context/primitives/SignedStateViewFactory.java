@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.primitives;
 
 import com.hedera.node.app.service.mono.ServicesState;
@@ -40,9 +41,7 @@ public class SignedStateViewFactory {
 
     @Inject
     public SignedStateViewFactory(
-            final Platform platform,
-            final ScheduleStore scheduleStore,
-            final NetworkInfo nodeInfo) {
+            final Platform platform, final ScheduleStore scheduleStore, final NetworkInfo nodeInfo) {
         this.platform = platform;
         this.scheduleStore = scheduleStore;
         this.networkInfo = nodeInfo;
@@ -82,8 +81,7 @@ public class SignedStateViewFactory {
      * @return the requested view, if present
      */
     public Optional<StateView> latestSignedStateView() {
-        return childrenOfLatestSignedState()
-                .map(children -> new StateView(scheduleStore, children, networkInfo));
+        return childrenOfLatestSignedState().map(children -> new StateView(scheduleStore, children, networkInfo));
     }
 
     /**
@@ -122,10 +120,8 @@ public class SignedStateViewFactory {
      * @param action what to do with the latest state
      * @throws NoValidSignedStateException
      */
-    private void doWithLatest(final Consumer<ServicesState> action)
-            throws NoValidSignedStateException {
-        try (final AutoCloseableWrapper<ServicesState> wrapper =
-                platform.getLatestImmutableState()) {
+    private void doWithLatest(final Consumer<ServicesState> action) throws NoValidSignedStateException {
+        try (final AutoCloseableWrapper<ServicesState> wrapper = platform.getLatestImmutableState()) {
             final var signedState = wrapper.get();
             if (!isUsable(signedState)) {
                 throw new NoValidSignedStateException();

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.schedule;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -59,9 +60,11 @@ class ScheduleDeleteTransitionLogicTest {
 
     private TransactionBody scheduleDeleteTxn;
 
-    @LoggingTarget private LogCaptor logCaptor;
+    @LoggingTarget
+    private LogCaptor logCaptor;
 
-    @LoggingSubject private ScheduleDeleteTransitionLogic subject;
+    @LoggingSubject
+    private ScheduleDeleteTransitionLogic subject;
 
     @BeforeEach
     void setup() {
@@ -105,9 +108,7 @@ class ScheduleDeleteTransitionLogicTest {
         verify(store).deleteAt(schedule, consensusNow);
         assertThat(
                 logCaptor.warnLogs(),
-                contains(
-                        "Unhandled error while processing :: null! "
-                                + "java.lang.IllegalArgumentException: null"));
+                contains("Unhandled error while processing :: null! " + "java.lang.IllegalArgumentException: null"));
         verify(txnCtx).setStatus(FAIL_INVALID);
     }
 
@@ -139,8 +140,7 @@ class ScheduleDeleteTransitionLogicTest {
 
     private void givenCtx(final boolean invalidScheduleId) {
         final var builder = TransactionBody.newBuilder();
-        final var scheduleDelete =
-                ScheduleDeleteTransactionBody.newBuilder().setScheduleID(schedule);
+        final var scheduleDelete = ScheduleDeleteTransactionBody.newBuilder().setScheduleID(schedule);
 
         if (invalidScheduleId) {
             scheduleDelete.clearScheduleID();

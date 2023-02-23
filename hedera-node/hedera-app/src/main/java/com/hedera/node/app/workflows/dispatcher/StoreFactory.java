@@ -13,10 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.service.token.TokenService;
@@ -81,6 +84,17 @@ public class StoreFactory {
     public ReadableAccountStore getAccountStore() {
         final var tokenStates = getReadableStates(TokenService.NAME);
         return new ReadableAccountStore(tokenStates);
+    }
+
+    /**
+     * Get a {@link com.hedera.node.app.service.consensus.impl.ReadableTopicStore}
+     *
+     * @return a new {@link ReadableTopicStore}
+     */
+    @NonNull
+    public ReadableTopicStore getTopicStore() {
+        final var topicStates = getReadableStates(ConsensusService.NAME);
+        return new ReadableTopicStore(topicStates);
     }
 
     /**

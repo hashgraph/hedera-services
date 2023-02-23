@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.codec;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,12 +29,11 @@ class TransferWrapperTest {
     @Test
     void translatesFungibleTransfersAsExpected() {
         final var inputTransfers = wellKnownTransfers();
-        final var expectedAdjustments =
-                TransferList.newBuilder()
-                        .addAccountAmounts(aaWith(anAccount, aChange))
-                        .addAccountAmounts(aaWith(otherAccount, bChange))
-                        .addAccountAmounts(aaWith(anotherAccount, cChange))
-                        .build();
+        final var expectedAdjustments = TransferList.newBuilder()
+                .addAccountAmounts(aaWith(anAccount, aChange))
+                .addAccountAmounts(aaWith(otherAccount, bChange))
+                .addAccountAmounts(aaWith(anotherAccount, cChange))
+                .build();
         final var subject = new TransferWrapper(inputTransfers);
 
         final var builder = subject.asGrpcBuilder();
@@ -41,15 +41,17 @@ class TransferWrapperTest {
     }
 
     private AccountAmount aaWith(final AccountID account, final long amount) {
-        return AccountAmount.newBuilder().setAccountID(account).setAmount(amount).build();
+        return AccountAmount.newBuilder()
+                .setAccountID(account)
+                .setAmount(amount)
+                .build();
     }
 
     private List<SyntheticTxnFactory.HbarTransfer> wellKnownTransfers() {
         return List.of(
                 new SyntheticTxnFactory.HbarTransfer(Math.abs(aChange), false, anAccount, null),
                 new SyntheticTxnFactory.HbarTransfer(Math.abs(bChange), false, null, otherAccount),
-                new SyntheticTxnFactory.HbarTransfer(
-                        Math.abs(cChange), false, null, anotherAccount));
+                new SyntheticTxnFactory.HbarTransfer(Math.abs(cChange), false, null, anotherAccount));
     }
 
     private final long aChange = -100L;

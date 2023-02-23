@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.sysfiles.validation;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION;
@@ -27,8 +28,7 @@ class ErrorCodeUtilsTest {
         final var details = "YIKES!";
         final var expectedMsg = "NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION :: " + details;
 
-        final var actualMsg =
-                ErrorCodeUtils.exceptionMsgFor(NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION, details);
+        final var actualMsg = ErrorCodeUtils.exceptionMsgFor(NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION, details);
 
         assertEquals(expectedMsg, actualMsg);
     }
@@ -37,9 +37,7 @@ class ErrorCodeUtilsTest {
     void extractsErrorCodeFromMsg() {
         final var msg = "NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION :: YIKES!";
 
-        assertEquals(
-                Optional.of(NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION),
-                ErrorCodeUtils.errorFrom(msg));
+        assertEquals(Optional.of(NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION), ErrorCodeUtils.errorFrom(msg));
     }
 
     @Test

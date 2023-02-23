@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.accounts;
 
 import com.google.common.base.Suppliers;
@@ -25,18 +26,14 @@ import org.hyperledger.besu.datatypes.Address;
 public abstract class HederaEvmContractAliases {
 
     public static final int EVM_ADDRESS_LEN = 20;
-    private static final Supplier<byte[]> MIRROR_PREFIX =
-            Suppliers.memoize(
-                    () -> {
-                        /* A placeholder to store the 12-byte prefix (4-byte shard and 8-byte realm) that marks an EVM
-                         * address as a "mirror" address that follows immediately from a <shard>.<realm>.<num> id. */
-                        byte[] result = new byte[12];
-                        System.arraycopy(
-                                Longs.toByteArray(StaticProperties.getShard()), 4, result, 0, 4);
-                        System.arraycopy(
-                                Longs.toByteArray(StaticProperties.getRealm()), 0, result, 4, 8);
-                        return result;
-                    });
+    private static final Supplier<byte[]> MIRROR_PREFIX = Suppliers.memoize(() -> {
+        /* A placeholder to store the 12-byte prefix (4-byte shard and 8-byte realm) that marks an EVM
+         * address as a "mirror" address that follows immediately from a <shard>.<realm>.<num> id. */
+        byte[] result = new byte[12];
+        System.arraycopy(Longs.toByteArray(StaticProperties.getShard()), 4, result, 0, 4);
+        System.arraycopy(Longs.toByteArray(StaticProperties.getRealm()), 0, result, 4, 8);
+        return result;
+    });
 
     public abstract Address resolveForEvm(Address addressOrAlias);
 

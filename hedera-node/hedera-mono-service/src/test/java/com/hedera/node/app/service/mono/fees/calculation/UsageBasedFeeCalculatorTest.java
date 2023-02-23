@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation;
 
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
@@ -100,27 +101,24 @@ import org.mockito.Mockito;
 
 class UsageBasedFeeCalculatorTest {
     private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
-    private final FeeComponents mockFees =
-            FeeComponents.newBuilder()
-                    .setMax(1_234_567L)
-                    .setGas(5_000_000L)
-                    .setBpr(1_000_000L)
-                    .setBpt(2_000_000L)
-                    .setRbh(3_000_000L)
-                    .setSbh(4_000_000L)
-                    .build();
-    private final FeeData mockFeeData =
-            FeeData.newBuilder()
-                    .setNetworkdata(mockFees)
-                    .setNodedata(mockFees)
-                    .setServicedata(mockFees)
-                    .setSubType(SubType.DEFAULT)
-                    .build();
-    private final Map<SubType, FeeData> currentPrices =
-            Map.of(
-                    SubType.DEFAULT, mockFeeData,
-                    SubType.TOKEN_FUNGIBLE_COMMON, mockFeeData,
-                    SubType.TOKEN_NON_FUNGIBLE_UNIQUE, mockFeeData);
+    private final FeeComponents mockFees = FeeComponents.newBuilder()
+            .setMax(1_234_567L)
+            .setGas(5_000_000L)
+            .setBpr(1_000_000L)
+            .setBpt(2_000_000L)
+            .setRbh(3_000_000L)
+            .setSbh(4_000_000L)
+            .build();
+    private final FeeData mockFeeData = FeeData.newBuilder()
+            .setNetworkdata(mockFees)
+            .setNodedata(mockFees)
+            .setServicedata(mockFees)
+            .setSubType(SubType.DEFAULT)
+            .build();
+    private final Map<SubType, FeeData> currentPrices = Map.of(
+            SubType.DEFAULT, mockFeeData,
+            SubType.TOKEN_FUNGIBLE_COMMON, mockFeeData,
+            SubType.TOKEN_NON_FUNGIBLE_UNIQUE, mockFeeData);
     private final FeeData defaultCurrentPrices = mockFeeData;
     private final FeeData resourceUsage = mockFeeData;
     private final ExchangeRate currentRate =
@@ -159,12 +157,11 @@ class UsageBasedFeeCalculatorTest {
         query = mock(Query.class);
         payerKey = complexKey.asJKey();
         exchange = mock(HbarCentExchange.class);
-        signedTxn =
-                newSignedCryptoCreate()
-                        .balance(balance)
-                        .payerKt(complexKey)
-                        .txnValidStart(at)
-                        .get();
+        signedTxn = newSignedCryptoCreate()
+                .balance(balance)
+                .payerKt(complexKey)
+                .txnValidStart(at)
+                .get();
         accessor = SignedTxnAccessor.from(signedTxn.toByteArray(), signedTxn);
         usagePrices = mock(UsagePricesProvider.class);
         given(usagePrices.activePrices(accessor)).willReturn(currentPrices);
@@ -175,19 +172,17 @@ class UsageBasedFeeCalculatorTest {
         autoRenewCalcs = mock(AutoRenewCalcs.class);
         pricedUsageCalculator = mock(PricedUsageCalculator.class);
 
-        txnUsageEstimators =
-                (Map<HederaFunctionality, List<TxnResourceUsageEstimator>>) mock(Map.class);
+        txnUsageEstimators = (Map<HederaFunctionality, List<TxnResourceUsageEstimator>>) mock(Map.class);
 
-        subject =
-                new UsageBasedFeeCalculator(
-                        autoRenewCalcs,
-                        exchange,
-                        mock(AutoCreationLogic.class),
-                        usagePrices,
-                        new NestedMultiplierSource(),
-                        pricedUsageCalculator,
-                        Set.of(incorrectQueryEstimator, correctQueryEstimator),
-                        txnUsageEstimators);
+        subject = new UsageBasedFeeCalculator(
+                autoRenewCalcs,
+                exchange,
+                mock(AutoCreationLogic.class),
+                usagePrices,
+                new NestedMultiplierSource(),
+                pricedUsageCalculator,
+                Set.of(incorrectQueryEstimator, correctQueryEstimator),
+                txnUsageEstimators);
     }
 
     @Test
@@ -199,9 +194,8 @@ class UsageBasedFeeCalculatorTest {
                 .willReturn(expected);
 
         // when:
-        final var actual =
-                subject.assessCryptoAutoRenewal(
-                        new MerkleAccount(), 1L, Instant.ofEpochSecond(2L), new MerkleAccount());
+        final var actual = subject.assessCryptoAutoRenewal(
+                new MerkleAccount(), 1L, Instant.ofEpochSecond(2L), new MerkleAccount());
 
         // then:
         assertSame(expected, actual);
@@ -212,25 +206,21 @@ class UsageBasedFeeCalculatorTest {
         // setup:
         final long gas = 1_234L;
         final long sent = 5_432L;
-        signedTxn =
-                newSignedContractCall()
-                        .payer(asAccountString(payer))
-                        .gas(gas)
-                        .sending(sent)
-                        .txnValidStart(at)
-                        .get();
+        signedTxn = newSignedContractCall()
+                .payer(asAccountString(payer))
+                .gas(gas)
+                .sending(sent)
+                .txnValidStart(at)
+                .get();
         accessor = SignedTxnAccessor.from(signedTxn.toByteArray());
 
         given(exchange.rate(at)).willReturn(currentRate);
         given(usagePrices.defaultPricesGiven(ContractCall, at)).willReturn(defaultCurrentPrices);
         // and:
-        final long expectedGasPrice =
-                getTinybarsFromTinyCents(currentRate, mockFees.getGas() / FEE_DIVISOR_FACTOR);
+        final long expectedGasPrice = getTinybarsFromTinyCents(currentRate, mockFees.getGas() / FEE_DIVISOR_FACTOR);
 
         // expect:
-        assertEquals(
-                -(gas * expectedGasPrice + sent),
-                subject.estimatedNonFeePayerAdjustments(accessor, at));
+        assertEquals(-(gas * expectedGasPrice + sent), subject.estimatedNonFeePayerAdjustments(accessor, at));
     }
 
     @Test
@@ -238,13 +228,12 @@ class UsageBasedFeeCalculatorTest {
         // setup:
         final long gas = 1_234L;
         final long sent = 5_432L;
-        signedTxn =
-                newSignedContractCall()
-                        .payer(asAccountString(payer))
-                        .gas(gas)
-                        .sending(sent)
-                        .txnValidStart(at)
-                        .get();
+        signedTxn = newSignedContractCall()
+                .payer(asAccountString(payer))
+                .gas(gas)
+                .sending(sent)
+                .txnValidStart(at)
+                .get();
         accessor = Mockito.spy(SignedTxnAccessor.from(signedTxn.toByteArray()));
 
         given(accessor.getFunction()).willReturn(EthereumTransaction);
@@ -264,32 +253,31 @@ class UsageBasedFeeCalculatorTest {
         // setup:
         final long gas = 1_234L;
         final long initialBalance = 5_432L;
-        signedTxn =
-                newSignedContractCreate()
-                        .payer(asAccountString(payer))
-                        .gas(gas)
-                        .initialBalance(initialBalance)
-                        .txnValidStart(at)
-                        .get();
+        signedTxn = newSignedContractCreate()
+                .payer(asAccountString(payer))
+                .gas(gas)
+                .initialBalance(initialBalance)
+                .txnValidStart(at)
+                .get();
         accessor = SignedTxnAccessor.from(signedTxn.toByteArray());
 
         given(exchange.rate(at)).willReturn(currentRate);
         given(usagePrices.pricesGiven(ContractCreate, at)).willReturn(currentPrices);
         given(usagePrices.defaultPricesGiven(ContractCreate, at)).willReturn(defaultCurrentPrices);
         // and:
-        final long expectedGasPrice =
-                getTinybarsFromTinyCents(currentRate, mockFees.getGas() / FEE_DIVISOR_FACTOR);
+        final long expectedGasPrice = getTinybarsFromTinyCents(currentRate, mockFees.getGas() / FEE_DIVISOR_FACTOR);
 
         // expect:
-        assertEquals(
-                -(gas * expectedGasPrice + initialBalance),
-                subject.estimatedNonFeePayerAdjustments(accessor, at));
+        assertEquals(-(gas * expectedGasPrice + initialBalance), subject.estimatedNonFeePayerAdjustments(accessor, at));
     }
 
     @Test
     void estimatesMiscNoNetChange() throws Throwable {
         // setup:
-        signedTxn = newSignedFileCreate().payer(asAccountString(payer)).txnValidStart(at).get();
+        signedTxn = newSignedFileCreate()
+                .payer(asAccountString(payer))
+                .txnValidStart(at)
+                .get();
         accessor = SignedTxnAccessor.from(signedTxn.toByteArray());
 
         // expect:
@@ -300,14 +288,11 @@ class UsageBasedFeeCalculatorTest {
     void estimatesCryptoTransferPayerBalanceChanges() throws Throwable {
         // setup:
         final long sent = 1_234L;
-        signedTxn =
-                newSignedCryptoTransfer()
-                        .payer(asAccountString(payer))
-                        .transfers(
-                                tinyBarsFromTo(
-                                        asAccountString(payer), asAccountString(receiver), sent))
-                        .txnValidStart(at)
-                        .get();
+        signedTxn = newSignedCryptoTransfer()
+                .payer(asAccountString(payer))
+                .transfers(tinyBarsFromTo(asAccountString(payer), asAccountString(receiver), sent))
+                .txnValidStart(at)
+                .get();
         accessor = SignedTxnAccessor.from(signedTxn.toByteArray());
 
         // expect:
@@ -320,8 +305,7 @@ class UsageBasedFeeCalculatorTest {
         given(usagePrices.pricesGiven(CryptoCreate, at)).willReturn(currentPrices);
         given(usagePrices.defaultPricesGiven(CryptoCreate, at)).willReturn(defaultCurrentPrices);
         // and:
-        final long expected =
-                getTinybarsFromTinyCents(currentRate, mockFees.getGas() / FEE_DIVISOR_FACTOR);
+        final long expected = getTinybarsFromTinyCents(currentRate, mockFees.getGas() / FEE_DIVISOR_FACTOR);
 
         // when:
         final long actual = subject.estimatedGasPriceInTinybars(CryptoCreate, at);
@@ -334,16 +318,14 @@ class UsageBasedFeeCalculatorTest {
     void loadPriceSchedulesOnInit() {
         final var firstNow = Instant.ofEpochSecond(1_234_567L, 890);
         final var secondNow = Instant.ofEpochSecond(1_234_567L, 911);
-        final var accountSeq =
-                Triple.of(
-                        Map.of(SubType.DEFAULT, FeeData.getDefaultInstance()),
-                        firstNow,
-                        Map.of(SubType.DEFAULT, FeeData.getDefaultInstance()));
-        final var contractSeq =
-                Triple.of(
-                        Map.of(SubType.DEFAULT, FeeData.getDefaultInstance()),
-                        secondNow,
-                        Map.of(SubType.DEFAULT, FeeData.getDefaultInstance()));
+        final var accountSeq = Triple.of(
+                Map.of(SubType.DEFAULT, FeeData.getDefaultInstance()),
+                firstNow,
+                Map.of(SubType.DEFAULT, FeeData.getDefaultInstance()));
+        final var contractSeq = Triple.of(
+                Map.of(SubType.DEFAULT, FeeData.getDefaultInstance()),
+                secondNow,
+                Map.of(SubType.DEFAULT, FeeData.getDefaultInstance()));
 
         given(usagePrices.activePricingSequence(CryptoAccountAutoRenew)).willReturn(accountSeq);
         given(usagePrices.activePricingSequence(ContractAutoRenew)).willReturn(contractSeq);
@@ -367,63 +349,45 @@ class UsageBasedFeeCalculatorTest {
     void failsWithIseGivenApplicableButUnusableCalculator() throws InvalidTxBodyException {
         // setup:
         final SigValueObj expectedSigUsage =
-                new SigValueObj(
-                        FeeBuilder.getSignatureCount(signedTxn),
-                        9,
-                        FeeBuilder.getSignatureSize(signedTxn));
+                new SigValueObj(FeeBuilder.getSignatureCount(signedTxn), 9, FeeBuilder.getSignatureSize(signedTxn));
 
         given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
         given(txnUsageEstimators.get(CryptoCreate)).willReturn(List.of(correctOpEstimator));
-        given(
-                        correctOpEstimator.usageGiven(
-                                argThat(accessor.getTxn()::equals),
-                                argThat(factory.apply(expectedSigUsage)),
-                                argThat(view::equals)))
+        given(correctOpEstimator.usageGiven(
+                        argThat(accessor.getTxn()::equals),
+                        argThat(factory.apply(expectedSigUsage)),
+                        argThat(view::equals)))
                 .willThrow(InvalidTxBodyException.class);
 
         // when:
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.computeFee(accessor, payerKey, view, consensusNow));
+        assertThrows(IllegalArgumentException.class, () -> subject.computeFee(accessor, payerKey, view, consensusNow));
     }
 
     @Test
     void failsWithNseeSansApplicableUsageCalculator() {
         // expect:
-        assertThrows(
-                NoSuchElementException.class,
-                () -> subject.computeFee(accessor, payerKey, view, consensusNow));
+        assertThrows(NoSuchElementException.class, () -> subject.computeFee(accessor, payerKey, view, consensusNow));
 
         final Map<String, Object> emptyMap = Collections.emptyMap();
         final var prices = currentPrices.get(SubType.DEFAULT);
-        assertThrows(
-                NoSuchElementException.class,
-                () -> subject.computePayment(query, prices, view, at, emptyMap));
+        assertThrows(NoSuchElementException.class, () -> subject.computePayment(query, prices, view, at, emptyMap));
     }
 
     @Test
     void invokesQueryDelegateAsExpected() {
         // setup:
-        final FeeObject expectedFees =
-                getFeeObject(currentPrices.get(SubType.DEFAULT), resourceUsage, currentRate);
+        final FeeObject expectedFees = getFeeObject(currentPrices.get(SubType.DEFAULT), resourceUsage, currentRate);
 
         given(correctQueryEstimator.applicableTo(query)).willReturn(true);
         given(incorrectQueryEstimator.applicableTo(query)).willReturn(false);
-        given(
-                        correctQueryEstimator.usageGiven(
-                                argThat(query::equals), argThat(view::equals), any()))
+        given(correctQueryEstimator.usageGiven(argThat(query::equals), argThat(view::equals), any()))
                 .willReturn(resourceUsage);
         given(incorrectQueryEstimator.usageGiven(any(), any())).willThrow(RuntimeException.class);
         given(exchange.rate(at)).willReturn(currentRate);
 
         // when:
         final FeeObject fees =
-                subject.computePayment(
-                        query,
-                        currentPrices.get(SubType.DEFAULT),
-                        view,
-                        at,
-                        Collections.emptyMap());
+                subject.computePayment(query, currentPrices.get(SubType.DEFAULT), view, at, Collections.emptyMap());
 
         // then:
         assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
@@ -434,21 +398,17 @@ class UsageBasedFeeCalculatorTest {
     @Test
     void invokesQueryDelegateByTypeAsExpected() {
         // setup:
-        final FeeObject expectedFees =
-                getFeeObject(currentPrices.get(SubType.DEFAULT), resourceUsage, currentRate);
+        final FeeObject expectedFees = getFeeObject(currentPrices.get(SubType.DEFAULT), resourceUsage, currentRate);
 
         given(correctQueryEstimator.applicableTo(query)).willReturn(true);
         given(incorrectQueryEstimator.applicableTo(query)).willReturn(false);
-        given(correctQueryEstimator.usageGivenType(query, view, ANSWER_ONLY))
-                .willReturn(resourceUsage);
-        given(incorrectQueryEstimator.usageGivenType(any(), any(), any()))
-                .willThrow(RuntimeException.class);
+        given(correctQueryEstimator.usageGivenType(query, view, ANSWER_ONLY)).willReturn(resourceUsage);
+        given(incorrectQueryEstimator.usageGivenType(any(), any(), any())).willThrow(RuntimeException.class);
         given(exchange.rate(at)).willReturn(currentRate);
 
         // when:
         final FeeObject fees =
-                subject.estimatePayment(
-                        query, currentPrices.get(SubType.DEFAULT), view, at, ANSWER_ONLY);
+                subject.estimatePayment(query, currentPrices.get(SubType.DEFAULT), view, at, ANSWER_ONLY);
 
         // then:
         assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
@@ -461,22 +421,17 @@ class UsageBasedFeeCalculatorTest {
         // setup:
         final long multiplier = 5L;
         final SigValueObj expectedSigUsage =
-                new SigValueObj(
-                        FeeBuilder.getSignatureCount(signedTxn),
-                        9,
-                        FeeBuilder.getSignatureSize(signedTxn));
+                new SigValueObj(FeeBuilder.getSignatureCount(signedTxn), 9, FeeBuilder.getSignatureSize(signedTxn));
         final FeeObject expectedFees =
-                getFeeObject(
-                        currentPrices.get(SubType.DEFAULT), resourceUsage, currentRate, multiplier);
+                getFeeObject(currentPrices.get(SubType.DEFAULT), resourceUsage, currentRate, multiplier);
         suggestedMultiplier.set(multiplier);
 
         given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
         given(txnUsageEstimators.get(CryptoCreate)).willReturn(List.of(correctOpEstimator));
-        given(
-                        correctOpEstimator.usageGiven(
-                                argThat(accessor.getTxn()::equals),
-                                argThat(factory.apply(expectedSigUsage)),
-                                argThat(view::equals)))
+        given(correctOpEstimator.usageGiven(
+                        argThat(accessor.getTxn()::equals),
+                        argThat(factory.apply(expectedSigUsage)),
+                        argThat(view::equals)))
                 .willReturn(resourceUsage);
         given(exchange.activeRate(consensusNow)).willReturn(currentRate);
 
@@ -493,20 +448,15 @@ class UsageBasedFeeCalculatorTest {
     void invokesOpDelegateAsExpectedWithOneOption() throws Exception {
         // setup:
         final SigValueObj expectedSigUsage =
-                new SigValueObj(
-                        FeeBuilder.getSignatureCount(signedTxn),
-                        9,
-                        FeeBuilder.getSignatureSize(signedTxn));
-        final FeeObject expectedFees =
-                getFeeObject(currentPrices.get(SubType.DEFAULT), resourceUsage, currentRate);
+                new SigValueObj(FeeBuilder.getSignatureCount(signedTxn), 9, FeeBuilder.getSignatureSize(signedTxn));
+        final FeeObject expectedFees = getFeeObject(currentPrices.get(SubType.DEFAULT), resourceUsage, currentRate);
 
         given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
         given(txnUsageEstimators.get(CryptoCreate)).willReturn(List.of(correctOpEstimator));
-        given(
-                        correctOpEstimator.usageGiven(
-                                argThat(accessor.getTxn()::equals),
-                                argThat(factory.apply(expectedSigUsage)),
-                                argThat(view::equals)))
+        given(correctOpEstimator.usageGiven(
+                        argThat(accessor.getTxn()::equals),
+                        argThat(factory.apply(expectedSigUsage)),
+                        argThat(view::equals)))
                 .willReturn(resourceUsage);
         given(exchange.activeRate(consensusNow)).willReturn(currentRate);
 
@@ -520,86 +470,66 @@ class UsageBasedFeeCalculatorTest {
     }
 
     @Test
-    void invokesAccessorBasedUsagesForCryptoTransferOutsideHandleWithNewAccumulator()
-            throws Throwable {
+    void invokesAccessorBasedUsagesForCryptoTransferOutsideHandleWithNewAccumulator() throws Throwable {
         // setup:
         final long sent = 1_234L;
-        signedTxn =
-                newSignedCryptoTransfer()
-                        .payer(asAccountString(payer))
-                        .transfers(
-                                tinyBarsFromTo(
-                                        asAccountString(payer), asAccountString(receiver), sent))
-                        .txnValidStart(at)
-                        .get();
-        invokesAccessorBasedUsagesForTxnInHandle(
-                signedTxn, CryptoTransfer, SubType.DEFAULT, TokenType.UNRECOGNIZED);
+        signedTxn = newSignedCryptoTransfer()
+                .payer(asAccountString(payer))
+                .transfers(tinyBarsFromTo(asAccountString(payer), asAccountString(receiver), sent))
+                .txnValidStart(at)
+                .get();
+        invokesAccessorBasedUsagesForTxnInHandle(signedTxn, CryptoTransfer, SubType.DEFAULT, TokenType.UNRECOGNIZED);
     }
 
     @Test
-    void invokesAccessorBasedUsagesForCryptoTransferInHandleWithReusedAccumulator()
-            throws Throwable {
+    void invokesAccessorBasedUsagesForCryptoTransferInHandleWithReusedAccumulator() throws Throwable {
         // setup:
         final long sent = 1_234L;
-        signedTxn =
-                newSignedCryptoTransfer()
-                        .payer(asAccountString(payer))
-                        .transfers(
-                                tinyBarsFromTo(
-                                        asAccountString(payer), asAccountString(receiver), sent))
-                        .txnValidStart(at)
-                        .get();
+        signedTxn = newSignedCryptoTransfer()
+                .payer(asAccountString(payer))
+                .transfers(tinyBarsFromTo(asAccountString(payer), asAccountString(receiver), sent))
+                .txnValidStart(at)
+                .get();
 
-        invokesAccessorBasedUsagesForTxnInHandle(
-                signedTxn, CryptoTransfer, SubType.DEFAULT, TokenType.UNRECOGNIZED);
+        invokesAccessorBasedUsagesForTxnInHandle(signedTxn, CryptoTransfer, SubType.DEFAULT, TokenType.UNRECOGNIZED);
     }
 
     @Test
     void invokesAccessorBasedUsagesForTokenBurnInHandle() throws Throwable {
         // setup:
-        signedTxn =
-                newSignedTokenBurn()
-                        .payer(asAccountString(payer))
-                        .burning(tokenId)
-                        .txnValidStart(at)
-                        .get();
+        signedTxn = newSignedTokenBurn()
+                .payer(asAccountString(payer))
+                .burning(tokenId)
+                .txnValidStart(at)
+                .get();
         invokesAccessorBasedUsagesForTxnInHandle(
-                signedTxn,
-                TokenBurn,
-                SubType.TOKEN_NON_FUNGIBLE_UNIQUE,
-                TokenType.NON_FUNGIBLE_UNIQUE);
+                signedTxn, TokenBurn, SubType.TOKEN_NON_FUNGIBLE_UNIQUE, TokenType.NON_FUNGIBLE_UNIQUE);
     }
 
     @Test
     void invokesAccessorBasedUsagesForTokenWipeInHandle() throws Throwable {
         // setup:
-        signedTxn =
-                newSignedTokenWipe()
-                        .payer(asAccountString(payer))
-                        .wiping(tokenId, receiver)
-                        .txnValidStart(at)
-                        .get();
+        signedTxn = newSignedTokenWipe()
+                .payer(asAccountString(payer))
+                .wiping(tokenId, receiver)
+                .txnValidStart(at)
+                .get();
         final var dynamicProperties = mock(GlobalDynamicProperties.class);
         given(dynamicProperties.areNftsEnabled()).willReturn(true);
         given(dynamicProperties.maxBatchSizeWipe()).willReturn(10);
         accessor = new TokenWipeAccessor(signedTxn.toByteArray(), signedTxn, dynamicProperties);
         invokesAccessorBasedUsagesForTxnInHandle(
-                signedTxn,
-                TokenAccountWipe,
-                SubType.TOKEN_NON_FUNGIBLE_UNIQUE,
-                TokenType.NON_FUNGIBLE_UNIQUE,
-                true);
+                signedTxn, TokenAccountWipe, SubType.TOKEN_NON_FUNGIBLE_UNIQUE, TokenType.NON_FUNGIBLE_UNIQUE, true);
     }
 
     @Test
     void invokesAccessorBasedUsagesForTokenMintInHandle() throws Throwable {
         // setup:
-        signedTxn =
-                newSignedTokenMint()
-                        .payer(asAccountString(payer))
-                        .minting(tokenId)
-                        .txnValidStart(at)
-                        .get();
+        signedTxn = newSignedTokenMint()
+                .payer(asAccountString(payer))
+                .minting(tokenId)
+                .txnValidStart(at)
+                .get();
 
         invokesAccessorBasedUsagesForTxnInHandle(
                 signedTxn, TokenMint, SubType.TOKEN_FUNGIBLE_COMMON, TokenType.FUNGIBLE_COMMON);
@@ -609,25 +539,18 @@ class UsageBasedFeeCalculatorTest {
     void invokesOpDelegateAsExpectedWithTwoOptions() throws Exception {
         // setup:
         final SigValueObj expectedSigUsage =
-                new SigValueObj(
-                        FeeBuilder.getSignatureCount(signedTxn),
-                        9,
-                        FeeBuilder.getSignatureSize(signedTxn));
-        final FeeObject expectedFees =
-                getFeeObject(currentPrices.get(SubType.DEFAULT), resourceUsage, currentRate);
+                new SigValueObj(FeeBuilder.getSignatureCount(signedTxn), 9, FeeBuilder.getSignatureSize(signedTxn));
+        final FeeObject expectedFees = getFeeObject(currentPrices.get(SubType.DEFAULT), resourceUsage, currentRate);
 
         given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
         given(incorrectOpEstimator.applicableTo(accessor.getTxn())).willReturn(false);
-        given(txnUsageEstimators.get(CryptoCreate))
-                .willReturn(List.of(incorrectOpEstimator, correctOpEstimator));
-        given(
-                        correctOpEstimator.usageGiven(
-                                argThat(accessor.getTxn()::equals),
-                                argThat(factory.apply(expectedSigUsage)),
-                                argThat(view::equals)))
+        given(txnUsageEstimators.get(CryptoCreate)).willReturn(List.of(incorrectOpEstimator, correctOpEstimator));
+        given(correctOpEstimator.usageGiven(
+                        argThat(accessor.getTxn()::equals),
+                        argThat(factory.apply(expectedSigUsage)),
+                        argThat(view::equals)))
                 .willReturn(resourceUsage);
-        given(incorrectOpEstimator.usageGiven(any(), any(), any()))
-                .willThrow(RuntimeException.class);
+        given(incorrectOpEstimator.usageGiven(any(), any(), any())).willThrow(RuntimeException.class);
         given(exchange.rate(at)).willReturn(currentRate);
         given(usagePrices.activePrices(accessor)).willThrow(RuntimeException.class);
         given(usagePrices.pricesGiven(CryptoCreate, at)).willReturn(currentPrices);
@@ -645,22 +568,17 @@ class UsageBasedFeeCalculatorTest {
     void invokesOpDelegateAsExpectedForEstimateOfUnrecognizable() throws Exception {
         // setup:
         final SigValueObj expectedSigUsage =
-                new SigValueObj(
-                        FeeBuilder.getSignatureCount(signedTxn),
-                        9,
-                        FeeBuilder.getSignatureSize(signedTxn));
+                new SigValueObj(FeeBuilder.getSignatureCount(signedTxn), 9, FeeBuilder.getSignatureSize(signedTxn));
 
         final FeeObject expectedFees =
-                getFeeObject(
-                        DEFAULT_RESOURCE_PRICES.get(SubType.DEFAULT), resourceUsage, currentRate);
+                getFeeObject(DEFAULT_RESOURCE_PRICES.get(SubType.DEFAULT), resourceUsage, currentRate);
 
         given(txnUsageEstimators.get(CryptoCreate)).willReturn(List.of(correctOpEstimator));
         given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
-        given(
-                        correctOpEstimator.usageGiven(
-                                argThat(accessor.getTxn()::equals),
-                                argThat(factory.apply(expectedSigUsage)),
-                                argThat(view::equals)))
+        given(correctOpEstimator.usageGiven(
+                        argThat(accessor.getTxn()::equals),
+                        argThat(factory.apply(expectedSigUsage)),
+                        argThat(view::equals)))
                 .willReturn(resourceUsage);
         given(exchange.rate(at)).willReturn(currentRate);
         given(usagePrices.pricesGiven(CryptoCreate, at)).willThrow(RuntimeException.class);
@@ -675,13 +593,9 @@ class UsageBasedFeeCalculatorTest {
     }
 
     private final Function<SigValueObj, ArgumentMatcher<SigValueObj>> factory =
-            expectedSigUsage ->
-                    sigUsage ->
-                            expectedSigUsage.getSignatureSize() == sigUsage.getSignatureSize()
-                                    && expectedSigUsage.getPayerAcctSigCount()
-                                            == sigUsage.getPayerAcctSigCount()
-                                    && expectedSigUsage.getSignatureSize()
-                                            == sigUsage.getSignatureSize();
+            expectedSigUsage -> sigUsage -> expectedSigUsage.getSignatureSize() == sigUsage.getSignatureSize()
+                    && expectedSigUsage.getPayerAcctSigCount() == sigUsage.getPayerAcctSigCount()
+                    && expectedSigUsage.getSignatureSize() == sigUsage.getSignatureSize();
 
     private class NestedMultiplierSource implements FeeMultiplierSource {
         @Override
@@ -739,15 +653,12 @@ class UsageBasedFeeCalculatorTest {
             accessor = SignedTxnAccessor.uncheckedFrom(signedTxn);
         }
         // and:
-        final var expectedFees =
-                getFeeObject(currentPrices.get(subType), resourceUsage, currentRate);
+        final var expectedFees = getFeeObject(currentPrices.get(subType), resourceUsage, currentRate);
 
         given(pricedUsageCalculator.supports(function)).willReturn(true);
         given(exchange.activeRate(consensusNow)).willReturn(currentRate);
         given(usagePrices.activePrices(accessor)).willReturn(currentPrices);
-        given(
-                        pricedUsageCalculator.inHandleFees(
-                                accessor, currentPrices.get(subType), currentRate, payerKey))
+        given(pricedUsageCalculator.inHandleFees(accessor, currentPrices.get(subType), currentRate, payerKey))
                 .willReturn(expectedFees);
         given(view.tokenType(tokenId)).willReturn(Optional.of(tokenType));
 

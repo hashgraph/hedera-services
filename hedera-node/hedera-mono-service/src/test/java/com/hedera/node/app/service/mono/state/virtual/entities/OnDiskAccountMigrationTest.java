@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.entities;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -28,8 +29,7 @@ class OnDiskAccountMigrationTest {
     @ParameterizedTest
     @SuppressWarnings("java:S5961")
     void allFieldsAreSet(final int testCaseNo) {
-        final var source =
-                SeededPropertySource.forSerdeTest(MerkleAccountState.CURRENT_VERSION, testCaseNo);
+        final var source = SeededPropertySource.forSerdeTest(MerkleAccountState.CURRENT_VERSION, testCaseNo);
         final var inMemoryAccount = source.nextAccountState();
         final var onDiskAccount = OnDiskAccount.from(inMemoryAccount);
 
@@ -37,33 +37,21 @@ class OnDiskAccountMigrationTest {
         assertEquals(inMemoryAccount.memo(), onDiskAccount.getMemo());
         assertEquals(inMemoryAccount.getAlias(), onDiskAccount.getAlias());
         assertEquals(inMemoryAccount.getCryptoAllowances(), onDiskAccount.getHbarAllowances());
-        assertEquals(
-                inMemoryAccount.getFungibleTokenAllowances(),
-                onDiskAccount.getFungibleAllowances());
-        assertEquals(
-                inMemoryAccount.getApproveForAllNfts(), onDiskAccount.getNftOperatorApprovals());
+        assertEquals(inMemoryAccount.getFungibleTokenAllowances(), onDiskAccount.getFungibleAllowances());
+        assertEquals(inMemoryAccount.getApproveForAllNfts(), onDiskAccount.getNftOperatorApprovals());
         assertTrue(JKey.equalUpToDecodability(inMemoryAccount.key(), onDiskAccount.getKey()));
         // Flags
         assertEquals(inMemoryAccount.isDeleted(), onDiskAccount.isDeleted());
         assertEquals(inMemoryAccount.isSmartContract(), onDiskAccount.isContract());
         assertEquals(inMemoryAccount.isDeclineReward(), onDiskAccount.isDeclineReward());
-        assertEquals(
-                inMemoryAccount.isReceiverSigRequired(), onDiskAccount.isReceiverSigRequired());
-        assertEquals(
-                inMemoryAccount.isExpiredAndPendingRemoval(),
-                onDiskAccount.isExpiredAndPendingRemoval());
+        assertEquals(inMemoryAccount.isReceiverSigRequired(), onDiskAccount.isReceiverSigRequired());
+        assertEquals(inMemoryAccount.isExpiredAndPendingRemoval(), onDiskAccount.isExpiredAndPendingRemoval());
         // Ints
-        assertEquals(
-                inMemoryAccount.getNumContractKvPairs(), onDiskAccount.getNumContractKvPairs());
-        assertEquals(
-                inMemoryAccount.getMaxAutomaticAssociations(),
-                onDiskAccount.getMaxAutoAssociations());
-        assertEquals(
-                inMemoryAccount.getUsedAutomaticAssociations(),
-                onDiskAccount.getUsedAutoAssociations());
+        assertEquals(inMemoryAccount.getNumContractKvPairs(), onDiskAccount.getNumContractKvPairs());
+        assertEquals(inMemoryAccount.getMaxAutomaticAssociations(), onDiskAccount.getMaxAutoAssociations());
+        assertEquals(inMemoryAccount.getUsedAutomaticAssociations(), onDiskAccount.getUsedAutoAssociations());
         assertEquals(inMemoryAccount.getNumAssociations(), onDiskAccount.getNumAssociations());
-        assertEquals(
-                inMemoryAccount.getNumPositiveBalances(), onDiskAccount.getNumPositiveBalances());
+        assertEquals(inMemoryAccount.getNumPositiveBalances(), onDiskAccount.getNumPositiveBalances());
         assertEquals(inMemoryAccount.getNumTreasuryTitles(), onDiskAccount.getNumTreasuryTitles());
         // Longs
         assertEquals(inMemoryAccount.expiry(), onDiskAccount.getExpiry());
@@ -81,13 +69,9 @@ class OnDiskAccountMigrationTest {
         assertEquals(
                 inMemoryAccount.getStakeAtStartOfLastRewardedPeriod(),
                 onDiskAccount.getStakeAtStartOfLastRewardedPeriod());
-        assertEquals(
-                inMemoryAccount.getAutoRenewAccount().num(),
-                onDiskAccount.getAutoRenewAccountNumber());
+        assertEquals(inMemoryAccount.getAutoRenewAccount().num(), onDiskAccount.getAutoRenewAccountNumber());
         // Complex
-        assertEquals(
-                inMemoryAccount.getFirstUint256KeyNonZeroBytes(),
-                onDiskAccount.getFirstStorageKeyNonZeroBytes());
+        assertEquals(inMemoryAccount.getFirstUint256KeyNonZeroBytes(), onDiskAccount.getFirstStorageKeyNonZeroBytes());
         assertArrayEquals(inMemoryAccount.getFirstUint256Key(), onDiskAccount.getFirstStorageKey());
     }
 }

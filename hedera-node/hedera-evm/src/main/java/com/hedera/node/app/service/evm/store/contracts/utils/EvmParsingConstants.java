@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.utils;
 
 import com.esaulpaugh.headlong.abi.TupleType;
@@ -46,50 +47,40 @@ public class EvmParsingConstants {
     public static final String KEY_VALUE = "(bool,address,bytes,bytes,address)";
     public static final String TOKEN_KEY = "(uint256," + KEY_VALUE + ")";
     public static final String HEDERA_TOKEN =
-            "("
-                    + "string,string,address,string,bool,int64,bool,"
-                    + TOKEN_KEY
-                    + ARRAY_BRACKETS
-                    + ","
-                    + EXPIRY
-                    + ")";
+            "(" + "string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
 
     public static final String RESPONSE_STATUS_AT_BEGINNING = "(int32,";
     public static final String FIXED_FEE = "(uint32,address,bool,bool,address)";
     public static final String FRACTIONAL_FEE = "(uint32,uint32,uint32,uint32,bool,address)";
     public static final String ROYALTY_FEE = "(uint32,uint32,uint32,address,bool,address)";
-    public static final String TOKEN_INFO =
-            "("
-                    + HEDERA_TOKEN
-                    + ",int64,bool,bool,bool,"
-                    + FIXED_FEE
-                    + ARRAY_BRACKETS
-                    + ","
-                    + FRACTIONAL_FEE
-                    + ARRAY_BRACKETS
-                    + ","
-                    + ROYALTY_FEE
-                    + ARRAY_BRACKETS
-                    + ",string"
-                    + ")";
-    public static final String NON_FUNGIBLE_TOKEN_INFO =
-            "(" + TOKEN_INFO + ",int64,address,int64,bytes,address" + ")";
+    public static final String TOKEN_INFO = "("
+            + HEDERA_TOKEN
+            + ",int64,bool,bool,bool,"
+            + FIXED_FEE
+            + ARRAY_BRACKETS
+            + ","
+            + FRACTIONAL_FEE
+            + ARRAY_BRACKETS
+            + ","
+            + ROYALTY_FEE
+            + ARRAY_BRACKETS
+            + ",string"
+            + ")";
+    public static final String NON_FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",int64,address,int64,bytes,address" + ")";
 
     public static final TupleType GET_NON_FUNGIBLE_TOKEN_INFO_TYPE =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")");
 
-    public static final TupleType GET_TOKEN_CUSTOM_FEES_TYPE =
-            TupleType.parse(
-                    RESPONSE_STATUS_AT_BEGINNING
-                            + FIXED_FEE
-                            + ARRAY_BRACKETS
-                            + ","
-                            + FRACTIONAL_FEE
-                            + ARRAY_BRACKETS
-                            + ","
-                            + ROYALTY_FEE
-                            + ARRAY_BRACKETS
-                            + ")");
+    public static final TupleType GET_TOKEN_CUSTOM_FEES_TYPE = TupleType.parse(RESPONSE_STATUS_AT_BEGINNING
+            + FIXED_FEE
+            + ARRAY_BRACKETS
+            + ","
+            + FRACTIONAL_FEE
+            + ARRAY_BRACKETS
+            + ","
+            + ROYALTY_FEE
+            + ARRAY_BRACKETS
+            + ")");
     public static final String FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",int32" + ")";
 
     public static final TupleType BIG_INTEGER_TUPLE = TupleType.parse(UINT256);
@@ -107,8 +98,7 @@ public class EvmParsingConstants {
     public static final TupleType GET_TOKEN_EXPIRY_INFO_TYPE =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + EXPIRY + ")");
 
-    public static final TupleType GET_TOKEN_KEY_TYPE =
-            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + KEY_VALUE + ")");
+    public static final TupleType GET_TOKEN_KEY_TYPE = TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + KEY_VALUE + ")");
 
     public enum FunctionType {
         ERC_DECIMALS,

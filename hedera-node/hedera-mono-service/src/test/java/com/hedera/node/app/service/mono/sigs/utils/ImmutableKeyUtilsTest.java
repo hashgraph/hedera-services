@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.utils;
 
 import static com.hedera.node.app.service.mono.sigs.utils.ImmutableKeyUtils.signalsKeyRemoval;
@@ -28,13 +29,10 @@ class ImmutableKeyUtilsTest {
     @Test
     void recognizesSentinelKey() {
         assertFalse(signalsKeyRemoval(Key.getDefaultInstance()));
-        assertFalse(
-                signalsKeyRemoval(
-                        Key.newBuilder()
-                                .setThresholdKey(ThresholdKey.getDefaultInstance())
-                                .build()));
-        assertTrue(
-                signalsKeyRemoval(
-                        Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build()));
+        assertFalse(signalsKeyRemoval(Key.newBuilder()
+                .setThresholdKey(ThresholdKey.getDefaultInstance())
+                .build()));
+        assertTrue(signalsKeyRemoval(
+                Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build()));
     }
 }

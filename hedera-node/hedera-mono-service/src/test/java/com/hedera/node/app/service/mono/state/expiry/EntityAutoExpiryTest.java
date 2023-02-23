@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry;
 
 import static com.hedera.node.app.service.mono.state.tasks.SystemTaskResult.*;
@@ -47,31 +48,45 @@ class EntityAutoExpiryTest {
 
     private final long aNum = 1002L, bNum = 1003L, cNum = 1004L;
 
-    @Mock private SystemTaskManager taskManager;
-    @Mock private SequenceNumber seqNo;
-    @Mock private NetworkCtxManager networkCtxManager;
-    @Mock private MerkleNetworkContext networkCtx;
-    @Mock private ConsensusTimeTracker consensusTimeTracker;
-    @Mock private ExpiryThrottle expiryThrottle;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private ExpiryStats expiryStats;
+    @Mock
+    private SystemTaskManager taskManager;
+
+    @Mock
+    private SequenceNumber seqNo;
+
+    @Mock
+    private NetworkCtxManager networkCtxManager;
+
+    @Mock
+    private MerkleNetworkContext networkCtx;
+
+    @Mock
+    private ConsensusTimeTracker consensusTimeTracker;
+
+    @Mock
+    private ExpiryThrottle expiryThrottle;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private ExpiryStats expiryStats;
 
     private EntityAutoExpiry subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new EntityAutoExpiry(
-                        expiryStats,
-                        mockHederaNums,
-                        expiryThrottle,
-                        recordsHistorian,
-                        taskManager,
-                        mockDynamicProps,
-                        networkCtxManager,
-                        () -> networkCtx,
-                        consensusTimeTracker,
-                        () -> seqNo);
+        subject = new EntityAutoExpiry(
+                expiryStats,
+                mockHederaNums,
+                expiryThrottle,
+                recordsHistorian,
+                taskManager,
+                mockDynamicProps,
+                networkCtxManager,
+                () -> networkCtx,
+                consensusTimeTracker,
+                () -> seqNo);
     }
 
     @Test
@@ -162,8 +177,7 @@ class EntityAutoExpiryTest {
 
         givenWrapNum(aNum + numToScan);
         givenLastScanned(aNum - 1);
-        given(taskManager.process(anyLong(), eq(instantNow), eq(networkCtx)))
-                .willReturn(NOTHING_TO_DO);
+        given(taskManager.process(anyLong(), eq(instantNow), eq(networkCtx))).willReturn(NOTHING_TO_DO);
 
         // when:
         subject.execute(instantNow);
@@ -183,8 +197,7 @@ class EntityAutoExpiryTest {
         given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(true);
         givenWrapNum(aNum + numToScan + 1);
         givenLastScanned(aNum - 1);
-        given(taskManager.process(aNum, instantNow, networkCtx))
-                .willReturn(NEEDS_DIFFERENT_CONTEXT);
+        given(taskManager.process(aNum, instantNow, networkCtx)).willReturn(NEEDS_DIFFERENT_CONTEXT);
         mockDynamicProps.setMaxToTouch(1);
 
         // when:
@@ -228,13 +241,10 @@ class EntityAutoExpiryTest {
 
         givenWrapNum(aNum + numToScan);
         givenLastScanned(aNum - 1);
-        given(taskManager.process(aNum, instantNow, networkCtx))
-                .willAnswer(
-                        i -> {
-                            given(consensusTimeTracker.hasMoreStandaloneRecordTime())
-                                    .willReturn(false);
-                            return DONE;
-                        });
+        given(taskManager.process(aNum, instantNow, networkCtx)).willAnswer(i -> {
+            given(consensusTimeTracker.hasMoreStandaloneRecordTime()).willReturn(false);
+            return DONE;
+        });
 
         // when:
         subject.execute(instantNow);
@@ -254,8 +264,7 @@ class EntityAutoExpiryTest {
 
         givenWrapNum(aNum + numToScan);
         givenLastScanned(aNum + numToScan - 2);
-        given(taskManager.process(aNum + numToScan - 1, instantNow, networkCtx))
-                .willReturn(NOTHING_TO_DO);
+        given(taskManager.process(aNum + numToScan - 1, instantNow, networkCtx)).willReturn(NOTHING_TO_DO);
         given(taskManager.process(aNum - 1, instantNow, networkCtx)).willReturn(NOTHING_TO_DO);
         given(taskManager.process(aNum, instantNow, networkCtx)).willReturn(DONE);
         given(taskManager.process(bNum, instantNow, networkCtx)).willReturn(DONE);

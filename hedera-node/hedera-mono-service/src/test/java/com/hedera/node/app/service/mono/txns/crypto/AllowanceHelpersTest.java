@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
@@ -54,22 +55,20 @@ class AllowanceHelpersTest {
     @Test
     void aggregatedListCorrectly() {
         List<NftAllowance> list = new ArrayList<>();
-        final var Nftid =
-                NftAllowance.newBuilder()
-                        .setSpender(asAccount("0.0.1000"))
-                        .addAllSerialNumbers(List.of(1L, 10L))
-                        .setTokenId(asToken("0.0.10001"))
-                        .setOwner(asAccount("0.0.5000"))
-                        .setApprovedForAll(BoolValue.of(false))
-                        .build();
-        final var Nftid2 =
-                NftAllowance.newBuilder()
-                        .setSpender(asAccount("0.0.1000"))
-                        .addAllSerialNumbers(List.of(1L, 100L))
-                        .setTokenId(asToken("0.0.10001"))
-                        .setOwner(asAccount("0.0.5000"))
-                        .setApprovedForAll(BoolValue.of(false))
-                        .build();
+        final var Nftid = NftAllowance.newBuilder()
+                .setSpender(asAccount("0.0.1000"))
+                .addAllSerialNumbers(List.of(1L, 10L))
+                .setTokenId(asToken("0.0.10001"))
+                .setOwner(asAccount("0.0.5000"))
+                .setApprovedForAll(BoolValue.of(false))
+                .build();
+        final var Nftid2 = NftAllowance.newBuilder()
+                .setSpender(asAccount("0.0.1000"))
+                .addAllSerialNumbers(List.of(1L, 100L))
+                .setTokenId(asToken("0.0.10001"))
+                .setOwner(asAccount("0.0.5000"))
+                .setApprovedForAll(BoolValue.of(false))
+                .build();
         list.add(Nftid);
         list.add(Nftid2);
         assertEquals(4, aggregateNftAllowances(list));
@@ -87,10 +86,9 @@ class AllowanceHelpersTest {
         given(token.getTreasury()).willReturn(treasury);
         given(treasury.getId()).willReturn(ownerId);
 
-        final var ex =
-                assertThrows(
-                        InvalidTransactionException.class,
-                        () -> updateSpender(tokenStore, ownerId, spenderId, tokenId, serials));
+        final var ex = assertThrows(
+                InvalidTransactionException.class,
+                () -> updateSpender(tokenStore, ownerId, spenderId, tokenId, serials));
 
         assertEquals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, ex.getResponseCode());
     }

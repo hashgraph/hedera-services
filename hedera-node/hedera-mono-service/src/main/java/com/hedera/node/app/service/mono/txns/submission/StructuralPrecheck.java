@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.submission;
 
 import static com.hedera.node.app.service.mono.txns.submission.PresolvencyFlaws.WELL_KNOWN_FLAWS;
@@ -75,10 +76,7 @@ public final class StructuralPrecheck {
         final var hasDeprecatedBody = signedTxn.hasBody();
         final var hasDeprecatedSigs = signedTxn.hasSigs();
 
-        if (hasDeprecatedBody
-                || hasDeprecatedSigs
-                || hasDeprecatedSigMap
-                || hasDeprecatedBodyBytes) {
+        if (hasDeprecatedBody || hasDeprecatedSigs || hasDeprecatedSigMap || hasDeprecatedBodyBytes) {
             opCounters.countDeprecatedTxnReceived();
         }
 
@@ -122,12 +120,7 @@ public final class StructuralPrecheck {
                 depth = Math.max(depth, 1 + protoDepthOf((GeneratedMessageV3) field));
             } else if (field instanceof List<? extends Object> list) {
                 for (final var item : list) {
-                    depth =
-                            Math.max(
-                                    depth,
-                                    isProtoMsg(item)
-                                            ? 1 + protoDepthOf((GeneratedMessageV3) item)
-                                            : 0);
+                    depth = Math.max(depth, isProtoMsg(item) ? 1 + protoDepthOf((GeneratedMessageV3) item) : 0);
                 }
             }
             /* Otherwise the field is a primitive and adds no depth to the message. */

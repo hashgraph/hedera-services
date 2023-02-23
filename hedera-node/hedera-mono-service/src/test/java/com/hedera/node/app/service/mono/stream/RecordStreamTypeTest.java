@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,7 +31,8 @@ class RecordStreamTypeTest {
     private static final String expectedRecordSigExtension = "rcd_sig";
     private static final String expectedSidecarRecordExtension = "rcd";
 
-    @Mock private RecordStreamType subject;
+    @Mock
+    private RecordStreamType subject;
 
     @Test
     void capturesV5RecordStreamMetadata() {

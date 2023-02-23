@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
@@ -78,10 +79,7 @@ public class BalanceChange {
     }
 
     public static BalanceChange changingFtUnits(
-            final Id token,
-            final TokenID tokenId,
-            final AccountAmount aa,
-            final AccountID payerID) {
+            final Id token, final TokenID tokenId, final AccountAmount aa, final AccountID payerID) {
         final var tokenChange = new BalanceChange(token, aa, INSUFFICIENT_TOKEN_BALANCE, payerID);
         tokenChange.tokenId = tokenId;
         return tokenChange;
@@ -89,26 +87,17 @@ public class BalanceChange {
 
     public static BalanceChange hbarCustomFeeAdjust(final Id id, final long amount) {
         return new BalanceChange(
-                id,
-                amount,
-                DEFAULT_PAYER,
-                DEFAULT_ALLOWANCE_APPROVAL,
-                true,
-                INSUFFICIENT_ACCOUNT_BALANCE);
+                id, amount, DEFAULT_PAYER, DEFAULT_ALLOWANCE_APPROVAL, true, INSUFFICIENT_ACCOUNT_BALANCE);
     }
 
     public static BalanceChange changingNftOwnership(
-            final Id token,
-            final TokenID tokenId,
-            final NftTransfer nftTransfer,
-            final AccountID payerID) {
-        final var nftChange =
-                new BalanceChange(
-                        token,
-                        nftTransfer.getSenderAccountID(),
-                        nftTransfer.getReceiverAccountID(),
-                        nftTransfer.getSerialNumber(),
-                        SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+            final Id token, final TokenID tokenId, final NftTransfer nftTransfer, final AccountID payerID) {
+        final var nftChange = new BalanceChange(
+                token,
+                nftTransfer.getSenderAccountID(),
+                nftTransfer.getReceiverAccountID(),
+                nftTransfer.getSerialNumber(),
+                SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
         nftChange.tokenId = tokenId;
         nftChange.isApprovedAllowance = nftTransfer.getIsApproval();
         if (nftTransfer.getIsApproval()) {
@@ -118,8 +107,7 @@ public class BalanceChange {
         return nftChange;
     }
 
-    public static BalanceChange tokenCustomFeeAdjust(
-            final Id account, final Id token, final long amount) {
+    public static BalanceChange tokenCustomFeeAdjust(final Id account, final Id token, final long amount) {
         return tokenAdjust(account, token, amount, DEFAULT_PAYER, DEFAULT_ALLOWANCE_APPROVAL, true);
     }
 
@@ -130,14 +118,8 @@ public class BalanceChange {
             final AccountID payerID,
             final boolean isApprovedAllowance,
             final boolean isForCustomFee) {
-        final var change =
-                new BalanceChange(
-                        account,
-                        amount,
-                        payerID,
-                        isApprovedAllowance,
-                        isForCustomFee,
-                        INSUFFICIENT_TOKEN_BALANCE);
+        final var change = new BalanceChange(
+                account, amount, payerID, isApprovedAllowance, isForCustomFee, INSUFFICIENT_TOKEN_BALANCE);
         change.payerID = payerID;
         change.token = token;
         change.tokenId = token.asGrpcToken();
@@ -170,10 +152,7 @@ public class BalanceChange {
 
     /* HTS constructor */
     private BalanceChange(
-            final Id token,
-            final AccountAmount aa,
-            final ResponseCodeEnum code,
-            final AccountID payerID) {
+            final Id token, final AccountAmount aa, final ResponseCodeEnum code, final AccountID payerID) {
         this.token = token;
         this.accountId = aa.getAccountID();
         this.alias = accountId.getAlias();

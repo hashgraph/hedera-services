@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops;
 
 import static java.util.Collections.binarySearch;
@@ -94,7 +95,8 @@ public class BiasedDelegatingProvider implements OpProvider {
             return Optional.empty();
         } else {
             while (true) {
-                Optional<HapiSpecOperation> op = delegates.get(randomSelection()).get();
+                Optional<HapiSpecOperation> op =
+                        delegates.get(randomSelection()).get();
                 if (op.isPresent()) {
                     op.ifPresent(this::configureDefaults);
                     return op;

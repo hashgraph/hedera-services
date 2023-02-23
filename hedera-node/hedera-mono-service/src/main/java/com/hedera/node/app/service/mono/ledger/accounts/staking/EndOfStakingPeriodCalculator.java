@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.node.app.service.mono.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_RATE;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -52,8 +53,7 @@ import org.apache.logging.log4j.Logger;
 public class EndOfStakingPeriodCalculator {
 
     private static final Logger log = LogManager.getLogger(EndOfStakingPeriodCalculator.class);
-    public static final String END_OF_STAKING_PERIOD_CALCULATIONS_MEMO =
-            "End of staking period calculation record";
+    public static final String END_OF_STAKING_PERIOD_CALCULATIONS_MEMO = "End of staking period calculation record";
     private static final SideEffectsTracker NO_OTHER_SIDE_EFFECTS = new SideEffectsTracker();
 
     private final Supplier<AccountStorageAdapter> accounts;
@@ -99,10 +99,9 @@ public class EndOfStakingPeriodCalculator {
         final var totalStakedRewardStart = curNetworkCtx.getTotalStakedRewardStart();
         // The tinybars earned per hbar for stakers who were staked to a node whose total
         // stakedRewardStart for the ending period was in the range [minStake, maxStake]
-        final var perHbarRate =
-                totalStakedRewardStart < HBARS_TO_TINYBARS
-                        ? 0
-                        : rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS);
+        final var perHbarRate = totalStakedRewardStart < HBARS_TO_TINYBARS
+                ? 0
+                : rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS);
         log.info(
                 "The reward rate for the period was {} tb ({} tb/hbar for nodes with in-range"
                         + " stake, given {} total stake reward start)",
@@ -120,20 +119,17 @@ public class EndOfStakingPeriodCalculator {
             // paid to all
             // accounts who had staked-to-reward for this node long enough to be eligible in the
             // just-finished period
-            final var nodeRewardRate =
-                    stakingInfo.updateRewardSumHistory(
-                            perHbarRate,
-                            dynamicProperties.maxDailyStakeRewardThPerH(),
-                            dynamicProperties.requireMinStakeToReward());
+            final var nodeRewardRate = stakingInfo.updateRewardSumHistory(
+                    perHbarRate,
+                    dynamicProperties.maxDailyStakeRewardThPerH(),
+                    dynamicProperties.requireMinStakeToReward());
 
             final var oldStakeRewardStart = stakingInfo.getStakeRewardStart();
-            final var pendingRewardHbars =
-                    stakingInfo.stakeRewardStartMinusUnclaimed() / HBARS_TO_TINYBARS;
+            final var pendingRewardHbars = stakingInfo.stakeRewardStartMinusUnclaimed() / HBARS_TO_TINYBARS;
             final var newStakeRewardStart = stakingInfo.reviewElectionsAndRecomputeStakes();
             final var nodePendingRewards = pendingRewardHbars * nodeRewardRate;
             log.info(
-                    "For node{}, the tb/hbar reward rate was {} for {} pending, "
-                            + "with stake reward start {} -> {}",
+                    "For node{}, the tb/hbar reward rate was {} for {} pending, " + "with stake reward start {} -> {}",
                     nodeNum.longValue(),
                     nodeRewardRate,
                     nodePendingRewards,
@@ -144,40 +140,33 @@ public class EndOfStakingPeriodCalculator {
 
             newTotalStakedRewardStart += newStakeRewardStart;
             newTotalStakedStart += stakingInfo.getStake();
-            nodeStakingInfos.add(
-                    NodeStake.newBuilder()
-                            .setNodeId(nodeNum.longValue())
-                            .setRewardRate(nodeRewardRate)
-                            .setStake(stakingInfo.getStake())
-                            .setMinStake(stakingInfo.getMinStake())
-                            .setMaxStake(stakingInfo.getMaxStake())
-                            .setStakeRewarded(stakingInfo.getStakeToReward())
-                            .setStakeNotRewarded(stakingInfo.getStakeToNotReward())
-                            .build());
+            nodeStakingInfos.add(NodeStake.newBuilder()
+                    .setNodeId(nodeNum.longValue())
+                    .setRewardRate(nodeRewardRate)
+                    .setStake(stakingInfo.getStake())
+                    .setMinStake(stakingInfo.getMinStake())
+                    .setMaxStake(stakingInfo.getMaxStake())
+                    .setStakeRewarded(stakingInfo.getStakeToReward())
+                    .setStakeNotRewarded(stakingInfo.getStakeToNotReward())
+                    .build());
         }
         curNetworkCtx.setTotalStakedRewardStart(newTotalStakedRewardStart);
         curNetworkCtx.setTotalStakedStart(newTotalStakedStart);
         log.info(
-                "Total stake start is now {} ({} rewarded), pending rewards are {} vs 0.0.800"
-                        + " balance {}",
+                "Total stake start is now {} ({} rewarded), pending rewards are {} vs 0.0.800" + " balance {}",
                 newTotalStakedStart,
                 newTotalStakedRewardStart,
                 curNetworkCtx.pendingRewards(),
                 rewardsBalance());
 
-        final var syntheticNodeStakeUpdateTxn =
-                syntheticTxnFactory.nodeStakeUpdate(
-                        lastInstantOfPreviousPeriodFor(consensusTime),
-                        nodeStakingInfos,
-                        properties);
+        final var syntheticNodeStakeUpdateTxn = syntheticTxnFactory.nodeStakeUpdate(
+                lastInstantOfPreviousPeriodFor(consensusTime), nodeStakingInfos, properties);
         log.info("Exporting:\n{}", nodeStakingInfos);
         recordsHistorian.trackPrecedingChildRecord(
                 DEFAULT_SOURCE_ID,
                 syntheticNodeStakeUpdateTxn,
                 creator.createSuccessfulSyntheticRecord(
-                        NO_CUSTOM_FEES,
-                        NO_OTHER_SIDE_EFFECTS,
-                        END_OF_STAKING_PERIOD_CALCULATIONS_MEMO));
+                        NO_CUSTOM_FEES, NO_OTHER_SIDE_EFFECTS, END_OF_STAKING_PERIOD_CALCULATIONS_MEMO));
     }
 
     @VisibleForTesting
@@ -191,10 +180,9 @@ public class EndOfStakingPeriodCalculator {
 
     @VisibleForTesting
     Timestamp lastInstantOfPreviousPeriodFor(final Instant consensusTime) {
-        final var justBeforeMidNightTime =
-                LocalDate.ofInstant(consensusTime, ZoneId.of("UTC"))
-                        .atStartOfDay()
-                        .minusNanos(1); // give out the timestamp that is just before midnight
+        final var justBeforeMidNightTime = LocalDate.ofInstant(consensusTime, ZoneId.of("UTC"))
+                .atStartOfDay()
+                .minusNanos(1); // give out the timestamp that is just before midnight
         return Timestamp.newBuilder()
                 .setSeconds(justBeforeMidNightTime.toEpochSecond(ZoneOffset.UTC))
                 .setNanos(justBeforeMidNightTime.getNano())
@@ -203,9 +191,7 @@ public class EndOfStakingPeriodCalculator {
 
     private long rewardsBalance() {
         return accounts.get()
-                .get(
-                        EntityNum.fromLong(
-                                properties.getLongProperty(ACCOUNTS_STAKING_REWARD_ACCOUNT)))
+                .get(EntityNum.fromLong(properties.getLongProperty(ACCOUNTS_STAKING_REWARD_ACCOUNT)))
                 .getBalance();
     }
 }

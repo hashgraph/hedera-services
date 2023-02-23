@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
@@ -34,8 +35,7 @@ public interface EvmIsKycPrecompile {
 
     public static GrantRevokeKycWrapper<byte[], byte[]> decodeIsKyc(final Bytes input) {
         final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input, IS_KYC_TOKEN_FUNCTION_SELECTOR, IS_KYC_TOKEN_FUNCTION_DECODER);
+                decodeFunctionCall(input, IS_KYC_TOKEN_FUNCTION_SELECTOR, IS_KYC_TOKEN_FUNCTION_DECODER);
 
         return new GrantRevokeKycWrapper<>(decodedArguments.get(0), decodedArguments.get(1));
     }

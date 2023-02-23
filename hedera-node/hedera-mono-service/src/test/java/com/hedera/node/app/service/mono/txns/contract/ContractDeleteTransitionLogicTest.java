@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.contract;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
@@ -38,8 +39,10 @@ import org.junit.jupiter.api.Test;
 
 class ContractDeleteTransitionLogicTest {
     private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
-    private final ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
-    private final AccountID transfer = AccountID.newBuilder().setAccountNum(4_321L).build();
+    private final ContractID target =
+            ContractID.newBuilder().setContractNum(9_999L).build();
+    private final AccountID transfer =
+            AccountID.newBuilder().setAccountNum(4_321L).build();
 
     private Instant consensusTime;
     private DeletionLogic deletionLogic;
@@ -95,13 +98,11 @@ class ContractDeleteTransitionLogicTest {
     }
 
     private void givenValidTxnCtx() {
-        var op =
-                TransactionBody.newBuilder()
-                        .setTransactionID(ourTxnId())
-                        .setContractDeleteInstance(
-                                ContractDeleteTransactionBody.newBuilder()
-                                        .setTransferAccountID(transfer)
-                                        .setContractID(target));
+        var op = TransactionBody.newBuilder()
+                .setTransactionID(ourTxnId())
+                .setContractDeleteInstance(ContractDeleteTransactionBody.newBuilder()
+                        .setTransferAccountID(transfer)
+                        .setContractID(target));
         contractDeleteTxn = op.build();
         given(accessor.getTxn()).willReturn(contractDeleteTxn);
         given(txnCtx.accessor()).willReturn(accessor);
@@ -110,8 +111,7 @@ class ContractDeleteTransitionLogicTest {
     private TransactionID ourTxnId() {
         return TransactionID.newBuilder()
                 .setAccountID(payer)
-                .setTransactionValidStart(
-                        Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
+                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
                 .build();
     }
 }

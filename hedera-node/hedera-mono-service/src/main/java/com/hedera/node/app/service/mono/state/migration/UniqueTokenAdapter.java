@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.migration;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
@@ -122,9 +123,7 @@ public class UniqueTokenAdapter implements FastCopyable {
      * @return packed creation time of underlying instance.
      */
     public long getPackedCreationTime() {
-        return isVirtual
-                ? uniqueTokenValue.getPackedCreationTime()
-                : merkleUniqueToken.getPackedCreationTime();
+        return isVirtual ? uniqueTokenValue.getPackedCreationTime() : merkleUniqueToken.getPackedCreationTime();
     }
 
     /**

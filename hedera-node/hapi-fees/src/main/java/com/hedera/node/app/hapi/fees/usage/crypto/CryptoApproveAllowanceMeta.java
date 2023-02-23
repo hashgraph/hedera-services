@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.crypto;
 
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoContextUtils.convertToCryptoMap;
@@ -48,8 +49,7 @@ public class CryptoApproveAllowanceMeta {
     }
 
     public CryptoApproveAllowanceMeta(
-            final CryptoApproveAllowanceTransactionBody cryptoApproveTxnBody,
-            final long transactionValidStartSecs) {
+            final CryptoApproveAllowanceTransactionBody cryptoApproveTxnBody, final long transactionValidStartSecs) {
         effectiveNow = transactionValidStartSecs;
         msgBytesUsed = bytesUsedInTxn(cryptoApproveTxnBody);
         cryptoAllowances = convertToCryptoMap(cryptoApproveTxnBody.getCryptoAllowancesList());
@@ -95,20 +95,17 @@ public class CryptoApproveAllowanceMeta {
         private Map<AllowanceId, Long> tokenAllowances;
         private Set<AllowanceId> nftAllowances;
 
-        public CryptoApproveAllowanceMeta.Builder cryptoAllowances(
-                final Map<Long, Long> cryptoAllowances) {
+        public CryptoApproveAllowanceMeta.Builder cryptoAllowances(final Map<Long, Long> cryptoAllowances) {
             this.cryptoAllowances = cryptoAllowances;
             return this;
         }
 
-        public CryptoApproveAllowanceMeta.Builder tokenAllowances(
-                final Map<AllowanceId, Long> tokenAllowances) {
+        public CryptoApproveAllowanceMeta.Builder tokenAllowances(final Map<AllowanceId, Long> tokenAllowances) {
             this.tokenAllowances = tokenAllowances;
             return this;
         }
 
-        public CryptoApproveAllowanceMeta.Builder nftAllowances(
-                final Set<AllowanceId> nftAllowances) {
+        public CryptoApproveAllowanceMeta.Builder nftAllowances(final Set<AllowanceId> nftAllowances) {
             this.nftAllowances = nftAllowances;
             return this;
         }

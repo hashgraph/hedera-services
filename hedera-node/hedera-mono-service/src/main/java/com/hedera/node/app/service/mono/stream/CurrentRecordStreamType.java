@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stream;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -35,8 +36,7 @@ public class CurrentRecordStreamType implements RecordStreamType {
 
     @Inject
     public CurrentRecordStreamType(
-            final SemanticVersions semanticVersions,
-            final GlobalDynamicProperties dynamicProperties) {
+            final SemanticVersions semanticVersions, final GlobalDynamicProperties dynamicProperties) {
         this.semanticVersions = semanticVersions;
         this.dynamicProperties = dynamicProperties;
     }
@@ -47,16 +47,14 @@ public class CurrentRecordStreamType implements RecordStreamType {
             final var deployed = semanticVersions.getDeployed();
             final var protoSemVer = deployed.protoSemVer();
             if (SemanticVersion.getDefaultInstance().equals(protoSemVer)) {
-                log.error(
-                        "Failed to load HAPI proto versions, record stream files may be unusable");
+                log.error("Failed to load HAPI proto versions, record stream files may be unusable");
             }
-            fileHeader =
-                    new int[] {
-                        dynamicProperties.recordFileVersion(),
-                        protoSemVer.getMajor(),
-                        protoSemVer.getMinor(),
-                        protoSemVer.getPatch()
-                    };
+            fileHeader = new int[] {
+                dynamicProperties.recordFileVersion(),
+                protoSemVer.getMajor(),
+                protoSemVer.getMinor(),
+                protoSemVer.getPatch()
+            };
             log.info("Record stream file header is {}", () -> Arrays.toString(fileHeader));
         }
         return fileHeader;

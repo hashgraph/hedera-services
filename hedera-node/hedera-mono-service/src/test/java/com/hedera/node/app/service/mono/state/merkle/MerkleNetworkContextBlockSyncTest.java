@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
@@ -58,8 +59,11 @@ class MerkleNetworkContextBlockSyncTest {
         r.nextBytes(unmatchedHash);
     }
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private MerkleNetworkContext subject;
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private MerkleNetworkContext subject;
 
     @BeforeEach
     void setUp() {
@@ -83,8 +87,7 @@ class MerkleNetworkContextBlockSyncTest {
 
     @Test
     void renumberingWithUnknownValuesIsNoop() {
-        assertDoesNotThrow(
-                () -> subject.renumberBlocksToMatch(KnownBlockValues.MISSING_BLOCK_VALUES));
+        assertDoesNotThrow(() -> subject.renumberBlocksToMatch(KnownBlockValues.MISSING_BLOCK_VALUES));
     }
 
     @Test
@@ -92,9 +95,7 @@ class MerkleNetworkContextBlockSyncTest {
         finishNBlocks(m);
         final var blockOffset = m / 4;
         subject.renumberBlocksToMatch(new KnownBlockValues(blockHashes[blockOffset], knownBlockNo));
-        assertSame(
-                UNAVAILABLE_BLOCK_HASH,
-                subject.getBlockHashByNumber(knownBlockNo - blockOffset - 1));
+        assertSame(UNAVAILABLE_BLOCK_HASH, subject.getBlockHashByNumber(knownBlockNo - blockOffset - 1));
         for (int i = 0; i < m; i++) {
             assertArrayEquals(
                     blockHashes[i],
@@ -106,9 +107,7 @@ class MerkleNetworkContextBlockSyncTest {
         // and:
         assertEquals(NUM_BLOCKS_TO_LOG_AFTER_RENUMBERING, subject.getBlocksToLog());
         for (int j = 0; j < NUM_BLOCKS_TO_LOG_AFTER_RENUMBERING + 1; j++) {
-            subject.finishBlock(
-                    ethHashFrom(new Hash(swirldHashes[j % swirldHashes.length])),
-                    then.plusSeconds(2 * j));
+            subject.finishBlock(ethHashFrom(new Hash(swirldHashes[j % swirldHashes.length])), then.plusSeconds(2 * j));
         }
         assertThat(
                 logCaptor.infoLogs(),
@@ -118,8 +117,7 @@ class MerkleNetworkContextBlockSyncTest {
                         Matchers.startsWith("--- BLOCK UPDATE ---\n  Finished: #" + (newCurNo + 1)),
                         Matchers.startsWith("--- BLOCK UPDATE ---\n  Finished: #" + (newCurNo + 2)),
                         Matchers.startsWith("--- BLOCK UPDATE ---\n  Finished: #" + (newCurNo + 3)),
-                        Matchers.startsWith(
-                                "--- BLOCK UPDATE ---\n  Finished: #" + (newCurNo + 4))));
+                        Matchers.startsWith("--- BLOCK UPDATE ---\n  Finished: #" + (newCurNo + 4))));
     }
 
     @Test

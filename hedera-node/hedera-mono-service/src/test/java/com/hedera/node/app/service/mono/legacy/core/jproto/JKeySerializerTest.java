@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
 import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.equalUpToDecodability;
@@ -80,8 +81,7 @@ class JKeySerializerTest {
         baos.flush();
 
         final var in = new ByteArrayInputStream(baos.toByteArray());
-        final JECDSA_384Key result =
-                JKeySerializer.deserialize(new SerializableDataInputStream(in));
+        final JECDSA_384Key result = JKeySerializer.deserialize(new SerializableDataInputStream(in));
         assertArrayEquals(subject.getECDSA384(), result.getECDSA384());
     }
 
@@ -93,8 +93,7 @@ class JKeySerializerTest {
         baos.flush();
 
         final var in = new ByteArrayInputStream(baos.toByteArray());
-        final JDelegatableContractIDKey result =
-                JKeySerializer.deserialize(new SerializableDataInputStream(in));
+        final JDelegatableContractIDKey result = JKeySerializer.deserialize(new SerializableDataInputStream(in));
         assertEquals(subject.getContractID(), result.getContractID());
     }
 
@@ -106,40 +105,39 @@ class JKeySerializerTest {
         baos.flush();
 
         final var in = new ByteArrayInputStream(baos.toByteArray());
-        final JDelegatableContractIDKey result =
-                JKeySerializer.deserialize(new SerializableDataInputStream(in));
+        final JDelegatableContractIDKey result = JKeySerializer.deserialize(new SerializableDataInputStream(in));
         assertEquals(subject.getContractID(), result.getContractID());
     }
 
     @Test
     void canSerializeAndDeserializeJContractAliasKey() throws IOException {
         final byte[] mockAddr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
-        final var input =
-                ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(mockAddr)).build();
+        final var input = ContractID.newBuilder()
+                .setEvmAddress(ByteString.copyFrom(mockAddr))
+                .build();
         final var subject = new JContractAliasKey(input);
         final var baos = new ByteArrayOutputStream();
         baos.write(JKeySerializer.serialize(subject));
         baos.flush();
 
         final var in = new ByteArrayInputStream(baos.toByteArray());
-        final JContractAliasKey result =
-                JKeySerializer.deserialize(new SerializableDataInputStream(in));
+        final JContractAliasKey result = JKeySerializer.deserialize(new SerializableDataInputStream(in));
         assertEquals(subject.getContractID(), result.getContractID());
     }
 
     @Test
     void canSerializeAndDeserializeJDelegatableContractAliasKey() throws IOException {
         final byte[] mockAddr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
-        final var input =
-                ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(mockAddr)).build();
+        final var input = ContractID.newBuilder()
+                .setEvmAddress(ByteString.copyFrom(mockAddr))
+                .build();
         final var subject = new JDelegatableContractAliasKey(input);
         final var baos = new ByteArrayOutputStream();
         baos.write(JKeySerializer.serialize(subject));
         baos.flush();
 
         final var in = new ByteArrayInputStream(baos.toByteArray());
-        final JDelegatableContractAliasKey result =
-                JKeySerializer.deserialize(new SerializableDataInputStream(in));
+        final JDelegatableContractAliasKey result = JKeySerializer.deserialize(new SerializableDataInputStream(in));
         assertEquals(subject.getContractID(), result.getContractID());
     }
 
@@ -174,8 +172,7 @@ class JKeySerializerTest {
      * @param keyList
      * @return
      */
-    private JKey genThresholdKeyRecursive(
-            final int numKeys, final int threshold, final List<JKey> keyList) {
+    private JKey genThresholdKeyRecursive(final int numKeys, final int threshold, final List<JKey> keyList) {
         if (keyList.size() == 1) {
             return keyList.get(0);
         }
@@ -235,7 +232,8 @@ class JKeySerializerTest {
     private static Key genSingleECDSASecp256k1Key(final Map<String, PrivateKey> pubKey2privKeyMap) {
         final var pair = new KeyPairGenerator().generateKeyPair();
         final var pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
-        final var key = Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(pubKey)).build();
+        final var key =
+                Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(pubKey)).build();
         final var pubKeyHex = CommonUtils.hex(pubKey);
         pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
         return key;
@@ -247,8 +245,7 @@ class JKeySerializerTest {
      * @param depth of the generated key
      * @return generated key
      */
-    private static Key genSampleComplexKey(
-            final int depth, final Map<String, PrivateKey> pubKey2privKeyMap) {
+    private static Key genSampleComplexKey(final int depth, final Map<String, PrivateKey> pubKey2privKeyMap) {
         Key rv = null;
         final int numKeys = 3;
         final int threshold = 2;
@@ -285,17 +282,15 @@ class JKeySerializerTest {
      * @param counter keeps track the number of keys
      * @return number of expanded keys
      */
-    private static int computeNumOfExpandedKeys(
-            final Key key, int depth, final AtomicInteger counter) {
+    private static int computeNumOfExpandedKeys(final Key key, int depth, final AtomicInteger counter) {
         if (!(key.hasThresholdKey() || key.hasKeyList())) {
             counter.incrementAndGet();
             return counter.get();
         }
 
-        final var tKeys =
-                key.hasThresholdKey()
-                        ? key.getThresholdKey().getKeys().getKeysList()
-                        : key.getKeyList().getKeysList();
+        final var tKeys = key.hasThresholdKey()
+                ? key.getThresholdKey().getKeys().getKeysList()
+                : key.getKeyList().getKeysList();
 
         if (depth <= 100) {
             depth++;
@@ -314,8 +309,7 @@ class JKeySerializerTest {
      * @param pubKey2privKeyMap map of public key hex string as key and the private key as value
      * @return generated key list
      */
-    private static Key genKeyListInstance(
-            final int numKeys, final Map<String, PrivateKey> pubKey2privKeyMap) {
+    private static Key genKeyListInstance(final int numKeys, final Map<String, PrivateKey> pubKey2privKeyMap) {
         final var keys = genEd25519Keys(numKeys, pubKey2privKeyMap);
         return genKeyList(keys);
     }
@@ -329,9 +323,7 @@ class JKeySerializerTest {
      * @return generated threshold key
      */
     private static Key genThresholdKeyInstance(
-            final int numKeys,
-            final int threshold,
-            final Map<String, PrivateKey> pubKey2privKeyMap) {
+            final int numKeys, final int threshold, final Map<String, PrivateKey> pubKey2privKeyMap) {
         final var keys = genEd25519Keys(numKeys, pubKey2privKeyMap);
         return genThresholdKey(keys, threshold);
     }
@@ -342,13 +334,13 @@ class JKeySerializerTest {
      * @param pubKey2privKeyMap map of public key hex string as key and the private key as value
      * @return a list of generated Ed25519 keys
      */
-    private static List<Key> genEd25519Keys(
-            final int numKeys, final Map<String, PrivateKey> pubKey2privKeyMap) {
+    private static List<Key> genEd25519Keys(final int numKeys, final Map<String, PrivateKey> pubKey2privKeyMap) {
         final List<Key> rv = new ArrayList<>();
         for (int i = 0; i < numKeys; i++) {
             final var pair = new KeyPairGenerator().generateKeyPair();
             final var pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
-            final var key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
+            final var key =
+                    Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
             final var pubKeyHex = CommonUtils.hex(pubKey);
             pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
             rv.add(key);
@@ -363,10 +355,9 @@ class JKeySerializerTest {
      * @return generated threshold key
      */
     private static Key genThresholdKey(final List<Key> keys, final int threshold) {
-        final var thresholdKey =
-                ThresholdKey.newBuilder()
-                        .setKeys(KeyList.newBuilder().addAllKeys(keys))
-                        .setThreshold(threshold);
+        final var thresholdKey = ThresholdKey.newBuilder()
+                .setKeys(KeyList.newBuilder().addAllKeys(keys))
+                .setThreshold(threshold);
         return Key.newBuilder().setThresholdKey(thresholdKey).build();
     }
 
@@ -407,9 +398,7 @@ class JKeySerializerTest {
                     () -> assertNotNull(afterJKeysList.getKeysList()));
 
             final int afterJKeysListSize = afterJKeysList.getKeysList().size();
-            assertAll(
-                    "JKeyRebornChecks2",
-                    () -> assertEquals(beforeJKeyListSize, afterJKeysListSize));
+            assertAll("JKeyRebornChecks2", () -> assertEquals(beforeJKeyListSize, afterJKeysListSize));
         } catch (Exception e) {
             throw new IllegalStateException(String.format("Failed to deserialize!", e));
         }
@@ -442,9 +431,7 @@ class JKeySerializerTest {
                     () -> assertNotNull(afterJKeysList.getKeysList()));
 
             final var afterJKeysListSize = afterJKeysList.getKeysList().size();
-            assertAll(
-                    "JKeyRebornChecks2",
-                    () -> assertEquals(beforeJKeyListSize, afterJKeysListSize));
+            assertAll("JKeyRebornChecks2", () -> assertEquals(beforeJKeyListSize, afterJKeysListSize));
         } catch (Exception e) {
             throw new IllegalStateException(String.format("Failed to deserialize!", e));
         }

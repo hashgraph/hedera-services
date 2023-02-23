@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.output;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.reflectForPrecheck;
@@ -36,10 +37,7 @@ public enum CommonMessages {
     }
 
     public void printGlobalInfo(ConfigManager config) {
-        var msg =
-                String.format(
-                        "Targeting %s, paying with %s",
-                        config.getTargetName(), asId(config.getDefaultPayer()));
+        var msg = String.format("Targeting %s, paying with %s", config.getTargetName(), asId(config.getDefaultPayer()));
         System.out.println(msg);
     }
 

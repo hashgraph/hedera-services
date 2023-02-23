@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.properties;
 
 import java.util.Map;
@@ -24,24 +25,30 @@ import java.util.function.Supplier;
  * Supplier} instances.
  */
 public class SupplierMapPropertySource implements PropertySource {
+
     private final Map<String, Supplier<Object>> source;
 
-    public SupplierMapPropertySource(Map<String, Supplier<Object>> source) {
+    public SupplierMapPropertySource(final Map<String, Supplier<Object>> source) {
         this.source = source;
     }
 
     @Override
-    public boolean containsProperty(String name) {
+    public boolean containsProperty(final String name) {
         return source.containsKey(name);
     }
 
     @Override
-    public Object getProperty(String name) {
+    public Object getProperty(final String name) {
         return source.get(name).get();
     }
 
     @Override
     public Set<String> allPropertyNames() {
         return source.keySet();
+    }
+
+    @Override
+    public String getRawValue(final String name) {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 }

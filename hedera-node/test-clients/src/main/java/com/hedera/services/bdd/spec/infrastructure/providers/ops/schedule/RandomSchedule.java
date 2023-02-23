@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.schedule;
 
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount.INITIAL_BALANCE;
@@ -45,8 +46,7 @@ public class RandomSchedule implements OpProvider {
     private final AtomicInteger opNo = new AtomicInteger();
     private final RegistrySourcedNameProvider<ScheduleID> schedules;
     private final EntityNameProvider<AccountID> accounts;
-    public final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(UNRESOLVABLE_REQUIRED_SIGNERS);
+    public final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(UNRESOLVABLE_REQUIRED_SIGNERS);
 
     private final ResponseCodeEnum[] outcomesForTransfer =
             standardOutcomesAnd(ACCOUNT_DELETED, INSUFFICIENT_ACCOUNT_BALANCE);
@@ -56,9 +56,7 @@ public class RandomSchedule implements OpProvider {
     static final String ADMIN_KEY = DEFAULT_PAYER;
     static final String STABLE_RECEIVER = "stable-receiver";
 
-    public RandomSchedule(
-            RegistrySourcedNameProvider<ScheduleID> schedules,
-            EntityNameProvider<AccountID> accounts) {
+    public RandomSchedule(RegistrySourcedNameProvider<ScheduleID> schedules, EntityNameProvider<AccountID> accounts) {
         this.schedules = schedules;
         this.accounts = accounts;
     }
@@ -71,14 +69,12 @@ public class RandomSchedule implements OpProvider {
     @Override
     public List<HapiSpecOperation> suggestedInitializers() {
         return stableAccounts(1).stream()
-                .map(
-                        account ->
-                                cryptoCreate(STABLE_RECEIVER)
-                                        .noLogging()
-                                        .balance(INITIAL_BALANCE)
-                                        .deferStatusResolution()
-                                        .payingWith(UNIQUE_PAYER_ACCOUNT)
-                                        .receiverSigRequired(true))
+                .map(account -> cryptoCreate(STABLE_RECEIVER)
+                        .noLogging()
+                        .balance(INITIAL_BALANCE)
+                        .deferStatusResolution()
+                        .payingWith(UNIQUE_PAYER_ACCOUNT)
+                        .receiverSigRequired(true))
                 .collect(toList());
     }
 
@@ -95,18 +91,17 @@ public class RandomSchedule implements OpProvider {
 
         String from = involved.get().getKey(), to = involved.get().getValue();
 
-        HapiScheduleCreate op =
-                scheduleCreate(
-                                "schedule" + id,
-                                cryptoTransfer(tinyBarsFromTo(from, STABLE_RECEIVER, 1))
-                                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS))
-                        .signedBy(DEFAULT_PAYER)
-                        .fee(ONE_HUNDRED_HBARS)
-                        .alsoSigningWith(from)
-                        .memo("randomlycreated" + id)
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                        .hasKnownStatusFrom(permissibleOutcomes)
-                        .adminKey(ADMIN_KEY);
+        HapiScheduleCreate op = scheduleCreate(
+                        "schedule" + id,
+                        cryptoTransfer(tinyBarsFromTo(from, STABLE_RECEIVER, 1))
+                                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS))
+                .signedBy(DEFAULT_PAYER)
+                .fee(ONE_HUNDRED_HBARS)
+                .alsoSigningWith(from)
+                .memo("randomlycreated" + id)
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                .hasKnownStatusFrom(permissibleOutcomes)
+                .adminKey(ADMIN_KEY);
         return Optional.of(op);
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -91,9 +92,8 @@ class TxnIdTest {
         // given:
         subject = scheduledSubject();
         // and:
-        final var desired =
-                "TxnId{payer=EntityId{shard=0, realm=0, num=75231}, validStart=RichInstant"
-                        + "{seconds=1234567, nanos=89}, scheduled=true, nonce=123}";
+        final var desired = "TxnId{payer=EntityId{shard=0, realm=0, num=75231}, validStart=RichInstant"
+                + "{seconds=1234567, nanos=89}, scheduled=true, nonce=123}";
 
         // expect:
         assertEquals(desired, subject.toString());
@@ -134,9 +134,6 @@ class TxnIdTest {
     }
 
     private TransactionID.Builder base() {
-        return TransactionID.newBuilder()
-                .setAccountID(payer)
-                .setNonce(nonce)
-                .setTransactionValidStart(validStart);
+        return TransactionID.newBuilder().setAccountID(payer).setNonce(nonce).setTransactionValidStart(validStart);
     }
 }

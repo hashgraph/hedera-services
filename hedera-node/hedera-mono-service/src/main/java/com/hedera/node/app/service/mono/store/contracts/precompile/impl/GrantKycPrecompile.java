@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ADDRESS_PAIR_RAW_TYPE;
@@ -49,12 +50,9 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class GrantKycPrecompile extends AbstractGrantRevokeKycPrecompile {
-    private static final Function GRANT_TOKEN_KYC_FUNCTION =
-            new Function("grantTokenKyc(address,address)", INT);
-    private static final Bytes GRANT_TOKEN_KYC_FUNCTION_SELECTOR =
-            Bytes.wrap(GRANT_TOKEN_KYC_FUNCTION.selector());
-    private static final ABIType<Tuple> GRANT_TOKEN_KYC_FUNCTION_DECODER =
-            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
+    private static final Function GRANT_TOKEN_KYC_FUNCTION = new Function("grantTokenKyc(address,address)", INT);
+    private static final Bytes GRANT_TOKEN_KYC_FUNCTION_SELECTOR = Bytes.wrap(GRANT_TOKEN_KYC_FUNCTION.selector());
+    private static final ABIType<Tuple> GRANT_TOKEN_KYC_FUNCTION_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
     public GrantKycPrecompile(
             final WorldLedgers ledgers,
@@ -64,14 +62,7 @@ public class GrantKycPrecompile extends AbstractGrantRevokeKycPrecompile {
             final SyntheticTxnFactory syntheticTxnFactory,
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils) {
-        super(
-                ledgers,
-                aliases,
-                sigsVerifier,
-                sideEffects,
-                syntheticTxnFactory,
-                infrastructureFactory,
-                pricingUtils);
+        super(ledgers, aliases, sigsVerifier, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
     }
 
     @Override
@@ -83,8 +74,7 @@ public class GrantKycPrecompile extends AbstractGrantRevokeKycPrecompile {
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         grantRevokeOp = decodeGrantTokenKyc(input, aliasResolver);
         transactionBody = syntheticTxnFactory.createGrantKyc(grantRevokeOp);
         return transactionBody;
@@ -99,18 +89,15 @@ public class GrantKycPrecompile extends AbstractGrantRevokeKycPrecompile {
     public static GrantRevokeKycWrapper<TokenID, AccountID> decodeGrantTokenKyc(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input, GRANT_TOKEN_KYC_FUNCTION_SELECTOR, GRANT_TOKEN_KYC_FUNCTION_DECODER);
+                decodeFunctionCall(input, GRANT_TOKEN_KYC_FUNCTION_SELECTOR, GRANT_TOKEN_KYC_FUNCTION_DECODER);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        final var accountID =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+        final var accountID = convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
 
         return new GrantRevokeKycWrapper<>(tokenID, accountID);
     }
 
-    private void executeForGrant(
-            final GrantKycLogic grantKycLogic, final Id tokenId, final Id accountId) {
+    private void executeForGrant(final GrantKycLogic grantKycLogic, final Id tokenId, final Id accountId) {
         validateLogic(grantKycLogic.validate(transactionBody.build()));
         grantKycLogic.grantKyc(tokenId, accountId);
     }

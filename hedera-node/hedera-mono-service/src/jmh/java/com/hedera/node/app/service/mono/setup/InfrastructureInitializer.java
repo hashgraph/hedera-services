@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.setup;
 
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
@@ -42,14 +43,11 @@ import java.util.SplittableRandom;
 
 public class InfrastructureInitializer {
 
-    public static void initializeBundle(
-            final Map<String, Object> config, final InfrastructureBundle bundle) {
+    public static void initializeBundle(final Map<String, Object> config, final InfrastructureBundle bundle) {
         if (config.containsKey("initContracts") && config.containsKey("initKvPairs")) {
             initSomeContractStorage(
-                    bundle.get(ACCOUNTS_MM),
-                    bundle.get(CONTRACT_STORAGE_VM),
-                    (int) config.get("initKvPairs"),
-                    (int) config.get("initContracts"));
+                    bundle.get(ACCOUNTS_MM), bundle.get(CONTRACT_STORAGE_VM), (int) config.get("initKvPairs"), (int)
+                            config.get("initContracts"));
         }
         if (config.containsKey("userAccounts")) {
             initSomeAccounts(bundle.get(ACCOUNTS_LEDGER), (int) config.get("userAccounts"));
@@ -110,8 +108,7 @@ public class InfrastructureInitializer {
     }
 
     private static void initSomeAccounts(
-            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger,
-            final int userAccounts) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger, final int userAccounts) {
         ledger.begin();
         final var initialBalance = 50_000_000_000L * 100_000_000L / (userAccounts + 1000);
         for (int i = 1; i <= 1000; i++) {
@@ -160,9 +157,7 @@ public class InfrastructureInitializer {
                 final var evmKey = EvmKeyValueSource.uniqueKey(j);
                 final var vmKey = ContractKey.from(contractId, evmKey);
                 final var vmValue = IterableContractValue.from(evmKey);
-                firstKey =
-                        overwritingUpsertMapping(
-                                vmKey, vmValue, firstKey, firstValue, contractStorage);
+                firstKey = overwritingUpsertMapping(vmKey, vmValue, firstKey, firstValue, contractStorage);
                 firstValue = vmValue;
             }
 
@@ -175,12 +170,11 @@ public class InfrastructureInitializer {
 
             final var created = i + 1;
             if (created % perCreationPrint == 0) {
-                System.out.println(
-                        "  -> "
-                                + created
-                                + " contracts now created ("
-                                + (created * perContractKvPairs)
-                                + " K/V pairs)");
+                System.out.println("  -> "
+                        + created
+                        + " contracts now created ("
+                        + (created * perContractKvPairs)
+                        + " K/V pairs)");
             }
         }
     }

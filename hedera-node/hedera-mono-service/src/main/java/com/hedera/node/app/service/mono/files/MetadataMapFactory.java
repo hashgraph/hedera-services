@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
@@ -80,9 +81,7 @@ public final class MetadataMapFactory {
             try {
                 log.warn("Argument 'attr={}' could not be serialized!", attr);
             } catch (Exception terminal) {
-                log.warn(
-                        "Argument 'attr' could not be serialized, nor represented as a string!",
-                        terminal);
+                log.warn("Argument 'attr' could not be serialized, nor represented as a string!", terminal);
             }
             throw new IllegalArgumentException(internal);
         }

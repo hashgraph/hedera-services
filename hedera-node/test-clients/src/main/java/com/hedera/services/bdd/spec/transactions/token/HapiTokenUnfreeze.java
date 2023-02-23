@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
@@ -58,23 +59,18 @@ public class HapiTokenUnfreeze extends HapiTxnOp<HapiTokenUnfreeze> {
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
-            throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         return spec.fees()
-                .forActivityBasedOp(
-                        HederaFunctionality.TokenUnfreezeAccount,
-                        this::usageEstimate,
-                        txn,
-                        numPayerKeys);
+                .forActivityBasedOp(HederaFunctionality.TokenUnfreezeAccount, this::usageEstimate, txn, numPayerKeys);
     }
 
     private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
         final UsageAccumulator accumulator = new UsageAccumulator();
         final var tokenUnfreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenUnfreezeUsageFrom();
-        final var baseTransactionMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
+        final var baseTransactionMeta =
+                new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
         final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
-        tokenOpsUsage.tokenUnfreezeUsage(
-                suFrom(svo), baseTransactionMeta, tokenUnfreezeMeta, accumulator);
+        tokenOpsUsage.tokenUnfreezeUsage(suFrom(svo), baseTransactionMeta, tokenUnfreezeMeta, accumulator);
         return AdapterUtils.feeDataFrom(accumulator);
     }
 
@@ -82,24 +78,19 @@ public class HapiTokenUnfreeze extends HapiTxnOp<HapiTokenUnfreeze> {
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final var aId = TxnUtils.asId(account, spec);
         final var tId = TxnUtils.asTokenId(token, spec);
-        final TokenUnfreezeAccountTransactionBody opBody =
-                spec.txns()
-                        .<TokenUnfreezeAccountTransactionBody,
-                                TokenUnfreezeAccountTransactionBody.Builder>
-                                body(
-                                        TokenUnfreezeAccountTransactionBody.class,
-                                        b -> {
-                                            b.setAccount(aId);
-                                            b.setToken(tId);
-                                        });
+        final TokenUnfreezeAccountTransactionBody opBody = spec.txns()
+                .<TokenUnfreezeAccountTransactionBody, TokenUnfreezeAccountTransactionBody.Builder>body(
+                        TokenUnfreezeAccountTransactionBody.class, b -> {
+                            b.setAccount(aId);
+                            b.setToken(tId);
+                        });
         return b -> b.setTokenUnfreeze(opBody);
     }
 
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
-        return List.of(
-                spec -> spec.registry().getKey(effectivePayer(spec)),
-                spec -> spec.registry().getFreezeKey(token));
+        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
+                .getFreezeKey(token));
     }
 
     @Override

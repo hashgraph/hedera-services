@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.query;
 
 import com.hedera.node.app.SessionContext;
@@ -31,7 +32,5 @@ public interface QueryWorkflow {
      * @param responseBuffer The raw protobuf response bytes.
      */
     void handleQuery(
-            @NonNull SessionContext session,
-            @NonNull ByteBuffer requestBuffer,
-            @NonNull ByteBuffer responseBuffer);
+            @NonNull SessionContext session, @NonNull ByteBuffer requestBuffer, @NonNull ByteBuffer responseBuffer);
 }

@@ -13,9 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.sysfiles;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.*;
+import static com.hedera.node.app.spi.config.PropertyNames.EXPIRY_MIN_CYCLE_ENTRY_CAPACITY;
+import static com.hedera.node.app.spi.config.PropertyNames.EXPIRY_THROTTLE_RESOURCE;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 
 import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
@@ -45,6 +48,7 @@ import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class ConfigCallbacks {
+
     private static final Logger log = LogManager.getLogger(ConfigCallbacks.class);
     private static final long DEFAULT_MAX_TO_MIN_STAKE_RATIO = 4L;
     private final PropertySource properties;
@@ -114,24 +118,19 @@ public class ConfigCallbacks {
             final long hbarFloat, final int numNodes, final Map<Long, Long> maxToMinStakeRatios) {
         final var maxStake = hbarFloat / numNodes;
         final var curStakingInfos = stakingInfos.get();
-        curStakingInfos
-                .keySet()
-                .forEach(
-                        num -> {
-                            final var mutableInfo = curStakingInfos.getForModify(num);
-                            mutableInfo.setMaxStake(maxStake);
-                            final var maxToMinRatio =
-                                    maxToMinStakeRatios.getOrDefault(
-                                            num.longValue(), DEFAULT_MAX_TO_MIN_STAKE_RATIO);
-                            final var minStake = maxStake / maxToMinRatio;
-                            mutableInfo.setMinStake(minStake);
-                            log.info(
-                                    "Set node{} max/min stake to {}/{} ~ {}:1 ratio",
-                                    num::longValue,
-                                    mutableInfo::getMaxStake,
-                                    mutableInfo::getMinStake,
-                                    () -> maxToMinRatio);
-                        });
+        curStakingInfos.keySet().forEach(num -> {
+            final var mutableInfo = curStakingInfos.getForModify(num);
+            mutableInfo.setMaxStake(maxStake);
+            final var maxToMinRatio = maxToMinStakeRatios.getOrDefault(num.longValue(), DEFAULT_MAX_TO_MIN_STAKE_RATIO);
+            final var minStake = maxStake / maxToMinRatio;
+            mutableInfo.setMinStake(minStake);
+            log.info(
+                    "Set node{} max/min stake to {}/{} ~ {}:1 ratio",
+                    num::longValue,
+                    mutableInfo::getMaxStake,
+                    mutableInfo::getMinStake,
+                    () -> maxToMinRatio);
+        });
     }
 
     public Consumer<ServicesConfigurationList> permissionsCb() {

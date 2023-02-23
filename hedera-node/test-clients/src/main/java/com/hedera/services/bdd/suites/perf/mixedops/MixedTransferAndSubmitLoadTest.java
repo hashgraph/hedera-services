@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.mixedops;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -59,52 +60,25 @@ public class MixedTransferAndSubmitLoadTest extends HapiSuite {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         final AtomicInteger submittedSoFar = new AtomicInteger(0);
 
-        Supplier<HapiSpecOperation[]> transferBurst =
-                () ->
-                        new HapiSpecOperation[] {
-                            inParallel(
-                                    flattened(
-                                            IntStream.range(0, settings.getBurstSize() / 2)
-                                                    .mapToObj(
-                                                            ignore ->
-                                                                    cryptoTransfer(
-                                                                                    tinyBarsFromTo(
-                                                                                            "sender",
-                                                                                            "receiver",
-                                                                                            1L))
-                                                                            .noLogging()
-                                                                            .hasPrecheckFrom(
-                                                                                    OK,
-                                                                                    BUSY,
-                                                                                    DUPLICATE_TRANSACTION,
-                                                                                    PLATFORM_TRANSACTION_NOT_CREATED)
-                                                                            .deferStatusResolution())
-                                                    .toArray(n -> new HapiSpecOperation[n]),
-                                            IntStream.range(0, settings.getBurstSize() / 2)
-                                                    .mapToObj(
-                                                            ignore ->
-                                                                    submitMessageTo("topic")
-                                                                            .message(
-                                                                                    "A fascinating"
-                                                                                        + " item of"
-                                                                                        + " general"
-                                                                                        + " interest!")
-                                                                            .noLogging()
-                                                                            .hasPrecheckFrom(
-                                                                                    OK,
-                                                                                    BUSY,
-                                                                                    DUPLICATE_TRANSACTION,
-                                                                                    PLATFORM_TRANSACTION_NOT_CREATED)
-                                                                            .deferStatusResolution())
-                                                    .toArray(n -> new HapiSpecOperation[n]))),
-                            logIt(
-                                    ignore ->
-                                            String.format(
-                                                    "Now a 50/50 mix of %d transfers and messages"
-                                                            + " submitted in total.",
-                                                    submittedSoFar.addAndGet(
-                                                            settings.getBurstSize()))),
-                        };
+        Supplier<HapiSpecOperation[]> transferBurst = () -> new HapiSpecOperation[] {
+            inParallel(flattened(
+                    IntStream.range(0, settings.getBurstSize() / 2)
+                            .mapToObj(ignore -> cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1L))
+                                    .noLogging()
+                                    .hasPrecheckFrom(OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+                                    .deferStatusResolution())
+                            .toArray(n -> new HapiSpecOperation[n]),
+                    IntStream.range(0, settings.getBurstSize() / 2)
+                            .mapToObj(ignore -> submitMessageTo("topic")
+                                    .message("A fascinating" + " item of" + " general" + " interest!")
+                                    .noLogging()
+                                    .hasPrecheckFrom(OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+                                    .deferStatusResolution())
+                            .toArray(n -> new HapiSpecOperation[n]))),
+            logIt(ignore -> String.format(
+                    "Now a 50/50 mix of %d transfers and messages" + " submitted in total.",
+                    submittedSoFar.addAndGet(settings.getBurstSize()))),
+        };
 
         return defaultHapiSpec("RunMixedTransferAndSubmits")
                 .given(
@@ -115,12 +89,11 @@ public class MixedTransferAndSubmitLoadTest extends HapiSuite {
                         createTopic("topic"),
                         cryptoCreate("sender").balance(ignore -> settings.getInitialBalance()),
                         cryptoCreate("receiver"))
-                .then(
-                        runLoadTest(transferBurst)
-                                .tps(settings::getTps)
-                                .tolerance(settings::getTolerancePercentage)
-                                .allowedSecsBelow(settings::getAllowedSecsBelow)
-                                .lasting(settings::getMins, () -> MINUTES));
+                .then(runLoadTest(transferBurst)
+                        .tps(settings::getTps)
+                        .tolerance(settings::getTolerancePercentage)
+                        .allowedSecsBelow(settings::getAllowedSecsBelow)
+                        .lasting(settings::getMins, () -> MINUTES));
     }
 
     @Override

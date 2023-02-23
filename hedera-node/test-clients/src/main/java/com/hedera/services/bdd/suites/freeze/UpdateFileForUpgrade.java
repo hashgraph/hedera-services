@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.freeze;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -54,23 +55,19 @@ public final class UpdateFileForUpgrade extends HapiSuite {
     private HapiSpec updateFileForUpgrade() {
         return defaultHapiSpec("UpdateFileForUpgrade")
                 .given(initializeSettings())
-                .when(
-                        sourcing(
-                                () -> {
-                                    try {
-                                        return UtilVerbs.updateSpecialFile(
-                                                GENESIS,
-                                                upgradeFileId(),
-                                                ByteString.copyFrom(
-                                                        Files.readAllBytes(
-                                                                Paths.get(upgradeFilePath()))),
-                                                TxnUtils.BYTES_4K,
-                                                upgradeFileAppendsPerBurst());
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
-                                        return null;
-                                    }
-                                }))
+                .when(sourcing(() -> {
+                    try {
+                        return UtilVerbs.updateSpecialFile(
+                                GENESIS,
+                                upgradeFileId(),
+                                ByteString.copyFrom(Files.readAllBytes(Paths.get(upgradeFilePath()))),
+                                TxnUtils.BYTES_4K,
+                                upgradeFileAppendsPerBurst());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        return null;
+                    }
+                }))
                 .then();
     }
 }

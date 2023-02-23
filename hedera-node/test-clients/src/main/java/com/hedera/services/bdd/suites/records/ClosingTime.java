@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.records;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -45,16 +46,12 @@ public class ClosingTime extends HapiSuite {
 
     private HapiSpec closeLastStreamFileWithNoBalanceImpact() {
         return customHapiSpec("CloseLastStreamFileWithNoBalanceImpact")
-                .withProperties(
-                        Map.of(
-                                "fees.useFixedOffer", "true",
-                                "fees.fixedOffer", "100000000"))
+                .withProperties(Map.of(
+                        "fees.useFixedOffer", "true",
+                        "fees.fixedOffer", "100000000"))
                 .given()
                 .when()
-                .then(
-                        sleepFor(2500),
-                        cryptoTransfer((spec, b) -> {}).payingWith(GENESIS),
-                        sleepFor(500));
+                .then(sleepFor(2500), cryptoTransfer((spec, b) -> {}).payingWith(GENESIS), sleepFor(500));
     }
 
     @Override

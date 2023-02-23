@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -32,15 +33,12 @@ public record RoyaltyFeeSpec(long numerator, long denominator, FixedFeeSpec fall
         validateTrue(numerator <= denominator, ROYALTY_FRACTION_CANNOT_EXCEED_ONE);
     }
 
-    public void validateWith(
-            final Token owningToken, final Account feeCollector, final TypedTokenStore tokenStore) {
+    public void validateWith(final Token owningToken, final Account feeCollector, final TypedTokenStore tokenStore) {
         validateInternal(owningToken, false, feeCollector, tokenStore);
     }
 
     public void validateAndFinalizeWith(
-            final Token provisionalToken,
-            final Account feeCollector,
-            final TypedTokenStore tokenStore) {
+            final Token provisionalToken, final Account feeCollector, final TypedTokenStore tokenStore) {
         validateInternal(provisionalToken, true, feeCollector, tokenStore);
     }
 
@@ -49,9 +47,7 @@ public record RoyaltyFeeSpec(long numerator, long denominator, FixedFeeSpec fall
             final boolean beingCreated,
             final Account feeCollector,
             final TypedTokenStore tokenStore) {
-        validateTrue(
-                token.isNonFungibleUnique(),
-                CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
+        validateTrue(token.isNonFungibleUnique(), CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
         if (fallbackFee != null) {
             if (beingCreated) {
                 fallbackFee.validateAndFinalizeWith(token, feeCollector, tokenStore);

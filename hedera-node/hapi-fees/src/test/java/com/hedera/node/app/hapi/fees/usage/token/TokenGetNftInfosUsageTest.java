@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.token;
 
 import static com.hedera.node.app.hapi.fees.usage.token.entities.NftEntitySizes.NFT_ENTITY_SIZES;
@@ -54,14 +55,11 @@ class TokenGetNftInfosUsageTest {
             additionalRb += m.size();
         }
         final var expectedBytes =
-                BASIC_QUERY_RES_HEADER
-                        + NFT_ENTITY_SIZES.fixedBytesInNftRepr() * metadata.size()
-                        + additionalRb;
+                BASIC_QUERY_RES_HEADER + NFT_ENTITY_SIZES.fixedBytesInNftRepr() * metadata.size() + additionalRb;
 
         // then:
         final var node = usage.getNodedata();
-        assertEquals(
-                FeeBuilder.BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE + 2 * INT_SIZE, node.getBpt());
+        assertEquals(FeeBuilder.BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE + 2 * INT_SIZE, node.getBpt());
         assertEquals(expectedBytes, node.getBpr());
     }
 

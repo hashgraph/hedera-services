@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.AliasManager.keyAliasToEVMAddress;
@@ -94,8 +95,7 @@ public class AutoCreationLogic extends AbstractAutoCreationLogic {
     public boolean reclaimPendingAliases() {
         if (!pendingCreations.isEmpty()) {
             for (final var pendingCreation : pendingCreations) {
-                final var syntheticTxnBody =
-                        pendingCreation.syntheticBody().getCryptoCreateAccount();
+                final var syntheticTxnBody = pendingCreation.syntheticBody().getCryptoCreateAccount();
                 final var alias = syntheticTxnBody.getAlias();
                 if (!alias.isEmpty()) {
                     aliasManager.unlink(alias);
@@ -113,8 +113,7 @@ public class AutoCreationLogic extends AbstractAutoCreationLogic {
     }
 
     @Override
-    protected void trackSigImpactIfNeeded(
-            final Builder syntheticCreation, ExpirableTxnRecord.Builder childRecord) {
+    protected void trackSigImpactIfNeeded(final Builder syntheticCreation, ExpirableTxnRecord.Builder childRecord) {
         final var alias = syntheticCreation.getCryptoCreateAccount().getAlias();
         if (alias != ByteString.EMPTY) {
             sigImpactHistorian.markAliasChanged(alias);
@@ -123,14 +122,13 @@ public class AutoCreationLogic extends AbstractAutoCreationLogic {
                 sigImpactHistorian.markAliasChanged(ByteString.copyFrom(maybeAddress));
             }
         }
-        sigImpactHistorian.markEntityChanged(childRecord.getReceiptBuilder().getAccountId().num());
+        sigImpactHistorian.markEntityChanged(
+                childRecord.getReceiptBuilder().getAccountId().num());
     }
 
     public void submitRecordsTo(final RecordsHistorian recordsHistorian) {
-        submitRecords(
-                (syntheticBody, recordSoFar) ->
-                        recordsHistorian.trackPrecedingChildRecord(
-                                DEFAULT_SOURCE_ID, syntheticBody, recordSoFar));
+        submitRecords((syntheticBody, recordSoFar) ->
+                recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, syntheticBody, recordSoFar));
     }
 
     @VisibleForTesting

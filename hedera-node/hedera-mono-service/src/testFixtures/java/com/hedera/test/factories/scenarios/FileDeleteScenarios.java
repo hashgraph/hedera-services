@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.scenarios;
 
 import static com.hedera.test.factories.txns.FileDeleteFactory.newSignedFileDelete;
@@ -27,7 +28,8 @@ public enum FileDeleteScenarios implements TxnHandlingScenario {
     },
     IMMUTABLE_FILE_DELETE_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedFileDelete(IMMUTABLE_FILE_ID).get());
+            return PlatformTxnAccessor.from(
+                    newSignedFileDelete(IMMUTABLE_FILE_ID).get());
         }
     },
     MISSING_FILE_DELETE_SCENARIO {

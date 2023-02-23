@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.fixtures.meta;
 
 import com.hedera.node.app.spi.key.HederaKey;
@@ -27,8 +28,7 @@ import java.util.Objects;
 import org.assertj.core.api.AbstractAssert;
 
 @SuppressWarnings({"UnusedReturnValue", "unused"})
-public class TransactionMetadataAssert
-        extends AbstractAssert<TransactionMetadataAssert, TransactionMetadata> {
+public class TransactionMetadataAssert extends AbstractAssert<TransactionMetadataAssert, TransactionMetadata> {
 
     public TransactionMetadataAssert(@Nullable TransactionMetadata metadata) {
         super(metadata, TransactionMetadataAssert.class);
@@ -43,9 +43,7 @@ public class TransactionMetadataAssert
     public TransactionMetadataAssert hasTxnBody(@Nullable TransactionBody txnBody) {
         isNotNull();
         if (!Objects.equals(actual.txnBody(), txnBody)) {
-            failWithMessage(
-                    "Expected metadata's txnBody to be <%s> but was <%s>",
-                    txnBody, actual.txnBody());
+            failWithMessage("Expected metadata's txnBody to be <%s> but was <%s>", txnBody, actual.txnBody());
         }
         return this;
     }
@@ -54,9 +52,7 @@ public class TransactionMetadataAssert
     public TransactionMetadataAssert hasPayer(@Nullable AccountID payer) {
         isNotNull();
         if (!Objects.equals(actual.payer(), payer)) {
-            failWithMessage(
-                    "Expected TransactionMetadata's payer to be <%s> but was <%s>",
-                    payer, actual.payer());
+            failWithMessage("Expected TransactionMetadata's payer to be <%s> but was <%s>", payer, actual.payer());
         }
         return this;
     }
@@ -65,9 +61,7 @@ public class TransactionMetadataAssert
     public TransactionMetadataAssert hasStatus(@Nullable ResponseCodeEnum status) {
         isNotNull();
         if (actual.status() != status) {
-            failWithMessage(
-                    "Expected TransactionMetadata's status to be <%s> but was <%s>",
-                    status, actual.status());
+            failWithMessage("Expected TransactionMetadata's status to be <%s> but was <%s>", status, actual.status());
         }
         return this;
     }
@@ -77,15 +71,13 @@ public class TransactionMetadataAssert
         isNotNull();
         if (!Objects.equals(actual.payerKey(), payerKey)) {
             failWithMessage(
-                    "Expected TransactionMetadata's payerKey to be <%s> but was <%s>",
-                    payerKey, actual.payerKey());
+                    "Expected TransactionMetadata's payerKey to be <%s> but was <%s>", payerKey, actual.payerKey());
         }
         return this;
     }
 
     @NonNull
-    public TransactionMetadataAssert hasRequiredNonPayerKeys(
-            @Nullable List<HederaKey> requiredNonPayerKeys) {
+    public TransactionMetadataAssert hasRequiredNonPayerKeys(@Nullable List<HederaKey> requiredNonPayerKeys) {
         isNotNull();
         if (!Objects.equals(actual.requiredNonPayerKeys(), requiredNonPayerKeys)) {
             failWithMessage(
@@ -107,13 +99,11 @@ public class TransactionMetadataAssert
     }
 
     @NonNull
-    public TransactionMetadataAssert hasReadKeys(
-            @Nullable List<TransactionMetadata.ReadKeys> readKeys) {
+    public TransactionMetadataAssert hasReadKeys(@Nullable List<TransactionMetadata.ReadKeys> readKeys) {
         isNotNull();
         if (!Objects.equals(actual.readKeys(), readKeys)) {
             failWithMessage(
-                    "Expected TransactionMetadata's readKeys to be <%s> but was <%s>",
-                    readKeys, actual.readKeys());
+                    "Expected TransactionMetadata's readKeys to be <%s> but was <%s>", readKeys, actual.readKeys());
         }
         return this;
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.ids;
 
 import static com.hedera.node.app.service.mono.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
@@ -127,24 +128,12 @@ class SeqNoEntityIdSourceTest {
     void exceptionalSourceAlwaysThrows() {
         var defaultAccountId = AccountID.getDefaultInstance();
         // expect:
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> NOOP_ID_SOURCE.newAccountId(defaultAccountId));
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> NOOP_ID_SOURCE.newFileId(defaultAccountId));
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> NOOP_ID_SOURCE.newTokenId(defaultAccountId));
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> NOOP_ID_SOURCE.newScheduleId(defaultAccountId));
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> NOOP_ID_SOURCE.newTopicId(defaultAccountId));
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> NOOP_ID_SOURCE.newContractId(defaultAccountId));
+        assertThrows(UnsupportedOperationException.class, () -> NOOP_ID_SOURCE.newAccountId(defaultAccountId));
+        assertThrows(UnsupportedOperationException.class, () -> NOOP_ID_SOURCE.newFileId(defaultAccountId));
+        assertThrows(UnsupportedOperationException.class, () -> NOOP_ID_SOURCE.newTokenId(defaultAccountId));
+        assertThrows(UnsupportedOperationException.class, () -> NOOP_ID_SOURCE.newScheduleId(defaultAccountId));
+        assertThrows(UnsupportedOperationException.class, () -> NOOP_ID_SOURCE.newTopicId(defaultAccountId));
+        assertThrows(UnsupportedOperationException.class, () -> NOOP_ID_SOURCE.newContractId(defaultAccountId));
         assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::reclaimLastId);
         assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::reclaimProvisionalIds);
         assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::resetProvisionalIds);
@@ -153,13 +142,11 @@ class SeqNoEntityIdSourceTest {
     @Test
     void newScheduleId() {
         given(seqNo.getAndIncrement()).willReturn(3L);
-        var scheduleId =
-                subject.newScheduleId(
-                        AccountID.newBuilder()
-                                .setRealmNum(1)
-                                .setShardNum(2)
-                                .setAccountNum(3)
-                                .build());
+        var scheduleId = subject.newScheduleId(AccountID.newBuilder()
+                .setRealmNum(1)
+                .setShardNum(2)
+                .setAccountNum(3)
+                .build());
         assertNotNull(scheduleId);
         assertEquals(3, scheduleId.getScheduleNum());
         assertEquals(1, scheduleId.getRealmNum());
@@ -169,13 +156,11 @@ class SeqNoEntityIdSourceTest {
     @Test
     void newContractId() {
         given(seqNo.getAndIncrement()).willReturn(3L);
-        var contractId =
-                subject.newContractId(
-                        AccountID.newBuilder()
-                                .setRealmNum(1)
-                                .setShardNum(2)
-                                .setAccountNum(3)
-                                .build());
+        var contractId = subject.newContractId(AccountID.newBuilder()
+                .setRealmNum(1)
+                .setShardNum(2)
+                .setAccountNum(3)
+                .build());
         assertNotNull(contractId);
         assertEquals(3, contractId.getContractNum());
         assertEquals(1, contractId.getRealmNum());

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.codec;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ARRAY_BRACKETS;
@@ -46,10 +47,8 @@ public class DecodingFacade {
     private static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
     private static final int FUNCTION_SELECTOR_BYTES_LENGTH = 4;
 
-    public static final List<SyntheticTxnFactory.NftExchange> NO_NFT_EXCHANGES =
-            Collections.emptyList();
-    public static final List<SyntheticTxnFactory.FungibleTokenTransfer> NO_FUNGIBLE_TRANSFERS =
-            Collections.emptyList();
+    public static final List<SyntheticTxnFactory.NftExchange> NO_NFT_EXCHANGES = Collections.emptyList();
+    public static final List<SyntheticTxnFactory.FungibleTokenTransfer> NO_FUNGIBLE_TRANSFERS = Collections.emptyList();
 
     /* --- Token Create Structs --- */
     private static final String KEY_VALUE_DECODER = "(bool,bytes32,bytes,bytes,bytes32)";
@@ -60,33 +59,17 @@ public class DecodingFacade {
     public static final String ROYALTY_FEE_DECODER = "(int64,int64,int64,bytes32,bool,bytes32)";
 
     public static final String HEDERA_TOKEN_STRUCT =
-            "(string,string,address,string,bool,uint32,bool,"
-                    + TOKEN_KEY
-                    + ARRAY_BRACKETS
-                    + ","
-                    + EXPIRY
-                    + ")";
+            "(string,string,address,string,bool,uint32,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
     public static final String HEDERA_TOKEN_STRUCT_V2 =
-            "(string,string,address,string,bool,int64,bool,"
-                    + TOKEN_KEY
-                    + ARRAY_BRACKETS
-                    + ","
-                    + EXPIRY
-                    + ")";
+            "(string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
     public static final String HEDERA_TOKEN_STRUCT_V3 =
-            "(string,string,address,string,bool,int64,bool,"
-                    + TOKEN_KEY
-                    + ARRAY_BRACKETS
-                    + ","
-                    + EXPIRY_V2
-                    + ")";
-    public static final String HEDERA_TOKEN_STRUCT_DECODER =
-            "(string,string,bytes32,string,bool,int64,bool,"
-                    + TOKEN_KEY_DECODER
-                    + ARRAY_BRACKETS
-                    + ","
-                    + EXPIRY_DECODER
-                    + ")";
+            "(string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY_V2 + ")";
+    public static final String HEDERA_TOKEN_STRUCT_DECODER = "(string,string,bytes32,string,bool,int64,bool,"
+            + TOKEN_KEY_DECODER
+            + ARRAY_BRACKETS
+            + ","
+            + EXPIRY_DECODER
+            + ")";
 
     private DecodingFacade() {
         throw new UnsupportedOperationException("Utility Class");
@@ -100,26 +83,19 @@ public class DecodingFacade {
             final Tuple keyValueTuple = tokenKeyTuple.get(1);
             final var inheritAccountKey = (Boolean) keyValueTuple.get(0);
             final var contractId =
-                    EntityIdUtils.asContract(
-                            convertLeftPaddedAddressToAccountId(
-                                    keyValueTuple.get(1), aliasResolver));
+                    EntityIdUtils.asContract(convertLeftPaddedAddressToAccountId(keyValueTuple.get(1), aliasResolver));
             final var ed25519 = (byte[]) keyValueTuple.get(2);
             final var ecdsaSecp256K1 = (byte[]) keyValueTuple.get(3);
             final var delegatableContractId =
-                    EntityIdUtils.asContract(
-                            convertLeftPaddedAddressToAccountId(
-                                    keyValueTuple.get(4), aliasResolver));
-            tokenKeys.add(
-                    new TokenKeyWrapper(
-                            keyType,
-                            new KeyValueWrapper(
-                                    inheritAccountKey,
-                                    contractId.getContractNum() != 0 ? contractId : null,
-                                    ed25519,
-                                    ecdsaSecp256K1,
-                                    delegatableContractId.getContractNum() != 0
-                                            ? delegatableContractId
-                                            : null)));
+                    EntityIdUtils.asContract(convertLeftPaddedAddressToAccountId(keyValueTuple.get(4), aliasResolver));
+            tokenKeys.add(new TokenKeyWrapper(
+                    keyType,
+                    new KeyValueWrapper(
+                            inheritAccountKey,
+                            contractId.getContractNum() != 0 ? contractId : null,
+                            ed25519,
+                            ecdsaSecp256K1,
+                            delegatableContractId.getContractNum() != 0 ? delegatableContractId : null)));
         }
         return tokenKeys;
     }
@@ -127,23 +103,19 @@ public class DecodingFacade {
     public static TokenExpiryWrapper decodeTokenExpiry(
             @NonNull final Tuple expiryTuple, final UnaryOperator<byte[]> aliasResolver) {
         final var second = (long) expiryTuple.get(0);
-        final var autoRenewAccount =
-                convertLeftPaddedAddressToAccountId(expiryTuple.get(1), aliasResolver);
+        final var autoRenewAccount = convertLeftPaddedAddressToAccountId(expiryTuple.get(1), aliasResolver);
         final var autoRenewPeriod = (long) expiryTuple.get(2);
         return new TokenExpiryWrapper(
-                second,
-                autoRenewAccount.getAccountNum() == 0 ? null : autoRenewAccount,
-                autoRenewPeriod);
+                second, autoRenewAccount.getAccountNum() == 0 ? null : autoRenewAccount, autoRenewPeriod);
     }
 
     public static Tuple decodeFunctionCall(
             @NonNull final Bytes input, final Bytes selector, final ABIType<Tuple> decoder) {
         if (!selector.equals(input.slice(0, FUNCTION_SELECTOR_BYTES_LENGTH))) {
-            throw new IllegalArgumentException(
-                    "Selector does not match, expected "
-                            + selector
-                            + " actual "
-                            + input.slice(0, FUNCTION_SELECTOR_BYTES_LENGTH));
+            throw new IllegalArgumentException("Selector does not match, expected "
+                    + selector
+                    + " actual "
+                    + input.slice(0, FUNCTION_SELECTOR_BYTES_LENGTH));
         }
         return decoder.decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
     }
@@ -157,8 +129,7 @@ public class DecodingFacade {
         return accountIDs;
     }
 
-    public static List<TokenID> decodeTokenIDsFromBytesArray(
-            @NonNull final byte[][] accountBytesArray) {
+    public static List<TokenID> decodeTokenIDsFromBytesArray(@NonNull final byte[][] accountBytesArray) {
         final List<TokenID> accountIDs = new ArrayList<>();
         for (final var account : accountBytesArray) {
             accountIDs.add(convertAddressBytesToTokenID(account));
@@ -168,8 +139,7 @@ public class DecodingFacade {
 
     public static AccountID convertLeftPaddedAddressToAccountId(
             final byte[] leftPaddedAddress, @NonNull final UnaryOperator<byte[]> aliasResolver) {
-        final var addressOrAlias =
-                Arrays.copyOfRange(leftPaddedAddress, ADDRESS_SKIP_BYTES_LENGTH, WORD_LENGTH);
+        final var addressOrAlias = Arrays.copyOfRange(leftPaddedAddress, ADDRESS_SKIP_BYTES_LENGTH, WORD_LENGTH);
         return accountIdFromEvmAddress(aliasResolver.apply(addressOrAlias));
     }
 
@@ -209,16 +179,13 @@ public class DecodingFacade {
         final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
         for (final var exchange : abiExchanges) {
             final var sender = convertLeftPaddedAddressToAccountId(exchange.get(0), aliasResolver);
-            final var receiver =
-                    convertLeftPaddedAddressToAccountId(exchange.get(1), aliasResolver, exists);
+            final var receiver = convertLeftPaddedAddressToAccountId(exchange.get(1), aliasResolver, exists);
             final var serialNo = (long) exchange.get(2);
             // Only set the isApproval flag to true if it was sent in as a tuple parameter as "true"
             // otherwise default to false in order to preserve the existing behaviour.
             // The isApproval parameter only exists in the new form of cryptoTransfer
             final boolean isApproval = (exchange.size() > 3) && (boolean) exchange.get(3);
-            nftExchanges.add(
-                    new SyntheticTxnFactory.NftExchange(
-                            serialNo, tokenType, sender, receiver, isApproval));
+            nftExchanges.add(new SyntheticTxnFactory.NftExchange(serialNo, tokenType, sender, receiver, isApproval));
         }
         return nftExchanges;
     }
@@ -258,11 +225,9 @@ public class DecodingFacade {
         final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers = new ArrayList<>();
         for (final var transfer : abiTransfers) {
             final long amount = transfer.get(1);
-            final AccountID accountID =
-                    amount > 0
-                            ? convertLeftPaddedAddressToAccountId(
-                                    transfer.get(0), aliasResolver, exists)
-                            : convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
+            final AccountID accountID = amount > 0
+                    ? convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver, exists)
+                    : convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
             final boolean isApproval = transfer.get(2);
             addSignedHBarAdjustment(hbarTransfers, accountID, amount, isApproval);
         }
@@ -277,12 +242,10 @@ public class DecodingFacade {
             final boolean isApproval) {
         if (amount > 0) {
             fungibleTransfers.add(
-                    new SyntheticTxnFactory.FungibleTokenTransfer(
-                            amount, isApproval, tokenType, null, accountID));
+                    new SyntheticTxnFactory.FungibleTokenTransfer(amount, isApproval, tokenType, null, accountID));
         } else {
             fungibleTransfers.add(
-                    new SyntheticTxnFactory.FungibleTokenTransfer(
-                            -amount, isApproval, tokenType, accountID, null));
+                    new SyntheticTxnFactory.FungibleTokenTransfer(-amount, isApproval, tokenType, accountID, null));
         }
     }
 
@@ -292,11 +255,9 @@ public class DecodingFacade {
             final long amount,
             final boolean isApproval) {
         if (amount > 0) {
-            hbarTransfers.add(
-                    new SyntheticTxnFactory.HbarTransfer(amount, isApproval, null, accountID));
+            hbarTransfers.add(new SyntheticTxnFactory.HbarTransfer(amount, isApproval, null, accountID));
         } else {
-            hbarTransfers.add(
-                    new SyntheticTxnFactory.HbarTransfer(-amount, isApproval, accountID, null));
+            hbarTransfers.add(new SyntheticTxnFactory.HbarTransfer(-amount, isApproval, accountID, null));
         }
     }
 

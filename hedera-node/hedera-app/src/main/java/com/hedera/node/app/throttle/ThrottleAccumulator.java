@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.throttle;
 
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -47,6 +48,5 @@ public interface ThrottleAccumulator {
      * @param query the query to test
      * @return true if the query should be throttled, false otherwise
      */
-    boolean shouldThrottleQuery(
-            @NonNull final HederaFunctionality functionality, @NonNull Query query);
+    boolean shouldThrottleQuery(@NonNull final HederaFunctionality functionality, @NonNull Query query);
 }

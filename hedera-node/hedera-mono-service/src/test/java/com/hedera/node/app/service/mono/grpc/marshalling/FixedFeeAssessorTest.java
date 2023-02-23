@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -37,10 +38,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class FixedFeeAssessorTest {
     private final List<AssessedCustomFeeWrapper> mockAccum = Collections.emptyList();
 
-    @Mock private BalanceChangeManager changeManager;
-    @Mock private HtsFeeAssessor htsFeeAssessor;
-    @Mock private HbarFeeAssessor hbarFeeAssessor;
-    @Mock private CustomFeePayerExemptions customFeePayerExemptions;
+    @Mock
+    private BalanceChangeManager changeManager;
+
+    @Mock
+    private HtsFeeAssessor htsFeeAssessor;
+
+    @Mock
+    private HbarFeeAssessor hbarFeeAssessor;
+
+    @Mock
+    private CustomFeePayerExemptions customFeePayerExemptions;
 
     private FixedFeeAssessor subject;
 
@@ -77,8 +85,7 @@ class FixedFeeAssessorTest {
 
         // then:
         assertEquals(OK, result);
-        BDDMockito.verify(htsFeeAssessor)
-                .assess(payer, chargingMeta, htsFee, changeManager, mockAccum);
+        BDDMockito.verify(htsFeeAssessor).assess(payer, chargingMeta, htsFee, changeManager, mockAccum);
     }
 
     @Test
@@ -89,8 +96,7 @@ class FixedFeeAssessorTest {
                 .willReturn(true);
 
         // when:
-        final var result =
-                subject.assess(chargingToken, chargingMeta, htsFee, changeManager, mockAccum);
+        final var result = subject.assess(chargingToken, chargingMeta, htsFee, changeManager, mockAccum);
 
         // then:
         assertEquals(OK, result);
@@ -101,6 +107,5 @@ class FixedFeeAssessorTest {
     private final EntityId otherCollector = new EntityId(10, 9, 8);
     private final Id treasury = new Id(0, 0, 7777);
     private final Id chargingToken = new Id(0, 1, 2222);
-    private final CustomFeeMeta chargingMeta =
-            new CustomFeeMeta(chargingToken, treasury, List.of());
+    private final CustomFeeMeta chargingMeta = new CustomFeeMeta(chargingToken, treasury, List.of());
 }

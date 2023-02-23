@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops.inventory;
 
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -37,8 +38,7 @@ public class RecordSystemProperty<T> extends UtilOp {
     private final Function<String, T> converter;
     private final Consumer<T> historian;
 
-    public RecordSystemProperty(
-            String property, Function<String, T> converter, Consumer<T> historian) {
+    public RecordSystemProperty(String property, Function<String, T> converter, Consumer<T> historian) {
         this.property = property;
         this.converter = converter;
         this.historian = historian;
@@ -55,8 +55,7 @@ public class RecordSystemProperty<T> extends UtilOp {
             var defaultProps = loadDefaults();
             if (!defaultProps.containsKey(property)) {
                 throw new IllegalStateException(
-                        String.format(
-                                "Nothing can be recorded for putative property '%s'!", property));
+                        String.format("Nothing can be recorded for putative property '%s'!", property));
             }
             var defaultValue = defaultProps.get(property);
             log.info("Recorded default '{}' = '{}'", property, defaultValue);
@@ -71,14 +70,9 @@ public class RecordSystemProperty<T> extends UtilOp {
 
     Map<String, String> loadDefaults() throws IOException {
         var defaultProps = new Properties();
-        defaultProps.load(
-                RecordSystemProperty.class
-                        .getClassLoader()
-                        .getResourceAsStream("bootstrap.properties"));
+        defaultProps.load(RecordSystemProperty.class.getClassLoader().getResourceAsStream("bootstrap.properties"));
         Map<String, String> defaults = new HashMap<>();
-        defaultProps
-                .stringPropertyNames()
-                .forEach(p -> defaults.put(p, defaultProps.getProperty(p)));
+        defaultProps.stringPropertyNames().forEach(p -> defaults.put(p, defaultProps.getProperty(p)));
         return defaults;
     }
 }

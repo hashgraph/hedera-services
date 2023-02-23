@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.reconnect;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -114,25 +115,18 @@ public class ValidateTokensStateAfterReconnect extends HapiSuite {
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(TOKEN_TREASURY)
                                 .adminKey(newAdminKey),
-                        tokenAssociate(anotherAccount, tokenToBeQueried, anotherToken).logging(),
-                        blockingOrder(
-                                IntStream.range(0, 10)
-                                        .mapToObj(
-                                                i ->
-                                                        cryptoTransfer(
-                                                                moving(1, tokenToBeQueried)
-                                                                        .between(
-                                                                                TOKEN_TREASURY,
-                                                                                anotherAccount)))
-                                        .toArray(HapiSpecOperation[]::new)),
-                        blockingOrder(
-                                IntStream.range(0, 5)
-                                        .mapToObj(i -> mintToken(tokenToBeQueried, 100))
-                                        .toArray(HapiSpecOperation[]::new)),
-                        blockingOrder(
-                                IntStream.range(0, 5)
-                                        .mapToObj(i -> mintToken(anotherToken, 100))
-                                        .toArray(HapiSpecOperation[]::new)),
+                        tokenAssociate(anotherAccount, tokenToBeQueried, anotherToken)
+                                .logging(),
+                        blockingOrder(IntStream.range(0, 10)
+                                .mapToObj(i -> cryptoTransfer(
+                                        moving(1, tokenToBeQueried).between(TOKEN_TREASURY, anotherAccount)))
+                                .toArray(HapiSpecOperation[]::new)),
+                        blockingOrder(IntStream.range(0, 5)
+                                .mapToObj(i -> mintToken(tokenToBeQueried, 100))
+                                .toArray(HapiSpecOperation[]::new)),
+                        blockingOrder(IntStream.range(0, 5)
+                                .mapToObj(i -> mintToken(anotherToken, 100))
+                                .toArray(HapiSpecOperation[]::new)),
                         burnToken(anotherToken, 1),
                         burnToken(tokenToBeQueried, 1),
                         cryptoDelete(TOKEN_TREASURY).hasKnownStatus(ACCOUNT_IS_TREASURY),

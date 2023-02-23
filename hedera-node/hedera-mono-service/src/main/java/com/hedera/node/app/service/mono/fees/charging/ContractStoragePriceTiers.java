@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.charging;
 
 import static com.hedera.node.app.hapi.fees.calc.OverflowCheckingCalc.tinycentsToTinybars;
@@ -35,11 +36,7 @@ import org.apache.commons.lang3.tuple.Pair;
  * K/V pairs used) / (max # K/V)}.
  */
 public record ContractStoragePriceTiers(
-        long[] usageTiers,
-        long[] prices,
-        int freeTierLimit,
-        long maxTotalKvPairs,
-        long referenceLifetime) {
+        long[] usageTiers, long[] prices, int freeTierLimit, long maxTotalKvPairs, long referenceLifetime) {
 
     public static final long TIER_MULTIPLIER = 1_000_000L;
     public static final long THOUSANDTHS_TO_TINY = 100_000_000L / 1_000L;
@@ -74,29 +71,21 @@ public record ContractStoragePriceTiers(
      * @return a tiered price calculator obeying the given specification
      */
     public static ContractStoragePriceTiers from(
-            final String spec,
-            final int freeTierLimit,
-            final long maxTotalKvPairs,
-            final long referenceLifetime) {
+            final String spec, final int freeTierLimit, final long maxTotalKvPairs, final long referenceLifetime) {
         final var lastPrice = new AtomicLong(0);
         final var lastUsageTier = new AtomicLong(0);
-        final List<Pair<Long, Long>> pricedTiers =
-                Arrays.stream(spec.split(","))
-                        .map(
-                                literal ->
-                                        fromTwoPartDelimited(
-                                                literal,
-                                                "til",
-                                                (price, usageTier) -> {
-                                                    manageValidatedNonDecreasing(
-                                                            "price", lastPrice, price);
-                                                    manageValidatedNonDecreasing(
-                                                            "usage tier", lastUsageTier, usageTier);
-                                                },
-                                                ContractStoragePriceTiers::parsePrice,
-                                                ContractStoragePriceTiers::parseUsageTier,
-                                                Pair::of))
-                        .toList();
+        final List<Pair<Long, Long>> pricedTiers = Arrays.stream(spec.split(","))
+                .map(literal -> fromTwoPartDelimited(
+                        literal,
+                        "til",
+                        (price, usageTier) -> {
+                            manageValidatedNonDecreasing("price", lastPrice, price);
+                            manageValidatedNonDecreasing("usage tier", lastUsageTier, usageTier);
+                        },
+                        ContractStoragePriceTiers::parsePrice,
+                        ContractStoragePriceTiers::parseUsageTier,
+                        Pair::of))
+                .toList();
         return new ContractStoragePriceTiers(
                 pricedTiers.stream().mapToLong(Pair::getValue).toArray(),
                 pricedTiers.stream().mapToLong(Pair::getKey).toArray(),
@@ -125,11 +114,7 @@ public record ContractStoragePriceTiers(
             final long requestedLifetime,
             final KvUsageInfo usageInfo) {
         return rentGiven(
-                rate,
-                totalKvPairsUsed,
-                requestedLifetime,
-                usageInfo.pendingUsageDelta(),
-                usageInfo.pendingUsage());
+                rate, totalKvPairsUsed, requestedLifetime, usageInfo.pendingUsageDelta(), usageInfo.pendingUsage());
     }
 
     public long priceOfAutoRenewal(
@@ -137,12 +122,7 @@ public record ContractStoragePriceTiers(
             final long totalKvPairsUsed,
             final long requestedLifetime,
             final long contractKvPairsUsed) {
-        return rentGiven(
-                rate,
-                totalKvPairsUsed,
-                requestedLifetime,
-                contractKvPairsUsed,
-                contractKvPairsUsed);
+        return rentGiven(rate, totalKvPairsUsed, requestedLifetime, contractKvPairsUsed, contractKvPairsUsed);
     }
 
     private long rentGiven(
@@ -172,22 +152,14 @@ public record ContractStoragePriceTiers(
         final var leftoverLifetime = requestedLifetime % referenceLifetime;
         if (leftoverLifetime > 0) {
             // Add prorated charge for partial lifetime
-            fee =
-                    cappedAddition(
-                            fee,
-                            nonDegenerateDiv(
-                                    cappedMultiplication(leftoverLifetime, price),
-                                    referenceLifetime));
+            fee = cappedAddition(
+                    fee, nonDegenerateDiv(cappedMultiplication(leftoverLifetime, price), referenceLifetime));
         }
-        var cost =
-                Math.max(1, cappedMultiplication(tinycentsToTinybars(fee, rate), requestedKvPairs));
+        var cost = Math.max(1, cappedMultiplication(tinycentsToTinybars(fee, rate), requestedKvPairs));
         if (i == usageTiers.length - 1 && totalKvPairsUsed > usageTiers[i]) {
             // Congestion pricing takes effect now
             final var slotsRemaining = maxTotalKvPairs - totalKvPairsUsed;
-            cost =
-                    slotsRemaining > 0
-                            ? cappedMultiplication(cost, maxTotalKvPairs / slotsRemaining)
-                            : Long.MAX_VALUE;
+            cost = slotsRemaining > 0 ? cappedMultiplication(cost, maxTotalKvPairs / slotsRemaining) : Long.MAX_VALUE;
         }
         return cost;
     }
@@ -253,8 +225,7 @@ public record ContractStoragePriceTiers(
         return nominal >= 0 ? nominal : Long.MAX_VALUE;
     }
 
-    private static void manageValidatedNonDecreasing(
-            final String thing, final AtomicLong last, final long current) {
+    private static void manageValidatedNonDecreasing(final String thing, final AtomicLong last, final long current) {
         if (last.get() > current) {
             throw new IllegalArgumentException(
                     thing + " price cannot decrease (" + last.get() + " to " + current + ")");
@@ -264,8 +235,7 @@ public record ContractStoragePriceTiers(
 
     private static long parseUsageTier(final String s) {
         final var isMillions = s.endsWith("M");
-        return parseScaled(
-                isMillions ? s.substring(0, s.length() - 1) : s, isMillions ? TIER_MULTIPLIER : 1);
+        return parseScaled(isMillions ? s.substring(0, s.length() - 1) : s, isMillions ? TIER_MULTIPLIER : 1);
     }
 
     private static long parsePrice(final String s) {

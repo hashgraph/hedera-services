@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
@@ -101,40 +102,95 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class UnpausePrecompileTest {
     private final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_UNPAUSE_TOKEN));
 
-    @Mock private TypedTokenStore tokenStore;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private GasCalculator gasCalculator;
-    @Mock private MessageFrame frame;
-    @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private EncodingFacade encoder;
-    @Mock private EvmEncodingFacade evmEncoder;
-    @Mock private UnpauseLogic unpauseLogic;
-    @Mock private SideEffectsTracker sideEffects;
-    @Mock private TransactionBody.Builder mockSynthBodyBuilder;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private HederaStackedWorldStateUpdater worldUpdater;
-    @Mock private WorldLedgers wrappedLedgers;
-    @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
+    @Mock
+    private TypedTokenStore tokenStore;
 
     @Mock
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-            tokenRels;
+    private GlobalDynamicProperties dynamicProperties;
 
-    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
-    @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
-    @Mock private ExpiringCreations creator;
-    @Mock private FeeCalculator feeCalculator;
-    @Mock private FeeObject mockFeeObject;
-    @Mock private StateView stateView;
-    @Mock private ContractAliases aliases;
-    @Mock private UsagePricesProvider resourceCosts;
-    @Mock private InfrastructureFactory infrastructureFactory;
-    @Mock private AssetsLoader assetLoader;
-    @Mock private HbarCentExchange exchange;
-    @Mock private ExchangeRate exchangeRate;
-    @Mock private AccessorFactory accessorFactory;
-    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+    @Mock
+    private GasCalculator gasCalculator;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private TxnAwareEvmSigsVerifier sigsVerifier;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private EncodingFacade encoder;
+
+    @Mock
+    private EvmEncodingFacade evmEncoder;
+
+    @Mock
+    private UnpauseLogic unpauseLogic;
+
+    @Mock
+    private SideEffectsTracker sideEffects;
+
+    @Mock
+    private TransactionBody.Builder mockSynthBodyBuilder;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private HederaStackedWorldStateUpdater worldUpdater;
+
+    @Mock
+    private WorldLedgers wrappedLedgers;
+
+    @Mock
+    private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
+
+    @Mock
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRels;
+
+    @Mock
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
+
+    @Mock
+    private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
+
+    @Mock
+    private ExpiringCreations creator;
+
+    @Mock
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private FeeObject mockFeeObject;
+
+    @Mock
+    private StateView stateView;
+
+    @Mock
+    private ContractAliases aliases;
+
+    @Mock
+    private UsagePricesProvider resourceCosts;
+
+    @Mock
+    private InfrastructureFactory infrastructureFactory;
+
+    @Mock
+    private AssetsLoader assetLoader;
+
+    @Mock
+    private HbarCentExchange exchange;
+
+    @Mock
+    private ExchangeRate exchangeRate;
+
+    @Mock
+    private AccessorFactory accessorFactory;
+
+    @Mock
+    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     private static final long TEST_SERVICE_FEE = 5_000_000;
     private static final long TEST_NETWORK_FEE = 400_000;
@@ -144,12 +200,10 @@ class UnpausePrecompileTest {
     private static final long EXPECTED_GAS_PRICE =
             (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
     private static final Bytes FUNGIBLE_UNPAUSE_INPUT =
-            Bytes.fromHexString(
-                    "0x3b3bff0f0000000000000000000000000000000000000000000000000000000000000441");
+            Bytes.fromHexString("0x3b3bff0f0000000000000000000000000000000000000000000000000000000000000441");
 
     private static final Bytes NON_FUNGIBLE_UNPAUSE_INPUT =
-            Bytes.fromHexString(
-                    "0x3b3bff0f0000000000000000000000000000000000000000000000000000000000000449");
+            Bytes.fromHexString("0x3b3bff0f0000000000000000000000000000000000000000000000000000000000000449");
 
     private HTSPrecompiledContract subject;
     private MockedStatic<UnpausePrecompile> unpausePrecompile;
@@ -157,32 +211,24 @@ class UnpausePrecompileTest {
     @BeforeEach
     void setUp() throws IOException {
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
-        canonicalPrices.put(
-                HederaFunctionality.TokenUnpause, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
+        canonicalPrices.put(HederaFunctionality.TokenUnpause, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-        final PrecompilePricingUtils precompilePricingUtils =
-                new PrecompilePricingUtils(
-                        assetLoader,
-                        exchange,
-                        () -> feeCalculator,
-                        resourceCosts,
-                        stateView,
-                        accessorFactory);
-        subject =
-                new HTSPrecompiledContract(
-                        dynamicProperties,
-                        gasCalculator,
-                        recordsHistorian,
-                        sigsVerifier,
-                        encoder,
-                        evmEncoder,
-                        syntheticTxnFactory,
-                        creator,
-                        () -> feeCalculator,
-                        stateView,
-                        precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
+                assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
+        subject = new HTSPrecompiledContract(
+                dynamicProperties,
+                gasCalculator,
+                recordsHistorian,
+                sigsVerifier,
+                encoder,
+                evmEncoder,
+                syntheticTxnFactory,
+                creator,
+                () -> feeCalculator,
+                stateView,
+                precompilePricingUtils,
+                infrastructureFactory,
+                evmHTSPrecompiledContract);
 
         unpausePrecompile = Mockito.mockStatic(UnpausePrecompile.class);
     }
@@ -201,25 +247,19 @@ class UnpausePrecompileTest {
         givenLedgers();
         givenPricingUtilsContext();
 
-        given(
-                        sigsVerifier.hasActivePauseKey(
-                                true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+        given(sigsVerifier.hasActivePauseKey(true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newTokenStore(null, sideEffects, tokens, nfts, tokenRels))
                 .willReturn(tokenStore);
         given(infrastructureFactory.newUnpauseLogic(tokenStore)).willReturn(unpauseLogic);
-        given(
-                        feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, timestamp))
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
-        given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
-        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(TransactionBody.newBuilder().build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(
-                        creator.createSuccessfulSyntheticRecord(
-                                Collections.emptyList(), sideEffects, EMPTY_MEMO))
+        given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(expirableTxnRecordBuilder);
         given(unpauseLogic.validateSyntax(any())).willReturn(OK);
 
@@ -231,9 +271,7 @@ class UnpausePrecompileTest {
         assertEquals(successResult, result);
         verify(unpauseLogic).unpause(fungibleId);
         verify(wrappedLedgers).commit();
-        verify(worldUpdater)
-                .manageInProgressRecord(
-                        recordsHistorian, expirableTxnRecordBuilder, mockSynthBodyBuilder);
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, expirableTxnRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -247,13 +285,10 @@ class UnpausePrecompileTest {
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_UNPAUSE_TOKEN));
         unpausePrecompile.when(() -> decodeUnpause(pretendArguments)).thenReturn(fungibleUnpause);
         given(syntheticTxnFactory.createUnpause(fungibleUnpause))
-                .willReturn(
-                        TransactionBody.newBuilder()
-                                .setTokenUnpause(TokenUnpauseTransactionBody.newBuilder()));
+                .willReturn(TransactionBody.newBuilder().setTokenUnpause(TokenUnpauseTransactionBody.newBuilder()));
         given(feeCalculator.computeFee(any(), any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
-        given(feeCalculator.estimatedGasPriceInTinybars(any(), any()))
-                .willReturn(DEFAULT_GAS_PRICE);
+        given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -275,9 +310,7 @@ class UnpausePrecompileTest {
 
     @Test
     void decodeNonFungibleUnpauseInput() {
-        unpausePrecompile
-                .when(() -> decodeUnpause(NON_FUNGIBLE_UNPAUSE_INPUT))
-                .thenCallRealMethod();
+        unpausePrecompile.when(() -> decodeUnpause(NON_FUNGIBLE_UNPAUSE_INPUT)).thenCallRealMethod();
         final var decodedInput = decodeUnpause(NON_FUNGIBLE_UNPAUSE_INPUT);
 
         assertTrue(decodedInput.token().getTokenNum() > 0);
@@ -291,8 +324,7 @@ class UnpausePrecompileTest {
 
     private void givenFrameContext() {
         given(worldUpdater.aliases()).willReturn(aliases);
-        given(aliases.resolveForEvm(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getContractAddress()).willReturn(contractAddr);
         given(frame.getRecipientAddress()).willReturn(fungibleTokenAddr);

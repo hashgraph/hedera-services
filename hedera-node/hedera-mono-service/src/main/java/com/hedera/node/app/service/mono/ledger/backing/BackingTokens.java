@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.backing;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromTokenId;
@@ -58,9 +59,7 @@ public class BackingTokens implements BackingStore<TokenID, MerkleToken> {
 
     @Override
     public Set<TokenID> idSet() {
-        return delegate.get().keySet().stream()
-                .map(EntityNum::toGrpcTokenId)
-                .collect(Collectors.toSet());
+        return delegate.get().keySet().stream().map(EntityNum::toGrpcTokenId).collect(Collectors.toSet());
     }
 
     @Override

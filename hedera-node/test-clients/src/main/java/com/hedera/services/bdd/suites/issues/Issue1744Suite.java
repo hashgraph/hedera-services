@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.issues;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -47,31 +48,24 @@ public class Issue1744Suite extends HapiSuite {
         return defaultHapiSpec("KeepsRecordOfPayerIBE")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)).via("referenceTxn"),
-                        UtilVerbs.withOpContext(
-                                (spec, ctxLog) -> {
-                                    HapiGetTxnRecord subOp = getTxnRecord("referenceTxn");
-                                    allRunFor(spec, subOp);
-                                    TransactionRecord record = subOp.getResponseRecord();
-                                    long fee = record.getTransactionFee();
-                                    spec.registry().saveAmount("fee", fee);
-                                    spec.registry().saveAmount("balance", fee * 2);
-                                }))
+                        UtilVerbs.withOpContext((spec, ctxLog) -> {
+                            HapiGetTxnRecord subOp = getTxnRecord("referenceTxn");
+                            allRunFor(spec, subOp);
+                            TransactionRecord record = subOp.getResponseRecord();
+                            long fee = record.getTransactionFee();
+                            spec.registry().saveAmount("fee", fee);
+                            spec.registry().saveAmount("balance", fee * 2);
+                        }))
                 .when(cryptoCreate("payer").balance(spec -> spec.registry().getAmount("balance")))
                 .then(
                         UtilVerbs.inParallel(
-                                cryptoTransfer(
-                                                tinyBarsFromTo(
-                                                        "payer",
-                                                        FUNDING,
-                                                        spec -> spec.registry().getAmount("fee")))
+                                cryptoTransfer(tinyBarsFromTo("payer", FUNDING, spec -> spec.registry()
+                                                .getAmount("fee")))
                                         .payingWith("payer")
                                         .via("txnA")
                                         .hasAnyKnownStatus(),
-                                cryptoTransfer(
-                                                tinyBarsFromTo(
-                                                        "payer",
-                                                        FUNDING,
-                                                        spec -> spec.registry().getAmount("fee")))
+                                cryptoTransfer(tinyBarsFromTo("payer", FUNDING, spec -> spec.registry()
+                                                .getAmount("fee")))
                                         .payingWith("payer")
                                         .via("txnB")
                                         .hasAnyKnownStatus()),

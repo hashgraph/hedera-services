@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.txns;
 
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
@@ -53,8 +54,7 @@ public class ConsensusCreateTopicFactory extends SignedTxnFactory<ConsensusCreat
 
     @Override
     protected void customizeTxn(TransactionBody.Builder transactionBody) {
-        ConsensusCreateTopicTransactionBody.Builder op =
-                ConsensusCreateTopicTransactionBody.newBuilder();
+        ConsensusCreateTopicTransactionBody.Builder op = ConsensusCreateTopicTransactionBody.newBuilder();
         if (null != memo) {
             op.setMemo(memo);
         }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
@@ -60,8 +61,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             // If a spender who is granted approveForAll from owner and is granting
             // allowance for a serial to another spender, need signature from the approveForAll
             // spender
-            var operatorId =
-                    allowance.hasDelegatingSpender() ? allowance.getDelegatingSpender() : ownerId;
+            var operatorId = allowance.hasDelegatingSpender() ? allowance.getDelegatingSpender() : ownerId;
             // If approveForAll is set to true, need signature from owner
             // since only the owner can grant approveForAll
             if (allowance.getApprovedForAll().getValue()) {
