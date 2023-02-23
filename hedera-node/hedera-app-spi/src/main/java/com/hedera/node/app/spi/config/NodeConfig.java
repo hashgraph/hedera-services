@@ -20,6 +20,8 @@ import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_TLS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_TLS_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ACCOUNTS_EXPORT_PATH;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_EXPORT_ACCOUNTS_ON_STARTUP;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PREFETCH_CODE_CACHE_TTL_SECS;
@@ -101,4 +103,6 @@ public record NodeConfig(
         @ConfigProperty(HEDERA_PREFETCH_CODE_CACHE_TTL_SECS) int prefetchCodeCacheTtlSecs,
         @ConfigProperty(STATS_CONS_THROTTLES_TO_SAMPLE) List<String> consThrottlesToSample,
         @ConfigProperty(STATS_HAPI_THROTTLES_TO_SAMPLE) List<String> hapiThrottlesToSample,
-        @ConfigProperty(HEDERA_RECORD_STREAM_SIDE_CAR_DIR) String sidecarDir) {}
+        @ConfigProperty(HEDERA_RECORD_STREAM_SIDE_CAR_DIR) String sidecarDir,
+        @ConfigProperty(GRPC_WORKFLOWS_PORT) int workflowsPort,
+        @ConfigProperty(GRPC_WORKFLOWS_TLS_PORT) int workflowsTlsPort) {}

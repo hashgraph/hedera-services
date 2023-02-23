@@ -56,7 +56,7 @@ public class ServicesMain implements SwirldMain {
 
     /**
      * Stores information related to the running of the Hedera application in the modular app. This
-     * is unused when the "hedera.workflows.enabled" flag is false.
+     * is unused when the "hedera.workflows.enabled" is empty.
      */
     private final Hedera hedera = new Hedera();
 
@@ -151,11 +151,14 @@ public class ServicesMain implements SwirldMain {
     }
 
     private void startNettyIfAppropriate() {
-        // The "hedera.workflows.enabled" feature flag indicates whether we enable the new gRPC
-        // server and workflows, or use the existing gRPC handlers in mono-service.
+        // The "hedera.workflows.enabled" is a list of HAPI operations indicates whether we enable the new gRPC
+        // server and workflows, or use the existing gRPC handlers in mono-service, for that specific HAPI operations.
         final var props = app.globalStaticProperties();
-        if (props.workflowsEnabled()) {
-            hedera.start((HederaApp) app, app.nodeLocalProperties().port());
+        if (!props.workflowsEnabled().isEmpty()) {
+            // If there are any operations that use new workflows, start both the new gRPC server and the old gRPC
+            // server on different ports.
+            hedera.start((HederaApp) app, app.nodeLocalProperties().workflowsPort());
+            app.grpcStarter().startIfAppropriate();
         } else {
             app.grpcStarter().startIfAppropriate();
         }
