@@ -7,8 +7,7 @@ module com.hedera.node.app.service.file.impl {
     requires javax.inject;
     requires static com.google.auto.service;
 
-    exports com.hedera.node.app.service.file.impl to
-            com.hedera.node.app.service.file.impl.test;
+    exports com.hedera.node.app.service.file.impl;
     exports com.hedera.node.app.service.file.impl.handlers;
     exports com.hedera.node.app.service.file.impl.components;
 

@@ -24,9 +24,12 @@ import com.hedera.node.app.spi.service.ServiceFactory;
 import com.hedera.node.app.spi.service.ServiceProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * Factory for creating a {@link ContractService} instance.
+ */
 @AutoService(ServiceFactory.class)
 public class ContractServiceFactory implements ServiceFactory<ContractService> {
-    
+
     @NonNull
     @Override
     public Class<ContractService> getServiceClass() {

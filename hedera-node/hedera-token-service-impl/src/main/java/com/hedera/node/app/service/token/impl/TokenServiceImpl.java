@@ -78,6 +78,9 @@ public class TokenServiceImpl implements TokenService {
 
     private final TokenUnpauseHandler tokenUnpauseHandler;
 
+    /**
+     * Constructs a {@link TokenServiceImpl} instance.
+     */
     public TokenServiceImpl() {
         this.tokenAccountWipeHandler = new TokenAccountWipeHandler();
         this.tokenAssociateToAccountHandler = new TokenAssociateToAccountHandler();
@@ -99,91 +102,181 @@ public class TokenServiceImpl implements TokenService {
         this.tokenUnpauseHandler = new TokenUnpauseHandler();
     }
 
+    /**
+     * Returns the {@link TokenAccountWipeHandler} instance.
+     *
+     * @return the {@link TokenAccountWipeHandler} instance
+     */
     @NonNull
     public TokenAccountWipeHandler getTokenAccountWipeHandler() {
         return tokenAccountWipeHandler;
     }
 
+    /**
+     * Returns the {@link TokenAssociateToAccountHandler} instance.
+     *
+     * @return the {@link TokenAssociateToAccountHandler} instance
+     */
     @NonNull
     public TokenAssociateToAccountHandler getTokenAssociateToAccountHandler() {
         return tokenAssociateToAccountHandler;
     }
 
+    /**
+     * Returns the {@link TokenBurnHandler} instance.
+     *
+     * @return the {@link TokenBurnHandler} instance
+     */
     @NonNull
     public TokenBurnHandler getTokenBurnHandler() {
         return tokenBurnHandler;
     }
 
+    /**
+     * Returns the {@link TokenCreateHandler} instance.
+     *
+     * @return the {@link TokenCreateHandler} instance
+     */
     @NonNull
     public TokenCreateHandler getTokenCreateHandler() {
         return tokenCreateHandler;
     }
 
+    /**
+     * Returns the {@link TokenDeleteHandler} instance.
+     *
+     * @return the {@link TokenDeleteHandler} instance
+     */
     @NonNull
     public TokenDeleteHandler getTokenDeleteHandler() {
         return tokenDeleteHandler;
     }
 
+    /**
+     * Returns the {@link TokenDissociateFromAccountHandler} instance.
+     *
+     * @return the {@link TokenDissociateFromAccountHandler} instance
+     */
     @NonNull
     public TokenDissociateFromAccountHandler getTokenDissociateFromAccountHandler() {
         return tokenDissociateFromAccountHandler;
     }
 
+    /**
+     * Returns the {@link TokenFeeScheduleUpdateHandler} instance.
+     *
+     * @return the {@link TokenFeeScheduleUpdateHandler} instance
+     */
     @NonNull
     public TokenFeeScheduleUpdateHandler getTokenFeeScheduleUpdateHandler() {
         return tokenFeeScheduleUpdateHandler;
     }
 
+    /**
+     * Returns the {@link TokenFreezeAccountHandler} instance.
+     *
+     * @return the {@link TokenFreezeAccountHandler} instance
+     */
     @NonNull
     public TokenFreezeAccountHandler getTokenFreezeAccountHandler() {
         return tokenFreezeAccountHandler;
     }
 
+    /**
+     * Returns the {@link TokenGetAccountNftInfosHandler} instance.
+     *
+     * @return the {@link TokenGetAccountNftInfosHandler} instance
+     */
     @NonNull
     public TokenGetAccountNftInfosHandler getTokenGetAccountNftInfosHandler() {
         return tokenGetAccountNftInfosHandler;
     }
 
+    /**
+     * Returns the {@link TokenGetInfoHandler} instance.
+     *
+     * @return the {@link TokenGetInfoHandler} instance
+     */
     @NonNull
     public TokenGetInfoHandler getTokenGetInfoHandler() {
         return tokenGetInfoHandler;
     }
 
+    /**
+     * Returns the {@link TokenGetNftInfoHandler} instance.
+     *
+     * @return the {@link TokenGetNftInfoHandler} instance
+     */
     @NonNull
     public TokenGetNftInfoHandler getTokenGetNftInfoHandler() {
         return tokenGetNftInfoHandler;
     }
 
+    /**
+     * Returns the {@link TokenGetNftInfosHandler} instance.
+     *
+     * @return the {@link TokenGetNftInfosHandler} instance
+     */
     @NonNull
     public TokenGetNftInfosHandler getTokenGetNftInfosHandler() {
         return tokenGetNftInfosHandler;
     }
 
+    /**
+     * Returns the {@link TokenGrantKycToAccountHandler} instance.
+     *
+     * @return the {@link TokenGrantKycToAccountHandler} instance
+     */
     @NonNull
     public TokenGrantKycToAccountHandler getTokenGrantKycToAccountHandler() {
         return tokenGrantKycToAccountHandler;
     }
 
+    /**
+     * Returns the {@link TokenMintHandler} instance.
+     *
+     * @return the {@link TokenMintHandler} instance
+     */
     @NonNull
     public TokenMintHandler getTokenMintHandler() {
         return tokenMintHandler;
     }
 
+    /**
+     * Returns the {@link TokenPauseHandler} instance.
+     *
+     * @return the {@link TokenPauseHandler} instance
+     */
     @NonNull
     public TokenPauseHandler getTokenPauseHandler() {
         return tokenPauseHandler;
     }
 
+    /**
+     * Returns the {@link TokenRevokeKycFromAccountHandler} instance.
+     *
+     * @return the {@link TokenRevokeKycFromAccountHandler} instance
+     */
     @NonNull
     public TokenRevokeKycFromAccountHandler getTokenRevokeKycFromAccountHandler() {
         return tokenRevokeKycFromAccountHandler;
     }
 
+    /**
+     * Returns the {@link TokenUnfreezeAccountHandler} instance.
+     *
+     * @return the {@link TokenUnfreezeAccountHandler} instance
+     */
     @NonNull
     public TokenUnfreezeAccountHandler getTokenUnfreezeAccountHandler() {
         return tokenUnfreezeAccountHandler;
     }
 
+    /**
+     * Returns the {@link TokenUnpauseHandler} instance.
+     *
+     * @return the {@link TokenUnpauseHandler} instance
+     */
     @NonNull
     public TokenUnpauseHandler getTokenUnpauseHandler() {
         return tokenUnpauseHandler;

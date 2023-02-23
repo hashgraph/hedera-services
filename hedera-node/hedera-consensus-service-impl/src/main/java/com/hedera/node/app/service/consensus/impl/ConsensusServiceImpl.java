@@ -42,6 +42,9 @@ public final class ConsensusServiceImpl implements ConsensusService {
 
     private final ConsensusUpdateTopicHandler consensusUpdateTopicHandler;
 
+    /**
+     * Creates a new {@link ConsensusServiceImpl} instance.
+     */
     public ConsensusServiceImpl() {
         this.consensusCreateTopicHandler = new ConsensusCreateTopicHandler();
         this.consensusDeleteTopicHandler = new ConsensusDeleteTopicHandler();
@@ -50,26 +53,51 @@ public final class ConsensusServiceImpl implements ConsensusService {
         this.consensusUpdateTopicHandler = new ConsensusUpdateTopicHandler();
     }
 
+    /**
+     * Returns the {@link ConsensusCreateTopicHandler} instance.
+     *
+     * @return the {@link ConsensusCreateTopicHandler} instance.
+     */
     @NonNull
     public ConsensusCreateTopicHandler getConsensusCreateTopicHandler() {
         return consensusCreateTopicHandler;
     }
 
+    /**
+     * Returns the {@link ConsensusDeleteTopicHandler} instance.
+     *
+     * @return the {@link ConsensusDeleteTopicHandler} instance.
+     */
     @NonNull
     public ConsensusDeleteTopicHandler getConsensusDeleteTopicHandler() {
         return consensusDeleteTopicHandler;
     }
 
+    /**
+     * Returns the {@link ConsensusGetTopicInfoHandler} instance.
+     *
+     * @return the {@link ConsensusGetTopicInfoHandler} instance.
+     */
     @NonNull
     public ConsensusGetTopicInfoHandler getConsensusGetTopicInfoHandler() {
         return consensusGetTopicInfoHandler;
     }
 
+    /**
+     * Returns the {@link ConsensusSubmitMessageHandler} instance.
+     *
+     * @return the {@link ConsensusSubmitMessageHandler} instance.
+     */
     @NonNull
     public ConsensusSubmitMessageHandler getConsensusSubmitMessageHandler() {
         return consensusSubmitMessageHandler;
     }
 
+    /**
+     * Returns the {@link ConsensusUpdateTopicHandler} instance.
+     *
+     * @return the {@link ConsensusUpdateTopicHandler} instance.
+     */
     @NonNull
     public ConsensusUpdateTopicHandler getConsensusUpdateTopicHandler() {
         return consensusUpdateTopicHandler;

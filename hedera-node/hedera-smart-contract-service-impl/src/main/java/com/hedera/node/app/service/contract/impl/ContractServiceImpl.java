@@ -63,6 +63,9 @@ public final class ContractServiceImpl implements ContractService {
 
     private final EtherumTransactionHandler etherumTransactionHandler;
 
+    /**
+     * Default constructor.
+     */
     public ContractServiceImpl() {
         this.contractCallHandler = new ContractCallHandler();
         this.contractCallLocalHandler = new ContractCallLocalHandler();
@@ -78,61 +81,121 @@ public final class ContractServiceImpl implements ContractService {
         this.etherumTransactionHandler = new EtherumTransactionHandler();
     }
 
+    /**
+     * Returns the {@link ContractCallHandler} instance.
+     *
+     * @return the {@link ContractCallHandler} instance
+     */
     @NonNull
     public ContractCallHandler getContractCallHandler() {
         return contractCallHandler;
     }
 
+    /**
+     * Returns the {@link ContractCallLocalHandler} instance.
+     *
+     * @return the {@link ContractCallLocalHandler} instance
+     */
     @NonNull
     public ContractCallLocalHandler getContractCallLocalHandler() {
         return contractCallLocalHandler;
     }
 
+    /**
+     * Returns the {@link ContractCreateHandler} instance.
+     *
+     * @return the {@link ContractCreateHandler} instance
+     */
     @NonNull
     public ContractCreateHandler getContractCreateHandler() {
         return contractCreateHandler;
     }
 
+    /**
+     * Returns the {@link ContractDeleteHandler} instance.
+     *
+     * @return the {@link ContractDeleteHandler} instance
+     */
     @NonNull
     public ContractDeleteHandler getContractDeleteHandler() {
         return contractDeleteHandler;
     }
 
+    /**
+     * Returns the {@link ContractGetBySolidityIDHandler} instance.
+     *
+     * @return the {@link ContractGetBySolidityIDHandler} instance
+     */
     @NonNull
     public ContractGetBySolidityIDHandler getContractGetBySolidityIDHandler() {
         return contractGetBySolidityIDHandler;
     }
 
+    /**
+     * Returns the {@link ContractGetBytecodeHandler} instance.
+     *
+     * @return the {@link ContractGetBytecodeHandler} instance
+     */
     @NonNull
     public ContractGetBytecodeHandler getContractGetBytecodeHandler() {
         return contractGetBytecodeHandler;
     }
 
+    /**
+     * Returns the {@link ContractGetInfoHandler} instance.
+     *
+     * @return the {@link ContractGetInfoHandler} instance
+     */
     @NonNull
     public ContractGetInfoHandler getContractGetInfoHandler() {
         return contractGetInfoHandler;
     }
 
+    /**
+     * Returns the {@link ContractGetRecordsHandler} instance.
+     *
+     * @return the {@link ContractGetRecordsHandler} instance
+     */
     @NonNull
     public ContractGetRecordsHandler getContractGetRecordsHandler() {
         return contractGetRecordsHandler;
     }
 
+    /**
+     * Returns the {@link ContractSystemDeleteHandler} instance.
+     *
+     * @return the {@link ContractSystemDeleteHandler} instance
+     */
     @NonNull
     public ContractSystemDeleteHandler getContractSystemDeleteHandler() {
         return contractSystemDeleteHandler;
     }
 
+    /**
+     * Returns the {@link ContractSystemUndeleteHandler} instance.
+     *
+     * @return the {@link ContractSystemUndeleteHandler} instance
+     */
     @NonNull
     public ContractSystemUndeleteHandler getContractSystemUndeleteHandler() {
         return contractSystemUndeleteHandler;
     }
 
+    /**
+     * Returns the {@link ContractUpdateHandler} instance.
+     *
+     * @return the {@link ContractUpdateHandler} instance
+     */
     @NonNull
     public ContractUpdateHandler getContractUpdateHandler() {
         return contractUpdateHandler;
     }
 
+    /**
+     * Returns the {@link EtherumTransactionHandler} instance.
+     *
+     * @return the {@link EtherumTransactionHandler} instance
+     */
     @NonNull
     public EtherumTransactionHandler getEtherumTransactionHandler() {
         return etherumTransactionHandler;

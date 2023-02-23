@@ -27,10 +27,18 @@ public final class FreezeServiceImpl implements FreezeService {
 
     private final FreezeHandler freezeHandler;
 
+    /**
+     * Creates a new {@link FreezeServiceImpl} instance.
+     */
     public FreezeServiceImpl() {
         this.freezeHandler = new FreezeHandler();
     }
 
+    /**
+     * Returns the {@link FreezeHandler} instance.
+     *
+     * @return the {@link FreezeHandler} instance.
+     */
     @NonNull
     public FreezeHandler getFreezeHandler() {
         return freezeHandler;

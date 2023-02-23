@@ -63,6 +63,9 @@ public final class CryptoServiceImpl implements CryptoService {
 
     private final CryptoGetStakersHandler cryptoGetStakersHandler;
 
+    /**
+     * Constructs a {@link CryptoServiceImpl} instance.
+     */
     public CryptoServiceImpl() {
         this.cryptoAddLiveHashHandler = new CryptoAddLiveHashHandler();
         this.cryptoApproveAllowanceHandler = new CryptoApproveAllowanceHandler();
@@ -79,66 +82,131 @@ public final class CryptoServiceImpl implements CryptoService {
         this.cryptoGetStakersHandler = new CryptoGetStakersHandler();
     }
 
+    /**
+     * Returns the {@link CryptoAddLiveHashHandler} instance.
+     *
+     * @return the {@link CryptoAddLiveHashHandler} instance.
+     */
     @NonNull
     public CryptoAddLiveHashHandler getCryptoAddLiveHashHandler() {
         return cryptoAddLiveHashHandler;
     }
 
+    /**
+     * Returns the {@link CryptoApproveAllowanceHandler} instance.
+     *
+     * @return the {@link CryptoApproveAllowanceHandler} instance.
+     */
     @NonNull
     public CryptoApproveAllowanceHandler getCryptoApproveAllowanceHandler() {
         return cryptoApproveAllowanceHandler;
     }
 
+    /**
+     * Returns the {@link CryptoCreateHandler} instance.
+     *
+     * @return the {@link CryptoCreateHandler} instance.
+     */
     @NonNull
     public CryptoCreateHandler getCryptoCreateHandler() {
         return cryptoCreateHandler;
     }
 
+    /**
+     * Returns the {@link CryptoDeleteAllowanceHandler} instance.
+     *
+     * @return the {@link CryptoDeleteAllowanceHandler} instance.
+     */
     @NonNull
     public CryptoDeleteAllowanceHandler getCryptoDeleteAllowanceHandler() {
         return cryptoDeleteAllowanceHandler;
     }
 
+    /**
+     * Returns the {@link CryptoDeleteHandler} instance.
+     *
+     * @return the {@link CryptoDeleteHandler} instance.
+     */
     @NonNull
     public CryptoDeleteHandler getCryptoDeleteHandler() {
         return cryptoDeleteHandler;
     }
 
+    /**
+     * Returns the {@link CryptoDeleteLiveHashHandler} instance.
+     *
+     * @return the {@link CryptoDeleteLiveHashHandler} instance.
+     */
     @NonNull
     public CryptoDeleteLiveHashHandler getCryptoDeleteLiveHashHandler() {
         return cryptoDeleteLiveHashHandler;
     }
 
+    /**
+     * Returns the {@link CryptoTransferHandler} instance.
+     *
+     * @return the {@link CryptoTransferHandler} instance.
+     */
     @NonNull
     public CryptoTransferHandler getCryptoTransferHandler() {
         return cryptoTransferHandler;
     }
 
+    /**
+     * Returns the {@link CryptoUpdateHandler} instance.
+     *
+     * @return the {@link CryptoUpdateHandler} instance.
+     */
     @NonNull
     public CryptoUpdateHandler getCryptoUpdateHandler() {
         return cryptoUpdateHandler;
     }
 
+    /**
+     * Returns the {@link CryptoGetAccountBalanceHandler} instance.
+     *
+     * @return the {@link CryptoGetAccountBalanceHandler} instance.
+     */
     @NonNull
     public CryptoGetAccountBalanceHandler getCryptoGetAccountBalanceHandler() {
         return cryptoGetAccountBalanceHandler;
     }
 
+    /**
+     * Returns the {@link CryptoGetAccountInfoHandler} instance.
+     *
+     * @return the {@link CryptoGetAccountInfoHandler} instance.
+     */
     @NonNull
     public CryptoGetAccountInfoHandler getCryptoGetAccountInfoHandler() {
         return cryptoGetAccountInfoHandler;
     }
 
+    /**
+     * Returns the {@link CryptoGetAccountRecordsHandler} instance.
+     *
+     * @return the {@link CryptoGetAccountRecordsHandler} instance.
+     */
     @NonNull
     public CryptoGetAccountRecordsHandler getCryptoGetAccountRecordsHandler() {
         return cryptoGetAccountRecordsHandler;
     }
 
+    /**
+     * Returns the {@link CryptoGetLiveHashHandler} instance.
+     *
+     * @return the {@link CryptoGetLiveHashHandler} instance.
+     */
     @NonNull
     public CryptoGetLiveHashHandler getCryptoGetLiveHashHandler() {
         return cryptoGetLiveHashHandler;
     }
 
+    /**
+     * Returns the {@link CryptoGetStakersHandler} instance.
+     *
+     * @return the {@link CryptoGetStakersHandler} instance.
+     */
     @NonNull
     public CryptoGetStakersHandler getCryptoGetStakersHandler() {
         return cryptoGetStakersHandler;

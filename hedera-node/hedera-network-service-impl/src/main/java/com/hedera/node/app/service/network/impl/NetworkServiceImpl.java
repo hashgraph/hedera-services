@@ -48,6 +48,9 @@ public final class NetworkServiceImpl implements NetworkService {
 
     private final NetworkUncheckedSubmitHandler networkUncheckedSubmitHandler;
 
+    /**
+     * Creates a new {@link NetworkServiceImpl} instance.
+     */
     public NetworkServiceImpl() {
         this.networkGetAccountDetailsHandler = new NetworkGetAccountDetailsHandler();
         this.networkGetByKeyHandler = new NetworkGetByKeyHandler();
@@ -58,41 +61,76 @@ public final class NetworkServiceImpl implements NetworkService {
         this.networkUncheckedSubmitHandler = new NetworkUncheckedSubmitHandler();
     }
 
+    /**
+     * Returns the {@link NetworkGetAccountDetailsHandler} instance.
+     *
+     * @return the {@link NetworkGetAccountDetailsHandler} instance.
+     */
     @NonNull
     public NetworkGetAccountDetailsHandler getNetworkGetAccountDetailsHandler() {
         return networkGetAccountDetailsHandler;
     }
 
+    /**
+     * Returns the {@link NetworkGetByKeyHandler} instance.
+     *
+     * @return the {@link NetworkGetByKeyHandler} instance.
+     */
     @NonNull
     public NetworkGetByKeyHandler getNetworkGetByKeyHandler() {
         return networkGetByKeyHandler;
     }
 
+    /**
+     * Returns the {@link NetworkGetExecutionTimeHandler} instance.
+     *
+     * @return the {@link NetworkGetExecutionTimeHandler} instance.
+     */
     @NonNull
     public NetworkGetExecutionTimeHandler getNetworkGetExecutionTimeHandler() {
         return networkGetExecutionTimeHandler;
     }
 
+    /**
+     * Returns the {@link NetworkGetVersionInfoHandler} instance.
+     *
+     * @return the {@link NetworkGetVersionInfoHandler} instance.
+     */
     @NonNull
     public NetworkGetVersionInfoHandler getNetworkGetVersionInfoHandler() {
         return networkGetVersionInfoHandler;
     }
 
+    /**
+     * Returns the {@link NetworkTransactionGetReceiptHandler} instance.
+     *
+     * @return the {@link NetworkTransactionGetReceiptHandler} instance.
+     */
     @NonNull
     public NetworkTransactionGetReceiptHandler getNetworkTransactionGetReceiptHandler() {
         return networkTransactionGetReceiptHandler;
     }
 
+    /**
+     * Returns the {@link NetworkTransactionGetRecordHandler} instance.
+     *
+     * @return the {@link NetworkTransactionGetRecordHandler} instance.
+     */
     @NonNull
     public NetworkTransactionGetRecordHandler getNetworkTransactionGetRecordHandler() {
         return networkTransactionGetRecordHandler;
     }
 
+    /**
+     * Returns the {@link NetworkUncheckedSubmitHandler} instance.
+     *
+     * @return the {@link NetworkUncheckedSubmitHandler} instance.
+     */
     @NonNull
     public NetworkUncheckedSubmitHandler getNetworkUncheckedSubmitHandler() {
         return networkUncheckedSubmitHandler;
     }
-
+    
     @NonNull
     @Override
     public Set<TransactionHandler> getTransactionHandler() {

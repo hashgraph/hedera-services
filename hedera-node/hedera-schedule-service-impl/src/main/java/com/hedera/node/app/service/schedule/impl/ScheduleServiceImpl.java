@@ -39,6 +39,9 @@ public final class ScheduleServiceImpl implements ScheduleService {
 
     private final ScheduleSignHandler scheduleSignHandler;
 
+    /**
+     * Creates a new {@link ScheduleServiceImpl} instance.
+     */
     public ScheduleServiceImpl() {
         this.scheduleCreateHandler = new ScheduleCreateHandler();
         this.scheduleDeleteHandler = new ScheduleDeleteHandler();
@@ -46,21 +49,41 @@ public final class ScheduleServiceImpl implements ScheduleService {
         this.scheduleSignHandler = new ScheduleSignHandler();
     }
 
+    /**
+     * Returns the {@link ScheduleCreateHandler} instance.
+     *
+     * @return the {@link ScheduleCreateHandler} instance.
+     */
     @NonNull
     public ScheduleCreateHandler getScheduleCreateHandler() {
         return scheduleCreateHandler;
     }
 
+    /**
+     * Returns the {@link ScheduleDeleteHandler} instance.
+     *
+     * @return the {@link ScheduleDeleteHandler} instance.
+     */
     @NonNull
     public ScheduleDeleteHandler getScheduleDeleteHandler() {
         return scheduleDeleteHandler;
     }
 
+    /**
+     * Returns the {@link ScheduleGetInfoHandler} instance.
+     *
+     * @return the {@link ScheduleGetInfoHandler} instance.
+     */
     @NonNull
     public ScheduleGetInfoHandler getScheduleGetInfoHandler() {
         return scheduleGetInfoHandler;
     }
 
+    /**
+     * Returns the {@link ScheduleSignHandler} instance.
+     *
+     * @return the {@link ScheduleSignHandler} instance.
+     */
     @NonNull
     public ScheduleSignHandler getScheduleSignHandler() {
         return scheduleSignHandler;

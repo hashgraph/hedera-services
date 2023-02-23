@@ -24,6 +24,9 @@ import com.hedera.node.app.spi.service.ServiceFactory;
 import com.hedera.node.app.spi.service.ServiceProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * Factory for creating a {@link TokenService} instance.
+ */
 @AutoService(ServiceFactory.class)
 public class TokenServiceFactory implements ServiceFactory<TokenService> {
     @NonNull

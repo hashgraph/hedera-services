@@ -35,7 +35,7 @@ import org.junit.jupiter.api.Test;
 class ServiceProviderImplTest {
 
     @Test
-    void test1() {
+    void testAllServicesContainsBasicServices() {
         //given
         final var serviceProvider = new ServiceProviderImpl(null);
 
@@ -55,5 +55,32 @@ class ServiceProviderImplTest {
         assertThat(allServices).hasAtLeastOneElementOfType(TokenService.class);
         assertThat(allServices).hasAtLeastOneElementOfType(UtilService.class);
     }
+
+    @Test
+    void testCanAccessBasicServices() {
+        //given
+        final var serviceProvider = new ServiceProviderImpl(null);
+
+        //then
+        assertThat(serviceProvider.getServiceByType(FreezeService.class)).containsInstanceOf(FreezeService.class);
+        assertThat(serviceProvider.getServiceByType(ConsensusService.class)).containsInstanceOf(ConsensusService.class);
+        assertThat(serviceProvider.getServiceByType(FileService.class)).containsInstanceOf(FileService.class);
+        assertThat(serviceProvider.getServiceByType(NetworkService.class)).containsInstanceOf(NetworkService.class);
+        assertThat(serviceProvider.getServiceByType(ScheduleService.class)).containsInstanceOf(ScheduleService.class);
+        assertThat(serviceProvider.getServiceByType(ContractService.class)).containsInstanceOf(ContractService.class);
+        assertThat(serviceProvider.getServiceByType(CryptoService.class)).containsInstanceOf(CryptoService.class);
+        assertThat(serviceProvider.getServiceByType(TokenService.class)).containsInstanceOf(TokenService.class);
+        assertThat(serviceProvider.getServiceByType(UtilService.class)).containsInstanceOf(UtilService.class);
+    }
+
+    @Test
+    void testCanNotAccessBasicServiceType() {
+        //given
+        final var serviceProvider = new ServiceProviderImpl(null);
+
+        //then
+        assertThat(serviceProvider.getServiceByType(Service.class)).isNotPresent();
+    }
+
 
 }

@@ -27,10 +27,18 @@ public final class UtilServiceImpl implements UtilService {
 
     private final UtilPrngHandler prngHandler;
 
+    /**
+     * Creates a new {@link UtilServiceImpl} instance.
+     */
     public UtilServiceImpl() {
         prngHandler = new UtilPrngHandler();
     }
 
+    /**
+     * Returns the {@link UtilPrngHandler} instance.
+     *
+     * @return the {@link UtilPrngHandler} instance.
+     */
     @NonNull
     public UtilPrngHandler getPrngHandler() {
         return prngHandler;

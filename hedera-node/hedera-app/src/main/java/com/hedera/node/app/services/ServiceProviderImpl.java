@@ -106,6 +106,7 @@ public class ServiceProviderImpl implements ServiceProvider {
     public <T extends Service> Optional<T> getServiceByType(@NonNull final Class<T> type) {
         Objects.requireNonNull(type, "type");
         return services.entrySet().stream()
+                .filter(entry -> Objects.equals(entry.getKey(), type))
                 .map(Map.Entry::getValue)
                 .map(type::cast)
                 .findFirst();

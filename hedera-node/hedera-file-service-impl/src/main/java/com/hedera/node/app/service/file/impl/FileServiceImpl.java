@@ -49,6 +49,9 @@ public final class FileServiceImpl implements FileService {
 
     private final FileSystemUndeleteHandler fileSystemUndeleteHandler;
 
+    /**
+     * Creates a new {@link FileServiceImpl} instance.
+     */
     public FileServiceImpl() {
         this.fileAppendHandler = new FileAppendHandler();
         this.fileCreateHandler = new FileCreateHandler();
@@ -60,41 +63,81 @@ public final class FileServiceImpl implements FileService {
         this.fileSystemUndeleteHandler = new FileSystemUndeleteHandler();
     }
 
+    /**
+     * Returns the {@link FileAppendHandler} instance.
+     *
+     * @return the {@link FileAppendHandler} instance.
+     */
     @NonNull
     public FileAppendHandler getFileAppendHandler() {
         return fileAppendHandler;
     }
 
+    /**
+     * Returns the {@link FileCreateHandler} instance.
+     *
+     * @return the {@link FileCreateHandler} instance.
+     */
     @NonNull
     public FileCreateHandler getFileCreateHandler() {
         return fileCreateHandler;
     }
 
+    /**
+     * Returns the {@link FileDeleteHandler} instance.
+     *
+     * @return the {@link FileDeleteHandler} instance.
+     */
     @NonNull
     public FileDeleteHandler getFileDeleteHandler() {
         return fileDeleteHandler;
     }
 
+    /**
+     * Returns the {@link FileUpdateHandler} instance.
+     *
+     * @return the {@link FileUpdateHandler} instance.
+     */
     @NonNull
     public FileUpdateHandler getFileUpdateHandler() {
         return fileUpdateHandler;
     }
 
+    /**
+     * Returns the {@link FileGetContentsHandler} instance.
+     *
+     * @return the {@link FileGetContentsHandler} instance.
+     */
     @NonNull
     public FileGetContentsHandler getFileGetContentsHandler() {
         return fileGetContentsHandler;
     }
 
+    /**
+     * Returns the {@link FileGetInfoHandler} instance.
+     *
+     * @return the {@link FileGetInfoHandler} instance.
+     */
     @NonNull
     public FileGetInfoHandler getFileGetInfoHandler() {
         return fileGetInfoHandler;
     }
 
+    /**
+     * Returns the {@link FileSystemDeleteHandler} instance.
+     *
+     * @return the {@link FileSystemDeleteHandler} instance.
+     */
     @NonNull
     public FileSystemDeleteHandler getFileSystemDeleteHandler() {
         return fileSystemDeleteHandler;
     }
 
+    /**
+     * Returns the {@link FileSystemUndeleteHandler} instance.
+     *
+     * @return the {@link FileSystemUndeleteHandler} instance.
+     */
     @NonNull
     public FileSystemUndeleteHandler getFileSystemUndeleteHandler() {
         return fileSystemUndeleteHandler;
