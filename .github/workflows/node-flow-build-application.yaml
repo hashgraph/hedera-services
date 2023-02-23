@@ -89,3 +89,4 @@ jobs:
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       sonar-token: ${{ secrets.SONAR_TOKEN }}
+      snyk-token: ${{ secrets.SNYK_TOKEN }}
