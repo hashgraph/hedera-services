@@ -77,6 +77,7 @@ import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
@@ -173,7 +174,7 @@ class CryptoCreateTransitionLogicTest {
         cryptoCreateChecks = new CryptoCreateChecks(
                 dynamicProperties,
                 validator,
-                () -> AccountStorageAdapter.fromInMemory(accounts),
+                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
                 nodeInfo,
                 aliasManager);
         subject = new CryptoCreateTransitionLogic(

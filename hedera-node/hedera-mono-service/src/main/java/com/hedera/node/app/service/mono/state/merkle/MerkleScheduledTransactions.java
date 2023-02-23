@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.mono.state.merkle;
 
 import com.google.common.base.MoreObjects;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.logic.ScheduledTransactions;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualValue;
@@ -31,7 +33,8 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class MerkleScheduledTransactions extends PartialNaryMerkleInternal implements MerkleInternal {
+public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
+        implements MerkleInternal, ScheduledTransactions {
     private static final Logger log = LogManager.getLogger(MerkleScheduledTransactions.class);
 
     private int pendingMigrationSize;
@@ -120,9 +123,9 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal imple
         return new MerkleScheduledTransactions(
                 List.of(
                         state().copy(),
-                        byId().copy(),
-                        byExpirationSecond().copy(),
-                        byEquality().copy()),
+                        byIdInternal().copy(),
+                        byExpirationSecondInternal().copy(),
+                        byEqualityInternal().copy()),
                 this);
     }
 
@@ -141,34 +144,53 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal imple
     }
 
     /* ----  Merkle children  ---- */
+    @Override
     public MerkleScheduledTransactionsState state() {
         return getChild(ChildIndices.STATE);
     }
 
-    public MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> byId() {
+    @Override
+    public MerkleMapLike<EntityNumVirtualKey, ScheduleVirtualValue> byId() {
+        return MerkleMapLike.from(byIdInternal());
+    }
+
+    MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> byIdInternal() {
         return getChild(ChildIndices.BY_ID);
     }
 
-    public MerkleMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond() {
+    @Override
+    public MerkleMapLike<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond() {
+        return MerkleMapLike.from(byExpirationSecondInternal());
+    }
+
+    MerkleMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecondInternal() {
         return getChild(ChildIndices.BY_EXPIRATION_SECOND);
     }
 
-    public MerkleMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality() {
+    @Override
+    public MerkleMapLike<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality() {
+        return MerkleMapLike.from(getChild(ChildIndices.BY_EQUALITY));
+    }
+
+    MerkleMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEqualityInternal() {
         return getChild(ChildIndices.BY_EQUALITY);
     }
 
+    @Override
     public long getNumSchedules() {
-        var byIdSize = byId().size();
+        var byIdSize = byIdInternal().size();
         if (pendingMigrationSize > 0 && byIdSize <= 0) {
             return pendingMigrationSize;
         }
         return byIdSize;
     }
 
+    @Override
     public long getCurrentMinSecond() {
         return state().currentMinSecond();
     }
 
+    @Override
     public void setCurrentMinSecond(final long currentMinSecond) {
         throwIfImmutable("Cannot change this MerkleScheduledTransactions' currentMinSecond if it's" + " immutable.");
         state().setCurrentMinSecond(currentMinSecond);

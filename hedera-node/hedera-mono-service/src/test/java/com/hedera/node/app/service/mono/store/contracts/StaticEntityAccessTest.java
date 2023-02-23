@@ -48,6 +48,8 @@ import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
@@ -175,10 +177,10 @@ class StaticEntityAccessTest {
 
     @BeforeEach
     void setUp() {
-        given(stateView.tokens()).willReturn(tokens);
-        given(stateView.storage()).willReturn(blobs);
+        given(stateView.tokens()).willReturn(MerkleMapLike.from(tokens));
+        given(stateView.storage()).willReturn(VirtualMapLike.from(blobs));
         given(stateView.accounts()).willReturn(accounts);
-        given(stateView.contractStorage()).willReturn(storage);
+        given(stateView.contractStorage()).willReturn(VirtualMapLike.from(storage));
         given(stateView.tokenAssociations()).willReturn(tokenAssociations);
         given(stateView.uniqueTokens()).willReturn(UniqueTokenMapAdapter.wrap(nfts));
 

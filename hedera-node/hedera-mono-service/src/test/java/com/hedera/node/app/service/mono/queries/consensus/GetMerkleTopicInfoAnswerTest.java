@@ -39,6 +39,7 @@ import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -56,13 +57,12 @@ import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class GetMerkleTopicInfoAnswerTest {
     long seqNo = 1_234L;
-    MerkleMap topics;
+    MerkleMapLike topics;
     byte[] hash = "NOT A HASH".getBytes();
     StateView view;
     OptionValidator optionValidator;
@@ -89,7 +89,7 @@ class GetMerkleTopicInfoAnswerTest {
     void setup() throws Exception {
         adminKey = COMPLEX_KEY_ACCOUNT_KT.asKey();
         submitKey = MISC_ACCOUNT_KT.asKey();
-        topics = mock(MerkleMap.class);
+        topics = mock(MerkleMapLike.class);
         merkleTopic = TopicFactory.newTopic()
                 .adminKey(adminKey)
                 .submitKey(submitKey)

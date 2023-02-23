@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.withLoggedDuration;
 
 import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccountState;
 import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
@@ -74,7 +75,7 @@ public class MapMigrationToDisk {
         final var inMemoryAccounts = (MerkleMap<EntityNum, MerkleAccount>) mutableState.getChild(ACCOUNTS);
         final MerkleMap<EntityNum, MerklePayerRecords> payerRecords = new MerkleMap<>();
         withLoggedDuration(
-                () -> forEach(inMemoryAccounts, (num, account) -> {
+                () -> forEach(MerkleMapLike.from(inMemoryAccounts), (num, account) -> {
                     final var accountRecords = new MerklePayerRecords();
                     account.records().forEach(accountRecords::offer);
                     payerRecords.put(num, accountRecords);
@@ -105,7 +106,7 @@ public class MapMigrationToDisk {
         final var inMemoryRels =
                 (MerkleMap<EntityNumPair, MerkleTokenRelStatus>) mutableState.getChild(TOKEN_ASSOCIATIONS);
         withLoggedDuration(
-                () -> forEach(inMemoryRels, (numPair, rel) -> {
+                () -> forEach(MerkleMapLike.from(inMemoryRels), (numPair, rel) -> {
                     final var onDiskRel = relMigrator.apply(rel);
                     onDiskRels.get().put(EntityNumVirtualKey.fromPair(numPair), onDiskRel);
                     if (insertionsSoFar.incrementAndGet() % insertionsPerCopy == 0) {

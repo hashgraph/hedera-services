@@ -29,7 +29,10 @@ import static com.swirlds.common.system.InitTrigger.RESTART;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccountState;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
@@ -48,7 +51,6 @@ import com.hedera.node.app.service.mono.state.migration.StateChildIndices;
 import com.hedera.node.app.service.mono.state.migration.ToDiskMigrations;
 import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
-import com.hedera.node.app.service.mono.state.migration.VirtualMapDataAccess;
 import com.hedera.node.app.service.mono.state.org.StateMetadata;
 import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
@@ -109,9 +111,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /** The Merkle tree root of the Hedera Services world state. */
-public class ServicesState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState2 {
-
-    private static final VirtualMapDataAccess VIRTUAL_MAP_DATA_ACCESS = VirtualMapMigration::extractVirtualMapData;
+public class ServicesState extends PartialNaryMerkleInternal
+        implements MerkleInternal, SwirldState2, StateChildrenProvider {
     private static final Logger log = LogManager.getLogger(ServicesState.class);
 
     private static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
@@ -407,7 +408,6 @@ public class ServicesState extends PartialNaryMerkleInternal implements MerkleIn
         setImmutable(true);
 
         final var that = new ServicesState(this);
-        this.platform = that.platform;
         if (metadata != null) {
             metadata.app().workingState().updateFrom(that);
         }
@@ -479,29 +479,30 @@ public class ServicesState extends PartialNaryMerkleInternal implements MerkleIn
         final var accountsStorage = getChild(StateChildIndices.ACCOUNTS);
         return (accountsStorage instanceof VirtualMap)
                 ? AccountStorageAdapter.fromOnDisk(
-                        VIRTUAL_MAP_DATA_ACCESS,
-                        getChild(StateChildIndices.PAYER_RECORDS),
-                        (VirtualMap<EntityNumVirtualKey, OnDiskAccount>) accountsStorage)
-                : AccountStorageAdapter.fromInMemory((MerkleMap<EntityNum, MerkleAccount>) accountsStorage);
+                        MerkleMapLike.from(getChild(StateChildIndices.PAYER_RECORDS)),
+                        VirtualMapLike.from((VirtualMap<EntityNumVirtualKey, OnDiskAccount>) accountsStorage))
+                : AccountStorageAdapter.fromInMemory(
+                        MerkleMapLike.from((MerkleMap<EntityNum, MerkleAccount>) accountsStorage));
     }
 
-    public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
-        return getChild(StateChildIndices.STORAGE);
+    public VirtualMapLike<VirtualBlobKey, VirtualBlobValue> storage() {
+        return VirtualMapLike.from(getChild(StateChildIndices.STORAGE));
     }
 
-    public MerkleMap<EntityNum, MerkleTopic> topics() {
-        return getChild(StateChildIndices.TOPICS);
+    public MerkleMapLike<EntityNum, MerkleTopic> topics() {
+        return MerkleMapLike.from(getChild(StateChildIndices.TOPICS));
     }
 
-    public MerkleMap<EntityNum, MerkleToken> tokens() {
-        return getChild(StateChildIndices.TOKENS);
+    public MerkleMapLike<EntityNum, MerkleToken> tokens() {
+        return MerkleMapLike.from(getChild(StateChildIndices.TOKENS));
     }
 
     @SuppressWarnings("unchecked")
     public TokenRelStorageAdapter tokenAssociations() {
         final var relsStorage = getChild(StateChildIndices.TOKEN_ASSOCIATIONS);
         return (relsStorage instanceof VirtualMap)
-                ? TokenRelStorageAdapter.fromOnDisk((VirtualMap<EntityNumVirtualKey, OnDiskTokenRel>) relsStorage)
+                ? TokenRelStorageAdapter.fromOnDisk(
+                        VirtualMapLike.from((VirtualMap<EntityNumVirtualKey, OnDiskTokenRel>) relsStorage))
                 : TokenRelStorageAdapter.fromInMemory((MerkleMap<EntityNumPair, MerkleTokenRelStatus>) relsStorage);
     }
 
@@ -530,21 +531,22 @@ public class ServicesState extends PartialNaryMerkleInternal implements MerkleIn
         final var tokensMap = getChild(StateChildIndices.UNIQUE_TOKENS);
         return tokensMap.getClass() == MerkleMap.class
                 ? UniqueTokenMapAdapter.wrap((MerkleMap<EntityNumPair, MerkleUniqueToken>) tokensMap)
-                : UniqueTokenMapAdapter.wrap((VirtualMap<UniqueTokenKey, UniqueTokenValue>) tokensMap);
+                : UniqueTokenMapAdapter.wrap(
+                        VirtualMapLike.from((VirtualMap<UniqueTokenKey, UniqueTokenValue>) tokensMap));
     }
 
     public RecordsStorageAdapter payerRecords() {
         return getNumberOfChildren() == StateChildIndices.NUM_032X_CHILDREN
-                ? RecordsStorageAdapter.fromDedicated(getChild(StateChildIndices.PAYER_RECORDS))
-                : RecordsStorageAdapter.fromLegacy(getChild(StateChildIndices.ACCOUNTS));
+                ? RecordsStorageAdapter.fromDedicated(MerkleMapLike.from(getChild(StateChildIndices.PAYER_RECORDS)))
+                : RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(getChild(StateChildIndices.ACCOUNTS)));
     }
 
-    public VirtualMap<ContractKey, IterableContractValue> contractStorage() {
-        return getChild(StateChildIndices.CONTRACT_STORAGE);
+    public VirtualMapLike<ContractKey, IterableContractValue> contractStorage() {
+        return VirtualMapLike.from(getChild(StateChildIndices.CONTRACT_STORAGE));
     }
 
-    public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
-        return getChild(StateChildIndices.STAKING_INFO);
+    public MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfo() {
+        return MerkleMapLike.from(getChild(StateChildIndices.STAKING_INFO));
     }
 
     int getDeserializedStateVersion() {

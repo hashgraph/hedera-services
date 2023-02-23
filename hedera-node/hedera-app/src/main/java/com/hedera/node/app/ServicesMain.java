@@ -18,10 +18,14 @@ package com.hedera.node.app;
 
 import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
 import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.STATES_ENABLED;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.state.merkle.MerkleHederaState;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
@@ -29,11 +33,14 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
+import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.platform.Browser;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -79,13 +86,35 @@ public class ServicesMain implements SwirldMain {
     }
 
     @Override
-    public ServicesState newState() {
-        return new ServicesState();
+    public SwirldState2 newState() {
+        // TODO - replace this flag with a check whether the set of workflow-enabled
+        // operations is non-empty (https://github.com/hashgraph/hedera-services/issues/4945)
+        final var workflowsEnabled = new BootstrapProperties(false).getBooleanProperty(STATES_ENABLED);
+        return stateWithWorkflowsEnabled(workflowsEnabled);
     }
 
     @Override
     public void run() {
         /* No-op. */
+    }
+
+    SwirldState2 stateWithWorkflowsEnabled(final boolean enabled) {
+        return enabled ? newMerkleHederaState(Hedera::registerServiceSchemasForMigration) : new ServicesState();
+    }
+
+    MerkleHederaState newMerkleHederaState(
+            final Function<SemanticVersion, Consumer<MerkleHederaState>> migrationFactory) {
+        final var servicesSemVer = SEMANTIC_VERSIONS.deployedSoftwareVersion().getServices();
+        log.info("Registering schemas for migration to {}", servicesSemVer);
+        final var migration = migrationFactory.apply(servicesSemVer);
+        return new MerkleHederaState(
+                migration,
+                (event, metadata, provider) -> metadata.app().eventExpansion().expandAllSigs(event, provider),
+                (round, dualState, metadata) -> {
+                    final var metaApp = metadata.app();
+                    metaApp.dualStateAccessor().setDualState(dualState);
+                    metaApp.logic().incorporateConsensus(round);
+                });
     }
 
     private void initApp() {

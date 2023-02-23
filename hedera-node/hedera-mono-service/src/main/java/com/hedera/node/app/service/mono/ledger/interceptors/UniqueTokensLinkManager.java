@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.mono.utils.MapValueListUtils.linkInPla
 import static com.hedera.node.app.service.mono.utils.MapValueListUtils.unlinkInPlaceFromMapValueList;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.expiry.UniqueTokensListMutation;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
@@ -33,7 +34,6 @@ import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.config.PropertyNames;
-import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Supplier;
@@ -46,14 +46,14 @@ public class UniqueTokensLinkManager {
     private static final Logger log = LogManager.getLogger(UniqueTokensLinkManager.class);
 
     private final Supplier<AccountStorageAdapter> accounts;
-    private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
+    private final Supplier<MerkleMapLike<EntityNum, MerkleToken>> tokens;
     private final Supplier<UniqueTokenMapAdapter> uniqueTokens;
     private final boolean enableVirtualNft;
 
     @Inject
     public UniqueTokensLinkManager(
             final Supplier<AccountStorageAdapter> accounts,
-            final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
+            final Supplier<MerkleMapLike<EntityNum, MerkleToken>> tokens,
             final Supplier<UniqueTokenMapAdapter> uniqueTokens,
             final BootstrapProperties bootstrapProperties) {
         this.accounts = accounts;

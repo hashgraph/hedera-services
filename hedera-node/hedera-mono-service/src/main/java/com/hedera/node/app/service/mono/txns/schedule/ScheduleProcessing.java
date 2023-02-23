@@ -42,7 +42,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTUR
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
-import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
+import com.hedera.node.app.service.mono.state.logic.ScheduledTransactions;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
@@ -75,7 +75,7 @@ public class ScheduleProcessing {
     private final ScheduleExecutor scheduleExecutor;
     private final GlobalDynamicProperties dynamicProperties;
     private final TimedFunctionalityThrottling scheduleThrottling;
-    private final Supplier<MerkleScheduledTransactions> schedules;
+    private final Supplier<ScheduledTransactions> schedules;
 
     SigMapScheduleClassifier classifier = new SigMapScheduleClassifier();
     SignatoryUtils.ScheduledSigningsWitness signingsWitness = SignatoryUtils::witnessScoped;
@@ -89,7 +89,7 @@ public class ScheduleProcessing {
             final GlobalDynamicProperties dynamicProperties,
             final ScheduleSigsVerifier scheduleSigsVerifier,
             @ScheduleThrottle final TimedFunctionalityThrottling scheduleThrottling,
-            final Supplier<MerkleScheduledTransactions> schedules) {
+            final Supplier<ScheduledTransactions> schedules) {
         this.sigImpactHistorian = sigImpactHistorian;
         this.store = store;
         this.scheduleExecutor = scheduleExecutor;

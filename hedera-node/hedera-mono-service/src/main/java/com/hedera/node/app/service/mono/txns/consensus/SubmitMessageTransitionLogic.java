@@ -26,13 +26,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.txns.TransitionLogic;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.merkle.map.MerkleMap;
 import java.io.IOException;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -50,12 +50,12 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 
     private final OptionValidator validator;
     private final TransactionContext transactionContext;
-    private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
+    private final Supplier<MerkleMapLike<EntityNum, MerkleTopic>> topics;
     private final GlobalDynamicProperties globalDynamicProperties;
 
     @Inject
     public SubmitMessageTransitionLogic(
-            Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
+            Supplier<MerkleMapLike<EntityNum, MerkleTopic>> topics,
             OptionValidator validator,
             TransactionContext transactionContext,
             GlobalDynamicProperties globalDynamicProperties) {
