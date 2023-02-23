@@ -111,50 +111,23 @@ class PreHandleWorkflowImplTest {
 
         when(transaction.getContents()).thenReturn(new byte[0]);
 
-        workflow =
-                new PreHandleWorkflowImpl(
-                        dispatcher, onset, signaturePreparer, cryptography, RUN_INSTANTLY);
+        workflow = new PreHandleWorkflowImpl(dispatcher, onset, signaturePreparer, cryptography, RUN_INSTANTLY);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters(@Mock ExecutorService executorService) {
-        assertThatThrownBy(
-                        () ->
-                                new PreHandleWorkflowImpl(
-                                        null, dispatcher, onset, signaturePreparer, cryptography))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(null, dispatcher, onset, signaturePreparer, cryptography))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
-                        () ->
-                                new PreHandleWorkflowImpl(
-                                        executorService,
-                                        null,
-                                        onset,
-                                        signaturePreparer,
-                                        cryptography))
+                        () -> new PreHandleWorkflowImpl(executorService, null, onset, signaturePreparer, cryptography))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () ->
-                                new PreHandleWorkflowImpl(
-                                        executorService,
-                                        dispatcher,
-                                        null,
-                                        signaturePreparer,
-                                        cryptography))
+        assertThatThrownBy(() ->
+                        new PreHandleWorkflowImpl(executorService, dispatcher, null, signaturePreparer, cryptography))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () ->
-                                new PreHandleWorkflowImpl(
-                                        executorService, dispatcher, onset, null, cryptography))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, dispatcher, onset, null, cryptography))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () ->
-                                new PreHandleWorkflowImpl(
-                                        executorService,
-                                        dispatcher,
-                                        onset,
-                                        signaturePreparer,
-                                        null))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, dispatcher, onset, signaturePreparer, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -240,9 +213,7 @@ class PreHandleWorkflowImplTest {
                 new OnsetResult(txBody, txBody.toByteArray(), DUPLICATE_TRANSACTION, signatureMap, functionality);
         when(localOnset.parseAndCheck(any(), any(byte[].class))).thenReturn(onsetResult);
 
-        workflow =
-                new PreHandleWorkflowImpl(
-                        dispatcher, localOnset, signaturePreparer, cryptography, RUN_INSTANTLY);
+        workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, signaturePreparer, cryptography, RUN_INSTANTLY);
 
         // when
         workflow.start(state, event);

@@ -149,17 +149,12 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             dispatcher.dispatchPreHandle(storeFactory, context);
 
             // 3. Prepare signature-data
-            final var payerSignature =
-                    context.getPayerKey() == null
-                            ? null
-                            : signaturePreparer.prepareSignature(
-                                    state, txBytes, onsetResult.signatureMap(), context.getPayer());
-            final var otherSignatures =
-                    signaturePreparer.prepareSignatures(
-                            state,
-                            txBytes,
-                            onsetResult.signatureMap(),
-                            context.getRequiredNonPayerKeys());
+            final var payerSignature = context.getPayerKey() == null
+                    ? null
+                    : signaturePreparer.prepareSignature(
+                            state, txBytes, onsetResult.signatureMap(), context.getPayer());
+            final var otherSignatures = signaturePreparer.prepareSignatures(
+                    state, txBytes, onsetResult.signatureMap(), context.getRequiredNonPayerKeys());
 
             // 4. Verify signatures
             // This is done synchronously, because preHandle() is already executed asynchronously
@@ -169,8 +164,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             cryptography.verifySync(otherSignatures);
 
             // 5. Return TransactionMetadata
-            return createTransactionMetadata(
-                    context, payerSignature, otherSignatures, storeFactory.getUsedStates());
+            return createTransactionMetadata(context, payerSignature, otherSignatures, storeFactory.getUsedStates());
 
         } catch (PreCheckException preCheckException) {
             return createInvalidTransactionMetadata(txBody, payerID, preCheckException.responseCode());

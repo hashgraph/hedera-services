@@ -98,7 +98,8 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     void scheduleSignVanillaWithOptionalPayerSet() {
         final var txn = scheduleSignTransaction();
         givenSetupForScheduleSign(txn);
-        scheduledMeta = new TransactionMetadata(scheduledTxn, payer, OK, adminKey, List.of(), null, null, List.of(), List.of());
+        scheduledMeta =
+                new TransactionMetadata(scheduledTxn, payer, OK, adminKey, List.of(), null, null, List.of(), List.of());
 
         given(schedule.hasExplicitPayer()).willReturn(true);
         given(schedule.payer()).willReturn(EntityId.fromGrpcAccountId(payer));

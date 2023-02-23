@@ -55,15 +55,20 @@ class TransactionMetadataTest {
         final List<TransactionMetadata.ReadKeys> readKeys = List.of();
         final List<TransactionSignature> signatures = List.of();
 
-        assertThatCode(() -> new TransactionMetadata(null, null, OK, null, hederaKeys, null, null, signatures, readKeys))
+        assertThatCode(() ->
+                        new TransactionMetadata(null, null, OK, null, hederaKeys, null, null, signatures, readKeys))
                 .doesNotThrowAnyException();
-        assertThatThrownBy(() -> new TransactionMetadata(txBody, payer, null, payerKey, hederaKeys, null, null, signatures, readKeys))
+        assertThatThrownBy(() -> new TransactionMetadata(
+                        txBody, payer, null, payerKey, hederaKeys, null, null, signatures, readKeys))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionMetadata(txBody, payer, OK, payerKey, null, null, null, signatures, readKeys))
+        assertThatThrownBy(() ->
+                        new TransactionMetadata(txBody, payer, OK, payerKey, null, null, null, signatures, readKeys))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionMetadata(txBody, payer, OK, payerKey, hederaKeys, null, null, null, readKeys))
+        assertThatThrownBy(() ->
+                        new TransactionMetadata(txBody, payer, OK, payerKey, hederaKeys, null, null, null, readKeys))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionMetadata(txBody, payer, OK, payerKey, hederaKeys, null, null, signatures, null))
+        assertThatThrownBy(() ->
+                        new TransactionMetadata(txBody, payer, OK, payerKey, hederaKeys, null, null, signatures, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -85,8 +90,7 @@ class TransactionMetadataTest {
 
         // when
         final var metadata =
-                new TransactionMetadata(
-                        context, payerSignature, List.of(otherSignature), List.of(readKeys));
+                new TransactionMetadata(context, payerSignature, List.of(otherSignature), List.of(readKeys));
 
         // then
         assertThat(metadata)
@@ -109,9 +113,12 @@ class TransactionMetadataTest {
         final List<TransactionSignature> signatures = List.of();
 
         // then
-        assertThatThrownBy(() -> new TransactionMetadata(null, null, signatures, readKeys)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionMetadata(context, null, null, readKeys)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionMetadata(context, null, signatures, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new TransactionMetadata(null, null, signatures, readKeys))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new TransactionMetadata(context, null, null, readKeys))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new TransactionMetadata(context, null, signatures, null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test

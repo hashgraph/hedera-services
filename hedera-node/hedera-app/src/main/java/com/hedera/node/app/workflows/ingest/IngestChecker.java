@@ -108,8 +108,7 @@ public class IngestChecker {
             @NonNull final AccountID payerID)
             throws PreCheckException {
         final var transactionBytes = extractByteArray(requestBuffer);
-        final var signature =
-                signaturePreparer.prepareSignature(state, transactionBytes, signatureMap, payerID);
+        final var signature = signaturePreparer.prepareSignature(state, transactionBytes, signatureMap, payerID);
         if (!cryptography.verifySync(signature)) {
             throw new PreCheckException(INVALID_SIGNATURE);
         }

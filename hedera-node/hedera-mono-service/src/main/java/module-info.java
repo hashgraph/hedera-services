@@ -58,8 +58,6 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.consensus.impl,
             com.hedera.node.app.service.consensus.impl.test;
     exports com.hedera.node.app.service.mono.utils.accessors;
-    exports com.hedera.node.app.service.mono.sigs to
-            com.hedera.node.app;
     exports com.hedera.node.app.service.mono.sigs.metadata to
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.sigs.utils to

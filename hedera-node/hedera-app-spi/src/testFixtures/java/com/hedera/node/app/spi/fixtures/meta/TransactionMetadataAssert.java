@@ -99,8 +99,7 @@ public class TransactionMetadataAssert extends AbstractAssert<TransactionMetadat
         return this;
     }
 
-    public TransactionMetadataAssert hasPayerSignature(
-            @Nullable final TransactionSignature payerSignature) {
+    public TransactionMetadataAssert hasPayerSignature(@Nullable final TransactionSignature payerSignature) {
         isNotNull();
         if (!Objects.equals(actual.payerSignature(), payerSignature)) {
             failWithMessage(
@@ -110,8 +109,7 @@ public class TransactionMetadataAssert extends AbstractAssert<TransactionMetadat
         return this;
     }
 
-    public TransactionMetadataAssert hasOtherSignatures(
-            @Nullable final List<TransactionSignature> otherSignature) {
+    public TransactionMetadataAssert hasOtherSignatures(@Nullable final List<TransactionSignature> otherSignature) {
         isNotNull();
         if (!Objects.equals(actual.otherSignatures(), otherSignature)) {
             failWithMessage(
