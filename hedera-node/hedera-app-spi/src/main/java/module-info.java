@@ -18,4 +18,5 @@ module com.hedera.node.app.spi {
     opens com.hedera.node.app.spi.service to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app.spi.test;
+    exports com.hedera.node.app.spi.config;
 }

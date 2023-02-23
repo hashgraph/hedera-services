@@ -53,6 +53,16 @@ public class ServiceProviderImpl implements ServiceProvider {
                                 + " since the service has a clash with " + service);
                     });
             final Service service = factory.createService(this, facilityFacade);
+
+            services.values().stream()
+                    .filter(existingService -> Objects.equals(existingService.getServiceName(),
+                            service.getServiceName()))
+                    .findAny()
+                    .ifPresent(existingService -> {
+                        throw new IllegalStateException("Can not add service for " + service.getClass()
+                                + " since a service with the same name has already been registered.");
+                    });
+
             services.put(factory.getServiceClass(), service);
         });
     }
