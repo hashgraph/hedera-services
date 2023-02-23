@@ -293,7 +293,7 @@ class GetAccountDetailsAnswerTest {
         final GetAccountDetailsResponse.AccountDetails details =
                 response.getAccountDetails().getAccountDetails();
         assertEquals(asAccount(payer), details.getAccountId());
-        final String address = CommonUtils.hex(asEvmAddress(0, 0L, 12_345L));
+        final String address = CommonUtils.hex(asEvmAddress(12_345L));
         assertEquals(address, details.getContractAccountId());
         assertEquals(payerAccount.getBalance(), details.getBalance());
         assertEquals(

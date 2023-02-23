@@ -315,7 +315,7 @@ class GetAccountInfoAnswerTest {
         final CryptoGetInfoResponse.AccountInfo info =
                 response.getCryptoGetInfo().getAccountInfo();
         assertEquals(asAccount(payer), info.getAccountID());
-        final String address = CommonUtils.hex(asEvmAddress(0, 0L, 12_345L));
+        final String address = CommonUtils.hex(asEvmAddress(12_345L));
         assertEquals(address, info.getContractAccountID());
         assertEquals(payerAccount.getBalance(), info.getBalance());
         assertEquals(payerAccount.getAutoRenewSecs(), info.getAutoRenewPeriod().getSeconds());
