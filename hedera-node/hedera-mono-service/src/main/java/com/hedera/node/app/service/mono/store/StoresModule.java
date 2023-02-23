@@ -48,6 +48,7 @@ import com.hedera.node.app.service.mono.ledger.properties.ChangeSummaryManager;
 import com.hedera.node.app.service.mono.ledger.properties.NftProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
@@ -69,7 +70,6 @@ import com.hedera.node.app.service.mono.store.tokens.annotations.AreTreasuryWild
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.merkle.map.MerkleMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -115,7 +115,7 @@ public interface StoresModule {
     @Provides
     @Singleton
     static TransactionalLedger<TokenID, TokenProperty, MerkleToken> provideTokensLedger(
-            final UsageLimits usageLimits, final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens) {
+            final UsageLimits usageLimits, final Supplier<MerkleMapLike<EntityNum, MerkleToken>> tokens) {
         final var interceptor = new TokensCommitInterceptor(usageLimits);
         final var tokensLedger = new TransactionalLedger<>(
                 TokenProperty.class, MerkleToken::new, new BackingTokens(tokens), new ChangeSummaryManager<>());

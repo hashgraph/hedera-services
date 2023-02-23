@@ -16,6 +16,65 @@
 
 package com.hedera.node.app.state.merkle;
 
+import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
+import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
+import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_FIRST_USER_ENTITY;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.swirlds.common.system.InitTrigger.GENESIS;
+import static com.swirlds.common.system.InitTrigger.RECONNECT;
+import static com.swirlds.common.system.InitTrigger.RESTART;
+
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
+import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
+import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.service.mono.ServicesApp;
+import com.hedera.node.app.service.mono.context.StateChildrenProvider;
+import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.hedera.node.app.service.mono.state.logic.ScheduledTransactions;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
+import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactionsState;
+import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
+import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.StateVersions;
+import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
+import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
+import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
+import com.hedera.node.app.service.mono.state.virtual.ContractKey;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKey;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualValue;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValue;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
+import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
+import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.network.NetworkService;
+import com.hedera.node.app.service.network.impl.NetworkServiceImpl;
+import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
+import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.EmptyWritableStates;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -27,31 +86,49 @@ import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.state.merkle.adapters.MerkleMapLikeAdapter;
+import com.hedera.node.app.state.merkle.adapters.ScheduledTransactionsAdapter;
+import com.hedera.node.app.state.merkle.adapters.VirtualMapLikeAdapter;
 import com.hedera.node.app.state.merkle.disk.OnDiskReadableKVState;
 import com.hedera.node.app.state.merkle.disk.OnDiskWritableKVState;
+import com.hedera.node.app.state.merkle.logic.OnHandleConsensusRound;
+import com.hedera.node.app.state.merkle.logic.OnPreHandle;
 import com.hedera.node.app.state.merkle.memory.InMemoryReadableKVState;
 import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
 import com.hedera.node.app.state.merkle.singleton.ReadableSingletonStateImpl;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
 import com.hedera.node.app.state.merkle.singleton.WritableSingletonStateImpl;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
+import com.swirlds.common.system.InitTrigger;
+import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.Round;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState2;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.utility.Labeled;
+import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.platform.gui.SwirldsGui;
+import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An implementation of {@link SwirldState2} and {@link HederaState}. The Hashgraph Platform
@@ -71,11 +148,19 @@ import java.util.function.Consumer;
  * each child must be part of the state proof. It would be better to have a binary tree. We should
  * consider nesting service nodes in a MerkleMap, or some other such approach to get a binary tree.
  */
-public class MerkleHederaState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState2, HederaState {
+public class MerkleHederaState extends PartialNaryMerkleInternal
+        implements MerkleInternal, SwirldState2, HederaState, StateChildrenProvider {
+    private static final Logger log = LogManager.getLogger(MerkleHederaState.class);
 
-    /** Used when asked for a service's readable states that we don't have */
+    public static final int MAX_SIGNED_TXN_SIZE = 6144;
+
+    /**
+     * Used when asked for a service's readable states that we don't have
+     */
     private static final ReadableStates EMPTY_READABLE_STATES = new EmptyReadableStates();
-    /** Used when asked for a service's writable states that we don't have */
+    /**
+     * Used when asked for a service's writable states that we don't have
+     */
     private static final WritableStates EMPTY_WRITABLE_STATES = new EmptyWritableStates();
 
     // For serialization
@@ -94,14 +179,14 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      *
      * <p>This reference is moved forward to the working mutable state.
      */
-    private BiConsumer<Round, SwirldDualState> onHandleConsensusRound;
+    private OnHandleConsensusRound onHandleConsensusRound;
 
     /**
      * This callback is invoked whenever there is an event to pre-handle.
      *
      * <p>This reference is moved forward to the working mutable state.
      */
-    private Consumer<Event> onPreHandle;
+    private OnPreHandle onPreHandle;
 
     /**
      * This callback is invoked when the platform determines it is time to perform a migration. This
@@ -112,6 +197,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * later working mutable states.
      */
     private Consumer<MerkleHederaState> onMigrate;
+
+    private Platform platform;
+    private SemanticVersion versionFromSavedState;
+    private com.hedera.node.app.service.mono.state.org.StateMetadata metadata;
 
     /**
      * Maintains information about each service, and each state of each service, known by this
@@ -126,17 +215,181 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
     /**
      * Create a new instance. This constructor must be used for all creations of this class.
      *
-     * @param onMigrate The callback to invoke when the platform deems it time to migrate
-     * @param onPreHandle The callback to invoke when an event is ready for pre-handle
+     * @param onMigrate              The callback to invoke when the platform deems it time to migrate
+     * @param onPreHandle            The callback to invoke when an event is ready for pre-handle
      * @param onHandleConsensusRound The callback invoked when the platform has
      */
     public MerkleHederaState(
             @NonNull final Consumer<MerkleHederaState> onMigrate,
-            @NonNull final Consumer<Event> onPreHandle,
-            @NonNull final BiConsumer<Round, SwirldDualState> onHandleConsensusRound) {
+            @NonNull final OnPreHandle onPreHandle,
+            @NonNull final OnHandleConsensusRound onHandleConsensusRound) {
         this.onMigrate = Objects.requireNonNull(onMigrate);
         this.onPreHandle = Objects.requireNonNull(onPreHandle);
         this.onHandleConsensusRound = Objects.requireNonNull(onHandleConsensusRound);
+    }
+
+    @Override
+    public void init(
+            final Platform platform,
+            final SwirldDualState dualState,
+            final InitTrigger trigger,
+            final SoftwareVersion deserializedVersion) {
+        this.platform = platform;
+        if (trigger == GENESIS) {
+            // Create the top-level children in the Merkle tree
+            onMigrate.accept(this);
+            final var bootstrapProps = new BootstrapProperties(false);
+            final var seqStart = bootstrapProps.getLongProperty(HEDERA_FIRST_USER_ENTITY);
+            createSpecialGenesisChildren(platform.getAddressBook(), seqStart, bootstrapProps);
+            internalInit(platform, bootstrapProps, dualState, GENESIS, null);
+            networkCtx().markPostUpgradeScanStatus();
+        } else {
+            versionFromSavedState = ((SerializableSemVers) deserializedVersion).getServices();
+            // Note this returns the app in case we need to do something with it  after making
+            // final changes to state (e.g. after migrating something from memory to disk)
+            deserializedInit(platform, dualState, trigger, deserializedVersion);
+        }
+    }
+
+    private ServicesApp deserializedInit(
+            final Platform platform,
+            final SwirldDualState dualState,
+            final InitTrigger trigger,
+            @NonNull final SoftwareVersion deserializedVersion) {
+        log.info("Init called on Services node {} WITH Merkle saved state", platform.getSelfId());
+        final var bootstrapProps = new BootstrapProperties(false);
+        return internalInit(platform, bootstrapProps, dualState, trigger, deserializedVersion);
+    }
+
+    private void createSpecialGenesisChildren(
+            final AddressBook addressBook, final long seqStart, final BootstrapProperties bootstrapProperties) {
+
+        final var writableNetworkStates = createWritableStates(NetworkService.NAME);
+        writableNetworkStates.getSingleton(NetworkServiceImpl.CONTEXT_KEY).put(genesisNetworkCtxWith(seqStart));
+        writableNetworkStates
+                .getSingleton(NetworkServiceImpl.RUNNING_HASHES_KEY)
+                .put(genesisRunningHashLeaf());
+        writableNetworkStates.getSingleton(NetworkServiceImpl.SPECIAL_FILES_KEY).put(new MerkleSpecialFiles());
+        ((MerkleWritableStates) writableNetworkStates).commit();
+
+        final var writableScheduleStates = createWritableStates(ScheduleService.NAME);
+        final var neverScheduledState = new MerkleScheduledTransactionsState();
+        writableScheduleStates
+                .getSingleton(ScheduleServiceImpl.SCHEDULING_STATE_KEY)
+                .put(neverScheduledState);
+        ((MerkleWritableStates) writableScheduleStates).commit();
+
+        final var writableStakingInfos =
+                writableNetworkStates.<EntityNum, MerkleStakingInfo>get(NetworkServiceImpl.STAKING_KEY);
+        buildStakingInfoMap(addressBook, bootstrapProperties, writableStakingInfos);
+    }
+
+    private void buildStakingInfoMap(
+            final AddressBook addressBook,
+            final BootstrapProperties bootstrapProperties,
+            final WritableKVState<EntityNum, MerkleStakingInfo> stakingInfos) {
+        final var numberOfNodes = addressBook.getSize();
+        long maxStakePerNode = bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT) / numberOfNodes;
+        long minStakePerNode = maxStakePerNode / 2;
+        for (int i = 0; i < numberOfNodes; i++) {
+            final var nodeNum = EntityNum.fromLong(addressBook.getAddress(i).getId());
+            final var info = new MerkleStakingInfo(bootstrapProperties);
+            info.setMinStake(minStakePerNode);
+            info.setMaxStake(maxStakePerNode);
+            stakingInfos.put(nodeNum, info);
+        }
+    }
+
+    private ServicesApp internalInit(
+            final Platform platform,
+            final BootstrapProperties bootstrapProps,
+            SwirldDualState dualState,
+            final InitTrigger trigger,
+            @Nullable final SoftwareVersion deserializedVersion) {
+        final var selfId = platform.getSelfId().getId();
+
+        final ServicesApp app;
+        if (APPS.includes(selfId)) {
+            app = APPS.get(selfId);
+        } else {
+            final var nodeAddress = addressBook().getAddress(selfId);
+            final var initialHash = runningHashLeaf().getRunningHash().getHash();
+            // Fully qualified so as to not confuse javadoc
+            app = com.hedera.node.app.DaggerHederaApp.builder()
+                    .staticAccountMemo(nodeAddress.getMemo())
+                    .bootstrapProps(bootstrapProps)
+                    .initialHash(initialHash)
+                    .platform(platform)
+                    .consoleCreator(SwirldsGui::createConsole)
+                    .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
+                    .crypto(CryptographyHolder.get())
+                    .selfId(selfId)
+                    .build();
+            APPS.save(selfId, app);
+        }
+
+        if (dualState == null) {
+            dualState = new DualStateImpl();
+        }
+        app.dualStateAccessor().setDualState(dualState);
+        log.info(
+                "Dual state includes freeze time={} and last frozen={}",
+                dualState.getFreezeTime(),
+                dualState.getLastFrozenTime());
+
+        final var deployedVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
+        if (deployedVersion.isBefore(deserializedVersion)) {
+            log.error(
+                    "Fatal error, state source version {} is after node software version {}",
+                    deserializedVersion,
+                    deployedVersion);
+            app.systemExits().fail(1);
+        } else {
+            final var isUpgrade = deployedVersion.isAfter(deserializedVersion);
+            if (trigger == RESTART) {
+                // We may still want to change the address book without an upgrade. But note
+                // that without a dynamic address book, this MUST be a no-op during reconnect.
+                app.stakeStartupHelper().doRestartHousekeeping(addressBook(), stakingInfo());
+                if (isUpgrade) {
+                    dualState.setFreezeTime(null);
+                    networkCtx().discardPreparedUpgradeMeta();
+                    if (deployedVersion.hasMigrationRecordsFrom(deserializedVersion)) {
+                        networkCtx().markMigrationRecordsNotYetStreamed();
+                    }
+                }
+            }
+            networkCtx().setStateVersion(StateVersions.CURRENT_VERSION);
+            metadata = new com.hedera.node.app.service.mono.state.org.StateMetadata(app, new FCHashMap<>());
+            // This updates the working state accessor with our children
+            app.initializationFlow().runWith(this, bootstrapProps);
+            if (trigger == RESTART && isUpgrade) {
+                app.stakeStartupHelper().doUpgradeHousekeeping(networkCtx(), accounts(), stakingInfo());
+            }
+
+            // Ensure the prefetch queue is created and thread pool is active instead of waiting
+            // for lazy-initialization to take place
+            app.prefetchProcessor();
+
+            log.info("  --> Context initialized accordingly on Services node {}", selfId);
+
+            if (trigger == GENESIS) {
+                app.sysAccountsCreator()
+                        .ensureSystemAccounts(
+                                app.backingAccounts(), app.workingState().addressBook());
+                app.sysFilesManager().createManagedFilesIfMissing();
+                app.stakeStartupHelper().doGenesisHousekeeping(addressBook());
+            }
+            if (trigger != RECONNECT) {
+                // Once we have a dynamic address book, this will run unconditionally
+                app.sysFilesManager().updateStakeDetails();
+            }
+        }
+        return app;
+    }
+
+    @Nullable
+    public SemanticVersion deserializedVersion() {
+        return versionFromSavedState;
     }
 
     /**
@@ -152,6 +405,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         for (final var entry : from.services.entrySet()) {
             this.services.put(entry.getKey(), new HashMap<>(entry.getValue()));
         }
+        this.metadata = (from.metadata == null) ? null : from.metadata.copy();
+        this.versionFromSavedState = from.versionFromSavedState;
 
         // Copy the non-null Merkle children from the source (should also be handled by super, TBH).
         // Note we don't "compress" -- null children remain in here unless we manually remove them
@@ -163,18 +418,21 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             }
         }
 
-        // **MOVE** over the handle listener. Don't leave it on the old copy anymore.
+        // **MOVE** over the handle listener. Don't leave it on the immutable state
         this.onHandleConsensusRound = from.onHandleConsensusRound;
         from.onHandleConsensusRound = null;
 
-        // **MOVE** over the pre-handle. Don't leave it on the old copy anymore.
+        // **MOVE** over the pre-handle; but also leave on the immutable state
         this.onPreHandle = from.onPreHandle;
-        from.onPreHandle = null;
 
         // **DO NOT** move over the onMigrate handler. We don't need it in subsequent
         // copies of the state
         this.onMigrate = null;
         from.onMigrate = null;
+
+        this.platform = from.platform;
+        // Don't null out the platform reference, since we can't rule out that work
+        // based on an immutable state may still need access to the address book
     }
 
     @Override
@@ -187,7 +445,9 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         return CURRENT_VERSION;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public ReadableStates createReadableStates(@NonNull final String serviceName) {
@@ -195,7 +455,9 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         return stateMetadata == null ? EMPTY_READABLE_STATES : new MerkleReadableStates(stateMetadata);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public WritableStates createWritableStates(@NonNull final String serviceName) {
@@ -204,32 +466,45 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         return stateMetadata == null ? EMPTY_WRITABLE_STATES : new MerkleWritableStates(stateMetadata);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public MerkleHederaState copy() {
         throwIfImmutable();
         throwIfDestroyed();
         setImmutable(true);
-        return new MerkleHederaState(this);
+        final var that = new MerkleHederaState(this);
+        if (metadata != null) {
+            metadata.app().workingState().updateFrom(that);
+        }
+        return that;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void handleConsensusRound(@NonNull final Round round, @NonNull final SwirldDualState swirldDualState) {
+        throwIfImmutable();
         if (onHandleConsensusRound != null) {
-            onHandleConsensusRound.accept(round, swirldDualState);
+            onHandleConsensusRound.accept(round, swirldDualState, metadata);
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void preHandle(Event event) {
         if (onPreHandle != null) {
-            onPreHandle.accept(event);
+            onPreHandle.accept(event, metadata, this);
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public MerkleNode migrate(int ignored) {
         if (onMigrate != null) {
@@ -238,6 +513,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
 
         // Always return this node, we never want to replace MerkleHederaState node in the tree
         return this;
+    }
+
+    public void setMetadata(com.hedera.node.app.service.mono.state.org.StateMetadata metadata) {
+        this.metadata = metadata;
     }
 
     <K extends Comparable<K>, V> void putServiceStateIfAbsent(@NonNull final StateMetadata<K, V> md) {
@@ -252,10 +531,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * for calling this method is that node MUST be a {@link MerkleMap} or {@link VirtualMap} and
      * MUST have a correct label applied.
      *
-     * @param md The metadata associated with the state
+     * @param md   The metadata associated with the state
      * @param node The node to add. Cannot be null.
      * @throws IllegalArgumentException if the node is neither a merkle map nor virtual map, or if
-     *     it doesn't have a label, or if the label isn't right.
+     *                                  it doesn't have a label, or if the label isn't right.
      */
     <K extends Comparable<K>, V> void putServiceStateIfAbsent(
             @NonNull final StateMetadata<K, V> md, @NonNull final MerkleNode node) {
@@ -296,6 +575,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         // because it may have been loaded from state on disk, and the node provided here in this
         // call is always for genesis. So we may just ignore it.
         if (findNodeIndex(md.serviceName(), def.stateKey()) == -1) {
+            //            System.out.println("Setting child " + getNumberOfChildren() + " to " +
+            // node);
             setChild(getNumberOfChildren(), node);
         }
     }
@@ -304,7 +585,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * Removes the node and metadata from the state merkle tree.
      *
      * @param serviceName The service name. Cannot be null.
-     * @param stateKey The state key
+     * @param stateKey    The state key
      */
     void removeServiceState(@NonNull final String serviceName, @NonNull final String stateKey) {
         throwIfImmutable();
@@ -328,22 +609,192 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * Simple utility method that finds the state node index.
      *
      * @param serviceName the service name
-     * @param stateKey the state key
+     * @param stateKey    the state key
      * @return -1 if not found, otherwise the index into the children
      */
     private int findNodeIndex(@NonNull final String serviceName, @NonNull final String stateKey) {
         final var label = StateUtils.computeLabel(serviceName, stateKey);
+        //        System.out.println("Looking for label " + label);
         for (int i = 0, n = getNumberOfChildren(); i < n; i++) {
             final var node = getChild(i);
             if (node instanceof Labeled labeled && label.equals(labeled.getLabel())) {
+                //                System.out.println("Found at index " + i);
                 return i;
             }
         }
 
+        //        System.out.println("Not found");
         return -1;
     }
 
-    /** Base class implementation for states based on MerkleTree */
+    @Override
+    @SuppressWarnings("unchecked")
+    public AccountStorageAdapter accounts() {
+        return AccountStorageAdapter.fromOnDisk(
+                mapLikePayerRecords(),
+                VirtualMapLikeAdapter.unwrapping(
+                        (StateMetadata<EntityNumVirtualKey, OnDiskAccount>)
+                                services.get(TokenService.NAME).get("ACCOUNTS"),
+                        getChild(findNodeIndex(TokenService.NAME, "ACCOUNTS"))));
+    }
+
+    @SuppressWarnings("unchecked")
+    private MerkleMapLike<EntityNum, MerklePayerRecords> mapLikePayerRecords() {
+        return MerkleMapLikeAdapter.unwrapping(
+                (StateMetadata<EntityNum, MerklePayerRecords>)
+                        services.get(TokenService.NAME).get(TokenServiceImpl.PAYER_RECORDS_KEY),
+                getChild(findNodeIndex(TokenService.NAME, TokenServiceImpl.PAYER_RECORDS_KEY)));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public MerkleMapLike<EntityNum, MerkleTopic> topics() {
+        return MerkleMapLikeAdapter.unwrapping(
+                (StateMetadata<EntityNum, MerkleTopic>)
+                        services.get(ConsensusService.NAME).get(ConsensusServiceImpl.TOPICS_KEY),
+                getChild(findNodeIndex(ConsensusService.NAME, ConsensusServiceImpl.TOPICS_KEY)));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public VirtualMapLike<VirtualBlobKey, VirtualBlobValue> storage() {
+        return VirtualMapLikeAdapter.unwrapping(
+                (StateMetadata<VirtualBlobKey, VirtualBlobValue>)
+                        services.get(FileService.NAME).get(FileServiceImpl.BLOBS_KEY),
+                getChild(findNodeIndex(FileService.NAME, FileServiceImpl.BLOBS_KEY)));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public VirtualMapLike<ContractKey, IterableContractValue> contractStorage() {
+        return VirtualMapLikeAdapter.unwrapping(
+                (StateMetadata<ContractKey, IterableContractValue>)
+                        services.get(ContractService.NAME).get(ContractServiceImpl.STORAGE_KEY),
+                getChild(findNodeIndex(ContractService.NAME, ContractServiceImpl.STORAGE_KEY)));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public MerkleMapLike<EntityNum, MerkleToken> tokens() {
+        return MerkleMapLikeAdapter.unwrapping(
+                (StateMetadata<EntityNum, MerkleToken>)
+                        services.get(TokenService.NAME).get(TokenServiceImpl.TOKENS_KEY),
+                getChild(findNodeIndex(TokenService.NAME, TokenServiceImpl.TOKENS_KEY)));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public TokenRelStorageAdapter tokenAssociations() {
+        return TokenRelStorageAdapter.fromOnDisk(VirtualMapLikeAdapter.unwrapping(
+                (StateMetadata<EntityNumVirtualKey, OnDiskTokenRel>)
+                        services.get(TokenService.NAME).get(TokenServiceImpl.TOKEN_RELS_KEY),
+                getChild(findNodeIndex(TokenService.NAME, TokenServiceImpl.TOKEN_RELS_KEY))));
+    }
+
+    @Override
+    public ScheduledTransactions scheduleTxs() {
+        return new ScheduledTransactionsAdapter(
+                ((SingletonNode<MerkleScheduledTransactionsState>)
+                                getChild(findNodeIndex(ScheduleService.NAME, ScheduleServiceImpl.SCHEDULING_STATE_KEY)))
+                        .getValue(),
+                MerkleMapLikeAdapter.unwrapping(
+                        (StateMetadata<EntityNumVirtualKey, ScheduleVirtualValue>)
+                                services.get(ScheduleService.NAME).get(ScheduleServiceImpl.SCHEDULES_BY_ID_KEY),
+                        getChild(findNodeIndex(ScheduleService.NAME, ScheduleServiceImpl.SCHEDULES_BY_ID_KEY))),
+                MerkleMapLikeAdapter.unwrapping(
+                        (StateMetadata<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue>)
+                                services.get(ScheduleService.NAME).get(ScheduleServiceImpl.SCHEDULES_BY_EXPIRY_SEC_KEY),
+                        getChild(findNodeIndex(ScheduleService.NAME, ScheduleServiceImpl.SCHEDULES_BY_EXPIRY_SEC_KEY))),
+                MerkleMapLikeAdapter.unwrapping(
+                        (StateMetadata<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue>)
+                                services.get(ScheduleService.NAME).get(ScheduleServiceImpl.SCHEDULES_BY_EQUALITY_KEY),
+                        getChild(findNodeIndex(ScheduleService.NAME, ScheduleServiceImpl.SCHEDULES_BY_EQUALITY_KEY))));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public MerkleNetworkContext networkCtx() {
+        return ((SingletonNode<MerkleNetworkContext>)
+                        getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.CONTEXT_KEY)))
+                .getValue();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public AddressBook addressBook() {
+        return Objects.requireNonNull(platform).getAddressBook();
+    }
+
+    @Override
+    public MerkleSpecialFiles specialFiles() {
+        return ((SingletonNode<MerkleSpecialFiles>)
+                        getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.SPECIAL_FILES_KEY)))
+                .getValue();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public UniqueTokenMapAdapter uniqueTokens() {
+        return UniqueTokenMapAdapter.wrap(VirtualMapLikeAdapter.unwrapping(
+                (StateMetadata<UniqueTokenKey, UniqueTokenValue>)
+                        services.get(TokenService.NAME).get(TokenServiceImpl.NFTS_KEY),
+                getChild(findNodeIndex(TokenService.NAME, TokenServiceImpl.NFTS_KEY))));
+    }
+
+    @Override
+    public RecordsStorageAdapter payerRecords() {
+        return RecordsStorageAdapter.fromDedicated(mapLikePayerRecords());
+    }
+
+    @Override
+    public RecordsRunningHashLeaf runningHashLeaf() {
+        return ((SingletonNode<RecordsRunningHashLeaf>)
+                        getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.RUNNING_HASHES_KEY)))
+                .getValue();
+    }
+
+    @Override
+    public Map<ByteString, EntityNum> aliases() {
+        Objects.requireNonNull(metadata, "Cannot get aliases from an uninitialized state");
+        return metadata.aliases();
+    }
+
+    @Override
+    public MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfo() {
+        return MerkleMapLikeAdapter.unwrapping(
+                (StateMetadata<EntityNum, MerkleStakingInfo>)
+                        services.get(NetworkService.NAME).get(NetworkServiceImpl.STAKING_KEY),
+                getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.STAKING_KEY)));
+    }
+
+    @Override
+    public boolean isInitialized() {
+        return metadata != null;
+    }
+
+    @Override
+    public Instant getTimeOfLastHandledTxn() {
+        return networkCtx().consensusTimeOfLastHandledTxn();
+    }
+
+    @Override
+    public int getStateVersion() {
+        return networkCtx().getStateVersion();
+    }
+
+    private RecordsRunningHashLeaf genesisRunningHashLeaf() {
+        final var genesisRunningHash = new RunningHash();
+        genesisRunningHash.setHash(EMPTY_HASH);
+        return new RecordsRunningHashLeaf(genesisRunningHash);
+    }
+
+    private MerkleNetworkContext genesisNetworkCtxWith(final long seqStart) {
+        return new MerkleNetworkContext(null, new SequenceNumber(seqStart), seqStart - 1, new ExchangeRates());
+    }
+
+    /**
+     * Base class implementation for states based on MerkleTree
+     */
     @SuppressWarnings({"rawtypes", "unchecked"})
     private abstract class MerkleStates implements ReadableStates {
         private final Map<String, StateMetadata<?, ?>> stateMetadata;
@@ -460,7 +911,9 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         }
     }
 
-    /** An implementation of {@link ReadableStates} based on the merkle tree. */
+    /**
+     * An implementation of {@link ReadableStates} based on the merkle tree.
+     */
     @SuppressWarnings({"rawtypes", "unchecked"})
     private final class MerkleReadableStates extends MerkleStates {
         /**
@@ -494,7 +947,9 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         }
     }
 
-    /** An implementation of {@link WritableStates} based on the merkle tree. */
+    /**
+     * An implementation of {@link WritableStates} based on the merkle tree.
+     */
     @SuppressWarnings({"rawtypes", "unchecked"})
     final class MerkleWritableStates extends MerkleStates implements WritableStates {
         /**

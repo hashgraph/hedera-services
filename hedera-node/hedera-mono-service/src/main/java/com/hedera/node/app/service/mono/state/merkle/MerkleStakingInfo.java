@@ -68,7 +68,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     private static final Logger log = LogManager.getLogger(MerkleStakingInfo.class);
 
     static final int RELEASE_0270_VERSION = 1;
-    static final int CURRENT_VERSION = RELEASE_0270_VERSION;
+    public static final int CURRENT_VERSION = RELEASE_0270_VERSION;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0xb8b383ccd3caed5bL;
 
     private int number;

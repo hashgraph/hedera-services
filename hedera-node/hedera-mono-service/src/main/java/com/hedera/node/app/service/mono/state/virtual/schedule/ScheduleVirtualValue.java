@@ -68,7 +68,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ScheduleVirtualValue extends PartialMerkleLeaf
         implements VirtualValue, Keyed<EntityNumVirtualKey>, MerkleLeaf {
 
-    static final int CURRENT_VERSION = 1;
+    public static final int CURRENT_VERSION = 1;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0xadfd7f9e613385fcL;
 
     @Nullable
