@@ -25,6 +25,8 @@ import com.hedera.node.app.service.network.impl.components.DaggerNetworkComponen
 import com.hedera.node.app.service.network.impl.components.NetworkComponent;
 import com.hedera.node.app.service.schedule.impl.components.DaggerScheduleComponent;
 import com.hedera.node.app.service.schedule.impl.components.ScheduleComponent;
+import com.hedera.node.app.service.token.impl.components.DaggerTokenComponent;
+import com.hedera.node.app.service.token.impl.components.TokenComponent;
 import dagger.Module;
 import dagger.Provides;
 import javax.inject.Singleton;
@@ -61,4 +63,9 @@ public interface ServiceModule {
         return DaggerScheduleComponent.create();
     }
 
+    @Provides
+    @Singleton
+    static TokenComponent provideTokenComponent() {
+        return DaggerTokenComponent.create();
+    }
 }

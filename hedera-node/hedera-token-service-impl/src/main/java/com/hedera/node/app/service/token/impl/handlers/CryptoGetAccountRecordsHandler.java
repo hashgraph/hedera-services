@@ -25,11 +25,18 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoGetAccountRecords}.
  */
+@Singleton
 public class CryptoGetAccountRecordsHandler extends PaidQueryHandler {
+
+    @Inject
+    public CryptoGetAccountRecordsHandler() {
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {

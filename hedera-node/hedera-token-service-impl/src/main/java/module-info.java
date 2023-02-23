@@ -11,6 +11,8 @@ module com.hedera.node.app.service.token.impl {
     requires com.hedera.node.app.service.evm;
     requires com.hedera.node.app.spi;
     requires static com.google.auto.service;
+    requires javax.inject;
+    requires dagger;
 
     exports com.hedera.node.app.service.token.impl to
             com.hedera.node.app.service.token.impl.test,

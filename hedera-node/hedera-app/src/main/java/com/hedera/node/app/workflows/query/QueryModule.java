@@ -24,13 +24,7 @@ import com.hedera.node.app.service.mono.txns.validation.ContextOptionValidator;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.network.impl.components.NetworkComponent;
 import com.hedera.node.app.service.schedule.impl.components.ScheduleComponent;
-import com.hedera.node.app.service.token.CryptoService;
-import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountBalanceHandler;
-import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountInfoHandler;
-import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountRecordsHandler;
-import com.hedera.node.app.service.token.impl.handlers.CryptoGetLiveHashHandler;
-import com.hedera.node.app.service.token.impl.handlers.CryptoGetStakersHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenGetInfoHandler;
+import com.hedera.node.app.service.token.impl.components.TokenComponent;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.MonoThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
@@ -78,7 +72,8 @@ public interface QueryModule {
             @NonNull final FileComponent fileComponent,
             @NonNull final NetworkComponent networkComponent,
             @NonNull final ContractComponent contractComponent,
-            @NonNull final ScheduleComponent scheduleComponent, @NonNull final CryptoService cryptoService) {
+            @NonNull final ScheduleComponent scheduleComponent,
+            @NonNull final TokenComponent tokenComponent) {
         return new QueryHandlers(
                 consensusComponent.consensusGetTopicInfoHandler(),
                 contractComponent.contractGetBySolidityIDHandler(),
@@ -86,11 +81,11 @@ public interface QueryModule {
                 contractComponent.contractGetInfoHandler(),
                 contractComponent.contractGetBytecodeHandler(),
                 contractComponent.contractGetRecordsHandler(),
-                (CryptoGetAccountBalanceHandler) cryptoService.getCryptoGetAccountBalanceHandler(),
-                (CryptoGetAccountInfoHandler) cryptoService.getCryptoGetAccountInfoHandler(),
-                (CryptoGetAccountRecordsHandler) cryptoService.getCryptoGetAccountRecordsHandler(),
-                (CryptoGetLiveHashHandler) cryptoService.getCryptoGetLiveHashHandler(),
-                (CryptoGetStakersHandler) cryptoService.getCryptoGetStakersHandler(),
+                tokenComponent.cryptoGetAccountBalanceHandler(),
+                tokenComponent.cryptoGetAccountInfoHandler(),
+                tokenComponent.cryptoGetAccountRecordsHandler(),
+                tokenComponent.cryptoGetLiveHashHandler(),
+                tokenComponent.cryptoGetStakersHandler(),
                 fileComponent.fileGetContentsHandler(),
                 fileComponent.fileGetInfoHandler(),
                 networkComponent.networkGetAccountDetailsHandler(),
@@ -100,9 +95,9 @@ public interface QueryModule {
                 networkComponent.networkTransactionGetReceiptHandler(),
                 networkComponent.networkTransactionGetRecordHandler(),
                 scheduleComponent.scheduleGetInfoHandler(),
-                (TokenGetInfoHandler) null,
-                null,
-                null,
-                null);
+                tokenComponent.tokenGetInfoHandler(),
+                tokenComponent.tokenGetAccountNftInfosHandler(),
+                tokenComponent.tokenGetNftInfoHandler(),
+                tokenComponent.tokenGetNftInfosHandler());
     }
 }
