@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
@@ -82,8 +83,8 @@ class BackingNftsTest extends ResponsibleVMapUser {
 
     @Test
     void virtualMapDoesNotSupportIdSet() {
-        subject = new BackingNfts(() ->
-                UniqueTokenMapAdapter.wrap(this.<UniqueTokenKey, UniqueTokenValue>trackedMap(new VirtualMap<>())));
+        subject = new BackingNfts(() -> UniqueTokenMapAdapter.wrap(
+                VirtualMapLike.from(this.<UniqueTokenKey, UniqueTokenValue>trackedMap(new VirtualMap<>()))));
 
         // expect:
         assertThrows(UnsupportedOperationException.class, subject::idSet);

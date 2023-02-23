@@ -50,6 +50,7 @@ import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -67,7 +68,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -117,9 +117,9 @@ class HederaScheduleStoreTest {
 
     private EntityIdSource ids;
     private MerkleScheduledTransactions schedules;
-    private MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> byId;
-    private MerkleMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond;
-    private MerkleMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality;
+    private MerkleMapLike<EntityNumVirtualKey, ScheduleVirtualValue> byId;
+    private MerkleMapLike<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond;
+    private MerkleMapLike<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality;
     private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     private HederaLedger hederaLedger;
     private GlobalDynamicProperties globalDynamicProperties;
@@ -161,9 +161,9 @@ class HederaScheduleStoreTest {
         given(accountsLedger.get(schedulingAccount, IS_DELETED)).willReturn(false);
 
         schedules = mock(MerkleScheduledTransactions.class);
-        byId = mock(MerkleMap.class);
-        byExpirationSecond = mock(MerkleMap.class);
-        byEquality = mock(MerkleMap.class);
+        byId = mock(MerkleMapLike.class);
+        byExpirationSecond = mock(MerkleMapLike.class);
+        byEquality = mock(MerkleMapLike.class);
         given(schedules.byId()).willReturn(byId);
         given(schedules.byExpirationSecond()).willReturn(byExpirationSecond);
         given(schedules.byEquality()).willReturn(byEquality);

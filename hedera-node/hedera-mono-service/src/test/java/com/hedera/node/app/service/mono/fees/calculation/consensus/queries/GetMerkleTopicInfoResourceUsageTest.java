@@ -29,6 +29,7 @@ import static org.mockito.BDDMockito.mock;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
@@ -59,7 +60,7 @@ class GetMerkleTopicInfoResourceUsageTest {
     void setup() {
         topics = mock(MerkleMap.class);
         final var children = new MutableStateChildren();
-        children.setTopics(topics);
+        children.setTopics(MerkleMapLike.from(topics));
         view = new StateView(null, children, null);
 
         subject = new GetTopicInfoResourceUsage();

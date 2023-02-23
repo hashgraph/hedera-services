@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.state.merkle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -26,6 +27,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualValue;
@@ -79,9 +81,12 @@ class MerkleScheduledTransactionsTest {
 
     @Test
     void returnsExpectedChildren() {
-        assertEquals(byId, subject.byId());
-        assertEquals(byExpirationSecond, subject.byExpirationSecond());
-        assertEquals(byEquality, subject.byEquality());
+        assertEquals(byId, subject.byIdInternal());
+        assertEquals(byExpirationSecond, subject.byExpirationSecondInternal());
+        assertEquals(byEquality, subject.byEqualityInternal());
+        assertInstanceOf(MerkleMapLike.class, subject.byId());
+        assertInstanceOf(MerkleMapLike.class, subject.byExpirationSecond());
+        assertInstanceOf(MerkleMapLike.class, subject.byEquality());
         assertEquals(state, subject.state());
     }
 
@@ -140,11 +145,11 @@ class MerkleScheduledTransactionsTest {
         verify(state).copy();
         assertEquals(state, copy.state());
         verify(byId).copy();
-        assertEquals(byId, copy.byId());
+        assertEquals(byId, copy.byIdInternal());
         verify(byExpirationSecond).copy();
-        assertEquals(byExpirationSecond, copy.byExpirationSecond());
+        assertEquals(byExpirationSecond, copy.byExpirationSecondInternal());
         verify(byEquality).copy();
-        assertEquals(byEquality, copy.byEquality());
+        assertEquals(byEquality, copy.byEqualityInternal());
     }
 
     @Test
