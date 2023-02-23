@@ -19,14 +19,15 @@ package com.hedera.node.app.spi.meta;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle". This happens with
@@ -40,51 +41,47 @@ import java.util.Set;
  * @param payerKey payer key required to sign the transaction. It is null if payer is missing
  * @param requiredNonPayerKeys list of keys that are required to sign the transaction, in addition
  *     to payer key
- * @param handlerMetadata arbitrary data that a handler can pass between pre-handle and handle
  * @param payerSignature {@link TransactionSignature} of the payer
  * @param otherSignatures lit {@link TransactionSignature} of other keys that need to sign
- * @param readKeys the keys that were read during pre-handle
+ * @param innerMetadata {@link TransactionMetadata} of the inner transaction (where appropriate)
  */
 public record TransactionMetadata(
         @Nullable TransactionBody txnBody,
         @Nullable AccountID payer,
+        @Nullable SignatureMap signatureMap,
         @NonNull ResponseCodeEnum status,
         @Nullable HederaKey payerKey,
         @NonNull List<HederaKey> requiredNonPayerKeys,
-        @Nullable Object handlerMetadata,
         @Nullable TransactionSignature payerSignature,
         @NonNull List<TransactionSignature> otherSignatures,
-        @NonNull List<ReadKeys> readKeys) {
+        @Nullable TransactionMetadata innerMetadata) {
 
     public TransactionMetadata {
         requireNonNull(status);
         requireNonNull(requiredNonPayerKeys);
         requireNonNull(otherSignatures);
-        requireNonNull(readKeys);
     }
 
     public TransactionMetadata(
             @NonNull final PreHandleContext context,
+            @NonNull final SignatureMap signatureMap,
             @Nullable final TransactionSignature payerSignature,
             @NonNull final List<TransactionSignature> otherSignatures,
-            @NonNull final List<ReadKeys> readKeys) {
+            @Nullable final TransactionMetadata innerMetadata) {
         this(
                 requireNonNull(context).getTxn(),
                 context.getPayer(),
+                requireNonNull(signatureMap),
                 context.getStatus(),
                 context.getPayerKey(),
                 context.getRequiredNonPayerKeys(),
-                context.getHandlerMetadata(),
                 payerSignature,
                 otherSignatures,
-                readKeys);
+                innerMetadata);
     }
 
-    public TransactionMetadata(
-            @Nullable final TransactionBody txBody,
-            @Nullable final AccountID payerID,
-            @NonNull final ResponseCodeEnum status) {
-        this(txBody, payerID, status, null, List.of(), null, null, List.of(), List.of());
+    public TransactionMetadata(@NonNull final ResponseCodeEnum status) {
+        this(null, null, null, status, null, List.of(), null, List.of(), null);
     }
 
     /**
@@ -94,28 +91,5 @@ public record TransactionMetadata(
      */
     public boolean failed() {
         return status != ResponseCodeEnum.OK;
-    }
-
-    /**
-     * An entry of read keys for a single {@link com.hedera.node.app.spi.state.ReadableKVState}
-     *
-     * <p>Each entry in the list consists of the {@code statesKey} (which identifies the {@link
-     * com.hedera.node.app.spi.state.ReadableStates}), the {@code stateKey} (which identifies the
-     * {@link com.hedera.node.app.spi.state.ReadableKVState}), and the {@link Set} of keys, that
-     * were read.
-     *
-     * @param statesKey index that identifies the {@link
-     *     com.hedera.node.app.spi.state.ReadableStates}
-     * @param stateKey index that identifies the {@link
-     *     com.hedera.node.app.spi.state.ReadableKVState}
-     * @param readKeys {@link Set} of all keys that were read
-     */
-    public record ReadKeys(
-            @NonNull String statesKey, @NonNull String stateKey, @NonNull Set<? extends Comparable<?>> readKeys) {
-        public ReadKeys {
-            requireNonNull(statesKey);
-            requireNonNull(stateKey);
-            requireNonNull(readKeys);
-        }
     }
 }

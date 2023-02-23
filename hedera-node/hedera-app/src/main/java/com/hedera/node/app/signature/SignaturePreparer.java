@@ -32,12 +32,8 @@ public interface SignaturePreparer {
      * <p>Please note: The parameter list is preliminary and very likely to change once we implement
      * the real {@link SignaturePreparer}.
      *
-     * @param state the {@link HederaState} that should be used to read the state. In the final
-     *     interface we need to replace this with something that tracks which state has been read
-     *     (e.g. {@link com.hedera.node.app.workflows.dispatcher.StoreFactory}).
-     * @param transactionBytes the {@code byte[]} of the {@link
-     *     com.hederahashgraph.api.proto.java.Transaction}. In the final interface it may be
-     *     sufficient to pass the buffer of the {@link
+     * @param state the {@link HederaState} that should be used to read the state
+     * @param txBodyBytes the {@code byte[]} of the {@link
      *     com.hederahashgraph.api.proto.java.TransactionBody}
      * @param signatureMap the {@link SignatureMap} that is included in the transaction
      * @param accountID the {@link AccountID} for which the signature data needs to be prepared
@@ -46,7 +42,7 @@ public interface SignaturePreparer {
     @NonNull
     TransactionSignature prepareSignature(
             @NonNull HederaState state,
-            @NonNull byte[] transactionBytes,
+            @NonNull byte[] txBodyBytes,
             @NonNull SignatureMap signatureMap,
             @NonNull AccountID accountID);
 
@@ -56,12 +52,8 @@ public interface SignaturePreparer {
      * <p>Please note: The parameter list is preliminary and very likely to change once we implement
      * the real {@link SignaturePreparer}.
      *
-     * @param state the {@link HederaState} that should be used to read the state. In the final
-     *     interface we need to replace this with something that tracks which state has been read
-     *     (e.g. {@link com.hedera.node.app.workflows.dispatcher.StoreFactory}).
-     * @param transactionBytes the {@code byte[]} of the {@link
-     *     com.hederahashgraph.api.proto.java.Transaction}. In the final interface it may be
-     *     sufficient to pass the buffer of the {@link
+     * @param state the {@link HederaState} that should be used to read the state
+     * @param txBodyBytes the {@code byte[]} of the {@link
      *     com.hederahashgraph.api.proto.java.TransactionBody}
      * @param signatureMap the {@link SignatureMap} that is included in the transaction
      * @param keys the list of {@link HederaKey}s for which the signature data needs to be prepared
@@ -70,7 +62,7 @@ public interface SignaturePreparer {
     @NonNull
     List<TransactionSignature> prepareSignatures(
             @NonNull HederaState state,
-            @NonNull byte[] transactionBytes,
+            @NonNull byte[] txBodyBytes,
             @NonNull SignatureMap signatureMap,
             @NonNull List<HederaKey> keys);
 }

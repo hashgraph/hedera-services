@@ -23,7 +23,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mock.Strictness.LENIENT;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
@@ -43,7 +46,6 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -51,7 +53,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -85,8 +86,10 @@ class PreHandleWorkflowImplTest {
 
     private PreHandleWorkflowImpl workflow;
 
-    private static final Function<Supplier<?>, CompletableFuture<?>> RUN_INSTANTLY =
-            supplier -> CompletableFuture.completedFuture(supplier.get());
+    private static final Function<Runnable, CompletableFuture<Void>> RUN_INSTANTLY = runnable -> {
+        runnable.run();
+        return CompletableFuture.completedFuture(null);
+    };
 
     @BeforeEach
     void setup(@Mock ReadableStates readableStates) throws PreCheckException {
@@ -186,12 +189,9 @@ class PreHandleWorkflowImplTest {
         workflow.start(state, event);
 
         // then
-        final ArgumentCaptor<Future<TransactionMetadata>> captor = ArgumentCaptor.forClass(Future.class);
+        final ArgumentCaptor<TransactionMetadata> captor = ArgumentCaptor.forClass(TransactionMetadata.class);
         verify(transaction).setMetadata(captor.capture());
-        assertThat(captor.getValue())
-                .succeedsWithin(Duration.ofMillis(100))
-                .isInstanceOf(TransactionMetadata.class)
-                .hasFieldOrPropertyWithValue("status", INVALID_TRANSACTION);
+        assertThat(captor.getValue()).hasFieldOrPropertyWithValue("status", INVALID_TRANSACTION);
         verify(dispatcher, never()).dispatchPreHandle(any(), any());
     }
 
