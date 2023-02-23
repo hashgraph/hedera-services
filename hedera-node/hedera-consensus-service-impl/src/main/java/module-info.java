@@ -8,6 +8,7 @@ module com.hedera.node.app.service.consensus.impl {
     requires dagger;
     requires javax.inject;
     requires static com.google.auto.service;
+    requires com.swirlds.common;
 
     exports com.hedera.node.app.service.consensus.impl.handlers;
     exports com.hedera.node.app.service.consensus.impl.components;

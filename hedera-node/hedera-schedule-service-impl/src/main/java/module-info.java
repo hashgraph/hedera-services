@@ -6,6 +6,7 @@ module com.hedera.node.app.service.schedule.impl {
     requires dagger;
     requires javax.inject;
     requires static com.google.auto.service;
+    requires com.swirlds.common;
 
     exports com.hedera.node.app.service.schedule.impl to
             com.hedera.node.app;

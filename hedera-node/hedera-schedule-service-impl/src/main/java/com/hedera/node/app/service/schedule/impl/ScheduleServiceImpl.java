@@ -46,7 +46,7 @@ import java.util.Set;
  * Standard implementation of the {@link ScheduleService} {@link Service}.
  */
 public final class ScheduleServiceImpl implements ScheduleService {
-    
+
     private static final SemanticVersion CURRENT_VERSION =
             SemanticVersion.newBuilder().setMinor(34).build();
 

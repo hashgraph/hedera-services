@@ -53,7 +53,6 @@ public final class NetworkServiceImpl implements NetworkService {
     private static final SemanticVersion CURRENT_VERSION =
             SemanticVersion.newBuilder().setMinor(34).build();
 
-
     private final NetworkGetAccountDetailsHandler networkGetAccountDetailsHandler;
 
     private final NetworkGetByKeyHandler networkGetByKeyHandler;

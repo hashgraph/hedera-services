@@ -50,5 +50,4 @@ public final class UtilServiceImpl implements UtilService {
     public Set<TransactionHandler> getTransactionHandler() {
         return Set.of(prngHandler);
     }
-
 }

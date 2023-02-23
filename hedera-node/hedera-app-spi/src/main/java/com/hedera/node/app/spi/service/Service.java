@@ -57,6 +57,6 @@ public interface Service {
     }
 
     default void registerSchemas(@NonNull final SchemaRegistry registry) {
-        //no-op
+        // no-op
     }
 }
