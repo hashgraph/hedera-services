@@ -51,6 +51,7 @@ public interface ServiceFactory<T extends Service> {
      *
      * @return set of all services that the service that is created by this factory depends on
      */
+    @NonNull
     default Set<Class<Service>> getDependencies() {
         return Set.of();
     }

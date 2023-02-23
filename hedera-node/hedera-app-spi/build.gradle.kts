@@ -43,14 +43,7 @@ dependencies {
 
     testImplementation(testLibs.bundles.testing)
     testCompileOnly(libs.spotbugs.annotations)
-    testImplementation(project(":hedera-node:hedera-token-service-impl"))
-
-
-    itestImplementation(libs.swirlds.common)
-    itestImplementation(testLibs.bundles.testing)
-    itestImplementation(project(":hedera-node:hedera-token-service-impl"))
-
-
+    
     testFixturesCompileOnly(libs.spotbugs.annotations)
     testFixturesCompileOnly(testLibs.assertj.core)
 }

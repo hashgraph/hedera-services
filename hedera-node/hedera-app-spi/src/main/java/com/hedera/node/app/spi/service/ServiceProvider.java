@@ -19,6 +19,7 @@ package com.hedera.node.app.spi.service;
 
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -34,6 +35,7 @@ public interface ServiceProvider {
      *
      * @return all services
      */
+    @NonNull
     Set<Service> getAllServices();
 
     /**
@@ -41,6 +43,7 @@ public interface ServiceProvider {
      *
      * @return all transaction handlers
      */
+    @NonNull
     default Set<TransactionHandler> getAllTransactionHandler() {
         return getAllServices().stream()
                 .flatMap(service -> service.getTransactionHandler().stream())
@@ -52,6 +55,7 @@ public interface ServiceProvider {
      *
      * @return all query handlers
      */
+    @NonNull
     default Set<QueryHandler> getAllQueryHandler() {
         return getAllServices().stream()
                 .flatMap(service -> service.getQueryHandler().stream())
@@ -64,18 +68,20 @@ public interface ServiceProvider {
      * @param name service name
      * @return service
      */
-    default Optional<Service> getServiceByName(final String name) {
+    @NonNull
+    default Optional<Service> getServiceByName(@NonNull final String name) {
         return getAllServices().stream()
                 .filter(service -> Objects.equals(service.getServiceName(), name))
                 .findFirst();
     }
 
     /**
-     * Get service by type
+     * Get service by type (class).
      *
      * @param type service type
      * @param <T>  service type
      * @return service
      */
-    <T extends Service> Optional<T> getServiceByType(final Class<T> type);
+    @NonNull
+    <T extends Service> Optional<T> getServiceByType(@NonNull final Class<T> type);
 }
