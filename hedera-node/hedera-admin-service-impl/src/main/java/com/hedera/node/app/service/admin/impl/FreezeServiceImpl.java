@@ -16,7 +16,29 @@
 package com.hedera.node.app.service.admin.impl;
 
 import com.hedera.node.app.service.admin.FreezeService;
+import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.spi.service.Service;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 
 /** Standard implementation of the {@link FreezeService} {@link Service}. */
-public final class FreezeServiceImpl implements FreezeService {}
+public final class FreezeServiceImpl implements FreezeService {
+
+    private final FreezeHandler freezeHandler;
+
+    public FreezeServiceImpl() {
+        this.freezeHandler = new FreezeHandler();
+    }
+
+    @NonNull
+    public FreezeHandler getFreezeHandler() {
+        return freezeHandler;
+    }
+
+    @NonNull
+    @Override
+    public Set<TransactionHandler> getTransactionHandler() {
+        return Set.of(freezeHandler);
+    }
+}

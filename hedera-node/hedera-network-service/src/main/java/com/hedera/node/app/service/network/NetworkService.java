@@ -16,9 +16,7 @@
 package com.hedera.node.app.service.network;
 
 import com.hedera.node.app.spi.service.Service;
-import com.hedera.node.app.spi.ServiceInstanceFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ServiceLoader;
 
 /**
  * Implements the HAPI <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/network_service.proto">Network
@@ -34,14 +32,4 @@ public interface NetworkService extends Service {
         return NAME;
     }
 
-    /**
-     * Returns the concrete implementation instance of the service
-     *
-     * @return the implementation instance
-     */
-    @NonNull
-    static NetworkService getInstance() {
-        return ServiceInstanceFactory.loadService(
-                NetworkService.class, ServiceLoader.load(NetworkService.class));
-    }
 }

@@ -29,10 +29,12 @@ configurations.all {
 }
 
 dependencies {
+    annotationProcessor(libs.auto.service)
     annotationProcessor(libs.dagger.compiler)
     api(project(":hedera-node:hedera-smart-contract-service"))
     implementation(project(":hedera-node:hedera-mono-service"))
     implementation(libs.bundles.di)
+    implementation(libs.auto.service.annotations)
 
     testImplementation(testLibs.bundles.testing)
     testImplementation(testLibs.mockito.inline)

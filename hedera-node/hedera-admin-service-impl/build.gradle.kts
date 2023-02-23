@@ -29,6 +29,10 @@ configurations.all {
 }
 
 dependencies {
+    annotationProcessor(libs.auto.service)
+
     api(project(":hedera-node:hedera-admin-service"))
     implementation(project(":hedera-node:hedera-mono-service"))
+    implementation(libs.auto.service.annotations)
+
 }

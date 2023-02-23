@@ -16,7 +16,30 @@
 package com.hedera.node.app.service.util.impl;
 
 import com.hedera.node.app.service.util.UtilService;
+import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.spi.service.Service;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 
 /** Standard implementation of the {@link UtilService} {@link Service}. */
-public final class UtilServiceImpl implements UtilService {}
+public final class UtilServiceImpl implements UtilService {
+
+    private final UtilPrngHandler prngHandler;
+
+    public UtilServiceImpl() {
+        prngHandler = new UtilPrngHandler();
+    }
+
+    @NonNull
+    public UtilPrngHandler getPrngHandler() {
+        return prngHandler;
+    }
+
+    @NonNull
+    @Override
+    public Set<TransactionHandler> getTransactionHandler() {
+        return Set.of(prngHandler);
+    }
+
+}

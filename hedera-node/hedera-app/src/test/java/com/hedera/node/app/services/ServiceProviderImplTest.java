@@ -19,7 +19,15 @@ package com.hedera.node.app.services;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.node.app.service.admin.FreezeService;
+import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.network.NetworkService;
+import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.CryptoService;
+import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.spi.service.Service;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -37,7 +45,15 @@ class ServiceProviderImplTest {
         //then
         assertThat(allServices).isNotNull();
         assertThat(allServices).isNotEmpty();
+        assertThat(allServices).hasAtLeastOneElementOfType(FreezeService.class);
+        assertThat(allServices).hasAtLeastOneElementOfType(ConsensusService.class);
+        assertThat(allServices).hasAtLeastOneElementOfType(FileService.class);
+        assertThat(allServices).hasAtLeastOneElementOfType(NetworkService.class);
+        assertThat(allServices).hasAtLeastOneElementOfType(ScheduleService.class);
+        assertThat(allServices).hasAtLeastOneElementOfType(ContractService.class);
         assertThat(allServices).hasAtLeastOneElementOfType(CryptoService.class);
+        assertThat(allServices).hasAtLeastOneElementOfType(TokenService.class);
+        assertThat(allServices).hasAtLeastOneElementOfType(UtilService.class);
     }
 
 }

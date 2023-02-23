@@ -1,4 +1,5 @@
-import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
+import com.hedera.node.app.service.consensus.impl.ConsensusServiceFactory;
+import com.hedera.node.app.spi.service.ServiceFactory;
 
 module com.hedera.node.app.service.consensus.impl {
     requires transitive com.hedera.node.app.service.consensus;
@@ -6,12 +7,12 @@ module com.hedera.node.app.service.consensus.impl {
     requires com.hedera.node.app.service.mono;
     requires dagger;
     requires javax.inject;
-
-    provides com.hedera.node.app.service.consensus.ConsensusService with
-            ConsensusServiceImpl;
+    requires static com.google.auto.service;
 
     exports com.hedera.node.app.service.consensus.impl to
             com.hedera.node.app.service.consensus.impl.test;
     exports com.hedera.node.app.service.consensus.impl.handlers;
     exports com.hedera.node.app.service.consensus.impl.components;
+
+    provides ServiceFactory with ConsensusServiceFactory;
 }

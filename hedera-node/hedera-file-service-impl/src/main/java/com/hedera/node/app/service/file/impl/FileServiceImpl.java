@@ -16,7 +16,107 @@
 package com.hedera.node.app.service.file.impl;
 
 import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileGetContentsHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
 import com.hedera.node.app.spi.service.Service;
+import com.hedera.node.app.spi.workflows.QueryHandler;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 
 /** Standard implementation of the {@link FileService} {@link Service}. */
-public final class FileServiceImpl implements FileService {}
+public final class FileServiceImpl implements FileService {
+
+    private final FileAppendHandler fileAppendHandler;
+
+    private final FileCreateHandler fileCreateHandler;
+
+    private final FileDeleteHandler fileDeleteHandler;
+
+    private final FileUpdateHandler fileUpdateHandler;
+
+    private final FileGetContentsHandler fileGetContentsHandler;
+
+    private final FileGetInfoHandler fileGetInfoHandler;
+
+    private final FileSystemDeleteHandler fileSystemDeleteHandler;
+
+    private final FileSystemUndeleteHandler fileSystemUndeleteHandler;
+
+    public FileServiceImpl() {
+        this.fileAppendHandler = new FileAppendHandler();
+        this.fileCreateHandler = new FileCreateHandler();
+        this.fileDeleteHandler = new FileDeleteHandler();
+        this.fileUpdateHandler = new FileUpdateHandler();
+        this.fileGetContentsHandler = new FileGetContentsHandler();
+        this.fileGetInfoHandler = new FileGetInfoHandler();
+        this.fileSystemDeleteHandler = new FileSystemDeleteHandler();
+        this.fileSystemUndeleteHandler = new FileSystemUndeleteHandler();
+    }
+
+    @NonNull
+    public FileAppendHandler getFileAppendHandler() {
+        return fileAppendHandler;
+    }
+
+    @NonNull
+    public FileCreateHandler getFileCreateHandler() {
+        return fileCreateHandler;
+    }
+
+    @NonNull
+    public FileDeleteHandler getFileDeleteHandler() {
+        return fileDeleteHandler;
+    }
+
+    @NonNull
+    public FileUpdateHandler getFileUpdateHandler() {
+        return fileUpdateHandler;
+    }
+
+    @NonNull
+    public FileGetContentsHandler getFileGetContentsHandler() {
+        return fileGetContentsHandler;
+    }
+
+    @NonNull
+    public FileGetInfoHandler getFileGetInfoHandler() {
+        return fileGetInfoHandler;
+    }
+
+    @NonNull
+    public FileSystemDeleteHandler getFileSystemDeleteHandler() {
+        return fileSystemDeleteHandler;
+    }
+
+    @NonNull
+    public FileSystemUndeleteHandler getFileSystemUndeleteHandler() {
+        return fileSystemUndeleteHandler;
+    }
+
+    @NonNull
+    @Override
+    public Set<TransactionHandler> getTransactionHandler() {
+        return Set.of(
+                fileAppendHandler,
+                fileCreateHandler,
+                fileDeleteHandler,
+                fileUpdateHandler,
+                fileSystemDeleteHandler,
+                fileSystemUndeleteHandler);
+    }
+
+    @NonNull
+    @Override
+    public Set<QueryHandler> getQueryHandler() {
+        return Set.of(
+                fileGetContentsHandler,
+                fileGetInfoHandler);
+    }
+}

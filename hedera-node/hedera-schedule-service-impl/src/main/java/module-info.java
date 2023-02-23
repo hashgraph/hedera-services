@@ -1,5 +1,3 @@
-import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
-
 module com.hedera.node.app.service.schedule.impl {
     requires transitive com.hedera.node.app.service.scheduled;
     requires org.apache.commons.lang3;
@@ -7,6 +5,7 @@ module com.hedera.node.app.service.schedule.impl {
     requires com.swirlds.virtualmap;
     requires dagger;
     requires javax.inject;
+    requires static com.google.auto.service;
 
     exports com.hedera.node.app.service.schedule.impl to
             com.hedera.node.app.service.schedule.impl.test,
@@ -17,6 +16,6 @@ module com.hedera.node.app.service.schedule.impl {
             com.hedera.node.app;
     exports com.hedera.node.app.service.schedule.impl.components;
 
-    provides com.hedera.node.app.service.schedule.ScheduleService with
-            ScheduleServiceImpl;
+    provides com.hedera.node.app.spi.service.ServiceFactory with
+            com.hedera.node.app.service.schedule.impl.ScheduleServiceFactory;
 }

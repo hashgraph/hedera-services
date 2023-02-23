@@ -16,9 +16,65 @@
 package com.hedera.node.app.service.schedule.impl;
 
 import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
+import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
+import com.hedera.node.app.service.schedule.impl.handlers.ScheduleGetInfoHandler;
+import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
 import com.hedera.node.app.spi.service.Service;
+import com.hedera.node.app.spi.workflows.QueryHandler;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 
 /**
  * Standard implementation of the {@link ScheduleService} {@link Service}.
  */
-public final class ScheduleServiceImpl implements ScheduleService {}
+public final class ScheduleServiceImpl implements ScheduleService {
+
+    private final ScheduleCreateHandler scheduleCreateHandler;
+
+    private final ScheduleDeleteHandler scheduleDeleteHandler;
+
+    private final ScheduleGetInfoHandler scheduleGetInfoHandler;
+
+    private final ScheduleSignHandler scheduleSignHandler;
+
+    public ScheduleServiceImpl() {
+        this.scheduleCreateHandler = new ScheduleCreateHandler();
+        this.scheduleDeleteHandler = new ScheduleDeleteHandler();
+        this.scheduleGetInfoHandler = new ScheduleGetInfoHandler();
+        this.scheduleSignHandler = new ScheduleSignHandler();
+    }
+
+    @NonNull
+    public ScheduleCreateHandler getScheduleCreateHandler() {
+        return scheduleCreateHandler;
+    }
+
+    @NonNull
+    public ScheduleDeleteHandler getScheduleDeleteHandler() {
+        return scheduleDeleteHandler;
+    }
+
+    @NonNull
+    public ScheduleGetInfoHandler getScheduleGetInfoHandler() {
+        return scheduleGetInfoHandler;
+    }
+
+    @NonNull
+    public ScheduleSignHandler getScheduleSignHandler() {
+        return scheduleSignHandler;
+    }
+
+    @NonNull
+    @Override
+    public Set<TransactionHandler> getTransactionHandler() {
+        return Set.of(scheduleCreateHandler, scheduleDeleteHandler, scheduleSignHandler);
+    }
+
+    @NonNull
+    @Override
+    public Set<QueryHandler> getQueryHandler() {
+        return Set.of(scheduleGetInfoHandler);
+    }
+}

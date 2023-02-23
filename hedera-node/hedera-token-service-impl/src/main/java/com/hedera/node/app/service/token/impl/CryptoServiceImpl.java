@@ -16,7 +16,6 @@
 package com.hedera.node.app.service.token.impl;
 
 import com.hedera.node.app.service.token.CryptoService;
-import com.hedera.node.app.service.token.handlers.CryptoApproveAllowanceHandlerI;
 import com.hedera.node.app.service.token.impl.handlers.CryptoAddLiveHashHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
@@ -30,10 +29,10 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoGetLiveHashHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetStakersHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
-import com.hedera.node.app.spi.workflows.FreeQueryHandler;
-import com.hedera.node.app.spi.workflows.PaidQueryHandler;
+import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 
 /** An implementation of the {@link CryptoService} interface. */
 public final class CryptoServiceImpl implements CryptoService {
@@ -81,80 +80,83 @@ public final class CryptoServiceImpl implements CryptoService {
     }
 
     @NonNull
-    @Override
-    public TransactionHandler getCryptoAddLiveHashHandler() {
+    public CryptoAddLiveHashHandler getCryptoAddLiveHashHandler() {
         return cryptoAddLiveHashHandler;
     }
 
     @NonNull
-    @Override
-    public CryptoApproveAllowanceHandlerI getCryptoApproveAllowanceHandler() {
+    public CryptoApproveAllowanceHandler getCryptoApproveAllowanceHandler() {
         return cryptoApproveAllowanceHandler;
     }
 
     @NonNull
-    @Override
-    public TransactionHandler getCryptoCreateHandler() {
+    public CryptoCreateHandler getCryptoCreateHandler() {
         return cryptoCreateHandler;
     }
 
     @NonNull
-    @Override
-    public TransactionHandler getCryptoDeleteAllowanceHandler() {
+    public CryptoDeleteAllowanceHandler getCryptoDeleteAllowanceHandler() {
         return cryptoDeleteAllowanceHandler;
     }
 
     @NonNull
-    @Override
-    public TransactionHandler getCryptoDeleteHandler() {
+    public CryptoDeleteHandler getCryptoDeleteHandler() {
         return cryptoDeleteHandler;
     }
 
     @NonNull
-    @Override
-    public TransactionHandler getCryptoDeleteLiveHashHandler() {
+    public CryptoDeleteLiveHashHandler getCryptoDeleteLiveHashHandler() {
         return cryptoDeleteLiveHashHandler;
     }
 
     @NonNull
-    @Override
-    public TransactionHandler getCryptoTransferHandler() {
+    public CryptoTransferHandler getCryptoTransferHandler() {
         return cryptoTransferHandler;
     }
 
     @NonNull
-    @Override
-    public TransactionHandler getCryptoUpdateHandler() {
+    public CryptoUpdateHandler getCryptoUpdateHandler() {
         return cryptoUpdateHandler;
     }
 
     @NonNull
-    @Override
-    public FreeQueryHandler getCryptoGetAccountBalanceHandler() {
+    public CryptoGetAccountBalanceHandler getCryptoGetAccountBalanceHandler() {
         return cryptoGetAccountBalanceHandler;
     }
 
     @NonNull
-    @Override
-    public PaidQueryHandler getCryptoGetAccountInfoHandler() {
+    public CryptoGetAccountInfoHandler getCryptoGetAccountInfoHandler() {
         return cryptoGetAccountInfoHandler;
     }
 
     @NonNull
-    @Override
-    public PaidQueryHandler getCryptoGetAccountRecordsHandler() {
+    public CryptoGetAccountRecordsHandler getCryptoGetAccountRecordsHandler() {
         return cryptoGetAccountRecordsHandler;
     }
 
     @NonNull
-    @Override
-    public FreeQueryHandler getCryptoGetLiveHashHandler() {
+    public CryptoGetLiveHashHandler getCryptoGetLiveHashHandler() {
         return cryptoGetLiveHashHandler;
     }
 
     @NonNull
-    @Override
-    public FreeQueryHandler getCryptoGetStakersHandler() {
+    public CryptoGetStakersHandler getCryptoGetStakersHandler() {
         return cryptoGetStakersHandler;
+    }
+
+    @NonNull
+    @Override
+    public Set<TransactionHandler> getTransactionHandler() {
+        return Set.of(cryptoAddLiveHashHandler, cryptoApproveAllowanceHandler, cryptoCreateHandler,
+                cryptoDeleteAllowanceHandler, cryptoDeleteHandler, cryptoDeleteLiveHashHandler,
+                cryptoTransferHandler, cryptoUpdateHandler);
+    }
+
+    @NonNull
+    @Override
+    public Set<QueryHandler> getQueryHandler() {
+        return Set.of(cryptoGetAccountBalanceHandler, cryptoGetAccountInfoHandler,
+                cryptoGetAccountRecordsHandler,
+                cryptoGetLiveHashHandler, cryptoGetStakersHandler);
     }
 }

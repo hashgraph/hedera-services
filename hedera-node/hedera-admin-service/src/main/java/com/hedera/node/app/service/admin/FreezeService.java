@@ -16,9 +16,7 @@
 package com.hedera.node.app.service.admin;
 
 import com.hedera.node.app.spi.service.Service;
-import com.hedera.node.app.spi.ServiceInstanceFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ServiceLoader;
 
 /**
  * Implements the HAPI <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/freeze_service.proto">Freeze
@@ -34,14 +32,4 @@ public interface FreezeService extends Service {
         return NAME;
     }
 
-    /**
-     * Returns the concrete implementation instance of the service
-     *
-     * @return the implementation instance
-     */
-    @NonNull
-    static FreezeService getInstance() {
-        return ServiceInstanceFactory.loadService(
-                FreezeService.class, ServiceLoader.load(FreezeService.class));
-    }
 }

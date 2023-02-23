@@ -29,8 +29,11 @@ configurations.all {
 }
 
 dependencies {
+    annotationProcessor(libs.auto.service)
     annotationProcessor(libs.dagger.compiler)
     api(project(":hedera-node:hedera-network-service"))
     implementation(libs.bundles.di)
     implementation(project(":hedera-node:hedera-mono-service"))
+    implementation(libs.auto.service.annotations)
+
 }

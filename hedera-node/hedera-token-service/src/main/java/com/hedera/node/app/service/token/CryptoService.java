@@ -15,14 +15,8 @@
  */
 package com.hedera.node.app.service.token;
 
-import com.hedera.node.app.service.token.handlers.CryptoApproveAllowanceHandlerI;
 import com.hedera.node.app.spi.service.Service;
-import com.hedera.node.app.spi.workflows.FreeQueryHandler;
-import com.hedera.node.app.spi.workflows.PaidQueryHandler;
-import com.hedera.node.app.spi.workflows.QueryHandler;
-import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
 
 /**
  * The {@code CryptoService} is responsible for working with {Account}s. It implements all transactions and queries
@@ -40,63 +34,9 @@ public interface CryptoService extends Service {
     String NAME = "CryptoService";
 
     @NonNull
-    TransactionHandler getCryptoAddLiveHashHandler();
-
-    @NonNull
-    CryptoApproveAllowanceHandlerI getCryptoApproveAllowanceHandler();
-
-    @NonNull
-    TransactionHandler getCryptoCreateHandler();
-
-    @NonNull
-    TransactionHandler getCryptoDeleteAllowanceHandler();
-
-    @NonNull
-    TransactionHandler getCryptoDeleteHandler();
-
-    @NonNull
-    TransactionHandler getCryptoDeleteLiveHashHandler();
-
-    @NonNull
-    TransactionHandler getCryptoTransferHandler();
-
-    @NonNull
-    TransactionHandler getCryptoUpdateHandler();
-
-    @NonNull
-    FreeQueryHandler getCryptoGetAccountBalanceHandler();
-
-    @NonNull
-    PaidQueryHandler getCryptoGetAccountInfoHandler();
-
-    @NonNull
-    PaidQueryHandler getCryptoGetAccountRecordsHandler();
-
-    @NonNull
-    FreeQueryHandler getCryptoGetLiveHashHandler();
-
-    @NonNull
-    FreeQueryHandler getCryptoGetStakersHandler();
-
-    @NonNull
     @Override
     default String getServiceName() {
         return NAME;
     }
 
-    @NonNull
-    @Override
-    default Set<TransactionHandler> getTransactionHandler() {
-        return Set.of(getCryptoAddLiveHashHandler(), getCryptoApproveAllowanceHandler(), getCryptoCreateHandler(),
-                getCryptoDeleteAllowanceHandler(), getCryptoDeleteHandler(), getCryptoDeleteLiveHashHandler(),
-                getCryptoTransferHandler(), getCryptoUpdateHandler());
-    }
-
-    @NonNull
-    @Override
-    default Set<QueryHandler> getQueryHandler() {
-        return Set.of(getCryptoGetAccountBalanceHandler(), getCryptoGetAccountInfoHandler(),
-                getCryptoGetAccountRecordsHandler(),
-                getCryptoGetLiveHashHandler(), getCryptoGetStakersHandler());
-    }
 }

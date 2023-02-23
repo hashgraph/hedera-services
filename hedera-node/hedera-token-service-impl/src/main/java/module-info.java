@@ -12,8 +12,6 @@ module com.hedera.node.app.service.token.impl {
     requires com.hedera.node.app.spi;
     requires static com.google.auto.service;
 
-    provides ServiceFactory with CryptoServiceFactory;
-
     exports com.hedera.node.app.service.token.impl to
             com.hedera.node.app.service.token.impl.test,
             com.hedera.node.app;
@@ -25,8 +23,11 @@ module com.hedera.node.app.service.token.impl {
             com.hedera.node.app.service.token.impl.test,
             com.hedera.node.app;
 
+    exports com.hedera.node.app.service.token.impl.components;
+
     opens com.hedera.node.app.service.token.impl.util to
             com.hedera.node.app.service.token.impl.test;
 
-    exports com.hedera.node.app.service.token.impl.components;
+    provides ServiceFactory with CryptoServiceFactory, com.hedera.node.app.service.token.impl.TokenServiceFactory;
+
 }

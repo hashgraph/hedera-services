@@ -1,12 +1,13 @@
-import com.hedera.node.app.service.util.impl.UtilServiceImpl;
+import com.hedera.node.app.spi.service.ServiceFactory;
 
 module com.hedera.node.app.service.util.impl {
     requires com.hedera.node.app.service.util;
-
-    provides com.hedera.node.app.service.util.UtilService with
-            UtilServiceImpl;
+    requires static com.google.auto.service;
 
     exports com.hedera.node.app.service.util.impl to
             com.hedera.node.app.service.util.impl.test;
     exports com.hedera.node.app.service.util.impl.handlers;
+
+    provides ServiceFactory with
+            com.hedera.node.app.service.util.impl.UtilServiceFactory;
 }

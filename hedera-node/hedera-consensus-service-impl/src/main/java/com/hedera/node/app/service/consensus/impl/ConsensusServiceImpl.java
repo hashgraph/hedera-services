@@ -16,9 +16,79 @@
 package com.hedera.node.app.service.consensus.impl;
 
 import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
 import com.hedera.node.app.spi.service.Service;
+import com.hedera.node.app.spi.workflows.QueryHandler;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 
 /**
  * Standard implementation of the {@link ConsensusService} {@link Service}.
  */
-public final class ConsensusServiceImpl implements ConsensusService {}
+public final class ConsensusServiceImpl implements ConsensusService {
+
+    private final ConsensusCreateTopicHandler consensusCreateTopicHandler;
+
+    private final ConsensusDeleteTopicHandler consensusDeleteTopicHandler;
+
+    private final ConsensusGetTopicInfoHandler consensusGetTopicInfoHandler;
+
+    private final ConsensusSubmitMessageHandler consensusSubmitMessageHandler;
+
+    private final ConsensusUpdateTopicHandler consensusUpdateTopicHandler;
+
+    public ConsensusServiceImpl() {
+        this.consensusCreateTopicHandler = new ConsensusCreateTopicHandler();
+        this.consensusDeleteTopicHandler = new ConsensusDeleteTopicHandler();
+        this.consensusGetTopicInfoHandler = new ConsensusGetTopicInfoHandler();
+        this.consensusSubmitMessageHandler = new ConsensusSubmitMessageHandler();
+        this.consensusUpdateTopicHandler = new ConsensusUpdateTopicHandler();
+    }
+
+    @NonNull
+    public ConsensusCreateTopicHandler getConsensusCreateTopicHandler() {
+        return consensusCreateTopicHandler;
+    }
+
+    @NonNull
+    public ConsensusDeleteTopicHandler getConsensusDeleteTopicHandler() {
+        return consensusDeleteTopicHandler;
+    }
+
+    @NonNull
+    public ConsensusGetTopicInfoHandler getConsensusGetTopicInfoHandler() {
+        return consensusGetTopicInfoHandler;
+    }
+
+    @NonNull
+    public ConsensusSubmitMessageHandler getConsensusSubmitMessageHandler() {
+        return consensusSubmitMessageHandler;
+    }
+
+    @NonNull
+    public ConsensusUpdateTopicHandler getConsensusUpdateTopicHandler() {
+        return consensusUpdateTopicHandler;
+    }
+
+    @NonNull
+    @Override
+    public Set<TransactionHandler> getTransactionHandler() {
+        return Set.of(
+                consensusCreateTopicHandler,
+                consensusDeleteTopicHandler,
+                consensusSubmitMessageHandler,
+                consensusUpdateTopicHandler
+        );
+    }
+
+    @NonNull
+    @Override
+    public Set<QueryHandler> getQueryHandler() {
+        return Set.of(consensusGetTopicInfoHandler);
+    }
+}

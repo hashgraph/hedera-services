@@ -19,15 +19,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.token.handlers.CryptoApproveAllowanceHandlerI;
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoApproveAllowance}.
  */
-public class CryptoApproveAllowanceHandler implements CryptoApproveAllowanceHandlerI {
+public class CryptoApproveAllowanceHandler implements TransactionHandler {
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoApproveAllowance} transaction,

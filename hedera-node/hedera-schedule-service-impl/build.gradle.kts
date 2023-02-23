@@ -32,11 +32,14 @@ configurations.all {
 }
 
 dependencies {
+    annotationProcessor(libs.auto.service)
     annotationProcessor(libs.dagger.compiler)
     api(project(":hedera-node:hedera-schedule-service"))
     implementation(libs.swirlds.virtualmap)
     implementation(libs.bundles.di)
     implementation(project(":hedera-node:hedera-mono-service"))
+    implementation(libs.auto.service.annotations)
+
     testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
     testImplementation(testLibs.bundles.mockito)
     testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))

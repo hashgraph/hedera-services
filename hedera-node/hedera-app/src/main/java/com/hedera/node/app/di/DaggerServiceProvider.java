@@ -18,16 +18,12 @@
 package com.hedera.node.app.di;
 
 import com.hedera.node.app.service.token.CryptoService;
-import com.hedera.node.app.service.token.handlers.CryptoApproveAllowanceHandlerI;
-import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.services.ServiceProviderImpl;
 import com.hedera.node.app.spi.service.Service;
-import com.hedera.node.app.spi.workflows.FreeQueryHandler;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
 import java.util.Set;
-import javax.inject.Named;
 import javax.inject.Singleton;
 
 @Module(includes = {FacilityModule.class})
@@ -52,24 +48,4 @@ public interface DaggerServiceProvider {
                 .orElseThrow(
                         () -> new IllegalStateException("No service of type '" + CryptoService.class + "' provided"));
     }
-
-    @Provides
-    @Singleton
-    @Named("CryptoGetAccountBalanceHandler")
-    static FreeQueryHandler provideCryptoGetAccountBalanceHandler(final CryptoService cryptoService) {
-        return cryptoService.getCryptoGetAccountBalanceHandler();
-    }
-
-    @Provides
-    @Singleton
-    static CryptoApproveAllowanceHandlerI provideCryptoApproveAllowanceHandler(final CryptoService cryptoService) {
-        return cryptoService.getCryptoApproveAllowanceHandler();
-    }
-
-    @Provides
-    @Singleton
-    static CryptoTransferHandler provideCryptoTransferHandler(final CryptoService cryptoService) {
-        return (CryptoTransferHandler) cryptoService.getCryptoTransferHandler();
-    }
-
 }

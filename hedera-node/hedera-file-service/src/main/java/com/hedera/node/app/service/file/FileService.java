@@ -16,9 +16,7 @@
 package com.hedera.node.app.service.file;
 
 import com.hedera.node.app.spi.service.Service;
-import com.hedera.node.app.spi.ServiceInstanceFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ServiceLoader;
 
 /**
  * Implements the HAPI <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/file_service.proto">File
@@ -34,13 +32,4 @@ public interface FileService extends Service {
         return NAME;
     }
 
-    /**
-     * Returns the concrete implementation instance of the service
-     *
-     * @return the implementation instance
-     */
-    @NonNull
-    static FileService getInstance() {
-        return ServiceInstanceFactory.loadService(FileService.class, ServiceLoader.load(FileService.class));
-    }
 }

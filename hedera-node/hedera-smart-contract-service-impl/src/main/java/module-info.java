@@ -1,4 +1,4 @@
-import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
+import com.hedera.node.app.spi.service.ServiceFactory;
 
 module com.hedera.node.app.service.contract.impl {
     requires com.hedera.node.app.service.contract;
@@ -8,12 +8,12 @@ module com.hedera.node.app.service.contract.impl {
     requires com.hedera.node.app.service.evm;
     requires dagger;
     requires javax.inject;
-
-    provides com.hedera.node.app.service.contract.ContractService with
-            ContractServiceImpl;
+    requires static com.google.auto.service;
 
     exports com.hedera.node.app.service.contract.impl to
             com.hedera.node.app.service.contract.impl.test;
     exports com.hedera.node.app.service.contract.impl.handlers;
     exports com.hedera.node.app.service.contract.impl.components;
+
+    provides ServiceFactory with com.hedera.node.app.service.contract.impl.ContractServiceFactory;
 }

@@ -16,9 +16,7 @@
 package com.hedera.node.app.service.contract;
 
 import com.hedera.node.app.spi.service.Service;
-import com.hedera.node.app.spi.ServiceInstanceFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ServiceLoader;
 
 /**
  * Implements the HAPI <a href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/smart_contract_service.proto">Smart
@@ -34,14 +32,4 @@ public interface ContractService extends Service {
         return NAME;
     }
 
-    /**
-     * Returns the concrete implementation instance of the service
-     *
-     * @return the implementation instance
-     */
-    @NonNull
-    static ContractService getInstance() {
-        return ServiceInstanceFactory.loadService(
-                ContractService.class, ServiceLoader.load(ContractService.class));
-    }
 }
