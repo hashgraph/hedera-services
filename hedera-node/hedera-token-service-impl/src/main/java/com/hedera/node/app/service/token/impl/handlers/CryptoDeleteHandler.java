@@ -27,20 +27,22 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoDelete}.
+ * This class contains all workflow-related functionality regarding {@link
+ * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoDelete}.
  */
 @Singleton
 public class CryptoDeleteHandler implements TransactionHandler {
-
     @Inject
     public CryptoDeleteHandler() {}
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoDeleteAllowance} transaction,
-     * returning the metadata required to, at minimum, validate the signatures of all required signing keys.
+     * Pre-handles a {@link
+     * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoDeleteAllowance} transaction,
+     * returning the metadata required to, at minimum, validate the signatures of all required
+     * signing keys.
      *
-     * @param context the {@link PreHandleContext} which collects all information that will be passed to {@link
-     *                #handle(TransactionMetadata)}
+     * @param context the {@link PreHandleContext} which collects all information that will be
+     *     passed to {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context) {

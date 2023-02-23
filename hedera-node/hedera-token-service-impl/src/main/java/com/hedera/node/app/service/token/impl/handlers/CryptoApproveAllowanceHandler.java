@@ -28,20 +28,22 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoApproveAllowance}.
+ * This class contains all workflow-related functionality regarding {@link
+ * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoApproveAllowance}.
  */
 @Singleton
 public class CryptoApproveAllowanceHandler implements TransactionHandler {
-
     @Inject
     public CryptoApproveAllowanceHandler() {}
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoApproveAllowance} transaction,
-     * returning the metadata required to, at minimum, validate the signatures of all required signing keys.
+     * Pre-handles a {@link
+     * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoApproveAllowance} transaction,
+     * returning the metadata required to, at minimum, validate the signatures of all required
+     * signing keys.
      *
-     * @param context the {@link PreHandleContext} which collects all information that will be passed to {@link
-     *                #handle(TransactionMetadata)}
+     * @param context the {@link PreHandleContext} which collects all information that will be
+     *     passed to {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context) {

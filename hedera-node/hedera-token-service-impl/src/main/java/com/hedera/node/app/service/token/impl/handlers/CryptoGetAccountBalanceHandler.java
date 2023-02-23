@@ -26,11 +26,11 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoGetAccountBalance}.
+ * This class contains all workflow-related functionality regarding {@link
+ * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoGetAccountBalance}.
  */
 @Singleton
 public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
-
     @Inject
     public CryptoGetAccountBalanceHandler() {}
 
@@ -47,28 +47,28 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
     }
 
     /**
-     * This method is called during the query workflow. It validates the query, but does not determine the response
-     * yet.
+     * This method is called during the query workflow. It validates the query, but does not
+     * determine the response yet.
      *
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
      * @param query the {@link Query} that should be validated
      * @throws NullPointerException if one of the arguments is {@code null}
-     * @throws PreCheckException    if validation fails
+     * @throws PreCheckException if validation fails
      */
     public ResponseCodeEnum validate(@NonNull final Query query) throws PreCheckException {
         throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
-     * This method is called during the query workflow. It determines the requested value(s) and returns the appropriate
-     * response.
+     * This method is called during the query workflow. It determines the requested value(s) and
+     * returns the appropriate response.
      *
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param query  the {@link Query} with the request
+     * @param query the {@link Query} with the request
      * @param header the {@link ResponseHeader} that should be used, if the request was successful
      * @return a {@link Response} with the requested values
      * @throws NullPointerException if one of the arguments is {@code null}
