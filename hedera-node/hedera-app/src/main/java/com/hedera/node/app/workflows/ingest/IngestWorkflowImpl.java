@@ -62,8 +62,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
      * @param nodeInfo the {@link NodeInfo} of the current node
      * @param currentPlatformStatus the {@link CurrentPlatformStatus}
      * @param stateAccessor a {@link Supplier} that provides the latest immutable state
-     * @param onset the {@link WorkflowOnset} that pre-processes the {@link ByteBuffer} of a
-     *     transaction
+     * @param onset the {@link WorkflowOnset} that pre-processes the {@link ByteBuffer} of a transaction
      * @param checker the {@link IngestChecker} with specific checks of an ingest-workflow
      * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform

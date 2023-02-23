@@ -52,9 +52,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     private static final Logger LOG = LoggerFactory.getLogger(PreHandleWorkflowImpl.class);
 
     /**
-     * Per-thread shared resources are shared in a {@link SessionContext}. We store these in a
-     * thread local, because we do not have control over the thread pool used by the underlying gRPC
-     * server.
+     * Per-thread shared resources are shared in a {@link SessionContext}. We store these in a thread local, because we
+     * do not have control over the thread pool used by the underlying gRPC server.
      */
     private static final ThreadLocal<SessionContext> SESSION_CONTEXT_THREAD_LOCAL =
             ThreadLocal.withInitial(() -> new SessionContext(
@@ -71,7 +70,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      *
      * @param exe the {@link ExecutorService} to use when submitting new tasks
      * @param dispatcher the {@link TransactionDispatcher} that will call transaction-specific
-     *     {@code preHandle()}-methods
+     * {@code preHandle()}-methods
      * @param onset the {@link WorkflowOnset} that pre-processes the {@link byte[]} of a transaction
      * @param signaturePreparer the {@link SignaturePreparer} to prepare signatures
      * @param cryptography the {@link Cryptography} component used to verify signatures

@@ -71,8 +71,8 @@ public class IngestChecker {
      * @param txBody the {@link TransactionBody}
      * @param functionality the {@link HederaFunctionality} of the transaction
      * @throws NullPointerException if one of the arguments is {@code null}
-     * @throws PreCheckException if a semantic error was discovered. The contained {@code
-     *     responseCode} provides the error reason.
+     * @throws PreCheckException if a semantic error was discovered. The contained {@code responseCode} provides the
+     * error reason.
      */
     public void checkTransactionSemantics(
             @NonNull final TransactionBody txBody, @NonNull final HederaFunctionality functionality)
@@ -98,8 +98,8 @@ public class IngestChecker {
      * @param signatureMap the {@link SignatureMap} contained in the transaction
      * @param payerID the {@link AccountID} of the payer
      * @throws NullPointerException if one of the arguments is {@code null}
-     * @throws PreCheckException if an error is found while checking the signature. The contained
-     *     {@code responseCode} provides the error reason.
+     * @throws PreCheckException if an error is found while checking the signature. The contained {@code responseCode}
+     * provides the error reason.
      */
     public void checkPayerSignature(
             @NonNull final HederaState state,
@@ -133,9 +133,8 @@ public class IngestChecker {
     }
 
     /**
-     * Extracts a {@code byte[]} from a {@link ByteBuffer}. The {@code byte[]} may contain a copy or
-     * point to the data of the {@code ByteBuffer} directly, i.e. the content should not be
-     * modified.
+     * Extracts a {@code byte[]} from a {@link ByteBuffer}. The {@code byte[]} may contain a copy or point to the data
+     * of the {@code ByteBuffer} directly, i.e. the content should not be modified.
      *
      * @param buffer the {@link ByteBuffer} from which to extract the data
      * @return the {@code byte[]} with the data

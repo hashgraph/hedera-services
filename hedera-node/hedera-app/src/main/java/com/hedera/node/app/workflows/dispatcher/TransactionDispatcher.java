@@ -30,8 +30,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /**
- * A {@code TransactionDispatcher} provides functionality to forward pre-check, pre-handle, and
- * handle-transaction requests to the appropriate handler
+ * A {@code TransactionDispatcher} provides functionality to forward pre-check, pre-handle, and handle-transaction
+ * requests to the appropriate handler
  */
 public class TransactionDispatcher {
 
@@ -54,8 +54,8 @@ public class TransactionDispatcher {
     }
 
     /**
-     * Dispatch a pre-handle request. It is forwarded to the correct handler, which takes care of
-     * the specific functionality
+     * Dispatch a pre-handle request. It is forwarded to the correct handler, which takes care of the specific
+     * functionality
      *
      * @param handlerContext the context of the pre-handle workflow
      * @throws NullPointerException if one of the arguments is {@code null}

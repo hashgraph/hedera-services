@@ -51,8 +51,8 @@ public class StoreFactory {
     }
 
     /**
-     * Get a {@link Map} of all {@link ReadableStates} that have been used to construct stores. The
-     * key of the {@code Map} is the key of the particular {@code ReadableStates}.
+     * Get a {@link Map} of all {@link ReadableStates} that have been used to construct stores. The key of the
+     * {@code Map} is the key of the particular {@code ReadableStates}.
      *
      * @return a {@link Map} that contains all {@link ReadableStates} that have been used
      */
@@ -62,8 +62,7 @@ public class StoreFactory {
     }
 
     /**
-     * Get a specific {@link ReadableStates}. If the {@code ReadableStates} does not exist yet, a
-     * new one is created.
+     * Get a specific {@link ReadableStates}. If the {@code ReadableStates} does not exist yet, a new one is created.
      *
      * @param key the {@code key} of the {@link ReadableStates}
      * @return the {@link ReadableStates}, either one that was created earlier or a new one
