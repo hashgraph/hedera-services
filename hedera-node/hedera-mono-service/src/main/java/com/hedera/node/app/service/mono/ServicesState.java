@@ -271,9 +271,13 @@ public class ServicesState extends PartialNaryMerkleInternal
     @Override
     public void handleConsensusRound(final Round round, final SwirldDualState dualState) {
         throwIfImmutable();
+
         final var app = metadata.app();
+        app.mapWarmer().initiateCacheWarmup(round);
+
         app.dualStateAccessor().setDualState(dualState);
         app.logic().incorporateConsensus(round);
+        app.mapWarmer().cancelPendingWarmups(round.getRoundNum());
     }
 
     @Override

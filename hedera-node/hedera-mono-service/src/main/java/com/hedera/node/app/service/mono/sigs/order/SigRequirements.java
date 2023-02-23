@@ -74,7 +74,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 /**
  * Encapsulates all policies related to which Hedera keys must have active signatures for a given
@@ -90,15 +89,11 @@ public class SigRequirements {
 
     private final SignatureWaivers signatureWaivers;
     private final SigMetadataLookup sigMetaLookup;
-    private final Supplier<MapWarmer> mapWarmer;
 
     public SigRequirements(
-            final SigMetadataLookup sigMetaLookup,
-            final SignatureWaivers signatureWaivers,
-            final Supplier<MapWarmer> mapWarmer) {
+            final SigMetadataLookup sigMetaLookup, final SignatureWaivers signatureWaivers) {
         this.sigMetaLookup = sigMetaLookup;
         this.signatureWaivers = signatureWaivers;
-        this.mapWarmer = mapWarmer;
     }
 
     /**
@@ -728,16 +723,6 @@ public class SigRequirements {
                     return (failure == MISSING_TOKEN)
                             ? factory.forMissingToken()
                             : accountFailure(failure, factory);
-                }
-                if (linkedRefsLoaded) {
-                    // pre-load objects needed for transfer:
-                    mapWarmer
-                            .get()
-                            .warmTokenObjs(
-                                    sender,
-                                    receiver,
-                                    token.getTokenNum(),
-                                    adjust.getSerialNumber());
                 }
             }
         }

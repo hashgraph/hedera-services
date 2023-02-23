@@ -42,6 +42,7 @@ import com.hedera.node.app.service.mono.queries.QueriesModule;
 import com.hedera.node.app.service.mono.records.RecordsModule;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.sigs.SigsModule;
+import com.hedera.node.app.service.mono.sigs.order.MapWarmer;
 import com.hedera.node.app.service.mono.state.DualStateAccessor;
 import com.hedera.node.app.service.mono.state.StateModule;
 import com.hedera.node.app.service.mono.state.expiry.ExpiryModule;
@@ -112,7 +113,8 @@ import javax.inject.Singleton;
             ThrottlingModule.class,
             SubmissionModule.class,
             TransactionsModule.class,
-            ExpiryModule.class
+            ExpiryModule.class,
+            CacheModule.class
         })
 public interface ServicesApp {
     /* Needed by ServicesState */
@@ -198,6 +200,8 @@ public interface ServicesApp {
     Supplier<NotificationEngine> notificationEngine();
 
     BackingStore<AccountID, HederaAccount> backingAccounts();
+
+    MapWarmer mapWarmer();
 
     @Component.Builder
     interface Builder {

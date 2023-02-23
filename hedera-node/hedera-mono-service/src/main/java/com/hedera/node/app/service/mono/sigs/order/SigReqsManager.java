@@ -35,7 +35,6 @@ import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.events.Event;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -83,7 +82,6 @@ public class SigReqsManager {
     private SigRequirements immutableSigReqs;
     // Used to expand signatures when one or more of the above conditions is not met
     private SigRequirements workingSigReqs;
-    private Supplier<MapWarmer> mapWarmer;
 
     @Inject
     public SigReqsManager(
@@ -91,14 +89,12 @@ public class SigReqsManager {
             final ExpansionHelper expansionHelper,
             final SignatureWaivers signatureWaivers,
             final MutableStateChildren workingState,
-            final GlobalDynamicProperties dynamicProperties,
-            final Supplier<MapWarmer> mapWarmer) {
+            final GlobalDynamicProperties dynamicProperties) {
         this.fileNumbers = fileNumbers;
         this.workingState = workingState;
         this.expansionHelper = expansionHelper;
         this.signatureWaivers = signatureWaivers;
         this.dynamicProperties = dynamicProperties;
-        this.mapWarmer = mapWarmer;
     }
 
     /**
@@ -164,7 +160,7 @@ public class SigReqsManager {
             final var lookup =
                     lookupsFactory.from(
                             fileNumbers, workingState, TOKEN_META_TRANSFORM, dynamicProperties);
-            workingSigReqs = sigReqsFactory.from(lookup, signatureWaivers, mapWarmer);
+            workingSigReqs = sigReqsFactory.from(lookup, signatureWaivers);
         }
     }
 
@@ -176,16 +172,13 @@ public class SigReqsManager {
                             immutableChildren,
                             TOKEN_META_TRANSFORM,
                             dynamicProperties);
-            immutableSigReqs = sigReqsFactory.from(lookup, signatureWaivers, mapWarmer);
+            immutableSigReqs = sigReqsFactory.from(lookup, signatureWaivers);
         }
     }
 
     @FunctionalInterface
     interface SigReqsFactory {
-        SigRequirements from(
-                SigMetadataLookup sigMetaLookup,
-                SignatureWaivers signatureWaivers,
-                Supplier<MapWarmer> mapWarmer);
+        SigRequirements from(SigMetadataLookup sigMetaLookup, SignatureWaivers signatureWaivers);
     }
 
     @FunctionalInterface

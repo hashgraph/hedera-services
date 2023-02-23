@@ -40,6 +40,7 @@ import com.hedera.node.app.service.mono.grpc.NettyGrpcServerManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper;
 import com.hedera.node.app.service.mono.ledger.backing.BackingAccounts;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
+import com.hedera.node.app.service.mono.sigs.order.MapWarmer;
 import com.hedera.node.app.service.mono.state.DualStateAccessor;
 import com.hedera.node.app.service.mono.state.exports.ServicesSignedStateListener;
 import com.hedera.node.app.service.mono.state.exports.SignedStateBalancesExporter;
@@ -146,5 +147,6 @@ class ServicesAppTest {
         assertSame(SLEEPING_PAUSE, subject.pause());
         assertTrue(subject.consoleOut().isEmpty());
         assertThat(subject.stakeStartupHelper(), instanceOf(StakeStartupHelper.class));
+        assertThat(subject.mapWarmer(), instanceOf(MapWarmer.class));
     }
 }

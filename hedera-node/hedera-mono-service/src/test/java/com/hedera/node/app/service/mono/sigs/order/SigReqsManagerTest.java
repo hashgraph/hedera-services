@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.sigs.order;
 import static com.hedera.node.app.service.mono.sigs.order.SigReqsManager.TOKEN_META_TRANSFORM;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.verify;
@@ -55,7 +54,6 @@ class SigReqsManagerTest {
     @Mock private ExpansionHelper expansionHelper;
     @Mock private PlatformTxnAccessor accessor;
     @Mock private PubKeyToSigBytes pubKeyToSigBytes;
-    @Mock private MapWarmer mapWarmer;
 
     private SigReqsManager subject;
 
@@ -67,8 +65,7 @@ class SigReqsManagerTest {
                         expansionHelper,
                         signatureWaivers,
                         workingState,
-                        dynamicProperties,
-                        () -> mapWarmer);
+                        dynamicProperties);
         given(accessor.getPkToSigsFn()).willReturn(pubKeyToSigBytes);
     }
 
@@ -78,7 +75,7 @@ class SigReqsManagerTest {
                         lookupsFactory.from(
                                 fileNumbers, workingState, TOKEN_META_TRANSFORM, dynamicProperties))
                 .willReturn(workingStateLookup);
-        given(sigReqsFactory.from(eq(workingStateLookup), eq(signatureWaivers), notNull()))
+        given(sigReqsFactory.from(eq(workingStateLookup), eq(signatureWaivers)))
                 .willReturn(workingStateSigReqs);
         given(dynamicProperties.expandSigsFromImmutableState()).willReturn(true);
         subject.setLookupsFactory(lookupsFactory);
@@ -95,7 +92,7 @@ class SigReqsManagerTest {
                         lookupsFactory.from(
                                 fileNumbers, workingState, TOKEN_META_TRANSFORM, dynamicProperties))
                 .willReturn(workingStateLookup);
-        given(sigReqsFactory.from(eq(workingStateLookup), eq(signatureWaivers), notNull()))
+        given(sigReqsFactory.from(eq(workingStateLookup), eq(signatureWaivers)))
                 .willReturn(workingStateSigReqs);
         given(dynamicProperties.expandSigsFromImmutableState()).willReturn(true);
         given(sourceState.getTimeOfLastHandledTxn()).willReturn(lastHandleTime);
@@ -113,7 +110,7 @@ class SigReqsManagerTest {
                         lookupsFactory.from(
                                 fileNumbers, workingState, TOKEN_META_TRANSFORM, dynamicProperties))
                 .willReturn(workingStateLookup);
-        given(sigReqsFactory.from(eq(workingStateLookup), eq(signatureWaivers), notNull()))
+        given(sigReqsFactory.from(eq(workingStateLookup), eq(signatureWaivers)))
                 .willReturn(workingStateSigReqs);
         given(dynamicProperties.expandSigsFromImmutableState()).willReturn(true);
         given(sourceState.getTimeOfLastHandledTxn()).willReturn(lastHandleTime);
@@ -139,9 +136,9 @@ class SigReqsManagerTest {
                                 TOKEN_META_TRANSFORM,
                                 dynamicProperties))
                 .willReturn(immutableStateLookup);
-        given(sigReqsFactory.from(eq(workingStateLookup), eq(signatureWaivers), notNull()))
+        given(sigReqsFactory.from(eq(workingStateLookup), eq(signatureWaivers)))
                 .willReturn(workingStateSigReqs);
-        given(sigReqsFactory.from(eq(immutableStateLookup), eq(signatureWaivers), notNull()))
+        given(sigReqsFactory.from(eq(immutableStateLookup), eq(signatureWaivers)))
                 .willReturn(immutableStateSigReqs);
         given(dynamicProperties.expandSigsFromImmutableState()).willReturn(true);
         given(sourceState.getTimeOfLastHandledTxn()).willReturn(lastHandleTime);
@@ -176,7 +173,7 @@ class SigReqsManagerTest {
                                 TOKEN_META_TRANSFORM,
                                 dynamicProperties))
                 .willReturn(immutableStateLookup);
-        given(sigReqsFactory.from(eq(immutableStateLookup), eq(signatureWaivers), notNull()))
+        given(sigReqsFactory.from(eq(immutableStateLookup), eq(signatureWaivers)))
                 .willReturn(immutableStateSigReqs);
         given(dynamicProperties.expandSigsFromImmutableState()).willReturn(true);
         given(sourceState.getTimeOfLastHandledTxn()).willReturn(lastHandleTime);
@@ -197,7 +194,7 @@ class SigReqsManagerTest {
                         lookupsFactory.from(
                                 fileNumbers, workingState, TOKEN_META_TRANSFORM, dynamicProperties))
                 .willReturn(workingStateLookup);
-        given(sigReqsFactory.from(eq(workingStateLookup), eq(signatureWaivers), notNull()))
+        given(sigReqsFactory.from(eq(workingStateLookup), eq(signatureWaivers)))
                 .willReturn(workingStateSigReqs);
         subject.setLookupsFactory(lookupsFactory);
         subject.setSigReqsFactory(sigReqsFactory);

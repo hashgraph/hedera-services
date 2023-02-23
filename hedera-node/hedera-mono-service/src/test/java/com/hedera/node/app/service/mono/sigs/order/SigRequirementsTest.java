@@ -348,7 +348,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 public class SigRequirementsTest {
     private static class TopicAdapter {
@@ -6433,8 +6432,7 @@ public class SigRequirementsTest {
                                                 tokenStore),
                                         DelegatingSigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY
                                                 .apply(scheduleStore))),
-                        signatureWaivers,
-                        () -> Mockito.mock(MapWarmer.class));
+                        signatureWaivers);
     }
 
     @SuppressWarnings("unchecked")

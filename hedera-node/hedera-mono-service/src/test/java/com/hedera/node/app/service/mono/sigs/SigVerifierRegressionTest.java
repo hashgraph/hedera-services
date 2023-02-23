@@ -41,7 +41,6 @@ import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.exception.InvalidAccountIDException;
 import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
-import com.hedera.node.app.service.mono.sigs.order.MapWarmer;
 import com.hedera.node.app.service.mono.sigs.order.PolicyBasedSigWaivers;
 import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
 import com.hedera.node.app.service.mono.sigs.order.SignatureWaivers;
@@ -63,7 +62,6 @@ import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 class SigVerifierRegressionTest {
     private PrecheckKeyReqs precheckKeyReqs;
@@ -78,7 +76,6 @@ class SigVerifierRegressionTest {
     private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
     private SignatureWaivers mockSignatureWaivers =
             new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
-    private MapWarmer mapWarmer = Mockito.mock(MapWarmer.class);
 
     @Test
     void rejectsInvalidTxn() throws Throwable {
@@ -192,8 +189,7 @@ class SigVerifierRegressionTest {
                                 () -> null,
                                 ref -> null,
                                 ref -> null),
-                        mockSignatureWaivers,
-                        () -> mapWarmer);
+                        mockSignatureWaivers);
         final var nodeInfo = mock(NodeInfo.class);
         given(nodeInfo.selfAccount()).willReturn(DEFAULT_NODE);
         isQueryPayment = PrecheckUtils.queryPaymentTestFor(nodeInfo);
