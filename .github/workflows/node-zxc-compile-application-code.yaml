@@ -294,8 +294,7 @@ jobs:
             ) &&
             !cancelled()
           }}
-        run: |
-          npm install -g snyk snyk-to-html @wcj/html-to-markdown-cli
+        run: npm install -g snyk snyk-to-html @wcj/html-to-markdown-cli
 
       - name: Snyk Scan
         id: snyk
@@ -312,8 +311,7 @@ jobs:
             ) &&
             !cancelled()
           }}
-        run: |
-          snyk test --all-sub-projects --severity-threshold=high --json-file-output=snyk-test.json
+        run: snyk test --all-sub-projects --severity-threshold=high --json-file-output=snyk-test.json
 
       - name: Snyk Code
         id: snyk-code
@@ -330,8 +328,7 @@ jobs:
             ) &&
             !cancelled()
           }}
-        run: |
-          snyk code test --severity-threshold=high --json-file-output=snyk-code.json
+        run: snyk code test --severity-threshold=high --json-file-output=snyk-code.json
 
       - name: Publish Snyk Results
         if: >-
