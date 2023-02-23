@@ -33,9 +33,8 @@ import javax.inject.Singleton;
 public class CryptoCreateHandler implements TransactionHandler {
 
     @Inject
-    public CryptoCreateHandler() {
-    }
-    
+    public CryptoCreateHandler() {}
+
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoCreate} transaction, returning
      * the metadata required to, at minimum, validate the signatures of all required signing keys.

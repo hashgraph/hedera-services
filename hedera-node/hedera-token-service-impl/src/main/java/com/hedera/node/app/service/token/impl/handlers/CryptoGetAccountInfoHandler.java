@@ -32,8 +32,7 @@ import javax.inject.Singleton;
 public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
 
     @Inject
-    public CryptoGetAccountInfoHandler() {
-    }
+    public CryptoGetAccountInfoHandler() {}
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {

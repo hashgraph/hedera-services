@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.services;
@@ -33,33 +32,29 @@ import java.util.stream.Collectors;
 
 public class ServiceProviderImpl implements ServiceProvider {
 
-    final private Map<Class<Service>, Service> services;
+    private final Map<Class<Service>, Service> services;
 
     public ServiceProviderImpl(final FacilityFacade facilityFacade) {
         services = new HashMap<>();
         final ServiceLoader<ServiceFactory> serviceLoader = ServiceLoader.load(ServiceFactory.class);
-        final Set<ServiceFactory> servicesFactories = serviceLoader.stream()
-                .map(Provider::get)
-                .collect(Collectors.toSet());
+        final Set<ServiceFactory> servicesFactories =
+                serviceLoader.stream().map(Provider::get).collect(Collectors.toSet());
 
-        servicesFactories.stream()
-                .sorted((a, b) -> sort(a, b))
-                .forEach(factory -> {
-                    if (!services.keySet().containsAll(factory.getDependencies())) {
-                        throw new IllegalStateException(
-                                "Can not add service for " + factory.getServiceClass()
-                                        + " since the service has a missing dependency");
-                    }
-                    services.keySet().stream()
-                            .filter(service -> dependOnEachOther(service, factory.getServiceClass()))
-                            .findAny().ifPresent(service -> {
-                                throw new IllegalStateException(
-                                        "Can not add service for " + factory.getServiceClass()
-                                                + " since the service has a clash with " + service);
-                            });
-                    final Service service = factory.createService(this, facilityFacade);
-                    services.put(factory.getServiceClass(), service);
-                });
+        servicesFactories.stream().sorted((a, b) -> sort(a, b)).forEach(factory -> {
+            if (!services.keySet().containsAll(factory.getDependencies())) {
+                throw new IllegalStateException("Can not add service for " + factory.getServiceClass()
+                        + " since the service has a missing dependency");
+            }
+            services.keySet().stream()
+                    .filter(service -> dependOnEachOther(service, factory.getServiceClass()))
+                    .findAny()
+                    .ifPresent(service -> {
+                        throw new IllegalStateException("Can not add service for " + factory.getServiceClass()
+                                + " since the service has a clash with " + service);
+                    });
+            final Service service = factory.createService(this, facilityFacade);
+            services.put(factory.getServiceClass(), service);
+        });
     }
 
     /**
@@ -110,7 +105,5 @@ public class ServiceProviderImpl implements ServiceProvider {
                 .map(Map.Entry::getValue)
                 .map(type::cast)
                 .findFirst();
-
     }
-
 }

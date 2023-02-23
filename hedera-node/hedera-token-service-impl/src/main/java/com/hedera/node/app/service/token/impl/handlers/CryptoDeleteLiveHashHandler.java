@@ -32,11 +32,9 @@ import javax.inject.Singleton;
 @Singleton
 public class CryptoDeleteLiveHashHandler implements TransactionHandler {
 
-
     @Inject
-    public CryptoDeleteLiveHashHandler() {
-    }
-    
+    public CryptoDeleteLiveHashHandler() {}
+
     /**
      * This method is called during the pre-handle workflow.
      *

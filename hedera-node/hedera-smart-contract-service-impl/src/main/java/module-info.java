@@ -14,5 +14,6 @@ module com.hedera.node.app.service.contract.impl {
     exports com.hedera.node.app.service.contract.impl.handlers;
     exports com.hedera.node.app.service.contract.impl.components;
 
-    provides ServiceFactory with com.hedera.node.app.service.contract.impl.ContractServiceFactory;
+    provides ServiceFactory with
+            com.hedera.node.app.service.contract.impl.ContractServiceFactory;
 }

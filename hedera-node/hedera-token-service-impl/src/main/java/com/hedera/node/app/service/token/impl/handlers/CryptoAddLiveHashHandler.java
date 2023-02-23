@@ -33,8 +33,7 @@ import javax.inject.Singleton;
 public class CryptoAddLiveHashHandler implements TransactionHandler {
 
     @Inject
-    public CryptoAddLiveHashHandler() {
-    }
+    public CryptoAddLiveHashHandler() {}
 
     /**
      * This method is called during the pre-handle workflow.

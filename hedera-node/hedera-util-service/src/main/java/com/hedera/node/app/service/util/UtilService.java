@@ -32,5 +32,4 @@ public interface UtilService extends Service {
     default String getServiceName() {
         return NAME;
     }
-
 }

@@ -216,16 +216,25 @@ public final class CryptoServiceImpl implements CryptoService {
     @NonNull
     @Override
     public Set<TransactionHandler> getTransactionHandler() {
-        return Set.of(cryptoAddLiveHashHandler, cryptoApproveAllowanceHandler, cryptoCreateHandler,
-                cryptoDeleteAllowanceHandler, cryptoDeleteHandler, cryptoDeleteLiveHashHandler,
-                cryptoTransferHandler, cryptoUpdateHandler);
+        return Set.of(
+                cryptoAddLiveHashHandler,
+                cryptoApproveAllowanceHandler,
+                cryptoCreateHandler,
+                cryptoDeleteAllowanceHandler,
+                cryptoDeleteHandler,
+                cryptoDeleteLiveHashHandler,
+                cryptoTransferHandler,
+                cryptoUpdateHandler);
     }
 
     @NonNull
     @Override
     public Set<QueryHandler> getQueryHandler() {
-        return Set.of(cryptoGetAccountBalanceHandler, cryptoGetAccountInfoHandler,
+        return Set.of(
+                cryptoGetAccountBalanceHandler,
+                cryptoGetAccountInfoHandler,
                 cryptoGetAccountRecordsHandler,
-                cryptoGetLiveHashHandler, cryptoGetStakersHandler);
+                cryptoGetLiveHashHandler,
+                cryptoGetStakersHandler);
     }
 }

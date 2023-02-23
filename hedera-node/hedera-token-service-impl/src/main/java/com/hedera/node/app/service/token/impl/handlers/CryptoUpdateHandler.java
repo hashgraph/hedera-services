@@ -34,8 +34,7 @@ import javax.inject.Singleton;
 public class CryptoUpdateHandler implements TransactionHandler {
 
     @Inject
-    public CryptoUpdateHandler() {
-    }
+    public CryptoUpdateHandler() {}
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoUpdate} transaction, returning

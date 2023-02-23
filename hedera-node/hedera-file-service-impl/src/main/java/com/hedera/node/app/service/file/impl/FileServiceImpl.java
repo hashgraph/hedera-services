@@ -159,8 +159,6 @@ public final class FileServiceImpl implements FileService {
     @NonNull
     @Override
     public Set<QueryHandler> getQueryHandler() {
-        return Set.of(
-                fileGetContentsHandler,
-                fileGetInfoHandler);
+        return Set.of(fileGetContentsHandler, fileGetInfoHandler);
     }
 }

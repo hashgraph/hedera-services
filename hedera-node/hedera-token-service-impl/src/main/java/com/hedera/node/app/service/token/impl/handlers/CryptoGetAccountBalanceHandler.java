@@ -32,8 +32,7 @@ import javax.inject.Singleton;
 public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
 
     @Inject
-    public CryptoGetAccountBalanceHandler() {
-    }
+    public CryptoGetAccountBalanceHandler() {}
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {

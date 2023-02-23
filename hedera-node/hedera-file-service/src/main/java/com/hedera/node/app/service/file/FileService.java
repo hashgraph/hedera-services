@@ -32,5 +32,4 @@ public interface FileService extends Service {
     default String getServiceName() {
         return NAME;
     }
-
 }

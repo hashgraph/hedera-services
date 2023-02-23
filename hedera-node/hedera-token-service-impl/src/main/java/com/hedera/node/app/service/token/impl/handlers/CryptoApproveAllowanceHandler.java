@@ -34,8 +34,7 @@ import javax.inject.Singleton;
 public class CryptoApproveAllowanceHandler implements TransactionHandler {
 
     @Inject
-    public CryptoApproveAllowanceHandler() {
-    }
+    public CryptoApproveAllowanceHandler() {}
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoApproveAllowance} transaction,

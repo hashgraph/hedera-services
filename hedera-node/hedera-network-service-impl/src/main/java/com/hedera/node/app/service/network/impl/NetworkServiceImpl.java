@@ -131,7 +131,7 @@ public final class NetworkServiceImpl implements NetworkService {
     public NetworkUncheckedSubmitHandler getNetworkUncheckedSubmitHandler() {
         return networkUncheckedSubmitHandler;
     }
-    
+
     @NonNull
     @Override
     public Set<TransactionHandler> getTransactionHandler() {

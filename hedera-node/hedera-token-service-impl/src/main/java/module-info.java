@@ -20,12 +20,12 @@ module com.hedera.node.app.service.token.impl {
     exports com.hedera.node.app.service.token.impl.util;
     exports com.hedera.node.app.service.token.impl.handlers to
             com.hedera.node.app;
-
     exports com.hedera.node.app.service.token.impl.components;
 
     opens com.hedera.node.app.service.token.impl.util to
             com.hedera.node.app.service.token.impl.test;
 
-    provides ServiceFactory with CryptoServiceFactory, com.hedera.node.app.service.token.impl.TokenServiceFactory;
-
+    provides ServiceFactory with
+            CryptoServiceFactory,
+            com.hedera.node.app.service.token.impl.TokenServiceFactory;
 }

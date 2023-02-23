@@ -111,8 +111,7 @@ public final class ConsensusServiceImpl implements ConsensusService {
                 consensusCreateTopicHandler,
                 consensusDeleteTopicHandler,
                 consensusSubmitMessageHandler,
-                consensusUpdateTopicHandler
-        );
+                consensusUpdateTopicHandler);
     }
 
     @NonNull

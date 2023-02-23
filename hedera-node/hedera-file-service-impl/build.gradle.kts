@@ -13,27 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-    id("com.hedera.hashgraph.conventions")
-}
+
+plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Default Hedera File Service Implementation"
 
 configurations.all {
-    exclude("javax.annotation", "javax.annotation-api")
+  exclude("javax.annotation", "javax.annotation-api")
 
-    exclude("io.grpc", "grpc-core")
-    exclude("io.grpc", "grpc-context")
-    exclude("io.grpc", "grpc-api")
-    exclude("io.grpc", "grpc-testing")
+  exclude("io.grpc", "grpc-core")
+  exclude("io.grpc", "grpc-context")
+  exclude("io.grpc", "grpc-api")
+  exclude("io.grpc", "grpc-testing")
 }
 
 dependencies {
-    annotationProcessor(libs.auto.service)
-    annotationProcessor(libs.dagger.compiler)
-    api(project(":hedera-node:hedera-file-service"))
-    implementation(libs.bundles.di)
-    implementation(project(":hedera-node:hedera-mono-service"))
-    implementation(libs.auto.service.annotations)
-
+  annotationProcessor(libs.auto.service)
+  annotationProcessor(libs.dagger.compiler)
+  api(project(":hedera-node:hedera-file-service"))
+  implementation(libs.bundles.di)
+  implementation(project(":hedera-node:hedera-mono-service"))
+  implementation(libs.auto.service.annotations)
 }

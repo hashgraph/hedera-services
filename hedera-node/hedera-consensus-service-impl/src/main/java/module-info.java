@@ -12,5 +12,6 @@ module com.hedera.node.app.service.consensus.impl {
     exports com.hedera.node.app.service.consensus.impl.handlers;
     exports com.hedera.node.app.service.consensus.impl.components;
 
-    provides ServiceFactory with ConsensusServiceFactory;
+    provides ServiceFactory with
+            ConsensusServiceFactory;
 }

@@ -47,8 +47,7 @@ import javax.inject.Singleton;
 public class CryptoTransferHandler implements TransactionHandler {
 
     @Inject
-    public CryptoTransferHandler() {
-    }
+    public CryptoTransferHandler() {}
 
     /**
      * Validates a {@link com.hederahashgraph.api.proto.java.CryptoTransfer} that is part of a {@link

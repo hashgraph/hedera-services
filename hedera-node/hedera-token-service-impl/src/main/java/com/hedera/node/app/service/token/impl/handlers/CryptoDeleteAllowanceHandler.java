@@ -33,8 +33,7 @@ import javax.inject.Singleton;
 public class CryptoDeleteAllowanceHandler implements TransactionHandler {
 
     @Inject
-    public CryptoDeleteAllowanceHandler() {
-    }
+    public CryptoDeleteAllowanceHandler() {}
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoDeleteAllowance} transaction,

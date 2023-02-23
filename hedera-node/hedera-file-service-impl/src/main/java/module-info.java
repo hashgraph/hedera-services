@@ -11,5 +11,6 @@ module com.hedera.node.app.service.file.impl {
     exports com.hedera.node.app.service.file.impl.handlers;
     exports com.hedera.node.app.service.file.impl.components;
 
-    provides ServiceFactory with FileServiceFactory;
+    provides ServiceFactory with
+            FileServiceFactory;
 }

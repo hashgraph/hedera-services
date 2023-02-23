@@ -307,9 +307,6 @@ public class TokenServiceImpl implements TokenService {
     @Override
     public Set<QueryHandler> getQueryHandler() {
         return Set.of(
-                tokenGetAccountNftInfosHandler,
-                tokenGetInfoHandler,
-                tokenGetNftInfoHandler,
-                tokenGetNftInfosHandler);
+                tokenGetAccountNftInfosHandler, tokenGetInfoHandler, tokenGetNftInfoHandler, tokenGetNftInfosHandler);
     }
 }

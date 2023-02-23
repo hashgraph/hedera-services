@@ -12,5 +12,6 @@ module com.hedera.node.app.service.network.impl {
     exports com.hedera.node.app.service.network.impl.handlers;
     exports com.hedera.node.app.service.network.impl.components;
 
-    provides ServiceFactory with NetworkServiceFactory;
+    provides ServiceFactory with
+            NetworkServiceFactory;
 }

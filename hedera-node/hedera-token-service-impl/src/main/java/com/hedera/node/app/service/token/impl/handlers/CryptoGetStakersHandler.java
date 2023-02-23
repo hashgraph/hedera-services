@@ -32,8 +32,7 @@ import javax.inject.Singleton;
 public class CryptoGetStakersHandler extends FreeQueryHandler {
 
     @Inject
-    public CryptoGetStakersHandler() {
-    }
+    public CryptoGetStakersHandler() {}
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {

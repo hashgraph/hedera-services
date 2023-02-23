@@ -32,8 +32,7 @@ import javax.inject.Singleton;
 public class CryptoGetLiveHashHandler extends FreeQueryHandler {
 
     @Inject
-    public CryptoGetLiveHashHandler() {
-    }
+    public CryptoGetLiveHashHandler() {}
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {

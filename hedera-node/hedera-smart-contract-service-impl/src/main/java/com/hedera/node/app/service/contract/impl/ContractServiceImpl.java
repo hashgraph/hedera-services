@@ -212,8 +212,7 @@ public final class ContractServiceImpl implements ContractService {
                 contractSystemDeleteHandler,
                 contractSystemUndeleteHandler,
                 contractUpdateHandler,
-                etherumTransactionHandler
-        );
+                etherumTransactionHandler);
     }
 
     @NonNull
@@ -224,7 +223,6 @@ public final class ContractServiceImpl implements ContractService {
                 contractGetBySolidityIDHandler,
                 contractGetBytecodeHandler,
                 contractGetInfoHandler,
-                contractGetRecordsHandler
-        );
+                contractGetRecordsHandler);
     }
 }
