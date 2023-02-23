@@ -55,8 +55,8 @@ public class ServiceProviderImpl implements ServiceProvider {
             final Service service = factory.createService(this, facilityFacade);
 
             services.values().stream()
-                    .filter(existingService -> Objects.equals(existingService.getServiceName(),
-                            service.getServiceName()))
+                    .filter(existingService ->
+                            Objects.equals(existingService.getServiceName(), service.getServiceName()))
                     .findAny()
                     .ifPresent(existingService -> {
                         throw new IllegalStateException("Can not add service for " + service.getClass()
