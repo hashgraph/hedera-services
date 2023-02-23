@@ -232,7 +232,6 @@ import static com.hedera.node.app.spi.config.PropertyNames.WORKFLOWS_ENABLED;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_ACTION;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_BYTECODE;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_STATE_CHANGE;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -256,6 +255,7 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -498,8 +498,8 @@ class BootstrapPropertiesTest {
             entry(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION, false),
             entry(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION, true),
             entry(TOKENS_AUTO_CREATIONS_ENABLED, true),
-            entry(WORKFLOWS_ENABLED, Set.of(ConsensusGetTopicInfo)),
             entry(STATES_ENABLED, false),
+            entry(WORKFLOWS_ENABLED, Set.of(HederaFunctionality.NONE)),
             entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, false));
 
     @Test

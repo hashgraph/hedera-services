@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.context.properties;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -32,7 +32,7 @@ class GlobalStaticPropertiesTest {
 
         assertFalse(subject.workflowsEnabled().isEmpty());
         assertEquals(1, subject.workflowsEnabled().size());
-        assertEquals(ConsensusGetTopicInfo, subject.workflowsEnabled().toArray()[0]);
+        assertEquals(NONE, subject.workflowsEnabled().toArray()[0]);
     }
 
     @Test
