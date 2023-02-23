@@ -15,36 +15,29 @@
  *
  */
 
-package com.hedera.node.app.spi.itest;
+package com.hedera.node.app.services;
 
-import com.hedera.node.app.spi.FacilityFacade;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.spi.service.Service;
-import com.hedera.node.app.spi.ServiceProviderImpl;
-import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.swirlds.config.api.Configuration;
 import java.util.Set;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-
-public class ServiceProviderTest {
+class ServiceProviderImplTest {
 
     @Test
-    void test() {
-        final FacilityFacade facilityFacade = new FacilityFacade() {
-            @Override
-            public Configuration getConfiguration() {
-                return null;
-            }
+    void test1() {
+        //given
+        final var serviceProvider = new ServiceProviderImpl(null);
 
-            @Override
-            public SchemaRegistry getSchemaRegistry() {
-                return null;
-            }
-        };
-        final ServiceProviderImpl serviceProvider = new ServiceProviderImpl(facilityFacade);
+        //when
         final Set<Service> allServices = serviceProvider.getAllServices();
 
-        Assertions.assertEquals(1, allServices.size());
+        //then
+        assertThat(allServices).isNotNull();
+        assertThat(allServices).isNotEmpty();
+        assertThat(allServices).hasAtLeastOneElementOfType(CryptoService.class);
     }
+
 }

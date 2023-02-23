@@ -16,8 +16,9 @@
 package com.hedera.node.app.service.consensus.impl;
 
 import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.spi.service.Service;
 
 /**
- * Standard implementation of the {@link ConsensusService} {@link com.hedera.node.app.spi.Service}.
+ * Standard implementation of the {@link ConsensusService} {@link Service}.
  */
 public final class ConsensusServiceImpl implements ConsensusService {}

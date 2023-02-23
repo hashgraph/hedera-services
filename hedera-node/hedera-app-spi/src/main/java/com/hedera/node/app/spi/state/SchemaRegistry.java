@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.spi.state;
 
-import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.service.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 

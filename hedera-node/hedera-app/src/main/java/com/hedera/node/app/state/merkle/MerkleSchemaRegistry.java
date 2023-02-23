@@ -16,7 +16,7 @@
 package com.hedera.node.app.state.merkle;
 
 import com.hedera.node.app.spi.SemanticVersionComparator;
-import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.service.Service;
 import com.hedera.node.app.spi.state.*;
 import com.hedera.node.app.state.merkle.MerkleHederaState.MerkleWritableStates;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;

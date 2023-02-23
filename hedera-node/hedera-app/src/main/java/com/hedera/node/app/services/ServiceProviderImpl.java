@@ -15,8 +15,12 @@
  *
  */
 
-package com.hedera.node.app.spi;
+package com.hedera.node.app.services;
 
+import com.hedera.node.app.spi.FacilityFacade;
+import com.hedera.node.app.spi.service.Service;
+import com.hedera.node.app.spi.service.ServiceFactory;
+import com.hedera.node.app.spi.service.ServiceProvider;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;

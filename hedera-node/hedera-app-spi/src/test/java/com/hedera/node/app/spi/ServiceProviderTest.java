@@ -17,6 +17,7 @@
 
 package com.hedera.node.app.spi;
 
+import com.hedera.node.app.spi.service.Service;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.swirlds.config.api.Configuration;
 import java.util.Set;

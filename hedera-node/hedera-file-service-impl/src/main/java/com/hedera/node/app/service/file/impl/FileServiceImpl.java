@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.file.impl;
 
 import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.spi.service.Service;
 
-/** Standard implementation of the {@link FileService} {@link com.hedera.node.app.spi.Service}. */
+/** Standard implementation of the {@link FileService} {@link Service}. */
 public final class FileServiceImpl implements FileService {}

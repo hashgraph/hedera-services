@@ -20,8 +20,8 @@ package com.hedera.node.app.di;
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.handlers.CryptoApproveAllowanceHandlerI;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
-import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.ServiceProviderImpl;
+import com.hedera.node.app.services.ServiceProviderImpl;
+import com.hedera.node.app.spi.service.Service;
 import com.hedera.node.app.spi.workflows.FreeQueryHandler;
 import dagger.Module;
 import dagger.Provides;
@@ -30,7 +30,7 @@ import java.util.Set;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-@Module
+@Module(includes = {FacilityModule.class})
 public interface DaggerServiceProvider {
 
     @Provides

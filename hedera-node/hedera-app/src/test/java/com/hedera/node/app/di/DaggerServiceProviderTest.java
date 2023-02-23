@@ -18,7 +18,7 @@
 package com.hedera.node.app.di;
 
 import com.hedera.node.app.service.token.CryptoService;
-import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.service.Service;
 import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

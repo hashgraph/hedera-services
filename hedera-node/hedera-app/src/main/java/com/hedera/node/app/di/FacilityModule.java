@@ -15,20 +15,23 @@
  *
  */
 
-package com.hedera.node.app.spi;
+package com.hedera.node.app.di;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
+import dagger.Module;
 
-public interface ServiceFactory<T extends Service> {
+@Module
+public class FacilityModule {
 
-    @NonNull
-    Class<T> getServiceClass();
+    //  private final FacilityFacade facilityFacade;
 
-    @NonNull
-    T createService(ServiceProviderImpl serviceProvider, FacilityFacade facilityFacade);
+    // public FacilityModule(final FacilityFacade facilityFacade) {
+    //     this.facilityFacade = Objects.requireNonNull(facilityFacade, "facilityFacade");
+    // }
 
-    default Set<Class<Service>> getDependencies() {
-        return Set.of();
-    }
+    // @Provides
+    // @Singleton
+    // public FacilityFacade provideFacilityFacade() {
+    //    return facilityFacade;
+    // }
+
 }

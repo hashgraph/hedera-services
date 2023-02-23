@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.token;
 
 import com.hedera.node.app.service.token.handlers.CryptoApproveAllowanceHandlerI;
-import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.service.Service;
 import com.hedera.node.app.spi.workflows.FreeQueryHandler;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.QueryHandler;

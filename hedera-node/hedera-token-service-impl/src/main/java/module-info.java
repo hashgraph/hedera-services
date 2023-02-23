@@ -1,5 +1,5 @@
 import com.hedera.node.app.service.token.impl.CryptoServiceFactory;
-import com.hedera.node.app.spi.ServiceFactory;
+import com.hedera.node.app.spi.service.ServiceFactory;
 
 module com.hedera.node.app.service.token.impl {
     requires com.hedera.node.app.service.token;

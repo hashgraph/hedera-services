@@ -16,8 +16,9 @@
 package com.hedera.node.app.service.network.impl;
 
 import com.hedera.node.app.service.network.NetworkService;
+import com.hedera.node.app.spi.service.Service;
 
 /**
- * Standard implementation of the {@link NetworkService} {@link com.hedera.node.app.spi.Service}.
+ * Standard implementation of the {@link NetworkService} {@link Service}.
  */
 public final class NetworkServiceImpl implements NetworkService {}

@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.admin.impl;
 
 import com.hedera.node.app.service.admin.FreezeService;
+import com.hedera.node.app.spi.service.Service;
 
-/** Standard implementation of the {@link FreezeService} {@link com.hedera.node.app.spi.Service}. */
+/** Standard implementation of the {@link FreezeService} {@link Service}. */
 public final class FreezeServiceImpl implements FreezeService {}

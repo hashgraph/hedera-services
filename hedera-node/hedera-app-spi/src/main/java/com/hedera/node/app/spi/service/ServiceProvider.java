@@ -15,7 +15,7 @@
  *
  */
 
-package com.hedera.node.app.spi;
+package com.hedera.node.app.spi.service;
 
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;

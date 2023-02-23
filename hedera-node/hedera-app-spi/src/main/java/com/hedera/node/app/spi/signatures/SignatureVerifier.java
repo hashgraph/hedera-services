@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.spi.signatures;
 
-import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.service.Service;
 import com.hedera.node.app.spi.key.HederaKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 

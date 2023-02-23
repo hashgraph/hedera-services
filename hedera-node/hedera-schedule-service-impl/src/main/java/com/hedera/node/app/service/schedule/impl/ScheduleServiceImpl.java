@@ -16,8 +16,9 @@
 package com.hedera.node.app.service.schedule.impl;
 
 import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.spi.service.Service;
 
 /**
- * Standard implementation of the {@link ScheduleService} {@link com.hedera.node.app.spi.Service}.
+ * Standard implementation of the {@link ScheduleService} {@link Service}.
  */
 public final class ScheduleServiceImpl implements ScheduleService {}

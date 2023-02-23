@@ -17,7 +17,7 @@
 
 package com.hedera.node.app.di;
 
-import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.service.Service;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;

@@ -20,10 +20,23 @@ package com.hedera.node.app.spi;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.swirlds.config.api.Configuration;
 
+/**
+ * Provides access to the Hedera node's facilities.
+ */
 public interface FacilityFacade {
 
+    /**
+     * Returns the node's configuration.
+     *
+     * @return the node's configuration
+     */
     Configuration getConfiguration();
 
+    /**
+     * Returns the node's schema registry.
+     *
+     * @return the node's schema registry
+     */
     SchemaRegistry getSchemaRegistry();
 
 }

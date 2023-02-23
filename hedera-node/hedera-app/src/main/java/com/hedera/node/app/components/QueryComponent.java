@@ -17,6 +17,7 @@ package com.hedera.node.app.components;
 
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.di.DaggerServiceProvider;
+import com.hedera.node.app.di.FacilityModule;
 import com.hedera.node.app.platform.PlatformModule;
 import com.hedera.node.app.service.mono.config.ConfigModule;
 import com.hedera.node.app.service.mono.context.ContextModule;
@@ -51,7 +52,8 @@ import javax.inject.Singleton;
                 PlatformModule.class,
                 PropertiesModule.class,
                 ThrottlingModule.class,
-                DaggerServiceProvider.class
+                DaggerServiceProvider.class,
+                FacilityModule.class
         })
 public interface QueryComponent {
     QueryWorkflow queryWorkflow();

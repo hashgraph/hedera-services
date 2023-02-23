@@ -1,3 +1,5 @@
+import com.hedera.node.app.spi.service.ServiceFactory;
+
 module com.hedera.node.app {
     requires io.helidon.grpc.core;
     requires io.helidon.grpc.server;
@@ -47,4 +49,6 @@ module com.hedera.node.app {
             com.swirlds.common;
     exports com.hedera.node.app.state.merkle.singleton to
             com.swirlds.common;
+
+    uses ServiceFactory;
 }
