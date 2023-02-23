@@ -82,7 +82,65 @@ public class MapWarmer {
         if (accountsStorageAdapter.get().areOnDisk()
                 && nftsAdapter.get().isVirtual()
                 && tokenRelsAdapter.get().areOnDisk()) {
-            threadpool.execute(newTokenRunnable(sender, receiver, tokenNum, senderSerialNum));
+
+            threadpool.execute(() -> {
+                // Accounts:
+                final var acctMap = accountsStorageAdapter.get().getOnDiskAccounts();
+                if (acctMap == null) return;
+
+                acctMap.warm(EntityNumVirtualKey.from(EntityNum.fromAccountId(sender)));
+                acctMap.warm(EntityNumVirtualKey.from(EntityNum.fromAccountId(receiver)));
+            });
+
+            threadpool.execute(() -> {
+                // NFT:
+                final var nftKey = new UniqueTokenKey(tokenNum, senderSerialNum);
+                final var nftMap = nftsAdapter.get().getOnDiskNfts();
+                final var nftValue =
+                        Optional.ofNullable(nftMap).map(vmap -> vmap.get(nftKey)).orElse(null);
+                if (nftValue != null) {
+                    nftMap.warm(
+                            UniqueTokenKey.from(nftValue.getPrev().nftId()));
+                    nftMap.warm(
+                            UniqueTokenKey.from(nftValue.getNext().nftId()));
+                }
+            });
+
+            threadpool.execute(() -> {
+                // Sender TokenRel:
+                final var senderTokenRelKey =
+                        EntityNumVirtualKey.fromPair(
+                                EntityNumPair.fromLongs(sender.getAccountNum(), tokenNum));
+                final var tokenRelMap = tokenRelsAdapter.get().getOnDiskRels();
+                final var senderTokenRel =
+                        Optional.ofNullable(tokenRelMap)
+                                .map(vmap -> vmap.get(senderTokenRelKey))
+                                .orElse(null);
+                if (senderTokenRel != null) {
+                    tokenRelMap.warm(
+                            EntityNumVirtualKey.fromPair(EntityNumPair.fromLongs(sender.getAccountNum(), senderTokenRel.getPrev())));
+                    tokenRelMap.warm(
+                            EntityNumVirtualKey.fromPair(EntityNumPair.fromLongs(sender.getAccountNum(), senderTokenRel.getNext())));
+                }
+            });
+
+            threadpool.execute(() -> {
+                // Receiver TokenRel:
+                final var receiverTokenRelKey =
+                        EntityNumVirtualKey.fromPair(
+                                EntityNumPair.fromLongs(receiver.getAccountNum(), tokenNum));
+                final var tokenRelMap = tokenRelsAdapter.get().getOnDiskRels();
+                final var receiverTokenRel =
+                        Optional.ofNullable(tokenRelMap)
+                                .map(vmap -> vmap.get(receiverTokenRelKey))
+                                .orElse(null);
+                if (receiverTokenRel != null) {
+                    tokenRelMap.warm(
+                            EntityNumVirtualKey.fromPair(EntityNumPair.fromLongs(receiver.getAccountNum(), receiverTokenRel.getPrev())));
+                    tokenRelMap.warm(
+                            EntityNumVirtualKey.fromPair(EntityNumPair.fromLongs(receiver.getAccountNum(), receiverTokenRel.getNext())));
+                }
+            });
         } else if (log.isDebugEnabled()) {
             log.debug(
                     "no-op 'warm' not called on any token objects due to non-matching config:"
@@ -91,76 +149,5 @@ public class MapWarmer {
                     nftsAdapter.get().isVirtual(),
                     tokenRelsAdapter.get().areOnDisk());
         }
-    }
-
-    private Runnable newTokenRunnable(
-            AccountID sender, AccountID receiver, long tokenNum, long senderSerialNum) {
-        return () -> {
-            // Sending Account:
-            final var senderAcctKey = EntityNumVirtualKey.from(EntityNum.fromAccountId(sender));
-            final var acctMap = accountsStorageAdapter.get().getOnDiskAccounts();
-            if (acctMap != null) {
-                acctMap.warm(senderAcctKey);
-            } else if (log.isDebugEnabled()) {
-                log.debug("no-op 'warm' called on sender account key {}", senderAcctKey);
-            }
-
-            // Receiving Account:
-            final var receiverAcctKey = EntityNumVirtualKey.from(EntityNum.fromAccountId(receiver));
-            if (acctMap != null) {
-                acctMap.warm(receiverAcctKey);
-            } else if (log.isDebugEnabled()) {
-                log.debug("no-op 'warm' called on receiver account key {}", receiverAcctKey);
-            }
-
-            // NFT:
-            final var nftKey = UniqueTokenKey.from(NftNumPair.fromLongs(tokenNum, senderSerialNum));
-            final var nftMap = nftsAdapter.get().getOnDiskNfts();
-            final var nftValue =
-                    Optional.ofNullable(nftMap).map(vmap -> vmap.get(nftKey)).orElse(null);
-            if (nftValue != null) {
-                nftMap.warm(
-                        UniqueTokenKey.from(nftValue.getPrev().asEntityNumPair().asNftNumPair()));
-                nftMap.warm(
-                        UniqueTokenKey.from(nftValue.getNext().asEntityNumPair().asNftNumPair()));
-            } else if (log.isDebugEnabled()) {
-                log.debug("no-op 'warm' called on unique token key {}", nftKey);
-            }
-
-            // Sender TokenRel:
-            final var senderTokenRelKey =
-                    EntityNumVirtualKey.fromPair(
-                            EntityNumPair.fromLongs(sender.getAccountNum(), tokenNum));
-            final var tokenRelMap = tokenRelsAdapter.get().getOnDiskRels();
-            final var senderTokenRel =
-                    Optional.ofNullable(tokenRelMap)
-                            .map(vmap -> vmap.get(senderTokenRelKey))
-                            .orElse(null);
-            if (senderTokenRel != null) {
-                tokenRelMap.warm(
-                        EntityNumVirtualKey.from(EntityNum.fromLong(senderTokenRel.getPrev())));
-                tokenRelMap.warm(
-                        EntityNumVirtualKey.from(EntityNum.fromLong(senderTokenRel.getNext())));
-            } else if (log.isDebugEnabled()) {
-                log.debug("no-op 'warm' called on tokenRel sender key {}", senderTokenRelKey);
-            }
-
-            // Receiver TokenRel:
-            final var receiverTokenRelKey =
-                    EntityNumVirtualKey.fromPair(
-                            EntityNumPair.fromLongs(receiver.getAccountNum(), tokenNum));
-            final var receiverTokenRel =
-                    Optional.ofNullable(tokenRelMap)
-                            .map(vmap -> vmap.get(receiverTokenRelKey))
-                            .orElse(null);
-            if (receiverTokenRel != null) {
-                tokenRelMap.warm(
-                        EntityNumVirtualKey.from(EntityNum.fromLong(receiverTokenRel.getPrev())));
-                tokenRelMap.warm(
-                        EntityNumVirtualKey.from(EntityNum.fromLong(receiverTokenRel.getNext())));
-            } else if (log.isDebugEnabled()) {
-                log.debug("no-op 'warm' called on tokenRel receiver key {}", receiverTokenRelKey);
-            }
-        };
     }
 }
