@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static com.hedera.node.app.service.mono.context.primitives.StateView.tokenFreeStatusFor;
@@ -273,8 +274,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         deleted = in.readBoolean();
         expiry = in.readLong();
         autoRenewAccount = readNullableSerializable(in);
@@ -298,9 +298,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         supplyType = TokenSupplyType.values()[in.readInt()];
         maxSupply = in.readLong();
         lastUsedSerialNumber = in.readLong();
-        feeSchedule =
-                unmodifiableList(
-                        in.readSerializableList(Integer.MAX_VALUE, true, FcCustomFee::new));
+        feeSchedule = unmodifiableList(in.readSerializableList(Integer.MAX_VALUE, true, FcCustomFee::new));
         feeScheduleKey = readNullable(in, JKeySerializer::deserialize);
         // Added in 0.18
         number = in.readInt();
@@ -349,17 +347,16 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
     @Override
     public MerkleToken copy() {
         setImmutable(true);
-        final var fc =
-                new MerkleToken(
-                        expiry,
-                        totalSupply,
-                        decimals,
-                        symbol,
-                        name,
-                        accountsFrozenByDefault,
-                        accountsKycGrantedByDefault,
-                        treasury,
-                        number);
+        final var fc = new MerkleToken(
+                expiry,
+                totalSupply,
+                decimals,
+                symbol,
+                name,
+                accountsFrozenByDefault,
+                accountsKycGrantedByDefault,
+                treasury,
+                number);
         fc.setMemo(memo);
         fc.setDeleted(deleted);
         fc.setFeeSchedule(feeSchedule);
@@ -587,14 +584,11 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         final var newTotalSupply = totalSupply + amount;
         if (newTotalSupply < 0) {
             throw new IllegalArgumentException(
-                    String.format(
-                            "Argument 'amount=%d' would negate totalSupply=%d!",
-                            amount, totalSupply));
+                    String.format("Argument 'amount=%d' would negate totalSupply=%d!", amount, totalSupply));
         }
         if (maxSupply != 0 && maxSupply < newTotalSupply) {
             throw new IllegalArgumentException(
-                    String.format(
-                            "Argument 'amount=%d' would exceed maxSupply=%d!", amount, maxSupply));
+                    String.format("Argument 'amount=%d' would exceed maxSupply=%d!", amount, maxSupply));
         }
         totalSupply += amount;
     }
@@ -719,21 +713,20 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
     }
 
     public TokenInfo asTokenInfo(final TokenID tokenId, final ByteString ledgerId) {
-        final var info =
-                TokenInfo.newBuilder()
-                        .setLedgerId(ledgerId)
-                        .setTokenTypeValue(tokenType().ordinal())
-                        .setSupplyTypeValue(supplyType().ordinal())
-                        .setTokenId(tokenId)
-                        .setDeleted(isDeleted())
-                        .setSymbol(symbol())
-                        .setName(name())
-                        .setMemo(memo())
-                        .setTreasury(treasury().toGrpcAccountId())
-                        .setTotalSupply(totalSupply())
-                        .setMaxSupply(maxSupply())
-                        .setDecimals(decimals())
-                        .setExpiry(Timestamp.newBuilder().setSeconds(expiry()));
+        final var info = TokenInfo.newBuilder()
+                .setLedgerId(ledgerId)
+                .setTokenTypeValue(tokenType().ordinal())
+                .setSupplyTypeValue(supplyType().ordinal())
+                .setTokenId(tokenId)
+                .setDeleted(isDeleted())
+                .setSymbol(symbol())
+                .setName(name())
+                .setMemo(memo())
+                .setTreasury(treasury().toGrpcAccountId())
+                .setTotalSupply(totalSupply())
+                .setMaxSupply(maxSupply())
+                .setDecimals(decimals())
+                .setExpiry(Timestamp.newBuilder().setSeconds(expiry()));
 
         final var adminCandidate = adminKey();
         adminCandidate.ifPresent(k -> info.setAdminKey(asKeyUnchecked(k)));

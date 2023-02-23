@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.hapi.utils.ByteStringUtils.wrapUnsafely;
@@ -128,8 +129,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
     }
 
     public ExpirableTxnRecord(final Builder builder) {
-        this.receipt =
-                (builder.receiptBuilder != null) ? builder.receiptBuilder.build() : builder.receipt;
+        this.receipt = (builder.receiptBuilder != null) ? builder.receiptBuilder.build() : builder.receipt;
         this.txnHash = builder.txnHash;
         this.txnId = builder.txnId;
         this.consensusTime = builder.consensusTime;
@@ -157,28 +157,27 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
     /* --- Object --- */
     @Override
     public String toString() {
-        final var helper =
-                MoreObjects.toStringHelper(this)
-                        .omitNullValues()
-                        .add("numChildRecords", numChildRecords)
-                        .add("receipt", receipt)
-                        .add("fee", fee)
-                        .add("txnHash", CommonUtils.hex(txnHash))
-                        .add("txnId", txnId)
-                        .add("consensusTimestamp", consensusTime)
-                        .add("expiry", expiry)
-                        .add("submittingMember", submittingMember)
-                        .add("memo", memo)
-                        .add("contractCreation", contractCreateResult)
-                        .add("contractCall", contractCallResult)
-                        .add("hbarAdjustments", hbarAdjustments)
-                        .add("stakingRewardsPaid", stakingRewardsPaid)
-                        .add("scheduleRef", scheduleRef)
-                        .add("alias", alias.toStringUtf8())
-                        .add("ethereumHash", CommonUtils.hex(ethereumHash))
-                        .add("pseudoRandomNumber", pseudoRandomNumber)
-                        .add("pseudoRandomBytes", CommonUtils.hex(pseudoRandomBytes))
-                        .add("evmAddress", CommonUtils.hex(evmAddress));
+        final var helper = MoreObjects.toStringHelper(this)
+                .omitNullValues()
+                .add("numChildRecords", numChildRecords)
+                .add("receipt", receipt)
+                .add("fee", fee)
+                .add("txnHash", CommonUtils.hex(txnHash))
+                .add("txnId", txnId)
+                .add("consensusTimestamp", consensusTime)
+                .add("expiry", expiry)
+                .add("submittingMember", submittingMember)
+                .add("memo", memo)
+                .add("contractCreation", contractCreateResult)
+                .add("contractCall", contractCallResult)
+                .add("hbarAdjustments", hbarAdjustments)
+                .add("stakingRewardsPaid", stakingRewardsPaid)
+                .add("scheduleRef", scheduleRef)
+                .add("alias", alias.toStringUtf8())
+                .add("ethereumHash", CommonUtils.hex(ethereumHash))
+                .add("pseudoRandomNumber", pseudoRandomNumber)
+                .add("pseudoRandomBytes", CommonUtils.hex(pseudoRandomBytes))
+                .add("evmAddress", CommonUtils.hex(evmAddress));
 
         if (packedParentConsensusTime != MISSING_PARENT_CONSENSUS_TIMESTAMP) {
             helper.add(
@@ -190,34 +189,26 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
 
         if (tokens != NO_TOKENS) {
             final int n = tokens.size();
-            final var readable =
-                    IntStream.range(0, n)
-                            .mapToObj(
-                                    i ->
-                                            String.format(
-                                                    "%s(%s)",
-                                                    tokens.get(i).toAbbrevString(),
-                                                    reprOfNonEmptyChange(
-                                                            i,
-                                                            tokenAdjustments,
-                                                            nftTokenAdjustments)))
-                            .collect(joining(", "));
+            final var readable = IntStream.range(0, n)
+                    .mapToObj(i -> String.format(
+                            "%s(%s)",
+                            tokens.get(i).toAbbrevString(),
+                            reprOfNonEmptyChange(i, tokenAdjustments, nftTokenAdjustments)))
+                    .collect(joining(", "));
             helper.add("tokenAdjustments", readable);
         }
 
         if (assessedCustomFees != NO_CUSTOM_FEES) {
-            final var readable =
-                    assessedCustomFees.stream()
-                            .map(assessedCustomFee -> String.format("(%s)", assessedCustomFee))
-                            .collect(joining(", "));
+            final var readable = assessedCustomFees.stream()
+                    .map(assessedCustomFee -> String.format("(%s)", assessedCustomFee))
+                    .collect(joining(", "));
             helper.add("assessedCustomFees", readable);
         }
 
         if (newTokenAssociations != NO_NEW_TOKEN_ASSOCIATIONS) {
-            final var readable =
-                    newTokenAssociations.stream()
-                            .map(newTokenAssociation -> String.format("(%s)", newTokenAssociation))
-                            .collect(joining(", "));
+            final var readable = newTokenAssociations.stream()
+                    .map(newTokenAssociation -> String.format("(%s)", newTokenAssociation))
+                    .collect(joining(", "));
             helper.add("newTokenAssociations", readable);
         }
         return helper.toString();
@@ -228,9 +219,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
             final List<CurrencyAdjustments> tokenAdjustments,
             final List<NftAdjustments> nftTokenAdjustments) {
         final var fungibleAdjust = tokenAdjustments.get(i);
-        return fungibleAdjust.isEmpty()
-                ? nftTokenAdjustments.get(i).toString()
-                : fungibleAdjust.toString();
+        return fungibleAdjust.isEmpty() ? nftTokenAdjustments.get(i).toString() : fungibleAdjust.toString();
     }
 
     @Override
@@ -270,30 +259,29 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
 
     @Override
     public int hashCode() {
-        var result =
-                Objects.hash(
-                        receipt,
-                        txnId,
-                        consensusTime,
-                        memo,
-                        fee,
-                        contractCallResult,
-                        contractCreateResult,
-                        hbarAdjustments,
-                        stakingRewardsPaid,
-                        expiry,
-                        submittingMember,
-                        tokens,
-                        tokenAdjustments,
-                        nftTokenAdjustments,
-                        scheduleRef,
-                        assessedCustomFees,
-                        newTokenAssociations,
-                        numChildRecords,
-                        packedParentConsensusTime,
-                        alias,
-                        ethereumHash,
-                        pseudoRandomNumber);
+        var result = Objects.hash(
+                receipt,
+                txnId,
+                consensusTime,
+                memo,
+                fee,
+                contractCallResult,
+                contractCreateResult,
+                hbarAdjustments,
+                stakingRewardsPaid,
+                expiry,
+                submittingMember,
+                tokens,
+                tokenAdjustments,
+                nftTokenAdjustments,
+                scheduleRef,
+                assessedCustomFees,
+                newTokenAssociations,
+                numChildRecords,
+                packedParentConsensusTime,
+                alias,
+                ethereumHash,
+                pseudoRandomNumber);
         result = result * 31 + Arrays.hashCode(txnHash);
         result = result * 31 + Arrays.hashCode(pseudoRandomBytes);
         return result * 31 + Arrays.hashCode(evmAddress);
@@ -373,8 +361,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         receipt = readNullableSerializable(in);
         txnHash = in.readByteArray(MAX_TXN_HASH_BYTES);
         txnId = readNullableSerializable(in);
@@ -436,8 +423,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
         }
     }
 
-    private void deserializeAllowanceMaps(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    private void deserializeAllowanceMaps(final SerializableDataInputStream in, final int version) throws IOException {
         if (version < RELEASE_0250_VERSION) {
             // In release 0.24.x and 0.23.0 three _always-empty_ map sizes were serialized here
             in.readInt();
@@ -804,15 +790,13 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
             return this;
         }
 
-        public Builder setNewTokenAssociations(
-                final List<FcTokenAssociation> newTokenAssociations) {
+        public Builder setNewTokenAssociations(final List<FcTokenAssociation> newTokenAssociations) {
             this.newTokenAssociations = newTokenAssociations;
             return this;
         }
 
         public Builder setParentConsensusTime(final Instant consTime) {
-            this.packedParentConsensusTime =
-                    packedTime(consTime.getEpochSecond(), consTime.getNano());
+            this.packedParentConsensusTime = packedTime(consTime.getEpochSecond(), consTime.getNano());
             return this;
         }
 
@@ -904,8 +888,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
                 final var jId = changedThere[j];
                 final var cmp = Long.compare(iId, jId);
                 if (cmp == 0) {
-                    final var net =
-                            this.hbarAdjustments.hbars[i++] - that.hbarAdjustments.hbars[j++];
+                    final var net = this.hbarAdjustments.hbars[i++] - that.hbarAdjustments.hbars[j++];
                     if (net != 0) {
                         netAdjustsHere[k] = net;
                         netChanged[k++] = iId;
@@ -1009,8 +992,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
         }
 
         public boolean shouldNotBeExternalized() {
-            return onlyExternalizedIfSuccessful
-                    && !TxnReceipt.SUCCESS_LITERAL.equals(receiptBuilder.getStatus());
+            return onlyExternalizedIfSuccessful && !TxnReceipt.SUCCESS_LITERAL.equals(receiptBuilder.getStatus());
         }
 
         public long getFee() {

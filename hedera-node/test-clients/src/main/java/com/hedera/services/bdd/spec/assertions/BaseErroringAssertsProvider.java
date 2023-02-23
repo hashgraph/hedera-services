@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.assertions;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
@@ -35,31 +36,25 @@ public class BaseErroringAssertsProvider<T> implements ErroringAssertsProvider<T
     List<Function<HapiSpec, Function<T, Optional<Throwable>>>> testProviders = new ArrayList<>();
 
     protected void registerProvider(AssertUtils.ThrowingAssert throwing) {
-        testProviders.add(
-                spec ->
-                        instance -> {
-                            try {
-                                throwing.assertThrowable(spec, instance);
-                            } catch (Throwable t) {
-                                return Optional.of(t);
-                            }
-                            return Optional.empty();
-                        });
+        testProviders.add(spec -> instance -> {
+            try {
+                throwing.assertThrowable(spec, instance);
+            } catch (Throwable t) {
+                return Optional.of(t);
+            }
+            return Optional.empty();
+        });
     }
 
     /* Helper for asserting something about a ContractID, FileID, AccountID, etc. */
     @SuppressWarnings("unchecked")
-    protected <R> void registerIdLookupAssert(
-            String key, Function<T, R> getActual, Class<R> cls, String err) {
-        registerProvider(
-                (spec, o) -> {
-                    R expected =
-                            isIdLiteral(key)
-                                    ? parseIdByType(key, cls)
-                                    : spec.registry().getId(key, cls);
-                    R actual = getActual.apply((T) o);
-                    Assertions.assertEquals(expected, actual, err);
-                });
+    protected <R> void registerIdLookupAssert(String key, Function<T, R> getActual, Class<R> cls, String err) {
+        registerProvider((spec, o) -> {
+            R expected =
+                    isIdLiteral(key) ? parseIdByType(key, cls) : spec.registry().getId(key, cls);
+            R actual = getActual.apply((T) o);
+            Assertions.assertEquals(expected, actual, err);
+        });
     }
 
     @SuppressWarnings("unchecked")

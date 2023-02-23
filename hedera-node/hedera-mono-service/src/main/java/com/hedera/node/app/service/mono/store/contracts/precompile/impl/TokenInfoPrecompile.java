@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -33,8 +34,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class TokenInfoPrecompile extends AbstractTokenInfoPrecompile
-        implements EvmTokenInfoPrecompile {
+public class TokenInfoPrecompile extends AbstractTokenInfoPrecompile implements EvmTokenInfoPrecompile {
 
     public TokenInfoPrecompile(
             final TokenID tokenId,
@@ -56,9 +56,9 @@ public class TokenInfoPrecompile extends AbstractTokenInfoPrecompile
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        final var tokenInfo =
-                ledgers.evmInfoForToken(tokenId, stateView.getNetworkInfo().ledgerId())
-                        .orElse(null);
+        final var tokenInfo = ledgers.evmInfoForToken(
+                        tokenId, stateView.getNetworkInfo().ledgerId())
+                .orElse(null);
         validateTrue(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
         return evmEncoder.encodeGetTokenInfo(tokenInfo);

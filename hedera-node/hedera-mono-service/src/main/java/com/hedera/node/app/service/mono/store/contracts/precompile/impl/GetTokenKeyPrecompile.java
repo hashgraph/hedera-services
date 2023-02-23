@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -37,8 +38,7 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile
-        implements EvmGetTokenKeyPrecompile {
+public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile implements EvmGetTokenKeyPrecompile {
     private TokenProperty keyType;
 
     public GetTokenKeyPrecompile(
@@ -52,8 +52,7 @@ public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var getTokenKeyWrapper = decodeGetTokenKey(input);
         tokenId = getTokenKeyWrapper.token();
         keyType = TokenProperty.valueOf(getTokenKeyWrapper.tokenKeyType().name());

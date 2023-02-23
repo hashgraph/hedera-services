@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hedera.node.app.hapi.utils.ByteStringUtils.wrapUnsafely;
@@ -141,14 +142,11 @@ public class SigsAndPayerKeyScreen {
     }
 
     private void trackHollowAccountCompletion(AccountID accountID, JKey key) {
-        final var accountKey =
-                Key.newBuilder()
-                        .setECDSASecp256K1(ByteString.copyFrom(key.getECDSASecp256k1Key()))
-                        .build();
+        final var accountKey = Key.newBuilder()
+                .setECDSASecp256K1(ByteString.copyFrom(key.getECDSASecp256k1Key()))
+                .build();
 
-        var syntheticUpdate =
-                syntheticTxnFactory.updateHollowAccount(
-                        EntityNum.fromAccountId(accountID), accountKey);
+        var syntheticUpdate = syntheticTxnFactory.updateHollowAccount(EntityNum.fromAccountId(accountID), accountKey);
 
         final var sideEffects = new SideEffectsTracker();
         sideEffects.trackHollowAccountUpdate(accountID);
@@ -156,17 +154,13 @@ public class SigsAndPayerKeyScreen {
         final var childRecordBuilder =
                 creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, null);
 
-        final var inProgress =
-                new InProgressChildRecord(
-                        DEFAULT_SOURCE_ID,
-                        syntheticUpdate,
-                        childRecordBuilder,
-                        Collections.emptyList());
+        final var inProgress = new InProgressChildRecord(
+                DEFAULT_SOURCE_ID, syntheticUpdate, childRecordBuilder, Collections.emptyList());
 
         final var childRecord = inProgress.recordBuilder();
-        sigImpactHistorian.markEntityChanged(childRecord.getReceiptBuilder().getAccountId().num());
-        recordsHistorian.trackPrecedingChildRecord(
-                DEFAULT_SOURCE_ID, inProgress.syntheticBody(), childRecord);
+        sigImpactHistorian.markEntityChanged(
+                childRecord.getReceiptBuilder().getAccountId().num());
+        recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, inProgress.syntheticBody(), childRecord);
     }
 
     private boolean hasActivePayerSig(SwirldsTxnAccessor accessor) {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token.process;
 
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
@@ -60,19 +61,44 @@ class CreationTest {
 
     private TokenCreateTransactionBody op;
 
-    @Mock private EntityIdSource ids;
-    @Mock private Token provisionalToken;
-    @Mock private Account treasury;
-    @Mock private Account autoRenew;
-    @Mock private FcCustomFee customFee;
-    @Mock private TokenRelationship newRel;
-    @Mock private FcTokenAssociation autoAssociation;
-    @Mock private OptionValidator validator;
-    @Mock private AccountStore accountStore;
-    @Mock private TypedTokenStore tokenStore;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private Creation.NewRelsListing listing;
-    @Mock private Creation.TokenModelFactory modelFactory;
+    @Mock
+    private EntityIdSource ids;
+
+    @Mock
+    private Token provisionalToken;
+
+    @Mock
+    private Account treasury;
+
+    @Mock
+    private Account autoRenew;
+
+    @Mock
+    private FcCustomFee customFee;
+
+    @Mock
+    private TokenRelationship newRel;
+
+    @Mock
+    private FcTokenAssociation autoAssociation;
+
+    @Mock
+    private OptionValidator validator;
+
+    @Mock
+    private AccountStore accountStore;
+
+    @Mock
+    private TypedTokenStore tokenStore;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private Creation.NewRelsListing listing;
+
+    @Mock
+    private Creation.TokenModelFactory modelFactory;
 
     private Creation subject;
 
@@ -105,8 +131,7 @@ class CreationTest {
     void verifiesExpiryBeforeLoading() {
         givenSubjectWithInvalidExpiry();
 
-        assertFailsWith(
-                () -> subject.loadModelsWith(grpcSponsor, ids, validator), INVALID_EXPIRATION_TIME);
+        assertFailsWith(() -> subject.loadModelsWith(grpcSponsor, ids, validator), INVALID_EXPIRATION_TIME);
     }
 
     @Test
@@ -143,9 +168,7 @@ class CreationTest {
         givenSubjectWithEverything();
         given(dynamicProperties.maxCustomFeesAllowed()).willReturn(1);
 
-        assertFailsWith(
-                () -> subject.doProvisionallyWith(now, modelFactory, listing),
-                CUSTOM_FEES_LIST_TOO_LONG);
+        assertFailsWith(() -> subject.doProvisionallyWith(now, modelFactory, listing), CUSTOM_FEES_LIST_TOO_LONG);
     }
 
     @Test
@@ -155,8 +178,7 @@ class CreationTest {
         given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
         given(modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now))
                 .willReturn(provisionalToken);
-        given(listing.listFrom(provisionalToken, tokenStore, dynamicProperties))
-                .willReturn(List.of(newRel));
+        given(listing.listFrom(provisionalToken, tokenStore, dynamicProperties)).willReturn(List.of(newRel));
         given(provisionalToken.getCustomFees()).willReturn(List.of(customFee));
 
         subject.setProvisionalId(provisionalId);
@@ -178,8 +200,7 @@ class CreationTest {
         given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
         given(modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now))
                 .willReturn(provisionalToken);
-        given(listing.listFrom(provisionalToken, tokenStore, dynamicProperties))
-                .willReturn(List.of(newRel));
+        given(listing.listFrom(provisionalToken, tokenStore, dynamicProperties)).willReturn(List.of(newRel));
         given(provisionalToken.getCustomFees()).willReturn(List.of(customFee));
 
         subject.setProvisionalId(provisionalId);
@@ -201,8 +222,7 @@ class CreationTest {
         given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
         given(modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now))
                 .willReturn(provisionalToken);
-        given(listing.listFrom(provisionalToken, tokenStore, dynamicProperties))
-                .willReturn(List.of(newRel));
+        given(listing.listFrom(provisionalToken, tokenStore, dynamicProperties)).willReturn(List.of(newRel));
 
         subject.setProvisionalId(provisionalId);
         subject.setProvisionalToken(provisionalToken);
@@ -215,17 +235,12 @@ class CreationTest {
     }
 
     private void givenSubjectWithEverything() {
-        subject =
-                new Creation(accountStore, tokenStore, dynamicProperties, creationWithEverything());
+        subject = new Creation(accountStore, tokenStore, dynamicProperties, creationWithEverything());
     }
 
     private void givenSubjectWithEverythingExceptInitialSupply() {
         subject =
-                new Creation(
-                        accountStore,
-                        tokenStore,
-                        dynamicProperties,
-                        creationWithEverythingExceptInitialSupply());
+                new Creation(accountStore, tokenStore, dynamicProperties, creationWithEverythingExceptInitialSupply());
     }
 
     private void givenSubjectNoAutoRenew() {
@@ -233,8 +248,7 @@ class CreationTest {
     }
 
     private void givenSubjectWithInvalidExpiry() {
-        subject =
-                new Creation(accountStore, tokenStore, dynamicProperties, creationInvalidExpiry());
+        subject = new Creation(accountStore, tokenStore, dynamicProperties, creationInvalidExpiry());
     }
 
     private final AccountID grpcSponsor = IdUtils.asAccount("0.0.3");
@@ -244,24 +258,22 @@ class CreationTest {
     private final Id autoRenewId = Id.fromGrpcAccount(grpcAutoRenewId);
 
     private TokenCreateTransactionBody creationInvalidExpiry() {
-        op =
-                TokenCreateTransactionBody.newBuilder()
-                        .setExpiry(Timestamp.newBuilder().setSeconds(now))
-                        .setTreasury(grpcTreasuryId)
-                        .setAutoRenewAccount(grpcAutoRenewId)
-                        .build();
+        op = TokenCreateTransactionBody.newBuilder()
+                .setExpiry(Timestamp.newBuilder().setSeconds(now))
+                .setTreasury(grpcTreasuryId)
+                .setAutoRenewAccount(grpcAutoRenewId)
+                .build();
         return op;
     }
 
     private TokenCreateTransactionBody creationWithEverything() {
-        op =
-                TokenCreateTransactionBody.newBuilder()
-                        .setTreasury(grpcTreasuryId)
-                        .setInitialSupply(initialSupply)
-                        .setAutoRenewAccount(grpcAutoRenewId)
-                        .addCustomFees(CustomFee.getDefaultInstance())
-                        .addCustomFees(CustomFee.getDefaultInstance())
-                        .build();
+        op = TokenCreateTransactionBody.newBuilder()
+                .setTreasury(grpcTreasuryId)
+                .setInitialSupply(initialSupply)
+                .setAutoRenewAccount(grpcAutoRenewId)
+                .addCustomFees(CustomFee.getDefaultInstance())
+                .addCustomFees(CustomFee.getDefaultInstance())
+                .build();
         return op;
     }
 
@@ -271,11 +283,10 @@ class CreationTest {
     }
 
     private TokenCreateTransactionBody creationNoAutoRenew() {
-        op =
-                TokenCreateTransactionBody.newBuilder()
-                        .setTreasury(grpcTreasuryId)
-                        .setAutoRenewAccount(grpcAutoRenewId)
-                        .build();
+        op = TokenCreateTransactionBody.newBuilder()
+                .setTreasury(grpcTreasuryId)
+                .setAutoRenewAccount(grpcAutoRenewId)
+                .build();
         return op;
     }
 }

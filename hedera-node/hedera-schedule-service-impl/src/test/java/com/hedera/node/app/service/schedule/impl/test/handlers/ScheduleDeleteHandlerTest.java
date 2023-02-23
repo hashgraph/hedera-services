@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.schedule.impl.test.handlers;
 
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asOrdinary;
@@ -37,12 +38,19 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
-    private final ScheduleID scheduleID = ScheduleID.newBuilder().setScheduleNum(100L).build();
-    @Mock private ScheduleVirtualValue schedule;
-    @Mock private ReadableKVStateBase<Long, ScheduleVirtualValue> schedulesById;
+    private final ScheduleID scheduleID =
+            ScheduleID.newBuilder().setScheduleNum(100L).build();
+
+    @Mock
+    private ScheduleVirtualValue schedule;
+
+    @Mock
+    private ReadableKVStateBase<Long, ScheduleVirtualValue> schedulesById;
+
     private ReadableScheduleStore scheduleStore;
 
-    private final AccountID scheduleDeleter = AccountID.newBuilder().setAccountNum(3001L).build();
+    private final AccountID scheduleDeleter =
+            AccountID.newBuilder().setAccountNum(3001L).build();
 
     @BeforeEach
     void setUp() {
@@ -57,8 +65,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
         final var txn = scheduleDeleteTransaction();
         givenSetupForScheduleDelete(txn);
         given(schedule.adminKey()).willReturn(Optional.of(JKey.mapKey(key)));
-        given(keyLookup.getKey(scheduleDeleter))
-                .willReturn(KeyOrLookupFailureReason.withKey(adminKey));
+        given(keyLookup.getKey(scheduleDeleter)).willReturn(KeyOrLookupFailureReason.withKey(adminKey));
         given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
 
         final var context = new PreHandleContext(keyLookup, txn, scheduleDeleter);
@@ -74,8 +81,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
         final var txn = scheduleDeleteTransaction();
         givenSetupForScheduleDelete(txn);
 
-        given(keyLookup.getKey(scheduleDeleter))
-                .willReturn(KeyOrLookupFailureReason.withKey(adminKey));
+        given(keyLookup.getKey(scheduleDeleter)).willReturn(KeyOrLookupFailureReason.withKey(adminKey));
         final var context = new PreHandleContext(keyLookup, txn, scheduleDeleter);
         subject.preHandle(context, scheduleStore);
         assertEquals(scheduleDeleter, context.getPayer());
@@ -87,8 +93,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     void scheduleDeleteScheduleIsImmutable() {
         final var txn = scheduleDeleteTransaction();
         givenSetupForScheduleDelete(txn);
-        given(keyLookup.getKey(scheduleDeleter))
-                .willReturn(KeyOrLookupFailureReason.withKey(adminKey));
+        given(keyLookup.getKey(scheduleDeleter)).willReturn(KeyOrLookupFailureReason.withKey(adminKey));
         given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
 
         final var context = new PreHandleContext(keyLookup, txn, scheduleDeleter);
@@ -98,32 +103,27 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     }
 
     private void givenSetupForScheduleDelete(TransactionBody txn) {
-        scheduledTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(
-                                TransactionID.newBuilder().setAccountID(scheduler).build())
-                        .setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
-                        .build();
-        scheduledMeta =
-                new TransactionMetadata(
-                        asOrdinary(
-                                txn.getScheduleCreate().getScheduledTransactionBody(),
-                                txn.getTransactionID()),
-                        scheduler,
-                        OK,
-                        schedulerKey,
-                        List.of(),
-                        null,
-                        null,
-                        List.of(),
-                        List.of());
+        scheduledTxn = TransactionBody.newBuilder()
+                .setTransactionID(
+                        TransactionID.newBuilder().setAccountID(scheduler).build())
+                .setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
+                .build();
+        scheduledMeta = new TransactionMetadata(
+                asOrdinary(txn.getScheduleCreate().getScheduledTransactionBody(), txn.getTransactionID()),
+                scheduler,
+                OK,
+                schedulerKey,
+                List.of(),
+                null,
+                null,
+                List.of(),
+                List.of());
     }
 
     private TransactionBody scheduleDeleteTransaction() {
         return TransactionBody.newBuilder()
                 .setTransactionID(TransactionID.newBuilder().setAccountID(scheduleDeleter))
-                .setScheduleDelete(
-                        ScheduleDeleteTransactionBody.newBuilder().setScheduleID(scheduleID))
+                .setScheduleDelete(ScheduleDeleteTransactionBody.newBuilder().setScheduleID(scheduleID))
                 .build();
     }
 }

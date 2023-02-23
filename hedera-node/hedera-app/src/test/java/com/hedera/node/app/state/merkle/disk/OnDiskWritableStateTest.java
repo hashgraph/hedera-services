@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle.disk;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -87,8 +88,7 @@ class OnDiskWritableStateTest extends MerkleTestBase {
         @Test
         @DisplayName("Iterate over keys in the virtual map is not allowed")
         void iterateThrows() {
-            assertThatThrownBy(() -> state.keys())
-                    .isInstanceOf(UnsupportedOperationException.class);
+            assertThatThrownBy(() -> state.keys()).isInstanceOf(UnsupportedOperationException.class);
         }
     }
 

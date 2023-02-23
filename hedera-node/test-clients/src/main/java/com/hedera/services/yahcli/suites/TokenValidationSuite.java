@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.suites;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -61,10 +62,9 @@ public class TokenValidationSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    validateTokens(),
-                });
+        return List.of(new HapiSpec[] {
+            validateTokens(),
+        });
     }
 
     private HapiSpec validateTokens() {
@@ -108,21 +108,15 @@ public class TokenValidationSuite extends HapiSuite {
                         logIt(checkBoxed("Token management looks good")))
                 .then(
                         getAccountBalance(RECEIVER).payingWith(PAYER).hasTokenBalance(TOKEN, 1L),
-                        sourcing(
-                                () ->
-                                        getAccountBalance(TREASURY)
-                                                .payingWith(PAYER)
-                                                .hasTokenBalance(
-                                                        TOKEN, 1L + initialTreasuryBalance.get())),
+                        sourcing(() -> getAccountBalance(TREASURY)
+                                .payingWith(PAYER)
+                                .hasTokenBalance(TOKEN, 1L + initialTreasuryBalance.get())),
                         wipeTokenAccount(TOKEN, RECEIVER, 1).payingWith(PAYER),
                         burnToken(TOKEN, 1L).payingWith(PAYER),
                         getAccountBalance(RECEIVER).payingWith(PAYER).hasTokenBalance(TOKEN, 0L),
-                        sourcing(
-                                () ->
-                                        getAccountBalance(TREASURY)
-                                                .payingWith(PAYER)
-                                                .hasTokenBalance(
-                                                        TOKEN, initialTreasuryBalance.get())),
+                        sourcing(() -> getAccountBalance(TREASURY)
+                                .payingWith(PAYER)
+                                .hasTokenBalance(TOKEN, initialTreasuryBalance.get())),
                         logIt(checkBoxed("Token balance changes looks good")));
     }
 

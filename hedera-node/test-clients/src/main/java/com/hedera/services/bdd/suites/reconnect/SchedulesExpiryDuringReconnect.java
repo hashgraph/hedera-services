@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.reconnect;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -61,8 +62,7 @@ public class SchedulesExpiryDuringReconnect extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                runTransfersBeforeReconnect(), suiteSetup(), expireSchedulesDuringReconnect());
+        return List.of(runTransfersBeforeReconnect(), suiteSetup(), expireSchedulesDuringReconnect());
     }
 
     private HapiSpec expireSchedulesDuringReconnect() {
@@ -94,8 +94,7 @@ public class SchedulesExpiryDuringReconnect extends HapiSuite {
                 .when(
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(GENESIS)
-                                .overridingProps(
-                                        Map.of("ledger.schedule.txExpiryTimeSecs", "1800")),
+                                .overridingProps(Map.of("ledger.schedule.txExpiryTimeSecs", "1800")),
                         scheduleCreate(
                                         longLastingSchedule,
                                         cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 2))
@@ -141,8 +140,7 @@ public class SchedulesExpiryDuringReconnect extends HapiSuite {
                                 .sleepingBetweenRetriesFor(10),
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(GENESIS)
-                                .overridingProps(
-                                        Map.of("ledger.schedule.txExpiryTimeSecs", "1000")),
+                                .overridingProps(Map.of("ledger.schedule.txExpiryTimeSecs", "1000")),
                         scheduleCreate(
                                         duplicateSchedule,
                                         cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1))
@@ -173,10 +171,7 @@ public class SchedulesExpiryDuringReconnect extends HapiSuite {
         return defaultHapiSpec("suiteSetup")
                 .given()
                 .when()
-                .then(
-                        overriding(
-                                "ledger.schedule.txExpiryTimeSecs",
-                                "" + SCHEDULE_EXPIRY_TIME_SECS));
+                .then(overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS));
     }
 
     @Override

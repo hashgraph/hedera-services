@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.operation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,13 +47,26 @@ class HederaSelfDestructOperationTest {
     private static final String ethAddress = "0xc257274276a4e539741ca11b590b9447b26a8051";
     private static final Address eip1014Address = Address.fromHexString(ethAddress);
 
-    @Mock private HederaStackedWorldStateUpdater worldUpdater;
-    @Mock private GasCalculator gasCalculator;
-    @Mock private TransactionContext txnCtx;
-    @Mock private MessageFrame frame;
-    @Mock private EVM evm;
-    @Mock private Account account;
-    @Mock private BiPredicate<Address, MessageFrame> addressValidator;
+    @Mock
+    private HederaStackedWorldStateUpdater worldUpdater;
+
+    @Mock
+    private GasCalculator gasCalculator;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private EVM evm;
+
+    @Mock
+    private Account account;
+
+    @Mock
+    private BiPredicate<Address, MessageFrame> addressValidator;
 
     private HederaSelfDestructOperation subject;
 
@@ -130,9 +144,7 @@ class HederaSelfDestructOperationTest {
 
         final var opResult = subject.execute(frame, evm);
 
-        assertEquals(
-                HederaExceptionalHaltReason.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES,
-                opResult.getHaltReason());
+        assertEquals(HederaExceptionalHaltReason.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES, opResult.getHaltReason());
         assertEquals(2L, opResult.getGasCost());
     }
 
@@ -147,8 +159,7 @@ class HederaSelfDestructOperationTest {
 
         final var opResult = subject.execute(frame, evm);
 
-        assertEquals(
-                HederaExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS, opResult.getHaltReason());
+        assertEquals(HederaExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS, opResult.getHaltReason());
         assertEquals(2L, opResult.getGasCost());
     }
 
@@ -161,8 +172,7 @@ class HederaSelfDestructOperationTest {
 
         final var opResult = subject.execute(frame, evm);
 
-        assertEquals(
-                HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, opResult.getHaltReason());
+        assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, opResult.getHaltReason());
         assertEquals(2L, opResult.getGasCost());
     }
 

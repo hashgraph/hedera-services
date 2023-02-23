@@ -13,15 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.SigControl.SECP256K1_ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertEventuallyPasses;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.awaitStreamAssertions;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordedCryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustInclude;
 import static com.hedera.services.bdd.suites.contract.Utils.asInstant;
 
 import com.hedera.services.bdd.junit.validators.AccountExistenceValidator;
@@ -44,7 +49,7 @@ public class NewAccountRecordExists extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(newAccountIsReflectedInRecordStream());
+        return List.of(newAccountIsReflectedInRecordStream(), newAccountIsReflectedInRecordStreamV2());
     }
 
     private HapiSpec newAccountIsReflectedInRecordStream() {
@@ -64,19 +69,21 @@ public class NewAccountRecordExists extends HapiSuite {
                                 .via(creation),
                         getTxnRecord(creation)
                                 .exposingTo(
-                                        protoRecord ->
-                                                consensusTime.set(
-                                                        asInstant(
-                                                                        protoRecord
-                                                                                .getConsensusTimestamp())
-                                                                .plusNanos(0))))
-                .then(
-                        sourcing(
-                                () ->
-                                        assertEventuallyPasses(
-                                                new AccountExistenceValidator(
-                                                        account, consensusTime.get()),
-                                                Duration.ofMillis(2_100))));
+                                        protoRecord -> consensusTime.set(asInstant(protoRecord.getConsensusTimestamp())
+                                                .plusNanos(0))))
+                .then(sourcing(() -> assertEventuallyPasses(
+                        new AccountExistenceValidator(account, consensusTime.get()), Duration.ofMillis(2_100))));
+    }
+
+    private HapiSpec newAccountIsReflectedInRecordStreamV2() {
+        final var balance = 1_234_567L;
+        final var memo = "It was the best of times";
+        final var account = "novel";
+        return onlyDefaultHapiSpec("NewAccountIsReflectedInRecordStreamV2")
+                .given(streamMustInclude(
+                        recordedCryptoCreate(account, a -> a.withMemo(memo).withBalance(balance))))
+                .when(cryptoCreate(account).balance(balance).memo(memo))
+                .then(awaitStreamAssertions());
     }
 
     @Override

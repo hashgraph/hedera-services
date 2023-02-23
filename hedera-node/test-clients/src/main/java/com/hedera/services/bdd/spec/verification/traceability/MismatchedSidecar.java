@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.verification.traceability;
 
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
 record MismatchedSidecar(
-        TransactionSidecarRecord expectedSidecarRecord,
-        TransactionSidecarRecord actualSidecarRecord) {}
+        TransactionSidecarRecord expectedSidecarRecord, TransactionSidecarRecord actualSidecarRecord) {}

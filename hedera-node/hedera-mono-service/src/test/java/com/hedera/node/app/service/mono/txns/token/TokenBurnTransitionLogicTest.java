@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
@@ -55,14 +56,29 @@ class TokenBurnTransitionLogicTest {
     private final TokenID grpcId = IdUtils.asToken("1.2.3");
     private final Id treasuryId = new Id(2, 4, 6);
 
-    @Mock private TransactionContext txnCtx;
-    @Mock private SignedTxnAccessor accessor;
-    @Mock private TransactionBody transactionBody;
-    @Mock private TokenBurnTransactionBody burnTransactionBody;
-    @Mock private OptionValidator validator;
-    @Mock private TypedTokenStore tokenStore;
-    @Mock private AccountStore accountStore;
-    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private SignedTxnAccessor accessor;
+
+    @Mock
+    private TransactionBody transactionBody;
+
+    @Mock
+    private TokenBurnTransactionBody burnTransactionBody;
+
+    @Mock
+    private OptionValidator validator;
+
+    @Mock
+    private TypedTokenStore tokenStore;
+
+    @Mock
+    private AccountStore accountStore;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
 
     private TransactionBody tokenBurnTxn;
 
@@ -129,24 +145,21 @@ class TokenBurnTransitionLogicTest {
     void rejectsInvalidTxnBodyWithBothProps() {
         given(dynamicProperties.areNftsEnabled()).willReturn(true);
 
-        tokenBurnTxn =
-                TransactionBody.newBuilder()
-                        .setTokenBurn(
-                                TokenBurnTransactionBody.newBuilder()
-                                        .addAllSerialNumbers(List.of(1L))
-                                        .setAmount(1)
-                                        .setToken(grpcId))
-                        .build();
+        tokenBurnTxn = TransactionBody.newBuilder()
+                .setTokenBurn(TokenBurnTransactionBody.newBuilder()
+                        .addAllSerialNumbers(List.of(1L))
+                        .setAmount(1)
+                        .setToken(grpcId))
+                .build();
 
         assertEquals(INVALID_TRANSACTION_BODY, subject.semanticCheck().apply(tokenBurnTxn));
     }
 
     @Test
     void allowsTxnBodyWithNoProps() {
-        tokenBurnTxn =
-                TransactionBody.newBuilder()
-                        .setTokenBurn(TokenBurnTransactionBody.newBuilder().setToken(grpcId))
-                        .build();
+        tokenBurnTxn = TransactionBody.newBuilder()
+                .setTokenBurn(TokenBurnTransactionBody.newBuilder().setToken(grpcId))
+                .build();
 
         assertEquals(OK, subject.semanticCheck().apply(tokenBurnTxn));
     }
@@ -154,16 +167,11 @@ class TokenBurnTransitionLogicTest {
     @Test
     void rejectsInvalidTxnBodyWithInvalidBatch() {
         given(dynamicProperties.areNftsEnabled()).willReturn(true);
-        tokenBurnTxn =
-                TransactionBody.newBuilder()
-                        .setTokenBurn(
-                                TokenBurnTransactionBody.newBuilder()
-                                        .addAllSerialNumbers(
-                                                LongStream.range(-20L, 0L)
-                                                        .boxed()
-                                                        .collect(Collectors.toList()))
-                                        .setToken(grpcId))
-                        .build();
+        tokenBurnTxn = TransactionBody.newBuilder()
+                .setTokenBurn(TokenBurnTransactionBody.newBuilder()
+                        .addAllSerialNumbers(LongStream.range(-20L, 0L).boxed().collect(Collectors.toList()))
+                        .setToken(grpcId))
+                .build();
 
         given(validator.maxBatchSizeBurnCheck(tokenBurnTxn.getTokenBurn().getSerialNumbersCount()))
                 .willReturn(OK);
@@ -173,16 +181,11 @@ class TokenBurnTransitionLogicTest {
     @Test
     void propagatesErrorOnBatchSizeExceeded() {
         given(dynamicProperties.areNftsEnabled()).willReturn(true);
-        tokenBurnTxn =
-                TransactionBody.newBuilder()
-                        .setTokenBurn(
-                                TokenBurnTransactionBody.newBuilder()
-                                        .addAllSerialNumbers(
-                                                LongStream.range(1, 5)
-                                                        .boxed()
-                                                        .collect(Collectors.toList()))
-                                        .setToken(grpcId))
-                        .build();
+        tokenBurnTxn = TransactionBody.newBuilder()
+                .setTokenBurn(TokenBurnTransactionBody.newBuilder()
+                        .addAllSerialNumbers(LongStream.range(1, 5).boxed().collect(Collectors.toList()))
+                        .setToken(grpcId))
+                .build();
 
         given(validator.maxBatchSizeBurnCheck(tokenBurnTxn.getTokenBurn().getSerialNumbersCount()))
                 .willReturn(BATCH_SIZE_LIMIT_EXCEEDED);
@@ -209,51 +212,40 @@ class TokenBurnTransitionLogicTest {
     }
 
     private void givenValidTxnCtx() {
-        tokenBurnTxn =
-                TransactionBody.newBuilder()
-                        .setTokenBurn(
-                                TokenBurnTransactionBody.newBuilder()
-                                        .setToken(grpcId)
-                                        .setAmount(amount))
-                        .build();
+        tokenBurnTxn = TransactionBody.newBuilder()
+                .setTokenBurn(
+                        TokenBurnTransactionBody.newBuilder().setToken(grpcId).setAmount(amount))
+                .build();
     }
 
     private void givenValidUniqueTxnCtx() {
-        tokenBurnTxn =
-                TransactionBody.newBuilder()
-                        .setTokenBurn(
-                                TokenBurnTransactionBody.newBuilder()
-                                        .setToken(grpcId)
-                                        .addAllSerialNumbers(List.of(1L)))
-                        .build();
+        tokenBurnTxn = TransactionBody.newBuilder()
+                .setTokenBurn(
+                        TokenBurnTransactionBody.newBuilder().setToken(grpcId).addAllSerialNumbers(List.of(1L)))
+                .build();
     }
 
     private void givenMissingToken() {
-        tokenBurnTxn =
-                TransactionBody.newBuilder()
-                        .setTokenBurn(TokenBurnTransactionBody.newBuilder().build())
-                        .build();
+        tokenBurnTxn = TransactionBody.newBuilder()
+                .setTokenBurn(TokenBurnTransactionBody.newBuilder().build())
+                .build();
     }
 
     private void givenInvalidNegativeAmount() {
-        tokenBurnTxn =
-                TransactionBody.newBuilder()
-                        .setTokenBurn(
-                                TokenBurnTransactionBody.newBuilder()
-                                        .setToken(grpcId)
-                                        .setAmount(-1)
-                                        .build())
-                        .build();
+        tokenBurnTxn = TransactionBody.newBuilder()
+                .setTokenBurn(TokenBurnTransactionBody.newBuilder()
+                        .setToken(grpcId)
+                        .setAmount(-1)
+                        .build())
+                .build();
     }
 
     private void givenInvalidZeroAmount() {
-        tokenBurnTxn =
-                TransactionBody.newBuilder()
-                        .setTokenBurn(
-                                TokenBurnTransactionBody.newBuilder()
-                                        .setToken(grpcId)
-                                        .setAmount(0)
-                                        .build())
-                        .build();
+        tokenBurnTxn = TransactionBody.newBuilder()
+                .setTokenBurn(TokenBurnTransactionBody.newBuilder()
+                        .setToken(grpcId)
+                        .setAmount(0)
+                        .build())
+                .build();
     }
 }

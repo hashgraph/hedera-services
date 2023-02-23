@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
 import com.hedera.node.app.service.mono.store.models.Id;
 
 public interface FungibleAdjuster {
-    BalanceChange adjustedChange(
-            Id account, Id chargingToken, Id denom, long amount, BalanceChangeManager manager);
+    BalanceChange adjustedChange(Id account, Id chargingToken, Id denom, long amount, BalanceChangeManager manager);
 }

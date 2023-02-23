@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.stats;
 
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -30,15 +31,14 @@ public class ThroughputObs {
         this.name = name;
         this.creationTime = System.currentTimeMillis();
         this.expectedQueueSaturationTime = expectedQueueSaturationTime;
-        spec.addLedgerOpCountCallback(
-                count -> {
-                    if (numOpsAtExpectedQueueSaturation == -1) {
-                        long now = System.currentTimeMillis();
-                        if (now >= expectedQueueSaturationTime) {
-                            numOpsAtExpectedQueueSaturation = count;
-                        }
-                    }
-                });
+        spec.addLedgerOpCountCallback(count -> {
+            if (numOpsAtExpectedQueueSaturation == -1) {
+                long now = System.currentTimeMillis();
+                if (now >= expectedQueueSaturationTime) {
+                    numOpsAtExpectedQueueSaturation = count;
+                }
+            }
+        });
         this.numOpsAtObservationStart = spec.numLedgerOps();
     }
 
@@ -81,9 +81,7 @@ public class ThroughputObs {
     }
 
     private boolean summarizable() {
-        return pos(numOpsAtExpectedQueueSaturation)
-                && pos(numOpsAtObservationFinish)
-                && pos(obsLengthMs);
+        return pos(numOpsAtExpectedQueueSaturation) && pos(numOpsAtObservationFinish) && pos(obsLengthMs);
     }
 
     private boolean pos(long v) {

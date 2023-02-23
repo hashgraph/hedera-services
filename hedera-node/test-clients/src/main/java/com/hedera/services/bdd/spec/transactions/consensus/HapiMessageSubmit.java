@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.consensus;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTopicId;
@@ -116,9 +117,7 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
     }
 
     public HapiMessageSubmit chunkInfo(
-            final int totalChunks,
-            final int chunkNumber,
-            final TransactionID initialTransactionID) {
+            final int totalChunks, final int chunkNumber, final TransactionID initialTransactionID) {
         this.initialTransactionID = Optional.of(initialTransactionID);
         return chunkInfo(totalChunks, chunkNumber);
     }
@@ -126,42 +125,31 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final TopicID id = resolveTopicId(spec);
-        final ConsensusSubmitMessageTransactionBody opBody =
-                spec.txns()
-                        .<ConsensusSubmitMessageTransactionBody,
-                                ConsensusSubmitMessageTransactionBody.Builder>
-                                body(
-                                        ConsensusSubmitMessageTransactionBody.class,
-                                        b -> {
-                                            b.setTopicID(id);
-                                            message.ifPresent(m -> b.setMessage(m));
-                                            if (clearMessage) {
-                                                b.clearMessage();
-                                            }
-                                            if (totalChunks.isPresent()
-                                                    && chunkNumber.isPresent()) {
-                                                final ConsensusMessageChunkInfo chunkInfo =
-                                                        ConsensusMessageChunkInfo.newBuilder()
-                                                                .setInitialTransactionID(
-                                                                        initialTransactionID.orElse(
-                                                                                asTransactionID(
-                                                                                        spec,
-                                                                                        initialTransactionPayer
-                                                                                                        .isPresent()
-                                                                                                ? initialTransactionPayer
-                                                                                                : payer)))
-                                                                .setTotal(totalChunks.getAsInt())
-                                                                .setNumber(chunkNumber.getAsInt())
-                                                                .build();
-                                                b.setChunkInfo(chunkInfo);
-                                                spec.registry()
-                                                        .saveTimestamp(
-                                                                txnName,
-                                                                chunkInfo
-                                                                        .getInitialTransactionID()
-                                                                        .getTransactionValidStart());
-                                            }
-                                        });
+        final ConsensusSubmitMessageTransactionBody opBody = spec.txns()
+                .<ConsensusSubmitMessageTransactionBody, ConsensusSubmitMessageTransactionBody.Builder>body(
+                        ConsensusSubmitMessageTransactionBody.class, b -> {
+                            b.setTopicID(id);
+                            message.ifPresent(m -> b.setMessage(m));
+                            if (clearMessage) {
+                                b.clearMessage();
+                            }
+                            if (totalChunks.isPresent() && chunkNumber.isPresent()) {
+                                final ConsensusMessageChunkInfo chunkInfo = ConsensusMessageChunkInfo.newBuilder()
+                                        .setInitialTransactionID(initialTransactionID.orElse(asTransactionID(
+                                                spec,
+                                                initialTransactionPayer.isPresent() ? initialTransactionPayer : payer)))
+                                        .setTotal(totalChunks.getAsInt())
+                                        .setNumber(chunkNumber.getAsInt())
+                                        .build();
+                                b.setChunkInfo(chunkInfo);
+                                spec.registry()
+                                        .saveTimestamp(
+                                                txnName,
+                                                chunkInfo
+                                                        .getInitialTransactionID()
+                                                        .getTransactionValidStart());
+                            }
+                        });
         return b -> b.setConsensusSubmitMessage(opBody);
     }
 
@@ -193,10 +181,8 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
-            throws Throwable {
-        return spec.fees()
-                .forActivityBasedOp(ConsensusSubmitMessage, this::usageEstimate, txn, numPayerKeys);
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
+        return spec.fees().forActivityBasedOp(ConsensusSubmitMessage, this::usageEstimate, txn, numPayerKeys);
     }
 
     private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
@@ -213,9 +199,7 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
         final MoreObjects.ToStringHelper helper =
-                super.toStringHelper()
-                        .add("topic", topic.orElse("<not set>"))
-                        .add("message", message);
+                super.toStringHelper().add("topic", topic.orElse("<not set>")).add("message", message);
         return helper;
     }
 }

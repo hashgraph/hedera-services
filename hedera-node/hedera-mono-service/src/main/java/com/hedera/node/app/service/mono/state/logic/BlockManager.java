@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_PERIOD;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext.ethHashFrom;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_PERIOD;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
@@ -57,7 +58,8 @@ public class BlockManager {
     // Whether the current transaction starts a new block; always false if not yet computed
     private boolean provisionalBlockIsNew = false;
     // The hash of the just-finished block if provisionalBlockIsNew == true; null otherwise
-    @Nullable private org.hyperledger.besu.datatypes.Hash provisionalFinishedBlockHash;
+    @Nullable
+    private org.hyperledger.besu.datatypes.Hash provisionalFinishedBlockHash;
 
     @Inject
     public BlockManager(
@@ -67,10 +69,8 @@ public class BlockManager {
         this.networkCtx = networkCtx;
         this.runningHashLeaf = runningHashLeaf;
         this.blockPeriodMs =
-                bootstrapProperties.getLongProperty(HEDERA_RECORD_STREAM_LOG_PERIOD)
-                        * Units.SECONDS_TO_MILLISECONDS;
-        this.logEveryTransaction =
-                bootstrapProperties.getBooleanProperty(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION);
+                bootstrapProperties.getLongProperty(HEDERA_RECORD_STREAM_LOG_PERIOD) * Units.SECONDS_TO_MILLISECONDS;
+        this.logEveryTransaction = bootstrapProperties.getBooleanProperty(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION);
     }
 
     /** Clears all provisional block metadata for the current transaction. */
@@ -100,10 +100,9 @@ public class BlockManager {
      */
     public BlockNumberMeta updateAndGetAlignmentBlockNumber(@NonNull final Instant now) {
         ensureProvisionalBlockMeta(now);
-        final var blockNo =
-                provisionalBlockIsNew
-                        ? networkCtx.get().finishBlock(provisionalFinishedBlockHash, now)
-                        : provisionalBlockNo;
+        final var blockNo = provisionalBlockIsNew
+                ? networkCtx.get().finishBlock(provisionalFinishedBlockHash, now)
+                : provisionalBlockNo;
         return new BlockNumberMeta(blockNo, provisionalBlockIsNew);
     }
 
@@ -131,8 +130,7 @@ public class BlockManager {
     public HederaBlockValues computeBlockValues(@NonNull final Instant now, final long gasLimit) {
         ensureProvisionalBlockMeta(now);
         if (provisionalBlockIsNew) {
-            return new HederaBlockValues(
-                    gasLimit, provisionalBlockNo, Instant.ofEpochSecond(now.getEpochSecond()));
+            return new HederaBlockValues(gasLimit, provisionalBlockNo, Instant.ofEpochSecond(now.getEpochSecond()));
         } else {
             return new HederaBlockValues(
                     gasLimit, provisionalBlockNo, networkCtx.get().firstConsTimeOfCurrentBlock());
@@ -177,14 +175,11 @@ public class BlockManager {
         provisionalBlockIsNew = willCreateNewBlock(now);
         if (provisionalBlockIsNew) {
             try {
-                provisionalFinishedBlockHash =
-                        ethHashFrom(runningHashLeaf.get().currentRunningHash());
+                provisionalFinishedBlockHash = ethHashFrom(runningHashLeaf.get().currentRunningHash());
             } catch (final InterruptedException e) {
                 provisionalBlockIsNew = false;
                 // This is almost certainly fatal, hence the ERROR log level
-                log.error(
-                        "Interrupted when computing hash for block #{}",
-                        curNetworkCtx::getAlignmentBlockNo);
+                log.error("Interrupted when computing hash for block #{}", curNetworkCtx::getAlignmentBlockNo);
                 Thread.currentThread().interrupt();
             }
         }
@@ -203,8 +198,7 @@ public class BlockManager {
 
     private void assertProvisionalValuesAreComputed() {
         if (provisionalBlockNo == UNKNOWN_BLOCK_NO) {
-            throw new IllegalStateException(
-                    "No block information is available until provisional values computed");
+            throw new IllegalStateException("No block information is available until provisional values computed");
         }
     }
 }

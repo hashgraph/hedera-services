@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.consensus.txns;
 
 import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee;
@@ -50,38 +51,32 @@ public final class UpdateTopicResourceUsage implements TxnResourceUsageEstimator
 
     @Override
     public FeeData usageGiven(
-            @Nullable final TransactionBody txnBody,
-            final SigValueObj sigUsage,
-            @Nullable final StateView view)
+            @Nullable final TransactionBody txnBody, final SigValueObj sigUsage, @Nullable final StateView view)
             throws InvalidTxBodyException, IllegalStateException {
         if (txnBody == null || !txnBody.hasConsensusUpdateTopic()) {
-            throw new InvalidTxBodyException(
-                    "consensusUpdateTopic field not available for Fee Calculation");
+            throw new InvalidTxBodyException("consensusUpdateTopic field not available for Fee Calculation");
         }
         if (view == null) {
             throw new IllegalStateException("No StateView present !!");
         }
 
         long rbsIncrease = 0;
-        final var merkleTopic =
-                view.topics()
-                        .get(EntityNum.fromTopicId(txnBody.getConsensusUpdateTopic().getTopicID()));
+        final var merkleTopic = view.topics()
+                .get(EntityNum.fromTopicId(txnBody.getConsensusUpdateTopic().getTopicID()));
 
         if (merkleTopic != null && merkleTopic.hasAdminKey()) {
-            final var expiry =
-                    Timestamp.newBuilder()
-                            .setSeconds(merkleTopic.getExpirationTimestamp().getSeconds())
-                            .build();
+            final var expiry = Timestamp.newBuilder()
+                    .setSeconds(merkleTopic.getExpirationTimestamp().getSeconds())
+                    .build();
             try {
-                rbsIncrease =
-                        getUpdateTopicRbsIncrease(
-                                txnBody.getTransactionID().getTransactionValidStart(),
-                                JKey.mapJKey(merkleTopic.getAdminKey()),
-                                JKey.mapJKey(merkleTopic.getSubmitKey()),
-                                merkleTopic.getMemo(),
-                                merkleTopic.hasAutoRenewAccountId(),
-                                expiry,
-                                txnBody.getConsensusUpdateTopic());
+                rbsIncrease = getUpdateTopicRbsIncrease(
+                        txnBody.getTransactionID().getTransactionValidStart(),
+                        JKey.mapJKey(merkleTopic.getAdminKey()),
+                        JKey.mapJKey(merkleTopic.getSubmitKey()),
+                        merkleTopic.getMemo(),
+                        merkleTopic.hasAutoRenewAccountId(),
+                        expiry,
+                        txnBody.getConsensusUpdateTopic());
             } catch (final DecoderException illegal) {
                 log.warn("Usage estimation unexpectedly failed for {}!", txnBody, illegal);
                 throw new InvalidTxBodyException(illegal);

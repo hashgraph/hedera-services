@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.sigs;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.extractTransactionBodyBytes;
@@ -62,10 +63,8 @@ public class SigFactory {
     }
 
     public Transaction signWithSigMap(
-            final Transaction.Builder txn, final List<KeyTree> signers, final KeyFactory factory)
-            throws Throwable {
-        final SimpleSigning signing =
-                new SimpleSigning(extractTransactionBodyBytes(txn), signers, factory);
+            final Transaction.Builder txn, final List<KeyTree> signers, final KeyFactory factory) throws Throwable {
+        final SimpleSigning signing = new SimpleSigning(extractTransactionBodyBytes(txn), signers, factory);
         final List<Map.Entry<byte[], byte[]>> sigs = signing.completed();
         txn.setSigMap(sigMapGen.generate(sigs, signing.sigTypes()));
         return txn.build();
@@ -79,8 +78,7 @@ public class SigFactory {
         private final List<SignatureType> sigTypes = new ArrayList<>();
         private final List<Map.Entry<byte[], byte[]>> keySigs = new ArrayList<>();
 
-        public SimpleSigning(
-                final byte[] data, final List<KeyTree> signers, final KeyFactory factory) {
+        public SimpleSigning(final byte[] data, final List<KeyTree> signers, final KeyFactory factory) {
             this.data = data;
             this.signers = signers;
             this.factory = factory;
@@ -136,9 +134,7 @@ public class SigFactory {
                 keySigs.add(
                         new AbstractMap.SimpleEntry<>(key.getECDSASecp256K1().toByteArray(), sig));
             } else if (sigType == SignatureType.RSA) {
-                keySigs.add(
-                        new AbstractMap.SimpleEntry<>(
-                                key.getRSA3072().toByteArray(), NONSENSE_RSA_SIG));
+                keySigs.add(new AbstractMap.SimpleEntry<>(key.getRSA3072().toByteArray(), NONSENSE_RSA_SIG));
             }
             sigTypes.add(sigType);
         }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.records;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -54,10 +55,8 @@ public class RecordCreationSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(RecordCreationSuite.class);
 
     private static final long SLEEP_MS = 1_000L;
-    public static final String STAKING_FEES_NODE_REWARD_PERCENTAGE =
-            "staking.fees.nodeRewardPercentage";
-    public static final String STAKING_FEES_STAKING_REWARD_PERCENTAGE =
-            "staking.fees.stakingRewardPercentage";
+    public static final String STAKING_FEES_NODE_REWARD_PERCENTAGE = "staking.fees.nodeRewardPercentage";
+    public static final String STAKING_FEES_STAKING_REWARD_PERCENTAGE = "staking.fees.stakingRewardPercentage";
 
     public static void main(String... args) {
         new RecordCreationSuite().runSuiteSync();
@@ -91,75 +90,39 @@ public class RecordCreationSuite extends HapiSuite {
                         balanceSnapshot("fundingBefore", "0.0.98"),
                         balanceSnapshot("stakingReward", "0.0.800"),
                         balanceSnapshot("nodeReward", "0.0.801"),
-                        sourcing(
-                                () ->
-                                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
-                                                .memo(comfortingMemo)
-                                                .fee(
-                                                        feeObs.get().getNetworkFee()
-                                                                + feeObs.get().getNodeFee())
-                                                .payingWith("payer")
-                                                .via("txnId")
-                                                .hasKnownStatus(INSUFFICIENT_TX_FEE)
-                                                .logged()))
+                        sourcing(() -> cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
+                                .memo(comfortingMemo)
+                                .fee(feeObs.get().getNetworkFee() + feeObs.get().getNodeFee())
+                                .payingWith("payer")
+                                .via("txnId")
+                                .hasKnownStatus(INSUFFICIENT_TX_FEE)
+                                .logged()))
                 .then(
-                        sourcing(
-                                () ->
-                                        getAccountBalance("0.0.3")
-                                                .hasTinyBars(
-                                                        changeFromSnapshot(
-                                                                "before",
-                                                                +feeObs.get().getNodeFee()))
-                                                .logged()),
-                        sourcing(
-                                () ->
-                                        getAccountBalance("0.0.98")
-                                                .hasTinyBars(
-                                                        changeFromSnapshot(
-                                                                "fundingBefore",
-                                                                (long)
-                                                                        (+feeObs.get()
-                                                                                                .getNetworkFee()
-                                                                                        * 0.8
-                                                                                + 1)))
-                                                .logged()),
-                        sourcing(
-                                () ->
-                                        getAccountBalance("0.0.800")
-                                                .hasTinyBars(
-                                                        changeFromSnapshot(
-                                                                "stakingReward",
-                                                                (long)
-                                                                        (+feeObs.get()
-                                                                                        .getNetworkFee()
-                                                                                * 0.1)))
-                                                .logged()),
-                        sourcing(
-                                () ->
-                                        getAccountBalance("0.0.801")
-                                                .hasTinyBars(
-                                                        changeFromSnapshot(
-                                                                "nodeReward",
-                                                                (long)
-                                                                        (+feeObs.get()
-                                                                                        .getNetworkFee()
-                                                                                * 0.1)))
-                                                .logged()),
-                        sourcing(
-                                () ->
-                                        getTxnRecord("txnId")
-                                                .assertingNothingAboutHashes()
-                                                .hasPriority(
-                                                        recordWith()
-                                                                .transfers(
-                                                                        includingDeduction(
-                                                                                "payer",
-                                                                                feeObs.get()
-                                                                                                .getNetworkFee()
-                                                                                        + feeObs.get()
-                                                                                                .getNodeFee()))
-                                                                .status(INSUFFICIENT_TX_FEE))
-                                                .logged()));
+                        sourcing(() -> getAccountBalance("0.0.3")
+                                .hasTinyBars(changeFromSnapshot(
+                                        "before", +feeObs.get().getNodeFee()))
+                                .logged()),
+                        sourcing(() -> getAccountBalance("0.0.98")
+                                .hasTinyBars(changeFromSnapshot(
+                                        "fundingBefore", (long) (+feeObs.get().getNetworkFee() * 0.8 + 1)))
+                                .logged()),
+                        sourcing(() -> getAccountBalance("0.0.800")
+                                .hasTinyBars(changeFromSnapshot(
+                                        "stakingReward", (long) (+feeObs.get().getNetworkFee() * 0.1)))
+                                .logged()),
+                        sourcing(() -> getAccountBalance("0.0.801")
+                                .hasTinyBars(changeFromSnapshot(
+                                        "nodeReward", (long) (+feeObs.get().getNetworkFee() * 0.1)))
+                                .logged()),
+                        sourcing(() -> getTxnRecord("txnId")
+                                .assertingNothingAboutHashes()
+                                .hasPriority(recordWith()
+                                        .transfers(includingDeduction(
+                                                "payer",
+                                                feeObs.get().getNetworkFee()
+                                                        + feeObs.get().getNodeFee()))
+                                        .status(INSUFFICIENT_TX_FEE))
+                                .logged()));
     }
 
     private HapiSpec submittingNodeChargedNetworkFeeForLackOfDueDiligence() {
@@ -182,69 +145,35 @@ public class RecordCreationSuite extends HapiSuite {
                         balanceSnapshot("fundingBefore", "0.0.98"),
                         balanceSnapshot("stakingReward", "0.0.800"),
                         balanceSnapshot("nodeReward", "0.0.801"),
-                        uncheckedSubmit(
-                                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
-                                                .memo(disquietingMemo)
-                                                .payingWith("payer")
-                                                .txnId("txnId"))
+                        uncheckedSubmit(cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
+                                        .memo(disquietingMemo)
+                                        .payingWith("payer")
+                                        .txnId("txnId"))
                                 .payingWith(GENESIS),
                         sleepFor(SLEEP_MS))
                 .then(
-                        sourcing(
-                                () ->
-                                        getAccountBalance("0.0.3")
-                                                .hasTinyBars(
-                                                        changeFromSnapshot(
-                                                                "before",
-                                                                -feeObs.get().getNetworkFee()))),
-                        sourcing(
-                                () ->
-                                        getAccountBalance("0.0.98")
-                                                .hasTinyBars(
-                                                        changeFromSnapshot(
-                                                                "fundingBefore",
-                                                                (long)
-                                                                        (+feeObs.get()
-                                                                                                .getNetworkFee()
-                                                                                        * 0.8
-                                                                                + 1)))
-                                                .logged()),
-                        sourcing(
-                                () ->
-                                        getAccountBalance("0.0.800")
-                                                .hasTinyBars(
-                                                        changeFromSnapshot(
-                                                                "stakingReward",
-                                                                (long)
-                                                                        (+feeObs.get()
-                                                                                        .getNetworkFee()
-                                                                                * 0.1)))
-                                                .logged()),
-                        sourcing(
-                                () ->
-                                        getAccountBalance("0.0.801")
-                                                .hasTinyBars(
-                                                        changeFromSnapshot(
-                                                                "nodeReward",
-                                                                (long)
-                                                                        (+feeObs.get()
-                                                                                        .getNetworkFee()
-                                                                                * 0.1)))
-                                                .logged()),
-                        sourcing(
-                                () ->
-                                        getTxnRecord("txnId")
-                                                .assertingNothingAboutHashes()
-                                                .hasPriority(
-                                                        recordWith()
-                                                                .transfers(
-                                                                        includingDeduction(
-                                                                                () -> 3L,
-                                                                                feeObs.get()
-                                                                                        .getNetworkFee()))
-                                                                .status(
-                                                                        INVALID_ZERO_BYTE_IN_STRING))
-                                                .logged()));
+                        sourcing(() -> getAccountBalance("0.0.3")
+                                .hasTinyBars(changeFromSnapshot(
+                                        "before", -feeObs.get().getNetworkFee()))),
+                        sourcing(() -> getAccountBalance("0.0.98")
+                                .hasTinyBars(changeFromSnapshot(
+                                        "fundingBefore", (long) (+feeObs.get().getNetworkFee() * 0.8 + 1)))
+                                .logged()),
+                        sourcing(() -> getAccountBalance("0.0.800")
+                                .hasTinyBars(changeFromSnapshot(
+                                        "stakingReward", (long) (+feeObs.get().getNetworkFee() * 0.1)))
+                                .logged()),
+                        sourcing(() -> getAccountBalance("0.0.801")
+                                .hasTinyBars(changeFromSnapshot(
+                                        "nodeReward", (long) (+feeObs.get().getNetworkFee() * 0.1)))
+                                .logged()),
+                        sourcing(() -> getTxnRecord("txnId")
+                                .assertingNothingAboutHashes()
+                                .hasPriority(recordWith()
+                                        .transfers(includingDeduction(
+                                                () -> 3L, feeObs.get().getNetworkFee()))
+                                        .status(INVALID_ZERO_BYTE_IN_STRING))
+                                .logged()));
     }
 
     private HapiSpec submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness() {
@@ -266,76 +195,36 @@ public class RecordCreationSuite extends HapiSuite {
                         balanceSnapshot("fundingBefore", "0.0.98"),
                         balanceSnapshot("stakingReward", "0.0.800"),
                         balanceSnapshot("nodeReward", "0.0.801"),
-                        sourcing(
-                                () ->
-                                        uncheckedSubmit(
-                                                        cryptoTransfer(
-                                                                        tinyBarsFromTo(
-                                                                                GENESIS, FUNDING,
-                                                                                1L))
-                                                                .memo(comfortingMemo)
-                                                                .fee(
-                                                                        feeObs.get().getNetworkFee()
-                                                                                - 1L)
-                                                                .payingWith("payer")
-                                                                .txnId("txnId"))
-                                                .payingWith(GENESIS)),
+                        sourcing(() -> uncheckedSubmit(cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
+                                        .memo(comfortingMemo)
+                                        .fee(feeObs.get().getNetworkFee() - 1L)
+                                        .payingWith("payer")
+                                        .txnId("txnId"))
+                                .payingWith(GENESIS)),
                         sleepFor(SLEEP_MS))
                 .then(
-                        sourcing(
-                                () ->
-                                        getAccountBalance("0.0.3")
-                                                .hasTinyBars(
-                                                        changeFromSnapshot(
-                                                                "before",
-                                                                -feeObs.get().getNetworkFee()))),
-                        sourcing(
-                                () ->
-                                        getAccountBalance("0.0.98")
-                                                .hasTinyBars(
-                                                        changeFromSnapshot(
-                                                                "fundingBefore",
-                                                                (long)
-                                                                        (+feeObs.get()
-                                                                                                .getNetworkFee()
-                                                                                        * 0.8
-                                                                                + 1)))
-                                                .logged()),
-                        sourcing(
-                                () ->
-                                        getAccountBalance("0.0.800")
-                                                .hasTinyBars(
-                                                        changeFromSnapshot(
-                                                                "stakingReward",
-                                                                (long)
-                                                                        (+feeObs.get()
-                                                                                        .getNetworkFee()
-                                                                                * 0.1)))
-                                                .logged()),
-                        sourcing(
-                                () ->
-                                        getAccountBalance("0.0.801")
-                                                .hasTinyBars(
-                                                        changeFromSnapshot(
-                                                                "nodeReward",
-                                                                (long)
-                                                                        (+feeObs.get()
-                                                                                        .getNetworkFee()
-                                                                                * 0.1)))
-                                                .logged()),
-                        sourcing(
-                                () ->
-                                        getTxnRecord("txnId")
-                                                .assertingNothingAboutHashes()
-                                                .hasPriority(
-                                                        recordWith()
-                                                                .transfers(
-                                                                        includingDeduction(
-                                                                                () -> 3L,
-                                                                                feeObs.get()
-                                                                                        .getNetworkFee()))
-                                                                .status(INSUFFICIENT_TX_FEE))
-                                                .logged()));
+                        sourcing(() -> getAccountBalance("0.0.3")
+                                .hasTinyBars(changeFromSnapshot(
+                                        "before", -feeObs.get().getNetworkFee()))),
+                        sourcing(() -> getAccountBalance("0.0.98")
+                                .hasTinyBars(changeFromSnapshot(
+                                        "fundingBefore", (long) (+feeObs.get().getNetworkFee() * 0.8 + 1)))
+                                .logged()),
+                        sourcing(() -> getAccountBalance("0.0.800")
+                                .hasTinyBars(changeFromSnapshot(
+                                        "stakingReward", (long) (+feeObs.get().getNetworkFee() * 0.1)))
+                                .logged()),
+                        sourcing(() -> getAccountBalance("0.0.801")
+                                .hasTinyBars(changeFromSnapshot(
+                                        "nodeReward", (long) (+feeObs.get().getNetworkFee() * 0.1)))
+                                .logged()),
+                        sourcing(() -> getTxnRecord("txnId")
+                                .assertingNothingAboutHashes()
+                                .hasPriority(recordWith()
+                                        .transfers(includingDeduction(
+                                                () -> 3L, feeObs.get().getNetworkFee()))
+                                        .status(INSUFFICIENT_TX_FEE))
+                                .logged()));
     }
 
     private HapiSpec payerRecordCreationSanityChecks() {
@@ -343,26 +232,19 @@ public class RecordCreationSuite extends HapiSuite {
                 .given(cryptoCreate("payer"))
                 .when(
                         createTopic("ofGeneralInterest").payingWith("payer"),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1_000L))
-                                .payingWith("payer"),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1_000L)).payingWith("payer"),
                         submitMessageTo("ofGeneralInterest").message("I say!").payingWith("payer"))
-                .then(
-                        assertionsHold(
-                                (spec, opLog) -> {
-                                    final var payerId = spec.registry().getAccountID("payer");
-                                    final var subOp = getAccountRecords("payer").logged();
-                                    allRunFor(spec, subOp);
-                                    final var records =
-                                            subOp.getResponse()
-                                                    .getCryptoGetAccountRecords()
-                                                    .getRecordsList();
-                                    assertEquals(3, records.size());
-                                    for (var record : records) {
-                                        assertEquals(
-                                                record.getTransactionFee(),
-                                                -netChangeIn(record, payerId));
-                                    }
-                                }));
+                .then(assertionsHold((spec, opLog) -> {
+                    final var payerId = spec.registry().getAccountID("payer");
+                    final var subOp = getAccountRecords("payer").logged();
+                    allRunFor(spec, subOp);
+                    final var records =
+                            subOp.getResponse().getCryptoGetAccountRecords().getRecordsList();
+                    assertEquals(3, records.size());
+                    for (var record : records) {
+                        assertEquals(record.getTransactionFee(), -netChangeIn(record, payerId));
+                    }
+                }));
     }
 
     private long netChangeIn(TransactionRecord record, AccountID id) {
@@ -377,10 +259,9 @@ public class RecordCreationSuite extends HapiSuite {
 
         return defaultHapiSpec("AccountsGetPayerRecordsIfSoConfigured")
                 .given(cryptoCreate("payer"))
-                .when(
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1_000L))
-                                .payingWith("payer")
-                                .via(txn))
+                .when(cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1_000L))
+                        .payingWith("payer")
+                        .via(txn))
                 .then(getAccountRecords("payer").has(inOrder(recordWith().txnId(txn))));
     }
 

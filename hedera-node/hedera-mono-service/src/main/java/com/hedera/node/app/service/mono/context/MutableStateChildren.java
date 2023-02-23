@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -138,8 +139,7 @@ public class MutableStateChildren implements StateChildren {
         return contractStorage().size();
     }
 
-    public void setContractStorage(
-            final VirtualMap<ContractKey, IterableContractValue> contractStorage) {
+    public void setContractStorage(final VirtualMap<ContractKey, IterableContractValue> contractStorage) {
         this.contractStorage = new WeakReference<>(contractStorage);
     }
 
@@ -225,16 +225,14 @@ public class MutableStateChildren implements StateChildren {
         return Objects.requireNonNull(aliases.get());
     }
 
-    public void updateFromImmutable(
-            final ServicesState signedState, final Instant lowerBoundOnSigningTime) {
+    public void updateFromImmutable(final ServicesState signedState, final Instant lowerBoundOnSigningTime) {
         updateFrom(signedState);
         signedAt = lowerBoundOnSigningTime;
     }
 
     public void updateFrom(final ServicesState state) {
         if (!state.isInitialized()) {
-            throw new IllegalArgumentException(
-                    "State children require an initialized state to update");
+            throw new IllegalArgumentException("State children require an initialized state to update");
         }
         updatePrimitiveChildrenFrom(state);
     }

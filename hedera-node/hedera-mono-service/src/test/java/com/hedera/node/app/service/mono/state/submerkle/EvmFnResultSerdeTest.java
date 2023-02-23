@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import com.hedera.test.serde.SelfSerializableDataTest;
@@ -28,14 +29,13 @@ public class EvmFnResultSerdeTest extends SelfSerializableDataTest<EvmFnResult> 
 
     @Override
     protected int getNumTestCasesFor(final int version) {
-        return version == EvmFnResult.RELEASE_0240_VERSION
-                ? MIN_TEST_CASES_PER_VERSION
-                : NUM_TEST_CASES;
+        return version == EvmFnResult.RELEASE_0240_VERSION ? MIN_TEST_CASES_PER_VERSION : NUM_TEST_CASES;
     }
 
     @Override
     protected EvmFnResult getExpectedObject(final int version, final int testCaseNo) {
-        final var seeded = SeededPropertySource.forSerdeTest(version, testCaseNo).nextEvmResult();
+        final var seeded =
+                SeededPropertySource.forSerdeTest(version, testCaseNo).nextEvmResult();
         if (version < EvmFnResult.RELEASE_0250_VERSION) {
             // Always empty before 0.25
             seeded.setGas(0);

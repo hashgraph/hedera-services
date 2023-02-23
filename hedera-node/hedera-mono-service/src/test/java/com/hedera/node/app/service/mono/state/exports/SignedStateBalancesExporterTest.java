@@ -13,15 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.exports;
 
 import static com.hedera.node.app.hapi.utils.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
 import static com.hedera.node.app.hapi.utils.exports.FileCompressionUtils.readUncompressedFileBytes;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.node.app.service.mono.state.exports.SignedStateBalancesExporter.SINGLE_ACCOUNT_BALANCES_COMPARATOR;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromTokenId;
 import static com.hedera.node.app.service.mono.utils.EntityNumPair.fromAccountTokenRel;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -90,6 +91,7 @@ import org.mockito.ArgumentCaptor;
 
 @ExtendWith(LogCaptureExtension.class)
 class SignedStateBalancesExporterTest {
+
     private static final NodeId nodeId = new NodeId(false, 1);
     private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
     private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
@@ -135,28 +137,31 @@ class SignedStateBalancesExporterTest {
     private DirectoryAssurance assurance;
     private SystemExits systemExits;
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private SignedStateBalancesExporter subject;
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private SignedStateBalancesExporter subject;
 
     @BeforeEach
     void setUp() throws ConstructableRegistryException, NoSuchAlgorithmException {
         tokenRels = TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
         ConstructableRegistry.getInstance()
-                .registerConstructable(
-                        new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
-        final var secondNonNodeDelTokenAssociationKey =
-                fromAccountTokenRel(secondNonNode, theDeletedToken);
+                .registerConstructable(new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+        final var secondNonNodeDelTokenAssociationKey = fromAccountTokenRel(secondNonNode, theDeletedToken);
         final var secondNonNodeTokenAssociationKey = fromAccountTokenRel(secondNonNode, theToken);
 
-        thisNodeAccount = MerkleAccountFactory.newAccount().balance(thisNodeBalance).get();
-        anotherNodeAccount = MerkleAccountFactory.newAccount().balance(anotherNodeBalance).get();
-        firstNonNodeAccount =
-                MerkleAccountFactory.newAccount().balance(firstNonNodeAccountBalance).get();
-        secondNonNodeAccount =
-                MerkleAccountFactory.newAccount()
-                        .balance(secondNonNodeAccountBalance)
-                        .tokens(theToken, theDeletedToken, theMissingToken)
-                        .get();
+        thisNodeAccount =
+                MerkleAccountFactory.newAccount().balance(thisNodeBalance).get();
+        anotherNodeAccount =
+                MerkleAccountFactory.newAccount().balance(anotherNodeBalance).get();
+        firstNonNodeAccount = MerkleAccountFactory.newAccount()
+                .balance(firstNonNodeAccountBalance)
+                .get();
+        secondNonNodeAccount = MerkleAccountFactory.newAccount()
+                .balance(secondNonNodeAccountBalance)
+                .tokens(theToken, theDeletedToken, theMissingToken)
+                .get();
         deletedAccount = MerkleAccountFactory.newAccount().deleted(true).get();
 
         accounts.put(fromAccountId(thisNode), thisNodeAccount);
@@ -225,8 +230,7 @@ class SignedStateBalancesExporterTest {
 
         systemExits = mock(SystemExits.class);
 
-        subject =
-                new SignedStateBalancesExporter(systemExits, properties, signer, dynamicProperties);
+        subject = new SignedStateBalancesExporter(systemExits, properties, signer, dynamicProperties);
 
         sigFileWriter = mock(SigFileWriter.class);
         hashReader = mock(FileHashReader.class);
@@ -236,16 +240,13 @@ class SignedStateBalancesExporterTest {
 
     @Test
     void logsOnIoException() throws NoSuchAlgorithmException {
-        final var otherDynamicProperties =
-                new MockGlobalDynamicProps() {
-                    @Override
-                    public String pathToBalancesExportDir() {
-                        return "not/a/real/location";
-                    }
-                };
-        subject =
-                new SignedStateBalancesExporter(
-                        systemExits, properties, signer, otherDynamicProperties);
+        final var otherDynamicProperties = new MockGlobalDynamicProps() {
+            @Override
+            public String pathToBalancesExportDir() {
+                return "not/a/real/location";
+            }
+        };
+        subject = new SignedStateBalancesExporter(systemExits, properties, signer, otherDynamicProperties);
         subject.directories = assurance;
 
         subject.exportBalancesFrom(state, now, nodeId);
@@ -256,22 +257,18 @@ class SignedStateBalancesExporterTest {
     @Test
     void logsOnSigningFailure() {
         final var loc = expectedExportLoc();
-        given(sigFileWriter.writeSigFile(any(), any(), any()))
-                .willThrow(UncheckedIOException.class);
+        given(sigFileWriter.writeSigFile(any(), any(), any())).willThrow(UncheckedIOException.class);
 
         subject.exportBalancesFrom(state, now, nodeId);
 
-        assertThat(
-                logCaptor.errorLogs(),
-                contains(Matchers.startsWith("Could not sign balance file")));
+        assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith("Could not sign balance file")));
 
         assertTrue(new File(loc).delete());
     }
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void testExportingTokenBalancesProto(final boolean isCompressed)
-            throws NoSuchAlgorithmException {
+    void testExportingTokenBalancesProto(final boolean isCompressed) throws NoSuchAlgorithmException {
         // given
         final var captor = ArgumentCaptor.forClass(String.class);
         var loc = expectedExportLoc();
@@ -282,16 +279,13 @@ class SignedStateBalancesExporterTest {
         final var desiredDebugMsg = "Created balance signature file " + "'" + loc + "_sig'.";
         given(hashReader.readHash(loc)).willReturn(fileHash);
         given(sigFileWriter.writeSigFile(captor.capture(), any(), any())).willReturn(loc + "_sig");
-        final var expectedAccountBalances =
-                AllAccountBalances.newBuilder()
-                        .addAllAllAccounts((subject.summarized(state).orderedBalances()))
-                        .setConsensusTimestamp(
-                                Timestamp.newBuilder()
-                                        .setSeconds(now.getEpochSecond())
-                                        .setNanos(now.getNano())
-                                        .build());
-        final var messageDigest =
-                MessageDigest.getInstance(Cryptography.DEFAULT_DIGEST_TYPE.algorithmName());
+        final var expectedAccountBalances = AllAccountBalances.newBuilder()
+                .addAllAllAccounts((subject.summarized(state).orderedBalances()))
+                .setConsensusTimestamp(Timestamp.newBuilder()
+                        .setSeconds(now.getEpochSecond())
+                        .setNanos(now.getNano())
+                        .build());
+        final var messageDigest = MessageDigest.getInstance(Cryptography.DEFAULT_DIGEST_TYPE.algorithmName());
         final var expectedHash =
                 messageDigest.digest(expectedAccountBalances.build().toByteArray());
         given(signer.apply(expectedHash)).willReturn(new Signature(SignatureType.RSA, sig));
@@ -309,7 +303,8 @@ class SignedStateBalancesExporterTest {
             } else if (account.getAccountID().getAccountNum() == secondNonNode.getAccountNum()) {
                 assertEquals(250, account.getHbarBalance());
                 final var firstUnitBalances = account.getTokenUnitBalances(0);
-                assertEquals(theToken.getTokenNum(), firstUnitBalances.getTokenId().getTokenNum());
+                assertEquals(
+                        theToken.getTokenNum(), firstUnitBalances.getTokenId().getTokenNum());
                 assertEquals(secondNonNodeTokenBalance, firstUnitBalances.getBalance());
                 final var secondUnitBalances = account.getTokenUnitBalances(1);
                 assertEquals(
@@ -326,16 +321,13 @@ class SignedStateBalancesExporterTest {
 
     @Test
     void protoWriteIoException() throws NoSuchAlgorithmException {
-        final var otherDynamicProperties =
-                new MockGlobalDynamicProps() {
-                    @Override
-                    public String pathToBalancesExportDir() {
-                        return "not/a/real/location";
-                    }
-                };
-        subject =
-                new SignedStateBalancesExporter(
-                        systemExits, properties, signer, otherDynamicProperties);
+        final var otherDynamicProperties = new MockGlobalDynamicProps() {
+            @Override
+            public String pathToBalancesExportDir() {
+                return "not/a/real/location";
+            }
+        };
+        subject = new SignedStateBalancesExporter(systemExits, properties, signer, otherDynamicProperties);
         subject.directories = assurance;
 
         subject.exportBalancesFrom(state, now, nodeId);
@@ -364,8 +356,7 @@ class SignedStateBalancesExporterTest {
     @Test
     void errorProtoLogsOnIoException() throws IOException {
         subject.directories = assurance;
-        final var desiredMsg =
-                "Cannot ensure existence of export dir " + "'" + expectedExportDir() + "'!";
+        final var desiredMsg = "Cannot ensure existence of export dir " + "'" + expectedExportDir() + "'!";
         willThrow(IOException.class).given(assurance).ensureExistenceOf(any());
 
         subject.exportBalancesFrom(state, now, nodeId);
@@ -391,8 +382,7 @@ class SignedStateBalancesExporterTest {
     @Test
     void summarizesAsExpected() {
         final var expectedBalances = theExpectedBalances();
-        final var desiredWarning =
-                "Node '0.0.4' has unacceptably low balance " + anotherNodeBalance + "!";
+        final var desiredWarning = "Node '0.0.4' has unacceptably low balance " + anotherNodeBalance + "!";
 
         final var summary = subject.summarized(state);
 
@@ -403,36 +393,28 @@ class SignedStateBalancesExporterTest {
 
     private List<SingleAccountBalances> theExpectedBalances() {
         final var singleAcctBuilder = SingleAccountBalances.newBuilder();
-        final var thisNode =
-                singleAcctBuilder
-                        .setAccountID(asAccount("0.0.3"))
-                        .setHbarBalance(thisNodeBalance)
-                        .build();
-        final var anotherNode =
-                singleAcctBuilder
-                        .setHbarBalance(anotherNodeBalance)
-                        .setAccountID(asAccount("0.0.4"))
-                        .build();
-        final var firstNon =
-                singleAcctBuilder
-                        .setAccountID(asAccount("0.0.1001"))
-                        .setHbarBalance(firstNonNodeAccountBalance)
-                        .build();
+        final var thisNode = singleAcctBuilder
+                .setAccountID(asAccount("0.0.3"))
+                .setHbarBalance(thisNodeBalance)
+                .build();
+        final var anotherNode = singleAcctBuilder
+                .setHbarBalance(anotherNodeBalance)
+                .setAccountID(asAccount("0.0.4"))
+                .build();
+        final var firstNon = singleAcctBuilder
+                .setAccountID(asAccount("0.0.1001"))
+                .setHbarBalance(firstNonNodeAccountBalance)
+                .build();
         final var nonDeletedTokenUnits =
-                TokenUnitBalance.newBuilder()
-                        .setTokenId(theToken)
-                        .setBalance(secondNonNodeTokenBalance);
+                TokenUnitBalance.newBuilder().setTokenId(theToken).setBalance(secondNonNodeTokenBalance);
         final var deletedTokenUnits =
-                TokenUnitBalance.newBuilder()
-                        .setTokenId(theDeletedToken)
-                        .setBalance(secondNonNodeDeletedTokenBalance);
-        final var secondNon =
-                singleAcctBuilder
-                        .setAccountID(asAccount("0.0.1002"))
-                        .setHbarBalance(secondNonNodeAccountBalance)
-                        .addTokenUnitBalances(nonDeletedTokenUnits)
-                        .addTokenUnitBalances(deletedTokenUnits)
-                        .build();
+                TokenUnitBalance.newBuilder().setTokenId(theDeletedToken).setBalance(secondNonNodeDeletedTokenBalance);
+        final var secondNon = singleAcctBuilder
+                .setAccountID(asAccount("0.0.1002"))
+                .setHbarBalance(secondNonNodeAccountBalance)
+                .addTokenUnitBalances(nonDeletedTokenUnits)
+                .addTokenUnitBalances(deletedTokenUnits)
+                .build();
 
         return List.of(thisNode, anotherNode, firstNon, secondNon);
     }
@@ -466,8 +448,7 @@ class SignedStateBalancesExporterTest {
     @Test
     void errorLogsOnIoException() throws IOException {
         subject.directories = assurance;
-        final var desiredError =
-                "Cannot ensure existence of export dir " + "'" + expectedExportDir() + "'!";
+        final var desiredError = "Cannot ensure existence of export dir " + "'" + expectedExportDir() + "'!";
         willThrow(IOException.class).given(assurance).ensureExistenceOf(any());
 
         subject.exportBalancesFrom(state, now, nodeId);
@@ -476,10 +457,7 @@ class SignedStateBalancesExporterTest {
     }
 
     private String expectedExportDir() {
-        return dynamicProperties.pathToBalancesExportDir()
-                + File.separator
-                + "balance0.0.3"
-                + File.separator;
+        return dynamicProperties.pathToBalancesExportDir() + File.separator + "balance0.0.3" + File.separator;
     }
 
     @Test
@@ -500,8 +478,7 @@ class SignedStateBalancesExporterTest {
     void exportsWhenPeriodSecsHaveElapsed() throws NoSuchAlgorithmException {
         final int exportPeriodInSecs = dynamicProperties.balancesExportPeriodSecs();
         final var startTime = Instant.parse("2021-07-07T08:10:00.000Z");
-        subject =
-                new SignedStateBalancesExporter(systemExits, properties, signer, dynamicProperties);
+        subject = new SignedStateBalancesExporter(systemExits, properties, signer, dynamicProperties);
 
         // start from a time within 1 second of boundary time
         var now = startTime.plusNanos(12340);
@@ -517,8 +494,7 @@ class SignedStateBalancesExporterTest {
         assertEquals(startTime.plusSeconds(exportPeriodInSecs * 2), subject.getNextExportTime());
 
         // start from a random time
-        subject =
-                new SignedStateBalancesExporter(systemExits, properties, signer, dynamicProperties);
+        subject = new SignedStateBalancesExporter(systemExits, properties, signer, dynamicProperties);
         now = Instant.parse("2021-07-07T08:12:38.123Z");
         assertFalse(subject.isTimeToExport(now));
         assertEquals(startTime.plusSeconds(exportPeriodInSecs), subject.getNextExportTime());
@@ -532,8 +508,7 @@ class SignedStateBalancesExporterTest {
         try {
             final AllAccountBalances allAccountBalances;
             if (protoLoc.endsWith(COMPRESSION_ALGORITHM_EXTENSION)) {
-                allAccountBalances =
-                        AllAccountBalances.parseFrom(readUncompressedFileBytes(protoLoc));
+                allAccountBalances = AllAccountBalances.parseFrom(readUncompressedFileBytes(protoLoc));
             } else {
                 final var fin = new FileInputStream(protoLoc);
                 allAccountBalances = AllAccountBalances.parseFrom(fin);

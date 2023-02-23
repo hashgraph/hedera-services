@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.mixedops;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -63,9 +64,7 @@ public class MixedOpsMemoPerfSuite extends LoadTest {
     private final String TARGET_TOPIC = "topicForMemo";
 
     private final ResponseCodeEnum[] permissiblePrechecks =
-            new ResponseCodeEnum[] {
-                OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, UNKNOWN
-            };
+            new ResponseCodeEnum[] {OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED, UNKNOWN};
 
     public static void main(String... args) {
         parseArgs(args);
@@ -84,86 +83,66 @@ public class MixedOpsMemoPerfSuite extends LoadTest {
     protected HapiSpec runMixedMemoOps() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         final AtomicInteger createdSoFar = new AtomicInteger(0);
-        Supplier<HapiSpecOperation[]> mixedOpsBurst =
-                () ->
-                        new HapiSpecOperation[] {
-                            cryptoCreate("testAccount" + createdSoFar.getAndIncrement())
-                                    .balance(1L)
-                                    .fee(100_000_000L)
-                                    .payingWith(GENESIS)
-                                    .entityMemo(
-                                            new String(
-                                                    TxnUtils.randomUtf8Bytes(memoLength.getAsInt()),
-                                                    StandardCharsets.UTF_8))
-                                    .noLogging()
-                                    .hasPrecheckFrom(permissiblePrechecks)
-                                    .deferStatusResolution(),
-                            getAccountInfo(TARGET_ACCOUNT + "Info")
-                                    .payingWith(GENESIS)
-                                    .has(accountWith().memo(ACCOUNT_MEMO))
-                                    .hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
-                                    .hasCostAnswerPrecheckFrom(permissiblePrechecks)
-                                    .noLogging(),
-                            cryptoUpdate(TARGET_ACCOUNT)
-                                    .payingWith(GENESIS)
-                                    .entityMemo(
-                                            new String(
-                                                    TxnUtils.randomUtf8Bytes(memoLength.getAsInt()),
-                                                    StandardCharsets.UTF_8))
-                                    .noLogging()
-                                    .hasPrecheckFrom(permissiblePrechecks)
-                                    .deferStatusResolution(),
-                            tokenCreate("testToken" + createdSoFar.getAndIncrement())
-                                    .payingWith(GENESIS)
-                                    .entityMemo(
-                                            new String(
-                                                    TxnUtils.randomUtf8Bytes(memoLength.getAsInt()),
-                                                    StandardCharsets.UTF_8))
-                                    .noLogging()
-                                    .hasPrecheckFrom(permissiblePrechecks)
-                                    .deferStatusResolution(),
-                            getTokenInfo(TARGET_TOKEN + "Info")
-                                    .payingWith(GENESIS)
-                                    .hasEntityMemo(TOKEN_MEMO)
-                                    .hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
-                                    .hasCostAnswerPrecheckFrom(permissiblePrechecks)
-                                    .noLogging(),
-                            tokenUpdate(TARGET_TOKEN)
-                                    .payingWith(GENESIS)
-                                    .entityMemo(
-                                            new String(
-                                                    TxnUtils.randomUtf8Bytes(memoLength.getAsInt()),
-                                                    StandardCharsets.UTF_8))
-                                    .noLogging()
-                                    .hasPrecheckFrom(permissiblePrechecks)
-                                    .deferStatusResolution(),
-                            createTopic("testTopic" + createdSoFar.getAndIncrement())
-                                    .topicMemo(
-                                            new String(
-                                                    TxnUtils.randomUtf8Bytes(memoLength.getAsInt()),
-                                                    StandardCharsets.UTF_8))
-                                    .payingWith(GENESIS)
-                                    .adminKeyName("adminKey")
-                                    .noLogging()
-                                    .hasPrecheckFrom(permissiblePrechecks)
-                                    .deferStatusResolution(),
-                            getTopicInfo(TARGET_TOPIC + "Info")
-                                    .payingWith(GENESIS)
-                                    .hasMemo(TOPIC_MEMO)
-                                    .hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
-                                    .hasCostAnswerPrecheckFrom(permissiblePrechecks)
-                                    .noLogging(),
-                            updateTopic(TARGET_TOPIC)
-                                    .topicMemo(
-                                            new String(
-                                                    TxnUtils.randomUtf8Bytes(memoLength.getAsInt()),
-                                                    StandardCharsets.UTF_8))
-                                    .payingWith(GENESIS)
-                                    .adminKey("adminKey")
-                                    .noLogging()
-                                    .hasPrecheckFrom(permissiblePrechecks)
-                                    .deferStatusResolution()
-                        };
+        Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[] {
+            cryptoCreate("testAccount" + createdSoFar.getAndIncrement())
+                    .balance(1L)
+                    .fee(100_000_000L)
+                    .payingWith(GENESIS)
+                    .entityMemo(new String(TxnUtils.randomUtf8Bytes(memoLength.getAsInt()), StandardCharsets.UTF_8))
+                    .noLogging()
+                    .hasPrecheckFrom(permissiblePrechecks)
+                    .deferStatusResolution(),
+            getAccountInfo(TARGET_ACCOUNT + "Info")
+                    .payingWith(GENESIS)
+                    .has(accountWith().memo(ACCOUNT_MEMO))
+                    .hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
+                    .hasCostAnswerPrecheckFrom(permissiblePrechecks)
+                    .noLogging(),
+            cryptoUpdate(TARGET_ACCOUNT)
+                    .payingWith(GENESIS)
+                    .entityMemo(new String(TxnUtils.randomUtf8Bytes(memoLength.getAsInt()), StandardCharsets.UTF_8))
+                    .noLogging()
+                    .hasPrecheckFrom(permissiblePrechecks)
+                    .deferStatusResolution(),
+            tokenCreate("testToken" + createdSoFar.getAndIncrement())
+                    .payingWith(GENESIS)
+                    .entityMemo(new String(TxnUtils.randomUtf8Bytes(memoLength.getAsInt()), StandardCharsets.UTF_8))
+                    .noLogging()
+                    .hasPrecheckFrom(permissiblePrechecks)
+                    .deferStatusResolution(),
+            getTokenInfo(TARGET_TOKEN + "Info")
+                    .payingWith(GENESIS)
+                    .hasEntityMemo(TOKEN_MEMO)
+                    .hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
+                    .hasCostAnswerPrecheckFrom(permissiblePrechecks)
+                    .noLogging(),
+            tokenUpdate(TARGET_TOKEN)
+                    .payingWith(GENESIS)
+                    .entityMemo(new String(TxnUtils.randomUtf8Bytes(memoLength.getAsInt()), StandardCharsets.UTF_8))
+                    .noLogging()
+                    .hasPrecheckFrom(permissiblePrechecks)
+                    .deferStatusResolution(),
+            createTopic("testTopic" + createdSoFar.getAndIncrement())
+                    .topicMemo(new String(TxnUtils.randomUtf8Bytes(memoLength.getAsInt()), StandardCharsets.UTF_8))
+                    .payingWith(GENESIS)
+                    .adminKeyName("adminKey")
+                    .noLogging()
+                    .hasPrecheckFrom(permissiblePrechecks)
+                    .deferStatusResolution(),
+            getTopicInfo(TARGET_TOPIC + "Info")
+                    .payingWith(GENESIS)
+                    .hasMemo(TOPIC_MEMO)
+                    .hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
+                    .hasCostAnswerPrecheckFrom(permissiblePrechecks)
+                    .noLogging(),
+            updateTopic(TARGET_TOPIC)
+                    .topicMemo(new String(TxnUtils.randomUtf8Bytes(memoLength.getAsInt()), StandardCharsets.UTF_8))
+                    .payingWith(GENESIS)
+                    .adminKey("adminKey")
+                    .noLogging()
+                    .hasPrecheckFrom(permissiblePrechecks)
+                    .deferStatusResolution()
+        };
         return defaultHapiSpec("RunMixedMemoOps")
                 .given(
                         withOpContext(
@@ -173,18 +152,17 @@ public class MixedOpsMemoPerfSuite extends LoadTest {
                 .when(
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(GENESIS)
-                                .overridingProps(
-                                        Map.of(
-                                                "hapi.throttling.buckets.fastOpBucket.capacity",
-                                                "1300000.0",
-                                                "hapi.throttling.ops.consensusUpdateTopic.capacityRequired",
-                                                "1.0",
-                                                "hapi.throttling.ops.consensusGetTopicInfo.capacityRequired",
-                                                "1.0",
-                                                "hapi.throttling.ops.consensusSubmitMessage.capacityRequired",
-                                                "1.0",
-                                                "tokens.maxPerAccount",
-                                                "10000000")),
+                                .overridingProps(Map.of(
+                                        "hapi.throttling.buckets.fastOpBucket.capacity",
+                                        "1300000.0",
+                                        "hapi.throttling.ops.consensusUpdateTopic.capacityRequired",
+                                        "1.0",
+                                        "hapi.throttling.ops.consensusGetTopicInfo.capacityRequired",
+                                        "1.0",
+                                        "hapi.throttling.ops.consensusSubmitMessage.capacityRequired",
+                                        "1.0",
+                                        "tokens.maxPerAccount",
+                                        "10000000")),
                         sleepFor(5000),
                         newKeyNamed("adminKey"),
                         logIt(ignore -> settings.toString()),

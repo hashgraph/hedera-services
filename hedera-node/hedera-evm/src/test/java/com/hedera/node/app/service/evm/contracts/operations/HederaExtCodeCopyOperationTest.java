@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.contracts.operations;
 
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
@@ -40,14 +41,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HederaExtCodeCopyOperationTest {
 
-    @Mock private WorldUpdater worldUpdater;
+    @Mock
+    private WorldUpdater worldUpdater;
 
-    @Mock private GasCalculator gasCalculator;
+    @Mock
+    private GasCalculator gasCalculator;
 
-    @Mock private MessageFrame mf;
+    @Mock
+    private MessageFrame mf;
 
-    @Mock private EVM evm;
-    @Mock private BiPredicate<Address, MessageFrame> addressValidator;
+    @Mock
+    private EVM evm;
+
+    @Mock
+    private BiPredicate<Address, MessageFrame> addressValidator;
 
     private HederaExtCodeCopyOperation subject;
 
@@ -71,9 +78,7 @@ class HederaExtCodeCopyOperationTest {
         given(mf.getStackItem(0)).willReturn(ETH_ADDRESS_INSTANCE);
         given(mf.getStackItem(1)).willReturn(MEM_OFFSET);
         given(mf.getStackItem(3)).willReturn(NUM_BYTES);
-        given(
-                        gasCalculator.extCodeCopyOperationGasCost(
-                                mf, clampedToLong(MEM_OFFSET), clampedToLong(NUM_BYTES)))
+        given(gasCalculator.extCodeCopyOperationGasCost(mf, clampedToLong(MEM_OFFSET), clampedToLong(NUM_BYTES)))
                 .willReturn(OPERATION_COST);
         given(gasCalculator.getWarmStorageReadCost()).willReturn(WARM_READ_COST);
         given(addressValidator.test(any(), any())).willReturn(false);
@@ -82,8 +87,7 @@ class HederaExtCodeCopyOperationTest {
         var opResult = subject.execute(mf, evm);
 
         // then:
-        assertEquals(
-                HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, opResult.getHaltReason());
+        assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, opResult.getHaltReason());
         assertEquals(ACTUAL_COST, opResult.getGasCost());
     }
 
@@ -94,9 +98,7 @@ class HederaExtCodeCopyOperationTest {
         given(mf.getStackItem(1)).willReturn(MEM_OFFSET);
         given(mf.getStackItem(3)).willReturn(NUM_BYTES);
         given(mf.getWorldUpdater()).willReturn(worldUpdater);
-        given(
-                        gasCalculator.extCodeCopyOperationGasCost(
-                                mf, clampedToLong(MEM_OFFSET), clampedToLong(NUM_BYTES)))
+        given(gasCalculator.extCodeCopyOperationGasCost(mf, clampedToLong(MEM_OFFSET), clampedToLong(NUM_BYTES)))
                 .willReturn(OPERATION_COST);
         given(gasCalculator.getWarmStorageReadCost()).willReturn(WARM_READ_COST);
         // and:
@@ -111,9 +113,7 @@ class HederaExtCodeCopyOperationTest {
         given(mf.getRemainingGas()).willReturn(2000L);
         given(mf.getWorldUpdater()).willReturn(worldUpdater);
         // and:
-        given(
-                        gasCalculator.extCodeCopyOperationGasCost(
-                                mf, clampedToLong(MEM_OFFSET), clampedToLong(NUM_BYTES)))
+        given(gasCalculator.extCodeCopyOperationGasCost(mf, clampedToLong(MEM_OFFSET), clampedToLong(NUM_BYTES)))
                 .willReturn(OPERATION_COST);
         given(gasCalculator.getWarmStorageReadCost()).willReturn(WARM_READ_COST);
         given(addressValidator.test(any(), any())).willReturn(true);

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.builder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,33 +52,42 @@ class RequestBuilderTest {
     private final ByteString transactionBody = ByteString.copyFromUtf8("0x00120");
     private final ResponseType responseType = ResponseType.ANSWER_STATE_PROOF;
     private final ByteString hash =
-            ByteString.copyFromUtf8(
-                    "952e79e36a5fe25bd015c3a2ce85f318690c2c1fcb834c89ef06a84ba4d179c0");
-    private final Key validED25519Key =
-            Key.newBuilder()
-                    .setEd25519(
-                            ByteString.copyFromUtf8(
-                                    "a479462fba67674b5a41acfb16cb6828626b61d3f389fa611005a45754130e5c749073c0b1b791596430f4a54649cc8a3f6d28147dd4099070a5c3c4811d1771"))
-                    .build();
-    private final KeyList keyList = KeyList.newBuilder().addKeys(validED25519Key).build();
+            ByteString.copyFromUtf8("952e79e36a5fe25bd015c3a2ce85f318690c2c1fcb834c89ef06a84ba4d179c0");
+    private final Key validED25519Key = Key.newBuilder()
+            .setEd25519(
+                    ByteString.copyFromUtf8(
+                            "a479462fba67674b5a41acfb16cb6828626b61d3f389fa611005a45754130e5c749073c0b1b791596430f4a54649cc8a3f6d28147dd4099070a5c3c4811d1771"))
+            .build();
+    private final KeyList keyList =
+            KeyList.newBuilder().addKeys(validED25519Key).build();
     private final Timestamp startTime = Timestamp.newBuilder().setSeconds(1234L).build();
-    private final Duration transactionDuration = Duration.newBuilder().setSeconds(30L).build();
+    private final Duration transactionDuration =
+            Duration.newBuilder().setSeconds(30L).build();
     private final Duration autoRenew = Duration.newBuilder().setSeconds(30L).build();
     private final boolean generateRecord = false;
     private final String memo = "memo";
     private final String contractMemo = "contractMemo";
 
-    private final AccountID accountId =
-            AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1002).build();
+    private final AccountID accountId = AccountID.newBuilder()
+            .setShardNum(0)
+            .setRealmNum(0)
+            .setAccountNum(1002)
+            .build();
 
     private final FileID fileID =
             FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(6667).build();
 
-    private final ContractID contractId =
-            ContractID.newBuilder().setShardNum(0).setRealmNum(0).setContractNum(3337).build();
+    private final ContractID contractId = ContractID.newBuilder()
+            .setShardNum(0)
+            .setRealmNum(0)
+            .setContractNum(3337)
+            .build();
 
-    private final AccountID nodeId =
-            AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(3).build();
+    private final AccountID nodeId = AccountID.newBuilder()
+            .setShardNum(0)
+            .setRealmNum(0)
+            .setAccountNum(3)
+            .build();
 
     private final TransactionID transactionId =
             TransactionID.newBuilder().setAccountID(accountId).build();
@@ -110,34 +120,34 @@ class RequestBuilderTest {
         final var nodeAccountNum = 2L;
         final var fileNo = 3L;
         final var transactionFee = 100L;
-        final var timestamp = Timestamp.newBuilder().setSeconds(500L).setNanos(500).build();
+        final var timestamp =
+                Timestamp.newBuilder().setSeconds(500L).setNanos(500).build();
         final var duration = RequestBuilder.getDuration(500L);
         final var generateRecord = false;
-        final var fileId =
-                FileID.newBuilder()
-                        .setFileNum(fileNo)
-                        .setRealmNum(realmNum)
-                        .setShardNum(shardNum)
-                        .build();
+        final var fileId = FileID.newBuilder()
+                .setFileNum(fileNo)
+                .setRealmNum(realmNum)
+                .setShardNum(shardNum)
+                .build();
 
-        final var transaction =
-                RequestBuilder.getFileDeleteBuilder(
-                        payerAccountNum,
-                        realmNum,
-                        shardNum,
-                        nodeAccountNum,
-                        realmNum,
-                        shardNum,
-                        transactionFee,
-                        timestamp,
-                        duration,
-                        generateRecord,
-                        memo,
-                        fileId);
+        final var transaction = RequestBuilder.getFileDeleteBuilder(
+                payerAccountNum,
+                realmNum,
+                shardNum,
+                nodeAccountNum,
+                realmNum,
+                shardNum,
+                transactionFee,
+                timestamp,
+                duration,
+                generateRecord,
+                memo,
+                fileId);
         final var transactionBody = buildSignedTransactionBody(transaction);
         assertEquals(fileId, transactionBody.getFileDelete().getFileID());
         assertEquals(
-                payerAccountNum, transactionBody.getTransactionID().getAccountID().getAccountNum());
+                payerAccountNum,
+                transactionBody.getTransactionID().getAccountID().getAccountNum());
         assertEquals(timestamp, transactionBody.getTransactionID().getTransactionValidStart());
         assertEquals(realmNum, transactionBody.getTransactionID().getAccountID().getRealmNum());
         assertEquals(shardNum, transactionBody.getTransactionID().getAccountID().getShardNum());
@@ -158,13 +168,13 @@ class RequestBuilderTest {
 
     @Test
     void assertGetCryptoBalanceQuery() {
-        var infoQuery =
-                RequestBuilder.getCryptoGetBalanceQuery(accountId, transaction, responseType);
+        var infoQuery = RequestBuilder.getCryptoGetBalanceQuery(accountId, transaction, responseType);
 
         assertEquals(accountId, infoQuery.getCryptogetAccountBalance().getAccountID());
         assertEquals(
                 responseType, infoQuery.getCryptogetAccountBalance().getHeader().getResponseType());
-        assertEquals(transaction, infoQuery.getCryptogetAccountBalance().getHeader().getPayment());
+        assertEquals(
+                transaction, infoQuery.getCryptogetAccountBalance().getHeader().getPayment());
     }
 
     @Test
@@ -187,14 +197,13 @@ class RequestBuilderTest {
 
     @Test
     void assertGetTransactionGetRecordQuery() {
-        var infoQuery =
-                RequestBuilder.getTransactionGetRecordQuery(
-                        transactionId, transaction, responseType);
+        var infoQuery = RequestBuilder.getTransactionGetRecordQuery(transactionId, transaction, responseType);
 
         assertEquals(transactionId, infoQuery.getTransactionGetRecord().getTransactionID());
         assertEquals(
                 responseType, infoQuery.getTransactionGetRecord().getHeader().getResponseType());
-        assertEquals(transaction, infoQuery.getTransactionGetRecord().getHeader().getPayment());
+        assertEquals(
+                transaction, infoQuery.getTransactionGetRecord().getHeader().getPayment());
     }
 
     @Test
@@ -204,7 +213,8 @@ class RequestBuilderTest {
         assertEquals(accountId, infoQuery.getCryptoGetAccountRecords().getAccountID());
         assertEquals(
                 responseType, infoQuery.getCryptoGetAccountRecords().getHeader().getResponseType());
-        assertEquals(transaction, infoQuery.getCryptoGetAccountRecords().getHeader().getPayment());
+        assertEquals(
+                transaction, infoQuery.getCryptoGetAccountRecords().getHeader().getPayment());
     }
 
     @Test
@@ -220,9 +230,8 @@ class RequestBuilderTest {
     void assertGetContractCallLocalQuery() {
         var maxResultSize = 123_456L;
         var functionResult = ByteString.copyFromUtf8("functionResult");
-        var infoQuery =
-                RequestBuilder.getContractCallLocalQuery(
-                        contractId, gas, functionResult, maxResultSize, transaction, responseType);
+        var infoQuery = RequestBuilder.getContractCallLocalQuery(
+                contractId, gas, functionResult, maxResultSize, transaction, responseType);
 
         assertEquals(contractId, infoQuery.getContractCallLocal().getContractID());
         assertEquals(gas, infoQuery.getContractCallLocal().getGas());
@@ -233,8 +242,7 @@ class RequestBuilderTest {
 
     @Test
     void assertGetTransactionReceipt() {
-        var transactionReceipt =
-                RequestBuilder.getTransactionReceipt(accountId, responseCodeEnum, exchangeRateSet);
+        var transactionReceipt = RequestBuilder.getTransactionReceipt(accountId, responseCodeEnum, exchangeRateSet);
 
         assertEquals(accountId, transactionReceipt.getAccountID());
         assertEquals(exchangeRateSet, transactionReceipt.getExchangeRate());
@@ -243,8 +251,7 @@ class RequestBuilderTest {
 
     @Test
     void assertGetTransactionReceiptByResponseCodeAndExchangeRate() {
-        var transactionReceipt =
-                RequestBuilder.getTransactionReceipt(responseCodeEnum, exchangeRateSet);
+        var transactionReceipt = RequestBuilder.getTransactionReceipt(responseCodeEnum, exchangeRateSet);
 
         assertEquals(exchangeRateSet, transactionReceipt.getExchangeRate());
         assertEquals(responseCodeEnum, transactionReceipt.getStatus());
@@ -252,8 +259,7 @@ class RequestBuilderTest {
 
     @Test
     void assertGetTransactionReceiptByFileId() {
-        var transactionReceipt =
-                RequestBuilder.getTransactionReceipt(fileID, responseCodeEnum, exchangeRateSet);
+        var transactionReceipt = RequestBuilder.getTransactionReceipt(fileID, responseCodeEnum, exchangeRateSet);
 
         assertEquals(fileID, transactionReceipt.getFileID());
         assertEquals(exchangeRateSet, transactionReceipt.getExchangeRate());
@@ -262,8 +268,7 @@ class RequestBuilderTest {
 
     @Test
     void assertGetTransactionReceiptByContractId() {
-        var transactionReceipt =
-                RequestBuilder.getTransactionReceipt(contractId, responseCodeEnum, exchangeRateSet);
+        var transactionReceipt = RequestBuilder.getTransactionReceipt(contractId, responseCodeEnum, exchangeRateSet);
 
         assertEquals(contractId, transactionReceipt.getContractID());
         assertEquals(exchangeRateSet, transactionReceipt.getExchangeRate());
@@ -289,8 +294,7 @@ class RequestBuilderTest {
     @Test
     void assertGetAccountLiveHashQuery() {
         var infoQuery =
-                RequestBuilder.getAccountLiveHashQuery(
-                        accountId, hash.toByteArray(), transaction, responseType);
+                RequestBuilder.getAccountLiveHashQuery(accountId, hash.toByteArray(), transaction, responseType);
 
         assertEquals(accountId, infoQuery.getCryptoGetLiveHash().getAccountID());
         assertEquals(hash, infoQuery.getCryptoGetLiveHash().getHash());
@@ -300,21 +304,20 @@ class RequestBuilderTest {
 
     @Test
     void assertGetContractGetInfoQuery() {
-        var contractGetInfoQuery =
-                RequestBuilder.getContractGetInfoQuery(contractId, transaction, responseType);
+        var contractGetInfoQuery = RequestBuilder.getContractGetInfoQuery(contractId, transaction, responseType);
 
         assertEquals(contractId, contractGetInfoQuery.getContractGetInfo().getContractID());
         assertEquals(
                 responseType,
                 contractGetInfoQuery.getContractGetInfo().getHeader().getResponseType());
         assertEquals(
-                transaction, contractGetInfoQuery.getContractGetInfo().getHeader().getPayment());
+                transaction,
+                contractGetInfoQuery.getContractGetInfo().getHeader().getPayment());
     }
 
     @Test
     void assertGetContractGetBytecodeQuery() {
-        var contractGetInfoQuery =
-                RequestBuilder.getContractGetBytecodeQuery(contractId, transaction, responseType);
+        var contractGetInfoQuery = RequestBuilder.getContractGetBytecodeQuery(contractId, transaction, responseType);
 
         assertEquals(contractId, contractGetInfoQuery.getContractGetBytecode().getContractID());
         assertEquals(
@@ -327,21 +330,20 @@ class RequestBuilderTest {
 
     @Test
     void assertGetContractRecordsQuery() {
-        var contractGetInfoQuery =
-                RequestBuilder.getContractRecordsQuery(contractId, transaction, responseType);
+        var contractGetInfoQuery = RequestBuilder.getContractRecordsQuery(contractId, transaction, responseType);
 
         assertEquals(contractId, contractGetInfoQuery.getContractGetRecords().getContractID());
         assertEquals(
                 responseType,
                 contractGetInfoQuery.getContractGetRecords().getHeader().getResponseType());
         assertEquals(
-                transaction, contractGetInfoQuery.getContractGetRecords().getHeader().getPayment());
+                transaction,
+                contractGetInfoQuery.getContractGetRecords().getHeader().getPayment());
     }
 
     @Test
     void assertGetTransactionGetReceiptQuery() {
-        var transactionGetReceiptQuery =
-                RequestBuilder.getTransactionGetReceiptQuery(transactionId, responseType);
+        var transactionGetReceiptQuery = RequestBuilder.getTransactionGetReceiptQuery(transactionId, responseType);
 
         assertEquals(responseType, transactionGetReceiptQuery.getHeader().getResponseType());
         assertEquals(transactionId, transactionGetReceiptQuery.getTransactionID());
@@ -349,8 +351,7 @@ class RequestBuilderTest {
 
     @Test
     void assertGetFastTransactionRecordQuery() {
-        var fastRecordQuery =
-                RequestBuilder.getFastTransactionRecordQuery(transactionId, responseType);
+        var fastRecordQuery = RequestBuilder.getFastTransactionRecordQuery(transactionId, responseType);
 
         assertEquals(responseType, fastRecordQuery.getHeader().getResponseType());
         assertEquals(transactionId, fastRecordQuery.getTransactionID());
@@ -358,9 +359,7 @@ class RequestBuilderTest {
 
     @Test
     void assertGetLiveHash() {
-        var liveHash =
-                RequestBuilder.getLiveHash(
-                        accountId, transactionDuration, keyList, hash.toByteArray());
+        var liveHash = RequestBuilder.getLiveHash(accountId, transactionDuration, keyList, hash.toByteArray());
 
         assertEquals(hash, liveHash.getHash());
         assertEquals(transactionDuration, liveHash.getDuration());
@@ -371,8 +370,7 @@ class RequestBuilderTest {
     @Test
     void assertGetResponseHeader() {
         var cost = 1234L;
-        var responseHeader =
-                RequestBuilder.getResponseHeader(responseCodeEnum, cost, responseType, hash);
+        var responseHeader = RequestBuilder.getResponseHeader(responseCodeEnum, cost, responseType, hash);
 
         assertEquals(responseType, responseHeader.getResponseType());
         assertEquals(cost, responseHeader.getCost());
@@ -383,10 +381,10 @@ class RequestBuilderTest {
     @Test
     void assertGetTransactionRecord() {
         var consensusTime = Instant.now();
-        var transactionReceipt = TransactionReceipt.newBuilder().setAccountID(accountId).build();
+        var transactionReceipt =
+                TransactionReceipt.newBuilder().setAccountID(accountId).build();
         var transactionRecord =
-                RequestBuilder.getTransactionRecord(
-                        transactionFee, memo, transactionId, startTime, transactionReceipt);
+                RequestBuilder.getTransactionRecord(transactionFee, memo, transactionId, startTime, transactionReceipt);
 
         assertEquals(transactionFee, transactionRecord.getTransactionFee());
         assertEquals(memo, transactionRecord.getMemo());
@@ -397,9 +395,7 @@ class RequestBuilderTest {
 
     @Test
     void assertGetFileIdBuild() {
-        var fileId =
-                RequestBuilder.getFileIdBuild(
-                        fileID.getFileNum(), fileID.getRealmNum(), fileID.getShardNum());
+        var fileId = RequestBuilder.getFileIdBuild(fileID.getFileNum(), fileID.getRealmNum(), fileID.getShardNum());
         assertEquals(fileID.getShardNum(), fileId.getShardNum());
         assertEquals(fileID.getRealmNum(), fileId.getRealmNum());
         assertEquals(fileID.getFileNum(), fileId.getFileNum());
@@ -407,11 +403,8 @@ class RequestBuilderTest {
 
     @Test
     void assertGetContractIdBuild() {
-        var contractID =
-                RequestBuilder.getContractIdBuild(
-                        contractId.getContractNum(),
-                        contractId.getRealmNum(),
-                        contractId.getShardNum());
+        var contractID = RequestBuilder.getContractIdBuild(
+                contractId.getContractNum(), contractId.getRealmNum(), contractId.getShardNum());
         assertEquals(contractId.getShardNum(), contractID.getShardNum());
         assertEquals(contractId.getRealmNum(), contractID.getRealmNum());
         assertEquals(contractId.getContractNum(), contractID.getContractNum());
@@ -422,9 +415,7 @@ class RequestBuilderTest {
         var hbarEquivalent = 1000;
         var centEquivalent = 100;
         var expirationSeconds = 1234L;
-        var exchangeRate =
-                RequestBuilder.getExchangeRateBuilder(
-                        hbarEquivalent, centEquivalent, expirationSeconds);
+        var exchangeRate = RequestBuilder.getExchangeRateBuilder(hbarEquivalent, centEquivalent, expirationSeconds);
         assertEquals(hbarEquivalent, exchangeRate.getHbarEquiv());
         assertEquals(centEquivalent, exchangeRate.getCentEquiv());
         assertEquals(expirationSeconds, exchangeRate.getExpirationTime().getSeconds());
@@ -439,14 +430,13 @@ class RequestBuilderTest {
         var currentExpirationSeconds = 1234L;
         var nextExpirationSeconds = 123_456L;
 
-        var exchangeRateSet =
-                RequestBuilder.getExchangeRateSetBuilder(
-                        currentHbarEquivalent,
-                        currentCentEquivalent,
-                        currentExpirationSeconds,
-                        nextHbarEquivalent,
-                        nextCentEquivalent,
-                        nextExpirationSeconds);
+        var exchangeRateSet = RequestBuilder.getExchangeRateSetBuilder(
+                currentHbarEquivalent,
+                currentCentEquivalent,
+                currentExpirationSeconds,
+                nextHbarEquivalent,
+                nextCentEquivalent,
+                nextExpirationSeconds);
 
         assertEquals(currentHbarEquivalent, exchangeRateSet.getCurrentRate().getHbarEquiv());
         assertEquals(currentCentEquivalent, exchangeRateSet.getCurrentRate().getCentEquiv());
@@ -469,25 +459,24 @@ class RequestBuilderTest {
         long receiveRecordThreshold = 5L;
         boolean receiverSign = true;
 
-        var transaction =
-                RequestBuilder.getCreateAccountBuilder(
-                        accountId.getAccountNum(),
-                        accountId.getRealmNum(),
-                        accountId.getShardNum(),
-                        nodeId.getAccountNum(),
-                        nodeId.getRealmNum(),
-                        nodeId.getShardNum(),
-                        transactionFee,
-                        startTime,
-                        transactionDuration,
-                        generateRecord,
-                        memo,
-                        keyList,
-                        initBal,
-                        sendRecordThreshold,
-                        receiveRecordThreshold,
-                        receiverSign,
-                        autoRenew);
+        var transaction = RequestBuilder.getCreateAccountBuilder(
+                accountId.getAccountNum(),
+                accountId.getRealmNum(),
+                accountId.getShardNum(),
+                nodeId.getAccountNum(),
+                nodeId.getRealmNum(),
+                nodeId.getShardNum(),
+                transactionFee,
+                startTime,
+                transactionDuration,
+                generateRecord,
+                memo,
+                keyList,
+                initBal,
+                sendRecordThreshold,
+                receiveRecordThreshold,
+                receiverSign,
+                autoRenew);
 
         var tb = buildSignedTransactionBody(transaction);
         assertEquals(memo, tb.getMemo());
@@ -501,21 +490,16 @@ class RequestBuilderTest {
         assertEquals(nodeId.getRealmNum(), tb.getNodeAccountID().getShardNum());
         assertEquals(
                 accountId.getAccountNum(), tb.getTransactionID().getAccountID().getAccountNum());
-        assertEquals(accountId.getRealmNum(), tb.getTransactionID().getAccountID().getRealmNum());
-        assertEquals(accountId.getShardNum(), tb.getTransactionID().getAccountID().getShardNum());
+        assertEquals(
+                accountId.getRealmNum(), tb.getTransactionID().getAccountID().getRealmNum());
+        assertEquals(
+                accountId.getShardNum(), tb.getTransactionID().getAccountID().getShardNum());
     }
 
     @Test
     void assertGetTxBodyBuilder() {
-        var transactionBody =
-                RequestBuilder.getTxBodyBuilder(
-                        transactionFee,
-                        startTime,
-                        transactionDuration,
-                        generateRecord,
-                        memo,
-                        accountId,
-                        nodeId);
+        var transactionBody = RequestBuilder.getTxBodyBuilder(
+                transactionFee, startTime, transactionDuration, generateRecord, memo, accountId, nodeId);
 
         assertEquals(memo, transactionBody.getMemo());
         assertEquals(transactionFee, transactionBody.getTransactionFee());
@@ -528,24 +512,26 @@ class RequestBuilderTest {
 
     @Test
     void assertGetTransactionBody() throws InvalidProtocolBufferException {
-        var accId =
-                AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1005).build();
+        var accId = AccountID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setAccountNum(1005)
+                .build();
 
-        var transaction =
-                RequestBuilder.getAccountUpdateRequest(
-                        accId,
-                        accountId.getAccountNum(),
-                        accountId.getRealmNum(),
-                        accountId.getShardNum(),
-                        nodeId.getAccountNum(),
-                        nodeId.getRealmNum(),
-                        nodeId.getShardNum(),
-                        transactionFee,
-                        startTime,
-                        transactionDuration,
-                        generateRecord,
-                        memo,
-                        autoRenew);
+        var transaction = RequestBuilder.getAccountUpdateRequest(
+                accId,
+                accountId.getAccountNum(),
+                accountId.getRealmNum(),
+                accountId.getShardNum(),
+                nodeId.getAccountNum(),
+                nodeId.getRealmNum(),
+                nodeId.getShardNum(),
+                transactionFee,
+                startTime,
+                transactionDuration,
+                generateRecord,
+                memo,
+                autoRenew);
 
         var tb = buildSignedTransactionBody(transaction);
         assertEquals(memo, tb.getMemo());
@@ -559,30 +545,31 @@ class RequestBuilderTest {
         assertEquals(nodeId.getShardNum(), tb.getNodeAccountID().getShardNum());
         assertEquals(
                 accountId.getAccountNum(), tb.getTransactionID().getAccountID().getAccountNum());
-        assertEquals(accountId.getRealmNum(), tb.getTransactionID().getAccountID().getRealmNum());
-        assertEquals(accountId.getShardNum(), tb.getTransactionID().getAccountID().getShardNum());
+        assertEquals(
+                accountId.getRealmNum(), tb.getTransactionID().getAccountID().getRealmNum());
+        assertEquals(
+                accountId.getShardNum(), tb.getTransactionID().getAccountID().getShardNum());
     }
 
     @Test
     void assertGetFileCreateBuilder() throws InvalidProtocolBufferException {
         Timestamp fileExpiration = Timestamp.newBuilder().setSeconds(123_456L).build();
         List<Key> keyList = List.of(validED25519Key);
-        var transaction =
-                RequestBuilder.getFileCreateBuilder(
-                        accountId.getAccountNum(),
-                        accountId.getRealmNum(),
-                        accountId.getShardNum(),
-                        nodeId.getAccountNum(),
-                        nodeId.getRealmNum(),
-                        nodeId.getShardNum(),
-                        transactionFee,
-                        startTime,
-                        transactionDuration,
-                        generateRecord,
-                        memo,
-                        hash,
-                        fileExpiration,
-                        keyList);
+        var transaction = RequestBuilder.getFileCreateBuilder(
+                accountId.getAccountNum(),
+                accountId.getRealmNum(),
+                accountId.getShardNum(),
+                nodeId.getAccountNum(),
+                nodeId.getRealmNum(),
+                nodeId.getShardNum(),
+                transactionFee,
+                startTime,
+                transactionDuration,
+                generateRecord,
+                memo,
+                hash,
+                fileExpiration,
+                keyList);
 
         var tb = buildSignedTransactionBody(transaction);
         assertEquals(memo, tb.getMemo());
@@ -599,27 +586,28 @@ class RequestBuilderTest {
         assertEquals(nodeId.getShardNum(), tb.getNodeAccountID().getShardNum());
         assertEquals(
                 accountId.getAccountNum(), tb.getTransactionID().getAccountID().getAccountNum());
-        assertEquals(accountId.getRealmNum(), tb.getTransactionID().getAccountID().getRealmNum());
-        assertEquals(accountId.getShardNum(), tb.getTransactionID().getAccountID().getShardNum());
+        assertEquals(
+                accountId.getRealmNum(), tb.getTransactionID().getAccountID().getRealmNum());
+        assertEquals(
+                accountId.getShardNum(), tb.getTransactionID().getAccountID().getShardNum());
     }
 
     @Test
     void assertGetFileAppendBuilder() throws InvalidProtocolBufferException {
-        var transaction =
-                RequestBuilder.getFileAppendBuilder(
-                        accountId.getAccountNum(),
-                        accountId.getRealmNum(),
-                        accountId.getShardNum(),
-                        nodeId.getAccountNum(),
-                        nodeId.getRealmNum(),
-                        nodeId.getShardNum(),
-                        transactionFee,
-                        startTime,
-                        transactionDuration,
-                        generateRecord,
-                        memo,
-                        hash,
-                        fileID);
+        var transaction = RequestBuilder.getFileAppendBuilder(
+                accountId.getAccountNum(),
+                accountId.getRealmNum(),
+                accountId.getShardNum(),
+                nodeId.getAccountNum(),
+                nodeId.getRealmNum(),
+                nodeId.getShardNum(),
+                transactionFee,
+                startTime,
+                transactionDuration,
+                generateRecord,
+                memo,
+                hash,
+                fileID);
 
         var tb = buildSignedTransactionBody(transaction);
         assertEquals(memo, tb.getMemo());
@@ -636,30 +624,31 @@ class RequestBuilderTest {
         assertEquals(nodeId.getShardNum(), tb.getNodeAccountID().getShardNum());
         assertEquals(
                 accountId.getAccountNum(), tb.getTransactionID().getAccountID().getAccountNum());
-        assertEquals(accountId.getRealmNum(), tb.getTransactionID().getAccountID().getRealmNum());
-        assertEquals(accountId.getShardNum(), tb.getTransactionID().getAccountID().getShardNum());
+        assertEquals(
+                accountId.getRealmNum(), tb.getTransactionID().getAccountID().getRealmNum());
+        assertEquals(
+                accountId.getShardNum(), tb.getTransactionID().getAccountID().getShardNum());
     }
 
     @Test
     void assertGetFileUpdateBuilder() throws InvalidProtocolBufferException {
         Timestamp fileExpiration = Timestamp.newBuilder().setSeconds(123_456L).build();
-        var transaction =
-                RequestBuilder.getFileUpdateBuilder(
-                        accountId.getAccountNum(),
-                        accountId.getRealmNum(),
-                        accountId.getShardNum(),
-                        nodeId.getAccountNum(),
-                        nodeId.getRealmNum(),
-                        nodeId.getShardNum(),
-                        transactionFee,
-                        startTime,
-                        fileExpiration,
-                        transactionDuration,
-                        generateRecord,
-                        memo,
-                        hash,
-                        fileID,
-                        keyList);
+        var transaction = RequestBuilder.getFileUpdateBuilder(
+                accountId.getAccountNum(),
+                accountId.getRealmNum(),
+                accountId.getShardNum(),
+                nodeId.getAccountNum(),
+                nodeId.getRealmNum(),
+                nodeId.getShardNum(),
+                transactionFee,
+                startTime,
+                fileExpiration,
+                transactionDuration,
+                generateRecord,
+                memo,
+                hash,
+                fileID,
+                keyList);
 
         var tb = buildSignedTransactionBody(transaction);
         assertEquals(memo, tb.getMemo());
@@ -677,8 +666,10 @@ class RequestBuilderTest {
         assertEquals(nodeId.getShardNum(), tb.getNodeAccountID().getShardNum());
         assertEquals(
                 accountId.getAccountNum(), tb.getTransactionID().getAccountID().getAccountNum());
-        assertEquals(accountId.getRealmNum(), tb.getTransactionID().getAccountID().getRealmNum());
-        assertEquals(accountId.getShardNum(), tb.getTransactionID().getAccountID().getShardNum());
+        assertEquals(
+                accountId.getRealmNum(), tb.getTransactionID().getAccountID().getRealmNum());
+        assertEquals(
+                accountId.getShardNum(), tb.getTransactionID().getAccountID().getShardNum());
     }
 
     @Test
@@ -688,23 +679,22 @@ class RequestBuilderTest {
         Long receiverAccountNum = 1010L;
         Long amountReceived = 1500L;
 
-        var transaction =
-                RequestBuilder.getCryptoTransferRequest(
-                        accountId.getAccountNum(),
-                        accountId.getRealmNum(),
-                        accountId.getShardNum(),
-                        nodeId.getAccountNum(),
-                        nodeId.getRealmNum(),
-                        nodeId.getShardNum(),
-                        transactionFee,
-                        startTime,
-                        transactionDuration,
-                        generateRecord,
-                        memo,
-                        senderAccountNum,
-                        amountSend,
-                        receiverAccountNum,
-                        amountReceived);
+        var transaction = RequestBuilder.getCryptoTransferRequest(
+                accountId.getAccountNum(),
+                accountId.getRealmNum(),
+                accountId.getShardNum(),
+                nodeId.getAccountNum(),
+                nodeId.getRealmNum(),
+                nodeId.getShardNum(),
+                transactionFee,
+                startTime,
+                transactionDuration,
+                generateRecord,
+                memo,
+                senderAccountNum,
+                amountSend,
+                receiverAccountNum,
+                amountReceived);
 
         var tb = buildSignedTransactionBody(transaction);
         assertEquals(memo, tb.getMemo());
@@ -718,8 +708,10 @@ class RequestBuilderTest {
         assertEquals(nodeId.getShardNum(), tb.getNodeAccountID().getShardNum());
         assertEquals(
                 accountId.getAccountNum(), tb.getTransactionID().getAccountID().getAccountNum());
-        assertEquals(accountId.getRealmNum(), tb.getTransactionID().getAccountID().getRealmNum());
-        assertEquals(accountId.getShardNum(), tb.getTransactionID().getAccountID().getShardNum());
+        assertEquals(
+                accountId.getRealmNum(), tb.getTransactionID().getAccountID().getRealmNum());
+        assertEquals(
+                accountId.getShardNum(), tb.getTransactionID().getAccountID().getShardNum());
         assertEquals(
                 senderAccountNum,
                 tb.getCryptoTransfer()
@@ -728,7 +720,8 @@ class RequestBuilderTest {
                         .getAccountID()
                         .getAccountNum());
         assertEquals(
-                amountSend, tb.getCryptoTransfer().getTransfers().getAccountAmounts(0).getAmount());
+                amountSend,
+                tb.getCryptoTransfer().getTransfers().getAccountAmounts(0).getAmount());
         assertEquals(
                 receiverAccountNum,
                 tb.getCryptoTransfer()
@@ -744,21 +737,20 @@ class RequestBuilderTest {
     @Test
     void assertGetContractCallRequest() throws InvalidProtocolBufferException {
         long value = 1500L;
-        var transaction =
-                RequestBuilder.getContractCallRequest(
-                        accountId.getAccountNum(),
-                        accountId.getRealmNum(),
-                        accountId.getShardNum(),
-                        nodeId.getAccountNum(),
-                        nodeId.getRealmNum(),
-                        nodeId.getShardNum(),
-                        transactionFee,
-                        startTime,
-                        transactionDuration,
-                        gas,
-                        contractId,
-                        hash,
-                        value);
+        var transaction = RequestBuilder.getContractCallRequest(
+                accountId.getAccountNum(),
+                accountId.getRealmNum(),
+                accountId.getShardNum(),
+                nodeId.getAccountNum(),
+                nodeId.getRealmNum(),
+                nodeId.getShardNum(),
+                transactionFee,
+                startTime,
+                transactionDuration,
+                gas,
+                contractId,
+                hash,
+                value);
 
         var tb = buildSignedTransactionBody(transaction);
 
@@ -767,8 +759,10 @@ class RequestBuilderTest {
         assertEquals(nodeId.getShardNum(), tb.getNodeAccountID().getShardNum());
         assertEquals(
                 accountId.getAccountNum(), tb.getTransactionID().getAccountID().getAccountNum());
-        assertEquals(accountId.getRealmNum(), tb.getTransactionID().getAccountID().getRealmNum());
-        assertEquals(accountId.getShardNum(), tb.getTransactionID().getAccountID().getShardNum());
+        assertEquals(
+                accountId.getRealmNum(), tb.getTransactionID().getAccountID().getRealmNum());
+        assertEquals(
+                accountId.getShardNum(), tb.getTransactionID().getAccountID().getShardNum());
         assertEquals(transactionFee, tb.getTransactionFee());
         assertEquals(startTime, tb.getTransactionID().getTransactionValidStart());
         assertEquals(transactionDuration, tb.getTransactionValidDuration());
@@ -779,24 +773,26 @@ class RequestBuilderTest {
 
     @Test
     void assertGetContractUpdateRequest() throws InvalidProtocolBufferException {
-        var proxyAccountID =
-                AccountID.newBuilder().setAccountNum(1010L).setRealmNum(0).setShardNum(0).build();
+        var proxyAccountID = AccountID.newBuilder()
+                .setAccountNum(1010L)
+                .setRealmNum(0)
+                .setShardNum(0)
+                .build();
         Timestamp expirationTime = Timestamp.newBuilder().setSeconds(124_56L).build();
-        var transaction =
-                RequestBuilder.getContractUpdateRequest(
-                        accountId,
-                        nodeId,
-                        transactionFee,
-                        startTime,
-                        transactionDuration,
-                        generateRecord,
-                        memo,
-                        contractId,
-                        autoRenew,
-                        validED25519Key,
-                        proxyAccountID,
-                        expirationTime,
-                        contractMemo);
+        var transaction = RequestBuilder.getContractUpdateRequest(
+                accountId,
+                nodeId,
+                transactionFee,
+                startTime,
+                transactionDuration,
+                generateRecord,
+                memo,
+                contractId,
+                autoRenew,
+                validED25519Key,
+                proxyAccountID,
+                expirationTime,
+                contractMemo);
 
         var tb = buildSignedTransactionBody(transaction);
 
@@ -818,26 +814,25 @@ class RequestBuilderTest {
     void assertGetCreateContractRequest() throws InvalidProtocolBufferException {
         var initialBalance = 300_000L;
 
-        var transaction =
-                RequestBuilder.getCreateContractRequest(
-                        accountId.getAccountNum(),
-                        accountId.getRealmNum(),
-                        accountId.getShardNum(),
-                        nodeId.getAccountNum(),
-                        nodeId.getRealmNum(),
-                        nodeId.getShardNum(),
-                        transactionFee,
-                        startTime,
-                        transactionDuration,
-                        generateRecord,
-                        memo,
-                        gas,
-                        fileID,
-                        hash,
-                        initialBalance,
-                        autoRenew,
-                        contractMemo,
-                        validED25519Key);
+        var transaction = RequestBuilder.getCreateContractRequest(
+                accountId.getAccountNum(),
+                accountId.getRealmNum(),
+                accountId.getShardNum(),
+                nodeId.getAccountNum(),
+                nodeId.getRealmNum(),
+                nodeId.getShardNum(),
+                transactionFee,
+                startTime,
+                transactionDuration,
+                generateRecord,
+                memo,
+                gas,
+                fileID,
+                hash,
+                initialBalance,
+                autoRenew,
+                contractMemo,
+                validED25519Key);
 
         var tb = buildSignedTransactionBody(transaction);
 
@@ -846,8 +841,10 @@ class RequestBuilderTest {
         assertEquals(nodeId.getShardNum(), tb.getNodeAccountID().getShardNum());
         assertEquals(
                 accountId.getAccountNum(), tb.getTransactionID().getAccountID().getAccountNum());
-        assertEquals(accountId.getRealmNum(), tb.getTransactionID().getAccountID().getRealmNum());
-        assertEquals(accountId.getShardNum(), tb.getTransactionID().getAccountID().getShardNum());
+        assertEquals(
+                accountId.getRealmNum(), tb.getTransactionID().getAccountID().getRealmNum());
+        assertEquals(
+                accountId.getShardNum(), tb.getTransactionID().getAccountID().getShardNum());
         assertEquals(transactionFee, tb.getTransactionFee());
         assertEquals(startTime, tb.getTransactionID().getTransactionValidStart());
         assertEquals(generateRecord, tb.getGenerateRecord());
@@ -865,72 +862,66 @@ class RequestBuilderTest {
         Constructor<RequestBuilder> constructor = RequestBuilder.class.getDeclaredConstructor();
         assertTrue(Modifier.isPrivate(constructor.getModifiers()));
         constructor.setAccessible(true);
-        assertThrows(
-                InvocationTargetException.class,
-                () -> {
-                    constructor.newInstance();
-                });
+        assertThrows(InvocationTargetException.class, () -> {
+            constructor.newInstance();
+        });
     }
 
     @Test
     void xferConvenienceBuildersDontThrow() {
 
-        assertNotNull(
-                RequestBuilder.getCryptoTransferRequest(
-                        1234l,
-                        0l,
-                        0l,
-                        3l,
-                        0l,
-                        0l,
-                        100_000_000L,
-                        Timestamp.getDefaultInstance(),
-                        Duration.getDefaultInstance(),
-                        false,
-                        "MEMO",
-                        5678l,
-                        -70000l,
-                        5679l,
-                        70000l));
-        assertNotNull(
-                RequestBuilder.getHbarCryptoTransferRequestToAlias(
-                        1234l,
-                        0l,
-                        0l,
-                        3l,
-                        0l,
-                        0l,
-                        100_000_000L,
-                        Timestamp.getDefaultInstance(),
-                        Duration.getDefaultInstance(),
-                        false,
-                        "MEMO",
-                        5678l,
-                        -70000l,
-                        ByteString.copyFromUtf8("ALIAS"),
-                        70000l));
-        assertNotNull(
-                RequestBuilder.getTokenTransferRequestToAlias(
-                        1234l,
-                        0l,
-                        0l,
-                        3l,
-                        0l,
-                        0l,
-                        100_000_000L,
-                        Timestamp.getDefaultInstance(),
-                        Duration.getDefaultInstance(),
-                        false,
-                        "MEMO",
-                        5678l,
-                        5555l,
-                        -70000l,
-                        ByteString.copyFromUtf8("aaaa"),
-                        70000l));
+        assertNotNull(RequestBuilder.getCryptoTransferRequest(
+                1234l,
+                0l,
+                0l,
+                3l,
+                0l,
+                0l,
+                100_000_000L,
+                Timestamp.getDefaultInstance(),
+                Duration.getDefaultInstance(),
+                false,
+                "MEMO",
+                5678l,
+                -70000l,
+                5679l,
+                70000l));
+        assertNotNull(RequestBuilder.getHbarCryptoTransferRequestToAlias(
+                1234l,
+                0l,
+                0l,
+                3l,
+                0l,
+                0l,
+                100_000_000L,
+                Timestamp.getDefaultInstance(),
+                Duration.getDefaultInstance(),
+                false,
+                "MEMO",
+                5678l,
+                -70000l,
+                ByteString.copyFromUtf8("ALIAS"),
+                70000l));
+        assertNotNull(RequestBuilder.getTokenTransferRequestToAlias(
+                1234l,
+                0l,
+                0l,
+                3l,
+                0l,
+                0l,
+                100_000_000L,
+                Timestamp.getDefaultInstance(),
+                Duration.getDefaultInstance(),
+                false,
+                "MEMO",
+                5678l,
+                5555l,
+                -70000l,
+                ByteString.copyFromUtf8("aaaa"),
+                70000l));
     }
 
-    private TransactionBody buildSignedTransactionBody(Transaction transaction)
-            throws InvalidProtocolBufferException {
+    private TransactionBody buildSignedTransactionBody(Transaction transaction) throws InvalidProtocolBufferException {
         var signedTxn = SignedTransaction.parseFrom(transaction.getSignedTransactionBytes());
         var transactionBody = TransactionBody.parseFrom(signedTxn.getBodyBytes());
         return transactionBody;

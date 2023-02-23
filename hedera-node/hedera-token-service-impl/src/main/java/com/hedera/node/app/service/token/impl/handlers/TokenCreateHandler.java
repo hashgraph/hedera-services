@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
@@ -97,8 +98,7 @@ public class TokenCreateHandler implements TransactionHandler {
      * @param customFeesList list with the custom fees
      */
     private void addCustomFeeCollectorKeys(
-            @NonNull final PreHandleContext context,
-            @NonNull final List<CustomFee> customFeesList) {
+            @NonNull final PreHandleContext context, @NonNull final List<CustomFee> customFeesList) {
 
         for (final var customFee : customFeesList) {
             final var collector = customFee.getFeeCollectorAccountId();
@@ -108,9 +108,8 @@ public class TokenCreateHandler implements TransactionHandler {
             since these are automatically associated to the newly created token. */
             if (customFee.hasFixedFee()) {
                 final var fixedFee = customFee.getFixedFee();
-                final var alwaysAdd =
-                        fixedFee.hasDenominatingTokenId()
-                                && fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
+                final var alwaysAdd = fixedFee.hasDenominatingTokenId()
+                        && fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
                 addAccount(context, collector, alwaysAdd);
             } else if (customFee.hasFractionalFee()) {
                 context.addNonPayerKey(collector, INVALID_CUSTOM_FEE_COLLECTOR);
@@ -119,9 +118,8 @@ public class TokenCreateHandler implements TransactionHandler {
                 var alwaysAdd = false;
                 if (royaltyFee.hasFallbackFee()) {
                     final var fFee = royaltyFee.getFallbackFee();
-                    alwaysAdd =
-                            fFee.hasDenominatingTokenId()
-                                    && fFee.getDenominatingTokenId().getTokenNum() == 0;
+                    alwaysAdd = fFee.hasDenominatingTokenId()
+                            && fFee.getDenominatingTokenId().getTokenNum() == 0;
                 }
                 addAccount(context, collector, alwaysAdd);
             }
@@ -135,8 +133,7 @@ public class TokenCreateHandler implements TransactionHandler {
      * @param collector the ID of the collector
      * @param alwaysAdd if true, will always add the key
      */
-    private void addAccount(
-            final PreHandleContext context, final AccountID collector, final boolean alwaysAdd) {
+    private void addAccount(final PreHandleContext context, final AccountID collector, final boolean alwaysAdd) {
         if (alwaysAdd) {
             context.addNonPayerKey(collector, INVALID_CUSTOM_FEE_COLLECTOR);
         } else {

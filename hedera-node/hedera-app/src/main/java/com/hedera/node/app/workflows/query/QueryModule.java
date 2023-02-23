@@ -13,15 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.query;
 
+import com.hedera.node.app.fees.FeeAccumulator;
+import com.hedera.node.app.fees.MonoFeeAccumulator;
 import com.hedera.node.app.service.consensus.impl.components.ConsensusComponent;
 import com.hedera.node.app.service.contract.impl.components.ContractComponent;
 import com.hedera.node.app.service.file.impl.components.FileComponent;
-import com.hedera.node.app.service.mono.store.schedule.HederaScheduleStore;
-import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
-import com.hedera.node.app.service.mono.txns.validation.ContextOptionValidator;
-import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.network.impl.components.NetworkComponent;
 import com.hedera.node.app.service.schedule.impl.components.ScheduleComponent;
 import com.hedera.node.app.service.token.impl.components.TokenComponent;
@@ -50,11 +49,7 @@ public interface QueryModule {
 
     @Binds
     @Singleton
-    OptionValidator bindOptionValidator(ContextOptionValidator optionValidator);
-
-    @Binds
-    @Singleton
-    ScheduleStore bindScheduleStore(HederaScheduleStore scheduleStore);
+    FeeAccumulator bindFeeAccumulator(MonoFeeAccumulator feeAccumulator);
 
     @Provides
     @Singleton
@@ -66,7 +61,6 @@ public interface QueryModule {
     }
 
     @Provides
-    @Singleton
     static QueryHandlers provideQueryHandlers(
             @NonNull ConsensusComponent consensusComponent,
             @NonNull FileComponent fileComponent,

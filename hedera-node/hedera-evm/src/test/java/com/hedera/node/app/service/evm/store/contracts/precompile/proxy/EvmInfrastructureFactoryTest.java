@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.proxy;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -31,10 +32,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class EvmInfrastructureFactoryTest {
 
-    @Mock private MessageFrame frame;
-    @Mock private EvmEncodingFacade evmEncoder;
-    @Mock private ViewGasCalculator gasCalculator;
-    @Mock private TokenAccessor tokenAccessor;
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private EvmEncodingFacade evmEncoder;
+
+    @Mock
+    private ViewGasCalculator gasCalculator;
+
+    @Mock
+    private TokenAccessor tokenAccessor;
 
     private EvmInfrastructureFactory subject;
 
@@ -46,8 +54,7 @@ class EvmInfrastructureFactoryTest {
     @Test
     void canCreateViewExecutor() {
         final var fakeInput = Bytes.of(1, 2, 3);
-        final var viewExecutor =
-                subject.newViewExecutor(fakeInput, frame, gasCalculator, tokenAccessor);
+        final var viewExecutor = subject.newViewExecutor(fakeInput, frame, gasCalculator, tokenAccessor);
         assertInstanceOf(ViewExecutor.class, viewExecutor);
     }
 

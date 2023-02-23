@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.file;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_SYSTEM_DELETABLE;
+import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_SYSTEM_DELETABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -57,6 +58,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 class FileSysUndelTransitionLogicTest {
+
     enum TargetType {
         VALID,
         MISSING,
@@ -114,22 +116,16 @@ class FileSysUndelTransitionLogicTest {
         given(hfs.exists(missing)).willReturn(false);
         given(hfs.getattr(undeleted)).willReturn(attr);
         given(hfs.getattr(deleted)).willReturn(deletedAttr);
-        given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE))
-                .willReturn(EnumSet.allOf(EntityType.class));
+        given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE)).willReturn(EnumSet.allOf(EntityType.class));
 
-        subject =
-                new FileSysUndelTransitionLogic(
-                        hfs, sigImpactHistorian, oldExpiries, txnCtx, properties);
+        subject = new FileSysUndelTransitionLogic(hfs, sigImpactHistorian, oldExpiries, txnCtx, properties);
     }
 
     @Test
     void abortsIfNotSupported() {
-        given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE))
-                .willReturn(EnumSet.noneOf(EntityType.class));
+        given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE)).willReturn(EnumSet.noneOf(EntityType.class));
 
-        subject =
-                new FileSysUndelTransitionLogic(
-                        hfs, sigImpactHistorian, oldExpiries, txnCtx, properties);
+        subject = new FileSysUndelTransitionLogic(hfs, sigImpactHistorian, oldExpiries, txnCtx, properties);
 
         subject.doStateTransition();
         verify(txnCtx).setStatus(NOT_SUPPORTED);
@@ -139,7 +135,7 @@ class FileSysUndelTransitionLogicTest {
     @Test
     void happyPathFlows() {
         // setup:
-        InOrder inOrder = inOrder(hfs, txnCtx, oldExpiries, sigImpactHistorian);
+        final InOrder inOrder = inOrder(hfs, txnCtx, oldExpiries, sigImpactHistorian);
 
         givenTxnCtxSysUndeleting(TargetType.DELETED, OldExpiryType.FUTURE);
         // and:
@@ -206,10 +202,10 @@ class FileSysUndelTransitionLogicTest {
     @Test
     void hasCorrectApplicability() {
         // setup:
-        SystemUndeleteTransactionBody.Builder op =
-                SystemUndeleteTransactionBody.newBuilder()
-                        .setContractID(IdUtils.asContract("0.0.1001"));
-        var contractSysUndelTxn = TransactionBody.newBuilder().setSystemUndelete(op).build();
+        final SystemUndeleteTransactionBody.Builder op =
+                SystemUndeleteTransactionBody.newBuilder().setContractID(IdUtils.asContract("0.0.1001"));
+        final var contractSysUndelTxn =
+                TransactionBody.newBuilder().setSystemUndelete(op).build();
 
         givenTxnCtxSysUndeleting(TargetType.VALID, OldExpiryType.FUTURE);
 
@@ -222,14 +218,14 @@ class FileSysUndelTransitionLogicTest {
     @Test
     void syntaxCheckRubberstamps() {
         // given:
-        var syntaxCheck = subject.semanticCheck();
+        final var syntaxCheck = subject.semanticCheck();
 
         // expect:
         assertEquals(ResponseCodeEnum.OK, syntaxCheck.apply(TransactionBody.getDefaultInstance()));
     }
 
-    private void givenTxnCtxSysUndeleting(TargetType type, OldExpiryType expiryType) {
-        SystemUndeleteTransactionBody.Builder op = SystemUndeleteTransactionBody.newBuilder();
+    private void givenTxnCtxSysUndeleting(final TargetType type, final OldExpiryType expiryType) {
+        final SystemUndeleteTransactionBody.Builder op = SystemUndeleteTransactionBody.newBuilder();
 
         FileID id = null;
         switch (type) {
@@ -246,7 +242,7 @@ class FileSysUndelTransitionLogicTest {
                 id = deleted;
                 break;
         }
-        EntityId entity = EntityId.fromGrpcFileId(id);
+        final EntityId entity = EntityId.fromGrpcFileId(id);
 
         switch (expiryType) {
             case NONE:
@@ -263,18 +259,15 @@ class FileSysUndelTransitionLogicTest {
                 break;
         }
 
-        txnId =
-                TransactionID.newBuilder()
-                        .setTransactionValidStart(
-                                MiscUtils.asTimestamp(
-                                        Instant.ofEpochSecond(Instant.now().getEpochSecond())))
-                        .build();
-        fileSysUndelTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(txnId)
-                        .setTransactionValidDuration(Duration.newBuilder().setSeconds(180))
-                        .setSystemUndelete(op)
-                        .build();
+        txnId = TransactionID.newBuilder()
+                .setTransactionValidStart(MiscUtils.asTimestamp(
+                        Instant.ofEpochSecond(Instant.now().getEpochSecond())))
+                .build();
+        fileSysUndelTxn = TransactionBody.newBuilder()
+                .setTransactionID(txnId)
+                .setTransactionValidDuration(Duration.newBuilder().setSeconds(180))
+                .setSystemUndelete(op)
+                .build();
         given(accessor.getTxn()).willReturn(fileSysUndelTxn);
         given(txnCtx.accessor()).willReturn(accessor);
         given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));

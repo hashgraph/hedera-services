@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.files;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -57,11 +58,10 @@ public class RandomAppend implements OpProvider {
             return Optional.empty();
         }
 
-        var op =
-                TxnVerbs.fileAppend(target.get())
-                        .hasPrecheckFrom(permissiblePrechecks)
-                        .hasKnownStatusFrom(permissibleOutcomes)
-                        .content(MORE_BYTES);
+        var op = TxnVerbs.fileAppend(target.get())
+                .hasPrecheckFrom(permissiblePrechecks)
+                .hasKnownStatusFrom(permissibleOutcomes)
+                .content(MORE_BYTES);
 
         return Optional.of(op);
     }

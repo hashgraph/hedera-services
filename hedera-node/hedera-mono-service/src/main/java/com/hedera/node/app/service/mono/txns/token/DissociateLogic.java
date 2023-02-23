@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hedera.node.app.service.mono.txns.validation.TokenListChecks.repeatsItself;
@@ -60,8 +61,7 @@ public class DissociateLogic {
         final var account = accountStore.loadAccount(accountId);
         final List<Dissociation> dissociations = new ArrayList<>();
         for (final var tokenId : tokenIds) {
-            dissociations.add(
-                    dissociationFactory.loadFrom(tokenStore, account, Id.fromGrpcToken(tokenId)));
+            dissociations.add(dissociationFactory.loadFrom(tokenStore, account, Id.fromGrpcToken(tokenId)));
         }
 
         // --- Do the business logic ---

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.migration;
 
 import static com.hedera.node.app.service.mono.state.migration.QueryableRecords.NO_QUERYABLE_RECORDS;
@@ -50,13 +51,11 @@ public class RecordsStorageAdapter {
     private final @Nullable MerkleMap<EntityNum, MerkleAccount> legacyAccounts;
     private final @Nullable MerkleMap<EntityNum, MerklePayerRecords> payerRecords;
 
-    public static RecordsStorageAdapter fromLegacy(
-            final MerkleMap<EntityNum, MerkleAccount> accounts) {
+    public static RecordsStorageAdapter fromLegacy(final MerkleMap<EntityNum, MerkleAccount> accounts) {
         return new RecordsStorageAdapter(accounts, null);
     }
 
-    public static RecordsStorageAdapter fromDedicated(
-            final MerkleMap<EntityNum, MerklePayerRecords> payerRecords) {
+    public static RecordsStorageAdapter fromDedicated(final MerkleMap<EntityNum, MerklePayerRecords> payerRecords) {
         return new RecordsStorageAdapter(null, payerRecords);
     }
 
@@ -118,15 +117,12 @@ public class RecordsStorageAdapter {
     public QueryableRecords getReadOnlyPayerRecords(final EntityNum payerNum) {
         if (accountsOnDisk) {
             final var payerRecordsView = payerRecords.get(payerNum);
-            return (payerRecordsView == null)
-                    ? NO_QUERYABLE_RECORDS
-                    : payerRecordsView.asQueryableRecords();
+            return (payerRecordsView == null) ? NO_QUERYABLE_RECORDS : payerRecordsView.asQueryableRecords();
         } else {
             final var payerAccountView = legacyAccounts.get(payerNum);
             return (payerAccountView == null)
                     ? NO_QUERYABLE_RECORDS
-                    : new QueryableRecords(
-                            payerAccountView.numRecords(), payerAccountView.recordIterator());
+                    : new QueryableRecords(payerAccountView.numRecords(), payerAccountView.recordIterator());
         }
     }
 
@@ -134,12 +130,9 @@ public class RecordsStorageAdapter {
         if (accountsOnDisk) {
             forEach(
                     payerRecords,
-                    (payerNum, accountRecords) ->
-                            observer.accept(payerNum, accountRecords.readOnlyQueue()));
+                    (payerNum, accountRecords) -> observer.accept(payerNum, accountRecords.readOnlyQueue()));
         } else {
-            forEach(
-                    legacyAccounts,
-                    (payerNum, account) -> observer.accept(payerNum, account.records()));
+            forEach(legacyAccounts, (payerNum, account) -> observer.accept(payerNum, account.records()));
         }
     }
 }

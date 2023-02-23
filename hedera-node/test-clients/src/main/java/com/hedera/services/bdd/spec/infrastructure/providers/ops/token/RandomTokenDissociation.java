@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.token;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
@@ -37,13 +38,12 @@ public class RandomTokenDissociation implements OpProvider {
         this.tokenRels = tokenRels;
     }
 
-    private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(
-                    TOKEN_WAS_DELETED,
-                    ACCOUNT_IS_TREASURY,
-                    ACCOUNT_FROZEN_FOR_TOKEN,
-                    TOKEN_NOT_ASSOCIATED_TO_ACCOUNT,
-                    TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+    private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
+            TOKEN_WAS_DELETED,
+            ACCOUNT_IS_TREASURY,
+            ACCOUNT_FROZEN_FOR_TOKEN,
+            TOKEN_NOT_ASSOCIATED_TO_ACCOUNT,
+            TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
 
     @Override
     public Optional<HapiSpecOperation> get() {
@@ -54,10 +54,9 @@ public class RandomTokenDissociation implements OpProvider {
 
         var implicitRel = relToDissociate.get();
         var rel = explicit(implicitRel);
-        var op =
-                tokenDissociate(rel.getLeft(), rel.getRight())
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                        .hasKnownStatusFrom(permissibleOutcomes);
+        var op = tokenDissociate(rel.getLeft(), rel.getRight())
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                .hasKnownStatusFrom(permissibleOutcomes);
         return Optional.of(op);
     }
 

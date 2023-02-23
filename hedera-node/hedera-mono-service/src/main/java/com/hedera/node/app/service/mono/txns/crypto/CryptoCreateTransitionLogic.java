@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
@@ -35,7 +36,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.exceptions.InsufficientFundsException;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
@@ -75,7 +75,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
     private final HederaLedger ledger;
     private final SigImpactHistorian sigImpactHistorian;
     private final TransactionContext txnCtx;
-    private final GlobalDynamicProperties dynamicProperties;
     private final AliasManager aliasManager;
     private final AutoCreationLogic autoCreationLogic;
     private final TransferLogic transferLogic;
@@ -87,7 +86,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             final HederaLedger ledger,
             final SigImpactHistorian sigImpactHistorian,
             final TransactionContext txnCtx,
-            final GlobalDynamicProperties dynamicProperties,
             final AliasManager aliasManager,
             final AutoCreationLogic autoCreationLogic,
             final TransferLogic transferLogic,
@@ -96,7 +94,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         this.txnCtx = txnCtx;
         this.usageLimits = usageLimits;
         this.sigImpactHistorian = sigImpactHistorian;
-        this.dynamicProperties = dynamicProperties;
         this.aliasManager = aliasManager;
         this.autoCreationLogic = autoCreationLogic;
         this.transferLogic = transferLogic;
@@ -117,13 +114,9 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             long balance = op.getInitialBalance();
             final var customizer = asCustomizer(op);
             final var isLazyCreation =
-                    !op.getAlias().isEmpty()
-                            && op.getAlias().size() == EVM_ADDRESS_SIZE
-                            && !op.hasKey();
-            final var lazyCreationFinalizationFee =
-                    autoCreationLogic.getLazyCreationFinalizationFee();
-            final var minPayerBalanceRequired =
-                    balance + (isLazyCreation ? lazyCreationFinalizationFee : 0);
+                    !op.getAlias().isEmpty() && op.getAlias().size() == EVM_ADDRESS_SIZE && !op.hasKey();
+            final var lazyCreationFinalizationFee = autoCreationLogic.getLazyCreationFinalizationFee();
+            final var minPayerBalanceRequired = balance + (isLazyCreation ? lazyCreationFinalizationFee : 0);
             if (minPayerBalanceRequired > (long) ledger.getAccountsLedger().get(sponsor, BALANCE)) {
                 throw new InsufficientFundsException(txnCtx.activePayer(), minPayerBalanceRequired);
             }
@@ -145,16 +138,12 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
                     final var key = asPrimitiveKeyUnchecked(op.getAlias());
                     maybeLinkEvmAddressFrom(key, aliasesToLink);
                 }
-            } else if (op.hasKey()
-                    && dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
-                maybeLinkEvmAddressFrom(op.getKey(), aliasesToLink);
             }
 
-            aliasesToLink.forEach(
-                    alias -> {
-                        aliasManager.link(alias, EntityNum.fromAccountId(created));
-                        sigImpactHistorian.markAliasChanged(alias);
-                    });
+            aliasesToLink.forEach(alias -> {
+                aliasManager.link(alias, EntityNum.fromAccountId(created));
+                sigImpactHistorian.markAliasChanged(alias);
+            });
         } catch (InsufficientFundsException ife) {
             txnCtx.setStatus(INSUFFICIENT_PAYER_BALANCE);
         } catch (Exception e) {
@@ -192,21 +181,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
                 .isDeclinedReward(op.getDeclineReward());
 
         if (onlyKeyProvided(op)) {
-            if (!op.getKey().getECDSASecp256K1().isEmpty()
-                    && dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
-
-                final var recoveredEvmAddressFromPrimitiveKey =
-                        recoverAddressFromPubKey(op.getKey().getECDSASecp256K1().toByteArray());
-
-                if (isRecoveredEvmAddress(recoveredEvmAddressFromPrimitiveKey)
-                        && aliasManager
-                                .lookupIdBy(
-                                        ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey))
-                                .equals(MISSING_NUM)) {
-                    customizer.alias(ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey));
-                }
-            }
-
             final JKey key = asFcKeyUnchecked(op.getKey());
             customizer.key(key);
         } else if (onlyAliasProvided(op)) {
@@ -216,8 +190,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         }
 
         if (hasStakedId(op.getStakedIdCase().name())) {
-            customizer.customizeStakedId(
-                    op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId());
+            customizer.customizeStakedId(op.getStakedIdCase().name(), op.getStakedAccountId(), op.getStakedNodeId());
         }
         return customizer;
     }

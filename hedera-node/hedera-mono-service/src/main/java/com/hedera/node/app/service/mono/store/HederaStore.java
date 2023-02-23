@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
@@ -40,8 +41,7 @@ public abstract class HederaStore {
         this.ids = ids;
     }
 
-    public void setAccountsLedger(
-            TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
+    public void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
         this.accountsLedger = accountsLedger;
     }
 
@@ -56,9 +56,7 @@ public abstract class HederaStore {
     protected ResponseCodeEnum usableOrElse(AccountID aId, ResponseCodeEnum fallbackFailure) {
         final var validity = checkAccountUsability(aId);
 
-        return (validity == ACCOUNT_EXPIRED_AND_PENDING_REMOVAL || validity == OK)
-                ? validity
-                : fallbackFailure;
+        return (validity == ACCOUNT_EXPIRED_AND_PENDING_REMOVAL || validity == OK) ? validity : fallbackFailure;
     }
 
     protected ResponseCodeEnum checkAccountUsability(AccountID aId) {

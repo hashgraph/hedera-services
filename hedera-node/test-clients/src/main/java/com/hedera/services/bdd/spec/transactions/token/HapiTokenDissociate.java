@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
@@ -62,48 +63,35 @@ public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
-            throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
-                        HederaFunctionality.TokenDissociateFromAccount,
-                        this::usageEstimate,
-                        txn,
-                        numPayerKeys);
+                        HederaFunctionality.TokenDissociateFromAccount, this::usageEstimate, txn, numPayerKeys);
     }
 
     private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
-        return TokenDissociateUsage.newEstimate(
-                        txn, new TxnUsageEstimator(suFrom(svo), txn, ESTIMATOR_UTILS))
+        return TokenDissociateUsage.newEstimate(txn, new TxnUsageEstimator(suFrom(svo), txn, ESTIMATOR_UTILS))
                 .get();
     }
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final var aId = TxnUtils.asId(account, spec);
-        final TokenDissociateTransactionBody opBody =
-                spec.txns()
-                        .<TokenDissociateTransactionBody, TokenDissociateTransactionBody.Builder>
-                                body(
-                                        TokenDissociateTransactionBody.class,
-                                        b -> {
-                                            b.setAccount(aId);
-                                            b.addAllTokens(
-                                                    tokens.stream()
-                                                            .map(
-                                                                    lit ->
-                                                                            TxnUtils.asTokenId(
-                                                                                    lit, spec))
-                                                            .collect(toList()));
-                                        });
+        final TokenDissociateTransactionBody opBody = spec.txns()
+                .<TokenDissociateTransactionBody, TokenDissociateTransactionBody.Builder>body(
+                        TokenDissociateTransactionBody.class, b -> {
+                            b.setAccount(aId);
+                            b.addAllTokens(tokens.stream()
+                                    .map(lit -> TxnUtils.asTokenId(lit, spec))
+                                    .collect(toList()));
+                        });
         return b -> b.setTokenDissociate(opBody);
     }
 
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
-        return List.of(
-                spec -> spec.registry().getKey(effectivePayer(spec)),
-                spec -> spec.registry().getKey(account));
+        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
+                .getKey(account));
     }
 
     @Override

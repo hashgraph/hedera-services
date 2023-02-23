@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
@@ -49,16 +50,12 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
 public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
-    private static final Function ERC_SET_APPROVAL_FOR_ALL =
-            new Function("setApprovalForAll(address,bool)");
-    private static final Bytes ERC_SET_APPROVAL_FOR_ALL_SELECTOR =
-            Bytes.wrap(ERC_SET_APPROVAL_FOR_ALL.selector());
-    private static final ABIType<Tuple> ERC_SET_APPROVAL_FOR_ALL_DECODER =
-            TypeFactory.create("(bytes32,bool)");
+    private static final Function ERC_SET_APPROVAL_FOR_ALL = new Function("setApprovalForAll(address,bool)");
+    private static final Bytes ERC_SET_APPROVAL_FOR_ALL_SELECTOR = Bytes.wrap(ERC_SET_APPROVAL_FOR_ALL.selector());
+    private static final ABIType<Tuple> ERC_SET_APPROVAL_FOR_ALL_DECODER = TypeFactory.create("(bytes32,bool)");
     private static final Function HAPI_SET_APPROVAL_FOR_ALL =
             new Function("setApprovalForAll(address,address,bool)", INT);
-    private static final Bytes HAPI_SET_APPROVAL_FOR_ALL_SELECTOR =
-            Bytes.wrap(HAPI_SET_APPROVAL_FOR_ALL.selector());
+    private static final Bytes HAPI_SET_APPROVAL_FOR_ALL_SELECTOR = Bytes.wrap(HAPI_SET_APPROVAL_FOR_ALL.selector());
     private static final ABIType<Tuple> HAPI_SET_APPROVAL_FOR_ALL_DECODER =
             TypeFactory.create("(bytes32,bytes32,bool)");
     private final TokenID tokenId;
@@ -85,58 +82,40 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils,
             final Address senderAddress) {
-        this(
-                null,
-                ledgers,
-                sideEffects,
-                syntheticTxnFactory,
-                infrastructureFactory,
-                pricingUtils,
-                senderAddress);
+        this(null, ledgers, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils, senderAddress);
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var nestedInput = tokenId == null ? input : input.slice(24);
         setApprovalForAllWrapper = decodeSetApprovalForAll(nestedInput, tokenId, aliasResolver);
-        transactionBody =
-                syntheticTxnFactory.createApproveAllowanceForAllNFT(setApprovalForAllWrapper);
+        transactionBody = syntheticTxnFactory.createApproveAllowanceForAllNFT(setApprovalForAllWrapper);
         return transactionBody;
     }
 
     @Override
     public void run(MessageFrame frame) {
-        Objects.requireNonNull(
-                setApprovalForAllWrapper, "`body` method should be called before `run`");
+        Objects.requireNonNull(setApprovalForAllWrapper, "`body` method should be called before `run`");
         /* --- Build the necessary infrastructure to execute the transaction --- */
         final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
-        final var tokenStore =
-                infrastructureFactory.newTokenStore(
-                        accountStore,
-                        sideEffects,
-                        ledgers.tokens(),
-                        ledgers.nfts(),
-                        ledgers.tokenRels());
+        final var tokenStore = infrastructureFactory.newTokenStore(
+                accountStore, sideEffects, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels());
         final var payerAccount =
-                accountStore.loadAccount(
-                        Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(senderAddress)));
+                accountStore.loadAccount(Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(senderAddress)));
 
         final var approveAllowanceChecks = infrastructureFactory.newApproveAllowanceChecks();
 
-        final var status =
-                approveAllowanceChecks.allowancesValidation(
-                        transactionBody.getCryptoApproveAllowance().getCryptoAllowancesList(),
-                        transactionBody.getCryptoApproveAllowance().getTokenAllowancesList(),
-                        transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
-                        payerAccount,
-                        accountStore,
-                        tokenStore);
+        final var status = approveAllowanceChecks.allowancesValidation(
+                transactionBody.getCryptoApproveAllowance().getCryptoAllowancesList(),
+                transactionBody.getCryptoApproveAllowance().getTokenAllowancesList(),
+                transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
+                payerAccount,
+                accountStore,
+                tokenStore);
         validateTrueOrRevert(status == OK, status);
 
         /* --- Execute the transaction and capture its results --- */
-        final var approveAllowanceLogic =
-                infrastructureFactory.newApproveAllowanceLogic(accountStore, tokenStore);
+        final var approveAllowanceLogic = infrastructureFactory.newApproveAllowanceLogic(accountStore, tokenStore);
         approveAllowanceLogic.approveAllowance(
                 transactionBody.getCryptoApproveAllowance().getCryptoAllowancesList(),
                 transactionBody.getCryptoApproveAllowance().getTokenAllowancesList(),
@@ -157,33 +136,21 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
                 .forLogger(logger)
                 .forEventSignature(AbiConstants.APPROVAL_FOR_ALL_EVENT)
                 .forIndexedArgument(ledgers.canonicalAddress(senderAddress))
-                .forIndexedArgument(
-                        ledgers.canonicalAddress(asTypedEvmAddress(setApprovalForAllWrapper.to())))
+                .forIndexedArgument(ledgers.canonicalAddress(asTypedEvmAddress(setApprovalForAllWrapper.to())))
                 .forDataItem(setApprovalForAllWrapper.approved())
                 .build();
     }
 
     public static SetApprovalForAllWrapper decodeSetApprovalForAll(
-            final Bytes input,
-            final TokenID impliedTokenId,
-            final UnaryOperator<byte[]> aliasResolver) {
+            final Bytes input, final TokenID impliedTokenId, final UnaryOperator<byte[]> aliasResolver) {
         final var offset = impliedTokenId == null ? 1 : 0;
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input,
-                        offset == 0
-                                ? ERC_SET_APPROVAL_FOR_ALL_SELECTOR
-                                : HAPI_SET_APPROVAL_FOR_ALL_SELECTOR,
-                        offset == 0
-                                ? ERC_SET_APPROVAL_FOR_ALL_DECODER
-                                : HAPI_SET_APPROVAL_FOR_ALL_DECODER);
-        final var tokenId =
-                offset == 0
-                        ? impliedTokenId
-                        : convertAddressBytesToTokenID(decodedArguments.get(0));
+        final Tuple decodedArguments = decodeFunctionCall(
+                input,
+                offset == 0 ? ERC_SET_APPROVAL_FOR_ALL_SELECTOR : HAPI_SET_APPROVAL_FOR_ALL_SELECTOR,
+                offset == 0 ? ERC_SET_APPROVAL_FOR_ALL_DECODER : HAPI_SET_APPROVAL_FOR_ALL_DECODER);
+        final var tokenId = offset == 0 ? impliedTokenId : convertAddressBytesToTokenID(decodedArguments.get(0));
 
-        final var to =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);
+        final var to = convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);
         final var approved = (boolean) decodedArguments.get(offset + 1);
 
         return new SetApprovalForAllWrapper(tokenId, to, approved);

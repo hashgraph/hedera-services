@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON;
@@ -65,27 +66,39 @@ class TokenUpdateLogicTest {
     private static final AccountID account = IdUtils.asAccount("0.0.3");
     private static final AccountID treasury = IdUtils.asAccount("0.0.4");
     private static final NftId nftId =
-            new NftId(
-                    nonFungible.getShardNum(),
-                    nonFungible.getRealmNum(),
-                    nonFungible.getTokenNum(),
-                    -1);
+            new NftId(nonFungible.getShardNum(), nonFungible.getRealmNum(), nonFungible.getTokenNum(), -1);
     private static final Timestamp EXPIRY = Timestamp.getDefaultInstance();
     private static final EntityId treasuryId = EntityId.fromGrpcAccountId(treasury);
-    @Mock private OptionValidator validator;
-    @Mock private HederaTokenStore store;
-    @Mock private WorldLedgers ledgers;
-    @Mock private SideEffectsTracker sideEffectsTracker;
-    @Mock private SigImpactHistorian sigImpactHistorian;
-    @Mock private MerkleToken merkleToken;
-    @Mock private TransactionBody transactionBody;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
 
     @Mock
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-            tokenRels;
+    private OptionValidator validator;
 
-    @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
+    @Mock
+    private HederaTokenStore store;
+
+    @Mock
+    private WorldLedgers ledgers;
+
+    @Mock
+    private SideEffectsTracker sideEffectsTracker;
+
+    @Mock
+    private SigImpactHistorian sigImpactHistorian;
+
+    @Mock
+    private MerkleToken merkleToken;
+
+    @Mock
+    private TransactionBody transactionBody;
+
+    @Mock
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
+
+    @Mock
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRels;
+
+    @Mock
+    private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
 
     private TokenUpdateLogic subject;
     private TokenUpdateTransactionBody op;
@@ -94,8 +107,7 @@ class TokenUpdateLogicTest {
     void callsWithInvalidTokenIdFail() {
         givenTokenUpdateLogic(true);
         op = TokenUpdateTransactionBody.newBuilder().setToken(MISSING_TOKEN).build();
-        Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+        Assertions.assertThrows(InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
     }
 
     @Test
@@ -104,16 +116,14 @@ class TokenUpdateLogicTest {
         op = TokenUpdateTransactionBody.newBuilder().setToken(fungible).build();
         given(store.get(fungible)).willReturn(merkleToken);
         given(merkleToken.isDeleted()).willReturn(true);
-        Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+        Assertions.assertThrows(InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
     }
 
     @Test
     void callsWithInvalidExpiry() {
         givenTokenUpdateLogic(true);
         givenValidTransactionBody(true, true);
-        Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+        Assertions.assertThrows(InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
     }
 
     @Test
@@ -174,9 +184,7 @@ class TokenUpdateLogicTest {
         given(ledgers.nfts()).willReturn(nfts);
         // then
         Assertions.assertThrows(
-                InvalidTransactionException.class,
-                () -> subject.updateToken(op, CONSENSUS_TIME),
-                FAIL_INVALID.name());
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME), FAIL_INVALID.name());
     }
 
     @Test
@@ -187,8 +195,7 @@ class TokenUpdateLogicTest {
         given(validator.isValidExpiry(EXPIRY)).willReturn(true);
         given(store.get(fungible)).willReturn(merkleToken);
         // then
-        Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+        Assertions.assertThrows(InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
     }
 
     @Test
@@ -303,9 +310,7 @@ class TokenUpdateLogicTest {
 
         // then
         Assertions.assertThrows(
-                InvalidTransactionException.class,
-                () -> subject.updateToken(op, CONSENSUS_TIME),
-                FAIL_INVALID.name());
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME), FAIL_INVALID.name());
     }
 
     @Test
@@ -342,8 +347,7 @@ class TokenUpdateLogicTest {
         subject.validate(transactionBody);
         // then
 
-        Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
+        Assertions.assertThrows(InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
     }
 
     @Test
@@ -402,9 +406,7 @@ class TokenUpdateLogicTest {
         given(store.get(nonFungible)).willReturn(merkleToken);
         given(store.update(op, CONSENSUS_TIME)).willReturn(FAIL_INVALID);
         // then
-        Assertions.assertThrows(
-                InvalidTransactionException.class,
-                () -> subject.updateTokenKeys(op, CONSENSUS_TIME));
+        Assertions.assertThrows(InvalidTransactionException.class, () -> subject.updateTokenKeys(op, CONSENSUS_TIME));
     }
 
     @Test
@@ -447,9 +449,7 @@ class TokenUpdateLogicTest {
         // then
 
         Assertions.assertThrows(
-                InvalidTransactionException.class,
-                () -> subject.updateToken(op, CONSENSUS_TIME),
-                FAIL_INVALID.name());
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME), FAIL_INVALID.name());
     }
 
     @Test
@@ -485,8 +485,7 @@ class TokenUpdateLogicTest {
         given(ledgers.tokenRels()).willReturn(tokenRels);
         given(ledgers.nfts()).willReturn(nfts);
 
-        Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
+        Assertions.assertThrows(InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
     }
 
     @Test
@@ -497,14 +496,12 @@ class TokenUpdateLogicTest {
         given(merkleToken.hasAdminKey()).willReturn(true);
         given(accounts.contains(account)).willReturn(true);
         given(validator.isValidExpiry(EXPIRY)).willReturn(true);
-        given(validator.expiryStatusGiven(accounts, account))
-                .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+        given(validator.expiryStatusGiven(accounts, account)).willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
         given(store.get(fungible)).willReturn(merkleToken);
         given(store.resolve(op.getToken())).willReturn(op.getToken());
         given(ledgers.accounts()).willReturn(accounts);
 
-        assertFailsWith(
-                () -> subject.updateTokenExpiryInfo(op), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+        assertFailsWith(() -> subject.updateTokenExpiryInfo(op), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
     }
 
     @Test
@@ -525,16 +522,15 @@ class TokenUpdateLogicTest {
     @Test
     void updateTokenExpiryInfoForEmptyExpiry() {
         // given
-        final var txnBodyWithEmptyExpiry =
-                TokenUpdateTransactionBody.newBuilder()
-                        .setToken(fungible)
-                        .setName("name")
-                        .setMemo(StringValue.of("memo"))
-                        .setSymbol("symbol")
-                        .setTreasury(account)
-                        .setAutoRenewAccount(account)
-                        .setAutoRenewPeriod(Duration.newBuilder().setSeconds(2L))
-                        .build();
+        final var txnBodyWithEmptyExpiry = TokenUpdateTransactionBody.newBuilder()
+                .setToken(fungible)
+                .setName("name")
+                .setMemo(StringValue.of("memo"))
+                .setSymbol("symbol")
+                .setTreasury(account)
+                .setAutoRenewAccount(account)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(2L))
+                .build();
         givenTokenUpdateLogic(true);
         given(merkleToken.hasAdminKey()).willReturn(true);
         given(merkleToken.hasAutoRenewAccount()).willReturn(true);
@@ -544,8 +540,7 @@ class TokenUpdateLogicTest {
         given(ledgers.accounts()).willReturn(accounts);
         given(accounts.contains(account)).willReturn(true);
         given(store.get(fungible)).willReturn(merkleToken);
-        given(store.resolve(txnBodyWithEmptyExpiry.getToken()))
-                .willReturn(txnBodyWithEmptyExpiry.getToken());
+        given(store.resolve(txnBodyWithEmptyExpiry.getToken())).willReturn(txnBodyWithEmptyExpiry.getToken());
         given(store.updateExpiryInfo(txnBodyWithEmptyExpiry)).willReturn(OK);
         given(ledgers.accounts()).willReturn(accounts);
 
@@ -563,8 +558,7 @@ class TokenUpdateLogicTest {
         givenValidTransactionBody(true, false);
         given(store.resolve(op.getToken())).willReturn(MISSING_TOKEN);
 
-        Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
+        Assertions.assertThrows(InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
     }
 
     @Test
@@ -576,8 +570,7 @@ class TokenUpdateLogicTest {
         given(store.get(fungible)).willReturn(merkleToken);
         given(store.resolve(op.getToken())).willReturn(op.getToken());
         given(merkleToken.isDeleted()).willReturn(true);
-        Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
+        Assertions.assertThrows(InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
     }
 
     @Test
@@ -590,8 +583,7 @@ class TokenUpdateLogicTest {
         given(store.resolve(op.getToken())).willReturn(op.getToken());
         given(merkleToken.isDeleted()).willReturn(false);
         given(merkleToken.isPaused()).willReturn(true);
-        Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
+        Assertions.assertThrows(InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
     }
 
     @Test
@@ -602,8 +594,7 @@ class TokenUpdateLogicTest {
         given(validator.isValidExpiry(EXPIRY)).willReturn(true);
         given(store.get(fungible)).willReturn(merkleToken);
         given(store.resolve(op.getToken())).willReturn(op.getToken());
-        Assertions.assertThrows(
-                InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
+        Assertions.assertThrows(InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
     }
 
     private void givenContextForSuccessFullCalls() {
@@ -618,8 +609,7 @@ class TokenUpdateLogicTest {
     private void givenContextForUnsuccessFullCalls() {
         given(merkleToken.hasAdminKey()).willReturn(true);
         given(validator.isValidExpiry(EXPIRY)).willReturn(true);
-        given(validator.expiryStatusGiven(accounts, account))
-                .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+        given(validator.expiryStatusGiven(accounts, account)).willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
     }
 
     private void givenLedgers() {
@@ -648,22 +638,21 @@ class TokenUpdateLogicTest {
 
     private void givenValidTransactionBody(boolean isFungible, boolean hasTreasury) {
         var builder = TokenUpdateTransactionBody.newBuilder();
-        builder =
-                isFungible
-                        ? builder.setToken(fungible)
-                                .setName("name")
-                                .setMemo(StringValue.of("memo"))
-                                .setSymbol("symbol")
-                                .setExpiry(EXPIRY)
-                                .setAutoRenewAccount(account)
-                                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(2L))
-                        : builder.setToken(nonFungible)
-                                .setName("NFT")
-                                .setMemo(StringValue.of("NftMemo"))
-                                .setSymbol("NftSymbol")
-                                .setExpiry(EXPIRY)
-                                .setAutoRenewAccount(account)
-                                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(2L));
+        builder = isFungible
+                ? builder.setToken(fungible)
+                        .setName("name")
+                        .setMemo(StringValue.of("memo"))
+                        .setSymbol("symbol")
+                        .setExpiry(EXPIRY)
+                        .setAutoRenewAccount(account)
+                        .setAutoRenewPeriod(Duration.newBuilder().setSeconds(2L))
+                : builder.setToken(nonFungible)
+                        .setName("NFT")
+                        .setMemo(StringValue.of("NftMemo"))
+                        .setSymbol("NftSymbol")
+                        .setExpiry(EXPIRY)
+                        .setAutoRenewAccount(account)
+                        .setAutoRenewPeriod(Duration.newBuilder().setSeconds(2L));
 
         if (hasTreasury) {
             builder.setTreasury(account);
@@ -679,13 +668,7 @@ class TokenUpdateLogicTest {
     }
 
     private void givenTokenUpdateLogic(boolean hasValidNftAllowance) {
-        subject =
-                new TokenUpdateLogic(
-                        hasValidNftAllowance,
-                        validator,
-                        store,
-                        ledgers,
-                        sideEffectsTracker,
-                        sigImpactHistorian);
+        subject = new TokenUpdateLogic(
+                hasValidNftAllowance, validator, store, ledgers, sideEffectsTracker, sigImpactHistorian);
     }
 }

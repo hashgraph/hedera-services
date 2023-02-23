@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -90,63 +91,115 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class InfrastructureFactoryTest {
-    @Mock private UsageLimits usageLimits;
-    @Mock private EntityIdSource ids;
-    @Mock private EncodingFacade encoder;
-    @Mock private EvmEncodingFacade evmEncoder;
-    @Mock private OptionValidator validator;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private SigImpactHistorian sigImpactHistorian;
-    @Mock private DissociationFactory dissociationFactory;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
+    @Mock
+    private UsageLimits usageLimits;
 
     @Mock
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-            tokenRelsLedger;
+    private EntityIdSource ids;
 
-    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
-    @Mock private BackingStore<TokenID, MerkleToken> tokens;
-    @Mock private BackingStore<NftId, UniqueTokenAdapter> uniqueTokens;
-    @Mock private BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> tokenRels;
-    @Mock private MessageFrame frame;
-    @Mock private ViewGasCalculator gasCalculator;
-    @Mock private HederaStackedWorldStateUpdater worldStateUpdater;
-    @Mock private WorldLedgers ledgers;
-    @Mock private TransactionContext txnCtx;
-    @Mock private AliasManager aliasManager;
-    @Mock private FeeDistribution feeDistribution;
-    @Mock private FeeAssessor feeAssessor;
-    @Mock private PureTransferSemanticChecks checks;
-    @Mock private CustomFeeSchedules customFeeSchedules;
-    @Mock private Provider<FeeCalculator> feeCalculator;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private StateView view;
-    @Mock private EntityCreator entityCreator;
+    @Mock
+    private EncodingFacade encoder;
+
+    @Mock
+    private EvmEncodingFacade evmEncoder;
+
+    @Mock
+    private OptionValidator validator;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private SigImpactHistorian sigImpactHistorian;
+
+    @Mock
+    private DissociationFactory dissociationFactory;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
+
+    @Mock
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRelsLedger;
+
+    @Mock
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
+
+    @Mock
+    private BackingStore<TokenID, MerkleToken> tokens;
+
+    @Mock
+    private BackingStore<NftId, UniqueTokenAdapter> uniqueTokens;
+
+    @Mock
+    private BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> tokenRels;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private ViewGasCalculator gasCalculator;
+
+    @Mock
+    private HederaStackedWorldStateUpdater worldStateUpdater;
+
+    @Mock
+    private WorldLedgers ledgers;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private AliasManager aliasManager;
+
+    @Mock
+    private FeeDistribution feeDistribution;
+
+    @Mock
+    private FeeAssessor feeAssessor;
+
+    @Mock
+    private PureTransferSemanticChecks checks;
+
+    @Mock
+    private CustomFeeSchedules customFeeSchedules;
+
+    @Mock
+    private Provider<FeeCalculator> feeCalculator;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private StateView view;
+
+    @Mock
+    private EntityCreator entityCreator;
 
     private InfrastructureFactory subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new InfrastructureFactory(
-                        usageLimits,
-                        ids,
-                        evmEncoder,
-                        validator,
-                        recordsHistorian,
-                        sigImpactHistorian,
-                        dissociationFactory,
-                        dynamicProperties,
-                        txnCtx,
-                        aliasManager,
-                        feeDistribution,
-                        feeAssessor,
-                        checks,
-                        feeCalculator,
-                        syntheticTxnFactory,
-                        view,
-                        entityCreator);
+        subject = new InfrastructureFactory(
+                usageLimits,
+                ids,
+                evmEncoder,
+                validator,
+                recordsHistorian,
+                sigImpactHistorian,
+                dissociationFactory,
+                dynamicProperties,
+                txnCtx,
+                aliasManager,
+                feeDistribution,
+                feeAssessor,
+                checks,
+                feeCalculator,
+                syntheticTxnFactory,
+                view,
+                entityCreator);
     }
 
     @Test
@@ -156,9 +209,7 @@ class InfrastructureFactoryTest {
 
     @Test
     void canCreateImpliedTransfersMarshal() {
-        assertInstanceOf(
-                ImpliedTransfersMarshal.class,
-                subject.newImpliedTransfersMarshal(customFeeSchedules));
+        assertInstanceOf(ImpliedTransfersMarshal.class, subject.newImpliedTransfersMarshal(customFeeSchedules));
     }
 
     @Test
@@ -171,11 +222,7 @@ class InfrastructureFactoryTest {
         assertInstanceOf(
                 TypedTokenStore.class,
                 subject.newTokenStore(
-                        subject.newAccountStore(accounts),
-                        subject.newSideEffects(),
-                        tokens,
-                        uniqueTokens,
-                        tokenRels));
+                        subject.newAccountStore(accounts), subject.newSideEffects(), tokens, uniqueTokens, tokenRels));
     }
 
     @Test
@@ -189,8 +236,7 @@ class InfrastructureFactoryTest {
     void canCreateNewHederaTokenStore() {
         assertInstanceOf(
                 HederaTokenStore.class,
-                subject.newHederaTokenStore(
-                        subject.newSideEffects(), tokens, nftsLedger, tokenRelsLedger));
+                subject.newHederaTokenStore(subject.newSideEffects(), tokens, nftsLedger, tokenRelsLedger));
     }
 
     @Test
@@ -201,19 +247,14 @@ class InfrastructureFactoryTest {
                 subject.newBurnLogic(
                         accountStore,
                         subject.newTokenStore(
-                                accountStore,
-                                subject.newSideEffects(),
-                                tokens,
-                                uniqueTokens,
-                                tokenRels)));
+                                accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels)));
     }
 
     @Test
     void canCreateNewDeleteLogic() {
         final var accountStore = subject.newAccountStore(accounts);
         final var tokenStore =
-                subject.newTokenStore(
-                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+                subject.newTokenStore(accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
         assertInstanceOf(DeleteLogic.class, subject.newDeleteLogic(accountStore, tokenStore));
     }
 
@@ -225,11 +266,7 @@ class InfrastructureFactoryTest {
                 subject.newMintLogic(
                         accountStore,
                         subject.newTokenStore(
-                                accountStore,
-                                subject.newSideEffects(),
-                                tokens,
-                                uniqueTokens,
-                                tokenRels)));
+                                accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels)));
     }
 
     @Test
@@ -240,11 +277,7 @@ class InfrastructureFactoryTest {
                 subject.newAssociateLogic(
                         accountStore,
                         subject.newTokenStore(
-                                accountStore,
-                                subject.newSideEffects(),
-                                tokens,
-                                uniqueTokens,
-                                tokenRels)));
+                                accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels)));
     }
 
     @Test
@@ -255,11 +288,7 @@ class InfrastructureFactoryTest {
                 subject.newDissociateLogic(
                         accountStore,
                         subject.newTokenStore(
-                                accountStore,
-                                subject.newSideEffects(),
-                                tokens,
-                                uniqueTokens,
-                                tokenRels)));
+                                accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels)));
     }
 
     @Test
@@ -270,11 +299,7 @@ class InfrastructureFactoryTest {
                 subject.newTokenCreateLogic(
                         accountStore,
                         subject.newTokenStore(
-                                accountStore,
-                                subject.newSideEffects(),
-                                tokens,
-                                uniqueTokens,
-                                tokenRels)));
+                                accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels)));
     }
 
     @Test
@@ -283,8 +308,7 @@ class InfrastructureFactoryTest {
         assertInstanceOf(
                 TransferLogic.class,
                 subject.newTransferLogic(
-                        subject.newHederaTokenStore(
-                                sideEffects, tokens, nftsLedger, tokenRelsLedger),
+                        subject.newHederaTokenStore(sideEffects, tokens, nftsLedger, tokenRelsLedger),
                         sideEffects,
                         nftsLedger,
                         accounts,
@@ -295,22 +319,16 @@ class InfrastructureFactoryTest {
     void canCreateNewApproveAllowanceLogic() {
         final var accountStore = subject.newAccountStore(accounts);
         final var tokenStore =
-                subject.newTokenStore(
-                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
-        assertInstanceOf(
-                ApproveAllowanceLogic.class,
-                subject.newApproveAllowanceLogic(accountStore, tokenStore));
+                subject.newTokenStore(accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(ApproveAllowanceLogic.class, subject.newApproveAllowanceLogic(accountStore, tokenStore));
     }
 
     @Test
     void canCreateNewDeleteAllowanceLogic() {
         final var accountStore = subject.newAccountStore(accounts);
         final var tokenStore =
-                subject.newTokenStore(
-                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
-        assertInstanceOf(
-                DeleteAllowanceLogic.class,
-                subject.newDeleteAllowanceLogic(accountStore, tokenStore));
+                subject.newTokenStore(accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+        assertInstanceOf(DeleteAllowanceLogic.class, subject.newDeleteAllowanceLogic(accountStore, tokenStore));
     }
 
     @Test
@@ -332,8 +350,7 @@ class InfrastructureFactoryTest {
     void canCreateNewGrantKycLogic() {
         final var accountStore = subject.newAccountStore(accounts);
         final var tokenStore =
-                subject.newTokenStore(
-                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+                subject.newTokenStore(accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
         assertInstanceOf(GrantKycLogic.class, subject.newGrantKycLogic(accountStore, tokenStore));
     }
 
@@ -341,8 +358,7 @@ class InfrastructureFactoryTest {
     void canCreateNewRevokeKycLogic() {
         final var accountStore = subject.newAccountStore(accounts);
         final var tokenStore =
-                subject.newTokenStore(
-                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+                subject.newTokenStore(accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
         assertInstanceOf(RevokeKycLogic.class, subject.newRevokeKycLogic(accountStore, tokenStore));
     }
 
@@ -350,8 +366,7 @@ class InfrastructureFactoryTest {
     void canCreateNewPauseLogic() {
         final var accountStore = subject.newAccountStore(accounts);
         final var tokenStore =
-                subject.newTokenStore(
-                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+                subject.newTokenStore(accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
         assertInstanceOf(PauseLogic.class, subject.newPauseLogic(tokenStore));
     }
 
@@ -359,8 +374,7 @@ class InfrastructureFactoryTest {
     void canCreateNewUnpauseLogic() {
         final var accountStore = subject.newAccountStore(accounts);
         final var tokenStore =
-                subject.newTokenStore(
-                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+                subject.newTokenStore(accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
         assertInstanceOf(UnpauseLogic.class, subject.newUnpauseLogic(tokenStore));
     }
 
@@ -368,8 +382,7 @@ class InfrastructureFactoryTest {
     void canCreateNewWipeLogic() {
         final var accountStore = subject.newAccountStore(accounts);
         final var tokenStore =
-                subject.newTokenStore(
-                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+                subject.newTokenStore(accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
         assertInstanceOf(WipeLogic.class, subject.newWipeLogic(accountStore, tokenStore));
     }
 
@@ -377,8 +390,7 @@ class InfrastructureFactoryTest {
     void canCreateNewFreezeLogic() {
         final var accountStore = subject.newAccountStore(accounts);
         final var tokenStore =
-                subject.newTokenStore(
-                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+                subject.newTokenStore(accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
         assertInstanceOf(FreezeLogic.class, subject.newFreezeLogic(accountStore, tokenStore));
     }
 
@@ -386,8 +398,7 @@ class InfrastructureFactoryTest {
     void canCreateNewUnfreezeLogic() {
         final var accountStore = subject.newAccountStore(accounts);
         final var tokenStore =
-                subject.newTokenStore(
-                        accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
+                subject.newTokenStore(accountStore, subject.newSideEffects(), tokens, uniqueTokens, tokenRels);
         assertInstanceOf(UnfreezeLogic.class, subject.newUnfreezeLogic(accountStore, tokenStore));
     }
 
@@ -397,8 +408,7 @@ class InfrastructureFactoryTest {
         assertInstanceOf(
                 TokenUpdateLogic.class,
                 subject.newTokenUpdateLogic(
-                        subject.newHederaTokenStore(
-                                sideEffects, tokens, nftsLedger, tokenRelsLedger),
+                        subject.newHederaTokenStore(sideEffects, tokens, nftsLedger, tokenRelsLedger),
                         ledgers,
                         sideEffects));
     }
@@ -413,8 +423,6 @@ class InfrastructureFactoryTest {
         recordSubmissions.submitForTracking(txnBodyBuilder, expirableTxnRecord);
 
         verify(expirableTxnRecord).onlyExternalizeIfSuccessful();
-        verify(updater)
-                .manageInProgressPrecedingRecord(
-                        recordsHistorian, expirableTxnRecord, txnBodyBuilder);
+        verify(updater).manageInProgressPrecedingRecord(recordsHistorian, expirableTxnRecord, txnBodyBuilder);
     }
 }

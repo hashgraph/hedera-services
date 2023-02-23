@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -88,29 +89,16 @@ class EntityExpiryMapFactoryTest {
 
         assertFalse(expiryMap.isEmpty());
         assertEquals(4, expiryMap.size());
-        assertEquals(
-                java.util.Optional.of(moreData),
-                java.util.Optional.ofNullable(expiryMap.remove(eid2)));
+        assertEquals(java.util.Optional.of(moreData), java.util.Optional.ofNullable(expiryMap.remove(eid2)));
         assertEquals(3, expiryMap.size());
         assertEquals(
                 "/2/e3->333, /4/e555555->222, /2/e7->111",
                 delegate.entrySet().stream()
-                        .sorted(
-                                Comparator.comparingLong(
-                                        entry ->
-                                                Long.parseLong(
-                                                        entry.getKey()
-                                                                .substring(
-                                                                        entry.getKey().indexOf('e')
-                                                                                + 1,
-                                                                        entry.getKey().indexOf('e')
-                                                                                + 2))))
-                        .map(
-                                entry ->
-                                        String.format(
-                                                "%s->%d",
-                                                entry.getKey(),
-                                                Longs.fromByteArray(entry.getValue())))
+                        .sorted(Comparator.comparingLong(entry -> Long.parseLong(entry.getKey()
+                                .substring(
+                                        entry.getKey().indexOf('e') + 1,
+                                        entry.getKey().indexOf('e') + 2))))
+                        .map(entry -> String.format("%s->%d", entry.getKey(), Longs.fromByteArray(entry.getValue())))
                         .collect(Collectors.joining(", ")));
 
         assertTrue(expiryMap.containsKey(eid1));

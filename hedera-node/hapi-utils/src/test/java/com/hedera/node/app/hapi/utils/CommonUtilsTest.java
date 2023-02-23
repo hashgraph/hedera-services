@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
@@ -40,20 +41,17 @@ class CommonUtilsTest {
     @Test
     void base64EncodesAsExpected() {
         final var someBytes = "abcdefg".getBytes();
-        assertEquals(
-                Base64.getEncoder().encodeToString(someBytes), CommonUtils.base64encode(someBytes));
+        assertEquals(Base64.getEncoder().encodeToString(someBytes), CommonUtils.base64encode(someBytes));
     }
 
     @Test
     void returnsAvailableTransactionBodyBytes() throws InvalidProtocolBufferException {
-        final var current =
-                Transaction.newBuilder()
-                        .setSignedTransactionBytes(
-                                SignedTransaction.newBuilder()
-                                        .setBodyBytes(NONSENSE)
-                                        .build()
-                                        .toByteString())
-                        .build();
+        final var current = Transaction.newBuilder()
+                .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                        .setBodyBytes(NONSENSE)
+                        .build()
+                        .toByteString())
+                .build();
         final var deprecated = Transaction.newBuilder().setBodyBytes(NONSENSE).build();
 
         assertEquals(NONSENSE, CommonUtils.extractTransactionBodyByteString(current));
@@ -63,42 +61,31 @@ class CommonUtilsTest {
 
     @Test
     void canExtractTransactionBody() throws InvalidProtocolBufferException {
-        final var body =
-                TransactionBody.newBuilder()
-                        .setTransactionID(
-                                TransactionID.newBuilder()
-                                        .setAccountID(
-                                                AccountID.newBuilder().setAccountNum(2L).build()))
-                        .build();
-        final var current =
-                Transaction.newBuilder()
-                        .setSignedTransactionBytes(
-                                SignedTransaction.newBuilder()
-                                        .setBodyBytes(body.toByteString())
-                                        .build()
-                                        .toByteString())
-                        .build();
+        final var body = TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder()
+                        .setAccountID(AccountID.newBuilder().setAccountNum(2L).build()))
+                .build();
+        final var current = Transaction.newBuilder()
+                .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                        .setBodyBytes(body.toByteString())
+                        .build()
+                        .toByteString())
+                .build();
         assertEquals(body, CommonUtils.extractTransactionBody(current));
     }
 
     @Test
     void returnsAvailableSigMap() throws InvalidProtocolBufferException {
-        final var sigMap =
-                SignatureMap.newBuilder()
-                        .addSigPair(
-                                SignaturePair.newBuilder()
-                                        .setPubKeyPrefix(NONSENSE)
-                                        .setEd25519(NONSENSE)
-                                        .build())
-                        .build();
-        final var current =
-                Transaction.newBuilder()
-                        .setSignedTransactionBytes(
-                                SignedTransaction.newBuilder()
-                                        .setSigMap(sigMap)
-                                        .build()
-                                        .toByteString())
-                        .build();
+        final var sigMap = SignatureMap.newBuilder()
+                .addSigPair(SignaturePair.newBuilder()
+                        .setPubKeyPrefix(NONSENSE)
+                        .setEd25519(NONSENSE)
+                        .build())
+                .build();
+        final var current = Transaction.newBuilder()
+                .setSignedTransactionBytes(
+                        SignedTransaction.newBuilder().setSigMap(sigMap).build().toByteString())
+                .build();
         final var deprecated = Transaction.newBuilder().setSigMap(sigMap).build();
 
         assertEquals(sigMap, CommonUtils.extractSignatureMap(current));

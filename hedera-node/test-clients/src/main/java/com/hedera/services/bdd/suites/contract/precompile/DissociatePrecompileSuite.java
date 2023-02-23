@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
@@ -120,9 +121,7 @@ public class DissociatePrecompileSuite extends HapiSuite {
         return defaultHapiSpec("DissociatePrecompileHasExpectedSemanticsForDeletedTokens")
                 .given(
                         newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT)
-                                .balance(10 * ONE_HUNDRED_HBARS)
-                                .exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY)
                                 .balance(10 * ONE_HUNDRED_HBARS)
                                 .exposingCreatedIdTo(treasuryID::set),
@@ -155,160 +154,107 @@ public class DissociatePrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(nonZeroBalanceUnfrozenID::set),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                tokenAssociate(zeroBalanceFrozen, TBD_TOKEN),
-                                                tokenAssociate(zeroBalanceUnfrozen, TBD_TOKEN),
-                                                tokenAssociate(nonZeroBalanceFrozen, TBD_TOKEN),
-                                                tokenAssociate(nonZeroBalanceUnfrozen, TBD_TOKEN),
-                                                mintToken(
-                                                        tbdUniqToken,
-                                                        List.of(firstMeta, secondMeta, thirdMeta)),
-                                                getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(3),
-                                                tokenUnfreeze(TBD_TOKEN, zeroBalanceUnfrozen),
-                                                tokenUnfreeze(TBD_TOKEN, nonZeroBalanceUnfrozen),
-                                                tokenUnfreeze(TBD_TOKEN, nonZeroBalanceFrozen),
-                                                cryptoTransfer(
-                                                        moving(nonZeroXfer, TBD_TOKEN)
-                                                                .between(
-                                                                        TOKEN_TREASURY,
-                                                                        nonZeroBalanceFrozen)),
-                                                cryptoTransfer(
-                                                        moving(nonZeroXfer, TBD_TOKEN)
-                                                                .between(
-                                                                        TOKEN_TREASURY,
-                                                                        nonZeroBalanceUnfrozen)),
-                                                tokenFreeze(TBD_TOKEN, nonZeroBalanceFrozen),
-                                                getAccountBalance(TOKEN_TREASURY)
-                                                        .hasTokenBalance(
-                                                                TBD_TOKEN,
-                                                                initialSupply - 2 * nonZeroXfer),
-                                                tokenDelete(TBD_TOKEN),
-                                                tokenDelete(tbdUniqToken),
-                                                contractCall(
-                                                                CONTRACT,
-                                                                "tokenDissociate",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                zeroBalanceFrozenID
-                                                                                        .get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                tbdTokenID.get())))
-                                                        .alsoSigningWithFullPrefix(
-                                                                zeroBalanceFrozen)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .via("dissociateZeroBalanceFrozenTxn"),
-                                                getTxnRecord("dissociateZeroBalanceFrozenTxn")
-                                                        .andAllChildRecords()
-                                                        .logged(),
-                                                contractCall(
-                                                                CONTRACT,
-                                                                "tokenDissociate",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                zeroBalanceUnfrozenID
-                                                                                        .get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                tbdTokenID.get())))
-                                                        .alsoSigningWithFullPrefix(
-                                                                zeroBalanceUnfrozen)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .via("dissociateZeroBalanceUnfrozenTxn"),
-                                                getTxnRecord("dissociateZeroBalanceUnfrozenTxn")
-                                                        .andAllChildRecords()
-                                                        .logged(),
-                                                contractCall(
-                                                                CONTRACT,
-                                                                "tokenDissociate",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                nonZeroBalanceFrozenID
-                                                                                        .get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                tbdTokenID.get())))
-                                                        .alsoSigningWithFullPrefix(
-                                                                nonZeroBalanceFrozen)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .via("dissociateNonZeroBalanceFrozenTxn"),
-                                                getTxnRecord("dissociateNonZeroBalanceFrozenTxn")
-                                                        .andAllChildRecords()
-                                                        .logged(),
-                                                contractCall(
-                                                                CONTRACT,
-                                                                "tokenDissociate",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                nonZeroBalanceUnfrozenID
-                                                                                        .get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                tbdTokenID.get())))
-                                                        .alsoSigningWithFullPrefix(
-                                                                nonZeroBalanceUnfrozen)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .via("dissociateNonZeroBalanceUnfrozenTxn"),
-                                                getTxnRecord("dissociateNonZeroBalanceUnfrozenTxn")
-                                                        .andAllChildRecords()
-                                                        .logged(),
-                                                contractCall(
-                                                                CONTRACT,
-                                                                "tokenDissociate",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                treasuryID.get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                tbdUniqueTokenID
-                                                                                        .get())))
-                                                        .alsoSigningWithFullPrefix(TOKEN_TREASURY)
-                                                        .gas(GAS_TO_OFFER))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        tokenAssociate(zeroBalanceFrozen, TBD_TOKEN),
+                        tokenAssociate(zeroBalanceUnfrozen, TBD_TOKEN),
+                        tokenAssociate(nonZeroBalanceFrozen, TBD_TOKEN),
+                        tokenAssociate(nonZeroBalanceUnfrozen, TBD_TOKEN),
+                        mintToken(tbdUniqToken, List.of(firstMeta, secondMeta, thirdMeta)),
+                        getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(3),
+                        tokenUnfreeze(TBD_TOKEN, zeroBalanceUnfrozen),
+                        tokenUnfreeze(TBD_TOKEN, nonZeroBalanceUnfrozen),
+                        tokenUnfreeze(TBD_TOKEN, nonZeroBalanceFrozen),
+                        cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN).between(TOKEN_TREASURY, nonZeroBalanceFrozen)),
+                        cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN).between(TOKEN_TREASURY, nonZeroBalanceUnfrozen)),
+                        tokenFreeze(TBD_TOKEN, nonZeroBalanceFrozen),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TBD_TOKEN, initialSupply - 2 * nonZeroXfer),
+                        tokenDelete(TBD_TOKEN),
+                        tokenDelete(tbdUniqToken),
+                        contractCall(
+                                        CONTRACT,
+                                        "tokenDissociate",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(zeroBalanceFrozenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(tbdTokenID.get())))
+                                .alsoSigningWithFullPrefix(zeroBalanceFrozen)
+                                .gas(GAS_TO_OFFER)
+                                .via("dissociateZeroBalanceFrozenTxn"),
+                        getTxnRecord("dissociateZeroBalanceFrozenTxn")
+                                .andAllChildRecords()
+                                .logged(),
+                        contractCall(
+                                        CONTRACT,
+                                        "tokenDissociate",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(zeroBalanceUnfrozenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(tbdTokenID.get())))
+                                .alsoSigningWithFullPrefix(zeroBalanceUnfrozen)
+                                .gas(GAS_TO_OFFER)
+                                .via("dissociateZeroBalanceUnfrozenTxn"),
+                        getTxnRecord("dissociateZeroBalanceUnfrozenTxn")
+                                .andAllChildRecords()
+                                .logged(),
+                        contractCall(
+                                        CONTRACT,
+                                        "tokenDissociate",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(nonZeroBalanceFrozenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(tbdTokenID.get())))
+                                .alsoSigningWithFullPrefix(nonZeroBalanceFrozen)
+                                .gas(GAS_TO_OFFER)
+                                .via("dissociateNonZeroBalanceFrozenTxn"),
+                        getTxnRecord("dissociateNonZeroBalanceFrozenTxn")
+                                .andAllChildRecords()
+                                .logged(),
+                        contractCall(
+                                        CONTRACT,
+                                        "tokenDissociate",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(nonZeroBalanceUnfrozenID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(tbdTokenID.get())))
+                                .alsoSigningWithFullPrefix(nonZeroBalanceUnfrozen)
+                                .gas(GAS_TO_OFFER)
+                                .via("dissociateNonZeroBalanceUnfrozenTxn"),
+                        getTxnRecord("dissociateNonZeroBalanceUnfrozenTxn")
+                                .andAllChildRecords()
+                                .logged(),
+                        contractCall(
+                                        CONTRACT,
+                                        "tokenDissociate",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(treasuryID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(tbdUniqueTokenID.get())))
+                                .alsoSigningWithFullPrefix(TOKEN_TREASURY)
+                                .gas(GAS_TO_OFFER))))
                 .then(
                         childRecordsCheck(
                                 "dissociateZeroBalanceFrozenTxn",
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
                         childRecordsCheck(
                                 "dissociateZeroBalanceUnfrozenTxn",
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
                         childRecordsCheck(
                                 "dissociateNonZeroBalanceFrozenTxn",
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
                         childRecordsCheck(
                                 "dissociateNonZeroBalanceUnfrozenTxn",
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
                         getAccountInfo(zeroBalanceFrozen).hasNoTokenRelationship(TBD_TOKEN),
                         getAccountInfo(zeroBalanceUnfrozen).hasNoTokenRelationship(TBD_TOKEN),
                         getAccountInfo(nonZeroBalanceFrozen).hasNoTokenRelationship(TBD_TOKEN),
@@ -317,8 +263,7 @@ public class DissociatePrecompileSuite extends HapiSuite {
                                 .hasToken(relationshipWith(TBD_TOKEN))
                                 .hasNoTokenRelationship(tbdUniqToken)
                                 .hasOwnedNfts(0),
-                        getAccountBalance(TOKEN_TREASURY)
-                                .hasTokenBalance(TBD_TOKEN, initialSupply - 2 * nonZeroXfer));
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TBD_TOKEN, initialSupply - 2 * nonZeroXfer));
     }
 
     /* -- Not specifically required in the HTS Precompile Test Plan -- */
@@ -328,9 +273,7 @@ public class DissociatePrecompileSuite extends HapiSuite {
 
         return defaultHapiSpec("nestedDissociateWorksAsExpected")
                 .given(
-                        cryptoCreate(ACCOUNT)
-                                .balance(10 * ONE_HUNDRED_HBARS)
-                                .exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -338,51 +281,35 @@ public class DissociatePrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
                         uploadInitCode(OUTER_CONTRACT, NESTED_CONTRACT),
                         contractCreate(NESTED_CONTRACT))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(
-                                                        OUTER_CONTRACT,
-                                                        asHeadlongAddress(
-                                                                getNestedContractAddress(
-                                                                        NESTED_CONTRACT, spec))),
-                                                tokenAssociate(ACCOUNT, VANILLA_TOKEN),
-                                                contractCall(
-                                                                OUTER_CONTRACT,
-                                                                "dissociateAssociateContractCall",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .alsoSigningWithFullPrefix(ACCOUNT)
-                                                        .via("nestedDissociateTxn")
-                                                        .gas(3_000_000L)
-                                                        .hasKnownStatus(ResponseCodeEnum.SUCCESS),
-                                                getTxnRecord("nestedDissociateTxn")
-                                                        .andAllChildRecords()
-                                                        .logged())))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCreate(
+                                OUTER_CONTRACT, asHeadlongAddress(getNestedContractAddress(NESTED_CONTRACT, spec))),
+                        tokenAssociate(ACCOUNT, VANILLA_TOKEN),
+                        contractCall(
+                                        OUTER_CONTRACT,
+                                        "dissociateAssociateContractCall",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                .alsoSigningWithFullPrefix(ACCOUNT)
+                                .via("nestedDissociateTxn")
+                                .gas(3_000_000L)
+                                .hasKnownStatus(ResponseCodeEnum.SUCCESS),
+                        getTxnRecord("nestedDissociateTxn").andAllChildRecords().logged())))
                 .then(
                         childRecordsCheck(
                                 "nestedDissociateTxn",
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS))),
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
                         getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
     }
 
@@ -395,12 +322,8 @@ public class DissociatePrecompileSuite extends HapiSuite {
 
         return defaultHapiSpec("multiplePrecompileDissociationWithSigsForFungibleWorks")
                 .given(
-                        cryptoCreate(ACCOUNT)
-                                .balance(10 * ONE_HUNDRED_HBARS)
-                                .exposingCreatedIdTo(accountID::set),
-                        cryptoCreate(TOKEN_TREASURY)
-                                .balance(0L)
-                                .exposingCreatedIdTo(treasuryID::set),
+                        cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS).exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(TOKEN_TREASURY).balance(0L).exposingCreatedIdTo(treasuryID::set),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
@@ -413,55 +336,36 @@ public class DissociatePrecompileSuite extends HapiSuite {
                                 .exposingCreatedIdTo(id -> knowableTokenTokenID.set(asToken(id))),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                tokenAssociate(
-                                                        ACCOUNT,
-                                                        List.of(VANILLA_TOKEN, KNOWABLE_TOKEN)),
-                                                getAccountInfo(ACCOUNT)
-                                                        .hasToken(relationshipWith(VANILLA_TOKEN)),
-                                                getAccountInfo(ACCOUNT)
-                                                        .hasToken(relationshipWith(KNOWABLE_TOKEN)),
-                                                contractCall(
-                                                                CONTRACT,
-                                                                "tokensDissociate",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())),
-                                                                new Address[] {
-                                                                    HapiParserUtil
-                                                                            .asHeadlongAddress(
-                                                                                    asAddress(
-                                                                                            vanillaTokenID
-                                                                                                    .get())),
-                                                                    HapiParserUtil
-                                                                            .asHeadlongAddress(
-                                                                                    asAddress(
-                                                                                            knowableTokenTokenID
-                                                                                                    .get()))
-                                                                })
-                                                        .alsoSigningWithFullPrefix(ACCOUNT)
-                                                        .via("multipleDissociationTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(SUCCESS),
-                                                getTxnRecord("multipleDissociationTxn")
-                                                        .andAllChildRecords()
-                                                        .logged())))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        tokenAssociate(ACCOUNT, List.of(VANILLA_TOKEN, KNOWABLE_TOKEN)),
+                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
+                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(KNOWABLE_TOKEN)),
+                        contractCall(
+                                        CONTRACT,
+                                        "tokensDissociate",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        new Address[] {
+                                            HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
+                                            HapiParserUtil.asHeadlongAddress(asAddress(knowableTokenTokenID.get()))
+                                        })
+                                .alsoSigningWithFullPrefix(ACCOUNT)
+                                .via("multipleDissociationTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTxnRecord("multipleDissociationTxn")
+                                .andAllChildRecords()
+                                .logged())))
                 .then(
                         childRecordsCheck(
                                 "multipleDissociationTxn",
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))),
-                        getAccountInfo(ACCOUNT)
-                                .hasNoTokenRelationship(FREEZABLE_TOKEN_ON_BY_DEFAULT),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
+                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(FREEZABLE_TOKEN_ON_BY_DEFAULT),
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(KNOWABLE_TOKEN));
     }
 

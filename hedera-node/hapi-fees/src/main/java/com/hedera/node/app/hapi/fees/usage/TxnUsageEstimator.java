@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage;
 
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.HRS_DIVISOR;
@@ -48,10 +49,7 @@ public class TxnUsageEstimator {
         var usage = utils.baseEstimate(txn, sigUsage);
         customize(usage);
         return utils.withDefaultTxnPartitioning(
-                usage.build(),
-                subType,
-                utils.nonDegenerateDiv(networkRbs, HRS_DIVISOR),
-                sigUsage.numPayerKeys());
+                usage.build(), subType, utils.nonDegenerateDiv(networkRbs, HRS_DIVISOR), sigUsage.numPayerKeys());
     }
 
     private void customize(UsageEstimate usage) {

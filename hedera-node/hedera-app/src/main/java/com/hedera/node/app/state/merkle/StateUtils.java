@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle;
 
 import static com.swirlds.common.utility.CommonUtils.getNormalisedStringBytes;
@@ -78,8 +79,7 @@ public final class StateUtils {
         for (int i = 0; i < stateKey.length(); i++) {
             final var c = stateKey.charAt(i);
             if (!isAsciiUnderscoreOrDash(c) && !isAsciiLetter(c) && !isAsciiNumber(c)) {
-                throw new IllegalArgumentException(
-                        "Illegal character '" + c + "' at position " + i);
+                throw new IllegalArgumentException("Illegal character '" + c + "' at position " + i);
             }
         }
 
@@ -93,8 +93,7 @@ public final class StateUtils {
      * @param stateKey The state key
      * @return The computed label
      */
-    public static String computeLabel(
-            @NonNull final String serviceName, @NonNull final String stateKey) {
+    public static String computeLabel(@NonNull final String serviceName, @NonNull final String stateKey) {
         return Objects.requireNonNull(serviceName) + "." + Objects.requireNonNull(stateKey);
     }
 
@@ -104,8 +103,7 @@ public final class StateUtils {
      * @param extra An extra string to bake into the class id
      * @return the class id
      */
-    public static long computeClassId(
-            @NonNull final StateMetadata<?, ?> md, @NonNull final String extra) {
+    public static long computeClassId(@NonNull final StateMetadata<?, ?> md, @NonNull final String extra) {
         final var def = md.stateDefinition();
         return computeClassId(md.serviceName(), def.stateKey(), md.schema().getVersion(), extra);
     }
@@ -124,8 +122,7 @@ public final class StateUtils {
         // NOTE: Once this is live on any network, the formula used to generate this key can NEVER
         // BE CHANGED or you won't ever be able to deserialize an exising state! If we get away from
         // this formula, we will need to hardcode known classId that had been previously generated.
-        final var ver =
-                "v" + version.getMajor() + "." + version.getMinor() + "." + version.getPatch();
+        final var ver = "v" + version.getMajor() + "." + version.getMinor() + "." + version.getPatch();
         return hashString(serviceName + ":" + stateKey + ":" + ver + ":" + extra);
     }
 
@@ -161,9 +158,7 @@ public final class StateUtils {
         // There may be 0 <= N <= 7 remaining bytes. Process these bytes
         final int numRemainingBytes = bytes.length - (numBlocks * 8);
         if (numRemainingBytes > 0) {
-            for (int shift = numRemainingBytes * 8, i = (numBlocks * 8);
-                    i < bytes.length;
-                    i++, shift -= 8) {
+            for (int shift = numRemainingBytes * 8, i = (numBlocks * 8); i < bytes.length; i++, shift -= 8) {
                 hash ^= ((long) bytes[i] << shift);
             }
             hash = NonCryptographicHashing.hash64(hash);

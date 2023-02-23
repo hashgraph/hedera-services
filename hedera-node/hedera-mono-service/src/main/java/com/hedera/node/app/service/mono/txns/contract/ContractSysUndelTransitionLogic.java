@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.contract;
 
 import static com.hedera.node.app.service.mono.context.properties.EntityType.CONTRACT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_SYSTEM_DELETABLE;
+import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_SYSTEM_DELETABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -44,6 +45,7 @@ import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class ContractSysUndelTransitionLogic implements TransitionLogic {
+
     private static final Logger log = LogManager.getLogger(ContractSysUndelTransitionLogic.class);
 
     private final boolean supported;
@@ -71,13 +73,14 @@ public class ContractSysUndelTransitionLogic implements TransitionLogic {
 
     @FunctionalInterface
     public interface LegacySystemUndeleter {
+
         TransactionRecord perform(TransactionBody txn, Instant consensusTime);
     }
 
     @Override
     public void doStateTransition() {
         try {
-            var contractSysUndelTxn = txnCtx.accessor().getTxn();
+            final var contractSysUndelTxn = txnCtx.accessor().getTxn();
 
             final var legacyRecord = delegate.perform(contractSysUndelTxn, txnCtx.consensusTime());
             final var status = legacyRecord.getReceipt().getStatus();
@@ -86,7 +89,7 @@ public class ContractSysUndelTransitionLogic implements TransitionLogic {
                 sigImpactHistorian.markEntityChanged(target.getContractNum());
             }
             txnCtx.setStatus(status);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             log.warn("Avoidable exception!", e);
             txnCtx.setStatus(FAIL_INVALID);
         }
@@ -102,12 +105,12 @@ public class ContractSysUndelTransitionLogic implements TransitionLogic {
         return this::validate;
     }
 
-    public ResponseCodeEnum validate(TransactionBody contractSysUndelTxn) {
+    public ResponseCodeEnum validate(final TransactionBody contractSysUndelTxn) {
         if (!supported) {
             return NOT_SUPPORTED;
         }
-        var op = contractSysUndelTxn.getSystemUndelete();
-        var status = validator.queryableContractStatus(op.getContractID(), contracts.get());
+        final var op = contractSysUndelTxn.getSystemUndelete();
+        final var status = validator.queryableContractStatus(op.getContractID(), contracts.get());
         return (status != INVALID_CONTRACT_ID) ? OK : INVALID_CONTRACT_ID;
     }
 }

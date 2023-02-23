@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stats;
 
 import static com.hedera.node.app.service.mono.stats.ServicesStatsManager.RUNNING_AVG_FORMAT;
@@ -36,30 +37,17 @@ public class ExpiryStats {
     }
 
     public void registerWith(final Platform platform) {
-        contractsRemoved =
-                platform.getMetrics()
-                        .getOrCreate(
-                                new Counter.Config(
-                                                STAT_CATEGORY,
-                                                Names.CONTRACTS_REMOVED_SINCE_RESTART)
-                                        .withDescription(
-                                                Descriptions.CONTRACTS_REMOVED_SINCE_RESTART));
-        contractsRenewed =
-                platform.getMetrics()
-                        .getOrCreate(
-                                new Counter.Config(
-                                                STAT_CATEGORY,
-                                                Names.CONTRACTS_RENEWED_SINCE_RESTART)
-                                        .withDescription(
-                                                Descriptions.CONTRACTS_RENEWED_SINCE_RESTART));
-        idsScannedPerConsSec =
-                platform.getMetrics()
-                        .getOrCreate(
-                                new RunningAverageMetric.Config(
-                                                STAT_CATEGORY, Names.IDS_SCANNED_PER_CONSENSUS_SEC)
-                                        .withDescription(Descriptions.IDS_SCANNED_PER_CONSENSUS_SEC)
-                                        .withFormat(RUNNING_AVG_FORMAT)
-                                        .withHalfLife(halfLife));
+        contractsRemoved = platform.getMetrics()
+                .getOrCreate(new Counter.Config(STAT_CATEGORY, Names.CONTRACTS_REMOVED_SINCE_RESTART)
+                        .withDescription(Descriptions.CONTRACTS_REMOVED_SINCE_RESTART));
+        contractsRenewed = platform.getMetrics()
+                .getOrCreate(new Counter.Config(STAT_CATEGORY, Names.CONTRACTS_RENEWED_SINCE_RESTART)
+                        .withDescription(Descriptions.CONTRACTS_RENEWED_SINCE_RESTART));
+        idsScannedPerConsSec = platform.getMetrics()
+                .getOrCreate(new RunningAverageMetric.Config(STAT_CATEGORY, Names.IDS_SCANNED_PER_CONSENSUS_SEC)
+                        .withDescription(Descriptions.IDS_SCANNED_PER_CONSENSUS_SEC)
+                        .withFormat(RUNNING_AVG_FORMAT)
+                        .withHalfLife(halfLife));
     }
 
     public void countRemovedContract() {
@@ -75,12 +63,9 @@ public class ExpiryStats {
     }
 
     public static final class Descriptions {
-        static final String IDS_SCANNED_PER_CONSENSUS_SEC =
-                "average entity ids scanned per second of consensus time";
-        static final String CONTRACTS_REMOVED_SINCE_RESTART =
-                "number of expired contracts removed since last restart";
-        static final String CONTRACTS_RENEWED_SINCE_RESTART =
-                "number of expired contracts renewed since last restart";
+        static final String IDS_SCANNED_PER_CONSENSUS_SEC = "average entity ids scanned per second of consensus time";
+        static final String CONTRACTS_REMOVED_SINCE_RESTART = "number of expired contracts removed since last restart";
+        static final String CONTRACTS_RENEWED_SINCE_RESTART = "number of expired contracts renewed since last restart";
 
         private Descriptions() {
             throw new UnsupportedOperationException("Utility Class");

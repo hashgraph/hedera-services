@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.keys;
 
 import static com.hedera.node.app.service.mono.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
@@ -54,21 +55,17 @@ class CharacteristicsFactoryTest {
         given(hfs.getattr(target)).willReturn(info);
 
         revocationServiceCharacteristics = mock(KeyActivationCharacteristics.class);
-        revocationServiceCharacteristicsFn =
-                (Function<JKeyList, KeyActivationCharacteristics>) mock(Function.class);
-        given(revocationServiceCharacteristicsFn.apply(wacl))
-                .willReturn(revocationServiceCharacteristics);
+        revocationServiceCharacteristicsFn = (Function<JKeyList, KeyActivationCharacteristics>) mock(Function.class);
+        given(revocationServiceCharacteristicsFn.apply(wacl)).willReturn(revocationServiceCharacteristics);
 
         subject = new CharacteristicsFactory(hfs);
 
-        CharacteristicsFactory.revocationServiceCharacteristicsFn =
-                revocationServiceCharacteristicsFn;
+        CharacteristicsFactory.revocationServiceCharacteristicsFn = revocationServiceCharacteristicsFn;
     }
 
     @AfterEach
     void cleanup() {
-        CharacteristicsFactory.revocationServiceCharacteristicsFn =
-                RevocationServiceCharacteristics::forTopLevelFile;
+        CharacteristicsFactory.revocationServiceCharacteristicsFn = RevocationServiceCharacteristics::forTopLevelFile;
     }
 
     @Test
@@ -80,8 +77,7 @@ class CharacteristicsFactoryTest {
     @Test
     void usesDefaultForMalformedFileDelete() {
         // expect:
-        assertSame(
-                DEFAULT_ACTIVATION_CHARACTERISTICS, subject.inferredFor(meaninglessFileDelete()));
+        assertSame(DEFAULT_ACTIVATION_CHARACTERISTICS, subject.inferredFor(meaninglessFileDelete()));
         assertSame(DEFAULT_ACTIVATION_CHARACTERISTICS, subject.inferredFor(missingFileDelete()));
     }
 

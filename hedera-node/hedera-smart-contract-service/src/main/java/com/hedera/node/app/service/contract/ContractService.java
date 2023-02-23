@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.contract;
 
 import com.hedera.node.app.spi.Service;
@@ -42,7 +43,6 @@ public interface ContractService extends Service {
      */
     @NonNull
     static ContractService getInstance() {
-        return ServiceFactory.loadService(
-                ContractService.class, ServiceLoader.load(ContractService.class));
+        return ServiceFactory.loadService(ContractService.class, ServiceLoader.load(ContractService.class));
     }
 }

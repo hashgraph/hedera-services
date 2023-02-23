@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.properties;
 
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.packedTime;
@@ -35,8 +36,7 @@ class NftPropertyTest {
     @Test
     void gettersWork() {
         // given:
-        final var aSubject =
-                UniqueTokenAdapter.wrap(new MerkleUniqueToken(aEntity, aMeta, aInstant));
+        final var aSubject = UniqueTokenAdapter.wrap(new MerkleUniqueToken(aEntity, aMeta, aInstant));
 
         // expect:
         assertEquals(aEntity, NftProperty.OWNER.getter().apply(aSubject));
@@ -48,15 +48,11 @@ class NftPropertyTest {
 
     @Test
     void setterWorks() {
-        final var aSubject =
-                UniqueTokenAdapter.wrap(new MerkleUniqueToken(aEntity, aMeta, aInstant));
-        final var bSubject =
-                UniqueTokenAdapter.wrap(new MerkleUniqueToken(bEntity, bMeta, bInstant));
+        final var aSubject = UniqueTokenAdapter.wrap(new MerkleUniqueToken(aEntity, aMeta, aInstant));
+        final var bSubject = UniqueTokenAdapter.wrap(new MerkleUniqueToken(bEntity, bMeta, bInstant));
 
         NftProperty.OWNER.setter().accept(aSubject, bEntity);
-        NftProperty.CREATION_TIME
-                .setter()
-                .accept(aSubject, packedTime(bInstant.getSeconds(), bInstant.getNanos()));
+        NftProperty.CREATION_TIME.setter().accept(aSubject, packedTime(bInstant.getSeconds(), bInstant.getNanos()));
         NftProperty.METADATA.setter().accept(aSubject, bMeta);
 
         // expect:

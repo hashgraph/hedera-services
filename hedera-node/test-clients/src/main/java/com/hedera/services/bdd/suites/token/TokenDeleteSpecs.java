@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -80,8 +81,7 @@ public class TokenDeleteSpecs extends HapiSuite {
                         tokenCreate(FIRST_TBD).adminKey(TOKEN_ADMIN).treasury(TOKEN_TREASURY),
                         tokenCreate(SECOND_TBD).adminKey(TOKEN_ADMIN).treasury(TOKEN_TREASURY),
                         cryptoDelete(TOKEN_TREASURY).hasKnownStatus(ACCOUNT_IS_TREASURY),
-                        tokenDissociate(TOKEN_TREASURY, FIRST_TBD)
-                                .hasKnownStatus(ACCOUNT_IS_TREASURY))
+                        tokenDissociate(TOKEN_TREASURY, FIRST_TBD).hasKnownStatus(ACCOUNT_IS_TREASURY))
                 .when(
                         tokenDelete(FIRST_TBD),
                         tokenDissociate(TOKEN_TREASURY, FIRST_TBD),
@@ -112,11 +112,7 @@ public class TokenDeleteSpecs extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .payingWith(PAYER))
                 .when()
-                .then(
-                        tokenDelete("tbd")
-                                .payingWith(PAYER)
-                                .signedBy(PAYER)
-                                .hasKnownStatus(TOKEN_IS_IMMUTABLE));
+                .then(tokenDelete("tbd").payingWith(PAYER).signedBy(PAYER).hasKnownStatus(TOKEN_IS_IMMUTABLE));
     }
 
     public HapiSpec deletionWorksAsExpected() {
@@ -163,14 +159,8 @@ public class TokenDeleteSpecs extends HapiSuite {
                 .given(cryptoCreate(PAYER))
                 .when()
                 .then(
-                        tokenDelete("0.0.0")
-                                .payingWith(PAYER)
-                                .signedBy(PAYER)
-                                .hasKnownStatus(INVALID_TOKEN_ID),
-                        tokenDelete("1.2.3")
-                                .payingWith(PAYER)
-                                .signedBy(PAYER)
-                                .hasKnownStatus(INVALID_TOKEN_ID));
+                        tokenDelete("0.0.0").payingWith(PAYER).signedBy(PAYER).hasKnownStatus(INVALID_TOKEN_ID),
+                        tokenDelete("1.2.3").payingWith(PAYER).signedBy(PAYER).hasKnownStatus(INVALID_TOKEN_ID));
     }
 
     @Override

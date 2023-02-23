@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.commands.files;
 
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED;
@@ -36,7 +37,8 @@ public class SysFileUploadCommand implements Callable<Integer> {
 
     public static AtomicReference<String> activeSrcDir = new AtomicReference<>();
 
-    @CommandLine.ParentCommand private SysFilesCommand sysFilesCommand;
+    @CommandLine.ParentCommand
+    private SysFilesCommand sysFilesCommand;
 
     @CommandLine.Option(
             names = {"-s", "--source-dir"},
@@ -46,25 +48,21 @@ public class SysFileUploadCommand implements Callable<Integer> {
 
     @CommandLine.Option(
             names = {"--dry-run"},
-            description =
-                    "only write the serialized form of the system file to disk, do not send a"
-                            + " FileUpdate")
+            description = "only write the serialized form of the system file to disk, do not send a" + " FileUpdate")
     private boolean dryRun;
 
     @CommandLine.Option(
             names = {"--bytes-per-append"},
-            description =
-                    "number of bytes to add in each append to a special file (default "
-                            + DEFAULT_BYTES_PER_APPEND
-                            + ")")
+            description = "number of bytes to add in each append to a special file (default "
+                    + DEFAULT_BYTES_PER_APPEND
+                    + ")")
     private Integer bytesPerAppend;
 
     @CommandLine.Option(
             names = {"--appends-per-burst"},
-            description =
-                    "number of appends to \"burst\" when uploading a special file (default "
-                            + DEFAULT_APPENDS_PER_BURST
-                            + ")")
+            description = "number of appends to \"burst\" when uploading a special file (default "
+                    + DEFAULT_APPENDS_PER_BURST
+                    + ")")
     private Integer appendsPerBurst;
 
     @CommandLine.Option(
@@ -75,11 +73,10 @@ public class SysFileUploadCommand implements Callable<Integer> {
     @CommandLine.Parameters(
             arity = "1",
             paramLabel = "<sysfile>",
-            description =
-                    "one of "
-                            + "{ address-book, node-details, fees, rates, props, "
-                            + "permissions, throttles, software-zip, telemetry-zip } (or "
-                            + "{ 101, 102, 111, 112, 121, 122, 123, 150, 159 })")
+            description = "one of "
+                    + "{ address-book, node-details, fees, rates, props, "
+                    + "permissions, throttles, software-zip, telemetry-zip } (or "
+                    + "{ 101, 102, 111, 112, 121, 122, 123, 150, 159 })")
     private String sysFile;
 
     @Override
@@ -116,17 +113,16 @@ public class SysFileUploadCommand implements Callable<Integer> {
             }
         }
 
-        var delegate =
-                isSpecialFile()
-                        ? new SysFileUploadSuite(
-                                bytesPerAppend,
-                                appendsPerBurst,
-                                restartFromFailure,
-                                srcDir,
-                                config.asSpecConfig(),
-                                sysFile,
-                                dryRun)
-                        : new SysFileUploadSuite(srcDir, config.asSpecConfig(), sysFile, dryRun);
+        var delegate = isSpecialFile()
+                ? new SysFileUploadSuite(
+                        bytesPerAppend,
+                        appendsPerBurst,
+                        restartFromFailure,
+                        srcDir,
+                        config.asSpecConfig(),
+                        sysFile,
+                        dryRun)
+                : new SysFileUploadSuite(srcDir, config.asSpecConfig(), sysFile, dryRun);
 
         delegate.runSuiteSync();
 

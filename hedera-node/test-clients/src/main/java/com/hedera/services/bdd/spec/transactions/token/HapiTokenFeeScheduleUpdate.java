@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -80,14 +81,11 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
-            throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         try {
             final TokenInfo info = lookupInfo(spec, token, log, loggingOff);
-            final FeeCalculator.ActivityMetrics metricsCalc =
-                    (_txn, svo) -> usageEstimate(_txn, svo, info);
-            return spec.fees()
-                    .forActivityBasedOp(TokenFeeScheduleUpdate, metricsCalc, txn, numPayerKeys);
+            final FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> usageEstimate(_txn, svo, info);
+            return spec.fees().forActivityBasedOp(TokenFeeScheduleUpdate, metricsCalc, txn, numPayerKeys);
         } catch (final Throwable ignore) {
             return HapiSuite.ONE_HBAR;
         }
@@ -96,20 +94,16 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final var id = TxnUtils.asTokenId(token, spec);
-        final var opBody =
-                spec.txns()
-                        .<TokenFeeScheduleUpdateTransactionBody,
-                                TokenFeeScheduleUpdateTransactionBody.Builder>
-                                body(
-                                        TokenFeeScheduleUpdateTransactionBody.class,
-                                        b -> {
-                                            b.setTokenId(id);
-                                            if (!feeScheduleSuppliers.isEmpty()) {
-                                                for (final var supplier : feeScheduleSuppliers) {
-                                                    b.addCustomFees(supplier.apply(spec));
-                                                }
-                                            }
-                                        });
+        final var opBody = spec.txns()
+                .<TokenFeeScheduleUpdateTransactionBody, TokenFeeScheduleUpdateTransactionBody.Builder>body(
+                        TokenFeeScheduleUpdateTransactionBody.class, b -> {
+                            b.setTokenId(id);
+                            if (!feeScheduleSuppliers.isEmpty()) {
+                                for (final var supplier : feeScheduleSuppliers) {
+                                    b.addCustomFees(supplier.apply(spec));
+                                }
+                            }
+                        });
         return b -> b.setTokenFeeScheduleUpdate(opBody);
     }
 
@@ -117,13 +111,10 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
     protected List<Function<HapiSpec, Key>> defaultSigners() {
         final List<Function<HapiSpec, Key>> signers = new ArrayList<>();
         signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
-        signers.add(
-                spec -> {
-                    final var registry = spec.registry();
-                    return registry.hasFeeScheduleKey(token)
-                            ? registry.getFeeScheduleKey(token)
-                            : Key.getDefaultInstance();
-                });
+        signers.add(spec -> {
+            final var registry = spec.registry();
+            return registry.hasFeeScheduleKey(token) ? registry.getFeeScheduleKey(token) : Key.getDefaultInstance();
+        });
         return signers;
     }
 
@@ -142,11 +133,11 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
         return super.toStringHelper().add("token", token);
     }
 
-    private FeeData usageEstimate(
-            final TransactionBody txn, final SigValueObj svo, final TokenInfo info) {
+    private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo, final TokenInfo info) {
         final var op = txn.getTokenFeeScheduleUpdate();
         final var baseMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
-        final var effectiveNow = txn.getTransactionID().getTransactionValidStart().getSeconds();
+        final var effectiveNow =
+                txn.getTransactionID().getTransactionValidStart().getSeconds();
         final var bytesToReprNew = TOKEN_OPS_USAGE.bytesNeededToRepr(op.getCustomFeesList());
         final var bytesToReprOld = TOKEN_OPS_USAGE.bytesNeededToRepr(info.getCustomFeesList());
 
@@ -159,10 +150,7 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
     }
 
     static TokenInfo lookupInfo(
-            final HapiSpec spec,
-            final String token,
-            final Logger scopedLog,
-            final boolean loggingOff)
+            final HapiSpec spec, final String token, final Logger scopedLog, final boolean loggingOff)
             throws Throwable {
         final HapiGetTokenInfo subOp = getTokenInfo(token).noLogging();
         final Optional<Throwable> error = subOp.execFor(spec);

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.token;
 
 import static com.hedera.node.app.hapi.fees.usage.EstimatorUtils.MAX_ENTITY_LIFETIME;
@@ -36,8 +37,7 @@ public class TokenUpdateUsage extends TokenTxnUsage<TokenUpdateUsage> {
     private long currentMutableRb = 0;
     private boolean currentlyUsingAutoRenew = false;
 
-    private TokenUpdateUsage(
-            final TransactionBody tokenUpdateOp, final TxnUsageEstimator usageEstimator) {
+    private TokenUpdateUsage(final TransactionBody tokenUpdateOp, final TxnUsageEstimator usageEstimator) {
         super(tokenUpdateOp, usageEstimator);
     }
 
@@ -120,44 +120,25 @@ public class TokenUpdateUsage extends TokenTxnUsage<TokenUpdateUsage> {
 
         long newMutableRb = 0;
         newMutableRb +=
-                keySizeIfPresent(
-                        op,
-                        TokenUpdateTransactionBody::hasKycKey,
-                        TokenUpdateTransactionBody::getKycKey);
+                keySizeIfPresent(op, TokenUpdateTransactionBody::hasKycKey, TokenUpdateTransactionBody::getKycKey);
         newMutableRb +=
-                keySizeIfPresent(
-                        op,
-                        TokenUpdateTransactionBody::hasWipeKey,
-                        TokenUpdateTransactionBody::getWipeKey);
+                keySizeIfPresent(op, TokenUpdateTransactionBody::hasWipeKey, TokenUpdateTransactionBody::getWipeKey);
         newMutableRb +=
-                keySizeIfPresent(
-                        op,
-                        TokenUpdateTransactionBody::hasAdminKey,
-                        TokenUpdateTransactionBody::getAdminKey);
+                keySizeIfPresent(op, TokenUpdateTransactionBody::hasAdminKey, TokenUpdateTransactionBody::getAdminKey);
+        newMutableRb += keySizeIfPresent(
+                op, TokenUpdateTransactionBody::hasSupplyKey, TokenUpdateTransactionBody::getSupplyKey);
+        newMutableRb += keySizeIfPresent(
+                op, TokenUpdateTransactionBody::hasFreezeKey, TokenUpdateTransactionBody::getFreezeKey);
         newMutableRb +=
-                keySizeIfPresent(
-                        op,
-                        TokenUpdateTransactionBody::hasSupplyKey,
-                        TokenUpdateTransactionBody::getSupplyKey);
-        newMutableRb +=
-                keySizeIfPresent(
-                        op,
-                        TokenUpdateTransactionBody::hasFreezeKey,
-                        TokenUpdateTransactionBody::getFreezeKey);
-        newMutableRb +=
-                keySizeIfPresent(
-                        op,
-                        TokenUpdateTransactionBody::hasPauseKey,
-                        TokenUpdateTransactionBody::getPauseKey);
+                keySizeIfPresent(op, TokenUpdateTransactionBody::hasPauseKey, TokenUpdateTransactionBody::getPauseKey);
         if (!removesAutoRenewAccount(op) && (currentlyUsingAutoRenew || op.hasAutoRenewAccount())) {
             newMutableRb += BASIC_ENTITY_ID_SIZE;
         }
         newMutableRb += op.hasMemo() ? op.getMemo().getValue().length() : currentMemoLen;
         newMutableRb += (op.getName().length() > 0) ? op.getName().length() : currentNameLen;
         newMutableRb += (op.getSymbol().length() > 0) ? op.getSymbol().length() : currentSymbolLen;
-        long newLifetime =
-                ESTIMATOR_UTILS.relativeLifetime(
-                        this.op, Math.max(op.getExpiry().getSeconds(), currentExpiry));
+        long newLifetime = ESTIMATOR_UTILS.relativeLifetime(
+                this.op, Math.max(op.getExpiry().getSeconds(), currentExpiry));
         newLifetime = Math.min(newLifetime, MAX_ENTITY_LIFETIME);
         final long rbsDelta = Math.max(0, newLifetime * (newMutableRb - currentMutableRb));
         if (rbsDelta > 0) {

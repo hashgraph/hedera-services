@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.throttling;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -69,20 +70,18 @@ public class GasLimitThrottlingSuite extends HapiSuite {
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).payingWith(PAYER_ACCOUNT))
                 .then(
-                        UtilVerbs.inParallel(
-                                asOpArray(
-                                        NUM_CALLS,
-                                        i ->
-                                                contractCall(
-                                                                CONTRACT,
-                                                                "twoSSTOREs",
-                                                                Bytes.fromHexString("0x05")
-                                                                        .toArray())
-                                                        .gas(100_000)
-                                                        .payingWith(PAYER_ACCOUNT)
-                                                        .hasKnownStatusFrom(SUCCESS, OK))),
+                        UtilVerbs.inParallel(asOpArray(NUM_CALLS, i -> contractCall(
+                                        CONTRACT,
+                                        "twoSSTOREs",
+                                        Bytes.fromHexString("0x05").toArray())
+                                .gas(100_000)
+                                .payingWith(PAYER_ACCOUNT)
+                                .hasKnownStatusFrom(SUCCESS, OK))),
                         UtilVerbs.sleepFor(1000),
-                        contractCall(CONTRACT, "twoSSTOREs", Bytes.fromHexString("0x06").toArray())
+                        contractCall(
+                                        CONTRACT,
+                                        "twoSSTOREs",
+                                        Bytes.fromHexString("0x06").toArray())
                                 .gas(1_000_000L)
                                 .payingWith(PAYER_ACCOUNT)
                                 .hasKnownStatusFrom(SUCCESS, OK),
@@ -102,7 +101,10 @@ public class GasLimitThrottlingSuite extends HapiSuite {
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
                 .then(
-                        contractCall(CONTRACT, "twoSSTOREs", Bytes.fromHexString("0x05").toArray())
+                        contractCall(
+                                        CONTRACT,
+                                        "twoSSTOREs",
+                                        Bytes.fromHexString("0x05").toArray())
                                 .gas(1_000_001)
                                 .payingWith(PAYER_ACCOUNT)
                                 .hasPrecheck(BUSY),

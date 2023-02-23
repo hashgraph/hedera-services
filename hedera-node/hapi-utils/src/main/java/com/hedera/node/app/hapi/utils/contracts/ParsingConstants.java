@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.contracts;
 
 import com.esaulpaugh.headlong.abi.TupleType;
@@ -51,32 +52,24 @@ public final class ParsingConstants {
     public static final String TOKEN_KEY = "(uint256," + KEY_VALUE + ")";
 
     public static final String HEDERA_TOKEN =
-            "("
-                    + "string,string,address,string,bool,int64,bool,"
-                    + TOKEN_KEY
-                    + ARRAY_BRACKETS
-                    + ","
-                    + EXPIRY
-                    + ")";
-    public static final String TOKEN_INFO =
-            "("
-                    + HEDERA_TOKEN
-                    + ",int64,bool,bool,bool,"
-                    + FIXED_FEE
-                    + ARRAY_BRACKETS
-                    + ","
-                    + FRACTIONAL_FEE
-                    + ARRAY_BRACKETS
-                    + ","
-                    + ROYALTY_FEE
-                    + ARRAY_BRACKETS
-                    + ",string"
-                    + ")";
+            "(" + "string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
+    public static final String TOKEN_INFO = "("
+            + HEDERA_TOKEN
+            + ",int64,bool,bool,bool,"
+            + FIXED_FEE
+            + ARRAY_BRACKETS
+            + ","
+            + FRACTIONAL_FEE
+            + ARRAY_BRACKETS
+            + ","
+            + ROYALTY_FEE
+            + ARRAY_BRACKETS
+            + ",string"
+            + ")";
     public static final String RESPONSE_STATUS_AT_BEGINNING = "(int32,";
 
     public static final String FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",int32" + ")";
-    public static final String NON_FUNGIBLE_TOKEN_INFO =
-            "(" + TOKEN_INFO + ",int64,address,int64,bytes,address" + ")";
+    public static final String NON_FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",int64,address,int64,bytes,address" + ")";
 
     // tuple types
     public static final TupleType addressTuple = TupleType.parse(ADDRESS);
@@ -93,28 +86,23 @@ public final class ParsingConstants {
     public static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
     public static final TupleType getFungibleTokenInfoType =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO + ")");
-    public static final TupleType getTokenInfoType =
-            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")");
+    public static final TupleType getTokenInfoType = TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")");
     public static final TupleType getNonFungibleTokenInfoType =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")");
-    public static final TupleType getTokenCustomFeesType =
-            TupleType.parse(
-                    RESPONSE_STATUS_AT_BEGINNING
-                            + FIXED_FEE
-                            + ARRAY_BRACKETS
-                            + ","
-                            + FRACTIONAL_FEE
-                            + ARRAY_BRACKETS
-                            + ","
-                            + ROYALTY_FEE
-                            + ARRAY_BRACKETS
-                            + ")");
+    public static final TupleType getTokenCustomFeesType = TupleType.parse(RESPONSE_STATUS_AT_BEGINNING
+            + FIXED_FEE
+            + ARRAY_BRACKETS
+            + ","
+            + FRACTIONAL_FEE
+            + ARRAY_BRACKETS
+            + ","
+            + ROYALTY_FEE
+            + ARRAY_BRACKETS
+            + ")");
     public static final TupleType hapiAllowanceOfType = TupleType.parse("(int32,uint256)");
     public static final TupleType hapiGetApprovedType = TupleType.parse("(int32,bytes32)");
-    public static final TupleType getTokenExpiryInfoType =
-            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + EXPIRY + ")");
-    public static final TupleType getTokenKeyType =
-            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + KEY_VALUE + ")");
+    public static final TupleType getTokenExpiryInfoType = TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + EXPIRY + ")");
+    public static final TupleType getTokenKeyType = TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + KEY_VALUE + ")");
     public static final TupleType notSpecifiedType = TupleType.parse(INT32);
 
     public enum FunctionType {

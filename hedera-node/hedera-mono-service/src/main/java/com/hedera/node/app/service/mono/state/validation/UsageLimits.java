@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.validation;
 
 import static com.hedera.node.app.service.mono.utils.ResourceValidationUtils.validateResourceLimit;
@@ -45,9 +46,7 @@ public class UsageLimits implements ContractStorageLimits, AccountUsageTracking 
     private final GlobalDynamicProperties dynamicProperties;
 
     @Inject
-    public UsageLimits(
-            final MutableStateChildren stateChildren,
-            final GlobalDynamicProperties dynamicProperties) {
+    public UsageLimits(final MutableStateChildren stateChildren, final GlobalDynamicProperties dynamicProperties) {
         this.stateChildren = stateChildren;
         this.dynamicProperties = dynamicProperties;
     }
@@ -136,20 +135,16 @@ public class UsageLimits implements ContractStorageLimits, AccountUsageTracking 
     public void assertMintableNfts(final int n) {
         final var candidateNum = updatedNumNfts() + n;
         validateResourceLimit(
-                candidateNum <= dynamicProperties.maxNftMints(),
-                MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
+                candidateNum <= dynamicProperties.maxNftMints(), MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
     }
 
     public void assertUsableTotalSlots(final long n) {
         validateResourceLimit(
-                n <= dynamicProperties.maxAggregateContractKvPairs(),
-                MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED);
+                n <= dynamicProperties.maxAggregateContractKvPairs(), MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED);
     }
 
     public void assertUsableContractSlots(final long n) {
-        validateResourceLimit(
-                n <= dynamicProperties.maxIndividualContractKvPairs(),
-                MAX_CONTRACT_STORAGE_EXCEEDED);
+        validateResourceLimit(n <= dynamicProperties.maxIndividualContractKvPairs(), MAX_CONTRACT_STORAGE_EXCEEDED);
     }
 
     public double percentAccountsUsed() {

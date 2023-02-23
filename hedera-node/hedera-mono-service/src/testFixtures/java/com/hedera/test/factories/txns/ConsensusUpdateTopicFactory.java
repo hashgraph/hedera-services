@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.txns;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -52,8 +53,7 @@ public class ConsensusUpdateTopicFactory extends SignedTxnFactory<ConsensusUpdat
 
     @Override
     protected void customizeTxn(TransactionBody.Builder transactionBody) {
-        ConsensusUpdateTopicTransactionBody.Builder op =
-                ConsensusUpdateTopicTransactionBody.newBuilder();
+        ConsensusUpdateTopicTransactionBody.Builder op = ConsensusUpdateTopicTransactionBody.newBuilder();
         if (null != topicId) {
             op.setTopicID(asTopic(topicId));
         }
@@ -61,13 +61,10 @@ public class ConsensusUpdateTopicFactory extends SignedTxnFactory<ConsensusUpdat
             op.setAutoRenewAccount(asAccount(autoRenewAccountId));
         }
         adminKey.ifPresent(k -> op.setAdminKey(k.asKey(keyFactory)));
-        expirationTime.ifPresent(
-                et ->
-                        op.setExpirationTime(
-                                Timestamp.newBuilder()
-                                        .setSeconds(et.getEpochSecond())
-                                        .setNanos(et.getNano())
-                                        .build()));
+        expirationTime.ifPresent(et -> op.setExpirationTime(Timestamp.newBuilder()
+                .setSeconds(et.getEpochSecond())
+                .setNanos(et.getNano())
+                .build()));
         transactionBody.setConsensusUpdateTopic(op);
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -106,17 +107,15 @@ class RecordStreamObjectTest {
 
     @Test
     void toStringTest() {
-        final var expectedString =
-                "RecordStreamObject[TransactionRecord=mock record,Transaction=mock"
-                    + " transaction,ConsensusTimestamp=mock consensusTimestamp,Sidecars=<null>]";
+        final var expectedString = "RecordStreamObject[TransactionRecord=mock record,Transaction=mock"
+                + " transaction,ConsensusTimestamp=mock consensusTimestamp,Sidecars=<null>]";
         assertEquals(expectedString, recordStreamObject.toString());
     }
 
     @Test
     void toShortStringTest() {
-        final String expectedString =
-                "RecordStreamObject[TransactionRecord=[TransactionID=mock transactionID],"
-                        + "ConsensusTimestamp=mock consensusTimestamp]";
+        final String expectedString = "RecordStreamObject[TransactionRecord=[TransactionID=mock transactionID],"
+                + "ConsensusTimestamp=mock consensusTimestamp]";
         assertEquals(expectedString, recordStreamObject.toShortString());
     }
 
@@ -132,21 +131,15 @@ class RecordStreamObjectTest {
         assertNotEquals(recordStreamObject, new Object());
         assertEquals(recordStreamObject, sameButDifferent);
 
-        assertEquals(
-                recordStreamObject,
-                new RecordStreamObject(record, transaction, consensusTimestamp));
+        assertEquals(recordStreamObject, new RecordStreamObject(record, transaction, consensusTimestamp));
 
         assertNotEquals(recordStreamObject, realObject);
+        assertNotEquals(recordStreamObject, new RecordStreamObject(record, transaction, realObject.getTimestamp()));
+        assertNotEquals(
+                recordStreamObject, new RecordStreamObject(record, realObject.getTransaction(), consensusTimestamp));
         assertNotEquals(
                 recordStreamObject,
-                new RecordStreamObject(record, transaction, realObject.getTimestamp()));
-        assertNotEquals(
-                recordStreamObject,
-                new RecordStreamObject(record, realObject.getTransaction(), consensusTimestamp));
-        assertNotEquals(
-                recordStreamObject,
-                new RecordStreamObject(
-                        realObject.getTransactionRecord(), transaction, consensusTimestamp));
+                new RecordStreamObject(realObject.getTransactionRecord(), transaction, consensusTimestamp));
     }
 
     @Test
@@ -171,17 +164,15 @@ class RecordStreamObjectTest {
         final var accountID = AccountID.newBuilder().setAccountNum(3);
         final var transactionID = TransactionID.newBuilder().setAccountID(accountID);
         final var transactionBody = TransactionBody.newBuilder().setTransactionID(transactionID);
-        final var signedTransaction =
-                SignedTransaction.newBuilder().setBodyBytes(transactionBody.build().toByteString());
-        final var transaction =
-                Transaction.newBuilder()
-                        .setSignedTransactionBytes(signedTransaction.getBodyBytes())
-                        .build();
-        final var record =
-                TransactionRecord.newBuilder()
-                        .setConsensusTimestamp(MiscUtils.asTimestamp(consensusTimestamp))
-                        .setTransactionID(transactionID)
-                        .build();
+        final var signedTransaction = SignedTransaction.newBuilder()
+                .setBodyBytes(transactionBody.build().toByteString());
+        final var transaction = Transaction.newBuilder()
+                .setSignedTransactionBytes(signedTransaction.getBodyBytes())
+                .build();
+        final var record = TransactionRecord.newBuilder()
+                .setConsensusTimestamp(MiscUtils.asTimestamp(consensusTimestamp))
+                .setTransactionID(transactionID)
+                .build();
         return new RecordStreamObject(record, transaction, consensusTimestamp);
     }
 }

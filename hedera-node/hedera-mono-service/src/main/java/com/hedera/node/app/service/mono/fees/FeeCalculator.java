@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
@@ -39,20 +40,14 @@ public interface FeeCalculator {
 
     long estimatedNonFeePayerAdjustments(TxnAccessor accessor, Timestamp at);
 
-    FeeObject computeFee(
-            TxnAccessor accessor, JKey payerKey, StateView view, Instant consensusTime);
+    FeeObject computeFee(TxnAccessor accessor, JKey payerKey, StateView view, Instant consensusTime);
 
     FeeObject estimateFee(TxnAccessor accessor, JKey payerKey, StateView view, Timestamp at);
 
-    FeeObject estimatePayment(
-            Query query, FeeData usagePrices, StateView view, Timestamp at, ResponseType type);
+    FeeObject estimatePayment(Query query, FeeData usagePrices, StateView view, Timestamp at, ResponseType type);
 
     FeeObject computePayment(
-            Query query,
-            FeeData usagePrices,
-            StateView view,
-            Timestamp at,
-            Map<String, Object> queryCtx);
+            Query query, FeeData usagePrices, StateView view, Timestamp at, Map<String, Object> queryCtx);
 
     /**
      * Assesses the longest period for which the expired account can afford to renew itself, up to

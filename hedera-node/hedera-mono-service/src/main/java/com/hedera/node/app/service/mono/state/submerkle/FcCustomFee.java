@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -124,16 +125,12 @@ public class FcCustomFee implements SelfSerializable {
     }
 
     public void validateAndFinalizeWith(
-            final Token provisionalToken,
-            final AccountStore accountStore,
-            final TypedTokenStore tokenStore) {
+            final Token provisionalToken, final AccountStore accountStore, final TypedTokenStore tokenStore) {
         validate(provisionalToken, true, accountStore, tokenStore);
     }
 
     public void validateWith(
-            final Token owningToken,
-            final AccountStore accountStore,
-            final TypedTokenStore tokenStore) {
+            final Token owningToken, final AccountStore accountStore, final TypedTokenStore tokenStore) {
         validate(owningToken, false, accountStore, tokenStore);
     }
 
@@ -147,9 +144,7 @@ public class FcCustomFee implements SelfSerializable {
             final boolean beingCreated,
             final AccountStore accountStore,
             final TypedTokenStore tokenStore) {
-        collector =
-                accountStore.loadAccountOrFailWith(
-                        feeCollector.asId(), INVALID_CUSTOM_FEE_COLLECTOR);
+        collector = accountStore.loadAccountOrFailWith(feeCollector.asId(), INVALID_CUSTOM_FEE_COLLECTOR);
 
         switch (feeType) {
             case FIXED_FEE:
@@ -160,9 +155,7 @@ public class FcCustomFee implements SelfSerializable {
                 }
                 break;
             case ROYALTY_FEE:
-                validateTrue(
-                        token.isNonFungibleUnique(),
-                        CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
+                validateTrue(token.isNonFungibleUnique(), CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
                 if (beingCreated) {
                     royaltyFeeSpec.validateAndFinalizeWith(token, collector, tokenStore);
                 } else {
@@ -170,13 +163,9 @@ public class FcCustomFee implements SelfSerializable {
                 }
                 break;
             case FRACTIONAL_FEE:
-                validateTrue(
-                        token.isFungibleCommon(),
-                        CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
+                validateTrue(token.isFungibleCommon(), CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
                 if (!beingCreated) {
-                    validateTrue(
-                            tokenStore.hasAssociation(token, collector),
-                            TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
+                    validateTrue(tokenStore.hasAssociation(token, collector), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
                 }
                 break;
         }
@@ -190,8 +179,7 @@ public class FcCustomFee implements SelfSerializable {
             boolean allCollectorsAreExempt) {
         Objects.requireNonNull(feeCollector);
         final var spec = new RoyaltyFeeSpec(numerator, denominator, fallbackFee);
-        return new FcCustomFee(
-                FeeType.ROYALTY_FEE, feeCollector, null, null, spec, allCollectorsAreExempt);
+        return new FcCustomFee(FeeType.ROYALTY_FEE, feeCollector, null, null, spec, allCollectorsAreExempt);
     }
 
     public static FcCustomFee fractionalFee(
@@ -203,30 +191,20 @@ public class FcCustomFee implements SelfSerializable {
             EntityId feeCollector,
             boolean allCollectorsAreExempt) {
         Objects.requireNonNull(feeCollector);
-        final var spec =
-                new FractionalFeeSpec(
-                        numerator,
-                        denominator,
-                        minimumUnitsToCollect,
-                        maximumUnitsToCollect,
-                        netOfTransfers);
-        return new FcCustomFee(
-                FeeType.FRACTIONAL_FEE, feeCollector, null, spec, null, allCollectorsAreExempt);
+        final var spec = new FractionalFeeSpec(
+                numerator, denominator, minimumUnitsToCollect, maximumUnitsToCollect, netOfTransfers);
+        return new FcCustomFee(FeeType.FRACTIONAL_FEE, feeCollector, null, spec, null, allCollectorsAreExempt);
     }
 
     public static FcCustomFee fixedFee(
-            long unitsToCollect,
-            EntityId tokenDenomination,
-            EntityId feeCollector,
-            boolean allCollectorsAreExempt) {
+            long unitsToCollect, EntityId tokenDenomination, EntityId feeCollector, boolean allCollectorsAreExempt) {
         Objects.requireNonNull(feeCollector);
         final var spec = new FixedFeeSpec(unitsToCollect, tokenDenomination);
         return new FcCustomFee(FIXED_FEE, feeCollector, spec, null, null, allCollectorsAreExempt);
     }
 
     public static FcCustomFee fromGrpc(CustomFee source) {
-        final var isSpecified =
-                source.hasFixedFee() || source.hasFractionalFee() || source.hasRoyaltyFee();
+        final var isSpecified = source.hasFixedFee() || source.hasFractionalFee() || source.hasRoyaltyFee();
         validateTrue(isSpecified, CUSTOM_FEE_NOT_FULLY_SPECIFIED);
 
         final var feeCollector = EntityId.fromGrpcAccountId(source.getFeeCollectorAccountId());
@@ -257,31 +235,26 @@ public class FcCustomFee implements SelfSerializable {
             return royaltyFee(
                     fraction.getNumerator(),
                     fraction.getDenominator(),
-                    royaltySource.hasFallbackFee()
-                            ? FixedFeeSpec.fromGrpc(royaltySource.getFallbackFee())
-                            : null,
+                    royaltySource.hasFallbackFee() ? FixedFeeSpec.fromGrpc(royaltySource.getFallbackFee()) : null,
                     feeCollector,
                     allCollectorsAreExempt);
         }
     }
 
     public CustomFee asGrpc() {
-        final var builder =
-                CustomFee.newBuilder()
-                        .setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
-                        .setAllCollectorsAreExempt(allCollectorsAreExempt);
+        final var builder = CustomFee.newBuilder()
+                .setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
+                .setAllCollectorsAreExempt(allCollectorsAreExempt);
         if (feeType == FIXED_FEE) {
             final var spec = fixedFeeSpec;
             builder.setFixedFee(spec.asGrpc());
         } else if (feeType == FRACTIONAL_FEE) {
             final var spec = fractionalFeeSpec;
-            final var fracBuilder =
-                    FractionalFee.newBuilder()
-                            .setFractionalAmount(
-                                    Fraction.newBuilder()
-                                            .setNumerator(spec.getNumerator())
-                                            .setDenominator(spec.getDenominator()))
-                            .setMinimumAmount(spec.getMinimumAmount());
+            final var fracBuilder = FractionalFee.newBuilder()
+                    .setFractionalAmount(Fraction.newBuilder()
+                            .setNumerator(spec.getNumerator())
+                            .setDenominator(spec.getDenominator()))
+                    .setMinimumAmount(spec.getMinimumAmount());
             if (spec.getMaximumUnitsToCollect() != Long.MAX_VALUE) {
                 fracBuilder.setMaximumAmount(spec.getMaximumUnitsToCollect());
             }
@@ -289,12 +262,9 @@ public class FcCustomFee implements SelfSerializable {
             builder.setFractionalFee(fracBuilder);
         } else {
             final var spec = royaltyFeeSpec;
-            final var royaltyBuilder =
-                    RoyaltyFee.newBuilder()
-                            .setExchangeValueFraction(
-                                    Fraction.newBuilder()
-                                            .setNumerator(spec.numerator())
-                                            .setDenominator(spec.denominator()));
+            final var royaltyBuilder = RoyaltyFee.newBuilder()
+                    .setExchangeValueFraction(
+                            Fraction.newBuilder().setNumerator(spec.numerator()).setDenominator(spec.denominator()));
             final var fallback = spec.fallbackFee();
             if (fallback != null) {
                 royaltyBuilder.setFallbackFee(fallback.asGrpc());
@@ -391,13 +361,8 @@ public class FcCustomFee implements SelfSerializable {
             var minimumUnitsToCollect = din.readLong();
             var maximumUnitsToCollect = din.readLong();
             var netOfTransfers = version >= RELEASE_017X_VERSION && din.readBoolean();
-            fractionalFeeSpec =
-                    new FractionalFeeSpec(
-                            numerator,
-                            denominator,
-                            minimumUnitsToCollect,
-                            maximumUnitsToCollect,
-                            netOfTransfers);
+            fractionalFeeSpec = new FractionalFeeSpec(
+                    numerator, denominator, minimumUnitsToCollect, maximumUnitsToCollect, netOfTransfers);
         } else {
             feeType = FeeType.ROYALTY_FEE;
             var numerator = din.readLong();
@@ -454,8 +419,7 @@ public class FcCustomFee implements SelfSerializable {
         return CURRENT_VERSION;
     }
 
-    private void serializeFixed(FixedFeeSpec fee, SerializableDataOutputStream dos)
-            throws IOException {
+    private void serializeFixed(FixedFeeSpec fee, SerializableDataOutputStream dos) throws IOException {
         dos.writeLong(fee.getUnitsToCollect());
         dos.writeSerializable(fee.getTokenDenomination(), true);
     }

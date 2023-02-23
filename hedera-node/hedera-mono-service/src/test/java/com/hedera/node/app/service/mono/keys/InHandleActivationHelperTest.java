@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.keys;
 
 import static com.hedera.node.app.service.mono.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
@@ -67,8 +68,7 @@ class InHandleActivationHelperTest {
         secp256k1Scheduled.setForScheduledTxn(true);
 
         characteristicsFactory = mock(CharacteristicsFactory.class);
-        given(characteristicsFactory.inferredFor(any()))
-                .willReturn(DEFAULT_ACTIVATION_CHARACTERISTICS);
+        given(characteristicsFactory.inferredFor(any())).willReturn(DEFAULT_ACTIVATION_CHARACTERISTICS);
 
         sigMeta = mock(RationalizedSigMeta.class);
         given(sigMeta.verifiedSigs()).willReturn(sigs);
@@ -122,8 +122,7 @@ class InHandleActivationHelperTest {
 
         // when:
         boolean otherAns = subject.areOtherPartiesActive(tests);
-        boolean scheduledAns =
-                subject.areScheduledPartiesActive(TransactionBody.getDefaultInstance(), tests);
+        boolean scheduledAns = subject.areScheduledPartiesActive(TransactionBody.getDefaultInstance(), tests);
 
         // then:
         assertFalse(otherAns);
@@ -158,12 +157,7 @@ class InHandleActivationHelperTest {
 
         given(activation.test(scheduled, sigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS))
                 .willReturn(true);
-        given(
-                        activation.test(
-                                secp256k1Scheduled,
-                                sigsFn,
-                                tests,
-                                DEFAULT_ACTIVATION_CHARACTERISTICS))
+        given(activation.test(secp256k1Scheduled, sigsFn, tests, DEFAULT_ACTIVATION_CHARACTERISTICS))
                 .willReturn(true);
 
         // when:

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.issues;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -69,12 +70,11 @@ public class Issue310Suite extends HapiSuite {
                         cryptoCreate("acct2").via("txnId2"),
                         newKeyNamed("key1"),
                         createTopic("topic2").submitKeyName("key1"))
-                .when(
-                        submitMessageTo("topic2")
-                                .message("Hello world")
-                                .payingWith("acct2")
-                                .txnId("txnId2")
-                                .hasPrecheck(DUPLICATE_TRANSACTION))
+                .when(submitMessageTo("topic2")
+                        .message("Hello world")
+                        .payingWith("acct2")
+                        .txnId("txnId2")
+                        .hasPrecheck(DUPLICATE_TRANSACTION))
                 .then(getTxnRecord("txnId2").logged());
     }
 
@@ -98,12 +98,11 @@ public class Issue310Suite extends HapiSuite {
                         cryptoCreate("acct4").via("txnId4").setNode("0.0.3"),
                         newKeyNamed("key2"),
                         createTopic("topic2").setNode("0.0.5").submitKeyName("key2"))
-                .when(
-                        submitMessageTo("topic2")
-                                .message("Hello world")
-                                .payingWith("acct4")
-                                .txnId("txnId4")
-                                .hasPrecheck(DUPLICATE_TRANSACTION))
+                .when(submitMessageTo("topic2")
+                        .message("Hello world")
+                        .payingWith("acct4")
+                        .txnId("txnId4")
+                        .hasPrecheck(DUPLICATE_TRANSACTION))
                 .then(getTxnRecord("txnId4").logged());
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.file;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -90,8 +91,7 @@ public final class DiverseStateCreation extends HapiSuite {
     public static final String SMALL_CONTENTS_LOC = "src/main/resource/testfiles/small.txt";
     public static final String MEDIUM_CONTENTS_LOC = "src/main/resource/testfiles/medium.txt";
     public static final String LARGE_CONTENTS_LOC = "src/main/resource/testfiles/large.txt";
-    public static final String STATE_META_JSON_LOC =
-            "src/main/resource/testfiles/diverseBlobsInfo.json";
+    public static final String STATE_META_JSON_LOC = "src/main/resource/testfiles/diverseBlobsInfo.json";
 
     public static void main(String... args) throws IOException {
         new DiverseStateCreation().runSuiteSync();
@@ -101,7 +101,8 @@ public final class DiverseStateCreation extends HapiSuite {
     public List<HapiSpec> getSpecsInSuite() {
         try {
             SMALL_CONTENTS = Files.newInputStream(Paths.get(SMALL_CONTENTS_LOC)).readAllBytes();
-            MEDIUM_CONTENTS = Files.newInputStream(Paths.get(MEDIUM_CONTENTS_LOC)).readAllBytes();
+            MEDIUM_CONTENTS =
+                    Files.newInputStream(Paths.get(MEDIUM_CONTENTS_LOC)).readAllBytes();
             LARGE_CONTENTS = Files.newInputStream(Paths.get(LARGE_CONTENTS_LOC)).readAllBytes();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -113,11 +114,10 @@ public final class DiverseStateCreation extends HapiSuite {
     private HapiSpec createDiverseState() {
         final KeyShape SMALL_SHAPE = listOf(threshOf(1, 3));
         final KeyShape MEDIUM_SHAPE = listOf(SIMPLE, threshOf(2, 3));
-        final KeyShape LARGE_SHAPE =
-                listOf(
-                        SIMPLE,
-                        threshOf(1, listOf(SIMPLE, threshOf(1, 2), SIMPLE)),
-                        threshOf(2, threshOf(1, SIMPLE, listOf(SIMPLE, SIMPLE)), SIMPLE));
+        final KeyShape LARGE_SHAPE = listOf(
+                SIMPLE,
+                threshOf(1, listOf(SIMPLE, threshOf(1, 2), SIMPLE)),
+                threshOf(2, threshOf(1, SIMPLE, listOf(SIMPLE, SIMPLE)), SIMPLE));
         final var smallKey = "smallKey";
         final var mediumKey = "mediumKey";
         final var largeKey = "largeKey";
@@ -162,46 +162,28 @@ public final class DiverseStateCreation extends HapiSuite {
                                 OptionalLong.of(ONE_HBAR)),
                         /* Create some bytecode files */
                         uploadSingleInitCode(
-                                fuseContract,
-                                FUSE_EXPIRY_TIME,
-                                GENESIS,
-                                num -> entityNums.put(FUSE_INITCODE, num)),
+                                fuseContract, FUSE_EXPIRY_TIME, GENESIS, num -> entityNums.put(FUSE_INITCODE, num)),
                         uploadSingleInitCode(
-                                multiContract,
-                                MULTI_EXPIRY_TIME,
-                                GENESIS,
-                                num -> entityNums.put(MULTI_INITCODE, num)),
-                        contractCreate(fuseContract)
-                                .exposingNumTo(num -> entityNums.put(FUSE_CONTRACT, num)),
-                        contractCreate(multiContract)
-                                .exposingNumTo(num -> entityNums.put(MULTI_CONTRACT, num)),
+                                multiContract, MULTI_EXPIRY_TIME, GENESIS, num -> entityNums.put(MULTI_INITCODE, num)),
+                        contractCreate(fuseContract).exposingNumTo(num -> entityNums.put(FUSE_CONTRACT, num)),
+                        contractCreate(multiContract).exposingNumTo(num -> entityNums.put(MULTI_CONTRACT, num)),
                         contractCall(multiContract, "believeIn", EXPECTED_LUCKY_NO))
                 .then(
                         systemFileDelete(fuseContract).payingWith(GENESIS),
                         systemFileDelete(multiContract).payingWith(GENESIS),
-                        getFileInfo(SMALL_FILE)
-                                .exposingKeyReprTo(repr -> keyReprs.put(SMALL_FILE, repr)),
-                        getFileInfo(MEDIUM_FILE)
-                                .exposingKeyReprTo(repr -> keyReprs.put(MEDIUM_FILE, repr)),
-                        getFileInfo(LARGE_FILE)
-                                .exposingKeyReprTo(repr -> keyReprs.put(LARGE_FILE, repr)),
+                        getFileInfo(SMALL_FILE).exposingKeyReprTo(repr -> keyReprs.put(SMALL_FILE, repr)),
+                        getFileInfo(MEDIUM_FILE).exposingKeyReprTo(repr -> keyReprs.put(MEDIUM_FILE, repr)),
+                        getFileInfo(LARGE_FILE).exposingKeyReprTo(repr -> keyReprs.put(LARGE_FILE, repr)),
                         getContractBytecode(FUSE_CONTRACT)
-                                .exposingBytecodeTo(
-                                        code ->
-                                                hexedBytecode.put(
-                                                        FUSE_BYTECODE, CommonUtils.hex(code))),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var toSerialize =
-                                            Map.of(
-                                                    ENTITY_NUM_KEY, entityNums,
-                                                    KEY_REPRS_KEY, keyReprs,
-                                                    HEXED_BYTECODE_KEY, hexedBytecode);
-                                    final var om = new ObjectMapper();
-                                    om.writeValue(
-                                            Files.newOutputStream(Paths.get(STATE_META_JSON_LOC)),
-                                            toSerialize);
-                                }));
+                                .exposingBytecodeTo(code -> hexedBytecode.put(FUSE_BYTECODE, CommonUtils.hex(code))),
+                        withOpContext((spec, opLog) -> {
+                            final var toSerialize = Map.of(
+                                    ENTITY_NUM_KEY, entityNums,
+                                    KEY_REPRS_KEY, keyReprs,
+                                    HEXED_BYTECODE_KEY, hexedBytecode);
+                            final var om = new ObjectMapper();
+                            om.writeValue(Files.newOutputStream(Paths.get(STATE_META_JSON_LOC)), toSerialize);
+                        }));
     }
 
     @Override

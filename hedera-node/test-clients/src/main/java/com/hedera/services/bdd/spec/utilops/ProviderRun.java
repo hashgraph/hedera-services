@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops;
 
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -62,8 +63,7 @@ public class ProviderRun extends UtilOp {
 
     public ProviderRun(Function<HapiSpec, OpProvider> providerFn) {
         this.providerFn = providerFn;
-        Stream.of(HederaFunctionality.class.getEnumConstants())
-                .forEach(type -> counts.put(type, new AtomicInteger()));
+        Stream.of(HederaFunctionality.class.getEnumConstants()).forEach(type -> counts.put(type, new AtomicInteger()));
     }
 
     public ProviderRun lasting(final long duration, final TimeUnit unit) {
@@ -133,18 +133,15 @@ public class ProviderRun extends UtilOp {
                 nextLogTargetMs += logIncrementMs;
                 long delta = duration - stopwatch.elapsed(unit);
                 if (delta != lastDeltaLogged) {
-                    log.info(
-                            delta
-                                    + " "
-                                    + unit.toString().toLowerCase()
-                                    + (fixedOpSubmission
-                                            ? (" or " + remainingOpsToSubmit + " ops ")
-                                            : "")
-                                    + " left in test - "
-                                    + submittedSoFar
-                                    + " ops submitted so far ("
-                                    + numPending
-                                    + " pending).");
+                    log.info(delta
+                            + " "
+                            + unit.toString().toLowerCase()
+                            + (fixedOpSubmission ? (" or " + remainingOpsToSubmit + " ops ") : "")
+                            + " left in test - "
+                            + submittedSoFar
+                            + " ops submitted so far ("
+                            + numPending
+                            + " pending).");
                     log.info("Precheck txn status counts :: " + spec.precheckStatusCounts());
                     log.info("Resolved txn status counts :: " + spec.finalizedStatusCounts());
                     log.info("\n------------------------------\n");
@@ -160,21 +157,19 @@ public class ProviderRun extends UtilOp {
                 break;
             }
             if (numPending < MAX_PENDING_OPS) {
-                HapiSpecOperation[] burst =
-                        IntStream.range(
-                                        0,
-                                        Math.min(
-                                                MAX_N,
-                                                fixedOpSubmission
-                                                        ? Math.min(
-                                                                remainingOpsToSubmit.get(),
-                                                                MAX_OPS_PER_SEC
-                                                                        - opsThisSecond.get())
-                                                        : MAX_OPS_PER_SEC - opsThisSecond.get()))
-                                .mapToObj(ignore -> provider.get())
-                                .flatMap(Optional::stream)
-                                .peek(op -> counts.get(op.type()).getAndIncrement())
-                                .toArray(HapiSpecOperation[]::new);
+                HapiSpecOperation[] burst = IntStream.range(
+                                0,
+                                Math.min(
+                                        MAX_N,
+                                        fixedOpSubmission
+                                                ? Math.min(
+                                                        remainingOpsToSubmit.get(),
+                                                        MAX_OPS_PER_SEC - opsThisSecond.get())
+                                                : MAX_OPS_PER_SEC - opsThisSecond.get()))
+                        .mapToObj(ignore -> provider.get())
+                        .flatMap(Optional::stream)
+                        .peek(op -> counts.get(op.type()).getAndIncrement())
+                        .toArray(HapiSpecOperation[]::new);
                 if (burst.length > 0) {
                     allRunFor(spec, inParallel(burst));
                     submittedSoFar += burst.length;
@@ -184,12 +179,7 @@ public class ProviderRun extends UtilOp {
                     opsThisSecond.getAndAdd(burst.length);
                 }
             } else {
-                log.warn(
-                        "Now "
-                                + numPending
-                                + " ops pending; backing off for "
-                                + BACKOFF_SLEEP_SECS
-                                + "s!");
+                log.warn("Now " + numPending + " ops pending; backing off for " + BACKOFF_SLEEP_SECS + "s!");
                 try {
                     Thread.sleep(BACKOFF_SLEEP_SECS * 1_000L);
                 } catch (InterruptedException ignore) {
@@ -197,12 +187,10 @@ public class ProviderRun extends UtilOp {
             }
         }
 
-        Map<HederaFunctionality, Integer> finalCounts =
-                counts.entrySet().stream()
-                        .filter(entry -> entry.getValue().get() > 0)
-                        .collect(
-                                Collectors.toMap(
-                                        Map.Entry::getKey, entry -> entry.getValue().get()));
+        Map<HederaFunctionality, Integer> finalCounts = counts.entrySet().stream()
+                .filter(entry -> entry.getValue().get() > 0)
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey, entry -> entry.getValue().get()));
         log.info("Final breakdown of *provided* ops: " + finalCounts);
         log.info("Final breakdown of *resolved* statuses: " + spec.finalizedStatusCounts());
 

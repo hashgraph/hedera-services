@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,9 +64,7 @@ class MerkleScheduledTransactionsTest {
         given(state.copy()).willReturn(state);
         given(state.toString()).willReturn("MerkleScheduledTransactionsState");
 
-        subject =
-                new MerkleScheduledTransactions(
-                        List.of(state, byId, byExpirationSecond, byEquality));
+        subject = new MerkleScheduledTransactions(List.of(state, byId, byExpirationSecond, byEquality));
     }
 
     @Test
@@ -73,8 +72,7 @@ class MerkleScheduledTransactionsTest {
         final var otherByExpirationSecond = mock(MerkleMap.class);
 
         final var otherSubject =
-                new MerkleScheduledTransactions(
-                        List.of(state, byId, otherByExpirationSecond, byEquality));
+                new MerkleScheduledTransactions(List.of(state, byId, otherByExpirationSecond, byEquality));
 
         assertNotEquals(otherSubject, subject);
     }
@@ -107,9 +105,7 @@ class MerkleScheduledTransactionsTest {
 
     @Test
     void merkleMethodsWork() {
-        assertEquals(
-                MerkleScheduledTransactions.ChildIndices.NUM_0270_CHILDREN,
-                subject.getMinimumChildCount());
+        assertEquals(MerkleScheduledTransactions.ChildIndices.NUM_0270_CHILDREN, subject.getMinimumChildCount());
         assertEquals(MerkleScheduledTransactions.CURRENT_VERSION, subject.getVersion());
         assertEquals(MerkleScheduledTransactions.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
         assertFalse(subject.isLeaf());
@@ -173,9 +169,7 @@ class MerkleScheduledTransactionsTest {
 
     @Test
     void childIndicesConstructorThrows() {
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> new MerkleScheduledTransactions.ChildIndices());
+        assertThrows(UnsupportedOperationException.class, () -> new MerkleScheduledTransactions.ChildIndices());
     }
 
     @Test

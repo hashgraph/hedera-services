@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.utils;
 
 import java.util.ArrayList;
@@ -47,11 +48,7 @@ public class TriggeredValuesParser {
 
         if (triggers.size() != values.size()) {
             throw new IllegalArgumentException(
-                    "Cannot use input of "
-                            + triggers.size()
-                            + "triggers and "
-                            + values.size()
-                            + " values!");
+                    "Cannot use input of " + triggers.size() + "triggers and " + values.size() + " values!");
         }
         assertIncreasing(triggers, "triggers");
         assertIncreasing(values, "values");
@@ -71,14 +68,12 @@ public class TriggeredValuesParser {
         }
     }
 
-    private static <T extends Comparable<T>> void assertIncreasing(
-            final List<T> vals, final String desc) {
+    private static <T extends Comparable<T>> void assertIncreasing(final List<T> vals, final String desc) {
         for (int i = 0, n = vals.size() - 1; i < n; i++) {
             final var a = vals.get(i);
             final var b = vals.get(i + 1);
             if (a.compareTo(b) >= 0) {
-                throw new IllegalArgumentException(
-                        "Given " + desc + " are not strictly increasing!");
+                throw new IllegalArgumentException("Given " + desc + " are not strictly increasing!");
             }
         }
     }

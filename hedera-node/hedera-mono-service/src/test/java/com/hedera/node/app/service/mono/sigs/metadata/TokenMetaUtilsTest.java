@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.metadata;
 
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -33,13 +34,10 @@ class TokenMetaUtilsTest {
         // setup:
         final var treasury = new EntityId(1, 2, 4);
         var royaltyFeeWithFallbackToken =
-                new MerkleToken(
-                        Long.MAX_VALUE, 100, 1, "ZPHYR", "West Wind Art", false, true, treasury);
+                new MerkleToken(Long.MAX_VALUE, 100, 1, "ZPHYR", "West Wind Art", false, true, treasury);
         royaltyFeeWithFallbackToken.setTokenType(NON_FUNGIBLE_UNIQUE);
         royaltyFeeWithFallbackToken.setFeeSchedule(
-                List.of(
-                        FcCustomFee.royaltyFee(
-                                1, 2, new FixedFeeSpec(1, null), new EntityId(1, 2, 5), false)));
+                List.of(FcCustomFee.royaltyFee(1, 2, new FixedFeeSpec(1, null), new EntityId(1, 2, 5), false)));
 
         // given:
         final var meta = TokenMetaUtils.signingMetaFrom(royaltyFeeWithFallbackToken);
@@ -54,8 +52,7 @@ class TokenMetaUtilsTest {
         // setup:
         final var treasury = new EntityId(1, 2, 4);
         var royaltyFeeNoFallbackToken =
-                new MerkleToken(
-                        Long.MAX_VALUE, 100, 1, "ZPHYR", "West Wind Art", false, true, treasury);
+                new MerkleToken(Long.MAX_VALUE, 100, 1, "ZPHYR", "West Wind Art", false, true, treasury);
         royaltyFeeNoFallbackToken.setTokenType(NON_FUNGIBLE_UNIQUE);
         royaltyFeeNoFallbackToken.setFeeSchedule(
                 List.of(FcCustomFee.royaltyFee(1, 2, null, new EntityId(1, 2, 5), false)));

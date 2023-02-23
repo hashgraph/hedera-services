@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.sysfiles.domain.throttling;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,8 +36,7 @@ class ScaleFactorTest {
     @CsvSource({"3:0", "15", "9223372036854775807:100", "1:-1", "-2:3"})
     @ParameterizedTest
     void throwsIaeOnInvalid(String invalidLiteral) {
-        Assertions.assertThrows(
-                IllegalArgumentException.class, () -> ScaleFactor.from(invalidLiteral));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> ScaleFactor.from(invalidLiteral));
     }
 
     @Test

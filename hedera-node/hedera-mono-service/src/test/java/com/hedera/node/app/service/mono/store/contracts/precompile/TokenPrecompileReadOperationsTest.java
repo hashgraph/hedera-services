@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_TYPE;
@@ -77,28 +78,72 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TokenPrecompileReadOperationsTest {
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private GasCalculator gasCalculator;
-    @Mock private MessageFrame frame;
-    @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private EncodingFacade encoder;
-    @Mock private EvmEncodingFacade evmEncoder;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private ExpiringCreations creator;
-    @Mock private SideEffectsTracker sideEffects;
-    @Mock private FeeCalculator feeCalculator;
-    @Mock private StateView stateView;
-    @Mock private HederaStackedWorldStateUpdater worldUpdater;
-    @Mock private WorldLedgers wrappedLedgers;
-    @Mock private UsagePricesProvider resourceCosts;
-    @Mock private HbarCentExchange exchange;
-    @Mock private TransactionBody.Builder mockSynthBodyBuilder;
-    @Mock private InfrastructureFactory infrastructureFactory;
-    @Mock private MerkleMap<EntityNum, MerkleToken> tokenMerkleMap;
-    @Mock private AssetsLoader assetLoader;
-    @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
-    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private GasCalculator gasCalculator;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private TxnAwareEvmSigsVerifier sigsVerifier;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private EncodingFacade encoder;
+
+    @Mock
+    private EvmEncodingFacade evmEncoder;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private ExpiringCreations creator;
+
+    @Mock
+    private SideEffectsTracker sideEffects;
+
+    @Mock
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private StateView stateView;
+
+    @Mock
+    private HederaStackedWorldStateUpdater worldUpdater;
+
+    @Mock
+    private WorldLedgers wrappedLedgers;
+
+    @Mock
+    private UsagePricesProvider resourceCosts;
+
+    @Mock
+    private HbarCentExchange exchange;
+
+    @Mock
+    private TransactionBody.Builder mockSynthBodyBuilder;
+
+    @Mock
+    private InfrastructureFactory infrastructureFactory;
+
+    @Mock
+    private MerkleMap<EntityNum, MerkleToken> tokenMerkleMap;
+
+    @Mock
+    private AssetsLoader assetLoader;
+
+    @Mock
+    private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
+
+    @Mock
+    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+
     private MerkleToken merkleToken;
     private final TokenID tokenID = asToken("0.0.5");
 
@@ -109,39 +154,36 @@ class TokenPrecompileReadOperationsTest {
     @BeforeEach
     void setUp() throws IOException {
 
-        final PrecompilePricingUtils precompilePricingUtils =
-                new PrecompilePricingUtils(
-                        assetLoader,
-                        exchange,
-                        () -> feeCalculator,
-                        resourceCosts,
-                        stateView,
-                        new AccessorFactory(dynamicProperties));
-        subject =
-                new HTSPrecompiledContract(
-                        dynamicProperties,
-                        gasCalculator,
-                        recordsHistorian,
-                        sigsVerifier,
-                        encoder,
-                        evmEncoder,
-                        syntheticTxnFactory,
-                        creator,
-                        () -> feeCalculator,
-                        stateView,
-                        precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
-        merkleToken =
-                new MerkleToken(
-                        Long.MAX_VALUE,
-                        100,
-                        1,
-                        "UnfrozenToken",
-                        "UnfrozenTokenName",
-                        true,
-                        true,
-                        EntityId.fromGrpcTokenId(tokenID));
+        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
+                assetLoader,
+                exchange,
+                () -> feeCalculator,
+                resourceCosts,
+                stateView,
+                new AccessorFactory(dynamicProperties));
+        subject = new HTSPrecompiledContract(
+                dynamicProperties,
+                gasCalculator,
+                recordsHistorian,
+                sigsVerifier,
+                encoder,
+                evmEncoder,
+                syntheticTxnFactory,
+                creator,
+                () -> feeCalculator,
+                stateView,
+                precompilePricingUtils,
+                infrastructureFactory,
+                evmHTSPrecompiledContract);
+        merkleToken = new MerkleToken(
+                Long.MAX_VALUE,
+                100,
+                1,
+                "UnfrozenToken",
+                "UnfrozenTokenName",
+                true,
+                true,
+                EntityId.fromGrpcTokenId(tokenID));
         merkleToken.setTokenType(0);
         isTokenPrecompile = Mockito.mockStatic(IsTokenPrecompile.class);
         getTokenTypePrecompile = Mockito.mockStatic(GetTokenTypePrecompile.class);
@@ -156,17 +198,15 @@ class TokenPrecompileReadOperationsTest {
     @Test
     void computeCallsCorrectImplementationForIsTokenFungibleToken() {
         // given
-        final Bytes pretendArguments =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_IS_TOKEN)),
-                        Id.fromGrpcToken(tokenID).asEvmAddress());
+        final Bytes pretendArguments = Bytes.concatenate(
+                Bytes.of(Integers.toBytes(ABI_ID_IS_TOKEN)),
+                Id.fromGrpcToken(tokenID).asEvmAddress());
         givenMinimalFrameContext();
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         given(wrappedLedgers.tokens()).willReturn(tokensLedger);
         given(tokensLedger.contains(any())).willReturn(true);
         givenMinimalContextForSuccessfulCall();
-        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
-                .willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         isTokenPrecompile
                 .when(() -> IsTokenPrecompile.decodeIsToken(pretendArguments))
                 .thenReturn(TokenInfoWrapper.forToken(fungible));
@@ -186,11 +226,9 @@ class TokenPrecompileReadOperationsTest {
     @Test
     void computeCallsCorrectImplementationForIsTokenNonFungibleToken() {
         // given
-        final var tokenInfoWrapper =
-                createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
+        final var tokenInfoWrapper = createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
         final Bytes pretendArguments =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_IS_TOKEN)), nonFungibleTokenAddr);
+                Bytes.concatenate(Bytes.of(Integers.toBytes(ABI_ID_IS_TOKEN)), nonFungibleTokenAddr);
         givenMinimalFrameContext();
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         given(wrappedLedgers.tokens()).willReturn(tokensLedger);
@@ -216,13 +254,11 @@ class TokenPrecompileReadOperationsTest {
     @Test
     void computeCallsCorrectImplementationForGetTokenTypeFungibleToken() {
         // given
-        final Bytes RETURN_GET_TOKEN_TYPE =
-                Bytes.fromHexString(
-                        "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000000");
-        final Bytes pretendArguments =
-                Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_TYPE)),
-                        Id.fromGrpcToken(tokenID).asEvmAddress());
+        final Bytes RETURN_GET_TOKEN_TYPE = Bytes.fromHexString(
+                "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000000");
+        final Bytes pretendArguments = Bytes.concatenate(
+                Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_TYPE)),
+                Id.fromGrpcToken(tokenID).asEvmAddress());
 
         givenMinimalFrameContext();
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
@@ -231,8 +267,7 @@ class TokenPrecompileReadOperationsTest {
         given(wrappedLedgers.tokens()).willReturn(tokensLedger);
         given(tokensLedger.getImmutableRef(tokenID)).willReturn(merkleToken);
         givenMinimalContextForSuccessfulCall();
-        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
-                .willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         getTokenTypePrecompile
                 .when(() -> GetTokenTypePrecompile.decodeGetTokenType(pretendArguments))
                 .thenReturn(wrapper);

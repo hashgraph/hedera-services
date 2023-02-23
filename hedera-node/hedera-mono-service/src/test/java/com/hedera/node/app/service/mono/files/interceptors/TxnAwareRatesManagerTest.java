@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.interceptors;
 
 import static com.hedera.node.app.service.mono.files.interceptors.TxnAwareRatesManager.INVALID_VERDICT;
@@ -55,8 +56,10 @@ class TxnAwareRatesManagerTest {
     byte[] invalidBytes = "Definitely not an ExchangeRateSet".getBytes();
     ExchangeRate.Builder someRate =
             ExchangeRate.newBuilder().setHbarEquiv(30_000).setCentEquiv(120_000);
-    ExchangeRateSet validRatesObj =
-            ExchangeRateSet.newBuilder().setCurrentRate(someRate).setNextRate(someRate).build();
+    ExchangeRateSet validRatesObj = ExchangeRateSet.newBuilder()
+            .setCurrentRate(someRate)
+            .setNextRate(someRate)
+            .build();
     byte[] validRates = validRatesObj.toByteArray();
 
     FileID exchangeRates = asFile("0.0.112");
@@ -96,15 +99,14 @@ class TxnAwareRatesManagerTest {
         properties = mock(GlobalDynamicProperties.class);
         given(properties.ratesIntradayChangeLimitPercent()).willReturn(actualLimit);
 
-        subject =
-                new TxnAwareRatesManager(
-                        new MockFileNumbers(),
-                        new MockAccountNumbers(),
-                        properties,
-                        txnCtx,
-                        () -> midnightRates,
-                        postUpdateCb,
-                        intradayLimitFactory);
+        subject = new TxnAwareRatesManager(
+                new MockFileNumbers(),
+                new MockAccountNumbers(),
+                properties,
+                txnCtx,
+                () -> midnightRates,
+                postUpdateCb,
+                intradayLimitFactory);
     }
 
     @Test

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts;
 
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
@@ -33,8 +34,7 @@ import org.hyperledger.besu.evm.worldstate.WorldView;
  * @param <A> the account specialization used by the wrapped world view
  */
 public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extends Account>
-        extends AbstractLedgerWorldUpdater<
-                AbstractLedgerWorldUpdater<W, A>, UpdateTrackingLedgerAccount<A>> {
+        extends AbstractLedgerWorldUpdater<AbstractLedgerWorldUpdater<W, A>, UpdateTrackingLedgerAccount<A>> {
 
     protected AbstractStackedLedgerUpdater(
             final AbstractLedgerWorldUpdater<W, A> world, final WorldLedgers trackingLedgers) {
@@ -53,9 +53,7 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
             return null;
         }
         final A account = wrapped.getForMutation(address);
-        return account == null
-                ? null
-                : new UpdateTrackingLedgerAccount<>(account, trackingAccounts());
+        return account == null ? null : new UpdateTrackingLedgerAccount<>(account, trackingAccounts());
     }
 
     /** {@inheritDoc} */
@@ -93,8 +91,7 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
                 if (mutable == null) {
                     /* We created this account, so create a new tracker for our parent. */
                     mutable =
-                            new UpdateTrackingLedgerAccount<>(
-                                    updatedAccount.getAddress(), wrapped.trackingAccounts());
+                            new UpdateTrackingLedgerAccount<>(updatedAccount.getAddress(), wrapped.trackingAccounts());
                 } else {
                     /* This tracker is reusable, just update its tracking accounts to our parent's. */
                     mutable.updateTrackingAccounts(wrapped.trackingAccounts());
@@ -118,8 +115,7 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
             wrapped.addCommittedRecordSourceId(thisRecordSourceId, recordsHistorian);
         }
         if (!committedRecordSourceIds.isEmpty()) {
-            committedRecordSourceIds.forEach(
-                    id -> wrapped.addCommittedRecordSourceId(id, recordsHistorian));
+            committedRecordSourceIds.forEach(id -> wrapped.addCommittedRecordSourceId(id, recordsHistorian));
         }
     }
 }

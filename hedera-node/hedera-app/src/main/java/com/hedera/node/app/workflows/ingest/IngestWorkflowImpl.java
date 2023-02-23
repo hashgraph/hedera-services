@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.ingest;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -145,10 +146,9 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 final var payerID = txBody.getTransactionID().getAccountID();
                 final var tokenStates = state.createReadableStates(TokenService.NAME);
                 final var accountStore = storeSupplier.apply(tokenStates);
-                final var payer =
-                        accountStore
-                                .getAccount(payerID)
-                                .orElseThrow(() -> new PreCheckException(PAYER_ACCOUNT_NOT_FOUND));
+                final var payer = accountStore
+                        .getAccount(payerID)
+                        .orElseThrow(() -> new PreCheckException(PAYER_ACCOUNT_NOT_FOUND));
 
                 // 5. Check payer's signature
                 checker.checkPayerSignature(state, requestBuffer, signatureMap, payerID);
@@ -170,11 +170,10 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
         }
 
         // 8. Return PreCheck code and eventually estimated fee
-        final var transactionResponse =
-                TransactionResponse.newBuilder()
-                        .setNodeTransactionPrecheckCode(result)
-                        .setCost(estimatedFee)
-                        .build();
+        final var transactionResponse = TransactionResponse.newBuilder()
+                .setNodeTransactionPrecheckCode(result)
+                .setCost(estimatedFee)
+                .build();
         responseBuffer.put(transactionResponse.toByteArray());
     }
 }

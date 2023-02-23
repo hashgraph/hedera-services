@@ -13,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ##
-name: "PR Checks"
+
+name: "Node: PR Checks"
 on:
   workflow_dispatch:
   pull_request:
@@ -34,13 +35,25 @@ concurrency:
 jobs:
   build:
     name: Code
-    uses: ./.github/workflows/comp-compile-application-code.yaml
+    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     with:
-      enable-fossa-scan: true
-      enable-fossa-test: false
+      enable-spotless-check: false
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
-      fossa-api-token: ${{ secrets.FOSSA_API_TOKEN }}
+
+  spotless:
+    name: Spotless
+    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
+    with:
+      custom-job-label: "Check"
+      enable-javadoc: false
+      enable-unit-tests: false
+      enable-e2e-tests: false
+      enable-integration-tests: false
+      enable-sonar-analysis: false
+      enable-spotless-check: true
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
 
   unit-label-check:
     name: "Label Check [CI:UnitTests]"
@@ -53,7 +66,7 @@ jobs:
 
   unit-tests:
     name: Unit Tests
-    uses: ./.github/workflows/comp-compile-application-code.yaml
+    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs:
       - unit-label-check
     with:
@@ -69,7 +82,7 @@ jobs:
 
   eet-tests:
     name: E2E Tests
-    uses: ./.github/workflows/comp-compile-application-code.yaml
+    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs:
       - unit-label-check
     with:
@@ -85,7 +98,7 @@ jobs:
 
   integration-tests:
     name: Integration Tests
-    uses: ./.github/workflows/comp-compile-application-code.yaml
+    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
     needs:
       - unit-label-check
     with:
@@ -98,3 +111,20 @@ jobs:
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       sonar-token: ${{ secrets.SONAR_TOKEN }}
+
+  snyk-scan:
+    name: Snyk Scan
+    uses: ./.github/workflows/node-zxc-compile-application-code.yaml
+    needs:
+      - unit-label-check
+    with:
+      custom-job-label: Standard
+      enable-javadoc: false
+      enable-unit-tests: false
+      enable-e2e-tests: false
+      enable-integration-tests: false
+      enable-sonar-analysis: false
+      enable-snyk-scan: true
+    secrets:
+      access-token: ${{ secrets.GITHUB_TOKEN }}
+      snyk-token: ${{ secrets.SNYK_TOKEN }}

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.file;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -65,25 +66,24 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
     }
 
     private List<HapiSpec> positiveTests() {
-        return List.of(
-                new HapiSpec[] {
-                    account2CanUpdateApplicationProperties(),
-                    account50CanUpdateApplicationProperties(),
-                    account2CanUpdateApiPermissions(),
-                    account50CanUpdateApiPermissions(),
-                    account2CanUpdateAddressBook(),
-                    account50CanUpdateAddressBook(),
-                    account55CanUpdateAddressBook(),
-                    account2CanUpdateNodeDetails(),
-                    account50CanUpdateNodeDetails(),
-                    account55CanUpdateNodeDetails(),
-                    account2CanUpdateFeeSchedule(),
-                    account50CanUpdateFeeSchedule(),
-                    account56CanUpdateFeeSchedule(),
-                    account2CanUpdateExchangeRates(),
-                    account50CanUpdateExchangeRates(),
-                    account57CanUpdateExchangeRates()
-                });
+        return List.of(new HapiSpec[] {
+            account2CanUpdateApplicationProperties(),
+            account50CanUpdateApplicationProperties(),
+            account2CanUpdateApiPermissions(),
+            account50CanUpdateApiPermissions(),
+            account2CanUpdateAddressBook(),
+            account50CanUpdateAddressBook(),
+            account55CanUpdateAddressBook(),
+            account2CanUpdateNodeDetails(),
+            account50CanUpdateNodeDetails(),
+            account55CanUpdateNodeDetails(),
+            account2CanUpdateFeeSchedule(),
+            account50CanUpdateFeeSchedule(),
+            account56CanUpdateFeeSchedule(),
+            account2CanUpdateExchangeRates(),
+            account50CanUpdateExchangeRates(),
+            account57CanUpdateExchangeRates()
+        });
     }
 
     private List<HapiSpec> negativeTests() {
@@ -97,12 +97,8 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
     }
 
     private HapiSpec specialAccountCanUpdateSpecialPropertyFile(
-            final String specialAccount,
-            final String specialFile,
-            final String property,
-            final String expected) {
-        return specialAccountCanUpdateSpecialPropertyFile(
-                specialAccount, specialFile, property, expected, true);
+            final String specialAccount, final String specialFile, final String property, final String expected) {
+        return specialAccountCanUpdateSpecialPropertyFile(specialAccount, specialFile, property, expected, true);
     }
 
     private HapiSpec specialAccountCanUpdateSpecialPropertyFile(
@@ -113,45 +109,34 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
             final boolean isFree) {
         return defaultHapiSpec(specialAccount + "CanUpdate" + specialFile)
                 .given(givenOps(specialAccount, specialFile))
-                .when(
-                        fileUpdate(specialFile)
-                                .overridingProps(Map.of(property, expected))
-                                .payingWith(specialAccount))
-                .then(
-                        validateAndCleanUpOps(
-                                propertyFileValidationOp(
-                                        specialAccount, specialFile, property, expected),
-                                specialAccount,
-                                specialFile,
-                                isFree));
+                .when(fileUpdate(specialFile)
+                        .overridingProps(Map.of(property, expected))
+                        .payingWith(specialAccount))
+                .then(validateAndCleanUpOps(
+                        propertyFileValidationOp(specialAccount, specialFile, property, expected),
+                        specialAccount,
+                        specialFile,
+                        isFree));
     }
 
     private HapiSpecOperation propertyFileValidationOp(
             String account, String fileName, String property, String expected) {
-        return UtilVerbs.withOpContext(
-                (spec, ctxLog) -> {
-                    String registryEntry = fileName + "_CHANGED_BY_" + account;
-                    HapiGetFileContents subOp =
-                            getFileContents(fileName).saveToRegistry(registryEntry);
-                    CustomSpecAssert.allRunFor(spec, subOp);
-                    String newContents = new String(spec.registry().getBytes(registryEntry));
-                    int propertyIndex = newContents.indexOf(property);
-                    Assertions.assertTrue(propertyIndex >= 0);
-                    int valueIndex =
-                            propertyIndex + property.length() + PROPERTY_VALUE_SPACE_LENGTH;
-                    String actual =
-                            newContents.substring(valueIndex, valueIndex + expected.length());
-                    Assertions.assertEquals(expected, actual);
-                });
+        return UtilVerbs.withOpContext((spec, ctxLog) -> {
+            String registryEntry = fileName + "_CHANGED_BY_" + account;
+            HapiGetFileContents subOp = getFileContents(fileName).saveToRegistry(registryEntry);
+            CustomSpecAssert.allRunFor(spec, subOp);
+            String newContents = new String(spec.registry().getBytes(registryEntry));
+            int propertyIndex = newContents.indexOf(property);
+            Assertions.assertTrue(propertyIndex >= 0);
+            int valueIndex = propertyIndex + property.length() + PROPERTY_VALUE_SPACE_LENGTH;
+            String actual = newContents.substring(valueIndex, valueIndex + expected.length());
+            Assertions.assertEquals(expected, actual);
+        });
     }
 
     private HapiSpec specialAccountCanUpdateSpecialFile(
-            final String specialAccount,
-            final String specialFile,
-            final String target,
-            final String replacement) {
-        return specialAccountCanUpdateSpecialFile(
-                specialAccount, specialFile, target, replacement, true);
+            final String specialAccount, final String specialFile, final String target, final String replacement) {
+        return specialAccountCanUpdateSpecialFile(specialAccount, specialFile, target, replacement, true);
     }
 
     private HapiSpec specialAccountCanUpdateSpecialFile(
@@ -164,10 +149,9 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
                 specialAccount,
                 specialFile,
                 isFree,
-                contents ->
-                        target.equals("ignore")
-                                ? contents
-                                : (new String(contents).replace(target, replacement)).getBytes());
+                contents -> target.equals("ignore")
+                        ? contents
+                        : (new String(contents).replace(target, replacement)).getBytes());
     }
 
     private HapiSpec specialAccountCanUpdateSpecialFile(
@@ -178,27 +162,14 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
         final String newFileName = "NEW_" + specialFile;
 
         return defaultHapiSpec(specialAccount + "CanUpdate" + specialFile)
-                .given(
-                        ArrayUtils.add(
-                                givenOps(specialAccount, specialFile),
-                                UtilVerbs.withOpContext(
-                                        (spec, ctxLog) -> {
-                                            var origContents =
-                                                    spec.registry().getBytes(specialFile);
-                                            var newContents =
-                                                    contentsTransformer.apply(origContents);
-                                            spec.registry()
-                                                    .saveBytes(
-                                                            newFileName,
-                                                            ByteString.copyFrom(newContents));
-                                        })))
+                .given(ArrayUtils.add(givenOps(specialAccount, specialFile), UtilVerbs.withOpContext((spec, ctxLog) -> {
+                    var origContents = spec.registry().getBytes(specialFile);
+                    var newContents = contentsTransformer.apply(origContents);
+                    spec.registry().saveBytes(newFileName, ByteString.copyFrom(newContents));
+                })))
                 .when(UtilVerbs.updateLargeFile(specialAccount, specialFile, newFileName))
-                .then(
-                        validateAndCleanUpOps(
-                                getFileContents(specialFile).hasContents(newFileName),
-                                specialAccount,
-                                specialFile,
-                                isFree));
+                .then(validateAndCleanUpOps(
+                        getFileContents(specialFile).hasContents(newFileName), specialAccount, specialFile, isFree));
     }
 
     private HapiSpecOperation[] givenOps(String account, String fileName) {
@@ -211,10 +182,7 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
     }
 
     private HapiSpecOperation[] validateAndCleanUpOps(
-            final HapiSpecOperation validateOp,
-            final String account,
-            final String fileName,
-            final boolean isFree) {
+            final HapiSpecOperation validateOp, final String account, final String fileName, final boolean isFree) {
         HapiSpecOperation[] accountBalanceUnchanged = {
             getAccountBalance(account).hasTinyBars(changeFromSnapshot("preUpdate", 0))
         };
@@ -229,26 +197,22 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
         return ArrayUtils.addAll(accountBalanceUnchanged, opsArray);
     }
 
-    private HapiSpec unauthorizedAccountCannotUpdateSpecialFile(
-            final String specialFile, final String newContents) {
+    private HapiSpec unauthorizedAccountCannotUpdateSpecialFile(final String specialFile, final String newContents) {
         return defaultHapiSpec("UnauthorizedAccountCannotUpdate" + specialFile)
                 .given(cryptoCreate("unauthorizedAccount"))
                 .when()
-                .then(
-                        fileUpdate(specialFile)
-                                .contents(newContents)
-                                .payingWith("unauthorizedAccount")
-                                .hasPrecheck(AUTHORIZATION_FAILED));
+                .then(fileUpdate(specialFile)
+                        .contents(newContents)
+                        .payingWith("unauthorizedAccount")
+                        .hasPrecheck(AUTHORIZATION_FAILED));
     }
 
     private HapiSpec account2CanUpdateApplicationProperties() {
-        return specialAccountCanUpdateSpecialPropertyFile(
-                GENESIS, APP_PROPERTIES, "throttlingTps", "10");
+        return specialAccountCanUpdateSpecialPropertyFile(GENESIS, APP_PROPERTIES, "throttlingTps", "10");
     }
 
     private HapiSpec account50CanUpdateApplicationProperties() {
-        return specialAccountCanUpdateSpecialPropertyFile(
-                SYSTEM_ADMIN, APP_PROPERTIES, "getReceiptTps", "100");
+        return specialAccountCanUpdateSpecialPropertyFile(SYSTEM_ADMIN, APP_PROPERTIES, "getReceiptTps", "100");
     }
 
     private HapiSpec unauthorizedAccountCannotUpdateApplicationProperties() {
@@ -256,13 +220,11 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
     }
 
     private HapiSpec account2CanUpdateApiPermissions() {
-        return specialAccountCanUpdateSpecialPropertyFile(
-                GENESIS, API_PERMISSIONS, "createTopic", "1-*");
+        return specialAccountCanUpdateSpecialPropertyFile(GENESIS, API_PERMISSIONS, "createTopic", "1-*");
     }
 
     private HapiSpec account50CanUpdateApiPermissions() {
-        return specialAccountCanUpdateSpecialPropertyFile(
-                SYSTEM_ADMIN, API_PERMISSIONS, "updateFile", "1-*");
+        return specialAccountCanUpdateSpecialPropertyFile(SYSTEM_ADMIN, API_PERMISSIONS, "updateFile", "1-*");
     }
 
     private HapiSpec unauthorizedAccountCannotUpdateApiPermissions() {
@@ -271,10 +233,7 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
 
     private HapiSpec account2CanUpdateAddressBook() {
         return specialAccountCanUpdateSpecialFile(
-                GENESIS,
-                ADDRESS_BOOK,
-                true,
-                contents -> extendedBioAddressBook(contents, "0.0.5", "0.0.6"));
+                GENESIS, ADDRESS_BOOK, true, contents -> extendedBioAddressBook(contents, "0.0.5", "0.0.6"));
     }
 
     private HapiSpec account50CanUpdateAddressBook() {
@@ -282,8 +241,7 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
     }
 
     private HapiSpec account55CanUpdateAddressBook() {
-        return specialAccountCanUpdateSpecialFile(
-                ADDRESS_BOOK_CONTROL, ADDRESS_BOOK, "0.0.5", "0.0.6", false);
+        return specialAccountCanUpdateSpecialFile(ADDRESS_BOOK_CONTROL, ADDRESS_BOOK, "0.0.5", "0.0.6", false);
     }
 
     private HapiSpec unauthorizedAccountCannotUpdateAddressBook() {
@@ -292,10 +250,7 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
 
     private HapiSpec account2CanUpdateNodeDetails() {
         return specialAccountCanUpdateSpecialFile(
-                GENESIS,
-                NODE_DETAILS,
-                true,
-                contents -> extendedBioNodeDetails(contents, "0.0.5", "0.0.6"));
+                GENESIS, NODE_DETAILS, true, contents -> extendedBioNodeDetails(contents, "0.0.5", "0.0.6"));
     }
 
     private HapiSpec account50CanUpdateNodeDetails() {
@@ -303,8 +258,7 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
     }
 
     private HapiSpec account55CanUpdateNodeDetails() {
-        return specialAccountCanUpdateSpecialFile(
-                ADDRESS_BOOK_CONTROL, NODE_DETAILS, "0.0.5", "0.0.6", false);
+        return specialAccountCanUpdateSpecialFile(ADDRESS_BOOK_CONTROL, NODE_DETAILS, "0.0.5", "0.0.6", false);
     }
 
     private HapiSpec unauthorizedAccountCannotUpdateNodeDetails() {
@@ -320,8 +274,7 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
     }
 
     private HapiSpec account56CanUpdateFeeSchedule() {
-        return specialAccountCanUpdateSpecialFile(
-                FEE_SCHEDULE_CONTROL, FEE_SCHEDULE, "ignore", "ignore");
+        return specialAccountCanUpdateSpecialFile(FEE_SCHEDULE_CONTROL, FEE_SCHEDULE, "ignore", "ignore");
     }
 
     private HapiSpec unauthorizedAccountCannotUpdateFeeSchedule() {
@@ -337,8 +290,7 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
     }
 
     private HapiSpec account57CanUpdateExchangeRates() {
-        return specialAccountCanUpdateSpecialFile(
-                EXCHANGE_RATE_CONTROL, EXCHANGE_RATES, "ignore", "ignore");
+        return specialAccountCanUpdateSpecialFile(EXCHANGE_RATE_CONTROL, EXCHANGE_RATES, "ignore", "ignore");
     }
 
     private HapiSpec unauthorizedAccountCannotUpdateExchangeRates() {
@@ -368,9 +320,8 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
                 }
             }
             var newBook = builder.build();
-            var bookJson =
-                    mapper.writerWithDefaultPrettyPrinter()
-                            .writeValueAsString(AddressBookPojo.addressBookFrom(newBook));
+            var bookJson = mapper.writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(AddressBookPojo.addressBookFrom(newBook));
             log.info("New address book w/ extended bio: " + bookJson);
             return builder.build().toByteArray();
         } catch (InvalidProtocolBufferException e) {
@@ -398,9 +349,8 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
                 }
             }
             var newBook = builder.build();
-            var bookJson =
-                    mapper.writerWithDefaultPrettyPrinter()
-                            .writeValueAsString(AddressBookPojo.nodeDetailsFrom(newBook));
+            var bookJson = mapper.writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(AddressBookPojo.nodeDetailsFrom(newBook));
             log.info("New node details w/ extended bio: " + bookJson);
             return builder.build().toByteArray();
         } catch (InvalidProtocolBufferException e) {

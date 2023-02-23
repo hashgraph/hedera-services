@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.exports;
 
 import static com.hedera.node.app.hapi.utils.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
@@ -28,19 +29,15 @@ public class StandardSigFileWriter implements SigFileWriter {
     static final String SIG_FILE_EXTENSION = "_sig";
 
     @Override
-    public String writeSigFile(
-            final String signedFilePath, final byte[] sig, final byte[] signedFileHash) {
+    public String writeSigFile(final String signedFilePath, final byte[] sig, final byte[] signedFileHash) {
         final var isCompressed = signedFilePath.endsWith(COMPRESSION_ALGORITHM_EXTENSION);
-        final var sigFilePath =
-                isCompressed
-                        ? signedFilePath.replace(
-                                COMPRESSION_ALGORITHM_EXTENSION,
-                                SIG_FILE_EXTENSION + COMPRESSION_ALGORITHM_EXTENSION)
-                        : signedFilePath + SIG_FILE_EXTENSION;
-        try (final var outputStream =
-                isCompressed
-                        ? new GZIPOutputStream(new FileOutputStream(sigFilePath, false))
-                        : new FileOutputStream(sigFilePath, false)) {
+        final var sigFilePath = isCompressed
+                ? signedFilePath.replace(
+                        COMPRESSION_ALGORITHM_EXTENSION, SIG_FILE_EXTENSION + COMPRESSION_ALGORITHM_EXTENSION)
+                : signedFilePath + SIG_FILE_EXTENSION;
+        try (final var outputStream = isCompressed
+                ? new GZIPOutputStream(new FileOutputStream(sigFilePath, false))
+                : new FileOutputStream(sigFilePath, false)) {
             outputStream.write(TYPE_FILE_HASH);
             outputStream.write(signedFileHash);
             outputStream.write(TYPE_SIGNATURE);
@@ -48,8 +45,7 @@ public class StandardSigFileWriter implements SigFileWriter {
             outputStream.write(sig);
             outputStream.flush();
         } catch (IOException e) {
-            throw new UncheckedIOException(
-                    String.format("I/O error writing sig of '%s'!", signedFilePath), e);
+            throw new UncheckedIOException(String.format("I/O error writing sig of '%s'!", signedFilePath), e);
         }
         return sigFilePath;
     }

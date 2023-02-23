@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.file.negative;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -72,20 +73,17 @@ public class UpdateFailuresSpec extends HapiSuite {
         var initialExpiry = new AtomicLong();
         var extension = 1_000L;
         return defaultHapiSpec("ConfusedUpdateCantExtendExpiry")
-                .given(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    var infoOp = QueryVerbs.getFileInfo(EXCHANGE_RATES);
-                                    CustomSpecAssert.allRunFor(spec, infoOp);
-                                    var info = infoOp.getResponse().getFileGetInfo().getFileInfo();
-                                    initialExpiry.set(info.getExpirationTime().getSeconds());
-                                }))
-                .when(
-                        fileUpdate(EXCHANGE_RATES)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .contents("NONSENSE".getBytes())
-                                .extendingExpiryBy(extension)
-                                .hasKnownStatus(ResponseCodeEnum.INVALID_EXCHANGE_RATE_FILE))
+                .given(withOpContext((spec, opLog) -> {
+                    var infoOp = QueryVerbs.getFileInfo(EXCHANGE_RATES);
+                    CustomSpecAssert.allRunFor(spec, infoOp);
+                    var info = infoOp.getResponse().getFileGetInfo().getFileInfo();
+                    initialExpiry.set(info.getExpirationTime().getSeconds());
+                }))
+                .when(fileUpdate(EXCHANGE_RATES)
+                        .payingWith(EXCHANGE_RATE_CONTROL)
+                        .contents("NONSENSE".getBytes())
+                        .extendingExpiryBy(extension)
+                        .hasKnownStatus(ResponseCodeEnum.INVALID_EXCHANGE_RATE_FILE))
                 .then(QueryVerbs.getFileInfo(EXCHANGE_RATES).hasExpiry(initialExpiry::get));
     }
 
@@ -94,37 +92,24 @@ public class UpdateFailuresSpec extends HapiSuite {
                 .given(cryptoCreate(CIVILIAN))
                 .when()
                 .then(
-                        fileUpdate(ADDRESS_BOOK)
-                                .payingWith(CIVILIAN)
-                                .hasPrecheck(AUTHORIZATION_FAILED),
-                        fileUpdate(NODE_DETAILS)
-                                .payingWith(CIVILIAN)
-                                .hasPrecheck(AUTHORIZATION_FAILED),
-                        fileUpdate(API_PERMISSIONS)
-                                .payingWith(CIVILIAN)
-                                .hasPrecheck(AUTHORIZATION_FAILED),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(CIVILIAN)
-                                .hasPrecheck(AUTHORIZATION_FAILED),
-                        fileUpdate(FEE_SCHEDULE)
-                                .payingWith(CIVILIAN)
-                                .hasPrecheck(AUTHORIZATION_FAILED),
-                        fileUpdate(EXCHANGE_RATES)
-                                .payingWith(CIVILIAN)
-                                .hasPrecheck(AUTHORIZATION_FAILED));
+                        fileUpdate(ADDRESS_BOOK).payingWith(CIVILIAN).hasPrecheck(AUTHORIZATION_FAILED),
+                        fileUpdate(NODE_DETAILS).payingWith(CIVILIAN).hasPrecheck(AUTHORIZATION_FAILED),
+                        fileUpdate(API_PERMISSIONS).payingWith(CIVILIAN).hasPrecheck(AUTHORIZATION_FAILED),
+                        fileUpdate(APP_PROPERTIES).payingWith(CIVILIAN).hasPrecheck(AUTHORIZATION_FAILED),
+                        fileUpdate(FEE_SCHEDULE).payingWith(CIVILIAN).hasPrecheck(AUTHORIZATION_FAILED),
+                        fileUpdate(EXCHANGE_RATES).payingWith(CIVILIAN).hasPrecheck(AUTHORIZATION_FAILED));
     }
 
     private HapiSpec precheckAllowsMissing() {
         return defaultHapiSpec("PrecheckAllowsMissing")
                 .given()
                 .when()
-                .then(
-                        fileUpdate("1.2.3")
-                                .payingWith(GENESIS)
-                                .signedBy(GENESIS)
-                                .fee(1_234_567L)
-                                .hasPrecheck(OK)
-                                .hasKnownStatus(INVALID_FILE_ID));
+                .then(fileUpdate("1.2.3")
+                        .payingWith(GENESIS)
+                        .signedBy(GENESIS)
+                        .fee(1_234_567L)
+                        .hasPrecheck(OK)
+                        .hasKnownStatus(INVALID_FILE_ID));
     }
 
     private HapiSpec precheckAllowsDeleted() {
@@ -139,24 +124,22 @@ public class UpdateFailuresSpec extends HapiSuite {
         return defaultHapiSpec("PrecheckRejectsPrematureExpiry")
                 .given(fileCreate("file"))
                 .when()
-                .then(
-                        fileUpdate("file")
-                                .fee(A_LOT)
-                                .extendingExpiryBy(-now)
-                                .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE));
+                .then(fileUpdate("file")
+                        .fee(A_LOT)
+                        .extendingExpiryBy(-now)
+                        .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
     private HapiSpec precheckAllowsBadEncoding() {
         return defaultHapiSpec("PrecheckAllowsBadEncoding")
                 .given(fileCreate("file"))
                 .when()
-                .then(
-                        fileUpdate("file")
-                                .fee(A_LOT)
-                                .signedBy(GENESIS)
-                                .useBadWacl()
-                                .hasPrecheck(OK)
-                                .hasKnownStatus(INVALID_SIGNATURE));
+                .then(fileUpdate("file")
+                        .fee(A_LOT)
+                        .signedBy(GENESIS)
+                        .useBadWacl()
+                        .hasPrecheck(OK)
+                        .hasKnownStatus(INVALID_SIGNATURE));
     }
 
     @SuppressWarnings("java:S5960")
@@ -166,27 +149,19 @@ public class UpdateFailuresSpec extends HapiSuite {
         return defaultHapiSpec("HandleIgnoresEarlierExpiry")
                 .given(
                         fileCreate("file"),
-                        withOpContext(
-                                (spec, opLog) ->
-                                        initialExpiry.set(
-                                                spec.registry().getTimestamp("file").getSeconds())))
+                        withOpContext((spec, opLog) -> initialExpiry.set(
+                                spec.registry().getTimestamp("file").getSeconds())))
                 .when(fileUpdate("file").extendingExpiryBy(-1_000))
-                .then(
-                        UtilVerbs.assertionsHold(
-                                (spec, opLog) -> {
-                                    var infoOp = QueryVerbs.getFileInfo("file");
-                                    CustomSpecAssert.allRunFor(spec, infoOp);
-                                    var currExpiry =
-                                            infoOp.getResponse()
-                                                    .getFileGetInfo()
-                                                    .getFileInfo()
-                                                    .getExpirationTime()
-                                                    .getSeconds();
-                                    assertEquals(
-                                            initialExpiry.get(),
-                                            currExpiry,
-                                            "Expiry changed unexpectedly!");
-                                }));
+                .then(UtilVerbs.assertionsHold((spec, opLog) -> {
+                    var infoOp = QueryVerbs.getFileInfo("file");
+                    CustomSpecAssert.allRunFor(spec, infoOp);
+                    var currExpiry = infoOp.getResponse()
+                            .getFileGetInfo()
+                            .getFileInfo()
+                            .getExpirationTime()
+                            .getSeconds();
+                    assertEquals(initialExpiry.get(), currExpiry, "Expiry changed unexpectedly!");
+                }));
     }
 
     @Override

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.meta;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
@@ -43,15 +44,11 @@ public class GetFastTxnRecordAnswer implements AnswerService {
 
     @Override
     public Response responseGiven(
-            final Query query,
-            @Nullable final StateView view,
-            final ResponseCodeEnum validity,
-            final long cost) {
+            final Query query, @Nullable final StateView view, final ResponseCodeEnum validity, final long cost) {
         final TransactionGetFastRecordQuery op = query.getTransactionGetFastRecord();
         final ResponseType type = op.getHeader().getResponseType();
 
-        final TransactionGetFastRecordResponse.Builder response =
-                TransactionGetFastRecordResponse.newBuilder();
+        final TransactionGetFastRecordResponse.Builder response = TransactionGetFastRecordResponse.newBuilder();
         if (type == COST_ANSWER) {
             response.setHeader(costAnswerHeader(NOT_SUPPORTED, 0L));
         } else {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.suites;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
@@ -41,11 +42,7 @@ public class RekeySuite extends HapiSuite {
     private final Map<String, String> specConfig;
 
     public RekeySuite(
-            Map<String, String> specConfig,
-            String account,
-            String replKeyLoc,
-            boolean genNewKey,
-            String replTarget) {
+            Map<String, String> specConfig, String account, String replKeyLoc, boolean genNewKey, String replTarget) {
         this.specConfig = specConfig;
         this.replKeyLoc = replKeyLoc;
         this.genNewKey = genNewKey;
@@ -60,8 +57,7 @@ public class RekeySuite extends HapiSuite {
 
     private HapiSpec rekey() {
         final var replKey = "replKey";
-        final var newKeyLoc =
-                replTarget.endsWith(".pem") ? replTarget : replTarget.replace(".pem", ".words");
+        final var newKeyLoc = replTarget.endsWith(".pem") ? replTarget : replTarget.replace(".pem", ".words");
         final var newKeyPass = TxnUtils.randomAlphaNumeric(12);
 
         return HapiSpec.customHapiSpec("rekey" + account)
@@ -75,19 +71,16 @@ public class RekeySuite extends HapiSuite {
                                 : keyFromFile(replKey, replKeyLoc)
                                         .exportingTo(newKeyLoc, newKeyPass)
                                         .yahcliLogged())
-                .when(
-                        cryptoUpdate(account)
-                                .signedBy(DEFAULT_PAYER, replKey)
-                                .key(replKey)
-                                .noLogging()
-                                .yahcliLogging())
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    if (replTarget.endsWith(".words")) {
-                                        new File(replTarget).delete();
-                                    }
-                                }));
+                .when(cryptoUpdate(account)
+                        .signedBy(DEFAULT_PAYER, replKey)
+                        .key(replKey)
+                        .noLogging()
+                        .yahcliLogging())
+                .then(withOpContext((spec, opLog) -> {
+                    if (replTarget.endsWith(".words")) {
+                        new File(replTarget).delete();
+                    }
+                }));
     }
 
     @Override

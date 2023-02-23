@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle;
 
 import com.hedera.node.app.spi.state.EmptyReadableStates;
@@ -70,8 +71,7 @@ import java.util.function.Consumer;
  * each child must be part of the state proof. It would be better to have a binary tree. We should
  * consider nesting service nodes in a MerkleMap, or some other such approach to get a binary tree.
  */
-public class MerkleHederaState extends PartialNaryMerkleInternal
-        implements MerkleInternal, SwirldState2, HederaState {
+public class MerkleHederaState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState2, HederaState {
 
     /** Used when asked for a service's readable states that we don't have */
     private static final ReadableStates EMPTY_READABLE_STATES = new EmptyReadableStates();
@@ -192,9 +192,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     @NonNull
     public ReadableStates createReadableStates(@NonNull final String serviceName) {
         final var stateMetadata = services.get(serviceName);
-        return stateMetadata == null
-                ? EMPTY_READABLE_STATES
-                : new MerkleReadableStates(stateMetadata);
+        return stateMetadata == null ? EMPTY_READABLE_STATES : new MerkleReadableStates(stateMetadata);
     }
 
     /** {@inheritDoc} */
@@ -203,9 +201,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     public WritableStates createWritableStates(@NonNull final String serviceName) {
         throwIfImmutable();
         final var stateMetadata = services.get(serviceName);
-        return stateMetadata == null
-                ? EMPTY_WRITABLE_STATES
-                : new MerkleWritableStates(stateMetadata);
+        return stateMetadata == null ? EMPTY_WRITABLE_STATES : new MerkleWritableStates(stateMetadata);
     }
 
     /** {@inheritDoc} */
@@ -219,8 +215,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
     /** {@inheritDoc} */
     @Override
-    public void handleConsensusRound(
-            @NonNull final Round round, @NonNull final SwirldDualState swirldDualState) {
+    public void handleConsensusRound(@NonNull final Round round, @NonNull final SwirldDualState swirldDualState) {
         if (onHandleConsensusRound != null) {
             onHandleConsensusRound.accept(round, swirldDualState);
         }
@@ -245,8 +240,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         return this;
     }
 
-    <K extends Comparable<K>, V> void putServiceStateIfAbsent(
-            @NonNull final StateMetadata<K, V> md) {
+    <K extends Comparable<K>, V> void putServiceStateIfAbsent(@NonNull final StateMetadata<K, V> md) {
         throwIfImmutable();
         Objects.requireNonNull(md);
         final var stateMetadata = services.computeIfAbsent(md.serviceName(), k -> new HashMap<>());
@@ -279,8 +273,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         final var def = md.stateDefinition();
         if (def.onDisk() && !(node instanceof VirtualMap<?, ?>)) {
             throw new IllegalArgumentException(
-                    "Mismatch: state definition claims on-disk, but "
-                            + "the merkle node is not a VirtualMap");
+                    "Mismatch: state definition claims on-disk, but " + "the merkle node is not a VirtualMap");
         }
 
         if (label.isEmpty()) {
@@ -291,8 +284,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
         if (!label.equals(StateUtils.computeLabel(md.serviceName(), def.stateKey()))) {
             throw new IllegalArgumentException(
-                    "A label must be computed based on the same "
-                            + "service name and state key in the metadata!");
+                    "A label must be computed based on the same " + "service name and state key in the metadata!");
         }
 
         // Put this metadata into the map
@@ -374,8 +366,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         @NonNull
         @Override
         public <K extends Comparable<K>, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
-            final ReadableKVState<K, V> instance =
-                    (ReadableKVState<K, V>) kvInstances.get(stateKey);
+            final ReadableKVState<K, V> instance = (ReadableKVState<K, V>) kvInstances.get(stateKey);
             if (instance != null) {
                 return instance;
             }
@@ -403,16 +394,14 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         @NonNull
         @Override
         public <T> ReadableSingletonState<T> getSingleton(@NonNull String stateKey) {
-            final ReadableSingletonState<T> instance =
-                    (ReadableSingletonState<T>) singletonInstances.get(stateKey);
+            final ReadableSingletonState<T> instance = (ReadableSingletonState<T>) singletonInstances.get(stateKey);
             if (instance != null) {
                 return instance;
             }
 
             final var md = stateMetadata.get(stateKey);
             if (md == null || !md.stateDefinition().singleton()) {
-                throw new IllegalArgumentException(
-                        "Unknown singleton state key '" + stateKey + "'");
+                throw new IllegalArgumentException("Unknown singleton state key '" + stateKey + "'");
             }
 
             final var node = findNode(md);
@@ -438,12 +427,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         }
 
         @NonNull
-        protected abstract ReadableKVState createReadableKVState(
-                @NonNull StateMetadata md, @NonNull VirtualMap v);
+        protected abstract ReadableKVState createReadableKVState(@NonNull StateMetadata md, @NonNull VirtualMap v);
 
         @NonNull
-        protected abstract ReadableKVState createReadableKVState(
-                @NonNull StateMetadata md, @NonNull MerkleMap m);
+        protected abstract ReadableKVState createReadableKVState(@NonNull StateMetadata md, @NonNull MerkleMap m);
 
         @NonNull
         protected abstract ReadableSingletonState createReadableSingletonState(
@@ -458,15 +445,15 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
          */
         @NonNull
         private MerkleNode findNode(@NonNull final StateMetadata<?, ?> md) {
-            final var index = findNodeIndex(md.serviceName(), md.stateDefinition().stateKey());
+            final var index =
+                    findNodeIndex(md.serviceName(), md.stateDefinition().stateKey());
             if (index == -1) {
                 // This can only happen if there WAS a node here, and it was removed!
-                throw new IllegalStateException(
-                        "State '"
-                                + md.stateDefinition().stateKey()
-                                + "' for service '"
-                                + md.serviceName()
-                                + "' is missing from the merkle tree!");
+                throw new IllegalStateException("State '"
+                        + md.stateDefinition().stateKey()
+                        + "' for service '"
+                        + md.serviceName()
+                        + "' is missing from the merkle tree!");
             }
 
             return getChild(index);

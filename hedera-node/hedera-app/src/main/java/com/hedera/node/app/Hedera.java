@@ -13,18 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.node.app.grpc.GrpcServiceBuilder;
-import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.workflows.ingest.IngestWorkflowImpl;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.helidon.grpc.server.GrpcRouting;
 import io.helidon.grpc.server.GrpcServer;
 import io.helidon.grpc.server.GrpcServerConfiguration;
@@ -38,7 +39,7 @@ public final class Hedera {
 
     public Hedera() {}
 
-    public void start(ServicesApp app, int port) {
+    public void start(@NonNull final HederaApp app, int port) {
         final var metrics = createMetrics(app.nodeId());
 
         // Create the Ingest workflow. While we are in transition, some required facilities come
@@ -46,14 +47,10 @@ public final class Hedera {
         // facilities to be from the app module.
         // TODO Real values will be added to make this usable with #4825
         final var ingestWorkflow =
-                new IngestWorkflowImpl(
-                        app.nodeInfo(), app.platformStatus(), null, null, null, null, null, null);
+                new IngestWorkflowImpl(app.nodeInfo(), app.platformStatus(), null, null, null, null, null, null);
 
         // Create the query workflow; fully qualified import to appease javadoc Gradle task
-        final var queryWorkflow =
-                com.hedera.node.app.components.DaggerQueryComponent.factory()
-                        .create(app.bootstrapProps(), MAX_SIGNED_TXN_SIZE, app.platform())
-                        .queryWorkflow();
+        final var queryWorkflow = app.queryComponentFactory().get().create().queryWorkflow();
 
         // Setup and start the grpc server.
         // At some point I'd like to somehow move the metadata for which transactions are supported
@@ -61,22 +58,17 @@ public final class Hedera {
         // yet what that API would look like, so for now we do it this way. Maybe we should have
         // a set of annotations that generate the metadata, or maybe we have some code. Whatever
         // we do should work also with workflows.
-        final var grpcServer =
-                GrpcServer.create(
-                        GrpcServerConfiguration.builder().port(port).build(),
-                        GrpcRouting.builder()
-                                .register(
-                                        new GrpcServiceBuilder(
-                                                        "proto.ConsensusService",
-                                                        ingestWorkflow,
-                                                        queryWorkflow)
-                                                .transaction("createTopic")
-                                                .transaction("updateTopic")
-                                                .transaction("deleteTopic")
-                                                .query("getTopicInfo")
-                                                .transaction("submitMessage")
-                                                .build(metrics))
-                                .build());
+        final var grpcServer = GrpcServer.create(
+                GrpcServerConfiguration.builder().port(port).build(),
+                GrpcRouting.builder()
+                        .register(new GrpcServiceBuilder("proto.ConsensusService", ingestWorkflow, queryWorkflow)
+                                .transaction("createTopic")
+                                .transaction("updateTopic")
+                                .transaction("deleteTopic")
+                                .query("getTopicInfo")
+                                .transaction("submitMessage")
+                                .build(metrics))
+                        .build());
         grpcServer.whenShutdown().thenAccept(server -> shutdownLatch.countDown());
         grpcServer.start();
 
@@ -96,10 +88,8 @@ public final class Hedera {
 
     private static Metrics createMetrics(NodeId nodeId) {
         // This is a stub implementation, to be replaced by a real implementation in #4293
-        final var metricService =
-                Executors.newSingleThreadScheduledExecutor(
-                        getStaticThreadManager().createThreadFactory("metrics", "MetricsWriter"));
-        return new DefaultMetrics(
-                nodeId, new MetricKeyRegistry(), metricService, new DefaultMetricsFactory());
+        final var metricService = Executors.newSingleThreadScheduledExecutor(
+                getStaticThreadManager().createThreadFactory("metrics", "MetricsWriter"));
+        return new DefaultMetrics(nodeId, new MetricKeyRegistry(), metricService, new DefaultMetricsFactory());
     }
 }

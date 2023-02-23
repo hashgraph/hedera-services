@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.prehandle;
 
 import static java.util.Objects.requireNonNull;
@@ -56,13 +57,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      * server.
      */
     private static final ThreadLocal<SessionContext> SESSION_CONTEXT_THREAD_LOCAL =
-            ThreadLocal.withInitial(
-                    () ->
-                            new SessionContext(
-                                    Query.parser(),
-                                    Transaction.parser(),
-                                    SignedTransaction.parser(),
-                                    TransactionBody.parser()));
+            ThreadLocal.withInitial(() -> new SessionContext(
+                    Query.parser(), Transaction.parser(), SignedTransaction.parser(), TransactionBody.parser()));
 
     private final WorkflowOnset onset;
     private final TransactionDispatcher dispatcher;
@@ -133,8 +129,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     }
 
     private TransactionMetadata preHandle(
-            final HederaState state,
-            final com.swirlds.common.system.transaction.Transaction platformTx) {
+            final HederaState state, final com.swirlds.common.system.transaction.Transaction platformTx) {
         TransactionBody txBody = null;
         AccountID payerID = null;
         try {
@@ -178,8 +173,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                     context, payerSignature, otherSignatures, storeFactory.getUsedStates());
 
         } catch (PreCheckException preCheckException) {
-            return createInvalidTransactionMetadata(
-                    txBody, payerID, preCheckException.responseCode());
+            return createInvalidTransactionMetadata(txBody, payerID, preCheckException.responseCode());
         } catch (Exception ex) {
             // Some unknown and unexpected failure happened. If this was non-deterministic, I could
             // end up with an ISS. It is critical that I log whatever happened, because we should
@@ -211,12 +205,11 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     private static List<TransactionMetadata.ReadKeys> extractAllReadKeys(
             @NonNull final Map<String, ReadableStates> usedStates) {
         return usedStates.entrySet().stream()
-                .flatMap(
-                        entry -> {
-                            final String statesKey = entry.getKey();
-                            final ReadableStates readableStates = entry.getValue();
-                            return extractReadKeysFromReadableStates(statesKey, readableStates);
-                        })
+                .flatMap(entry -> {
+                    final String statesKey = entry.getKey();
+                    final ReadableStates readableStates = entry.getValue();
+                    return extractReadKeysFromReadableStates(statesKey, readableStates);
+                })
                 .toList();
     }
 
@@ -224,12 +217,11 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     private static Stream<TransactionMetadata.ReadKeys> extractReadKeysFromReadableStates(
             @NonNull final String statesKey, @NonNull final ReadableStates readableStates) {
         return readableStates.stateKeys().stream()
-                .map(
-                        stateKey -> {
-                            final Set<? extends Comparable<?>> readKeys =
-                                    readableStates.get(stateKey).readKeys();
-                            return new TransactionMetadata.ReadKeys(statesKey, stateKey, readKeys);
-                        })
+                .map(stateKey -> {
+                    final Set<? extends Comparable<?>> readKeys =
+                            readableStates.get(stateKey).readKeys();
+                    return new TransactionMetadata.ReadKeys(statesKey, stateKey, readKeys);
+                })
                 .filter(listEntry -> !listEntry.readKeys().isEmpty());
     }
 }

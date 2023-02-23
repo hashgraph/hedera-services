@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -41,12 +42,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({LogCaptureExtension.class, MockitoExtension.class})
 class UnzipUtilityTest {
-    @Mock private ZipInputStream zipIn;
+    @Mock
+    private ZipInputStream zipIn;
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private UnzipUtility subject;
+    @LoggingTarget
+    private LogCaptor logCaptor;
 
-    @TempDir private File tempDir;
+    @LoggingSubject
+    private UnzipUtility subject;
+
+    @TempDir
+    private File tempDir;
 
     @Test
     void unzipAbortWithRiskyFile() throws Exception {
@@ -54,11 +60,9 @@ class UnzipUtilityTest {
         final var data = Files.readAllBytes(Paths.get(zipFile));
         final var dstDir = "./temp";
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> {
-                    UnzipUtility.unzip(data, dstDir);
-                });
+        assertThrows(IllegalArgumentException.class, () -> {
+            UnzipUtility.unzip(data, dstDir);
+        });
     }
 
     @Test
@@ -80,9 +84,7 @@ class UnzipUtilityTest {
         given(zipIn.read(any())).willThrow(IOException.class);
 
         assertDoesNotThrow(() -> UnzipUtility.extractSingleFile(zipIn, tmpFile));
-        assertThat(
-                logCaptor.errorLogs(),
-                contains("Unable to write to file shortLived.txt java.io.IOException: null"));
+        assertThat(logCaptor.errorLogs(), contains("Unable to write to file shortLived.txt java.io.IOException: null"));
 
         new File(tmpFile).delete();
     }

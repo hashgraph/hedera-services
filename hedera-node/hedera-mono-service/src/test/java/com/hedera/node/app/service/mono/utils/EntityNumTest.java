@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
@@ -66,9 +67,7 @@ class EntityNumTest {
         assertEquals(expected, EntityNum.fromContractId(IdUtils.asContract("0.0.123")));
         assertEquals(expected, EntityNum.fromModel(new Id(0, 0, 123)));
         assertEquals(
-                expected,
-                EntityNum.fromEvmAddress(
-                        Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(0, 0, 123)))));
+                expected, EntityNum.fromEvmAddress(Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(0, 0, 123)))));
     }
 
     @Test
@@ -80,9 +79,7 @@ class EntityNumTest {
         assertEquals(MISSING_NUM, EntityNum.fromContractId(IdUtils.asContract("1.0.123")));
         assertEquals(MISSING_NUM, EntityNum.fromModel(new Id(1, 0, 123)));
         assertEquals(
-                MISSING_NUM,
-                EntityNum.fromEvmAddress(
-                        Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(1, 0, 123)))));
+                MISSING_NUM, EntityNum.fromEvmAddress(Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(1, 0, 123)))));
     }
 
     @Test
@@ -94,9 +91,7 @@ class EntityNumTest {
         assertEquals(MISSING_NUM, EntityNum.fromContractId(IdUtils.asContract("0.1.123")));
         assertEquals(MISSING_NUM, EntityNum.fromModel(new Id(0, 1, 123)));
         assertEquals(
-                MISSING_NUM,
-                EntityNum.fromEvmAddress(
-                        Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(0, 1, 123)))));
+                MISSING_NUM, EntityNum.fromEvmAddress(Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(0, 1, 123)))));
     }
 
     @Test

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.contract.txns;
 
 import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
@@ -40,8 +41,7 @@ public class ContractCallResourceUsage implements TxnResourceUsageEstimator {
     }
 
     @Override
-    public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view)
-            throws InvalidTxBodyException {
+    public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
         return usageEstimator.getContractCallTxFeeMatrices(txn, sigUsage);
     }
 }

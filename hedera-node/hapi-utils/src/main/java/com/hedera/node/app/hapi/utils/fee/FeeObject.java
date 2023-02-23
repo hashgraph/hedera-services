@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.fee;
 
 public class FeeObject {
@@ -41,13 +42,6 @@ public class FeeObject {
 
     @Override
     public String toString() {
-        return "FeeObject{"
-                + "nodeFee="
-                + nodeFee
-                + ", networkFee="
-                + networkFee
-                + ", serviceFee="
-                + serviceFee
-                + '}';
+        return "FeeObject{" + "nodeFee=" + nodeFee + ", networkFee=" + networkFee + ", serviceFee=" + serviceFee + '}';
     }
 }

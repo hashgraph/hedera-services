@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.customfees;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -104,8 +105,8 @@ class FcmCustomFeeSchedulesTest {
         // given:
         MerkleMap<EntityNum, MerkleToken> secondMerkleMap = new MerkleMap<>();
         MerkleToken token = new MerkleToken();
-        final var missingFees =
-                List.of(FcCustomFee.fixedFee(50L, missingToken, feeCollector, false).asGrpc());
+        final var missingFees = List.of(
+                FcCustomFee.fixedFee(50L, missingToken, feeCollector, false).asGrpc());
 
         token.setFeeScheduleFrom(missingFees);
         secondMerkleMap.put(EntityNum.fromLong(missingToken.num()), new MerkleToken());

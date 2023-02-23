@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
@@ -73,8 +74,8 @@ public class BasicTransactionContext implements TransactionContext {
     public static final JKey EMPTY_KEY;
 
     static {
-        EMPTY_KEY =
-                asFcKeyUnchecked(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
+        EMPTY_KEY = asFcKeyUnchecked(
+                Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
     }
 
     private TxnAccessor triggeredTxn = null;
@@ -125,8 +126,7 @@ public class BasicTransactionContext implements TransactionContext {
     }
 
     @Override
-    public void resetFor(
-            final TxnAccessor accessor, final Instant consensusTime, final long submittingMember) {
+    public void resetFor(final TxnAccessor accessor, final Instant consensusTime, final long submittingMember) {
         this.accessor = accessor;
         this.consensusTime = consensusTime;
         this.submittingMember = submittingMember;
@@ -162,8 +162,7 @@ public class BasicTransactionContext implements TransactionContext {
     @Override
     public long getBeneficiaryOfDeleted(final long accountNum) {
         if (deletedBeneficiaries == null || !deletedBeneficiaries.containsKey(accountNum)) {
-            throw new IllegalArgumentException(
-                    "Nothing recorded 0.0." + accountNum + " as deleted this transaction");
+            throw new IllegalArgumentException("Nothing recorded 0.0." + accountNum + " as deleted this transaction");
         }
         return deletedBeneficiaries.get(accountNum);
     }
@@ -199,8 +198,7 @@ public class BasicTransactionContext implements TransactionContext {
             return nodeInfo.accountOf(submittingMember);
         } catch (IllegalArgumentException e) {
             log.warn("No available Hedera account for member {}!", submittingMember, e);
-            throw new IllegalStateException(
-                    String.format("Member %d must have a Hedera account!", submittingMember));
+            throw new IllegalStateException(String.format("Member %d must have a Hedera account!", submittingMember));
         }
     }
 
@@ -213,25 +211,17 @@ public class BasicTransactionContext implements TransactionContext {
     public ExpirableTxnRecord.Builder recordSoFar() {
         final var receiptBuilder = receiptSoFar();
         final var totalFees = narratedCharging.totalFeesChargedToPayer() + otherNonThresholdFees;
-        recordSoFar =
-                creator.createTopLevelRecord(
-                        totalFees,
-                        hash,
-                        accessor,
-                        consensusTime,
-                        receiptBuilder,
-                        assessedCustomFees,
-                        sideEffectsTracker);
+        recordSoFar = creator.createTopLevelRecord(
+                totalFees, hash, accessor, consensusTime, receiptBuilder, assessedCustomFees, sideEffectsTracker);
 
         recordConfig.accept(recordSoFar);
         return recordSoFar;
     }
 
     TxnReceipt.Builder receiptSoFar() {
-        final var receipt =
-                TxnReceipt.newBuilder()
-                        .setExchangeRates(exchange.fcActiveRates())
-                        .setStatus(statusSoFar.name());
+        final var receipt = TxnReceipt.newBuilder()
+                .setExchangeRates(exchange.fcActiveRates())
+                .setStatus(statusSoFar.name());
         receiptConfig.accept(receipt);
         return receipt;
     }
@@ -256,8 +246,7 @@ public class BasicTransactionContext implements TransactionContext {
         if (accessor instanceof SwirldsTxnAccessor swirldsTxnAccessor) {
             return swirldsTxnAccessor;
         } else {
-            throw new IllegalStateException(
-                    "This context did not originate from a Swirlds transaction");
+            throw new IllegalStateException("This context did not originate from a Swirlds transaction");
         }
     }
 
@@ -283,8 +272,7 @@ public class BasicTransactionContext implements TransactionContext {
 
     @Override
     public void setScheduledTxnId(final TransactionID txnId) {
-        receiptConfig =
-                receiptConfig.andThen(receipt -> receipt.setScheduledTxnId(TxnId.fromGrpc(txnId)));
+        receiptConfig = receiptConfig.andThen(receipt -> receipt.setScheduledTxnId(TxnId.fromGrpc(txnId)));
     }
 
     @Override
@@ -304,11 +292,9 @@ public class BasicTransactionContext implements TransactionContext {
 
     @Override
     public void setTopicRunningHash(final byte[] topicRunningHash, final long sequenceNumber) {
-        receiptConfig =
-                receipt ->
-                        receipt.setTopicRunningHash(topicRunningHash)
-                                .setTopicSequenceNumber(sequenceNumber)
-                                .setRunningHashVersion(MerkleTopic.RUNNING_HASH_VERSION);
+        receiptConfig = receipt -> receipt.setTopicRunningHash(topicRunningHash)
+                .setTopicSequenceNumber(sequenceNumber)
+                .setRunningHashVersion(MerkleTopic.RUNNING_HASH_VERSION);
     }
 
     @Override
@@ -326,11 +312,10 @@ public class BasicTransactionContext implements TransactionContext {
     public void updateForEvmCall(final EthTxData callContext, EntityId senderId) {
         this.evmFnResult.updateForEvmCall(callContext, senderId);
         var wrappedRecordConfig = recordConfig;
-        recordConfig =
-                expiringRecord -> {
-                    wrappedRecordConfig.accept(expiringRecord);
-                    expiringRecord.setEthereumHash(callContext.getEthereumHash());
-                };
+        recordConfig = expiringRecord -> {
+            wrappedRecordConfig.accept(expiringRecord);
+            expiringRecord.setEthereumHash(callContext.getEthereumHash());
+        };
     }
 
     @Override

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.temporal;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -20,8 +21,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.SelfSerializableSupplier;
 import java.io.IOException;
 
-public class SecondSinceEpocVirtualKeySupplier
-        implements SelfSerializableSupplier<SecondSinceEpocVirtualKey> {
+public class SecondSinceEpocVirtualKeySupplier implements SelfSerializableSupplier<SecondSinceEpocVirtualKey> {
     static final long CLASS_ID = 0x170911f3cab1cf50L;
     static final int CURRENT_VERSION = 1;
 

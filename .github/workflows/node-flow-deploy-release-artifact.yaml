@@ -13,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ##
-name: "Deploy Release Artifact"
+
+name: "Node: Deploy Release Artifact"
 on:
   workflow_dispatch:
     inputs:
@@ -65,7 +66,7 @@ jobs:
   release-adhoc:
     name: Release / Adhoc
     if: ${{ github.event_name == 'workflow_dispatch' }}
-    uses: ./.github/workflows/comp-build-release-artifact.yaml
+    uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
     with:
       #      version-policy: ${{ github.event.inputs.new-verison != '' && 'specified' || 'branch-commit' }}
       version-policy: branch-commit
@@ -119,7 +120,7 @@ jobs:
 
   release-tag:
     name: Release / Tag
-    uses: ./.github/workflows/comp-build-release-artifact.yaml
+    uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
     needs:
       - prepare-tag-release
     with:
@@ -134,7 +135,7 @@ jobs:
 
   release-branch:
     name: Release / Branch
-    uses: ./.github/workflows/comp-build-release-artifact.yaml
+    uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
     if: ${{ github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/v') }}
     with:
       version-policy: branch-commit

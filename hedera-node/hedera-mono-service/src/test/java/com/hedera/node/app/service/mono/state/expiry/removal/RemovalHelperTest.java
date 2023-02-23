@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry.removal;
 
 import static com.hedera.node.app.service.mono.state.expiry.classification.ClassificationWork.CLASSIFICATION_WORK;
@@ -45,23 +46,31 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class RemovalHelperTest {
     private static final EntityNum detachedNum = EntityNum.fromLong(666_666);
-    private final CryptoGcOutcome finishedReturns =
-            new CryptoGcOutcome(
-                    FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS,
-                    NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
-                    true);
-    private final CryptoGcOutcome unfinishedReturns =
-            new CryptoGcOutcome(
-                    FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS,
-                    NonFungibleTreasuryReturns.UNFINISHED_NOOP_NON_FUNGIBLE_RETURNS,
-                    false);
+    private final CryptoGcOutcome finishedReturns = new CryptoGcOutcome(
+            FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS,
+            NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS,
+            true);
+    private final CryptoGcOutcome unfinishedReturns = new CryptoGcOutcome(
+            FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS,
+            NonFungibleTreasuryReturns.UNFINISHED_NOOP_NON_FUNGIBLE_RETURNS,
+            false);
     private AccountStorageAdapter accounts;
     private final MockGlobalDynamicProps properties = new MockGlobalDynamicProps();
-    @Mock private ContractGC contractGC;
-    @Mock private AccountGC accountGC;
-    @Mock private ExpiryRecordsHelper recordsHelper;
-    @Mock private ExpiryThrottle expiryThrottle;
-    @Mock private ExpiryStats expiryStats;
+
+    @Mock
+    private ContractGC contractGC;
+
+    @Mock
+    private AccountGC accountGC;
+
+    @Mock
+    private ExpiryRecordsHelper recordsHelper;
+
+    @Mock
+    private ExpiryThrottle expiryThrottle;
+
+    @Mock
+    private ExpiryStats expiryStats;
 
     private EntityLookup lookup;
     private ClassificationWork classifier;
@@ -75,15 +84,8 @@ class RemovalHelperTest {
         lookup = new EntityLookup(() -> accounts);
         classifier = new ClassificationWork(properties, lookup, expiryThrottle);
 
-        subject =
-                new RemovalHelper(
-                        expiryStats,
-                        classifier,
-                        properties,
-                        contractGC,
-                        accountGC,
-                        recordsHelper,
-                        expiryThrottle);
+        subject = new RemovalHelper(
+                expiryStats, classifier, properties, contractGC, accountGC, recordsHelper, expiryThrottle);
     }
 
     @Test
@@ -128,8 +130,7 @@ class RemovalHelperTest {
         properties.enableAutoRenew();
         final var expiredNum = EntityNum.fromLong(expiredDeletedAccountNum);
 
-        given(accountGC.expireBestEffort(expiredNum, expiredDeletedAccount))
-                .willReturn(finishedReturns);
+        given(accountGC.expireBestEffort(expiredNum, expiredDeletedAccount)).willReturn(finishedReturns);
         given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
 
         classifier.classify(expiredNum, now);
@@ -146,8 +147,7 @@ class RemovalHelperTest {
         properties.enableAutoRenew();
         final var expiredNum = EntityNum.fromLong(expiredDeletedAccountNum);
 
-        given(accountGC.expireBestEffort(expiredNum, expiredDeletedAccount))
-                .willReturn(unfinishedReturns);
+        given(accountGC.expireBestEffort(expiredNum, expiredDeletedAccount)).willReturn(unfinishedReturns);
         given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
 
         classifier.classify(expiredNum, now);
@@ -164,8 +164,7 @@ class RemovalHelperTest {
         final var expiredNum = EntityNum.fromLong(expiredDeletedContractNum);
 
         given(contractGC.expireBestEffort(expiredNum, expiredDeletedContract)).willReturn(true);
-        given(accountGC.expireBestEffort(expiredNum, expiredDeletedContract))
-                .willReturn(finishedReturns);
+        given(accountGC.expireBestEffort(expiredNum, expiredDeletedContract)).willReturn(finishedReturns);
         given(expiryThrottle.allow(CLASSIFICATION_WORK)).willReturn(true);
         final var autoRenewId = EntityId.fromNum(12345);
         expiredDeletedContract.setAutoRenewAccount(autoRenewId);
@@ -198,19 +197,17 @@ class RemovalHelperTest {
     private final long expiredDeletedAccountNum = 1003L;
     private final long expiredDeletedContractNum = 1004L;
 
-    private final MerkleAccount expiredDeletedAccount =
-            MerkleAccountFactory.newAccount()
-                    .balance(0)
-                    .deleted(true)
-                    .alias(ByteString.copyFromUtf8("cccc"))
-                    .expirationTime(now.getEpochSecond() - 1)
-                    .get();
-    private final MerkleAccount expiredDeletedContract =
-            MerkleAccountFactory.newAccount()
-                    .isSmartContract(true)
-                    .balance(0)
-                    .deleted(true)
-                    .alias(ByteString.copyFromUtf8("cccc"))
-                    .expirationTime(now.getEpochSecond() - 1)
-                    .get();
+    private final MerkleAccount expiredDeletedAccount = MerkleAccountFactory.newAccount()
+            .balance(0)
+            .deleted(true)
+            .alias(ByteString.copyFromUtf8("cccc"))
+            .expirationTime(now.getEpochSecond() - 1)
+            .get();
+    private final MerkleAccount expiredDeletedContract = MerkleAccountFactory.newAccount()
+            .isSmartContract(true)
+            .balance(0)
+            .deleted(true)
+            .alias(ByteString.copyFromUtf8("cccc"))
+            .expirationTime(now.getEpochSecond() - 1)
+            .get();
 }

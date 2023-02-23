@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.utils;
 
 import com.swirlds.common.crypto.config.CryptoConfig;
 
 public class CryptoConfigUtils {
-    public static CryptoConfig MINIMAL_CRYPTO_CONFIG =
-            new CryptoConfig(1, 1, 5, 5, false, "keystorePass");
+    public static CryptoConfig MINIMAL_CRYPTO_CONFIG = new CryptoConfig(1, 1, 5, 5, false, "keystorePass");
 
     private CryptoConfigUtils() {}
 }

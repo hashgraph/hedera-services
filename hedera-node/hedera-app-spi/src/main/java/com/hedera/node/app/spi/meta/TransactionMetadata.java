@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.meta;
 
 import static java.util.Objects.requireNonNull;
@@ -110,9 +111,7 @@ public record TransactionMetadata(
      * @param readKeys {@link Set} of all keys that were read
      */
     public record ReadKeys(
-            @NonNull String statesKey,
-            @NonNull String stateKey,
-            @NonNull Set<? extends Comparable<?>> readKeys) {
+            @NonNull String statesKey, @NonNull String stateKey, @NonNull Set<? extends Comparable<?>> readKeys) {
         public ReadKeys {
             requireNonNull(statesKey);
             requireNonNull(stateKey);

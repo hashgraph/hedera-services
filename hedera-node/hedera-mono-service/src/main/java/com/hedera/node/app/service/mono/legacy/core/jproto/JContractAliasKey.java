@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
@@ -70,13 +71,7 @@ public class JContractAliasKey extends JKey {
 
     @Override
     public String toString() {
-        return "<JContractAlias: "
-                + shardNum
-                + "."
-                + realmNum
-                + "."
-                + CommonUtils.hex(evmAddress)
-                + ">";
+        return "<JContractAlias: " + shardNum + "." + realmNum + "." + CommonUtils.hex(evmAddress) + ">";
     }
 
     @Override

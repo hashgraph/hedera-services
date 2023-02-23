@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.config;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -23,10 +24,8 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.Set;
 
 public class MockGlobalDynamicProps extends GlobalDynamicProperties {
-    private final CongestionMultipliers defaultMultipliers =
-            CongestionMultipliers.from("90,10x,95,25x,99,100x");
-    private final CongestionMultipliers differentMultipliers =
-            CongestionMultipliers.from("90,11x,95,26x,99,101x");
+    private final CongestionMultipliers defaultMultipliers = CongestionMultipliers.from("90,10x,95,25x,99,100x");
+    private final CongestionMultipliers differentMultipliers = CongestionMultipliers.from("90,11x,95,26x,99,101x");
 
     private int maxToTouch = 2;
     private int minCongestionPeriod = 2;
@@ -36,8 +35,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
     private boolean schedulingLongTermEnabled = false;
     private boolean exportBalances = true;
     private CongestionMultipliers currentMultipliers = defaultMultipliers;
-    private EntityScaleFactors scaleFactors =
-            EntityScaleFactors.from("DEFAULT(90,10:1,95,25:1,99,100:1)");
+    private EntityScaleFactors scaleFactors = EntityScaleFactors.from("DEFAULT(90,10:1,95,25:1,99,100:1)");
     private boolean throttleByGas;
     private boolean shouldCompressAccountFiles;
 

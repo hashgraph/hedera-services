@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.file;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -58,28 +59,26 @@ public class MixedFileOpsLoadTest extends LoadTest {
         String initialContent = "The initial contents!";
         String targetFile = "targetFile";
 
-        Supplier<HapiSpecOperation[]> mixedFileOpsBurst =
-                () ->
-                        new HapiSpecOperation[] {
-                            fileCreate(targetFile + submittedSoFar.getAndIncrement())
-                                    .contents(initialContent)
-                                    .hasKnownStatusFrom(SUCCESS, UNKNOWN),
-                            fileUpdate(targetFile)
-                                    .fee(ONE_HUNDRED_HBARS)
-                                    .contents(TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K))
-                                    .noLogging()
-                                    .payingWith(GENESIS)
-                                    .hasAnyPrecheck()
-                                    .hasKnownStatusFrom(SUCCESS, UNKNOWN)
-                                    .deferStatusResolution(),
-                            fileAppend(targetFile)
-                                    .content("dummy")
-                                    .hasAnyPrecheck()
-                                    .payingWith(GENESIS)
-                                    .fee(ONE_HUNDRED_HBARS)
-                                    .hasKnownStatusFrom(SUCCESS, UNKNOWN)
-                                    .deferStatusResolution()
-                        };
+        Supplier<HapiSpecOperation[]> mixedFileOpsBurst = () -> new HapiSpecOperation[] {
+            fileCreate(targetFile + submittedSoFar.getAndIncrement())
+                    .contents(initialContent)
+                    .hasKnownStatusFrom(SUCCESS, UNKNOWN),
+            fileUpdate(targetFile)
+                    .fee(ONE_HUNDRED_HBARS)
+                    .contents(TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K))
+                    .noLogging()
+                    .payingWith(GENESIS)
+                    .hasAnyPrecheck()
+                    .hasKnownStatusFrom(SUCCESS, UNKNOWN)
+                    .deferStatusResolution(),
+            fileAppend(targetFile)
+                    .content("dummy")
+                    .hasAnyPrecheck()
+                    .payingWith(GENESIS)
+                    .fee(ONE_HUNDRED_HBARS)
+                    .hasKnownStatusFrom(SUCCESS, UNKNOWN)
+                    .deferStatusResolution()
+        };
 
         return defaultHapiSpec("runMixedFileOps")
                 .given(

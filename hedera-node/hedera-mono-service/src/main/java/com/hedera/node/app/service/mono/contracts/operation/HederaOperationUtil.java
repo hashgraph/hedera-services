@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.operation;
 
 /*
@@ -98,27 +99,18 @@ public final class HederaOperationUtil {
         final var account = updater.get(address);
         if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
             return new Operation.OperationResult(
-                    supplierHaltGasCost.getAsLong(),
-                    HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
+                    supplierHaltGasCost.getAsLong(), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
         }
         boolean isDelegateCall = !frame.getContractAddress().equals(frame.getRecipientAddress());
         boolean sigReqIsMet;
         // if this is a delegate call activeContract should be the recipient address
         // otherwise it should be the contract address
         if (isDelegateCall) {
-            sigReqIsMet =
-                    sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                            true,
-                            account.getAddress(),
-                            frame.getRecipientAddress(),
-                            updater.trackingLedgers());
+            sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                    true, account.getAddress(), frame.getRecipientAddress(), updater.trackingLedgers());
         } else {
-            sigReqIsMet =
-                    sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
-                            false,
-                            account.getAddress(),
-                            frame.getContractAddress(),
-                            updater.trackingLedgers());
+            sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                    false, account.getAddress(), frame.getContractAddress(), updater.trackingLedgers());
         }
         if (!sigReqIsMet) {
             return new Operation.OperationResult(
@@ -129,22 +121,17 @@ public final class HederaOperationUtil {
     }
 
     public static void cacheExistingValue(
-            final MessageFrame frame,
-            final Address address,
-            final Bytes32 key,
-            final UInt256 storageValue) {
+            final MessageFrame frame, final Address address, final Bytes32 key, final UInt256 storageValue) {
         // Store the read if it is the first read for the slot/address
-        var updater =
-                frame.getMessageFrameStack()
-                        .getLast()
-                        .getWorldUpdater()
-                        .parentUpdater()
-                        .orElse(null);
+        var updater = frame.getMessageFrameStack()
+                .getLast()
+                .getWorldUpdater()
+                .parentUpdater()
+                .orElse(null);
         if (updater != null) {
-            final var addressSlots =
-                    ((HederaWorldState.Updater) updater)
-                            .getStateChanges()
-                            .computeIfAbsent(address, addr -> new TreeMap<>());
+            final var addressSlots = ((HederaWorldState.Updater) updater)
+                    .getStateChanges()
+                    .computeIfAbsent(address, addr -> new TreeMap<>());
             addressSlots.computeIfAbsent(key, slot -> new MutablePair<>(storageValue, null));
         }
     }

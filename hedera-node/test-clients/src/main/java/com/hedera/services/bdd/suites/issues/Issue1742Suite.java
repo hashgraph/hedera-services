@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.issues;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -50,18 +51,14 @@ public class Issue1742Suite extends HapiSuite {
         final long PAYER_BALANCE = 1_000_000L;
 
         return defaultHapiSpec("CryptoTransferListShowsOnlyFeesAfterIAB")
-                .given(
-                        flattened(
-                                cryptoCreate("payer").balance(PAYER_BALANCE),
-                                takeBalanceSnapshots(FUNDING, NODE, GENESIS, "payer")))
-                .when(
-                        cryptoTransfer(tinyBarsFromTo("payer", GENESIS, PAYER_BALANCE))
-                                .payingWith("payer")
-                                .via("txn")
-                                .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE))
-                .then(
-                        validateTransferListForBalances(
-                                "txn", List.of(FUNDING, NODE, GENESIS, "payer")));
+                .given(flattened(
+                        cryptoCreate("payer").balance(PAYER_BALANCE),
+                        takeBalanceSnapshots(FUNDING, NODE, GENESIS, "payer")))
+                .when(cryptoTransfer(tinyBarsFromTo("payer", GENESIS, PAYER_BALANCE))
+                        .payingWith("payer")
+                        .via("txn")
+                        .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE))
+                .then(validateTransferListForBalances("txn", List.of(FUNDING, NODE, GENESIS, "payer")));
     }
 
     @Override
