@@ -16,14 +16,18 @@
 
 package com.hedera.node.app.service.mono.fees.calculation;
 
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertFeeDataFromProtoToDto;
+
 import com.hedera.node.app.service.evm.fee.FeeResourcesLoader;
-import com.hedera.node.app.service.evm.fee.codec.FeeComponents;
+import com.hedera.node.app.service.evm.fee.codec.ExchangeRate;
 import com.hedera.node.app.service.evm.fee.codec.FeeData;
 import com.hedera.node.app.service.evm.fee.codec.SubType;
 import com.hedera.node.app.service.evm.utils.codec.HederaFunctionality;
 import com.hedera.node.app.service.evm.utils.codec.Timestamp;
-import java.util.Arrays;
-import java.util.EnumMap;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.fees.BasicHbarCentExchange;
+import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
@@ -31,50 +35,47 @@ import javax.inject.Inject;
 public class FeeResourcesLoaderImpl implements FeeResourcesLoader {
 
     private final BasicFcfsUsagePrices basicFcfsUsagePrices;
+    private final BasicHbarCentExchange basicHbarCentExchange;
+    private final MultiplierSources multiplierSources;
+    private final TransactionContext txnCtx;
 
     @Inject
-    public FeeResourcesLoaderImpl(final BasicFcfsUsagePrices basicFcfsUsagePrices) {
+    public FeeResourcesLoaderImpl(
+            final BasicFcfsUsagePrices basicFcfsUsagePrices,
+            final BasicHbarCentExchange basicHbarCentExchange,
+            final MultiplierSources multiplierSources,
+            final TransactionContext txnCtx) {
         this.basicFcfsUsagePrices = basicFcfsUsagePrices;
+        this.basicHbarCentExchange = basicHbarCentExchange;
+        this.multiplierSources = multiplierSources;
+        this.txnCtx = txnCtx;
     }
 
     @Override
-    public Timestamp currFunctionUsagePricesExpiry() {
-        return convertTimestampProtoToDto(basicFcfsUsagePrices.getCurrFunctionUsagePricesExpiry());
+    public ExchangeRate getCurrentRate() {
+        return convertExchangeRateFromProtoToDto(basicHbarCentExchange.getCurrentRate());
     }
 
     @Override
-    public Timestamp nextFunctionUsagePricesExpiry() {
-        return convertTimestampProtoToDto(basicFcfsUsagePrices.getNextFunctionUsagePricesExpiry());
+    public ExchangeRate getNextRate() {
+        return convertExchangeRateFromProtoToDto(basicHbarCentExchange.getNextRate());
     }
 
     @Override
-    public EnumMap<HederaFunctionality, Map<SubType, FeeData>> currFunctionUsagePrices() {
-        final var currentFunctionUsagePrices = basicFcfsUsagePrices.getCurrFunctionUsagePrices();
-
-        final EnumMap<HederaFunctionality, Map<SubType, FeeData>> convertedCurrentFunctionUsagePrices =
-                new EnumMap<>(com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.class);
-        Arrays.stream(HederaFunctionality.values())
-                .forEach(f -> convertedCurrentFunctionUsagePrices.put(
-                        HederaFunctionality.valueOf(f.toString()),
-                        convertSubTypeToFeeDataMapFromProtoToDto(currentFunctionUsagePrices.get(
-                                com.hederahashgraph.api.proto.java.HederaFunctionality.valueOf(f.toString())))));
-
-        return convertedCurrentFunctionUsagePrices;
+    public long getMaxCurrentMultiplier() {
+        return multiplierSources.maxCurrentMultiplier(txnCtx.accessor());
     }
 
     @Override
-    public EnumMap<HederaFunctionality, Map<SubType, FeeData>> nextFunctionUsagePrices() {
-        final var nextFunctionUsagePrices = basicFcfsUsagePrices.getNextFunctionUsagePrices();
+    public Map<SubType, FeeData> pricesGiven(HederaFunctionality function, Timestamp at) {
+        final var prices = basicFcfsUsagePrices.pricesGiven(
+                com.hederahashgraph.api.proto.java.HederaFunctionality.valueOf(function.name()),
+                com.hederahashgraph.api.proto.java.Timestamp.newBuilder()
+                        .setSeconds(at.getSeconds())
+                        .setNanos(at.getNanos())
+                        .build());
 
-        final EnumMap<HederaFunctionality, Map<SubType, FeeData>> convertedNextFunctionUsagePrices =
-                new EnumMap<>(com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.class);
-        Arrays.stream(HederaFunctionality.values())
-                .forEach(f -> convertedNextFunctionUsagePrices.put(
-                        HederaFunctionality.valueOf(f.toString()),
-                        convertSubTypeToFeeDataMapFromProtoToDto(nextFunctionUsagePrices.get(
-                                com.hederahashgraph.api.proto.java.HederaFunctionality.valueOf(f.toString())))));
-
-        return convertedNextFunctionUsagePrices;
+        return convertSubTypeToFeeDataMapFromProtoToDto(prices);
     }
 
     private Map<SubType, FeeData> convertSubTypeToFeeDataMapFromProtoToDto(
@@ -82,43 +83,9 @@ public class FeeResourcesLoaderImpl implements FeeResourcesLoader {
         final var subTypeMap = new HashMap<SubType, FeeData>();
 
         for (final var entry : map.entrySet()) {
-            final var protoFeeData = entry.getValue();
-            final var protoNodeData = protoFeeData.getNodedata();
-            final var protoNetworkData = protoFeeData.getNetworkdata();
-            final var protoServiceData = protoFeeData.getServicedata();
-
-            final var nodeData = convertFeeComponentsFromProtoToDto(protoNodeData);
-            final var networkData = convertFeeComponentsFromProtoToDto(protoNetworkData);
-            final var serviceData = convertFeeComponentsFromProtoToDto(protoServiceData);
-            final var feeData = new FeeData(
-                    nodeData,
-                    networkData,
-                    serviceData,
-                    SubType.valueOf(protoFeeData.getSubType().name()));
-
-            subTypeMap.put(SubType.valueOf(entry.getKey().name()), feeData);
+            subTypeMap.put(SubType.valueOf(entry.getKey().name()), convertFeeDataFromProtoToDto(entry.getValue()));
         }
 
         return subTypeMap;
-    }
-
-    public FeeComponents convertFeeComponentsFromProtoToDto(
-            com.hederahashgraph.api.proto.java.FeeComponents protoFeeComponents) {
-        return new FeeComponents(
-                protoFeeComponents.getMin(),
-                protoFeeComponents.getMax(),
-                protoFeeComponents.getConstant(),
-                protoFeeComponents.getBpt(),
-                protoFeeComponents.getVpt(),
-                protoFeeComponents.getRbh(),
-                protoFeeComponents.getSbh(),
-                protoFeeComponents.getGas(),
-                protoFeeComponents.getTv(),
-                protoFeeComponents.getBpr(),
-                protoFeeComponents.getSbpr());
-    }
-
-    private Timestamp convertTimestampProtoToDto(com.hederahashgraph.api.proto.java.Timestamp timestamp) {
-        return new Timestamp(timestamp.getSeconds(), timestamp.getNanos());
     }
 }

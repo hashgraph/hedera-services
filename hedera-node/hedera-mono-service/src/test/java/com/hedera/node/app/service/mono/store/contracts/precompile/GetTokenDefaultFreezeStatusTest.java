@@ -33,6 +33,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringCreations;
@@ -124,6 +125,9 @@ class GetTokenDefaultFreezeStatusTest {
     @Mock
     private AssetsLoader assetLoader;
 
+    @Mock
+    private FeeResourcesLoaderImpl feeResourcesLoader;
+
     public static final Bytes GET_TOKEN_DEFAULT_FREEZE_STATUS_INPUT =
             Bytes.fromHexString("0xa7daa18d00000000000000000000000000000000000000000000000000000000000003ff");
 
@@ -133,7 +137,7 @@ class GetTokenDefaultFreezeStatusTest {
     @BeforeEach
     void setUp() throws IOException {
         final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
-                assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
+                assetLoader, () -> feeCalculator, stateView, accessorFactory, feeResourcesLoader);
         subject = new HTSPrecompiledContract(
                 dynamicProperties,
                 gasCalculator,

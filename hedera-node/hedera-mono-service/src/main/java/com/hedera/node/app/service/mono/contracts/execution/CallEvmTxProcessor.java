@@ -21,7 +21,7 @@ import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.E
 
 import com.hedera.node.app.service.evm.utils.codec.HederaFunctionality;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.fees.calculation.PricesAndFeesProviderImpl;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.contracts.HederaMutableWorldState;
@@ -50,15 +50,15 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
     @Inject
     public CallEvmTxProcessor(
             final HederaMutableWorldState worldState,
-            final PricesAndFeesProviderImpl pricesAndFeesProvider,
             final CodeCache codeCache,
             final GlobalDynamicProperties dynamicProperties,
             final GasCalculator gasCalculator,
             final Map<String, Provider<MessageCallProcessor>> mcps,
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final AliasManager aliasManager,
-            final InHandleBlockMetaSource blockMetaSource) {
-        super(worldState, pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
+            final InHandleBlockMetaSource blockMetaSource,
+            final FeeResourcesLoaderImpl feeResourcesLoader) {
+        super(worldState, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource, feeResourcesLoader);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
     }

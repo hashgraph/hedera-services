@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.fees.charging;
 
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromProtoToDto;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
@@ -34,10 +35,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.ledger.backing.HashMapBackingAccounts;
@@ -102,6 +105,12 @@ class RecordedStorageFeeChargingTest {
     @Mock
     private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
 
+    @Mock
+    private PricesAndFeesProviderImpl pricesAndFeesProvider;
+
+    @Mock
+    private FeeResourcesLoaderImpl feeResourcesLoader;
+
     private FeeDistribution feeDistribution;
     private NonHapiFeeCharging nonHapiFeeCharging;
 
@@ -115,7 +124,7 @@ class RecordedStorageFeeChargingTest {
         nonHapiFeeCharging = new NonHapiFeeCharging(feeDistribution);
         subject = new RecordedStorageFeeCharging(
                 creator,
-                exchange,
+                feeResourcesLoader,
                 recordsHistorian,
                 txnCtx,
                 syntheticTxnFactory,
@@ -478,7 +487,7 @@ class RecordedStorageFeeChargingTest {
     @Test
     void doesntCreateRecordIfNoFeesCharged() {
         given(txnCtx.consensusTime()).willReturn(now);
-        given(exchange.activeRate(now)).willReturn(someRate);
+        given(pricesAndFeesProvider.activeRate(now)).willReturn(convertExchangeRateFromProtoToDto(someRate));
         given(dynamicProperties.storagePriceTiers()).willReturn(STORAGE_PRICE_TIERS);
         final Map<Long, KvUsageInfo> usageInfos =
                 Map.of(aContract.getAccountNum(), freeUsageFor(+1), bContract.getAccountNum(), freeUsageFor(12));
@@ -514,7 +523,7 @@ class RecordedStorageFeeChargingTest {
 
     private void givenStandardInternalSetup() {
         given(txnCtx.consensusTime()).willReturn(now);
-        given(exchange.activeRate(now)).willReturn(someRate);
+        given(pricesAndFeesProvider.activeRate(now)).willReturn(convertExchangeRateFromProtoToDto(someRate));
         given(dynamicProperties.fundingAccount()).willReturn(funding);
     }
 

@@ -21,6 +21,10 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.HRS_DIVISOR;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getFeeObject;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getTinybarsFromTinyCents;
 import static com.hedera.node.app.service.mono.fees.calculation.BasicFcfsUsagePrices.DEFAULT_RESOURCE_PRICES;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertFeeDataFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertHederaFunctionalityFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertTimestampFromProtoToDto;
 import static com.hedera.test.factories.txns.ContractCallFactory.newSignedContractCall;
 import static com.hedera.test.factories.txns.ContractCreateFactory.newSignedContractCreate;
 import static com.hedera.test.factories.txns.CryptoCreateFactory.newSignedCryptoCreate;
@@ -59,6 +63,7 @@ import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
@@ -96,9 +101,13 @@ import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Triple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatcher;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class UsageBasedFeeCalculatorTest {
     private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
     private final FeeComponents mockFees = FeeComponents.newBuilder()
@@ -151,6 +160,12 @@ class UsageBasedFeeCalculatorTest {
 
     private UsageBasedFeeCalculator subject;
 
+    @Mock
+    private PricesAndFeesProviderImpl pricesAndFeesProvider;
+
+    @Mock
+    private FeeResourcesLoaderImpl feeResourcesLoader;
+
     @BeforeEach
     void setup() throws Throwable {
         view = mock(StateView.class);
@@ -182,7 +197,8 @@ class UsageBasedFeeCalculatorTest {
                 new NestedMultiplierSource(),
                 pricedUsageCalculator,
                 Set.of(incorrectQueryEstimator, correctQueryEstimator),
-                txnUsageEstimators);
+                txnUsageEstimators,
+                feeResourcesLoader);
     }
 
     @Test
@@ -214,8 +230,11 @@ class UsageBasedFeeCalculatorTest {
                 .get();
         accessor = SignedTxnAccessor.from(signedTxn.toByteArray());
 
-        given(exchange.rate(at)).willReturn(currentRate);
-        given(usagePrices.defaultPricesGiven(ContractCall, at)).willReturn(defaultCurrentPrices);
+        given(pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(at)))
+                .willReturn(convertExchangeRateFromProtoToDto(currentRate));
+        given(pricesAndFeesProvider.defaultPricesGiven(
+                        convertHederaFunctionalityFromProtoToDto(ContractCall), convertTimestampFromProtoToDto(at)))
+                .willReturn(convertFeeDataFromProtoToDto(defaultCurrentPrices));
         // and:
         final long expectedGasPrice = getTinybarsFromTinyCents(currentRate, mockFees.getGas() / FEE_DIVISOR_FACTOR);
 
@@ -261,9 +280,12 @@ class UsageBasedFeeCalculatorTest {
                 .get();
         accessor = SignedTxnAccessor.from(signedTxn.toByteArray());
 
-        given(exchange.rate(at)).willReturn(currentRate);
+        given(pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(at)))
+                .willReturn(convertExchangeRateFromProtoToDto(currentRate));
         given(usagePrices.pricesGiven(ContractCreate, at)).willReturn(currentPrices);
-        given(usagePrices.defaultPricesGiven(ContractCreate, at)).willReturn(defaultCurrentPrices);
+        given(pricesAndFeesProvider.defaultPricesGiven(
+                        convertHederaFunctionalityFromProtoToDto(ContractCreate), convertTimestampFromProtoToDto(at)))
+                .willReturn(convertFeeDataFromProtoToDto(defaultCurrentPrices));
         // and:
         final long expectedGasPrice = getTinybarsFromTinyCents(currentRate, mockFees.getGas() / FEE_DIVISOR_FACTOR);
 
@@ -301,9 +323,12 @@ class UsageBasedFeeCalculatorTest {
 
     @Test
     void estimatesFutureGasPriceInTinybars() {
-        given(exchange.rate(at)).willReturn(currentRate);
+        given(pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(at)))
+                .willReturn(convertExchangeRateFromProtoToDto(currentRate));
         given(usagePrices.pricesGiven(CryptoCreate, at)).willReturn(currentPrices);
-        given(usagePrices.defaultPricesGiven(CryptoCreate, at)).willReturn(defaultCurrentPrices);
+        given(pricesAndFeesProvider.defaultPricesGiven(
+                        convertHederaFunctionalityFromProtoToDto(CryptoCreate), convertTimestampFromProtoToDto(at)))
+                .willReturn(convertFeeDataFromProtoToDto(defaultCurrentPrices));
         // and:
         final long expected = getTinybarsFromTinyCents(currentRate, mockFees.getGas() / FEE_DIVISOR_FACTOR);
 
@@ -383,7 +408,8 @@ class UsageBasedFeeCalculatorTest {
         given(correctQueryEstimator.usageGiven(argThat(query::equals), argThat(view::equals), any()))
                 .willReturn(resourceUsage);
         given(incorrectQueryEstimator.usageGiven(any(), any())).willThrow(RuntimeException.class);
-        given(exchange.rate(at)).willReturn(currentRate);
+        given(pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(at)))
+                .willReturn(convertExchangeRateFromProtoToDto(currentRate));
 
         // when:
         final FeeObject fees =
@@ -404,7 +430,8 @@ class UsageBasedFeeCalculatorTest {
         given(incorrectQueryEstimator.applicableTo(query)).willReturn(false);
         given(correctQueryEstimator.usageGivenType(query, view, ANSWER_ONLY)).willReturn(resourceUsage);
         given(incorrectQueryEstimator.usageGivenType(any(), any(), any())).willThrow(RuntimeException.class);
-        given(exchange.rate(at)).willReturn(currentRate);
+        given(pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(at)))
+                .willReturn(convertExchangeRateFromProtoToDto(currentRate));
 
         // when:
         final FeeObject fees =
@@ -433,7 +460,8 @@ class UsageBasedFeeCalculatorTest {
                         argThat(factory.apply(expectedSigUsage)),
                         argThat(view::equals)))
                 .willReturn(resourceUsage);
-        given(exchange.activeRate(consensusNow)).willReturn(currentRate);
+        given(pricesAndFeesProvider.activeRate(consensusNow))
+                .willReturn(convertExchangeRateFromProtoToDto(currentRate));
 
         // when:
         final FeeObject fees = subject.computeFee(accessor, payerKey, view, consensusNow);
@@ -458,7 +486,8 @@ class UsageBasedFeeCalculatorTest {
                         argThat(factory.apply(expectedSigUsage)),
                         argThat(view::equals)))
                 .willReturn(resourceUsage);
-        given(exchange.activeRate(consensusNow)).willReturn(currentRate);
+        given(pricesAndFeesProvider.activeRate(consensusNow))
+                .willReturn(convertExchangeRateFromProtoToDto(currentRate));
 
         // when:
         final FeeObject fees = subject.computeFee(accessor, payerKey, view, consensusNow);
@@ -551,7 +580,8 @@ class UsageBasedFeeCalculatorTest {
                         argThat(view::equals)))
                 .willReturn(resourceUsage);
         given(incorrectOpEstimator.usageGiven(any(), any(), any())).willThrow(RuntimeException.class);
-        given(exchange.rate(at)).willReturn(currentRate);
+        given(pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(at)))
+                .willReturn(convertExchangeRateFromProtoToDto(currentRate));
         given(usagePrices.activePrices(accessor)).willThrow(RuntimeException.class);
         given(usagePrices.pricesGiven(CryptoCreate, at)).willReturn(currentPrices);
 
@@ -580,7 +610,8 @@ class UsageBasedFeeCalculatorTest {
                         argThat(factory.apply(expectedSigUsage)),
                         argThat(view::equals)))
                 .willReturn(resourceUsage);
-        given(exchange.rate(at)).willReturn(currentRate);
+        given(pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(at)))
+                .willReturn(convertExchangeRateFromProtoToDto(currentRate));
         given(usagePrices.pricesGiven(CryptoCreate, at)).willThrow(RuntimeException.class);
 
         // when:
@@ -656,7 +687,8 @@ class UsageBasedFeeCalculatorTest {
         final var expectedFees = getFeeObject(currentPrices.get(subType), resourceUsage, currentRate);
 
         given(pricedUsageCalculator.supports(function)).willReturn(true);
-        given(exchange.activeRate(consensusNow)).willReturn(currentRate);
+        given(pricesAndFeesProvider.activeRate(consensusNow))
+                .willReturn(convertExchangeRateFromProtoToDto(currentRate));
         given(usagePrices.activePrices(accessor)).willReturn(currentPrices);
         given(pricedUsageCalculator.inHandleFees(accessor, currentPrices.get(subType), currentRate, payerKey))
                 .willReturn(expectedFees);

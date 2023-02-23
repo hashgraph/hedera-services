@@ -21,9 +21,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.fees.calculation.UsageBasedFeeCalculator;
-import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -41,7 +42,10 @@ class MonoFeeAccumulatorTest {
     private UsageBasedFeeCalculator usageBasedFeeCalculator;
 
     @Mock
-    private UsagePricesProvider usagePricesProvider;
+    private PricesAndFeesProvider pricesAndFeesProvider;
+
+    @Mock
+    private FeeResourcesLoaderImpl feeResourcesLoader;
 
     @Mock
     private StateView stateView;
@@ -50,7 +54,7 @@ class MonoFeeAccumulatorTest {
 
     @BeforeEach
     void setUp() {
-        subject = new MonoFeeAccumulator(usageBasedFeeCalculator, usagePricesProvider, () -> stateView);
+        subject = new MonoFeeAccumulator(usageBasedFeeCalculator, feeResourcesLoader, () -> stateView);
     }
 
     @Test
@@ -61,7 +65,6 @@ class MonoFeeAccumulatorTest {
         final var time = Timestamp.newBuilder().setSeconds(100L).build();
         final var feeObject = new FeeObject(100L, 0L, 100L);
 
-        given(usagePricesProvider.defaultPricesGiven(queryFunction, time)).willReturn(usagePrices);
         given(usageBasedFeeCalculator.computePayment(mockQuery, usagePrices, stateView, time, new HashMap<>()))
                 .willReturn(feeObject);
 
@@ -71,7 +74,6 @@ class MonoFeeAccumulatorTest {
                 Timestamp.newBuilder().setSeconds(100L).build());
 
         assertEquals(feeObject, fee);
-        verify(usagePricesProvider).defaultPricesGiven(queryFunction, time);
         verify(usageBasedFeeCalculator).computePayment(mockQuery, usagePrices, stateView, time, new HashMap<>());
     }
 }

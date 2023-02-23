@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.execution;
 
+import com.hedera.node.app.service.evm.fee.FeeResourcesLoader;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.utils.codec.HederaFunctionality;
 import java.util.Map;
@@ -33,13 +34,13 @@ public class MockHederaEvmTxProcessor extends HederaEvmTxProcessor {
 
     protected MockHederaEvmTxProcessor(
             final HederaEvmMutableWorldState worldState,
-            final PricesAndFeesProvider pricesAndFeesProvider,
             final EvmProperties dynamicProperties,
             final GasCalculator gasCalculator,
             final Map<String, Provider<MessageCallProcessor>> mcps,
             final Map<String, Provider<ContractCreationProcessor>> ccps,
-            final BlockMetaSource blockMetaSource) {
-        super(worldState, pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
+            final BlockMetaSource blockMetaSource,
+            final FeeResourcesLoader feeResourcesLoader) {
+        super(worldState, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource, feeResourcesLoader);
     }
 
     @Override

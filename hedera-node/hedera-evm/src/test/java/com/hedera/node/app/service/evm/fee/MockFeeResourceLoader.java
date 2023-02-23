@@ -23,22 +23,25 @@ import com.hedera.node.app.service.evm.utils.codec.HederaFunctionality;
 import com.hedera.node.app.service.evm.utils.codec.Timestamp;
 import java.util.Map;
 
-public interface FeeResourcesLoader {
+public class MockFeeResourceLoader implements FeeResourcesLoader {
 
-    ExchangeRate getCurrentRate();
+    @Override
+    public ExchangeRate getCurrentRate() {
+        return null;
+    }
 
-    ExchangeRate getNextRate();
+    @Override
+    public ExchangeRate getNextRate() {
+        return null;
+    }
 
-    long getMaxCurrentMultiplier();
+    @Override
+    public long getMaxCurrentMultiplier() {
+        return 0;
+    }
 
-    /**
-     * Returns the prices in tinyCents that are likely to be required to consume various resources
-     * while processing the given operation at the given time. (In principle, the price schedules
-     * could change in the interim.)
-     *
-     * @param function the operation of interest
-     * @param at the expected consensus time for the operation
-     * @return the estimated prices
-     */
-    Map<SubType, FeeData> pricesGiven(final HederaFunctionality function, final Timestamp at);
+    @Override
+    public Map<SubType, FeeData> pricesGiven(HederaFunctionality function, Timestamp at) {
+        return null;
+    }
 }

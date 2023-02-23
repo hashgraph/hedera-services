@@ -38,9 +38,10 @@ package com.hedera.node.app.service.mono.contracts.gascalculator;
  *
  */
 
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.fees.HbarCentExchange;
-import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import javax.inject.Inject;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -53,17 +54,13 @@ import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
 public class GasCalculatorHederaV19 extends LondonGasCalculator {
 
     private final GlobalDynamicProperties dynamicProperties;
-    private final UsagePricesProvider usagePrices;
-    private final HbarCentExchange exchange;
+    private final PricesAndFeesProvider pricesAndFeesProvider;
 
     @Inject
     public GasCalculatorHederaV19(
-            final GlobalDynamicProperties dynamicProperties,
-            final UsagePricesProvider usagePrices,
-            final HbarCentExchange exchange) {
+            final GlobalDynamicProperties dynamicProperties, final FeeResourcesLoaderImpl feeResourcesLoader) {
         this.dynamicProperties = dynamicProperties;
-        this.usagePrices = usagePrices;
-        this.exchange = exchange;
+        this.pricesAndFeesProvider = new PricesAndFeesProviderImpl(feeResourcesLoader);
     }
 
     @Override
@@ -80,7 +77,7 @@ public class GasCalculatorHederaV19 extends LondonGasCalculator {
     public long logOperationGasCost(
             final MessageFrame frame, final long dataOffset, final long dataLength, final int numTopics) {
         final var gasCost = GasCalculatorHederaUtil.logOperationGasCost(
-                usagePrices, exchange, frame, getLogStorageDuration(), dataOffset, dataLength, numTopics);
+                pricesAndFeesProvider, frame, getLogStorageDuration(), dataOffset, dataLength, numTopics);
         return Math.max(super.logOperationGasCost(frame, dataOffset, dataLength, numTopics), gasCost);
     }
 

@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.hapi.fees.calc.OverflowCheckingCalc.tinycentsToTinybars;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromProtoToDto;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.ExchangeRatePrecompiledContract.TO_TINYBARS_SELECTOR;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.ExchangeRatePrecompiledContract.TO_TINYCENTS_SELECTOR;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,8 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
 import com.google.common.primitives.Longs;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -54,11 +57,17 @@ class ExchangeRatePrecompiledContractTest {
     @Mock
     private GlobalDynamicProperties dynamicProperties;
 
+    @Mock
+    private FeeResourcesLoaderImpl feeResourcesLoader;
+
+    @Mock
+    private PricesAndFeesProviderImpl pricesAndFeesProvider;
+
     private ExchangeRatePrecompiledContract subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ExchangeRatePrecompiledContract(gasCalculator, exchange, dynamicProperties, () -> now);
+        subject = new ExchangeRatePrecompiledContract(gasCalculator, dynamicProperties, () -> now, feeResourcesLoader);
     }
 
     @Test
@@ -153,7 +162,7 @@ class ExchangeRatePrecompiledContractTest {
     }
 
     private void givenRate(final ExchangeRate rate) {
-        given(exchange.activeRate(now)).willReturn(rate);
+        given(pricesAndFeesProvider.activeRate(now)).willReturn(convertExchangeRateFromProtoToDto(rate));
     }
 
     private static final int someHbarEquiv = 120;

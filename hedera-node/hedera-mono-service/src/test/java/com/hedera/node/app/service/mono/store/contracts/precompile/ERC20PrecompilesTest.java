@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromDtoToProto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertTimestampFromProtoToDto;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ALLOWANCE;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_APPROVE;
@@ -81,19 +84,23 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.BalanceOfWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenAllowanceWrapper;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
+import com.hedera.node.app.service.evm.utils.codec.Timestamp;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
+import com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMeta;
@@ -307,6 +314,12 @@ class ERC20PrecompilesTest {
     @Mock
     private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
+    @Mock
+    private FeeResourcesLoaderImpl feeResourcesLoader;
+
+    @Mock
+    private PricesAndFeesProviderImpl pricesAndFeesProvider;
+
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
 
@@ -316,6 +329,7 @@ class ERC20PrecompilesTest {
     private MockedStatic<AllowancePrecompile> allowancePrecompile;
     private MockedStatic<BalanceOfPrecompile> balanceOfPrecompile;
     private MockedStatic<ApprovePrecompile> approvePrecompile;
+    private MockedStatic<FeeConverter> feeConverter;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -326,7 +340,7 @@ class ERC20PrecompilesTest {
         canonicalPrices.put(HederaFunctionality.CryptoTransfer, type);
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
         final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
-                assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
+                assetLoader, () -> feeCalculator, stateView, accessorFactory, feeResourcesLoader);
         subject = new HTSPrecompiledContract(
                 dynamicProperties,
                 gasCalculator,
@@ -365,6 +379,7 @@ class ERC20PrecompilesTest {
         allowancePrecompile = Mockito.mockStatic(AllowancePrecompile.class);
         balanceOfPrecompile = Mockito.mockStatic(BalanceOfPrecompile.class);
         approvePrecompile = Mockito.mockStatic(ApprovePrecompile.class);
+        feeConverter = Mockito.mockStatic(FeeConverter.class);
     }
 
     @AfterEach
@@ -374,6 +389,7 @@ class ERC20PrecompilesTest {
         allowancePrecompile.close();
         balanceOfPrecompile.close();
         approvePrecompile.close();
+        feeConverter.close();
     }
 
     @Test
@@ -1502,7 +1518,18 @@ class ERC20PrecompilesTest {
     }
 
     private void givenPricingUtilsContext() {
-        given(exchange.rate(any())).willReturn(exchangeRate);
+        given(feeResourcesLoader.getCurrentRate())
+                .willReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(
+                        HBAR_RATE, CENTS_RATE, HTSTestsUtil.TEST_CONSENSUS_TIME + 1));
+        feeConverter
+                .when(() -> convertExchangeRateFromProtoToDto(any()))
+                .thenReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(
+                        HBAR_RATE, CENTS_RATE, HTSTestsUtil.TEST_CONSENSUS_TIME + 1));
+        feeConverter.when(() -> convertExchangeRateFromDtoToProto(any())).thenReturn(exchangeRate);
+        feeConverter
+                .when(() -> convertTimestampFromProtoToDto(any()))
+                .thenReturn(new Timestamp(HTSTestsUtil.TEST_CONSENSUS_TIME, 0));
+
         given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
         given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
     }

@@ -26,7 +26,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessor;
 import com.hedera.node.app.service.mono.contracts.gascalculator.GasCalculatorHederaV22;
-import com.hedera.node.app.service.mono.fees.calculation.PricesAndFeesProviderImpl;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
@@ -202,13 +202,13 @@ public interface ContractsModule {
     @Singleton
     static Supplier<CallLocalEvmTxProcessor> provideCallLocalEvmTxProcessorFactory(
             final CodeCache codeCache,
-            final PricesAndFeesProviderImpl pricesAndFeesProvider,
             final GlobalDynamicProperties dynamicProperties,
             final GasCalculator gasCalculator,
             final Map<String, Provider<MessageCallProcessor>> mcps,
             final Map<String, Provider<ContractCreationProcessor>> ccps,
-            final AliasManager aliasManager) {
+            final AliasManager aliasManager,
+            final FeeResourcesLoaderImpl feeResourcesLoader) {
         return () -> new CallLocalEvmTxProcessor(
-                codeCache, pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps, aliasManager);
+                codeCache, dynamicProperties, gasCalculator, mcps, ccps, aliasManager, feeResourcesLoader);
     }
 }

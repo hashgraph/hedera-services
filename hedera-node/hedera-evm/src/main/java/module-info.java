@@ -16,6 +16,7 @@ module com.hedera.node.app.service.evm {
     requires com.sun.jna;
     requires headlong;
     requires javax.inject;
+    requires org.apache.logging.log4j;
 
     exports com.hedera.node.app.service.evm.store.contracts.utils;
     exports com.hedera.node.app.service.evm.contracts.execution;

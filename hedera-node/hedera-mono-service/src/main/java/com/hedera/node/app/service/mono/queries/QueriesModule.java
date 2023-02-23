@@ -21,7 +21,7 @@ import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
-import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.queries.answering.QueryHeaderValidity;
 import com.hedera.node.app.service.mono.queries.answering.StakeAwareAnswerFlow;
 import com.hedera.node.app.service.mono.queries.answering.StakedAnswerFlow;
@@ -48,7 +48,7 @@ public final class QueriesModule {
             final QueryFeeCheck queryFeeCheck,
             final HapiOpPermissions hapiOpPermissions,
             final Supplier<StateView> stateViews,
-            final UsagePricesProvider usagePrices,
+            final FeeResourcesLoaderImpl feeResourcesLoader,
             final QueryHeaderValidity queryHeaderValidity,
             final TransactionPrecheck transactionPrecheck,
             final PlatformSubmissionManager submissionManager,
@@ -57,7 +57,7 @@ public final class QueriesModule {
                 fees,
                 accountNums,
                 stateViews,
-                usagePrices,
+                feeResourcesLoader,
                 hapiThrottling,
                 submissionManager,
                 queryHeaderValidity,

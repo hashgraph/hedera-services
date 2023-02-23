@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromDtoToProto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertTimestampFromProtoToDto;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_REVOKE_TOKEN_KYC;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
@@ -36,14 +39,18 @@ import static org.mockito.BDDMockito.given;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.utils.codec.Timestamp;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
+import com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
@@ -184,8 +191,15 @@ class RevokeKycPrecompileTest {
     @Mock
     private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
+    @Mock
+    private PricesAndFeesProviderImpl pricesAndFeesProvider;
+
+    @Mock
+    private FeeResourcesLoaderImpl feeResourcesLoader;
+
     private HTSPrecompiledContract subject;
     private MockedStatic<RevokeKycPrecompile> revokeKycPrecompile;
+    private MockedStatic<FeeConverter> feeConverter;
     private static final long TEST_SERVICE_FEE = 5_000_000;
     private static final long TEST_NETWORK_FEE = 400_000;
     private static final long TEST_NODE_FEE = 300_000;
@@ -203,7 +217,7 @@ class RevokeKycPrecompileTest {
                 HederaFunctionality.TokenRevokeKycFromAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
         final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
-                assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
+                assetLoader, () -> feeCalculator, stateView, accessorFactory, feeResourcesLoader);
         subject = new HTSPrecompiledContract(
                 dynamicProperties,
                 gasCalculator,
@@ -219,11 +233,13 @@ class RevokeKycPrecompileTest {
                 infrastructureFactory,
                 evmHTSPrecompiledContract);
         revokeKycPrecompile = Mockito.mockStatic(RevokeKycPrecompile.class);
+        feeConverter = Mockito.mockStatic(FeeConverter.class);
     }
 
     @AfterEach
     void closeMocks() {
         revokeKycPrecompile.close();
+        feeConverter.close();
     }
 
     @Test
@@ -329,7 +345,18 @@ class RevokeKycPrecompileTest {
     }
 
     private void givenPricingUtilsContext() {
-        given(exchange.rate(any())).willReturn(exchangeRate);
+        given(feeResourcesLoader.getCurrentRate())
+                .willReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(
+                        HBAR_RATE, CENTS_RATE, HTSTestsUtil.TEST_CONSENSUS_TIME + 1));
+        feeConverter
+                .when(() -> convertExchangeRateFromProtoToDto(any()))
+                .thenReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(
+                        HBAR_RATE, CENTS_RATE, HTSTestsUtil.TEST_CONSENSUS_TIME + 1));
+        feeConverter.when(() -> convertExchangeRateFromDtoToProto(any())).thenReturn(exchangeRate);
+        feeConverter
+                .when(() -> convertTimestampFromProtoToDto(any()))
+                .thenReturn(new Timestamp(HTSTestsUtil.TEST_CONSENSUS_TIME, 0));
+
         given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
         given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
         given(worldUpdater.aliases()).willReturn(aliases);

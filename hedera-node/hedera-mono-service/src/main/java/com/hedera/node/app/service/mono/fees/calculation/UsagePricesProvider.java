@@ -58,17 +58,6 @@ public interface UsagePricesProvider {
     Map<SubType, FeeData> pricesGiven(HederaFunctionality function, Timestamp at);
 
     /**
-     * Returns the prices in tinyCents that are likely to be required to consume various resources
-     * while processing the given operation at the given time. (In principle, the price schedules
-     * could change in the interim.)
-     *
-     * @param function the operation of interest
-     * @param at the expected consensus time for the operation
-     * @return the estimated prices
-     */
-    FeeData defaultPricesGiven(HederaFunctionality function, Timestamp at);
-
-    /**
      * Returns a triple whose middle value is a "rollover consensus time" before which the leftmost
      * {@code FeeData} prices apply to the given function; and after which the rightmost {@code
      * FeeData} prices apply.

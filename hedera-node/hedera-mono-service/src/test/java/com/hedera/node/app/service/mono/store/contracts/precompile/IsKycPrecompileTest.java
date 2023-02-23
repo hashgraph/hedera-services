@@ -41,6 +41,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
@@ -165,6 +166,9 @@ class IsKycPrecompileTest {
     @Mock
     private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
+    @Mock
+    private FeeResourcesLoaderImpl feeResourcesLoader;
+
     public static final Bytes IS_KYC = Bytes.fromHexString(
             "0xf2c31ff400000000000000000000000000000000000000000000000000000000000004b200000000000000000000000000000000000000000000000000000000000004b0");
     private HTSPrecompiledContract subject;
@@ -173,7 +177,7 @@ class IsKycPrecompileTest {
     @BeforeEach
     void setUp() throws IOException {
         final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
-                assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
+                assetLoader, () -> feeCalculator, stateView, accessorFactory, feeResourcesLoader);
         subject = new HTSPrecompiledContract(
                 dynamicProperties,
                 gasCalculator,

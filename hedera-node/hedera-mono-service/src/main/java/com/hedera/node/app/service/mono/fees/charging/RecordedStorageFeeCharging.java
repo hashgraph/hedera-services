@@ -17,17 +17,22 @@
 package com.hedera.node.app.service.mono.fees.charging;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromDtoToProto;
 import static com.hedera.node.app.service.mono.ledger.TransactionalLedger.activeLedgerWrapping;
-import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.*;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.node.app.service.mono.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
@@ -54,7 +59,7 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
     // Used to create the synthetic record if itemizing is enabled
     private final EntityCreator creator;
     // Used to get the current exchange rate
-    private final HbarCentExchange exchange;
+    private final PricesAndFeesProvider pricesAndFeesProvider;
     // Used to track the storage fee payments in a succeeding child record
     private final RecordsHistorian recordsHistorian;
     // Used to create the synthetic CryptoTransfer for storage fee payments
@@ -69,7 +74,7 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
     @Inject
     public RecordedStorageFeeCharging(
             final EntityCreator creator,
-            final HbarCentExchange exchange,
+            final FeeResourcesLoaderImpl feeResourcesLoader,
             final RecordsHistorian recordsHistorian,
             final TransactionContext txnCtx,
             final SyntheticTxnFactory syntheticTxnFactory,
@@ -77,7 +82,7 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
             final NonHapiFeeCharging nonHapiFeeCharging) {
         this.txnCtx = txnCtx;
         this.creator = creator;
-        this.exchange = exchange;
+        this.pricesAndFeesProvider = new PricesAndFeesProviderImpl(feeResourcesLoader);
         this.recordsHistorian = recordsHistorian;
         this.dynamicProperties = dynamicProperties;
         this.syntheticTxnFactory = syntheticTxnFactory;
@@ -124,7 +129,7 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
             final ContractStoragePriceTiers storagePriceTiers,
             final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts) {
         final var now = txnCtx.consensusTime();
-        final var rate = exchange.activeRate(now);
+        final var rate = convertExchangeRateFromDtoToProto(pricesAndFeesProvider.activeRate(now));
         final var thisSecond = now.getEpochSecond();
 
         if (!newUsageInfos.isEmpty()) {

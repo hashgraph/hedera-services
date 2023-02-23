@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.evm.contracts.execution;
 
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
+import com.hedera.node.app.service.evm.fee.FeeResourcesLoader;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
@@ -80,14 +81,13 @@ public abstract class HederaEvmTxProcessor {
 
     protected HederaEvmTxProcessor(
             final HederaEvmMutableWorldState worldState,
-            final PricesAndFeesProvider pricesAndFeesProvider,
             final EvmProperties dynamicProperties,
             final GasCalculator gasCalculator,
             final Map<String, Provider<MessageCallProcessor>> mcps,
             final Map<String, Provider<ContractCreationProcessor>> ccps,
-            final BlockMetaSource blockMetaSource) {
+            final BlockMetaSource blockMetaSource,
+            final FeeResourcesLoader feeResourcesLoader) {
         this.worldState = worldState;
-        this.pricesAndFeesProvider = pricesAndFeesProvider;
         this.dynamicProperties = dynamicProperties;
         this.gasCalculator = gasCalculator;
 
@@ -97,6 +97,7 @@ public abstract class HederaEvmTxProcessor {
         this.contractCreationProcessor =
                 ccps.get(dynamicProperties.evmVersion()).get();
         this.blockMetaSource = blockMetaSource;
+        this.pricesAndFeesProvider = new PricesAndFeesProviderImpl(feeResourcesLoader);
     }
 
     /**
@@ -206,10 +207,7 @@ public abstract class HederaEvmTxProcessor {
 
     protected long gasPriceTinyBarsGiven(final Instant consensusTime, final boolean isEthTxn) {
         return pricesAndFeesProvider.currentGasPrice(
-                consensusTime,
-                isEthTxn
-                        ? com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.EthereumTransaction
-                        : getFunctionType());
+                consensusTime, isEthTxn ? HederaFunctionality.EthereumTransaction : getFunctionType());
     }
 
     protected abstract HederaFunctionality getFunctionType();

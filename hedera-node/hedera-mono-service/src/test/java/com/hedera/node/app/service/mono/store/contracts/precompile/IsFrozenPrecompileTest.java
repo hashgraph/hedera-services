@@ -40,6 +40,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
@@ -168,6 +169,9 @@ class IsFrozenPrecompileTest {
     @Mock
     private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
+    @Mock
+    private FeeResourcesLoaderImpl feeResourcesLoader;
+
     public static final Bytes IS_FROZEN_INPUT = Bytes.fromHexString(
             "0x46de0fb1000000000000000000000000000000000000000000000000000000000000050e000000000000000000000000000000000000000000000000000000000000050c");
     private HTSPrecompiledContract subject;
@@ -179,7 +183,7 @@ class IsFrozenPrecompileTest {
         canonicalPrices.put(HederaFunctionality.TokenUnfreezeAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
         final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
-                assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
+                assetLoader, () -> feeCalculator, stateView, accessorFactory, feeResourcesLoader);
         subject = new HTSPrecompiledContract(
                 dynamicProperties,
                 gasCalculator,

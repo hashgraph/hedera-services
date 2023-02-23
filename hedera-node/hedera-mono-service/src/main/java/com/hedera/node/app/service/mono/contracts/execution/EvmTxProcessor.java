@@ -25,10 +25,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.evm.fee.FeeResourcesLoader;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaTracer;
 import com.hedera.node.app.service.mono.exceptions.ResourceLimitException;
-import com.hedera.node.app.service.mono.fees.calculation.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.store.contracts.HederaMutableWorldState;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
 import com.hedera.node.app.service.mono.store.models.Account;
@@ -60,23 +60,23 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 abstract class EvmTxProcessor extends HederaEvmTxProcessor {
 
     protected EvmTxProcessor(
-            final PricesAndFeesProviderImpl pricesAndFeesProvider,
-            final GlobalDynamicProperties dynamicProperties,
-            final GasCalculator gasCalculator,
-            final Map<String, Provider<MessageCallProcessor>> mcps,
-            final Map<String, Provider<ContractCreationProcessor>> ccps) {
-        this(null, pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps, null);
-    }
-
-    protected EvmTxProcessor(
-            final HederaMutableWorldState worldState,
-            final PricesAndFeesProviderImpl pricesAndFeesProvider,
             final GlobalDynamicProperties dynamicProperties,
             final GasCalculator gasCalculator,
             final Map<String, Provider<MessageCallProcessor>> mcps,
             final Map<String, Provider<ContractCreationProcessor>> ccps,
-            final BlockMetaSource blockMetaSource) {
-        super(worldState, pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
+            final FeeResourcesLoader feeResourcesLoader) {
+        this(null, dynamicProperties, gasCalculator, mcps, ccps, null, feeResourcesLoader);
+    }
+
+    protected EvmTxProcessor(
+            final HederaMutableWorldState worldState,
+            final GlobalDynamicProperties dynamicProperties,
+            final GasCalculator gasCalculator,
+            final Map<String, Provider<MessageCallProcessor>> mcps,
+            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final BlockMetaSource blockMetaSource,
+            final FeeResourcesLoader feeResourcesLoader) {
+        super(worldState, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource, feeResourcesLoader);
     }
 
     /**

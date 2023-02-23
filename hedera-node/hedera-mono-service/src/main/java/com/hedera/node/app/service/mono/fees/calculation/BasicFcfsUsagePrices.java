@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.fees.calculation;
 
+import static com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl.DEFAULT_FEE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 
@@ -51,8 +52,6 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class BasicFcfsUsagePrices implements UsagePricesProvider {
     private static final Logger log = LogManager.getLogger(BasicFcfsUsagePrices.class);
-
-    private static final long DEFAULT_FEE = 100_000L;
     private static final FeeComponents DEFAULT_PROVIDER_RESOURCE_PRICES = FeeComponents.newBuilder()
             .setMin(DEFAULT_FEE)
             .setMax(DEFAULT_FEE)
@@ -135,11 +134,6 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
     }
 
     @Override
-    public FeeData defaultPricesGiven(final HederaFunctionality function, final Timestamp at) {
-        return pricesGiven(function, at).get(DEFAULT);
-    }
-
-    @Override
     public Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> activePricingSequence(
             final HederaFunctionality function) {
         return Triple.of(
@@ -147,22 +141,6 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
                 Instant.ofEpochSecond(
                         currFunctionUsagePricesExpiry.getSeconds(), currFunctionUsagePricesExpiry.getNanos()),
                 nextFunctionUsagePrices.get(function));
-    }
-
-    public Timestamp getCurrFunctionUsagePricesExpiry() {
-        return currFunctionUsagePricesExpiry;
-    }
-
-    public Timestamp getNextFunctionUsagePricesExpiry() {
-        return nextFunctionUsagePricesExpiry;
-    }
-
-    public EnumMap<HederaFunctionality, Map<SubType, FeeData>> getCurrFunctionUsagePrices() {
-        return currFunctionUsagePrices;
-    }
-
-    public EnumMap<HederaFunctionality, Map<SubType, FeeData>> getNextFunctionUsagePrices() {
-        return nextFunctionUsagePrices;
     }
 
     private Map<HederaFunctionality, Map<SubType, FeeData>> applicableUsagePrices(final Timestamp at) {

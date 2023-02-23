@@ -16,10 +16,16 @@
 
 package com.hedera.node.app.fees;
 
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertFeeDataFromDtoToProto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertHederaFunctionalityFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertTimestampFromProtoToDto;
+
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.fees.calculation.UsageBasedFeeCalculator;
-import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -36,22 +42,23 @@ import javax.inject.Singleton;
 @Singleton
 public class MonoFeeAccumulator implements FeeAccumulator {
     private final UsageBasedFeeCalculator feeCalculator;
-    private final UsagePricesProvider resourceCosts;
+    private final PricesAndFeesProvider pricesAndFeesProvider;
     private final Supplier<StateView> stateView;
 
     @Inject
     public MonoFeeAccumulator(
             final UsageBasedFeeCalculator feeCalculator,
-            final UsagePricesProvider resourceCosts,
+            final FeeResourcesLoaderImpl feeResourcesLoader,
             final Supplier<StateView> stateView) {
         this.feeCalculator = feeCalculator;
-        this.resourceCosts = resourceCosts;
+        this.pricesAndFeesProvider = new PricesAndFeesProviderImpl(feeResourcesLoader);
         this.stateView = stateView;
     }
 
     @Override
     public FeeObject computePayment(HederaFunctionality functionality, Query query, Timestamp now) {
-        final var usagePrices = resourceCosts.defaultPricesGiven(functionality, now);
+        final var usagePrices = convertFeeDataFromDtoToProto(pricesAndFeesProvider.defaultPricesGiven(
+                convertHederaFunctionalityFromProtoToDto(functionality), convertTimestampFromProtoToDto(now)));
         return feeCalculator.computePayment(query, usagePrices, stateView.get(), now, new HashMap<>());
     }
 }

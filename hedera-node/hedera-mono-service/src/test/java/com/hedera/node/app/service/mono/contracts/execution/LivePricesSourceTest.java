@@ -17,12 +17,19 @@
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getTinybarsFromTinyCents;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertFeeDataFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertHederaFunctionalityFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertTimestampFromProtoToDto;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
+import com.hedera.node.app.service.evm.utils.codec.HederaFunctionality;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
@@ -68,13 +75,19 @@ class LivePricesSourceTest {
     private TransactionContext txnCtx;
 
     @Mock
+    private PricesAndFeesProviderImpl pricesAndFeesProvider;
+
+    @Mock
     private TxnAccessor accessor;
+
+    @Mock
+    private FeeResourcesLoaderImpl feeResourcesLoader;
 
     private LivePricesSource subject;
 
     @BeforeEach
     void setUp() {
-        subject = new LivePricesSource(exchange, usagePrices, multiplierSources, txnCtx);
+        subject = new LivePricesSource(exchange, usagePrices, multiplierSources, txnCtx, feeResourcesLoader);
     }
 
     @Test
@@ -83,22 +96,33 @@ class LivePricesSourceTest {
 
         final var expected = getTinybarsFromTinyCents(activeRate, gasPriceTinybars) * reasonableMultiplier;
 
-        assertEquals(expected, subject.currentGasPrice(now, ContractCall));
+        assertEquals(
+                expected,
+                pricesAndFeesProvider.currentGasPrice(now, convertHederaFunctionalityFromProtoToDto(ContractCall)));
     }
 
     @Test
     void getsCurrentGasPriceInTinyCents() {
-        given(usagePrices.defaultPricesGiven(ContractCall, timeNow)).willReturn(providerPrices);
+        given(pricesAndFeesProvider.defaultPricesGiven(
+                        convertHederaFunctionalityFromProtoToDto(ContractCall),
+                        convertTimestampFromProtoToDto(timeNow)))
+                .willReturn(convertFeeDataFromProtoToDto(providerPrices));
 
         ToLongFunction<FeeComponents> resourcePriceFn = FeeComponents::getGas;
         final var expected = resourcePriceFn.applyAsLong(providerPrices.getServicedata()) / 1000;
 
-        assertEquals(expected, subject.currentGasPriceInTinycents(now, ContractCall));
+        assertEquals(
+                expected,
+                pricesAndFeesProvider.currentGasPriceInTinycents(
+                        now, convertHederaFunctionalityFromProtoToDto(ContractCall)));
     }
 
     private void givenCollabsWithMultiplier(final long multiplier) {
-        given(exchange.rate(timeNow)).willReturn(activeRate);
-        given(usagePrices.defaultPricesGiven(ContractCall, timeNow)).willReturn(providerPrices);
+        given(pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(timeNow)))
+                .willReturn(convertExchangeRateFromProtoToDto(activeRate));
+        given(pricesAndFeesProvider.defaultPricesGiven(
+                        HederaFunctionality.ContractCall, convertTimestampFromProtoToDto(timeNow)))
+                .willReturn(convertFeeDataFromProtoToDto(providerPrices));
         given(multiplierSources.maxCurrentMultiplier(accessor)).willReturn(multiplier);
         given(txnCtx.accessor()).willReturn(accessor);
     }

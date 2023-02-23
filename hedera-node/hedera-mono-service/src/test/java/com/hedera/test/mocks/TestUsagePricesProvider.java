@@ -82,11 +82,6 @@ public enum TestUsagePricesProvider implements UsagePricesProvider {
     }
 
     @Override
-    public FeeData defaultPricesGiven(HederaFunctionality function, Timestamp at) {
-        return pricesGiven(function, at).get(SubType.DEFAULT);
-    }
-
-    @Override
     public Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> activePricingSequence(
             HederaFunctionality function) {
         var now = Instant.now();

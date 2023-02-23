@@ -38,9 +38,13 @@ package com.hedera.node.app.service.mono.contracts.gascalculator;
  *
  */
 
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromDtoToProto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertFeeDataFromDtoToProto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertHederaFunctionalityFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertTimestampFromProtoToDto;
+
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
-import com.hedera.node.app.service.mono.fees.HbarCentExchange;
-import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -60,14 +64,16 @@ public final class GasCalculatorHederaUtil {
     }
 
     public static long ramByteHoursTinyBarsGiven(
-            final UsagePricesProvider usagePrices,
-            final HbarCentExchange exchange,
-            long consensusTime,
-            HederaFunctionality functionType) {
+            final PricesAndFeesProvider pricesAndFeesProvider, long consensusTime, HederaFunctionality functionType) {
         final var timestamp = Timestamp.newBuilder().setSeconds(consensusTime).build();
-        FeeData prices = usagePrices.defaultPricesGiven(functionType, timestamp);
+        FeeData prices = convertFeeDataFromDtoToProto(pricesAndFeesProvider.defaultPricesGiven(
+                convertHederaFunctionalityFromProtoToDto(functionType), convertTimestampFromProtoToDto(timestamp)));
         long feeInTinyCents = prices.getServicedata().getRbh() / 1000;
-        long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp), feeInTinyCents);
+        long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(
+                convertExchangeRateFromDtoToProto(
+                        pricesAndFeesProvider.rate(new com.hedera.node.app.service.evm.utils.codec.Timestamp(
+                                timestamp.getSeconds(), timestamp.getNanos()))),
+                feeInTinyCents);
         return Math.max(1L, feeInTinyBars);
     }
 
@@ -89,8 +95,7 @@ public final class GasCalculatorHederaUtil {
 
     @SuppressWarnings("unused")
     public static long logOperationGasCost(
-            final UsagePricesProvider usagePrices,
-            final HbarCentExchange exchange,
+            final PricesAndFeesProvider pricesAndFeesProvider,
             final MessageFrame frame,
             final long storageDuration,
             final long dataOffset,
@@ -104,7 +109,7 @@ public final class GasCalculatorHederaUtil {
         return GasCalculatorHederaUtil.calculateStorageGasNeeded(
                 logStorageTotalSize,
                 storageDuration,
-                GasCalculatorHederaUtil.ramByteHoursTinyBarsGiven(usagePrices, exchange, timestamp, functionType),
+                GasCalculatorHederaUtil.ramByteHoursTinyBarsGiven(pricesAndFeesProvider, timestamp, functionType),
                 gasPrice);
     }
 }

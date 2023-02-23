@@ -16,11 +16,31 @@
 
 package com.hedera.node.app.service.evm.contracts.execution;
 
+import com.hedera.node.app.service.evm.fee.codec.ExchangeRate;
+import com.hedera.node.app.service.evm.fee.codec.FeeData;
 import com.hedera.node.app.service.evm.utils.codec.HederaFunctionality;
+import com.hedera.node.app.service.evm.utils.codec.Timestamp;
 import java.time.Instant;
 
 public interface PricesAndFeesProvider {
     long currentGasPrice(final Instant now, final HederaFunctionality function);
 
     long currentGasPriceInTinycents(final Instant now, final HederaFunctionality function);
+
+    ExchangeRate rateAt(final long now);
+
+    ExchangeRate activeRate(Instant now);
+
+    ExchangeRate rate(Timestamp at);
+
+    /**
+     * Returns the prices in tinyCents that are likely to be required to consume various resources
+     * while processing the given operation at the given time. (In principle, the price schedules
+     * could change in the interim.)
+     *
+     * @param function the operation of interest
+     * @param at the expected consensus time for the operation
+     * @return the estimated prices
+     */
+    FeeData defaultPricesGiven(final HederaFunctionality function, final Timestamp at);
 }

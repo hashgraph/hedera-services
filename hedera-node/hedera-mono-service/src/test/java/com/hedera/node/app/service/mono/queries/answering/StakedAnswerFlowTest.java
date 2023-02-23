@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.mono.queries.answering;
 
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertFeeDataFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertTimestampFromProtoToDto;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -35,11 +37,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
+import com.hedera.node.app.service.evm.utils.codec.HederaFunctionality;
 import com.hedera.node.app.service.mono.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
-import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.queries.AnswerService;
 import com.hedera.node.app.service.mono.queries.validation.QueryFeeCheck;
 import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
@@ -101,9 +105,6 @@ class StakedAnswerFlowTest {
     private QueryFeeCheck queryFeeCheck;
 
     @Mock
-    private UsagePricesProvider resourceCosts;
-
-    @Mock
     private QueryHeaderValidity queryHeaderValidity;
 
     @Mock
@@ -118,6 +119,12 @@ class StakedAnswerFlowTest {
     @Mock
     private PlatformSubmissionManager submissionManager;
 
+    @Mock
+    private FeeResourcesLoaderImpl feeResourcesLoader;
+
+    @Mock
+    private PricesAndFeesProviderImpl pricesAndFeesProvider;
+
     private StakedAnswerFlow subject;
 
     @BeforeEach
@@ -126,7 +133,7 @@ class StakedAnswerFlowTest {
                 fees,
                 accountNumbers,
                 () -> stateView,
-                resourceCosts,
+                feeResourcesLoader,
                 throttles,
                 submissionManager,
                 queryHeaderValidity,
@@ -185,7 +192,10 @@ class StakedAnswerFlowTest {
         given(hapiOpPermissions.permissibilityOf(NetworkGetExecutionTime, superuser))
                 .willReturn(OK);
         givenHappyService();
-        given(resourceCosts.defaultPricesGiven(NetworkGetExecutionTime, now)).willReturn(usagePrices);
+        given(pricesAndFeesProvider.defaultPricesGiven(
+                        HederaFunctionality.valueOf(NetworkGetExecutionTime.name()),
+                        convertTimestampFromProtoToDto(now)))
+                .willReturn(convertFeeDataFromProtoToDto(usagePrices));
         givenComputableCost();
 
         final var actual = subject.satisfyUsing(service, query);
@@ -425,7 +435,9 @@ class StakedAnswerFlowTest {
     }
 
     private void givenAvailableResourcePrices() {
-        given(resourceCosts.defaultPricesGiven(ConsensusGetTopicInfo, now)).willReturn(usagePrices);
+        given(pricesAndFeesProvider.defaultPricesGiven(
+                        HederaFunctionality.valueOf(ConsensusGetTopicInfo.name()), convertTimestampFromProtoToDto(now)))
+                .willReturn(convertFeeDataFromProtoToDto(usagePrices));
     }
 
     private void givenHappyService() {

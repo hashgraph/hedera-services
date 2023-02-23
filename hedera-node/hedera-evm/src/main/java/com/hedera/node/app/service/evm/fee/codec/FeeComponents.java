@@ -32,6 +32,8 @@ public class FeeComponents {
     long bpr;
     long sbpr;
 
+    public FeeComponents() {}
+
     public FeeComponents(
             long min,
             long max,

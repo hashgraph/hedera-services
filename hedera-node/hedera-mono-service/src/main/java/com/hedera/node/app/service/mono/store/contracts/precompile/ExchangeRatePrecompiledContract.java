@@ -18,8 +18,10 @@ package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import com.esaulpaugh.headlong.abi.BigIntegerType;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.function.Supplier;
@@ -58,20 +60,20 @@ public class ExchangeRatePrecompiledContract extends AbstractPrecompiledContract
 
     public static final String EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS = "0x168";
 
-    private final HbarCentExchange exchange;
+    private final PricesAndFeesProvider pricesAndFeesProvider;
     private final Supplier<Instant> consensusNow;
     private final GlobalDynamicProperties dynamicProperties;
 
     @Inject
     public ExchangeRatePrecompiledContract(
             final GasCalculator gasCalculator,
-            final HbarCentExchange exchange,
             final GlobalDynamicProperties dynamicProperties,
-            final Supplier<Instant> consensusNow) {
+            final Supplier<Instant> consensusNow,
+            final FeeResourcesLoaderImpl feeResourcesLoader) {
         super(PRECOMPILE_NAME, gasCalculator);
-        this.exchange = exchange;
         this.consensusNow = consensusNow;
         this.dynamicProperties = dynamicProperties;
+        this.pricesAndFeesProvider = new PricesAndFeesProviderImpl(feeResourcesLoader);
     }
 
     @Override
@@ -84,7 +86,7 @@ public class ExchangeRatePrecompiledContract extends AbstractPrecompiledContract
         try {
             final var selector = input.getInt(0);
             final var amount = biValueFrom(input);
-            final var activeRate = exchange.activeRate(consensusNow.get());
+            final var activeRate = pricesAndFeesProvider.activeRate(consensusNow.get());
             return switch (selector) {
                 case TO_TINYBARS_SELECTOR -> padded(
                         fromAToB(amount, activeRate.getHbarEquiv(), activeRate.getCentEquiv()));

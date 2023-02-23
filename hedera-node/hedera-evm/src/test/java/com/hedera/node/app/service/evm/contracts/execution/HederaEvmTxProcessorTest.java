@@ -27,9 +27,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
+import com.hedera.node.app.service.evm.fee.MockFeeResourceLoader;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.node.app.service.evm.utils.codec.HederaFunctionality;
 import java.math.BigInteger;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -149,7 +151,13 @@ class HederaEvmTxProcessorTest {
                 });
 
         evmTxProcessor = new MockHederaEvmTxProcessor(
-                worldState, pricesAndFeesProvider, globalDynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
+                worldState,
+                globalDynamicProperties,
+                gasCalculator,
+                mcps,
+                ccps,
+                blockMetaSource,
+                new MockFeeResourceLoader());
 
         final var hederaEvmOperationTracer = new DefaultHederaTracer();
         evmTxProcessor.setOperationTracer(hederaEvmOperationTracer);
@@ -288,9 +296,7 @@ class HederaEvmTxProcessorTest {
 
     @Test
     void assertIsContractCallFunctionality() {
-        assertEquals(
-                com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCall,
-                evmTxProcessor.getFunctionType());
+        assertEquals(HederaFunctionality.ContractCall, evmTxProcessor.getFunctionType());
     }
 
     @Test

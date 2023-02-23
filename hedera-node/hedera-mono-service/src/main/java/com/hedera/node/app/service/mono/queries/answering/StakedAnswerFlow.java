@@ -17,6 +17,9 @@
 package com.hedera.node.app.service.mono.queries.answering;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertFeeDataFromDtoToProto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertHederaFunctionalityFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertTimestampFromProtoToDto;
 import static com.hedera.node.app.service.mono.txns.submission.SystemPrecheck.RESTRICTED_FUNCTIONALITIES;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -26,10 +29,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
-import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.queries.AnswerFlow;
 import com.hedera.node.app.service.mono.queries.AnswerService;
 import com.hedera.node.app.service.mono.queries.validation.QueryFeeCheck;
@@ -56,7 +61,7 @@ public final class StakedAnswerFlow implements AnswerFlow {
     private final HederaAccountNumbers accountNums;
     private final HapiOpPermissions hapiOpPermissions;
     private final Supplier<StateView> stateViews;
-    private final UsagePricesProvider resourceCosts;
+    private final PricesAndFeesProvider pricesAndFeesProvider;
     private final QueryHeaderValidity queryHeaderValidity;
     private final TransactionPrecheck transactionPrecheck;
     private final FunctionalityThrottling throttles;
@@ -66,7 +71,7 @@ public final class StakedAnswerFlow implements AnswerFlow {
             final FeeCalculator fees,
             final HederaAccountNumbers accountNums,
             final Supplier<StateView> stateViews,
-            final UsagePricesProvider resourceCosts,
+            final FeeResourcesLoaderImpl feeResourcesLoader,
             final FunctionalityThrottling throttles,
             final PlatformSubmissionManager submissionManager,
             final QueryHeaderValidity queryHeaderValidity,
@@ -78,7 +83,7 @@ public final class StakedAnswerFlow implements AnswerFlow {
         this.throttles = throttles;
         this.stateViews = stateViews;
         this.accountNums = accountNums;
-        this.resourceCosts = resourceCosts;
+        this.pricesAndFeesProvider = new PricesAndFeesProviderImpl(feeResourcesLoader);
         this.submissionManager = submissionManager;
         this.hapiOpPermissions = hapiOpPermissions;
         this.queryHeaderValidity = queryHeaderValidity;
@@ -115,7 +120,9 @@ public final class StakedAnswerFlow implements AnswerFlow {
         final var bestGuessNow = (null != optionalPayment)
                 ? optionalPayment.getTxnId().getTransactionValidStart()
                 : asTimestamp(Instant.now());
-        final var usagePrices = resourceCosts.defaultPricesGiven(service.canonicalFunction(), bestGuessNow);
+        final var usagePrices = convertFeeDataFromDtoToProto(pricesAndFeesProvider.defaultPricesGiven(
+                convertHederaFunctionalityFromProtoToDto(service.canonicalFunction()),
+                convertTimestampFromProtoToDto(bestGuessNow)));
 
         long fee = 0L;
         final Map<String, Object> queryCtx = new HashMap<>();

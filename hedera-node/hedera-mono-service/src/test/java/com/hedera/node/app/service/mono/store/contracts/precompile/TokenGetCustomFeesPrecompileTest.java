@@ -46,6 +46,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
@@ -163,6 +164,9 @@ class TokenGetCustomFeesPrecompileTest {
     @Mock
     private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
+    @Mock
+    private FeeResourcesLoaderImpl feeResourcesLoader;
+
     private static final Bytes GET_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT =
             Bytes.fromHexString("0xae7611a000000000000000000000000000000000000000000000000000000000000003ee");
 
@@ -175,7 +179,7 @@ class TokenGetCustomFeesPrecompileTest {
     @BeforeEach
     void setUp() {
         final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
-                assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
+                assetLoader, () -> feeCalculator, stateView, accessorFactory, feeResourcesLoader);
 
         entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(tokenMerkleId)).thenReturn(tokenMerkleAddress);

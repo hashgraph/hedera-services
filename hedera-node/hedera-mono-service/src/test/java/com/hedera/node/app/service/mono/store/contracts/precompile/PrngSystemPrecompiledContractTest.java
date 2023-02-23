@@ -40,11 +40,13 @@ import static org.mockito.Mockito.verify;
 
 import com.google.common.primitives.Longs;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.evm.utils.codec.HederaFunctionality;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
-import com.hedera.node.app.service.mono.fees.calculation.PricesAndFeesProviderImpl;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringCreations;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -109,6 +111,9 @@ class PrngSystemPrecompiledContractTest {
     private PricesAndFeesProviderImpl pricesAndFeesProvider;
 
     @Mock
+    private FeeResourcesLoaderImpl feeResourcesLoader;
+
+    @Mock
     private HederaStackedWorldStateUpdater updater;
 
     private PrngSystemPrecompiledContract subject;
@@ -120,13 +125,7 @@ class PrngSystemPrecompiledContractTest {
     void setUp() {
         final var logic = new PrngLogic(dynamicProperties, () -> runningHashLeaf, sideEffectsTracker);
         subject = new PrngSystemPrecompiledContract(
-                gasCalculator,
-                logic,
-                creator,
-                recordsHistorian,
-                pricingUtils,
-                pricesAndFeesProvider,
-                dynamicProperties);
+                gasCalculator, logic, creator, recordsHistorian, pricingUtils, dynamicProperties, feeResourcesLoader);
     }
 
     @Test
@@ -147,8 +146,7 @@ class PrngSystemPrecompiledContractTest {
     @Test
     void calculatesGasCorrectly() {
         given(pricingUtils.getCanonicalPriceInTinyCents(PRNG)).willReturn(100000000L);
-        given(pricesAndFeesProvider.currentGasPriceInTinycents(
-                        consensusNow, com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCall))
+        given(pricesAndFeesProvider.currentGasPriceInTinycents(consensusNow, HederaFunctionality.ContractCall))
                 .willReturn(800L);
         assertEquals(100000000L / 800L, subject.calculateGas(consensusNow));
     }
@@ -205,13 +203,7 @@ class PrngSystemPrecompiledContractTest {
         given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
         final var logic = mock(PrngLogic.class);
         subject = new PrngSystemPrecompiledContract(
-                gasCalculator,
-                logic,
-                creator,
-                recordsHistorian,
-                pricingUtils,
-                pricesAndFeesProvider,
-                dynamicProperties);
+                gasCalculator, logic, creator, recordsHistorian, pricingUtils, dynamicProperties, feeResourcesLoader);
         given(logic.getNMinus3RunningHashBytes()).willThrow(IndexOutOfBoundsException.class);
 
         final var response = subject.computePrngResult(10L, input, frame);
@@ -353,8 +345,7 @@ class PrngSystemPrecompiledContractTest {
         given(frame.getWorldUpdater()).willReturn(updater);
         given(updater.permissivelyUnaliased(frame.getSenderAddress().toArray())).willReturn(ALTBN128_ADD.toArray());
         given(pricingUtils.getCanonicalPriceInTinyCents(PRNG)).willReturn(100000000L);
-        given(pricesAndFeesProvider.currentGasPriceInTinycents(
-                        consensusNow, com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCall))
+        given(pricesAndFeesProvider.currentGasPriceInTinycents(consensusNow, HederaFunctionality.ContractCall))
                 .willReturn(830L);
         given(frame.getRemainingGas()).willReturn(400_000L);
         given(updater.parentUpdater()).willReturn(Optional.of(updater));

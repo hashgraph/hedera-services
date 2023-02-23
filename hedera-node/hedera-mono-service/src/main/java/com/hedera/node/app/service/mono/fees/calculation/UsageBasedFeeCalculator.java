@@ -19,6 +19,10 @@ package com.hedera.node.app.service.mono.fees.calculation;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getFeeObject;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getTinybarsFromTinyCents;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromDtoToProto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertFeeDataFromDtoToProto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertHederaFunctionalityFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertTimestampFromProtoToDto;
 import static com.hedera.node.app.service.mono.keys.HederaKeyTraversal.numSimpleKeys;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractAutoRenew;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
@@ -28,6 +32,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccou
 import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
@@ -75,6 +81,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
     private final PricedUsageCalculator pricedUsageCalculator;
     private final List<QueryResourceUsageEstimator> queryUsageEstimators;
     private final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators;
+    private final PricesAndFeesProvider pricesAndFeesProvider;
 
     @Inject
     public UsageBasedFeeCalculator(
@@ -85,7 +92,8 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
             final @GenericPriceMultiplier FeeMultiplierSource feeMultiplierSource,
             final PricedUsageCalculator pricedUsageCalculator,
             final Set<QueryResourceUsageEstimator> queryUsageEstimators,
-            final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators) {
+            final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators,
+            final FeeResourcesLoaderImpl feeResourcesLoader) {
         this.exchange = exchange;
         this.usagePrices = usagePrices;
         this.feeMultiplierSource = feeMultiplierSource;
@@ -93,6 +101,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
         this.txnUsageEstimators = txnUsageEstimators;
         this.queryUsageEstimators = new ArrayList<>(queryUsageEstimators);
         this.pricedUsageCalculator = pricedUsageCalculator;
+        this.pricesAndFeesProvider = new PricesAndFeesProviderImpl(feeResourcesLoader);
 
         autoCreationLogic.setFeeCalculator(this);
     }
@@ -111,7 +120,11 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
             final Instant now,
             final HederaAccount payer) {
         return autoRenewCalcs.assessCryptoRenewal(
-                expiredAccountOrContract, requestedRenewal, now, exchange.activeRate(now), payer);
+                expiredAccountOrContract,
+                requestedRenewal,
+                now,
+                convertExchangeRateFromDtoToProto(pricesAndFeesProvider.activeRate(now)),
+                payer);
     }
 
     @Override
@@ -130,26 +143,43 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
             Query query, FeeData usagePrices, Timestamp at, Function<QueryResourceUsageEstimator, FeeData> usageFn) {
         var usageEstimator = getQueryUsageEstimator(query);
         var queryUsage = usageFn.apply(usageEstimator);
-        return getFeeObject(usagePrices, queryUsage, exchange.rate(at));
+        return getFeeObject(
+                usagePrices,
+                queryUsage,
+                convertExchangeRateFromDtoToProto(pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(at))));
     }
 
     @Override
     public FeeObject computeFee(TxnAccessor accessor, JKey payerKey, StateView view, Instant now) {
-        return feeGiven(accessor, payerKey, view, usagePrices.activePrices(accessor), exchange.activeRate(now), true);
+        return feeGiven(
+                accessor,
+                payerKey,
+                view,
+                usagePrices.activePrices(accessor),
+                convertExchangeRateFromDtoToProto(pricesAndFeesProvider.activeRate(now)),
+                true);
     }
 
     @Override
     public FeeObject estimateFee(TxnAccessor accessor, JKey payerKey, StateView view, Timestamp at) {
         Map<SubType, FeeData> prices = uncheckedPricesGiven(accessor, at);
 
-        return feeGiven(accessor, payerKey, view, prices, exchange.rate(at), false);
+        return feeGiven(
+                accessor,
+                payerKey,
+                view,
+                prices,
+                convertExchangeRateFromDtoToProto(pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(at))),
+                false);
     }
 
     @Override
     public long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at) {
-        var rates = exchange.rate(at);
-        var prices = usagePrices.defaultPricesGiven(function, at);
-        return gasPriceInTinybars(prices, rates);
+        var rates = convertExchangeRateFromDtoToProto(pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(at)));
+
+        final var prices = pricesAndFeesProvider.defaultPricesGiven(
+                convertHederaFunctionalityFromProtoToDto(function), convertTimestampFromProtoToDto(at));
+        return gasPriceInTinybars(convertFeeDataFromDtoToProto(prices), rates);
     }
 
     @Override

@@ -35,7 +35,7 @@ import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
-import com.hedera.node.app.service.mono.fees.calculation.PricesAndFeesProviderImpl;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
@@ -113,7 +113,7 @@ class ContractsModuleTest {
     PrngLogic prngLogic;
 
     @Mock
-    PricesAndFeesProviderImpl pricesAndFeesProvider;
+    FeeResourcesLoaderImpl feeResourcesLoader;
 
     @Mock
     TransactionContext transactionContext;
@@ -169,7 +169,7 @@ class ContractsModuleTest {
                 .InfrastructureFactory(InfrastructureFactory)
                 .now(now)
                 .prngLogic(prngLogic)
-                .pricesAndFeesProvider(pricesAndFeesProvider)
+                .feeResourcesLoader(feeResourcesLoader)
                 .transactionContext(transactionContext)
                 .entityCreator(entityCreator)
                 .autoCreationLogic(autoCreationLogic)
@@ -182,12 +182,12 @@ class ContractsModuleTest {
         given(globalDynamicProperties.evmVersion()).willReturn(pretendVersion);
         final var supplier = provideCallLocalEvmTxProcessorFactory(
                 codeCache,
-                pricesAndFeesProvider,
                 globalDynamicProperties,
                 gasCalculator,
                 Map.of(pretendVersion, () -> messageCallProcessor),
                 Map.of(pretendVersion, () -> contractCreationProcessor),
-                aliasManager);
+                aliasManager,
+                feeResourcesLoader);
         assertInstanceOf(CallLocalEvmTxProcessor.class, supplier.get());
     }
 

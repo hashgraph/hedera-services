@@ -19,8 +19,6 @@ package com.hedera.node.app.service.mono.fees;
 import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -29,25 +27,27 @@ public final class BasicHbarCentExchange implements HbarCentExchange {
     private ExchangeRates fcRates = null;
     private ExchangeRateSet grpcRates = null;
 
+    //    private PricesAndFeesProvider pricesAndFeesProvider;
+
     @Inject
     public BasicHbarCentExchange() {
-        /* No-op */
+        //        this.pricesAndFeesProvider = new PricesAndFeesProviderImpl(feeResourcesLoader);
     }
 
-    @Override
-    public ExchangeRate activeRate(final Instant now) {
-        return rateAt(now.getEpochSecond());
-    }
+    //    @Override
+    //    public ExchangeRate activeRate(final Instant now) {
+    //        return convertExchangeRateFromDtoToProto(pricesAndFeesProvider.rateAt(now.getEpochSecond()));
+    //    }
 
     @Override
     public ExchangeRateSet activeRates() {
         return grpcRates;
     }
 
-    @Override
-    public ExchangeRate rate(final Timestamp now) {
-        return rateAt(now.getSeconds());
-    }
+    //    @Override
+    //    public ExchangeRate rate(final Timestamp now) {
+    //        return convertExchangeRateFromDtoToProto(pricesAndFeesProvider.rateAt(now.getSeconds()));
+    //    }
 
     @Override
     public void updateRates(final ExchangeRateSet rates) {
@@ -60,9 +60,11 @@ public final class BasicHbarCentExchange implements HbarCentExchange {
         return fcRates;
     }
 
-    private ExchangeRate rateAt(final long now) {
-        final var currentRate = grpcRates.getCurrentRate();
-        final var currentExpiry = currentRate.getExpirationTime().getSeconds();
-        return (now < currentExpiry) ? currentRate : grpcRates.getNextRate();
+    public ExchangeRate getCurrentRate() {
+        return grpcRates.getCurrentRate();
+    }
+
+    public ExchangeRate getNextRate() {
+        return grpcRates.getNextRate();
     }
 }

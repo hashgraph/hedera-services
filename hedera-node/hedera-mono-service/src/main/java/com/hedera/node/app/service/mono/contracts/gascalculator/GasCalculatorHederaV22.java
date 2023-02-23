@@ -39,8 +39,7 @@ package com.hedera.node.app.service.mono.contracts.gascalculator;
  */
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.fees.HbarCentExchange;
-import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import javax.inject.Inject;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -53,10 +52,8 @@ public class GasCalculatorHederaV22 extends GasCalculatorHederaV19 {
 
     @Inject
     public GasCalculatorHederaV22(
-            final GlobalDynamicProperties dynamicProperties,
-            final UsagePricesProvider usagePrices,
-            final HbarCentExchange exchange) {
-        super(dynamicProperties, usagePrices, exchange);
+            final GlobalDynamicProperties dynamicProperties, final FeeResourcesLoaderImpl feeResourcesLoader) {
+        super(dynamicProperties, feeResourcesLoader);
     }
 
     @Override

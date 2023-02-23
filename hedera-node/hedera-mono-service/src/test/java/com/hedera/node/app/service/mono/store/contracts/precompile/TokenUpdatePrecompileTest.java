@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromDtoToProto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertTimestampFromProtoToDto;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_INFO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_INFO_V2;
@@ -39,6 +42,7 @@ import static org.mockito.BDDMockito.given;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -47,7 +51,9 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
+import com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
@@ -183,6 +189,12 @@ class TokenUpdatePrecompileTest {
     @Mock
     private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
+    @Mock
+    private FeeResourcesLoaderImpl feeResourcesLoader;
+
+    @Mock
+    private PricesAndFeesProviderImpl pricesAndFeesProvider;
+
     private final TokenUpdateWrapper updateWrapper = HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys(null);
 
     private static final int CENTS_RATE = 12;
@@ -199,11 +211,12 @@ class TokenUpdatePrecompileTest {
 
     private HTSPrecompiledContract subject;
     private MockedStatic<TokenUpdatePrecompile> tokenUpdatePrecompile;
+    private MockedStatic<FeeConverter> feeConverter;
 
     @BeforeEach
     void setUp() {
         final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
-                assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
+                assetLoader, () -> feeCalculator, stateView, accessorFactory, feeResourcesLoader);
         subject = new HTSPrecompiledContract(
                 dynamicProperties,
                 gasCalculator,
@@ -220,12 +233,17 @@ class TokenUpdatePrecompileTest {
                 evmHTSPrecompiledContract);
 
         tokenUpdatePrecompile = Mockito.mockStatic(TokenUpdatePrecompile.class);
+        feeConverter = Mockito.mockStatic(FeeConverter.class);
     }
 
     @AfterEach
     void closeMocks() {
         if (!tokenUpdatePrecompile.isClosed()) {
             tokenUpdatePrecompile.close();
+        }
+
+        if (!feeConverter.isClosed()) {
+            feeConverter.close();
         }
     }
 
@@ -347,6 +365,7 @@ class TokenUpdatePrecompileTest {
     @Test
     void decodeFungibleUpdateInput() {
         tokenUpdatePrecompile.close();
+        feeConverter.close();
         final var decodedInput = decodeUpdateTokenInfo(UPDATE_FUNGIBLE_TOKEN_INPUT, identity());
 
         assertExpectedFungibleTokenUpdateStruct(decodedInput);
@@ -355,6 +374,7 @@ class TokenUpdatePrecompileTest {
     @Test
     void decodeFungibleUpdateInputWithNoTreasurySet() {
         tokenUpdatePrecompile.close();
+        feeConverter.close();
         final var decodedInput = decodeUpdateTokenInfo(UPDATE_FUNGIBLE_TOKEN_INPUT_WITH_NO_TREASURY_SET, identity());
 
         assertEquals("customName", decodedInput.name());
@@ -371,6 +391,7 @@ class TokenUpdatePrecompileTest {
     @Test
     void decodeFungibleUpdateInputV2() {
         tokenUpdatePrecompile.close();
+        feeConverter.close();
         final var decodedInput = decodeUpdateTokenInfoV2(UPDATE_FUNGIBLE_TOKEN_INPUT_V2, identity());
 
         assertExpectedFungibleTokenUpdateStruct(decodedInput);
@@ -379,6 +400,7 @@ class TokenUpdatePrecompileTest {
     @Test
     void decodeFungibleUpdateInputV3() {
         tokenUpdatePrecompile.close();
+        feeConverter.close();
         final var decodedInput = decodeUpdateTokenInfoV3(UPDATE_FUNGIBLE_TOKEN_INPUT_V3, identity());
 
         assertExpectedFungibleTokenUpdateStruct(decodedInput);
@@ -464,7 +486,19 @@ class TokenUpdatePrecompileTest {
     }
 
     private void givenPricingUtilsContext() {
-        given(exchange.rate(any())).willReturn(exchangeRate);
+        given(feeResourcesLoader.getCurrentRate())
+                .willReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(
+                        HBAR_RATE, CENTS_RATE, HTSTestsUtil.TEST_CONSENSUS_TIME + 1));
+        feeConverter
+                .when(() -> convertExchangeRateFromProtoToDto(any()))
+                .thenReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(
+                        HBAR_RATE, CENTS_RATE, HTSTestsUtil.TEST_CONSENSUS_TIME + 1));
+        feeConverter.when(() -> convertExchangeRateFromDtoToProto(any())).thenReturn(exchangeRate);
+        feeConverter
+                .when(() -> convertTimestampFromProtoToDto(any()))
+                .thenReturn(
+                        new com.hedera.node.app.service.evm.utils.codec.Timestamp(HTSTestsUtil.TEST_CONSENSUS_TIME, 0));
+
         given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
         given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
         given(worldUpdater.aliases()).willReturn(aliases);

@@ -41,6 +41,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
@@ -144,6 +145,9 @@ class TokenPrecompileReadOperationsTest {
     @Mock
     private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
+    @Mock
+    private FeeResourcesLoaderImpl feeResourcesLoader;
+
     private MerkleToken merkleToken;
     private final TokenID tokenID = asToken("0.0.5");
 
@@ -156,11 +160,10 @@ class TokenPrecompileReadOperationsTest {
 
         final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
                 assetLoader,
-                exchange,
                 () -> feeCalculator,
-                resourceCosts,
                 stateView,
-                new AccessorFactory(dynamicProperties));
+                new AccessorFactory(dynamicProperties),
+                feeResourcesLoader);
         subject = new HTSPrecompiledContract(
                 dynamicProperties,
                 gasCalculator,

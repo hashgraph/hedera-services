@@ -16,7 +16,8 @@
 
 package com.hedera.node.app.service.mono.contracts;
 
-import static com.hedera.node.app.service.mono.contracts.ContractsModule.*;
+import static com.hedera.node.app.service.mono.contracts.ContractsModule.V_0_30;
+import static com.hedera.node.app.service.mono.contracts.ContractsModule.V_0_34;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -25,7 +26,7 @@ import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
-import com.hedera.node.app.service.mono.fees.calculation.PricesAndFeesProviderImpl;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
@@ -109,7 +110,7 @@ public interface ContractsTestComponent {
         Builder prngLogic(PrngLogic prngLogic);
 
         @BindsInstance
-        Builder pricesAndFeesProvider(PricesAndFeesProviderImpl pricesAndFeesProvider);
+        Builder feeResourcesLoader(FeeResourcesLoaderImpl feeResourcesLoader);
 
         @BindsInstance
         Builder transactionContext(TransactionContext transactionContext);

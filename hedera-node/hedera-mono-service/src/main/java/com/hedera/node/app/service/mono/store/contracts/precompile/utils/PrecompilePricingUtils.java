@@ -18,6 +18,10 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.utils;
 
 import static com.hedera.node.app.hapi.fees.pricing.FeeSchedules.USD_TO_TINYCENTS;
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromDtoToProto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertFeeDataFromDtoToProto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertHederaFunctionalityFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertTimestampFromProtoToDto;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
@@ -47,10 +51,11 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
-import com.hedera.node.app.service.mono.fees.HbarCentExchange;
-import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.store.contracts.precompile.Precompile;
 import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -87,9 +92,8 @@ public class PrecompilePricingUtils {
     private static final Query SYNTHETIC_REDIRECT_QUERY = Query.newBuilder()
             .setTransactionGetRecord(TransactionGetRecordQuery.newBuilder().build())
             .build();
-    private final HbarCentExchange exchange;
     private final Provider<FeeCalculator> feeCalculator;
-    private final UsagePricesProvider resourceCosts;
+    private final PricesAndFeesProvider pricesAndFeesProvider;
     private final StateView currentView;
     private final AccessorFactory accessorFactory;
     Map<GasCostType, Long> canonicalOperationCostsInTinyCents;
@@ -97,14 +101,12 @@ public class PrecompilePricingUtils {
     @Inject
     public PrecompilePricingUtils(
             final AssetsLoader assetsLoader,
-            final HbarCentExchange exchange,
             final Provider<FeeCalculator> feeCalculator,
-            final UsagePricesProvider resourceCosts,
             final StateView currentView,
-            final AccessorFactory accessorFactory) {
-        this.exchange = exchange;
+            final AccessorFactory accessorFactory,
+            final FeeResourcesLoaderImpl feeResourcesLoader) {
         this.feeCalculator = feeCalculator;
-        this.resourceCosts = resourceCosts;
+        this.pricesAndFeesProvider = new PricesAndFeesProviderImpl(feeResourcesLoader);
         this.currentView = currentView;
         this.accessorFactory = accessorFactory;
 
@@ -132,7 +134,10 @@ public class PrecompilePricingUtils {
     }
 
     public long getMinimumPriceInTinybars(final GasCostType gasCostType, final Timestamp timestamp) {
-        return FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp), getCanonicalPriceInTinyCents(gasCostType));
+        return FeeBuilder.getTinybarsFromTinyCents(
+                convertExchangeRateFromDtoToProto(
+                        pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(timestamp))),
+                getCanonicalPriceInTinyCents(gasCostType));
     }
 
     public long gasFeeInTinybars(
@@ -153,7 +158,8 @@ public class PrecompilePricingUtils {
 
     public long computeViewFunctionGas(final Timestamp now, final long minimumTinybarCost) {
         final var calculator = feeCalculator.get();
-        final var usagePrices = resourceCosts.defaultPricesGiven(TokenGetInfo, now);
+        final var usagePrices = convertFeeDataFromDtoToProto(pricesAndFeesProvider.defaultPricesGiven(
+                convertHederaFunctionalityFromProtoToDto(TokenGetInfo), convertTimestampFromProtoToDto(now)));
         final var fees =
                 calculator.estimatePayment(SYNTHETIC_REDIRECT_QUERY, usagePrices, currentView, now, ANSWER_ONLY);
 

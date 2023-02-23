@@ -38,16 +38,21 @@ package com.hedera.node.app.service.mono.contracts.gascalculator;
  *
  */
 
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertFeeDataFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertHederaFunctionalityFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertTimestampFromProtoToDto;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -78,13 +83,16 @@ class GasCalculatorHederaV18Test {
     private UsagePricesProvider usagePricesProvider;
 
     @Mock
-    private MerkleNetworkContext merkleNetworkContext;
+    private FeeResourcesLoaderImpl feeResourcesLoader;
+
+    @Mock
+    private PricesAndFeesProviderImpl pricesAndFeesProvider;
 
     private GasCalculatorHederaV18 gasCalculatorHedera;
 
     @BeforeEach
     void setup() {
-        gasCalculatorHedera = new GasCalculatorHederaV18(properties, usagePricesProvider, hbarCentExchange);
+        gasCalculatorHedera = new GasCalculatorHederaV18(properties, feeResourcesLoader);
     }
 
     @Test
@@ -107,20 +115,26 @@ class GasCalculatorHederaV18Test {
         given(messageFrame.getContextVariable("HederaFunctionality")).willReturn(functionality);
         given(messageFrame.getMessageFrameStack()).willReturn(returningDeque);
 
-        given(usagePricesProvider.defaultPricesGiven(functionality, timestamp)).willReturn(feeData);
-        given(hbarCentExchange.rate(timestamp))
-                .willReturn(ExchangeRate.newBuilder()
+        given(pricesAndFeesProvider.defaultPricesGiven(
+                        convertHederaFunctionalityFromProtoToDto(functionality),
+                        convertTimestampFromProtoToDto(timestamp)))
+                .willReturn(convertFeeDataFromProtoToDto(feeData));
+        given(pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(timestamp)))
+                .willReturn(convertExchangeRateFromProtoToDto(ExchangeRate.newBuilder()
                         .setHbarEquiv(2000)
                         .setCentEquiv(200)
-                        .build());
+                        .build()));
         given(properties.cacheRecordsTtl()).willReturn(1000000);
         assertEquals(28L, gasCalculatorHedera.logOperationGasCost(messageFrame, 1L, 2L, 3));
         verify(messageFrame).getGasPrice();
         verify(messageFrame).getBlockValues();
         verify(messageFrame).getContextVariable("HederaFunctionality");
         verify(messageFrame).getMessageFrameStack();
-        verify(usagePricesProvider).defaultPricesGiven(functionality, timestamp);
-        verify(hbarCentExchange).rate(timestamp);
+        verify(pricesAndFeesProvider)
+                .defaultPricesGiven(
+                        convertHederaFunctionalityFromProtoToDto(functionality),
+                        convertTimestampFromProtoToDto(timestamp));
+        verify(pricesAndFeesProvider).rate(convertTimestampFromProtoToDto(timestamp));
     }
 
     @Test

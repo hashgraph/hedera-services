@@ -17,15 +17,17 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.utils;
 
 import static com.hedera.node.app.hapi.fees.pricing.FeeSchedules.USD_TO_TINYCENTS;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertTimestampFromProtoToDto;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
-import com.hedera.node.app.service.mono.fees.HbarCentExchange;
-import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -51,16 +53,10 @@ class PrecompilePricingUtilsTest {
     private AssetsLoader assetLoader;
 
     @Mock
-    private HbarCentExchange exchange;
-
-    @Mock
     private ExchangeRate exchangeRate;
 
     @Mock
     private Provider<FeeCalculator> feeCalculator;
-
-    @Mock
-    private UsagePricesProvider resourceCosts;
 
     @Mock
     private StateView stateView;
@@ -68,19 +64,26 @@ class PrecompilePricingUtilsTest {
     @Mock
     private AccessorFactory accessorFactory;
 
+    @Mock
+    private FeeResourcesLoaderImpl feeResourcesLoader;
+
+    @Mock
+    private PricesAndFeesProviderImpl pricesAndFeesProvider;
+
     @Test
     void failsToLoadCanonicalPrices() throws IOException {
         given(assetLoader.loadCanonicalPrices()).willThrow(IOException.class);
         assertThrows(
                 PrecompilePricingUtils.CanonicalOperationsUnloadableException.class,
                 () -> new PrecompilePricingUtils(
-                        assetLoader, exchange, feeCalculator, resourceCosts, stateView, accessorFactory));
+                        assetLoader, feeCalculator, stateView, accessorFactory, feeResourcesLoader));
     }
 
     @Test
     void calculatesMinimumPrice() throws IOException {
         final Timestamp timestamp = Timestamp.newBuilder().setSeconds(123456789).build();
-        given(exchange.rate(timestamp)).willReturn(exchangeRate);
+        given(pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(timestamp)))
+                .willReturn(convertExchangeRateFromProtoToDto(exchangeRate));
         given(assetLoader.loadCanonicalPrices())
                 .willReturn(Map.of(
                         HederaFunctionality.TokenAssociateToAccount,
@@ -88,8 +91,8 @@ class PrecompilePricingUtilsTest {
         given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
         given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
 
-        final PrecompilePricingUtils subject = new PrecompilePricingUtils(
-                assetLoader, exchange, feeCalculator, resourceCosts, stateView, accessorFactory);
+        final PrecompilePricingUtils subject =
+                new PrecompilePricingUtils(assetLoader, feeCalculator, stateView, accessorFactory, feeResourcesLoader);
 
         final long price = subject.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.ASSOCIATE, timestamp);
 

@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertHederaFunctionalityFromProtoToDto;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.PRNG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -24,11 +25,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_G
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
-import com.hedera.node.app.service.evm.utils.codec.HederaFunctionality;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.fees.calculation.PricesAndFeesProviderImpl;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringCreations;
@@ -38,6 +39,7 @@ import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateU
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompileUtils;
 import com.hedera.node.app.service.mono.txns.util.PrngLogic;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
@@ -85,14 +87,14 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
             final ExpiringCreations creator,
             final RecordsHistorian recordsHistorian,
             final PrecompilePricingUtils pricingUtils,
-            final PricesAndFeesProviderImpl pricesAndFeesProvider,
-            final GlobalDynamicProperties properties) {
+            final GlobalDynamicProperties properties,
+            final FeeResourcesLoaderImpl feeResourcesLoader) {
         super(PRECOMPILE_NAME, gasCalculator);
         this.prngLogic = prngLogic;
         this.creator = creator;
         this.recordsHistorian = recordsHistorian;
         this.pricingUtils = pricingUtils;
-        this.pricesAndFeesProvider = pricesAndFeesProvider;
+        this.pricesAndFeesProvider = new PricesAndFeesProviderImpl(feeResourcesLoader);
         this.properties = properties;
     }
 
@@ -177,8 +179,8 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
     @VisibleForTesting
     long calculateGas(final Instant now) {
         final var feesInTinyCents = pricingUtils.getCanonicalPriceInTinyCents(PRNG);
-        final var currentGasPriceInTinyCents =
-                pricesAndFeesProvider.currentGasPriceInTinycents(now, HederaFunctionality.ContractCall);
+        final var currentGasPriceInTinyCents = pricesAndFeesProvider.currentGasPriceInTinycents(
+                now, convertHederaFunctionalityFromProtoToDto(HederaFunctionality.ContractCall));
         return feesInTinyCents / currentGasPriceInTinyCents;
     }
 

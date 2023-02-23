@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getTinybarsFromTinyCents;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromProtoToDto;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2;
@@ -108,6 +109,7 @@ import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
@@ -118,6 +120,7 @@ import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifie
 import com.hedera.node.app.service.mono.exceptions.ResourceLimitException;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal;
@@ -292,6 +295,12 @@ class TransferPrecompilesTest {
     @Mock
     private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
+    @Mock
+    private FeeResourcesLoaderImpl feeResourcesLoader;
+
+    @Mock
+    private PricesAndFeesProviderImpl pricesAndFeesProvider;
+
     private static final long TEST_SERVICE_FEE = 5_000_000;
     private static final long TEST_NETWORK_FEE = 400_000;
     private static final long TEST_NODE_FEE = 300_000;
@@ -334,7 +343,7 @@ class TransferPrecompilesTest {
     @BeforeEach
     void setUp() {
         final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
-                assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
+                assetLoader, () -> feeCalculator, stateView, accessorFactory, feeResourcesLoader);
         subject = new HTSPrecompiledContract(
                 dynamicProperties,
                 gasCalculator,
@@ -1002,7 +1011,7 @@ class TransferPrecompilesTest {
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
         givenMinimalFrameContext();
         givenLedgers();
-        given(exchange.rate(any())).willReturn(exchangeRate);
+        given(pricesAndFeesProvider.rate(any())).willReturn(convertExchangeRateFromProtoToDto(exchangeRate));
         given(exchangeRate.getCentEquiv()).willReturn(1);
         given(exchangeRate.getHbarEquiv()).willReturn(1);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
@@ -1153,7 +1162,7 @@ class TransferPrecompilesTest {
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
         givenMinimalFrameContext();
         givenLedgers();
-        given(exchange.rate(any())).willReturn(exchangeRate);
+        given(pricesAndFeesProvider.rate(any())).willReturn(convertExchangeRateFromProtoToDto(exchangeRate));
         given(exchangeRate.getCentEquiv()).willReturn(1);
         given(exchangeRate.getHbarEquiv()).willReturn(1);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
@@ -1237,7 +1246,7 @@ class TransferPrecompilesTest {
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
         givenMinimalFrameContext();
         givenLedgers();
-        given(exchange.rate(any())).willReturn(exchangeRate);
+        given(pricesAndFeesProvider.rate(any())).willReturn(convertExchangeRateFromProtoToDto(exchangeRate));
         given(exchangeRate.getCentEquiv()).willReturn(1);
         given(exchangeRate.getHbarEquiv()).willReturn(1);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
@@ -2583,7 +2592,7 @@ class TransferPrecompilesTest {
     }
 
     private void givenPricingUtilsContext() {
-        given(exchange.rate(any())).willReturn(exchangeRate);
+        given(pricesAndFeesProvider.rate(any())).willReturn(convertExchangeRateFromProtoToDto(exchangeRate));
         given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
         given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
     }

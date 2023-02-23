@@ -41,8 +41,7 @@ package com.hedera.node.app.service.mono.contracts.gascalculator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.fees.HbarCentExchange;
-import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
+import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,14 +57,11 @@ class GasCalculatorHederaV22Test {
     GlobalDynamicProperties globalDynamicProperties;
 
     @Mock
-    UsagePricesProvider usagePricesProvider;
-
-    @Mock
-    HbarCentExchange hbarCentExchange;
+    FeeResourcesLoaderImpl feeResourcesLoader;
 
     @BeforeEach
     void setUp() {
-        subject = new GasCalculatorHederaV22(globalDynamicProperties, usagePricesProvider, hbarCentExchange);
+        subject = new GasCalculatorHederaV22(globalDynamicProperties, feeResourcesLoader);
     }
 
     @Test
