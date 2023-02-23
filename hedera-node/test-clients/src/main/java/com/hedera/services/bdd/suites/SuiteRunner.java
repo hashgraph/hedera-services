@@ -66,8 +66,6 @@ import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite
 import com.hedera.services.bdd.suites.contract.precompile.DelegatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DissociatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.MixedHTSPrecompileTestsSuite;
-import com.hedera.services.bdd.suites.regression.TargetNetworkPrep;
-import com.hedera.services.bdd.suites.leaky.FeatureFlagSuite;
 import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite;
@@ -103,6 +101,7 @@ import com.hedera.services.bdd.suites.freeze.PrepareUpgrade;
 import com.hedera.services.bdd.suites.freeze.SimpleFreezeOnly;
 import com.hedera.services.bdd.suites.freeze.UpdateFileForUpgrade;
 import com.hedera.services.bdd.suites.freeze.UpdateServerFiles;
+import com.hedera.services.bdd.suites.leaky.FeatureFlagSuite;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
 import com.hedera.services.bdd.suites.misc.CannotDeleteSystemEntitiesSuite;
 import com.hedera.services.bdd.suites.misc.ConsensusQueriesStressTests;
@@ -170,6 +169,7 @@ import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite
 import com.hedera.services.bdd.suites.regression.AddWellKnownEntities;
 import com.hedera.services.bdd.suites.regression.JrsRestartTestTemplate;
 import com.hedera.services.bdd.suites.regression.SteadyStateThrottlingCheck;
+import com.hedera.services.bdd.suites.regression.TargetNetworkPrep;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.schedule.ScheduleCreateSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleDeleteSpecs;
