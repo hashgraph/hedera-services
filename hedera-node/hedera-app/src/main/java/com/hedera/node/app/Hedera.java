@@ -87,13 +87,13 @@ public final class Hedera {
         grpcServer.start();
 
         // Block this main thread until the server terminates.
-        try {
-            shutdownLatch.await();
-        } catch (InterruptedException ignored) {
-            // An interrupt on this thread means we want to shut down the server.
-            shutdown();
-            Thread.currentThread().interrupt();
-        }
+        //        try {
+        //            shutdownLatch.await();
+        //        } catch (InterruptedException ignored) {
+        //            // An interrupt on this thread means we want to shut down the server.
+        //            shutdown();
+        //            Thread.currentThread().interrupt();
+        //        }
     }
 
     public void shutdown() {

@@ -199,7 +199,8 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
 
     @Override
     protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getConsSvcStub(targetNodeFor(spec), useTls)::createTopic;
+        return spec.clients()
+                .getConsSvcStub(targetNodeFor(spec), useTls, spec.setup().workflowOperations())::createTopic;
     }
 
     @Override

@@ -78,6 +78,9 @@ public class HapiApiClients {
     private final List<NodeConnectInfo> nodes;
     private final Map<AccountID, String> stubIds;
     private final Map<AccountID, String> tlsStubIds;
+
+    private final Map<AccountID, String> workflowStubIds;
+    private final Map<AccountID, String> workflowTlsStubIds;
     private static Map<String, ManagedChannel> channels = new HashMap<>();
 
     private ManagedChannel createNettyChannel(
@@ -121,17 +124,20 @@ public class HapiApiClients {
             }
             ManagedChannel channel =
                     createNettyChannel(node, useTls, node.getHost(), node.getPort(), node.getTlsPort());
-            channels.putIfAbsent(uri, channel);
-            scSvcStubs.putIfAbsent(uri, SmartContractServiceGrpc.newBlockingStub(channel));
-            consSvcStubs.putIfAbsent(uri, ConsensusServiceGrpc.newBlockingStub(channel));
-            fileSvcStubs.putIfAbsent(uri, FileServiceGrpc.newBlockingStub(channel));
-            schedSvcStubs.putIfAbsent(uri, ScheduleServiceGrpc.newBlockingStub(channel));
-            tokenSvcStubs.putIfAbsent(uri, TokenServiceGrpc.newBlockingStub(channel));
-            scheduleSvcStubs.putIfAbsent(uri, ScheduleServiceGrpc.newBlockingStub(channel));
-            cryptoSvcStubs.putIfAbsent(uri, CryptoServiceGrpc.newBlockingStub(channel));
-            freezeSvcStubs.putIfAbsent(uri, FreezeServiceGrpc.newBlockingStub(channel));
-            networkSvcStubs.putIfAbsent(uri, NetworkServiceGrpc.newBlockingStub(channel));
-            utilSvcStubs.putIfAbsent(uri, UtilServiceGrpc.newBlockingStub(channel));
+            channels.put(uri, channel);
+
+            System.out.println("URI " + uri);
+
+            scSvcStubs.put(uri, SmartContractServiceGrpc.newBlockingStub(channel));
+            consSvcStubs.put(uri, ConsensusServiceGrpc.newBlockingStub(channel));
+            fileSvcStubs.put(uri, FileServiceGrpc.newBlockingStub(channel));
+            schedSvcStubs.put(uri, ScheduleServiceGrpc.newBlockingStub(channel));
+            tokenSvcStubs.put(uri, TokenServiceGrpc.newBlockingStub(channel));
+            scheduleSvcStubs.put(uri, ScheduleServiceGrpc.newBlockingStub(channel));
+            cryptoSvcStubs.put(uri, CryptoServiceGrpc.newBlockingStub(channel));
+            freezeSvcStubs.put(uri, FreezeServiceGrpc.newBlockingStub(channel));
+            networkSvcStubs.put(uri, NetworkServiceGrpc.newBlockingStub(channel));
+            utilSvcStubs.put(uri, UtilServiceGrpc.newBlockingStub(channel));
         }
     }
 
@@ -143,14 +149,19 @@ public class HapiApiClients {
                 ConsensusGetTopicInfo,
                 ConsensusSubmitMessage,
                 ConsensusUpdateTopic);
-
+        String newUri = "";
+        if (uri.contains("50211")) {
+            newUri = uri.replace("50211", "60211");
+        } else if (uri.contains("50212")) {
+            newUri = uri.replace("50212", "60212");
+        }
         ManagedChannel workflowChannel =
                 createNettyChannel(node, useTls, node.getHost(), node.getWorkflowPort(), node.getWorkflowTlsPort());
-        channels.put(uri, workflowChannel);
+        channels.put(newUri, workflowChannel);
+        System.out.println("New URI " + newUri);
         if (workflowOperations.stream().anyMatch(consensusOps::contains)) {
-            consSvcStubs.put(uri, ConsensusServiceGrpc.newBlockingStub(workflowChannel));
+            consSvcStubs.put(newUri, ConsensusServiceGrpc.newBlockingStub(workflowChannel));
         }
-        // TODO: Add other workflow operations
     }
 
     private HapiApiClients(
@@ -160,6 +171,9 @@ public class HapiApiClients {
         this.nodes = nodes;
         stubIds = nodes.stream().collect(toMap(NodeConnectInfo::getAccount, NodeConnectInfo::uri));
         tlsStubIds = nodes.stream().collect(toMap(NodeConnectInfo::getAccount, NodeConnectInfo::tlsUri));
+        workflowStubIds = nodes.stream().collect(toMap(NodeConnectInfo::getAccount, NodeConnectInfo::workflowUri));
+        workflowTlsStubIds =
+                nodes.stream().collect(toMap(NodeConnectInfo::getAccount, NodeConnectInfo::workflowTlsUri));
         int before = stubCount();
         nodes.forEach(node -> {
             addStubs(node, node.uri(), false, workflowOperations);
@@ -209,8 +223,21 @@ public class HapiApiClients {
         return scSvcStubs.get(stubId(nodeId, useTls));
     }
 
-    public ConsensusServiceBlockingStub getConsSvcStub(AccountID nodeId, boolean useTls) {
-        return consSvcStubs.get(stubId(nodeId, useTls));
+    public ConsensusServiceBlockingStub getConsSvcStub(
+            AccountID nodeId, boolean useTls, Set<HederaFunctionality> hederaFunctionalities) {
+        if (hederaFunctionalities.contains(ConsensusCreateTopic)
+                || hederaFunctionalities.contains(ConsensusDeleteTopic)
+                || hederaFunctionalities.contains(ConsensusGetTopicInfo)
+                || hederaFunctionalities.contains(ConsensusSubmitMessage)
+                || hederaFunctionalities.contains(ConsensusUpdateTopic)) {
+
+            final var stub = consSvcStubs.get(workflowStubId(nodeId, useTls));
+            System.out.println("Picked " + workflowStubId(nodeId, useTls));
+            return stub;
+        }
+        final var stub = consSvcStubs.get(stubId(nodeId, useTls));
+        System.out.println("Picked " + stubId(nodeId, useTls));
+        return stub;
     }
 
     public NetworkServiceBlockingStub getNetworkSvcStub(AccountID nodeId, boolean useTls) {
@@ -227,6 +254,10 @@ public class HapiApiClients {
 
     private String stubId(AccountID nodeId, boolean useTls) {
         return useTls ? tlsStubIds.get(nodeId) : stubIds.get(nodeId);
+    }
+
+    private String workflowStubId(AccountID nodeId, boolean useTls) {
+        return useTls ? workflowTlsStubIds.get(nodeId) : workflowStubIds.get(nodeId);
     }
 
     @Override

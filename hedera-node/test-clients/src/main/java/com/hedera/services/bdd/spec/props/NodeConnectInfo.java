@@ -77,6 +77,14 @@ public class NodeConnectInfo {
         return String.format("%s:%d", host, tlsPort);
     }
 
+    public String workflowUri() {
+        return String.format("%s:%d", host, workflowPort);
+    }
+
+    public String workflowTlsUri() {
+        return String.format("%s:%d", host, workflowTlsPort);
+    }
+
     public String getHost() {
         return host;
     }
@@ -107,6 +115,8 @@ public class NodeConnectInfo {
                 .add("host", host)
                 .add("port", port)
                 .add("tlsPort", tlsPort)
+                .add("workflowPort", workflowPort)
+                .add("workflowTlsPort", workflowTlsPort)
                 .add("account", HapiPropertySource.asAccountString(account))
                 .toString();
     }
