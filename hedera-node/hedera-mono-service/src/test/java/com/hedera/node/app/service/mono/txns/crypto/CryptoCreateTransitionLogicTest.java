@@ -69,7 +69,6 @@ import com.hedera.node.app.service.mono.exceptions.InsufficientFundsException;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
-import com.hedera.node.app.service.mono.ledger.TransferLogic;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
@@ -145,8 +144,6 @@ class CryptoCreateTransitionLogicTest {
     private NodeInfo nodeInfo;
     private UsageLimits usageLimits;
     private AliasManager aliasManager;
-    private AutoCreationLogic autoCreationLogic;
-    private TransferLogic transferLogic;
     private CryptoCreateChecks cryptoCreateChecks;
 
     @BeforeEach
@@ -163,8 +160,6 @@ class CryptoCreateTransitionLogicTest {
         accounts = mock(MerkleMap.class);
         accountsLedger = mock(TransactionalLedger.class);
         nodeInfo = mock(NodeInfo.class);
-        autoCreationLogic = mock(AutoCreationLogic.class);
-        transferLogic = mock(TransferLogic.class);
         given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
         withRubberstampingValidator();
 
@@ -175,14 +170,7 @@ class CryptoCreateTransitionLogicTest {
                 nodeInfo,
                 aliasManager);
         subject = new CryptoCreateTransitionLogic(
-                usageLimits,
-                ledger,
-                sigImpactHistorian,
-                txnCtx,
-                aliasManager,
-                autoCreationLogic,
-                transferLogic,
-                cryptoCreateChecks);
+                usageLimits, ledger, sigImpactHistorian, txnCtx, aliasManager, cryptoCreateChecks);
     }
 
     @Test
@@ -658,9 +646,6 @@ class CryptoCreateTransitionLogicTest {
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
-        final var lazyCreationFinalizationFee = 100L;
-        given(autoCreationLogic.getLazyCreationFinalizationFee()).willReturn(lazyCreationFinalizationFee);
-        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE)).willReturn(lazyCreationFinalizationFee + 1);
 
         subject.doStateTransition();
 
@@ -824,9 +809,6 @@ class CryptoCreateTransitionLogicTest {
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
         given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
-        final var lazyCreationFinalizationFee = 100L;
-        given(autoCreationLogic.getLazyCreationFinalizationFee()).willReturn(lazyCreationFinalizationFee);
-        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE)).willReturn(lazyCreationFinalizationFee + 1);
 
         subject.doStateTransition();
 

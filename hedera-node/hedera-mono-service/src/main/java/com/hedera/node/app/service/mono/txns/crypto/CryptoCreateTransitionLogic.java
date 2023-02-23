@@ -37,7 +37,6 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.exceptions.InsufficientFundsException;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
-import com.hedera.node.app.service.mono.ledger.TransferLogic;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -74,8 +73,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
     private final SigImpactHistorian sigImpactHistorian;
     private final TransactionContext txnCtx;
     private final AliasManager aliasManager;
-    private final AutoCreationLogic autoCreationLogic;
-    private final TransferLogic transferLogic;
     private final CryptoCreateChecks cryptoCreateChecks;
 
     @Inject
@@ -85,16 +82,12 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             final SigImpactHistorian sigImpactHistorian,
             final TransactionContext txnCtx,
             final AliasManager aliasManager,
-            final AutoCreationLogic autoCreationLogic,
-            final TransferLogic transferLogic,
             final CryptoCreateChecks cryptoCreateChecks) {
         this.ledger = ledger;
         this.txnCtx = txnCtx;
         this.usageLimits = usageLimits;
         this.sigImpactHistorian = sigImpactHistorian;
         this.aliasManager = aliasManager;
-        this.autoCreationLogic = autoCreationLogic;
-        this.transferLogic = transferLogic;
         this.cryptoCreateChecks = cryptoCreateChecks;
     }
 
