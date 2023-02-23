@@ -49,6 +49,7 @@ import com.hedera.node.app.service.mono.contracts.execution.StaticBlockMetaProvi
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.store.AccountStore;
@@ -157,7 +158,7 @@ class ContractCallLocalAnswerTest {
 
     @Test
     void rejectsInvalidCid() throws Throwable {
-        given(view.contracts()).willReturn(AccountStorageAdapter.fromInMemory(contracts));
+        given(view.contracts()).willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(contracts)));
 
         // given:
         final Query query = validQuery(COST_ANSWER, fee);

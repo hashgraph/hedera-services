@@ -185,6 +185,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_HISTOR
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_START_THRESH;
+import static com.hedera.node.app.spi.config.PropertyNames.STATES_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_CONS_THROTTLES_TO_SAMPLE;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_EXECUTION_TIMES_TO_TRACK;
@@ -259,13 +260,19 @@ public final class BootstrapProperties implements PropertySource {
         }
         return in;
     };
-    private static final ThrowingStreamProvider fileStreamProvider = loc -> Files.newInputStream(Paths.get(loc));
+    private static ThrowingStreamProvider fileStreamProvider = loc -> Files.newInputStream(Paths.get(loc));
+
+    private final boolean logEnabled;
 
     private final Properties rawProperties = new Properties();
 
     @Inject
     public BootstrapProperties() {
-        /* No-op */
+        this(true);
+    }
+
+    public BootstrapProperties(final boolean logEnabled) {
+        this.logEnabled = logEnabled;
     }
 
     String bootstrapPropsResource = "bootstrap.properties";
@@ -308,12 +315,14 @@ public final class BootstrapProperties implements PropertySource {
         BOOTSTRAP_PROP_NAMES.forEach(
                 prop -> bootstrapProps.put(prop, transformFor(prop).apply(resourceProps.getProperty(prop))));
 
-        final var msg = "Resolved bootstrap properties:\n  "
-                + BOOTSTRAP_PROP_NAMES.stream()
-                        .sorted()
-                        .map(name -> String.format("%s=%s", name, bootstrapProps.get(name)))
-                        .collect(Collectors.joining("\n  "));
-        log.info(msg);
+        if (logEnabled) {
+            final var msg = "Resolved bootstrap properties:\n  "
+                    + BOOTSTRAP_PROP_NAMES.stream()
+                            .sorted()
+                            .map(name -> String.format("%s=%s", name, bootstrapProps.get(name)))
+                            .collect(Collectors.joining("\n  "));
+            log.info(msg);
+        }
     }
 
     private void load(final String resource, final Properties intoProps) throws IllegalStateException {
@@ -406,7 +415,8 @@ public final class BootstrapProperties implements PropertySource {
             STAKING_PERIOD_MINS,
             STAKING_REWARD_HISTORY_NUM_STORED_PERIODS,
             STAKING_STARTUP_HELPER_RECOMPUTE,
-            WORKFLOWS_ENABLED);
+            WORKFLOWS_ENABLED,
+            STATES_ENABLED);
 
     static final Set<String> GLOBAL_DYNAMIC_PROPS = Set.of(
             ACCOUNTS_MAX_NUM,
@@ -766,5 +776,6 @@ public final class BootstrapProperties implements PropertySource {
             entry(UTIL_PRNG_IS_ENABLED, AS_BOOLEAN),
             entry(TOKENS_AUTO_CREATIONS_ENABLED, AS_BOOLEAN),
             entry(WORKFLOWS_ENABLED, AS_BOOLEAN),
+            entry(STATES_ENABLED, AS_BOOLEAN),
             entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, AS_BOOLEAN));
 }

@@ -24,7 +24,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Service</a>.
  */
 public interface NetworkService extends Service {
-
     String NAME = "NetworkService";
 
     @NonNull

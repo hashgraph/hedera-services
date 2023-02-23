@@ -22,16 +22,28 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicH
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
-import com.hedera.node.app.spi.service.Service;
+import com.hedera.node.app.service.consensus.impl.serdes.EntityNumSerdes;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.state.Schema;
+import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.spi.state.serdes.MonoMapSerdesAdapter;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
 /**
- * Standard implementation of the {@link ConsensusService} {@link Service}.
+ * Standard implementation of the {@link ConsensusService}.
  */
 public final class ConsensusServiceImpl implements ConsensusService {
+
+    private static final SemanticVersion CURRENT_VERSION =
+            SemanticVersion.newBuilder().setMinor(34).build();
+
+    public static final String TOPICS_KEY = "TOPICS";
 
     private final ConsensusCreateTopicHandler consensusCreateTopicHandler;
 
@@ -118,5 +130,27 @@ public final class ConsensusServiceImpl implements ConsensusService {
     @Override
     public Set<QueryHandler> getQueryHandler() {
         return Set.of(consensusGetTopicInfoHandler);
+    }
+
+    @Override
+    public void registerSchemas(@NonNull final SchemaRegistry registry) {
+        registry.register(consensusSchema());
+    }
+
+    private Schema consensusSchema() {
+        return new Schema(CURRENT_VERSION) {
+            @NonNull
+            @Override
+            public Set<StateDefinition> statesToCreate() {
+                return Set.of(topicsDef());
+            }
+        };
+    }
+
+    private StateDefinition<EntityNum, MerkleTopic> topicsDef() {
+        final var keySerdes = new EntityNumSerdes();
+        final var valueSerdes =
+                MonoMapSerdesAdapter.serdesForSelfSerializable(MerkleTopic.CURRENT_VERSION, MerkleTopic::new);
+        return StateDefinition.inMemory(TOPICS_KEY, keySerdes, valueSerdes);
     }
 }

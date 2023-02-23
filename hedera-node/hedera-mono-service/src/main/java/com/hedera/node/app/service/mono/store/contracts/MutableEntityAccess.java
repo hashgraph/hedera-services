@@ -32,13 +32,13 @@ import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.virtualmap.VirtualMap;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -52,7 +52,7 @@ public class MutableEntityAccess implements EntityAccess {
     private final WorldLedgers worldLedgers;
     private final TransactionContext txnCtx;
     private final SizeLimitedStorage sizeLimitedStorage;
-    private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode;
+    private final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecode;
     private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 
     @Inject
@@ -62,7 +62,7 @@ public class MutableEntityAccess implements EntityAccess {
             final TransactionContext txnCtx,
             final SizeLimitedStorage sizeLimitedStorage,
             final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
-            final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode) {
+            final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecode) {
         this.txnCtx = txnCtx;
         this.ledger = ledger;
         this.bytecode = bytecode;

@@ -22,6 +22,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
@@ -40,8 +42,6 @@ import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.fchashmap.FCHashMap;
-import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,16 +61,16 @@ class ImmutableStateChildrenTest {
     private RecordsStorageAdapter payerRecords;
 
     @Mock
-    private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
+    private VirtualMapLike<VirtualBlobKey, VirtualBlobValue> storage;
 
     @Mock
-    private VirtualMap<ContractKey, IterableContractValue> contractStorage;
+    private VirtualMapLike<ContractKey, IterableContractValue> contractStorage;
 
     @Mock
-    private MerkleMap<EntityNum, MerkleTopic> topics;
+    private MerkleMapLike<EntityNum, MerkleTopic> topics;
 
     @Mock
-    private MerkleMap<EntityNum, MerkleToken> tokens;
+    private MerkleMapLike<EntityNum, MerkleToken> tokens;
 
     @Mock
     private TokenRelStorageAdapter tokenAssociations;
@@ -97,7 +97,7 @@ class ImmutableStateChildrenTest {
     private FCHashMap<ByteString, EntityNum> aliases;
 
     @Mock
-    private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
+    private MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfo;
 
     private ImmutableStateChildren subject;
 

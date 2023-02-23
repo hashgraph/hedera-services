@@ -16,7 +16,30 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKeySerializer;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKeySerializer;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.handlers.CryptoAddLiveHashHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteAllowanceHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteLiveHashHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountBalanceHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountInfoHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountRecordsHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoGetLiveHashHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoGetStakersHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
@@ -35,13 +58,31 @@ import com.hedera.node.app.service.token.impl.handlers.TokenPauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
+import com.hedera.node.app.service.token.impl.serdes.EntityNumSerdes;
+import com.hedera.node.app.spi.state.Schema;
+import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.spi.state.serdes.MonoMapSerdesAdapter;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
 /** An implementation of the {@link TokenService} interface. */
 public class TokenServiceImpl implements TokenService {
+
+    private static final int MAX_ACCOUNTS = 1024;
+    private static final int MAX_TOKEN_RELS = 1042;
+    private static final int MAX_MINTABLE_NFTS = 4096;
+    private static final SemanticVersion CURRENT_VERSION =
+            SemanticVersion.newBuilder().setMinor(34).build();
+
+    public static final String NFTS_KEY = "NFTS";
+    public static final String TOKENS_KEY = "TOKENS";
+    public static final String ACCOUNTS_KEY = "ACCOUNTS";
+    public static final String TOKEN_RELS_KEY = "TOKEN_RELS";
+    public static final String PAYER_RECORDS_KEY = "PAYER_RECORDS";
 
     private final TokenAccountWipeHandler tokenAccountWipeHandler;
 
@@ -79,6 +120,32 @@ public class TokenServiceImpl implements TokenService {
 
     private final TokenUnpauseHandler tokenUnpauseHandler;
 
+    private final CryptoAddLiveHashHandler cryptoAddLiveHashHandler;
+
+    private final CryptoApproveAllowanceHandler cryptoApproveAllowanceHandler;
+
+    private final CryptoCreateHandler cryptoCreateHandler;
+
+    private final CryptoDeleteAllowanceHandler cryptoDeleteAllowanceHandler;
+
+    private final CryptoDeleteHandler cryptoDeleteHandler;
+
+    private final CryptoDeleteLiveHashHandler cryptoDeleteLiveHashHandler;
+
+    private final CryptoTransferHandler cryptoTransferHandler;
+
+    private final CryptoUpdateHandler cryptoUpdateHandler;
+
+    private final CryptoGetAccountBalanceHandler cryptoGetAccountBalanceHandler;
+
+    private final CryptoGetAccountInfoHandler cryptoGetAccountInfoHandler;
+
+    private final CryptoGetAccountRecordsHandler cryptoGetAccountRecordsHandler;
+
+    private final CryptoGetLiveHashHandler cryptoGetLiveHashHandler;
+
+    private final CryptoGetStakersHandler cryptoGetStakersHandler;
+
     /**
      * Constructs a {@link TokenServiceImpl} instance.
      */
@@ -101,6 +168,19 @@ public class TokenServiceImpl implements TokenService {
         this.tokenRevokeKycFromAccountHandler = new TokenRevokeKycFromAccountHandler();
         this.tokenUnfreezeAccountHandler = new TokenUnfreezeAccountHandler();
         this.tokenUnpauseHandler = new TokenUnpauseHandler();
+        this.cryptoAddLiveHashHandler = new CryptoAddLiveHashHandler();
+        this.cryptoApproveAllowanceHandler = new CryptoApproveAllowanceHandler();
+        this.cryptoCreateHandler = new CryptoCreateHandler();
+        this.cryptoDeleteAllowanceHandler = new CryptoDeleteAllowanceHandler();
+        this.cryptoDeleteHandler = new CryptoDeleteHandler();
+        this.cryptoDeleteLiveHashHandler = new CryptoDeleteLiveHashHandler();
+        this.cryptoTransferHandler = new CryptoTransferHandler();
+        this.cryptoUpdateHandler = new CryptoUpdateHandler();
+        this.cryptoGetAccountBalanceHandler = new CryptoGetAccountBalanceHandler();
+        this.cryptoGetAccountInfoHandler = new CryptoGetAccountInfoHandler();
+        this.cryptoGetAccountRecordsHandler = new CryptoGetAccountRecordsHandler();
+        this.cryptoGetLiveHashHandler = new CryptoGetLiveHashHandler();
+        this.cryptoGetStakersHandler = new CryptoGetStakersHandler();
     }
 
     /**
@@ -283,6 +363,136 @@ public class TokenServiceImpl implements TokenService {
         return tokenUnpauseHandler;
     }
 
+    /**
+     * Returns the {@link CryptoAddLiveHashHandler} instance.
+     *
+     * @return the {@link CryptoAddLiveHashHandler} instance
+     */
+    @NonNull
+    public CryptoAddLiveHashHandler getCryptoAddLiveHashHandler() {
+        return cryptoAddLiveHashHandler;
+    }
+
+    /**
+     * Returns the {@link CryptoApproveAllowanceHandler} instance.
+     *
+     * @return the {@link CryptoApproveAllowanceHandler} instance
+     */
+    @NonNull
+    public CryptoApproveAllowanceHandler getCryptoApproveAllowanceHandler() {
+        return cryptoApproveAllowanceHandler;
+    }
+
+    /**
+     * Returns the {@link CryptoCreateHandler} instance.
+     *
+     * @return the {@link CryptoCreateHandler} instance
+     */
+    @NonNull
+    public CryptoCreateHandler getCryptoCreateHandler() {
+        return cryptoCreateHandler;
+    }
+
+    /**
+     * Returns the {@link CryptoDeleteAllowanceHandler} instance.
+     *
+     * @return the {@link CryptoDeleteAllowanceHandler} instance
+     */
+    @NonNull
+    public CryptoDeleteAllowanceHandler getCryptoDeleteAllowanceHandler() {
+        return cryptoDeleteAllowanceHandler;
+    }
+
+    /**
+     * Returns the {@link CryptoDeleteHandler} instance.
+     *
+     * @return the {@link CryptoDeleteHandler} instance
+     */
+    @NonNull
+    public CryptoDeleteHandler getCryptoDeleteHandler() {
+        return cryptoDeleteHandler;
+    }
+
+    /**
+     * Returns the {@link CryptoDeleteLiveHashHandler} instance.
+     *
+     * @return the {@link CryptoDeleteLiveHashHandler} instance
+     */
+    @NonNull
+    public CryptoDeleteLiveHashHandler getCryptoDeleteLiveHashHandler() {
+        return cryptoDeleteLiveHashHandler;
+    }
+
+    /**
+     * Returns the {@link CryptoTransferHandler} instance.
+     *
+     * @return the {@link CryptoTransferHandler} instance
+     */
+    @NonNull
+    public CryptoTransferHandler getCryptoTransferHandler() {
+        return cryptoTransferHandler;
+    }
+
+    /**
+     * Returns the {@link CryptoUpdateHandler} instance.
+     *
+     * @return the {@link CryptoUpdateHandler} instance
+     */
+    @NonNull
+    public CryptoUpdateHandler getCryptoUpdateHandler() {
+        return cryptoUpdateHandler;
+    }
+
+    /**
+     * Returns the {@link CryptoGetAccountBalanceHandler} instance.
+     *
+     * @return the {@link CryptoGetAccountBalanceHandler} instance
+     */
+    @NonNull
+    public CryptoGetAccountBalanceHandler getCryptoGetAccountBalanceHandler() {
+        return cryptoGetAccountBalanceHandler;
+    }
+
+    /**
+     * Returns the {@link CryptoGetAccountInfoHandler} instance.
+     *
+     * @return the {@link CryptoGetAccountInfoHandler} instance
+     */
+    @NonNull
+    public CryptoGetAccountInfoHandler getCryptoGetAccountInfoHandler() {
+        return cryptoGetAccountInfoHandler;
+    }
+
+    /**
+     * Returns the {@link CryptoGetAccountRecordsHandler} instance.
+     *
+     * @return the {@link CryptoGetAccountRecordsHandler} instance
+     */
+    @NonNull
+    public CryptoGetAccountRecordsHandler getCryptoGetAccountRecordsHandler() {
+        return cryptoGetAccountRecordsHandler;
+    }
+
+    /**
+     * Returns the {@link CryptoGetLiveHashHandler} instance.
+     *
+     * @return the {@link CryptoGetLiveHashHandler} instance
+     */
+    @NonNull
+    public CryptoGetLiveHashHandler getCryptoGetLiveHashHandler() {
+        return cryptoGetLiveHashHandler;
+    }
+
+    /**
+     * Returns the {@link CryptoGetStakersHandler} instance.
+     *
+     * @return the {@link CryptoGetStakersHandler} instance
+     */
+    @NonNull
+    public CryptoGetStakersHandler getCryptoGetStakersHandler() {
+        return cryptoGetStakersHandler;
+    }
+
     @NonNull
     @Override
     public Set<TransactionHandler> getTransactionHandler() {
@@ -300,13 +510,84 @@ public class TokenServiceImpl implements TokenService {
                 tokenPauseHandler,
                 tokenRevokeKycFromAccountHandler,
                 tokenUnfreezeAccountHandler,
-                tokenUnpauseHandler);
+                tokenUnpauseHandler,
+                cryptoAddLiveHashHandler,
+                cryptoApproveAllowanceHandler,
+                cryptoCreateHandler,
+                cryptoDeleteAllowanceHandler,
+                cryptoDeleteHandler,
+                cryptoDeleteLiveHashHandler,
+                cryptoTransferHandler,
+                cryptoUpdateHandler);
     }
 
     @NonNull
     @Override
     public Set<QueryHandler> getQueryHandler() {
         return Set.of(
-                tokenGetAccountNftInfosHandler, tokenGetInfoHandler, tokenGetNftInfoHandler, tokenGetNftInfosHandler);
+                tokenGetAccountNftInfosHandler,
+                tokenGetInfoHandler,
+                tokenGetNftInfoHandler,
+                tokenGetNftInfosHandler,
+                cryptoGetAccountBalanceHandler,
+                cryptoGetAccountInfoHandler,
+                cryptoGetAccountRecordsHandler,
+                cryptoGetLiveHashHandler,
+                cryptoGetStakersHandler);
+    }
+
+    @Override
+    public void registerSchemas(@NonNull final SchemaRegistry registry) {
+        registry.register(tokenSchema());
+    }
+
+    private Schema tokenSchema() {
+        // Everything on disk that can be
+        return new Schema(CURRENT_VERSION) {
+            @NonNull
+            @Override
+            public Set<StateDefinition> statesToCreate() {
+                return Set.of(
+                        tokensDef(), onDiskAccountsDef(), onDiskNftsDef(), onDiskTokenRelsDef(), payerRecordsDef());
+            }
+        };
+    }
+
+    private StateDefinition<EntityNumVirtualKey, OnDiskAccount> onDiskAccountsDef() {
+        final var keySerdes = MonoMapSerdesAdapter.serdesForVirtualKey(
+                EntityNumVirtualKey.CURRENT_VERSION, EntityNumVirtualKey::new, new EntityNumVirtualKeySerializer());
+        final var valueSerdes =
+                MonoMapSerdesAdapter.serdesForVirtualValue(OnDiskAccount.CURRENT_VERSION, OnDiskAccount::new);
+        return StateDefinition.onDisk(ACCOUNTS_KEY, keySerdes, valueSerdes, MAX_ACCOUNTS);
+    }
+
+    private StateDefinition<EntityNum, MerklePayerRecords> payerRecordsDef() {
+        final var keySerdes = new EntityNumSerdes();
+        final var valueSerdes = MonoMapSerdesAdapter.serdesForSelfSerializable(
+                MerklePayerRecords.CURRENT_VERSION, MerklePayerRecords::new);
+        return StateDefinition.inMemory(PAYER_RECORDS_KEY, keySerdes, valueSerdes);
+    }
+
+    private StateDefinition<EntityNum, MerkleToken> tokensDef() {
+        final var keySerdes = new EntityNumSerdes();
+        final var valueSerdes =
+                MonoMapSerdesAdapter.serdesForSelfSerializable(MerkleToken.CURRENT_VERSION, MerkleToken::new);
+        return StateDefinition.inMemory(TOKENS_KEY, keySerdes, valueSerdes);
+    }
+
+    private StateDefinition<EntityNumVirtualKey, OnDiskTokenRel> onDiskTokenRelsDef() {
+        final var keySerdes = MonoMapSerdesAdapter.serdesForVirtualKey(
+                EntityNumVirtualKey.CURRENT_VERSION, EntityNumVirtualKey::new, new EntityNumVirtualKeySerializer());
+        final var valueSerdes =
+                MonoMapSerdesAdapter.serdesForVirtualValue(OnDiskTokenRel.CURRENT_VERSION, OnDiskTokenRel::new);
+        return StateDefinition.onDisk(TOKEN_RELS_KEY, keySerdes, valueSerdes, MAX_TOKEN_RELS);
+    }
+
+    private StateDefinition<UniqueTokenKey, UniqueTokenValue> onDiskNftsDef() {
+        final var keySerdes = MonoMapSerdesAdapter.serdesForVirtualKey(
+                UniqueTokenKey.CURRENT_VERSION, UniqueTokenKey::new, new UniqueTokenKeySerializer());
+        final var valueSerdes =
+                MonoMapSerdesAdapter.serdesForVirtualValue(UniqueTokenValue.CURRENT_VERSION, UniqueTokenValue::new);
+        return StateDefinition.onDisk(NFTS_KEY, keySerdes, valueSerdes, MAX_MINTABLE_NFTS);
     }
 }

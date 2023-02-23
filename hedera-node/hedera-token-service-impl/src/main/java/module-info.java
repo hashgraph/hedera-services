@@ -1,4 +1,3 @@
-import com.hedera.node.app.service.token.impl.CryptoServiceFactory;
 import com.hedera.node.app.spi.service.ServiceFactory;
 
 module com.hedera.node.app.service.token.impl {
@@ -26,6 +25,5 @@ module com.hedera.node.app.service.token.impl {
             com.hedera.node.app.service.token.impl.test;
 
     provides ServiceFactory with
-            CryptoServiceFactory,
             com.hedera.node.app.service.token.impl.TokenServiceFactory;
 }

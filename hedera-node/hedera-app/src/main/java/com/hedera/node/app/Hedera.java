@@ -19,7 +19,20 @@ package com.hedera.node.app;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.node.app.grpc.GrpcServiceBuilder;
+import com.hedera.node.app.service.admin.impl.FreezeServiceImpl;
+import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
+import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.service.network.impl.NetworkServiceImpl;
+import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
+import com.hedera.node.app.service.token.impl.TokenServiceImpl;
+import com.hedera.node.app.service.util.impl.UtilServiceImpl;
+import com.hedera.node.app.spi.service.Service;
+import com.hedera.node.app.state.merkle.MerkleHederaState;
+import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.workflows.ingest.IngestWorkflowImpl;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
@@ -29,17 +42,18 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import io.helidon.grpc.server.GrpcRouting;
 import io.helidon.grpc.server.GrpcServer;
 import io.helidon.grpc.server.GrpcServerConfiguration;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 /** Main class for the Hedera Consensus Node. */
 public final class Hedera {
-    private static final int MAX_SIGNED_TXN_SIZE = 6144;
     private final CountDownLatch shutdownLatch = new CountDownLatch(1);
 
     public Hedera() {}
 
-    public void start(@NonNull final HederaApp app, int port) {
+    public void start(@NonNull final HederaApp app, final int port) {
         final var metrics = createMetrics(app.nodeId());
 
         // Create the Ingest workflow. While we are in transition, some required facilities come
@@ -49,7 +63,7 @@ public final class Hedera {
         final var ingestWorkflow =
                 new IngestWorkflowImpl(app.nodeInfo(), app.platformStatus(), null, null, null, null, null, null);
 
-        // Create the query workflow; fully qualified import to appease javadoc Gradle task
+        // Create the query workflow
         final var queryWorkflow = app.queryComponentFactory().get().create().queryWorkflow();
 
         // Setup and start the grpc server.
@@ -75,7 +89,7 @@ public final class Hedera {
         // Block this main thread until the server terminates.
         try {
             shutdownLatch.await();
-        } catch (InterruptedException ignored) {
+        } catch (final InterruptedException ignored) {
             // An interrupt on this thread means we want to shut down the server.
             shutdown();
             Thread.currentThread().interrupt();
@@ -86,7 +100,36 @@ public final class Hedera {
         shutdownLatch.countDown();
     }
 
-    private static Metrics createMetrics(NodeId nodeId) {
+    private record ServiceRegistry(Service service, MerkleSchemaRegistry registry) {
+        public static ServiceRegistry registryFor(final Service service) {
+            final var registry =
+                    new MerkleSchemaRegistry(ConstructableRegistry.getInstance(), null, service.getServiceName());
+            return new ServiceRegistry(service, registry);
+        }
+
+        public void registerSchemas() {
+            service.registerSchemas(registry);
+        }
+    }
+
+    public static Consumer<MerkleHederaState> registerServiceSchemasForMigration(final SemanticVersion currentVersion) {
+        final List<ServiceRegistry> serviceRegistries = List.of(
+                ServiceRegistry.registryFor(new ConsensusServiceImpl()),
+                ServiceRegistry.registryFor(new ContractServiceImpl()),
+                ServiceRegistry.registryFor(new FileServiceImpl()),
+                ServiceRegistry.registryFor(new FreezeServiceImpl()),
+                ServiceRegistry.registryFor(new NetworkServiceImpl()),
+                ServiceRegistry.registryFor(new ScheduleServiceImpl()),
+                ServiceRegistry.registryFor(new TokenServiceImpl()),
+                ServiceRegistry.registryFor(new UtilServiceImpl()));
+
+        serviceRegistries.forEach(ServiceRegistry::registerSchemas);
+
+        return state -> serviceRegistries.forEach(serviceRegistry ->
+                serviceRegistry.registry().migrate(state, state.deserializedVersion(), currentVersion));
+    }
+
+    private static Metrics createMetrics(final NodeId nodeId) {
         // This is a stub implementation, to be replaced by a real implementation in #4293
         final var metricService = Executors.newSingleThreadScheduledExecutor(
                 getStaticThreadManager().createThreadFactory("metrics", "MetricsWriter"));

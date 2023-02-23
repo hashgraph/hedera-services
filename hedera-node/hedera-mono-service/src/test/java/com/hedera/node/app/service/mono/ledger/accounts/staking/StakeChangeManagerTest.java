@@ -26,6 +26,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -70,7 +71,8 @@ class StakeChangeManagerTest {
     @BeforeEach
     void setUp() {
         stakingInfo = buildsStakingInfoMap();
-        subject = new StakeChangeManager(stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(accounts));
+        subject = new StakeChangeManager(
+                stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
     }
 
     @Test
@@ -145,7 +147,8 @@ class StakeChangeManagerTest {
                 -1, accountsMap.get(EntityNum.fromAccountId(counterpartyId)).getStakePeriodStart());
         assertEquals(-1, accountsMap.get(EntityNum.fromAccountId(partyId)).getStakePeriodStart());
 
-        subject = new StakeChangeManager(stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(accountsMap));
+        subject = new StakeChangeManager(
+                stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accountsMap)));
         subject.initializeAllStakingStartsTo(todayNum);
 
         assertEquals(todayNum, counterparty.getStakePeriodStart());

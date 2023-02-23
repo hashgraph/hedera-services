@@ -28,6 +28,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -102,7 +103,7 @@ class IterableStorageUtilsTest {
     void canRemoveOnlyValue() {
         given(storage.get(rootKey)).willReturn(rootValue);
 
-        final var newRoot = removeMapping(rootKey, rootKey, storage);
+        final var newRoot = removeMapping(rootKey, rootKey, VirtualMapLike.from(storage));
 
         assertNull(newRoot);
     }
@@ -116,7 +117,7 @@ class IterableStorageUtilsTest {
     void canUpdateExistingMappingInPlace() {
         given(storage.getForModify(targetKey)).willReturn(targetValue);
 
-        final var newRoot = inPlaceUpsertMapping(targetKey, nextValue, rootKey, null, storage);
+        final var newRoot = inPlaceUpsertMapping(targetKey, nextValue, rootKey, null, VirtualMapLike.from(storage));
 
         assertSame(rootKey, newRoot);
         assertArrayEquals(targetValue.getValue(), nextValue.getValue());
@@ -127,7 +128,7 @@ class IterableStorageUtilsTest {
         final var valueCaptor = ArgumentCaptor.forClass(IterableContractValue.class);
         given(storage.get(targetKey)).willReturn(targetValue);
 
-        final var newRoot = overwritingUpsertMapping(targetKey, nextValue, rootKey, null, storage);
+        final var newRoot = overwritingUpsertMapping(targetKey, nextValue, rootKey, null, VirtualMapLike.from(storage));
 
         assertSame(rootKey, newRoot);
         verify(storage).put(eq(targetKey), valueCaptor.capture());
@@ -137,7 +138,7 @@ class IterableStorageUtilsTest {
 
     @Test
     void canInsertToEmptyListInPlace() {
-        final var newRoot = inPlaceUpsertMapping(targetKey, targetValue, null, null, storage);
+        final var newRoot = inPlaceUpsertMapping(targetKey, targetValue, null, null, VirtualMapLike.from(storage));
 
         verify(storage).put(targetKey, targetValue);
 
@@ -146,7 +147,7 @@ class IterableStorageUtilsTest {
 
     @Test
     void canInsertToEmptyListOverwriting() {
-        final var newRoot = overwritingUpsertMapping(targetKey, targetValue, null, null, storage);
+        final var newRoot = overwritingUpsertMapping(targetKey, targetValue, null, null, VirtualMapLike.from(storage));
 
         verify(storage).put(targetKey, targetValue);
 
@@ -158,7 +159,7 @@ class IterableStorageUtilsTest {
         given(storage.getForModify(targetKey)).willReturn(null);
         given(storage.getForModify(rootKey)).willReturn(rootValue);
 
-        final var newRoot = inPlaceUpsertMapping(targetKey, targetValue, rootKey, null, storage);
+        final var newRoot = inPlaceUpsertMapping(targetKey, targetValue, rootKey, null, VirtualMapLike.from(storage));
 
         verify(storage).put(targetKey, targetValue);
 
@@ -174,7 +175,8 @@ class IterableStorageUtilsTest {
         given(storage.get(targetKey)).willReturn(null);
         given(storage.get(rootKey)).willReturn(rootValue);
 
-        final var newRoot = overwritingUpsertMapping(targetKey, targetValue, rootKey, null, storage);
+        final var newRoot =
+                overwritingUpsertMapping(targetKey, targetValue, rootKey, null, VirtualMapLike.from(storage));
 
         verify(storage).put(targetKey, targetValue);
 
@@ -188,7 +190,8 @@ class IterableStorageUtilsTest {
 
     @Test
     void canInsertWithPrefetchedValueInPlace() {
-        final var newRoot = inPlaceUpsertMapping(targetKey, targetValue, rootKey, rootValue, storage);
+        final var newRoot =
+                inPlaceUpsertMapping(targetKey, targetValue, rootKey, rootValue, VirtualMapLike.from(storage));
 
         assertSame(targetKey, newRoot);
         assertNull(targetValue.getPrevKeyScopedTo(contractNum));
@@ -201,7 +204,8 @@ class IterableStorageUtilsTest {
 
     @Test
     void canInsertWithPrefetchedValueOverwriting() {
-        final var newRoot = overwritingUpsertMapping(targetKey, targetValue, rootKey, rootValue, storage);
+        final var newRoot =
+                overwritingUpsertMapping(targetKey, targetValue, rootKey, rootValue, VirtualMapLike.from(storage));
 
         assertSame(targetKey, newRoot);
         assertNull(targetValue.getPrevKeyScopedTo(contractNum));

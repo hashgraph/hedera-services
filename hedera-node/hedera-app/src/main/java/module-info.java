@@ -34,10 +34,11 @@ module com.hedera.node.app {
     requires dagger;
     requires javax.inject;
     requires com.swirlds.platform;
+    requires com.swirlds.fchashmap;
     requires com.swirlds.config;
     requires org.apache.logging.log4j;
-    requires com.google.common;
     requires org.apache.commons.lang3;
+    requires com.google.common;
     requires com.hedera.node.app.hapi.fees;
 
     exports com.hedera.node.app to

@@ -191,6 +191,7 @@ import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_HISTOR
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_START_THRESH;
+import static com.hedera.node.app.spi.config.PropertyNames.STATES_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_CONS_THROTTLES_TO_SAMPLE;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_EXECUTION_TIMES_TO_TRACK;
@@ -266,12 +267,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith({LogCaptureExtension.class})
 class BootstrapPropertiesTest {
-
     @LoggingTarget
     private LogCaptor logCaptor;
 
     @LoggingSubject
-    private final BootstrapProperties subject = new BootstrapProperties();
+    private BootstrapProperties subject = new BootstrapProperties();
 
     private static final String STD_PROPS_RESOURCE = "bootstrap/standard.properties";
     private static final String INVALID_PROPS_RESOURCE = "bootstrap/not.properties";
@@ -494,6 +494,7 @@ class BootstrapPropertiesTest {
             entry(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION, true),
             entry(TOKENS_AUTO_CREATIONS_ENABLED, true),
             entry(WORKFLOWS_ENABLED, false),
+            entry(STATES_ENABLED, false),
             entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, false));
 
     @Test
@@ -572,6 +573,7 @@ class BootstrapPropertiesTest {
 
     @Test
     void doesntThrowOnMissingOverridesFile() {
+        subject = new BootstrapProperties(false);
         subject.bootstrapPropsResource = STD_PROPS_RESOURCE;
         subject.bootstrapOverridePropsLoc = "im-not-here";
 

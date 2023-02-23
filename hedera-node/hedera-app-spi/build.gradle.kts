@@ -35,6 +35,8 @@ configurations.all {
 
 dependencies {
   implementation(libs.grpc.stub)
+  implementation(libs.swirlds.virtualmap)
+  implementation(libs.swirlds.jasperdb)
   implementation(libs.swirlds.common)
   api(libs.swirlds.config.api)
   api(libs.hapi)

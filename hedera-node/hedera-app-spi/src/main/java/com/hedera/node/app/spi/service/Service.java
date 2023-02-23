@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.service;
 
+import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -53,5 +54,9 @@ public interface Service {
     @NonNull
     default Set<QueryHandler> getQueryHandler() {
         return Set.of();
+    }
+
+    default void registerSchemas(@NonNull final SchemaRegistry registry) {
+        //no-op
     }
 }

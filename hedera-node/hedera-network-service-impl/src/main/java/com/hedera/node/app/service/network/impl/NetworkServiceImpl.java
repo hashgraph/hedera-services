@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.network.impl;
 
+import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.network.NetworkService;
 import com.hedera.node.app.service.network.impl.handlers.NetworkGetAccountDetailsHandler;
 import com.hedera.node.app.service.network.impl.handlers.NetworkGetByKeyHandler;
@@ -24,9 +26,18 @@ import com.hedera.node.app.service.network.impl.handlers.NetworkGetVersionInfoHa
 import com.hedera.node.app.service.network.impl.handlers.NetworkTransactionGetReceiptHandler;
 import com.hedera.node.app.service.network.impl.handlers.NetworkTransactionGetRecordHandler;
 import com.hedera.node.app.service.network.impl.handlers.NetworkUncheckedSubmitHandler;
+import com.hedera.node.app.service.network.impl.serdes.EntityNumSerdes;
+import com.hedera.node.app.service.network.impl.serdes.MonoContextAdapterSerdes;
+import com.hedera.node.app.service.network.impl.serdes.MonoRunningHashesAdapterSerdes;
+import com.hedera.node.app.service.network.impl.serdes.MonoSpecialFilesAdapterSerdes;
 import com.hedera.node.app.spi.service.Service;
+import com.hedera.node.app.spi.state.Schema;
+import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.spi.state.serdes.MonoMapSerdesAdapter;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
@@ -34,6 +45,14 @@ import java.util.Set;
  * Standard implementation of the {@link NetworkService} {@link Service}.
  */
 public final class NetworkServiceImpl implements NetworkService {
+
+    public static final String CONTEXT_KEY = "CONTEXT";
+    public static final String STAKING_KEY = "STAKING";
+    public static final String SPECIAL_FILES_KEY = "SPECIAL_FILES";
+    public static final String RUNNING_HASHES_KEY = "RUNNING_HASHES";
+    private static final SemanticVersion CURRENT_VERSION =
+            SemanticVersion.newBuilder().setMinor(34).build();
+
 
     private final NetworkGetAccountDetailsHandler networkGetAccountDetailsHandler;
 
@@ -148,5 +167,31 @@ public final class NetworkServiceImpl implements NetworkService {
                 networkGetVersionInfoHandler,
                 networkTransactionGetReceiptHandler,
                 networkTransactionGetRecordHandler);
+    }
+
+    @Override
+    public void registerSchemas(final @NonNull SchemaRegistry registry) {
+        registry.register(networkSchema());
+    }
+
+    private Schema networkSchema() {
+        return new Schema(CURRENT_VERSION) {
+            @NonNull
+            @Override
+            public Set<StateDefinition> statesToCreate() {
+                return Set.of(
+                        stakingDef(),
+                        StateDefinition.singleton(CONTEXT_KEY, new MonoContextAdapterSerdes()),
+                        StateDefinition.singleton(SPECIAL_FILES_KEY, new MonoSpecialFilesAdapterSerdes()),
+                        StateDefinition.singleton(RUNNING_HASHES_KEY, new MonoRunningHashesAdapterSerdes()));
+            }
+        };
+    }
+
+    private StateDefinition<EntityNum, MerkleStakingInfo> stakingDef() {
+        final var keySerdes = new EntityNumSerdes();
+        final var valueSerdes = MonoMapSerdesAdapter.serdesForSelfSerializable(
+                MerkleStakingInfo.CURRENT_VERSION, MerkleStakingInfo::new);
+        return StateDefinition.inMemory(STAKING_KEY, keySerdes, valueSerdes);
     }
 }

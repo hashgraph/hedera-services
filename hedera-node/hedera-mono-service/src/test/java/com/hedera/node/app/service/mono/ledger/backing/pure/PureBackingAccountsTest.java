@@ -28,6 +28,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -53,7 +54,7 @@ class PureBackingAccountsTest {
     void setup() {
         map = mock(MerkleMap.class);
 
-        subject = new PureBackingAccounts(() -> AccountStorageAdapter.fromInMemory(map));
+        subject = new PureBackingAccounts(() -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(map)));
     }
 
     @Test

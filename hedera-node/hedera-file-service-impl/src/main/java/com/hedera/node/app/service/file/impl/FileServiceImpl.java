@@ -25,14 +25,27 @@ import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKeySerializer;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.spi.service.Service;
+import com.hedera.node.app.spi.state.Schema;
+import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.spi.state.serdes.MonoMapSerdesAdapter;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
 /** Standard implementation of the {@link FileService} {@link Service}. */
 public final class FileServiceImpl implements FileService {
+
+    private static final int MAX_BLOBS = 4096;
+    private static final SemanticVersion CURRENT_VERSION =
+            SemanticVersion.newBuilder().setMinor(34).build();
+    public static final String BLOBS_KEY = "BLOBS";
 
     private final FileAppendHandler fileAppendHandler;
 
@@ -160,5 +173,29 @@ public final class FileServiceImpl implements FileService {
     @Override
     public Set<QueryHandler> getQueryHandler() {
         return Set.of(fileGetContentsHandler, fileGetInfoHandler);
+    }
+
+    @Override
+    public void registerSchemas(@NonNull final SchemaRegistry registry) {
+        registry.register(fileServiceSchema());
+    }
+
+    private Schema fileServiceSchema() {
+        return new Schema(CURRENT_VERSION) {
+            @NonNull
+            @Override
+            public Set<StateDefinition> statesToCreate() {
+                return Set.of(blobsDef());
+            }
+        };
+    }
+
+    private static StateDefinition<VirtualBlobKey, VirtualBlobValue> blobsDef() {
+        final var keySerdes = MonoMapSerdesAdapter.serdesForVirtualKey(
+                VirtualBlobKey.CURRENT_VERSION, VirtualBlobKey::new, new VirtualBlobKeySerializer());
+        final var valueSerdes =
+                MonoMapSerdesAdapter.serdesForVirtualValue(VirtualBlobValue.CURRENT_VERSION, VirtualBlobValue::new);
+
+        return StateDefinition.onDisk(BLOBS_KEY, keySerdes, valueSerdes, MAX_BLOBS);
     }
 }

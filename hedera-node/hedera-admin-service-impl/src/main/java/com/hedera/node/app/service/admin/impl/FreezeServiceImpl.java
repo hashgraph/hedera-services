@@ -50,4 +50,5 @@ public final class FreezeServiceImpl implements FreezeService {
     public Set<TransactionHandler> getTransactionHandler() {
         return Set.of(freezeHandler);
     }
+
 }

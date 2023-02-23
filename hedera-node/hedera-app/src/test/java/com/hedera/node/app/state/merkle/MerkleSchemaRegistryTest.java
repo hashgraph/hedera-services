@@ -141,7 +141,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         /** Utility method that migrates from version 9 to 10 */
         void migrateFromV9ToV10() {
             schemaRegistry.migrate(
-                    new MerkleHederaState(tree -> {}, (e) -> {}, (round, dualState) -> {}),
+                    new MerkleHederaState(tree -> {}, (e, m, p) -> {}, (round, dualState, metadata) -> {}),
                     version(9, 0, 0),
                     version(10, 0, 0));
         }
@@ -155,7 +155,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
 
         @BeforeEach
         void setUp() {
-            merkleTree = new MerkleHederaState(tree -> {}, (e) -> {}, (round, dualState) -> {});
+            merkleTree = new MerkleHederaState(tree -> {}, (e, m, p) -> {}, (r, ds, m) -> {});
 
             // Let the first version[0] be null, and all others have a number
             versions = new SemanticVersion[10];

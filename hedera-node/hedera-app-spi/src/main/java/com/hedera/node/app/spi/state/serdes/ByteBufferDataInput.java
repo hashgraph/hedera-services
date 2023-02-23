@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state.merkle.data;
+package com.hedera.node.app.spi.state.serdes;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.DataInput;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
@@ -46,7 +45,7 @@ public class ByteBufferDataInput implements DataInput {
     }
 
     @Override
-    public int skipBytes(int n) {
+    public int skipBytes(final int n) {
         final var toRead = Math.min(buffer.remaining(), n);
         buffer.position(buffer.position() + toRead);
         return toRead;
@@ -110,7 +109,19 @@ public class ByteBufferDataInput implements DataInput {
     }
 
     @Override
-    public String readUTF() throws IOException {
+    public String readUTF() {
         throw new UnsupportedOperationException("readUTF is not supported");
+    }
+
+    /**
+     * Even more temporary than the class itself, this method is only here to allow us to get the
+     * underlying buffer to use when adapting a legacy {@code VirtualValue} implementation, which by
+     * default only knows how to deserialize itself from a {@link ByteBuffer} or {@link
+     * com.swirlds.common.io.streams.SerializableDataInputStream}.
+     *
+     * @return the underlying {@link ByteBuffer} that this class is adapting
+     */
+    public ByteBuffer getBuffer() {
+        return buffer;
     }
 }

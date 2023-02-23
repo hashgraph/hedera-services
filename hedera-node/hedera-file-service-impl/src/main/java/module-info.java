@@ -6,6 +6,7 @@ module com.hedera.node.app.service.file.impl {
     requires dagger;
     requires javax.inject;
     requires static com.google.auto.service;
+    requires com.hedera.node.app.service.mono;
 
     exports com.hedera.node.app.service.file.impl;
     exports com.hedera.node.app.service.file.impl.handlers;
