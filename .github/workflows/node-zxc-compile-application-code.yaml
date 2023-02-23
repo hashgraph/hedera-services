@@ -278,7 +278,7 @@ jobs:
           }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: sonarqube --info --scan
+          arguments: sonarqube --info --scan ${SONAR_OPTS}
 
       - name: Setup Snyk
         env:
