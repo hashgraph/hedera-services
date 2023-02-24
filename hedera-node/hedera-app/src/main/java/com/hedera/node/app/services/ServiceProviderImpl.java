@@ -53,19 +53,18 @@ public class ServiceProviderImpl implements ServiceProvider {
         }
         services.keySet().stream()
                 .filter(service -> dependOnEachOther(service, factory.getServiceClass()))
-                .findAny()
-                .ifPresent(service -> {
+                .anyMatch(serviceClass -> {
                     throw new IllegalStateException("Can not add service for " + factory.getServiceClass()
-                            + " since the service has a clash with " + service);
+                            + " since the service has a clash with " + serviceClass);
                 });
         final Service service = factory.createService(this, facilityFacade);
 
         services.values().stream()
                 .filter(existingService -> Objects.equals(existingService.getServiceName(), service.getServiceName()))
-                .findAny()
-                .ifPresent(existingService -> {
-                    throw new IllegalStateException("Can not add service for " + service.getClass()
-                            + " since a service with the same name has already been registered.");
+                .anyMatch(existingService -> {
+                    throw new IllegalStateException("Can not add service " + service.getClass()
+                            + " since a service with the same name (" + service.getServiceName()
+                            + ") has already been registered.");
                 });
 
         services.put(factory.getServiceClass(), service);
