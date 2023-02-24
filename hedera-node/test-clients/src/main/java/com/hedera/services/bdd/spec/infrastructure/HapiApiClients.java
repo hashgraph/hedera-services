@@ -250,7 +250,7 @@ public class HapiApiClients {
         } else {
             id = stubId(nodeId, useTls);
         }
-        log.info("Submitting to the stub with id: "+ id);
+        log.info("Submitting to the stub with id: " + id);
         return consSvcStubs.get(id);
     }
 

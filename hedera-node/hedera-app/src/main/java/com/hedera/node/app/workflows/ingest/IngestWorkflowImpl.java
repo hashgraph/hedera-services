@@ -84,12 +84,12 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
             @NonNull final HapiOpCounters opCounters) {
         this.nodeInfo = requireNonNull(nodeInfo);
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
-        this.stateAccessor = stateAccessor;
-        this.onset = onset;
-        this.checker = checker;
-        this.throttleAccumulator = throttleAccumulator;
-        this.submissionManager = submissionManager;
-        this.opCounters = opCounters;
+        this.stateAccessor = requireNonNull(stateAccessor);
+        this.onset = requireNonNull(onset);
+        this.checker = requireNonNull(checker);
+        this.throttleAccumulator = requireNonNull(throttleAccumulator);
+        this.submissionManager = requireNonNull(submissionManager);
+        this.opCounters = requireNonNull(opCounters);
     }
 
     @Override

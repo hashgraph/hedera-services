@@ -30,7 +30,6 @@ import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
-import com.hedera.node.app.workflows.ingest.IngestWorkflowImpl;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.metrics.Metrics;
@@ -59,10 +58,8 @@ public final class Hedera {
         // Create the Ingest workflow. While we are in transition, some required facilities come
         // from `hedera-app`, and some from `mono-service`. Eventually we'll transition all
         // facilities to be from the app module.
-        // TODO Real values will be added to make this usable with #4825
-        final var ingestWorkflow =
-                new IngestWorkflowImpl(app.nodeInfo(), app.platformStatus(), null, null, null, null, null, null);
-
+        // Create Ingest workflow
+        final var ingestWorkflow = app.ingestComponentFactory().get().create().ingestWorkflow();
         // Create the query workflow
         final var queryWorkflow = app.queryComponentFactory().get().create().queryWorkflow();
 
