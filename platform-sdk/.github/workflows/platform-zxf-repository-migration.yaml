@@ -1,0 +1,83 @@
+##
+# Copyright (C) 2023 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+name: "Z-Platform XF: Repository Migration"
+on:
+  workflow_dispatch:
+    inputs:
+      destination-repository:
+        description: "Destination Repository:"
+        type: string
+        required: true
+      remove-secrets:
+        description: "Remove Secrets (Remote)"
+        type: boolean
+        required: false
+        default: false
+      dry-run-enabled:
+        description: "Perform Dry Run"
+        type: boolean
+        required: false
+        default: false
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+jobs:
+  migrate-secrets:
+    name: Migrate Secrets
+    runs-on: [ self-hosted, Linux, medium, ephemeral ]
+    env:
+      GCP_KEY_FILE: ${{ secrets.GCP_KEY_FILE }}
+      GCP_PROJECT_NUMBER: ${{ secrets.GCP_PROJECT_NUMBER }}
+      GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+      GIT_USER_EMAIL: ${{ secrets.GIT_USER_EMAIL }}
+      GIT_USER_NAME: ${{ secrets.GIT_USER_NAME }}
+      GPG_KEY_CONTENTS: ${{ secrets.GPG_KEY_CONTENTS }}
+      GPG_KEY_PASSPHRASE: ${{ secrets.GPG_KEY_PASSPHRASE }}
+      JRS_SSH_KEY_FILE: ${{ secrets.JRS_SSH_KEY_FILE }}
+      JRS_SSH_USER_NAME: ${{ secrets.JRS_SSH_USER_NAME }}
+      OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+      OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+      SLACK_API_TOKEN: ${{ secrets.SLACK_API_TOKEN }}
+      SLACK_RELEASE_WEBHOOK: ${{ secrets.SLACK_RELEASE_WEBHOOK }}
+      SLACK_TEST_WEBHOOK: ${{ secrets.SLACK_TEST_WEBHOOK }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      - name: Synchronize Secrets
+        uses: actionite/secrets-sync-action@v2
+        with:
+          dry_run: ${{ inputs.dry-run-enabled }}
+          delete: ${{ inputs.remove-secrets }}
+          github_token: ${{ secrets.GH_ACCESS_TOKEN }}
+          repositories: |
+            ${{ inputs.destination-repository }}
+          repositories_list_regex: false
+          concurrency: 10
+          new_secret_prefix: "PLATFORM_"
+          secrets: |
+            ^GCP_.*
+            ^GH_.*
+            ^GIT_.*
+            ^GPG_.*
+            ^JRS_.*
+            ^OSSRH_.*
+            ^SLACK_.*
+            ^SONAR_.*

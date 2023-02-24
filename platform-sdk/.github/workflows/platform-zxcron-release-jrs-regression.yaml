@@ -1,0 +1,91 @@
+##
+# Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+name: "Z-Platform XCron: Release JRS Regression"
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  BRANCH_LIST_FILE: "${{ github.workspace }}/branches.lst"
+
+jobs:
+  cron:
+    name: Cron / Launch Workflows
+    runs-on: [self-hosted, Linux, small, scheduler, ephemeral]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Identify Release Branches
+        run: |
+          echo "::group::Ensure Branch List File Exists"
+            touch "${BRANCH_LIST_FILE}"
+          echo "::endgroup::"
+
+          BRANCH_LIST="$(git branch --list --remotes --format='%(refname:strip=3)' | cat)"
+
+          while IFS= read -r line; do
+            [[ "${line}" =~ ^release-[0-9]+.[0-9]+.[0-9]+ ]] || continue
+
+            echo "::group::Identified Branch: ${line}"
+            echo "${line}" | tee -a "${BRANCH_LIST_FILE}"
+            echo "::endgroup::"
+          done <<< "${BRANCH_LIST}"
+
+      - name: Show Branch List
+        run: cat "${BRANCH_LIST_FILE}"
+
+      - name: Install Github CLI
+        env:
+          GITHUB_TOKEN: ${{ secrets.access-token }}
+        run: |
+          curl -O -L -s https://github.com/cli/cli/releases/download/v2.12.1/gh_2.12.1_linux_amd64.deb
+          sudo apt install -y ./gh_2.12.1_linux_amd64.deb
+          rm -rf gh_2.12.1_linux_amd64.deb
+
+      - name: Launch JRS Jobs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+        run: |
+          FIRST_RUN_STARTED="false"
+
+          while IFS= read -r line; do
+            [[ -n "${line}" ]] || continue
+
+            if [[ "${FIRST_RUN_STARTED}" = true ]]; then
+              sleep 30m
+            else
+              FIRST_RUN_STARTED="true"
+            fi
+
+            echo "::group::Processing Branch: ${line}"
+              printf "======== Beginning Github Actions Workflow Initiation ========\n"
+              gh workflow run platform-flow-jrs-daily-regression.yaml \
+                  --ref "${line}" \
+                  -R "${{ github.repository }}" \
+                  -f "branch-name=${line}" \
+                  -f "ref=${line}" 2>&1 | cat
+              printf "======== Finished Github Actions Workflow Initiation ========\n"
+            echo "::endgroup::"
+          done < <(cat "${BRANCH_LIST_FILE}")

@@ -1,0 +1,259 @@
+##
+# Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+name: "Platform: Deploy OSS Code"
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run-enabled:
+        description: "Perform Dry Run"
+        type: boolean
+        required: false
+        default: false
+      new-version:
+        description: "New Release Version (ie. 0.30.0):"
+        type: string
+        required: true
+      java-version:
+        description: "Java JDK Version:"
+        type: string
+        required: false
+        default: "17.0.3"
+      java-distribution:
+        description: "Java JDK Distribution:"
+        type: string
+        required: false
+        default: "temurin"
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  prepare-release:
+    name: "Branch / Release / Prepare"
+    runs-on: [self-hosted, Linux, medium, ephemeral]
+    outputs:
+      version-number: ${{ steps.next-version.outputs.version-number }}
+      version-tag: ${{ steps.next-version.outputs.version-tag }}
+    steps:
+      - name: Install Semantic Version Tools
+        run: |
+          echo "::group::Download SemVer Binary"
+          sudo curl -L -o /usr/local/bin/semver https://raw.githubusercontent.com/fsaintjacques/semver-tool/master/src/semver
+          echo "::endgroup::"
+          echo "::group::Change SemVer Binary Permissions"
+          sudo chmod -v +x /usr/local/bin/semver
+          echo "::endgroup::"
+          echo "::group::Show SemVer Binary Version Info"
+          semver --version
+          echo "::endgroup::"
+
+      - name: Compute Version Details
+        id: next-version
+        run: |
+          NEW_VERSION="${{ github.event.inputs.new-version }}"
+          VALID_VERSION="$(semver validate "${NEW_VERSION}")"
+
+          if [[ "${VALID_VERSION}" != "valid" ]]; then
+            echo "::error title=Version Error::The supplied new-version parameter (${NEW_VERSION}) is invalid and does not conform to the semantic versioning specifications."
+            exit 2
+          fi
+
+          PRERELEASE="$(semver get prerel "${NEW_VERSION}")"
+
+          if [[ -n "${PRERELEASE}" && "${PRERELEASE}" =~ ^orvw\.[1-9]+$ ]]; then
+            ORVW_VERSION="$(semver get release "${NEW_VERSION}")-$(semver get prerel "${NEW_VERSION}")"
+          else
+            ORVW_VERSION="$(semver get release "${NEW_VERSION}")-orvw.1"
+          fi
+
+          echo "version-number=${ORVW_VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "version-tag=v${ORVW_VERSION}" >> "${GITHUB_OUTPUT}"
+
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          repository: hashgraph/hedera-platform
+          ref: staging
+          fetch-depth: 0
+
+
+      - name: Fail on Duplicate Tag
+        run: |
+          set +e
+          TAG="$(git tag -l | grep "${{ steps.next-version.outputs.version-tag }}")"
+          set -e
+
+          if [[ -n "${TAG}" ]]; then
+            echo "::error title=Duplicate Tag Error::The supplied new-version parameter (${{ github.event.inputs.new-version }}) would result in a duplicate tag (${{ steps.next-version.outputs.version-tag }})."
+            exit 16
+          fi
+
+  open-review-release:
+    name: "Branch"
+    uses: ./.github/workflows/platform-zxc-release-open-review.yaml
+    needs:
+      - prepare-release
+    with:
+      repository: hashgraph/hedera-platform
+      branch-ref: staging
+      new-version: ${{ needs.prepare-release.outputs.version-number }}
+      dry-run-enabled: ${{ github.event.inputs.dry-run-enabled == 'true' }}
+      java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
+      java-version: ${{ github.event.inputs.java-version || '17.0.3' }}
+      custom-job-label: "Release / OSS"
+    secrets:
+      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
+      gpg-key-contents: ${{ secrets.GPG_KEY_CONTENTS }}
+      gpg-key-passphrase: ${{ secrets.GPG_KEY_PASSPHRASE }}
+      git-user-name: ${{ secrets.GIT_USER_NAME }}
+      git-user-email: ${{ secrets.GIT_USER_EMAIL }}
+
+  finalize-release:
+    name: "Branch / Release / Finalize"
+    runs-on: [self-hosted, Linux, medium, ephemeral]
+    needs:
+      - prepare-release
+      - open-review-release
+    if: ${{ github.event.inputs.dry-run-enabled != 'true' }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          repository: hashgraph/hedera-platform
+          ref: staging
+
+      - name: Compute Commit Identifier
+        id: commit
+        run: |
+          echo "id=$(git rev-parse HEAD | tr -d '[:space:]')" >> "${GITHUB_OUTPUT}"
+          echo "short-id=$(git rev-parse HEAD | tr -d '[:space:]' | cut -c1-8)" >> "${GITHUB_OUTPUT}"
+
+      - name: Create Tag
+        uses: rickstaa/action-create-tag@v1
+        with:
+          github_token: ''
+          commit_sha: ${{ steps.commit.outputs.id }}
+          message: "OSS Release v${{ needs.prepare-release.outputs.version-number }}"
+          tag: ${{ needs.prepare-release.outputs.version-tag }}
+
+
+      - name: Send Slack Notification
+        uses: slackapi/slack-github-action@v1
+        env:
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_RELEASE_WEBHOOK }}
+        with:
+          payload: |
+            {
+              "attachments": [
+                  {
+                    "color": "#b7f350",
+                    "blocks": [
+                      {
+                        "type": "header",
+                        "text": {
+                          "type": "plain_text",
+                          "text": ":dvd: Open Source Code Release ${{ needs.prepare-release.outputs.version-tag }}",
+                          "emoji": true
+                        }
+                      },
+                      {
+                        "type": "section",
+                        "fields": [
+                          {
+                            "type": "mrkdwn",
+                            "text": "*Deployment Channel:*"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "*Deployment Status Check:*"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "Open Source Respository"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "<https://github.com/hashgraph/hedera-platform/tree/${{ needs.prepare-release.outputs.version-tag }}|OSS Repository>"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "section",
+                        "fields": [
+                          {
+                            "type": "mrkdwn",
+                            "text": "*Source Branch:*"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "*Short Commit ID:*"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "<${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "`${{ steps.commit.outputs.short-id }}`"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "section",
+                        "fields": [
+                          {
+                            "type": "mrkdwn",
+                            "text": "*Gradle Version Number:*"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "*Release Notes:*"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "`${{ needs.prepare-release.outputs.version-number }}`"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "N/A"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "divider"
+                      },
+                      {
+                        "type": "context",
+                        "elements": [
+                          {
+                            "type": "mrkdwn",
+                            "text": ":outbox_tray: @nathan"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }

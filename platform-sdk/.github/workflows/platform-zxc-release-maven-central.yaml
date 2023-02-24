@@ -1,0 +1,293 @@
+##
+# Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+name: "Z-Platform XC: Release Maven Central"
+on:
+  workflow_call:
+    inputs:
+      new-version:
+        description: "New Release Version (ie. 0.30.0):"
+        type: string
+        required: true
+      dry-run-enabled:
+        description: "Perform Dry Run"
+        type: boolean
+        required: false
+        default: false
+      java-distribution:
+        description: "Java JDK Distribution:"
+        type: string
+        required: false
+        default: "temurin"
+      java-version:
+        description: "Java JDK Version:"
+        type: string
+        required: false
+        default: "17.0.3"
+      gradle-version:
+        description: "Gradle Version:"
+        type: string
+        required: false
+        default: "wrapper"
+      custom-job-label:
+        description: "Custom Job Label:"
+        type: string
+        required: false
+        default: "Release"
+
+    secrets:
+      gpg-key-contents:
+        required: false
+      gpg-key-passphrase:
+        required: false
+      git-user-name:
+        required: false
+      git-user-email:
+        required: false
+      ossrh-user-name:
+        required: true
+      ossrh-user-password:
+        required: true
+
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  release:
+    name: ${{ inputs.custom-job-label || 'Release' }}
+    runs-on: [self-hosted, Linux, medium, ephemeral]
+    steps:
+      - name: Install Semantic Version Tools
+        run: |
+          echo "::group::Download SemVer Binary"
+          sudo curl -L -o /usr/local/bin/semver https://raw.githubusercontent.com/fsaintjacques/semver-tool/master/src/semver
+          echo "::endgroup::"
+          echo "::group::Change SemVer Binary Permissions"
+          sudo chmod -v +x /usr/local/bin/semver
+          echo "::endgroup::"
+          echo "::group::Show SemVer Binary Version Info"
+          semver --version
+          echo "::endgroup::"
+
+      - name: Install GnuPG Tools
+        run: |
+          if ! command -v gpg2 >/dev/null 2>&1; then
+            echo "::group::Updating APT Repository Indices"
+              sudo apt update
+            echo "::endgroup::"
+            echo "::group::Installing GnuPG Tools"
+              sudo apt install -y gnupg2
+            echo "::endgroup::"
+          fi
+
+      - name: Validate Workflow Inputs
+        id: validate-workflow
+        run: |
+          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+          BRANCH_NAME="${BRANCH_NAME##origin/}"
+
+          if [[ ! "${BRANCH_NAME}" =~ ^main$|^master$|^release-[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+           printf "::error title=Branch Error::The version policy of %s only allows this workflow to be executed on branches matching the pattern: %s" "${POLICY}" '^main$|^master$|^release-[0-9]+\.[0-9]+\.[0-9]+$'
+            exit 32
+          fi
+
+          NEW_VERSION="${{ inputs.new-version }}"
+          VALID_VERSION="$(semver validate "${NEW_VERSION}")"
+
+          if [[ "${VALID_VERSION}" != "valid" ]]; then
+            echo "::error title=Version Error::The supplied new-version parameter (${NEW_VERSION}) is invalid and does not conform to the semantic versioning specifications."
+            exit 2
+          fi
+
+          PRERELEASE="$(semver get prerel "${NEW_VERSION}")"
+
+          if [[ -n "${PRERELEASE}" ]]; then
+            echo "::error title=Version Error::The supplied new-version parameter (${NEW_VERSION}) is a PRERELEASE version and is not supported by this pipeline."
+            exit 8
+          fi
+
+          BUILD="$(semver get build "${NEW_VERSION}")"
+
+          if [[ -n "${BUILD}" ]]; then
+            echo "::error title=Version Error::The supplied new-version parameter (${NEW_VERSION}) contains a BUILD specification and is not supported by this pipeline."
+            exit 12
+          fi
+
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Import GPG key
+        id: gpg_key
+        uses: crazy-max/ghaction-import-gpg@v5
+        if: ${{ inputs.dry-run-enabled != true }}
+        with:
+          gpg_private_key: ${{ secrets.gpg-key-contents }}
+          passphrase: ${{ secrets.gpg-key-passphrase }}
+          git_config_global: true
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+          git_tag_gpgsign: true
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: ${{ inputs.java-distribution }}
+          java-version: ${{ inputs.java-version }}
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          gradle-home-cache-strict-match: false
+          gradle-home-cache-includes: |
+            caches
+            notifications
+            jdks
+            dependency-check-data
+
+      - name: Apply Version Number Update (Explicit)
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: versionAsSpecified --scan -PnewVersion=${{ inputs.new-version }}
+
+      - name: Version Report
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: githubVersionSummary --scan
+
+      - name: Gradle Assemble
+        uses: gradle/gradle-build-action@v2
+        if: ${{ inputs.dry-run-enabled != true }}
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: assemble --scan
+
+      - name: Gradle JavaDoc
+        id: gradle-javadoc
+        uses: gradle/gradle-build-action@v2
+        if: ${{ steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: javadoc --scan --parallel
+
+      - name: Gradle Deploy
+        uses: gradle/gradle-build-action@v2
+        if: ${{ inputs.dry-run-enabled != true }}
+        env:
+          OSSRH_USERNAME: ${{ secrets.ossrh-user-name }}
+          OSSRH_PASSWORD: ${{ secrets.ossrh-user-password }}
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: release-maven-central --scan -PpublishSigningEnabled=true
+
+      - name: Commit Version Changes
+        id: commit
+        uses: EndBug/add-and-commit@v9
+        if: ${{ inputs.dry-run-enabled != true }}
+        with:
+          author_name: ${{ secrets.git-user-name }}
+          author_email: ${{ secrets.git-user-email }}
+          commit: --signoff --gpg-sign
+          message: "[Automated Maven Central Release] Platform SDK v${{ inputs.new-version }}"
+
+      - name: Cache SDK Release Archives
+        id: archive-cache
+        uses: actions/cache@v3
+        with:
+          path: ~/sdk-archives
+          key: v1-sdk-release-v${{ inputs.new-version }}-jdk${{ inputs.java-version }}-${{ runner.os }}-${{ runner.arch }}-ri${{ github.run_id }}-rn${{ github.run_number }}-ra${{ github.run_attempt }}
+
+      - name: Stage SDK Release Archives
+        if: ${{ !cancelled() && inputs.dry-run-enabled != true }}
+        run: |
+          SDK_RELEASE_DIR="${HOME}/sdk-release"
+          SDK_ARCHIVE_DIR="${HOME}/sdk-archives"
+          COMMIT_SHA="$(echo "${{ steps.commit.outputs.commit_long_sha }}" | cut -c1-8)"
+
+          if [[ "${{ steps.archive-cache.outputs.cache-hit }}" == true ]]; then
+            echo "::group::Removing Existing Archive Cache Items"
+            rm -rvf "${SDK_ARCHIVE_DIR}"/*
+            echo "::endgroup::"
+          fi
+
+          echo "::group::Creating Release Directories"
+            [[ -f "${SDK_RELEASE_DIR}" ]] || mkdir -p "${SDK_RELEASE_DIR}"
+            [[ -f "${SDK_ARCHIVE_DIR}" ]] || mkdir -p "${SDK_ARCHIVE_DIR}"
+          echo "::endgroup::"
+
+          echo "::group::Staging Release Files"
+            cp -Rvf sdk/* "${SDK_RELEASE_DIR}"
+            rm -vf "${SDK_RELEASE_DIR}/log4j2.xml"
+            rm -vf "${SDK_RELEASE_DIR}/settings.txt"
+            rm -vf "${SDK_RELEASE_DIR}/test_cases.sh"
+            rm -rvf "${SDK_RELEASE_DIR}/target"
+            rm -rvf "${SDK_RELEASE_DIR}/testing"
+            rm -rvf "${SDK_RELEASE_DIR}/kernels"
+            rm -rvf "${SDK_RELEASE_DIR}/data/configs"
+
+
+            cat "sdk/config.txt" | \
+              perl -0777 -pe 's/# \*\* BEGIN REMOVE FROM SDK RELEASES \*\*.*# \*\* END REMOVE FROM SDK RELEASES \*\*//igs' \
+                > "${SDK_RELEASE_DIR}/config.txt"
+          echo "::endgroup::"
+
+          echo "::group::Rendering Settings File"
+            SETTINGS_CONTENTS="loadKeysFromPfxFiles, false\n"
+            SETTINGS_CONTENTS+="requireStateLoad, false\n"
+            SETTINGS_CONTENTS+="csvOutputFolder, data/stats\n"
+            SETTINGS_CONTENTS+="csvFileName, DemoStats\n"
+
+            echo -e "${SETTINGS_CONTENTS}" >"${SDK_RELEASE_DIR}/settings.txt"
+          echo "::endgroup::"
+
+          LIB_ARCHIVE_FILE="${SDK_ARCHIVE_DIR}/platform-sdk-libs-v${{ inputs.new-version }}-${COMMIT_SHA}.zip"
+          APPS_ARCHIVE_FILE="${SDK_ARCHIVE_DIR}/platform-sdk-apps-v${{ inputs.new-version }}-${COMMIT_SHA}.zip"
+          PUBLIC_ARCHIVE_FILE="${SDK_ARCHIVE_DIR}/platform-sdk-public-v${{ inputs.new-version }}-${COMMIT_SHA}.zip"
+
+          echo "::group::Building Release Archives"
+            cd "${SDK_RELEASE_DIR}" || exit "${?}"
+            zip -r "${LIB_ARCHIVE_FILE}" data/lib
+            zip -r "${APPS_ARCHIVE_FILE}" data/apps
+
+            # remove testing tools (if present) before building the public release artifact
+            rm -vf data/apps/*TestingTool.jar || true
+            zip -r "${PUBLIC_ARCHIVE_FILE}" *
+          echo "::endgroup::"
+
+          echo "::group::Sign Release Archives"
+            cd "${SDK_ARCHIVE_DIR}" || exit "${?}"
+            sha256sum "${LIB_ARCHIVE_FILE}" >"${LIB_ARCHIVE_FILE}.sha256"
+            sha256sum "${APPS_ARCHIVE_FILE}" >"${APPS_ARCHIVE_FILE}.sha256"
+            sha256sum "${PUBLIC_ARCHIVE_FILE}" >"${PUBLIC_ARCHIVE_FILE}.sha256"
+
+            gpg --output "${LIB_ARCHIVE_FILE}.asc" --detach-sig "${LIB_ARCHIVE_FILE}"
+            gpg --output "${APPS_ARCHIVE_FILE}.asc" --detach-sig "${APPS_ARCHIVE_FILE}"
+            gpg --output "${PUBLIC_ARCHIVE_FILE}.asc" --detach-sig "${PUBLIC_ARCHIVE_FILE}"
+
+            gpg --output "${LIB_ARCHIVE_FILE}.sha256.asc" --detach-sig "${LIB_ARCHIVE_FILE}.sha256"
+            gpg --output "${APPS_ARCHIVE_FILE}.sha256.asc" --detach-sig "${APPS_ARCHIVE_FILE}.sha256"
+            gpg --output "${PUBLIC_ARCHIVE_FILE}.sha256.asc" --detach-sig "${PUBLIC_ARCHIVE_FILE}.sha256"
+          echo "::endgroup::"

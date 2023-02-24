@@ -1,0 +1,256 @@
+##
+# Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+name: "Z-Platform XC: Release Internal"
+on:
+  workflow_call:
+    inputs:
+      deployment-profile:
+        description: "Deployment Profile:"
+        type: string
+        required: true
+      version-policy:
+        description: "Version Policy:"
+        type: string
+        required: true
+      prerelease-prefix:
+        description: "Prerelease Version Prefix:"
+        type: string
+        required: false
+        default: ''
+      new-version:
+        description: "New Version (Only used when policy is uniform-explicit):"
+        type: string
+        required: false
+      java-distribution:
+        description: "Java JDK Distribution:"
+        type: string
+        required: false
+        default: "temurin"
+      java-version:
+        description: "Java JDK Version:"
+        type: string
+        required: false
+        default: "17.0.3"
+      gradle-version:
+        description: "Gradle Version:"
+        type: string
+        required: false
+        default: "wrapper"
+      custom-job-label:
+        description: "Custom Job Label:"
+        type: string
+        required: false
+        default: "Release"
+      dry-run-enabled:
+        description: "Perform Dry Run"
+        type: boolean
+        required: false
+        default: false
+
+    secrets:
+      access-token:
+        required: true
+      gpg-key-contents:
+        required: false
+      gpg-key-passphrase:
+        required: false
+      git-user-name:
+        required: false
+      git-user-email:
+        required: false
+
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  id-token: write
+  contents: write
+
+env:
+  MAVEN_OPTS: -Xmx16g -XX:ActiveProcessorCount=16
+
+jobs:
+  release:
+    name: ${{ inputs.custom-job-label || 'Release' }}
+    runs-on: [self-hosted, Linux, medium, ephemeral]
+    steps:
+      - name: Verify Early Access Deployment
+        if: ${{ inputs.version-policy == 'early-access-explicit' && !cancelled() }}
+        run: |
+          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+          BRANCH_NAME="${BRANCH_NAME##origin/}"
+
+          if [[ ! "${BRANCH_NAME}" =~ ^main$|^master$|^release-[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            printf "::error title=Branch Error::The version policy of %s only allows this workflow to be executed on branches matching the pattern: %s" "${POLICY}" '^main$|^master$|^release-[0-9]+\.[0-9]+\.[0-9]+$'
+            exit 32
+          fi
+
+          if [[ "${{ inputs.dry-run-enabled }}" != true ]]; then
+            if [[ -z "${{ secrets.gpg-key-contents }}" ]]; then
+                echo "::error title=GPG Error::A valid GPG key file secret must be provided, but none was supplied."
+                exit 5
+            fi
+
+            if [[ -z "${{ secrets.gpg-key-passphrase }}" ]]; then
+                echo "::error title=GPG Error::A valid GPG key passphrase secret must be provided, but none was supplied."
+                exit 6
+            fi
+
+            if [[ -z "${{ secrets.git-user-name }}" ]]; then
+                echo "::error title=Git Error::A valid Git user name secret must be provided, but none was supplied."
+                exit 7
+            fi
+
+            if [[ -z "${{ secrets.git-user-email }}" ]]; then
+                echo "::error title=Git Error::A valid Git user email secret must be provided, but none was supplied."
+                exit 8
+            fi
+          fi
+
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+          token: ${{ secrets.access-token }}
+          fetch-depth: 0
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v1
+
+      - name: Import GPG key
+        id: gpg_key
+        uses: crazy-max/ghaction-import-gpg@v5
+        if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'early-access-explicit' }}
+        with:
+          gpg_private_key: ${{ secrets.gpg-key-contents }}
+          passphrase: ${{ secrets.gpg-key-passphrase }}
+          git_config_global: true
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+          git_tag_gpgsign: true
+
+      - name: Authenticate to Google Cloud
+        id: google-auth
+        uses: google-github-actions/auth@v1
+        if: ${{ inputs.dry-run-enabled != true }}
+        with:
+          workload_identity_provider: 'projects/229164983194/locations/global/workloadIdentityPools/registry-identity-pool/providers/gh-provider'
+          service_account: 'artifact-deployer@swirlds-registry.iam.gserviceaccount.com'
+
+      - name: Setup Google Cloud SDK
+        if: ${{ inputs.dry-run-enabled != true }}
+        uses: google-github-actions/setup-gcloud@v1
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: ${{ inputs.java-distribution }}
+          java-version: ${{ inputs.java-version }}
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          gradle-home-cache-strict-match: false
+          gradle-home-cache-includes: |
+            caches
+            notifications
+            jdks
+            dependency-check-data
+
+      - name: Install Semantic Version Tools
+        run: |
+          echo "::group::Download SemVer Binary"
+          sudo curl -L -o /usr/local/bin/semver https://raw.githubusercontent.com/fsaintjacques/semver-tool/master/src/semver
+          echo "::endgroup::"
+          echo "::group::Change SemVer Binary Permissions"
+          sudo chmod -v +x /usr/local/bin/semver
+          echo "::endgroup::"
+          echo "::group::Show SemVer Binary Version Info"
+          semver --version
+          echo "::endgroup::"
+
+      - name: Verify Version Number Update (Explicit)
+        id: verify-explicit-version
+        if: ${{ (inputs.version-policy == 'uniform-explicit' || inputs.version-policy == 'early-access-explicit') && !cancelled() }}
+        run: |
+          if [[ -z "${{ inputs.new-version }}" ]]; then
+            echo "::error title=Version Error::The version policy of ${{ inputs.version-policy }} requires the new-version parameter to be specified; however, no value was provided."
+            exit 1
+          fi
+
+          VALID_VERSION="$(semver validate "${{ inputs.new-version }}")"
+
+          if [[ "${VALID_VERSION}" != "valid" ]]; then
+            echo "::error title=Version Error::The supplied new-version parameter is invalid and does not conform to the semantic versioning specifications."
+            exit 2
+          fi
+
+          echo "number=${{ inputs.new-version }}" >> "${GITHUB_OUTPUT}"
+
+      - name: Apply Version Number Update (Explicit)
+        uses: gradle/gradle-build-action@v2
+        if: ${{ (inputs.version-policy == 'uniform-explicit' || inputs.version-policy == 'early-access-explicit') && !cancelled() }}
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: versionAsSpecified --scan -PnewVersion=${{ steps.verify-explicit-version.outputs.number }}
+
+      - name: Update Version Numbers (Commit Locked)
+        if: ${{ inputs.version-policy == 'commit-locked' && !cancelled() }}
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: versionAsPrefixedCommit --scan -PcommitPrefix=${{ inputs.prerelease-prefix }}
+
+      - name: Update Version Numbers (Snapshot Locked)
+        if: ${{ inputs.version-policy == 'snapshot-locked' && !cancelled() }}
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: versionAsSnapshot --scan
+
+      - name: Version Report
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: githubVersionSummary --scan
+
+      - name: Gradle Assemble
+        uses: gradle/gradle-build-action@v2
+        if: ${{ inputs.dry-run-enabled != true }}
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: assemble --scan --parallel
+
+      - name: Gradle Deploy
+        uses: gradle/gradle-build-action@v2
+        if: ${{ inputs.dry-run-enabled != true }}
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: release-${{ inputs.deployment-profile }} --scan
+
+      - name: Commit Version Changes
+        uses: EndBug/add-and-commit@v9
+        if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'early-access-explicit' }}
+        with:
+          author_name: ${{ secrets.git-user-name }}
+          author_email: ${{ secrets.git-user-email }}
+          commit: --signoff --gpg-sign
+          message: "[Automated EA Release] Platform SDK v${{ inputs.new-version }}"
+          remove: ${{ steps.google-auth.outputs.credentials_file_path }}
