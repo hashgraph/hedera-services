@@ -39,7 +39,7 @@ public class EntityUtilGauges {
     @Inject
     public EntityUtilGauges(final UsageLimits usageLimits) {
         utils = List.of(
-                //precent metrics for the current number of each entity type
+                // percent metrics for the current number of each entity type
                 new UtilGauge(
                         usageLimits::percentAccountsUsed,
                         gaugeConfigFor("accountsPercent"),
@@ -67,7 +67,7 @@ public class EntityUtilGauges {
                         new NonAtomicReference<>()),
                 new UtilGauge(
                         usageLimits::percentTopicsUsed, gaugeConfigFor("topicsPercent"), new NonAtomicReference<>()),
-                //plain metrics for the current number of each entity type
+                // plain metrics for the current number of each entity type
                 new UtilGauge(usageLimits::getNumAccounts, gaugeConfigFor("accounts"), new NonAtomicReference<>()),
                 new UtilGauge(usageLimits::getNumContracts, gaugeConfigFor("contracts"), new NonAtomicReference<>()),
                 new UtilGauge(usageLimits::getNumFiles, gaugeConfigFor("files"), new NonAtomicReference<>()),
