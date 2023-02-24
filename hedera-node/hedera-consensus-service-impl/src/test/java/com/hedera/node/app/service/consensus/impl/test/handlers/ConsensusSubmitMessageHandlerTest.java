@@ -25,7 +25,6 @@ import static com.hedera.node.app.service.consensus.impl.test.handlers.Consensus
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.CONSENSUS_SUBMIT_MESSAGE_MISSING_TOPIC_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.CONSENSUS_SUBMIT_MESSAGE_SCENARIO;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
@@ -46,7 +45,8 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-
+import java.time.Instant;
+import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -54,9 +54,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.Instant;
-import java.util.List;
 
 @ExtendWith(MockitoExtension.class)
 class ConsensusSubmitMessageHandlerTest {
@@ -150,6 +147,7 @@ class ConsensusSubmitMessageHandlerTest {
             topicStore = mock(ReadableTopicStore.class);
             keyLookup = com.hedera.node.app.service.consensus.impl.handlers.test.AdapterUtils.wellKnownKeyLookupAt();
         }
+
         @Test
         void getsConsensusSubmitMessageNoSubmitKey() {
             final var txn = txnFrom(CONSENSUS_SUBMIT_MESSAGE_SCENARIO);
@@ -191,7 +189,8 @@ class ConsensusSubmitMessageHandlerTest {
             final var txn = txnFrom(CONSENSUS_SUBMIT_MESSAGE_MISSING_TOPIC_SCENARIO);
 
             given(topicStore.getTopicMetadata(notNull()))
-                    .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withFailureReason(ResponseCodeEnum.INVALID_TOPIC_ID));
+                    .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withFailureReason(
+                            ResponseCodeEnum.INVALID_TOPIC_ID));
             final var context = new PreHandleContext(keyLookup, txn, DEFAULT_PAYER);
 
             // when:
@@ -217,9 +216,10 @@ class ConsensusSubmitMessageHandlerTest {
 
     private static TransactionBody newSubmitMessageTxn() {
         final var txnId = TransactionID.newBuilder().setAccountID(ACCOUNT_ID_4).build();
-        final var submitMessageBuilder =
-                ConsensusSubmitMessageTransactionBody.newBuilder().setTopicID(TOPIC_ID_1357).setMessage(
-                        ByteString.copyFromUtf8("Message for test-" + Instant.now() + "." + Instant.now().getNano()));
+        final var submitMessageBuilder = ConsensusSubmitMessageTransactionBody.newBuilder()
+                .setTopicID(TOPIC_ID_1357)
+                .setMessage(ByteString.copyFromUtf8("Message for test-" + Instant.now() + "."
+                        + Instant.now().getNano()));
         return TransactionBody.newBuilder()
                 .setTransactionID(txnId)
                 .setConsensusSubmitMessage(submitMessageBuilder.build())

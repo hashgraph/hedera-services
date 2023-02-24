@@ -38,10 +38,9 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.assertj.core.api.Assertions;
-
 import java.time.Instant;
 import java.util.Optional;
+import org.assertj.core.api.Assertions;
 
 public final class ConsensusTestUtils {
 
