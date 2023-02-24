@@ -201,6 +201,13 @@ public class ConcurrentSuites {
         };
     }
 
+    /**
+     * Wrap a suite supplier with a call to set the auto-scheduling override for the given functions.
+     *
+     * @param suiteSupplier the suite supplier to wrap
+     * @param functions the functions to auto-schedule
+     * @return the wrapped suite supplier
+     */
     private static Supplier<HapiSuite> withAutoScheduling(
             final Supplier<HapiSuite> suiteSupplier, final Set<HederaFunctionality> functions) {
         return () -> {

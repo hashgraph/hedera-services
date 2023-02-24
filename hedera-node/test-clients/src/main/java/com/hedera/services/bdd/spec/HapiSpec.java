@@ -600,6 +600,16 @@ public class HapiSpec implements Runnable {
         }
     }
 
+    /**
+     * Given the number of keys that will be used to sign the transaction, and the number of
+     * {@code ScheduleSign} transactions that will be executed, create a list of indices that
+     * can be used to choose which keys to sign with in both the initial {@code ScheduleCreate},
+     * and any {@code ScheduleSign} transactions.
+     *
+     * @param numKeys the number of keys that will be used to sign the transaction
+     * @param numSignTxns the number of {@code ScheduleSign} transactions that will be executed
+     * @return a list of indices that can be used to choose signing keys
+     */
     private static List<Integer> createAndSignIndicesGiven(final int numKeys, final int numSignTxns) {
         final List<Integer> endIndices = new ArrayList<>();
         endIndices.add(numKeys);
