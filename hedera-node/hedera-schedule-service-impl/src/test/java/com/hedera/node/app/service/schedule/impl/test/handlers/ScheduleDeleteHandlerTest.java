@@ -115,16 +115,6 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
                         TransactionID.newBuilder().setAccountID(scheduler).build())
                 .setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
                 .build();
-        //        scheduledMeta = new TransactionMetadata(
-        //                asOrdinary(txn.getScheduleCreate().getScheduledTransactionBody(), txn.getTransactionID()),
-        //                scheduler,
-        //                OK,
-        //                schedulerKey,
-        //                List.of(),
-        //                null,
-        //                null,
-        //                List.of(),
-        //                List.of());
     }
 
     private TransactionBody scheduleDeleteTransaction() {
