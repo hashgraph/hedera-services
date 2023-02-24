@@ -60,7 +60,7 @@ jobs:
 
   unit-label-check:
     name: "Label Check [CI:UnitTests]"
-    runs-on: [self-hosted, Linux, platform, standard, ephemeral]
+    runs-on: [self-hosted, Linux, small, scheduler, ephemeral]
     if: ${{ contains(github.event.pull_request.labels.*.name, 'CI:UnitTests') || contains(github.event.pull_request.labels.*.name, 'CI:FinalChecks') }}
     steps:
       - name: "Check Labels"
@@ -89,7 +89,7 @@ jobs:
 
   final-label-check:
     name: "Label Check [CI:FinalChecks]"
-    runs-on: [self-hosted, Linux, platform, standard, ephemeral]
+    runs-on: [self-hosted, Linux, small, scheduler, ephemeral]
     if: ${{ contains(github.event.pull_request.labels.*.name, 'CI:FinalChecks') }}
     steps:
       - name: "Check Labels"
