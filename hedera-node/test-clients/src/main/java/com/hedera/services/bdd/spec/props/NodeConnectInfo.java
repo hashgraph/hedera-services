@@ -27,13 +27,12 @@ import java.util.stream.Stream;
 
 public class NodeConnectInfo {
     public static int NEXT_DEFAULT_ACCOUNT_NUM = 3;
-
-    private final int DEFAULT_PORT = 50211;
-    private final int DEFAULT_TLS_PORT = 50212;
-
-    private final int DEFAULT_WORKFLOW_PORT = 60211;
-    private final int DEFAULT_WORKFLOW_TLS_PORT = 60212;
-    private final String DEFAULT_HOST = "localhost";
+    private static final int DEFAULT_PORT = 50211;
+    private static final int DEFAULT_TLS_PORT = 50212;
+    private static final int DEFAULT_WORKFLOW_PORT = 60211;
+    private static final int DEFAULT_WORKFLOW_TLS_PORT = 60212;
+    private static final String DEFAULT_HOST = "localhost";
+    private static final String FORMATTER = "%s:%d";
 
     private final String host;
     private final int port;
@@ -70,19 +69,19 @@ public class NodeConnectInfo {
     }
 
     public String uri() {
-        return String.format("%s:%d", host, port);
+        return String.format(FORMATTER, host, port);
     }
 
     public String tlsUri() {
-        return String.format("%s:%d", host, tlsPort);
+        return String.format(FORMATTER, host, tlsPort);
     }
 
     public String workflowUri() {
-        return String.format("%s:%d", host, workflowPort);
+        return String.format(FORMATTER, host, workflowPort);
     }
 
     public String workflowTlsUri() {
-        return String.format("%s:%d", host, workflowTlsPort);
+        return String.format(FORMATTER, host, workflowTlsPort);
     }
 
     public String getHost() {

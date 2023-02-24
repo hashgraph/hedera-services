@@ -326,8 +326,8 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Supplier<AddressBook> provideWorkingAddressBook(final MutableStateChildren workingState) {
-        return workingState::addressBook;
+    static Supplier<AddressBook> provideWorkingAddressBook(final Platform platform) {
+        return platform::getAddressBook;
     }
 
     @Provides

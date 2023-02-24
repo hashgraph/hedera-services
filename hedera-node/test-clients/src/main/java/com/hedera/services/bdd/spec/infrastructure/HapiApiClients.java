@@ -94,8 +94,7 @@ public class HapiApiClients {
 
     private static Map<String, ManagedChannel> channels = new HashMap<>();
 
-    private ManagedChannel createNettyChannel(
-            NodeConnectInfo node, boolean useTls, final String host, final int port, final int tlsPort) {
+    private ManagedChannel createNettyChannel(boolean useTls, final String host, final int port, final int tlsPort) {
         try {
             ManagedChannel channel;
             String[] protocols = new String[] {"TLSv1.2", "TLSv1.3"};
@@ -133,11 +132,9 @@ public class HapiApiClients {
             if (!workflowOperations.isEmpty()) {
                 addNewNettyChannelForWorkflowOperations(node, uri, useTls, workflowOperations);
             }
-            ManagedChannel channel =
-                    createNettyChannel(node, useTls, node.getHost(), node.getPort(), node.getTlsPort());
+            ManagedChannel channel = createNettyChannel(useTls, node.getHost(), node.getPort(), node.getTlsPort());
             channels.put(uri, channel);
-
-            System.out.println("URI " + uri);
+            log.info("URI {}", uri);
 
             scSvcStubs.put(uri, SmartContractServiceGrpc.newBlockingStub(channel));
             consSvcStubs.put(uri, ConsensusServiceGrpc.newBlockingStub(channel));
@@ -167,19 +164,21 @@ public class HapiApiClients {
                 ConsensusGetTopicInfo,
                 ConsensusSubmitMessage,
                 ConsensusUpdateTopic);
-        String newUri = "";
+        String workflowUri = "";
         if (uri.equals(node.uri())) {
-            newUri = node.workflowUri();
+            workflowUri = node.workflowUri();
         } else if (uri.equals(node.tlsUri())) {
-            newUri = node.workflowTlsUri();
+            workflowUri = node.workflowTlsUri();
         }
 
         ManagedChannel workflowChannel =
-                createNettyChannel(node, useTls, node.getHost(), node.getWorkflowPort(), node.getWorkflowTlsPort());
-        channels.put(newUri, workflowChannel);
-        System.out.println("New URI for workflows " + newUri);
+                createNettyChannel(useTls, node.getHost(), node.getWorkflowPort(), node.getWorkflowTlsPort());
+        channels.put(workflowUri, workflowChannel);
+
+        log.info("New URI for workflows {}", workflowUri);
+
         if (workflowOperations.stream().anyMatch(consensusOps::contains)) {
-            consSvcStubs.put(newUri, ConsensusServiceGrpc.newBlockingStub(workflowChannel));
+            consSvcStubs.put(workflowUri, ConsensusServiceGrpc.newBlockingStub(workflowChannel));
         }
     }
 
