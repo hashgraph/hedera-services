@@ -22,11 +22,23 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.COMPARE;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.TAKE;
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.*;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.HapiApiClients.clientsFor;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SUFFIX;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -44,12 +56,14 @@ import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.persistence.EntityManager;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
+import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -66,6 +80,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.SplittableRandom;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -74,6 +89,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -85,6 +101,8 @@ import org.apache.logging.log4j.Logger;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class HapiSpec implements Runnable {
+    private static final AtomicLong NEXT_AUTO_SCHEDULE_NUM = new AtomicLong(1);
+    private static final SplittableRandom RANDOM = new SplittableRandom();
     private static final String CI_PROPS_FLAG_FOR_NO_UNRECOVERABLE_NETWORK_FAILURES = "suppressNetworkFailures";
     private static final ThreadPoolExecutor THREAD_POOL =
             new ThreadPoolExecutor(0, 10_000, 250, MILLISECONDS, new SynchronousQueue<>());
@@ -405,19 +423,31 @@ public class HapiSpec implements Runnable {
             ops = new ArrayList<>(ops);
             ops.add(0, remembering(preservedProperties, propertiesToPreserve));
         }
+        final var autoScheduled = setup().txnTypesToSchedule();
+        if (!autoScheduled.isEmpty()) {
+            log.info("Auto-scheduling {}", autoScheduled);
+        }
         @Nullable List<EventualRecordStreamAssertion> assertions = null;
         for (HapiSpecOperation op : ops) {
+            if (!autoScheduled.isEmpty() && op.shouldSkipWhenAutoScheduling(autoScheduled)) {
+                continue;
+            }
             if (op instanceof EventualRecordStreamAssertion recordStreamAssertion) {
                 if (assertions == null) {
                     assertions = new ArrayList<>();
                 }
                 assertions.add(recordStreamAssertion);
+            } else if (op instanceof HapiTxnOp txn) {
+                if (autoScheduled.contains(txn.type())) {
+                    op = autoScheduledSequenceFor(txn);
+                }
             }
             Optional<Throwable> error = op.execFor(this);
             Failure asyncFailure = null;
             if (error.isPresent() || (asyncFailure = finishingError.get().orElse(null)) != null) {
                 status = FAILED;
-                failure = error.map(t -> new Failure(t, op.toString())).orElse(asyncFailure);
+                final var failedOp = op;
+                failure = error.map(t -> new Failure(t, failedOp.toString())).orElse(asyncFailure);
                 break;
             } else {
                 log.info("'{}' finished initial execution of {}", name, op);
@@ -455,6 +485,134 @@ public class HapiSpec implements Runnable {
         if (hapiSetup.requiresPersistentEntities() && hapiSetup.updateManifestsForCreatedPersistentEntities()) {
             entities.updateCreatedEntityManifests();
         }
+    }
+
+    /**
+     * Given a transaction, creates a sequence of operations that schedules the
+     * transaction and validates its execution and record. This sequence of
+     * operations looks like,
+     * <ol>
+     *     <li>A {@code ScheduleCreate} using the default payer, and including
+     *     zero or more of the required signing keys for the transaction.</li>
+     *     <li>Zero or more {@code ScheduleSign}'s targeting the created
+     *     schedule, each including one or more of the required signing keys
+     *     not used with the {@code ScheduleCreate}.</li>
+     *     <li>A {@code ScheduleInfo} query that verifies the schedule has been
+     *     executed (unless the expected pre-check or status of the transaction
+     *     was {@code INVALID_SIGNATURE}, in which case the schedule shouldn't
+     *     have been executed.)</li>
+     *     <li>A {@code GetTransactionRecord} query that verifies the triggered
+     *     transaction had the expected status (unless the expected pre-check
+     *     or status of the transaction was {@code INVALID_SIGNATURE}).</li>
+     * </ol>
+     *
+     * @param txn the transaction to auto-schedule
+     * @return the sequence of operations that auto-schedules the transaction
+     */
+    private HapiSpecOperation autoScheduledSequenceFor(final HapiTxnOp<?> txn) {
+        // For the signatures to have the expected semantics, we must
+        // incorporate any signature control overrides into this spec
+        final var sigControlOverrides = txn.setKeyControlOverrides(this);
+        if (!sigControlOverrides.isEmpty()) {
+            sigControlOverrides.forEach((key, control) -> keys().setControl(key, control));
+        }
+
+        final var scheduleCreatePayerKey = registry().getKey(DEFAULT_PAYER);
+        final var signingKeys = txn.signersToUseFor(this).stream()
+                // Skip empty keys, which will have no required signatures, but
+                // should be rejected at consensus in most cases
+                .filter(key -> !isEmpty(key))
+                // The ScheduleCreate uses the default payer key, so we should
+                // ignore it for signing requirement purposes
+                .filter(key -> !scheduleCreatePayerKey.equals(key))
+                // Without this we would commonly repeat the payer key and run
+                // into SCHEDULE_ALREADY_EXECUTED
+                .distinct()
+                .toList();
+        final var numKeys = signingKeys.size();
+        final var numSignTxns = RANDOM.nextInt(numKeys + 1);
+        final var indices = createAndSignIndicesGiven(numKeys, numSignTxns);
+        // One slot for the ScheduleCreate, one for each ScheduleSign,
+        // one for the GetScheduleInfo, and one for the GetTxnRecord
+        final var orderedOps = new HapiSpecOperation[1 + numSignTxns + 2];
+        final var sigPartitionDescription = new StringBuilder()
+                .append("ScheduleCreate[")
+                .append(indices.get(0))
+                .append(", ")
+                .append(indices.get(1))
+                .append("]");
+        final var num = NEXT_AUTO_SCHEDULE_NUM.getAndIncrement();
+        final var schedule = "autoScheduled" + num;
+        final var creation = "autoScheduleCreation" + num;
+        orderedOps[0] = scheduleCreate(schedule, txn)
+                .alsoSigningWithExplicit(signingKeys.subList(indices.get(0), indices.get(1)))
+                .savingExpectedScheduledTxnId()
+                .via(creation);
+        for (int i = 1, n = indices.size(); i < n - 1; i++) {
+            orderedOps[i] = scheduleSign(schedule)
+                    .alsoSigningWithExplicit(signingKeys.subList(indices.get(i), indices.get(i + 1)))
+                    // It's likely that some of the top-level transaction's signing keys will already
+                    // be present (e.g. the default payer's signature), so we accommodate that here
+                    // by adding NO_NEW_VALID_SIGNATURES to the list of acceptable statuses
+                    .hasKnownStatusFrom(SUCCESS, NO_NEW_VALID_SIGNATURES);
+            sigPartitionDescription
+                    .append(", ScheduleSign[")
+                    .append(indices.get(i))
+                    .append(", ")
+                    .append(indices.get(i + 1))
+                    .append("]");
+        }
+
+        final var expectedStatus =
+                (txn.getExpectedPrecheck() == OK) ? txn.getExpectedStatus() : txn.getExpectedPrecheck();
+        final var scheduleStateAssertion = getScheduleInfo(schedule);
+        // If the original transaction was supposed to fail with INVALID_SIGNATURE,
+        // then the schedule should not have been executed
+        if (expectedStatus != INVALID_SIGNATURE) {
+            scheduleStateAssertion.isExecuted();
+        } else {
+            scheduleStateAssertion.isNotExecuted();
+        }
+        orderedOps[orderedOps.length - 2] = scheduleStateAssertion;
+
+        if (expectedStatus != INVALID_SIGNATURE) {
+            final var recordAssertion = getTxnRecord(creation)
+                    .scheduledBy(schedule)
+                    .hasPriority(recordWith().status(expectedStatus));
+            orderedOps[orderedOps.length - 1] = recordAssertion;
+        } else {
+            // If the original transaction was supposed to fail with INVALID_SIGNATURE, there
+            // will be no scheduled transaction record to retrieve, so just use noOp()
+            orderedOps[orderedOps.length - 1] = noOp();
+        }
+        return blockingOrder(orderedOps);
+    }
+
+    private boolean isEmpty(final Key key) {
+        if (key.hasKeyList()) {
+            return key.getKeyList().getKeysCount() == 0
+                    || key.getKeyList().getKeysList().stream().allMatch(this::isEmpty);
+        } else if (key.hasThresholdKey()) {
+            return key.getThresholdKey().getKeys().getKeysCount() == 0
+                    || key.getThresholdKey().getKeys().getKeysList().stream().allMatch(this::isEmpty);
+        } else {
+            return false;
+        }
+    }
+
+    private static List<Integer> createAndSignIndicesGiven(final int numKeys, final int numSignTxns) {
+        final List<Integer> endIndices = new ArrayList<>();
+        endIndices.add(numKeys);
+        int remainingSkipsAllowed = numKeys - numSignTxns;
+        for (int i = 0; i < numSignTxns; i++) {
+            final var skips = remainingSkipsAllowed > 0 ? RANDOM.nextInt(remainingSkipsAllowed) : 0;
+            remainingSkipsAllowed -= skips;
+            final var curIndex = endIndices.get(0);
+            final var nextEndIndex = curIndex - skips - 1;
+            endIndices.add(0, nextEndIndex);
+        }
+        endIndices.add(0, 0);
+        return endIndices;
     }
 
     private Optional<Failure> checkRecordStream(@Nullable final List<EventualRecordStreamAssertion> assertions) {

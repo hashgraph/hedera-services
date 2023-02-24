@@ -51,6 +51,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -68,6 +69,10 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
     private boolean saveExpectedScheduledTxnId = false;
     private boolean useSentinelKeyListForAdminKey = false;
     private ByteString bytesSigned = ByteString.EMPTY;
+
+    @Nullable
+    private List<Key> explicitInitialSigners = null;
+
     private List<String> initialSigners = Collections.emptyList();
     private Optional<String> adminKey = Optional.empty();
     private Optional<String> payerAccountID = Optional.empty();
@@ -135,6 +140,11 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 
     public HapiScheduleCreate<T> alsoSigningWith(String... s) {
         initialSigners = List.of(s);
+        return this;
+    }
+
+    public HapiScheduleCreate<T> alsoSigningWithExplicit(final List<Key> keys) {
+        explicitInitialSigners = keys;
         return this;
     }
 
@@ -300,8 +310,12 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
         List<Function<HapiSpec, Key>> signers =
                 new ArrayList<>(List.of(spec -> spec.registry().getKey(effectivePayer(spec))));
         adminKey.ifPresent(k -> signers.add(spec -> spec.registry().getKey(k)));
-        for (String added : initialSigners) {
-            signers.add(spec -> spec.registry().getKey(added));
+        if (explicitInitialSigners != null) {
+            explicitInitialSigners.forEach(key -> signers.add(spec -> key));
+        } else {
+            for (String added : initialSigners) {
+                signers.add(spec -> spec.registry().getKey(added));
+            }
         }
         return signers;
     }
