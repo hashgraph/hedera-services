@@ -34,7 +34,7 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
 
     @BeforeEach
     void setUp() {
-        subject = new ReadableTopicStore(states);
+        subject = new ReadableTopicStore(readableStates);
     }
 
     @Test
@@ -122,7 +122,7 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
 
     @Test
     void failsIfTopicDoesntExist() {
-        given(topics.get(topicNum)).willReturn(null);
+        given(readableTopicState.get(topicNum)).willReturn(null);
         final var topicMeta = subject.getTopicMetadata(topicId);
 
         assertNotNull(topicMeta);
@@ -133,7 +133,7 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
 
     @Test
     void constructorCreatesTopicState() {
-        final var store = new ReadableTopicStore(states);
+        final var store = new ReadableTopicStore(readableStates);
         assertNotNull(store);
     }
 

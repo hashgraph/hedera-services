@@ -55,10 +55,20 @@ public class WritableTopicStore {
      *
      * @param topic - the topic to be mapped onto a new {@link MerkleTopic} and persisted.
      */
-    public void commit(@NonNull final Topic topic) {
+    public void put(@NonNull final Topic topic) {
         requireNonNull(topicState);
         requireNonNull(topic);
         topicState.put(topic.topicNumber(), asMerkleTopic(topic));
+    }
+
+    /**
+     * Removes a topic from the state.
+     * @param topicNum - the topic number to remove.
+     */
+    public void remove(@NonNull final long topicNum) {
+        requireNonNull(topicState);
+        requireNonNull(topicNum);
+        topicState.remove(topicNum);
     }
 
     private MerkleTopic asMerkleTopic(@NonNull final Topic topic) {

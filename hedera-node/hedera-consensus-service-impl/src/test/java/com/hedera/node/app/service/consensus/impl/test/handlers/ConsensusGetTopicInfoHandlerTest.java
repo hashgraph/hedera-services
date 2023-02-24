@@ -90,16 +90,16 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
         givenValidTopic();
 
         final var query = createGetTopicInfoQuery(topicNum.intValue());
-        final var response = subject.validate(query, store);
+        final var response = subject.validate(query, readableStore);
         assertEquals(OK, response);
     }
 
     @Test
     void validatesQueryIfInvalidTopic() throws Throwable {
-        given(topics.get(topicNum)).willReturn(null);
+        given(readableTopicState.get(topicNum)).willReturn(null);
 
         final var query = createGetTopicInfoQuery(topicNum.intValue());
-        final var response = subject.validate(query, store);
+        final var response = subject.validate(query, readableStore);
         assertEquals(INVALID_TOPIC_ID, response);
     }
 
@@ -109,7 +109,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
         given(topic.isDeleted()).willReturn(true);
 
         final var query = createGetTopicInfoQuery(topicNum.intValue());
-        final var response = subject.validate(query, store);
+        final var response = subject.validate(query, readableStore);
         assertEquals(INVALID_TOPIC_ID, response);
     }
 
@@ -120,7 +120,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
                 .build();
 
         final var query = createGetTopicInfoQuery(topicNum.intValue());
-        final var response = subject.findResponse(query, responseHeader, store, queryContext);
+        final var response = subject.findResponse(query, responseHeader, readableStore, queryContext);
         assertEquals(FAIL_FEE, response.getConsensusGetTopicInfo().getHeader().getNodeTransactionPrecheckCode());
         assertEquals(
                 ConsensusTopicInfo.newBuilder().build(),
@@ -136,7 +136,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
         final var expectedInfo = getExpectedInfo();
 
         final var query = createGetTopicInfoQuery(topicNum.intValue());
-        final var response = subject.findResponse(query, responseHeader, store, queryContext);
+        final var response = subject.findResponse(query, responseHeader, readableStore, queryContext);
         assertEquals(OK, response.getConsensusGetTopicInfo().getHeader().getNodeTransactionPrecheckCode());
         assertEquals(expectedInfo, response.getConsensusGetTopicInfo().getTopicInfo());
     }
