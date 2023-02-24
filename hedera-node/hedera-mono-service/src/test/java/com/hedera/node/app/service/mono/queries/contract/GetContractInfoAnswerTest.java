@@ -42,6 +42,7 @@ import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
@@ -272,7 +273,7 @@ class GetContractInfoAnswerTest {
 
         given(optionValidator.queryableContractStatus(eq(asContract(target)), any()))
                 .willReturn(INVALID_CONTRACT_ID);
-        given(view.contracts()).willReturn(AccountStorageAdapter.fromInMemory(contracts));
+        given(view.contracts()).willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(contracts)));
 
         // when:
         final ResponseCodeEnum validity = subject.checkValidity(query, view);
@@ -287,7 +288,7 @@ class GetContractInfoAnswerTest {
 
         given(optionValidator.queryableContractStatus(eq(asContract(target)), any()))
                 .willReturn(CONTRACT_DELETED);
-        given(view.contracts()).willReturn(AccountStorageAdapter.fromInMemory(contracts));
+        given(view.contracts()).willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(contracts)));
 
         final ResponseCodeEnum validity = subject.checkValidity(query, view);
 

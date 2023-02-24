@@ -30,6 +30,8 @@ import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringCreations;
 import com.hedera.node.app.service.mono.state.exports.AccountsExporter;
 import com.hedera.node.app.service.mono.state.exports.BalancesExporter;
@@ -43,10 +45,10 @@ import com.hedera.node.app.service.mono.state.initialization.SystemAccountsCreat
 import com.hedera.node.app.service.mono.state.initialization.SystemFilesManager;
 import com.hedera.node.app.service.mono.state.logic.HandleLogicModule;
 import com.hedera.node.app.service.mono.state.logic.ReconnectListener;
+import com.hedera.node.app.service.mono.state.logic.ScheduledTransactions;
 import com.hedera.node.app.service.mono.state.logic.StateWriteToDiskListener;
 import com.hedera.node.app.service.mono.state.logic.StatusChangeListener;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
-import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
@@ -84,8 +86,6 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -255,27 +255,29 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> provideWorkingStakingInfo(
+    static Supplier<MerkleMapLike<EntityNum, MerkleStakingInfo>> provideWorkingStakingInfo(
             final MutableStateChildren workingState) {
         return workingState::stakingInfo;
     }
 
     @Provides
     @Singleton
-    static Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> provideWorkingStorage(
+    static Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> provideWorkingStorage(
             final MutableStateChildren workingState) {
         return workingState::storage;
     }
 
     @Provides
     @Singleton
-    static Supplier<MerkleMap<EntityNum, MerkleTopic>> provideWorkingTopics(final MutableStateChildren workingState) {
+    static Supplier<MerkleMapLike<EntityNum, MerkleTopic>> provideWorkingTopics(
+            final MutableStateChildren workingState) {
         return workingState::topics;
     }
 
     @Provides
     @Singleton
-    static Supplier<MerkleMap<EntityNum, MerkleToken>> provideWorkingTokens(final MutableStateChildren workingState) {
+    static Supplier<MerkleMapLike<EntityNum, MerkleToken>> provideWorkingTokens(
+            final MutableStateChildren workingState) {
         return workingState::tokens;
     }
 
@@ -287,7 +289,7 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Supplier<MerkleScheduledTransactions> provideWorkingSchedules(final MutableStateChildren workingState) {
+    static Supplier<ScheduledTransactions> provideWorkingSchedules(final MutableStateChildren workingState) {
         return workingState::schedules;
     }
 
@@ -305,7 +307,7 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Supplier<VirtualMap<ContractKey, IterableContractValue>> provideWorkingContractStorage(
+    static Supplier<VirtualMapLike<ContractKey, IterableContractValue>> provideWorkingContractStorage(
             final MutableStateChildren workingState) {
         return workingState::contractStorage;
     }

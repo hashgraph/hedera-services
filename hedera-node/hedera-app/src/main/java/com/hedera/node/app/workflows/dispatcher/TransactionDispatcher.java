@@ -69,7 +69,8 @@ public class TransactionDispatcher {
         switch (txBody.getDataCase()) {
             case CONSENSUSCREATETOPIC -> handlers.consensusCreateTopicHandler().preHandle(handlerContext);
             case CONSENSUSUPDATETOPIC -> handlers.consensusUpdateTopicHandler().preHandle(handlerContext);
-            case CONSENSUSDELETETOPIC -> handlers.consensusDeleteTopicHandler().preHandle(handlerContext);
+            case CONSENSUSDELETETOPIC -> handlers.consensusDeleteTopicHandler()
+                    .preHandle(handlerContext, storeFactory.getTopicStore());
             case CONSENSUSSUBMITMESSAGE -> handlers.consensusSubmitMessageHandler()
                     .preHandle(handlerContext);
 

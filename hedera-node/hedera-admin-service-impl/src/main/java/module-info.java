@@ -8,6 +8,7 @@ module com.hedera.node.app.service.admin.impl {
             FreezeServiceImpl;
 
     exports com.hedera.node.app.service.admin.impl to
+            com.hedera.node.app,
             com.hedera.node.app.service.admin.impl.test;
     exports com.hedera.node.app.service.admin.impl.handlers;
 }

@@ -23,6 +23,8 @@ import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_TLS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_TLS_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PROFILES_ACTIVE;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_IS_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
@@ -75,7 +77,9 @@ public class ScreenedNodeFileProps implements PropertySource {
             entry("tlsPort", GRPC_TLS_PORT),
             entry("environment", HEDERA_PROFILES_ACTIVE),
             entry("defaultListeningNodeAccount", DEV_DEFAULT_LISTENING_NODE_ACCOUNT),
-            entry("uniqueListeningPortFlag", DEV_ONLY_DEFAULT_NODE_LISTENS));
+            entry("uniqueListeningPortFlag", DEV_ONLY_DEFAULT_NODE_LISTENS),
+            entry("workflowsPort", GRPC_WORKFLOWS_PORT),
+            entry("workflowsTlsPort", GRPC_WORKFLOWS_TLS_PORT));
     private static final Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS =
             Map.ofEntries(entry("environment", legacy -> LEGACY_ENV_ORDER[Integer.parseInt(legacy)].toString()));
 
