@@ -23,6 +23,7 @@ import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.StateChildren;
+import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.sigs.ExpansionHelper;
@@ -103,11 +104,11 @@ public class SigReqsManager {
      * signatures linked to the given transaction; prefers the implementation backed by the latest
      * signed state as returned from {@link Platform#getLatestImmutableState()}.
      *
-     * @param sourceState an immutable state appropriate for signature expansion
+     * @param provider an immutable state appropriate for signature expansion
      * @param accessor a transaction that needs linked signatures expanded
      */
-    public void expandSigs(final ServicesState sourceState, final SwirldsTxnAccessor accessor) {
-        if (dynamicProperties.expandSigsFromImmutableState() && tryExpandFromImmutable(sourceState, accessor)) {
+    public void expandSigs(final StateChildrenProvider provider, final SwirldsTxnAccessor accessor) {
+        if (dynamicProperties.expandSigsFromImmutableState() && tryExpandFromImmutable(provider, accessor)) {
             return;
         }
         expandFromWorkingState(accessor);
@@ -130,8 +131,8 @@ public class SigReqsManager {
      * @param accessor the transaction to expand signatures for
      * @return whether the expansion attempt succeeded
      */
-    private boolean tryExpandFromImmutable(final ServicesState sourceState, final SwirldsTxnAccessor accessor) {
-        if (!isUsable(sourceState)) {
+    private boolean tryExpandFromImmutable(final StateChildrenProvider provider, final SwirldsTxnAccessor accessor) {
+        if (!isUsable(provider)) {
             return false;
         }
         try {
@@ -139,7 +140,7 @@ public class SigReqsManager {
             // Because event intake is single-threaded, there's no risk of another thread getting
             // inconsistent results while we are doing this. Also, note that MutableStateChildren
             // uses weak references, so we won't keep this immutable state from GC eligibility.
-            immutableChildren.updateFromImmutable(sourceState, sourceState.getTimeOfLastHandledTxn());
+            immutableChildren.updateFromImmutable(provider, provider.getTimeOfLastHandledTxn());
             expandFromImmutableState(accessor);
             return true;
         } catch (final Exception e) {

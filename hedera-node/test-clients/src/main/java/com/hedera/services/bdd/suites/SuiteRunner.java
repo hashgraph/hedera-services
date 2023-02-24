@@ -101,6 +101,7 @@ import com.hedera.services.bdd.suites.freeze.PrepareUpgrade;
 import com.hedera.services.bdd.suites.freeze.SimpleFreezeOnly;
 import com.hedera.services.bdd.suites.freeze.UpdateFileForUpgrade;
 import com.hedera.services.bdd.suites.freeze.UpdateServerFiles;
+import com.hedera.services.bdd.suites.leaky.FeatureFlagSuite;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
 import com.hedera.services.bdd.suites.misc.CannotDeleteSystemEntitiesSuite;
 import com.hedera.services.bdd.suites.misc.ConsensusQueriesStressTests;
@@ -168,6 +169,7 @@ import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite
 import com.hedera.services.bdd.suites.regression.AddWellKnownEntities;
 import com.hedera.services.bdd.suites.regression.JrsRestartTestTemplate;
 import com.hedera.services.bdd.suites.regression.SteadyStateThrottlingCheck;
+import com.hedera.services.bdd.suites.regression.TargetNetworkPrep;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.schedule.ScheduleCreateSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleDeleteSpecs;
@@ -494,6 +496,9 @@ public class SuiteRunner {
             /* Approval and Allowance */
             put("CryptoApproveAllowanceSuite", aof(CryptoApproveAllowanceSuite::new));
             put("CryptoDeleteAllowanceSuite", aof(CryptoDeleteAllowanceSuite::new));
+            /* Network Prep*/
+            put("TargetNetworkPrep", aof(TargetNetworkPrep::new));
+            put("FeatureFlagSuite", aof(FeatureFlagSuite::new));
         }
     };
 

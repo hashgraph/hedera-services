@@ -28,6 +28,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccountState;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
@@ -97,7 +98,7 @@ class StakeStartupHelperTest {
         Assertions.assertTrue(stakingInfos.containsKey(removedNum));
         Assertions.assertFalse(stakingInfos.containsKey(addedNum));
 
-        subject.doRestartHousekeeping(addressBook, stakingInfos);
+        subject.doRestartHousekeeping(addressBook, MerkleMapLike.from(stakingInfos));
 
         verify(stakeInfoManager).prepForManaging(postUpgradeNodeIds);
         assertNull(stakingInfos.get(EntityNum.fromLong(removedNodeId)));
@@ -121,7 +122,9 @@ class StakeStartupHelperTest {
         givenPostUpgradeSubjectDoing();
 
         assertDoesNotThrow(() -> subject.doUpgradeHousekeeping(
-                networkContext, AccountStorageAdapter.fromInMemory(accounts), stakingInfos));
+                networkContext,
+                AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
+                MerkleMapLike.from(stakingInfos)));
     }
 
     @Test
@@ -130,7 +133,10 @@ class StakeStartupHelperTest {
         final var expectedQuantities = givenStakingAccountsWithExpectedQuantities();
         givenPostUpgradeSubjectDoing(NODE_STAKES, PENDING_REWARDS);
 
-        subject.doUpgradeHousekeeping(networkContext, AccountStorageAdapter.fromInMemory(accounts), stakingInfos);
+        subject.doUpgradeHousekeeping(
+                networkContext,
+                AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
+                MerkleMapLike.from(stakingInfos));
 
         verify(networkContext).setPendingRewards(expectedQuantities.pendingRewards);
 

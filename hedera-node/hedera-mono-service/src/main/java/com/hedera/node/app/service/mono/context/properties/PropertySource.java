@@ -70,8 +70,15 @@ public interface PropertySource {
                 }
             })
             .collect(toMap(e -> Long.parseLong(e[0]), e -> Long.parseLong(e[1])));
-    Function<String, Object> AS_FUNCTIONS =
-            s -> Arrays.stream(s.split(",")).map(HederaFunctionality::valueOf).collect(toSet());
+    Function<String, Object> AS_FUNCTIONS = s -> Stream.of(s.split(","))
+            .map(e -> {
+                if (e.length() != 0) {
+                    return HederaFunctionality.valueOf(e);
+                } else {
+                    return HederaFunctionality.NONE;
+                }
+            })
+            .collect(toSet());
     Function<String, Object> AS_CONGESTION_MULTIPLIERS = CongestionMultipliers::from;
 
     Function<String, Object> AS_LEGACY_ACTIVATIONS = LegacyContractIdActivations::from;

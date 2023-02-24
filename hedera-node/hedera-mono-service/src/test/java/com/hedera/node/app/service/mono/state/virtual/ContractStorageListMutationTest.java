@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +42,7 @@ class ContractStorageListMutationTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ContractStorageListMutation(contractId, storage);
+        subject = new ContractStorageListMutation(contractId, VirtualMapLike.from(storage));
     }
 
     @Test

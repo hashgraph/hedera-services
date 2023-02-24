@@ -24,6 +24,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
@@ -190,10 +191,10 @@ class RecordsStorageAdapterTest {
     }
 
     private void withLegacySubject() {
-        subject = RecordsStorageAdapter.fromLegacy(accounts);
+        subject = RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(accounts));
     }
 
     private void withDedicatedSubject() {
-        subject = RecordsStorageAdapter.fromDedicated(payerRecords);
+        subject = RecordsStorageAdapter.fromDedicated(MerkleMapLike.from(payerRecords));
     }
 }

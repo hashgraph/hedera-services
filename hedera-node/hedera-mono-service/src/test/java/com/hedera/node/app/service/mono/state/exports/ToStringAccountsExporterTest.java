@@ -26,6 +26,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -87,7 +88,7 @@ class ToStringAccountsExporterTest {
     @Test
     void toFileDoesNothingIfNoExportRequested() {
         // when:
-        subject.toFile(AccountStorageAdapter.fromInMemory(new MerkleMap<>()));
+        subject.toFile(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(new MerkleMap<>())));
 
         // expect:
         assertFalse(new File(testExportLoc).exists());
@@ -99,7 +100,8 @@ class ToStringAccountsExporterTest {
         given(nodeLocalProperties.accountsExportPath()).willReturn("/this/is/not/a/path");
 
         // expect:
-        assertDoesNotThrow(() -> subject.toFile(AccountStorageAdapter.fromInMemory(new MerkleMap<>())));
+        assertDoesNotThrow(
+                () -> subject.toFile(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(new MerkleMap<>()))));
         // and:
         assertThat(logCaptor.warnLogs(), contains(startsWith("Could not export accounts to '/this/is/not/a/path'")));
     }
@@ -155,7 +157,7 @@ class ToStringAccountsExporterTest {
                 + " expiredAndPendingRemoval=false}, # records=0}\n";
 
         // given:
-        AccountStorageAdapter accounts = AccountStorageAdapter.fromInMemory(new MerkleMap<>());
+        AccountStorageAdapter accounts = AccountStorageAdapter.fromInMemory(MerkleMapLike.from(new MerkleMap<>()));
         // and:
         accounts.put(EntityNum.fromInt(2), account2);
         accounts.put(EntityNum.fromInt(1), account1);
