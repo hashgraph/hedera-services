@@ -72,7 +72,7 @@ public class TransactionDispatcher {
             case CONSENSUSDELETETOPIC -> handlers.consensusDeleteTopicHandler()
                     .preHandle(handlerContext, storeFactory.getTopicStore());
             case CONSENSUSSUBMITMESSAGE -> handlers.consensusSubmitMessageHandler()
-                    .preHandle(handlerContext);
+                    .preHandle(handlerContext, storeFactory.getTopicStore());
 
             case CONTRACTCREATEINSTANCE -> handlers.contractCreateHandler().preHandle(handlerContext);
             case CONTRACTUPDATEINSTANCE -> handlers.contractUpdateHandler().preHandle(handlerContext);
