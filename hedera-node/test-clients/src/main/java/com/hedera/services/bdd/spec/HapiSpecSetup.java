@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ShardID;
 import java.security.SecureRandom;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -613,7 +614,11 @@ public class HapiSpecSetup {
      * @return set of hapi operations
      */
     public Set<HederaFunctionality> workflowOperations() {
-        return Stream.of(props.get("client.workflow.operations").split(","))
+        final var workflowOps = props.get("client.workflow.operations");
+        if (workflowOps.isEmpty()) {
+            return Collections.emptySet();
+        }
+        return Stream.of(workflowOps.split(","))
                 .map(HederaFunctionality::valueOf)
                 .collect(toSet());
     }
