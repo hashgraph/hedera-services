@@ -1049,4 +1049,5 @@ swirlds-platform-core/data/**
 saved.txt
 
 ### Hedera Node Files
-hedera-node/hapi
+hedera-node/hapi/hedera-protobufs
+hedera-node/hapi/checkouts.bin
