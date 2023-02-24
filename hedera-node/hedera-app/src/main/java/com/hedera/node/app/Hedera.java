@@ -87,6 +87,9 @@ public final class Hedera {
         grpcServer.start();
 
         // Block this main thread until the server terminates.
+        // TODO: Uncomment this code once we enable all operations to work with workflows.
+        // Currently we are enabling each operation step-by-step to work with new Grpc binding.
+
         //        try {
         //            shutdownLatch.await();
         //        } catch (InterruptedException ignored) {

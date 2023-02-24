@@ -607,6 +607,11 @@ public class HapiSpecSetup {
         return props.get("systemUndeleteAdmin.name");
     }
 
+    /**
+     * Stream the set of HAPI operations that should be submitted to workflow port 60211/60212.
+     * This code is needed to test each operation through the new workflow code.
+     * @return set of hapi operations
+     */
     public Set<HederaFunctionality> workflowOperations() {
         return Stream.of(props.get("client.workflow.operations").split(","))
                 .map(HederaFunctionality::valueOf)

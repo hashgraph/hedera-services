@@ -73,14 +73,25 @@ public class HapiApiClients {
     private static Map<String, ConsensusServiceBlockingStub> consSvcStubs = new HashMap<>();
     private static Map<String, SmartContractServiceBlockingStub> scSvcStubs = new HashMap<>();
     private static Map<String, UtilServiceGrpc.UtilServiceBlockingStub> utilSvcStubs = new HashMap<>();
-
     private final AccountID defaultNode;
     private final List<NodeConnectInfo> nodes;
+    /**
+     * Id of node-{host, port} pairs to use for non-workflow operations
+     */
     private final Map<AccountID, String> stubIds;
+    /**
+     * Id of node-{host, port} pairs to use for non-workflow operations using TLS ports
+     */
     private final Map<AccountID, String> tlsStubIds;
-
+    /**
+     * Id of node-{host, port} pairs to use for workflow operations
+     */
     private final Map<AccountID, String> workflowStubIds;
+    /**
+     * Id of node-{host, port} pairs to use for workflow operations using TLS ports
+     */
     private final Map<AccountID, String> workflowTlsStubIds;
+
     private static Map<String, ManagedChannel> channels = new HashMap<>();
 
     private ManagedChannel createNettyChannel(
@@ -141,6 +152,13 @@ public class HapiApiClients {
         }
     }
 
+    /**
+     * Since we need to submit workflow operations to a different port, we need to create a channel for that port.
+     * @param node Nodes to connect to
+     * @param uri String specifying host, port
+     * @param useTls true if tls is used, false otherwise
+     * @param workflowOperations set of HAPI operations client should submit to a different port
+     */
     private void addNewNettyChannelForWorkflowOperations(
             NodeConnectInfo node, String uri, boolean useTls, Set<HederaFunctionality> workflowOperations) {
         Set<HederaFunctionality> consensusOps = Set.of(
@@ -150,15 +168,16 @@ public class HapiApiClients {
                 ConsensusSubmitMessage,
                 ConsensusUpdateTopic);
         String newUri = "";
-        if (uri.contains("50211")) {
-            newUri = uri.replace("50211", "60211");
-        } else if (uri.contains("50212")) {
-            newUri = uri.replace("50212", "60212");
+        if (uri.equals(node.uri())) {
+            newUri = node.workflowUri();
+        } else if (uri.equals(node.tlsUri())) {
+            newUri = node.workflowTlsUri();
         }
+
         ManagedChannel workflowChannel =
                 createNettyChannel(node, useTls, node.getHost(), node.getWorkflowPort(), node.getWorkflowTlsPort());
         channels.put(newUri, workflowChannel);
-        System.out.println("New URI " + newUri);
+        System.out.println("New URI for workflows " + newUri);
         if (workflowOperations.stream().anyMatch(consensusOps::contains)) {
             consSvcStubs.put(newUri, ConsensusServiceGrpc.newBlockingStub(workflowChannel));
         }
@@ -224,20 +243,15 @@ public class HapiApiClients {
     }
 
     public ConsensusServiceBlockingStub getConsSvcStub(
-            AccountID nodeId, boolean useTls, Set<HederaFunctionality> hederaFunctionalities) {
-        if (hederaFunctionalities.contains(ConsensusCreateTopic)
-                || hederaFunctionalities.contains(ConsensusDeleteTopic)
-                || hederaFunctionalities.contains(ConsensusGetTopicInfo)
-                || hederaFunctionalities.contains(ConsensusSubmitMessage)
-                || hederaFunctionalities.contains(ConsensusUpdateTopic)) {
-
-            final var stub = consSvcStubs.get(workflowStubId(nodeId, useTls));
-            System.out.println("Picked " + workflowStubId(nodeId, useTls));
-            return stub;
+            AccountID nodeId, boolean useTls, Set<HederaFunctionality> operations) {
+        final String id;
+        if (hasConsensusOperations(operations)) {
+            id = workflowStubId(nodeId, useTls);
+        } else {
+            id = stubId(nodeId, useTls);
         }
-        final var stub = consSvcStubs.get(stubId(nodeId, useTls));
-        System.out.println("Picked " + stubId(nodeId, useTls));
-        return stub;
+        log.info("Submitting to the stub with id: "+ id);
+        return consSvcStubs.get(id);
     }
 
     public NetworkServiceBlockingStub getNetworkSvcStub(AccountID nodeId, boolean useTls) {
@@ -294,5 +308,13 @@ public class HapiApiClients {
     public static void tearDown() {
         closeChannels();
         clearStubs();
+    }
+
+    private boolean hasConsensusOperations(Set<HederaFunctionality> operations) {
+        return operations.contains(ConsensusCreateTopic)
+                || operations.contains(ConsensusDeleteTopic)
+                || operations.contains(ConsensusGetTopicInfo)
+                || operations.contains(ConsensusSubmitMessage)
+                || operations.contains(ConsensusUpdateTopic);
     }
 }
