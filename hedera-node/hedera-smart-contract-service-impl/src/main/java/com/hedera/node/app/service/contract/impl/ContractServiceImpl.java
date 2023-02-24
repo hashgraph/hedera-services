@@ -40,6 +40,7 @@ import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -218,7 +219,7 @@ public final class ContractServiceImpl implements ContractService {
 
     @NonNull
     @Override
-    public Set<TransactionHandler> getTransactionHandler() {
+    public Set<TransactionHandler> getTransactionHandlers() {
         return Set.of(
                 contractCallHandler,
                 contractCreateHandler,
@@ -231,7 +232,7 @@ public final class ContractServiceImpl implements ContractService {
 
     @NonNull
     @Override
-    public Set<QueryHandler> getQueryHandler() {
+    public Set<QueryHandler> getQueryHandlers() {
         return Set.of(
                 contractCallLocalHandler,
                 contractGetBySolidityIDHandler,
@@ -242,7 +243,7 @@ public final class ContractServiceImpl implements ContractService {
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        registry.register(contractSchema());
+        Objects.requireNonNull(registry, "registry must not be null").register(contractSchema());
     }
 
     private Schema contractSchema() {

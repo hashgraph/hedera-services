@@ -37,6 +37,7 @@ import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.Set;
 
 /** Standard implementation of the {@link FileService} {@link Service}. */
@@ -159,7 +160,7 @@ public final class FileServiceImpl implements FileService {
 
     @NonNull
     @Override
-    public Set<TransactionHandler> getTransactionHandler() {
+    public Set<TransactionHandler> getTransactionHandlers() {
         return Set.of(
                 fileAppendHandler,
                 fileCreateHandler,
@@ -171,13 +172,13 @@ public final class FileServiceImpl implements FileService {
 
     @NonNull
     @Override
-    public Set<QueryHandler> getQueryHandler() {
+    public Set<QueryHandler> getQueryHandlers() {
         return Set.of(fileGetContentsHandler, fileGetInfoHandler);
     }
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        registry.register(fileServiceSchema());
+        Objects.requireNonNull(registry, "registry must not be null").register(fileServiceSchema());
     }
 
     private Schema fileServiceSchema() {

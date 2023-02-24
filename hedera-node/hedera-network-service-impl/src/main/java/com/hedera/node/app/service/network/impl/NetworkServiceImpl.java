@@ -39,6 +39,7 @@ import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -152,13 +153,13 @@ public final class NetworkServiceImpl implements NetworkService {
 
     @NonNull
     @Override
-    public Set<TransactionHandler> getTransactionHandler() {
+    public Set<TransactionHandler> getTransactionHandlers() {
         return Set.of(networkUncheckedSubmitHandler);
     }
 
     @NonNull
     @Override
-    public Set<QueryHandler> getQueryHandler() {
+    public Set<QueryHandler> getQueryHandlers() {
         return Set.of(
                 networkGetAccountDetailsHandler,
                 networkGetByKeyHandler,
@@ -170,7 +171,7 @@ public final class NetworkServiceImpl implements NetworkService {
 
     @Override
     public void registerSchemas(final @NonNull SchemaRegistry registry) {
-        registry.register(networkSchema());
+        Objects.requireNonNull(registry, "registry must not be null").register(networkSchema());
     }
 
     private Schema networkSchema() {

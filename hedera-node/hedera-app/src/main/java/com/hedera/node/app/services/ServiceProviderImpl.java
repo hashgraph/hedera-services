@@ -34,37 +34,41 @@ public class ServiceProviderImpl implements ServiceProvider {
 
     private final Map<Class<Service>, Service> services;
 
-    public ServiceProviderImpl(final FacilityFacade facilityFacade) {
+    public ServiceProviderImpl(@NonNull final FacilityFacade facilityFacade) {
+        Objects.requireNonNull(facilityFacade, "FacilityFacade can not be null");
         services = new HashMap<>();
         final ServiceLoader<ServiceFactory> serviceLoader = ServiceLoader.load(ServiceFactory.class);
         final Set<ServiceFactory> servicesFactories =
                 serviceLoader.stream().map(Provider::get).collect(Collectors.toSet());
 
-        servicesFactories.stream().sorted((a, b) -> sort(a, b)).forEach(factory -> {
-            if (!services.keySet().containsAll(factory.getDependencies())) {
-                throw new IllegalStateException("Can not add service for " + factory.getServiceClass()
-                        + " since the service has a missing dependency");
-            }
-            services.keySet().stream()
-                    .filter(service -> dependOnEachOther(service, factory.getServiceClass()))
-                    .findAny()
-                    .ifPresent(service -> {
-                        throw new IllegalStateException("Can not add service for " + factory.getServiceClass()
-                                + " since the service has a clash with " + service);
-                    });
-            final Service service = factory.createService(this, facilityFacade);
+        servicesFactories.stream()
+                .sorted((a, b) -> sort(a, b))
+                .forEach(factory -> createAndAddService(facilityFacade, factory));
+    }
 
-            services.values().stream()
-                    .filter(existingService ->
-                            Objects.equals(existingService.getServiceName(), service.getServiceName()))
-                    .findAny()
-                    .ifPresent(existingService -> {
-                        throw new IllegalStateException("Can not add service for " + service.getClass()
-                                + " since a service with the same name has already been registered.");
-                    });
+    private void createAndAddService(final FacilityFacade facilityFacade, final ServiceFactory factory) {
+        if (!services.keySet().containsAll(factory.getDependencies())) {
+            throw new IllegalStateException("Can not add service for " + factory.getServiceClass()
+                    + " since the service has a missing dependency");
+        }
+        services.keySet().stream()
+                .filter(service -> dependOnEachOther(service, factory.getServiceClass()))
+                .findAny()
+                .ifPresent(service -> {
+                    throw new IllegalStateException("Can not add service for " + factory.getServiceClass()
+                            + " since the service has a clash with " + service);
+                });
+        final Service service = factory.createService(this, facilityFacade);
 
-            services.put(factory.getServiceClass(), service);
-        });
+        services.values().stream()
+                .filter(existingService -> Objects.equals(existingService.getServiceName(), service.getServiceName()))
+                .findAny()
+                .ifPresent(existingService -> {
+                    throw new IllegalStateException("Can not add service for " + service.getClass()
+                            + " since a service with the same name has already been registered.");
+                });
+
+        services.put(factory.getServiceClass(), service);
     }
 
     /**
@@ -75,8 +79,8 @@ public class ServiceProviderImpl implements ServiceProvider {
      * @return true if classA is assignable from classB or classB is assignable from classA
      */
     private boolean dependOnEachOther(@NonNull final Class<Service> classA, @NonNull final Class<Service> classB) {
-        Objects.requireNonNull(classA, "classA");
-        Objects.requireNonNull(classB, "classB");
+        Objects.requireNonNull(classA, "classA must not be null");
+        Objects.requireNonNull(classB, "classB must not be null");
         return classA.isAssignableFrom(classB) || classB.isAssignableFrom(classA);
     }
 
@@ -89,8 +93,8 @@ public class ServiceProviderImpl implements ServiceProvider {
      * otherwise
      */
     private int sort(@NonNull final ServiceFactory serviceFactoryA, @NonNull final ServiceFactory serviceFactoryB) {
-        Objects.requireNonNull(serviceFactoryA, "serviceFactoryA");
-        Objects.requireNonNull(serviceFactoryB, "serviceFactoryB");
+        Objects.requireNonNull(serviceFactoryA, "serviceFactoryA must not be null");
+        Objects.requireNonNull(serviceFactoryB, "serviceFactoryB must not be null");
         if (serviceFactoryA.getDependencies().contains(serviceFactoryB.getServiceClass())) {
             return 1;
         }
@@ -109,7 +113,7 @@ public class ServiceProviderImpl implements ServiceProvider {
     @NonNull
     @Override
     public <T extends Service> Optional<T> getServiceByType(@NonNull final Class<T> type) {
-        Objects.requireNonNull(type, "type");
+        Objects.requireNonNull(type, "type must not be null");
         return services.entrySet().stream()
                 .filter(entry -> Objects.equals(entry.getKey(), type))
                 .map(Map.Entry::getValue)

@@ -40,6 +40,7 @@ import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -115,19 +116,19 @@ public final class ScheduleServiceImpl implements ScheduleService {
 
     @NonNull
     @Override
-    public Set<TransactionHandler> getTransactionHandler() {
+    public Set<TransactionHandler> getTransactionHandlers() {
         return Set.of(scheduleCreateHandler, scheduleDeleteHandler, scheduleSignHandler);
     }
 
     @NonNull
     @Override
-    public Set<QueryHandler> getQueryHandler() {
+    public Set<QueryHandler> getQueryHandlers() {
         return Set.of(scheduleGetInfoHandler);
     }
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        registry.register(scheduleSchema());
+        Objects.requireNonNull(registry, "registry must not be null").register(scheduleSchema());
     }
 
     private Schema scheduleSchema() {

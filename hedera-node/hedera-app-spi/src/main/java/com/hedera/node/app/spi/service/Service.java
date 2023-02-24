@@ -42,7 +42,7 @@ public interface Service {
      * @return set of all transaction handlers
      */
     @NonNull
-    default Set<TransactionHandler> getTransactionHandler() {
+    default Set<TransactionHandler> getTransactionHandlers() {
         return Set.of();
     }
 
@@ -52,11 +52,9 @@ public interface Service {
      * @return set of all query handlers
      */
     @NonNull
-    default Set<QueryHandler> getQueryHandler() {
+    default Set<QueryHandler> getQueryHandlers() {
         return Set.of();
     }
 
-    default void registerSchemas(@NonNull final SchemaRegistry registry) {
-        // no-op
-    }
+    void registerSchemas(@NonNull final SchemaRegistry registry);
 }

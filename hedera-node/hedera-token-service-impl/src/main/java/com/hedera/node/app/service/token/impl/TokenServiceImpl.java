@@ -67,6 +67,7 @@ import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.Set;
 
 /** An implementation of the {@link TokenService} interface. */
@@ -495,7 +496,7 @@ public class TokenServiceImpl implements TokenService {
 
     @NonNull
     @Override
-    public Set<TransactionHandler> getTransactionHandler() {
+    public Set<TransactionHandler> getTransactionHandlers() {
         return Set.of(
                 tokenAccountWipeHandler,
                 tokenAssociateToAccountHandler,
@@ -523,7 +524,7 @@ public class TokenServiceImpl implements TokenService {
 
     @NonNull
     @Override
-    public Set<QueryHandler> getQueryHandler() {
+    public Set<QueryHandler> getQueryHandlers() {
         return Set.of(
                 tokenGetAccountNftInfosHandler,
                 tokenGetInfoHandler,
@@ -538,7 +539,7 @@ public class TokenServiceImpl implements TokenService {
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        registry.register(tokenSchema());
+        Objects.requireNonNull(registry, "registry must not be null").register(tokenSchema());
     }
 
     private Schema tokenSchema() {

@@ -24,19 +24,26 @@ import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.network.NetworkService;
 import com.hedera.node.app.service.schedule.ScheduleService;
-import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.util.UtilService;
+import com.hedera.node.app.spi.FacilityFacade;
 import com.hedera.node.app.spi.service.Service;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class ServiceProviderImplTest {
+
+    @Mock
+    FacilityFacade facilityFacade;
 
     @Test
     void testAllServicesContainsBasicServices() {
         // given
-        final var serviceProvider = new ServiceProviderImpl(null);
+        final var serviceProvider = new ServiceProviderImpl(facilityFacade);
 
         // when
         final Set<Service> allServices = serviceProvider.getAllServices();
@@ -50,7 +57,6 @@ class ServiceProviderImplTest {
         assertThat(allServices).hasAtLeastOneElementOfType(NetworkService.class);
         assertThat(allServices).hasAtLeastOneElementOfType(ScheduleService.class);
         assertThat(allServices).hasAtLeastOneElementOfType(ContractService.class);
-        assertThat(allServices).hasAtLeastOneElementOfType(CryptoService.class);
         assertThat(allServices).hasAtLeastOneElementOfType(TokenService.class);
         assertThat(allServices).hasAtLeastOneElementOfType(UtilService.class);
     }
@@ -58,7 +64,7 @@ class ServiceProviderImplTest {
     @Test
     void testCanAccessBasicServices() {
         // given
-        final var serviceProvider = new ServiceProviderImpl(null);
+        final var serviceProvider = new ServiceProviderImpl(facilityFacade);
 
         // then
         assertThat(serviceProvider.getServiceByType(FreezeService.class)).containsInstanceOf(FreezeService.class);
@@ -67,7 +73,6 @@ class ServiceProviderImplTest {
         assertThat(serviceProvider.getServiceByType(NetworkService.class)).containsInstanceOf(NetworkService.class);
         assertThat(serviceProvider.getServiceByType(ScheduleService.class)).containsInstanceOf(ScheduleService.class);
         assertThat(serviceProvider.getServiceByType(ContractService.class)).containsInstanceOf(ContractService.class);
-        assertThat(serviceProvider.getServiceByType(CryptoService.class)).containsInstanceOf(CryptoService.class);
         assertThat(serviceProvider.getServiceByType(TokenService.class)).containsInstanceOf(TokenService.class);
         assertThat(serviceProvider.getServiceByType(UtilService.class)).containsInstanceOf(UtilService.class);
     }
@@ -75,7 +80,7 @@ class ServiceProviderImplTest {
     @Test
     void testCanNotAccessBasicServiceType() {
         // given
-        final var serviceProvider = new ServiceProviderImpl(null);
+        final var serviceProvider = new ServiceProviderImpl(facilityFacade);
 
         // then
         assertThat(serviceProvider.getServiceByType(Service.class)).isNotPresent();

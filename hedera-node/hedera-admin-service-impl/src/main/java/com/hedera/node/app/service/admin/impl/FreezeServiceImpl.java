@@ -19,6 +19,7 @@ package com.hedera.node.app.service.admin.impl;
 import com.hedera.node.app.service.admin.FreezeService;
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.spi.service.Service;
+import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
@@ -47,7 +48,12 @@ public final class FreezeServiceImpl implements FreezeService {
 
     @NonNull
     @Override
-    public Set<TransactionHandler> getTransactionHandler() {
+    public Set<TransactionHandler> getTransactionHandlers() {
         return Set.of(freezeHandler);
+    }
+
+    @Override
+    public void registerSchemas(@NonNull final SchemaRegistry registry) {
+        // no-op
     }
 }

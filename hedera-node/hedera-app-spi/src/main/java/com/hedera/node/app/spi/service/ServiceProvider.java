@@ -45,7 +45,7 @@ public interface ServiceProvider {
     @NonNull
     default Set<TransactionHandler> getAllTransactionHandler() {
         return getAllServices().stream()
-                .flatMap(service -> service.getTransactionHandler().stream())
+                .flatMap(service -> service.getTransactionHandlers().stream())
                 .collect(Collectors.toSet());
     }
 
@@ -57,7 +57,7 @@ public interface ServiceProvider {
     @NonNull
     default Set<QueryHandler> getAllQueryHandler() {
         return getAllServices().stream()
-                .flatMap(service -> service.getQueryHandler().stream())
+                .flatMap(service -> service.getQueryHandlers().stream())
                 .collect(Collectors.toSet());
     }
 
