@@ -78,6 +78,8 @@ import com.hedera.node.app.service.mono.ledger.backing.BackingTokens;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.enums.TokenSupplyType;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
@@ -130,7 +132,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
@@ -194,14 +195,14 @@ class StateViewTest {
     private Map<FileID, byte[]> contents;
     private Map<FileID, HFileMeta> attrs;
 
-    private MerkleMap<EntityNum, MerkleToken> tokens;
-    private MerkleMap<EntityNum, MerkleTopic> topics;
+    private MerkleMapLike<EntityNum, MerkleToken> tokens;
+    private MerkleMapLike<EntityNum, MerkleTopic> topics;
     private AccountStorageAdapter contracts;
     private UniqueTokenMapAdapter uniqueTokens;
     private TokenRelStorageAdapter tokenRels;
-    private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
-    private VirtualMap<ContractKey, IterableContractValue> contractStorage;
-    private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
+    private VirtualMapLike<VirtualBlobKey, VirtualBlobValue> storage;
+    private VirtualMapLike<ContractKey, IterableContractValue> contractStorage;
+    private MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfo;
     private MerkleNetworkContext networkContext;
     private ScheduleStore scheduleStore;
     private TransactionBody parentScheduleCreate;
@@ -275,8 +276,8 @@ class StateViewTest {
                 .maxAutomaticAssociations(10)
                 .get();
         contracts = mock(AccountStorageAdapter.class);
-        topics = (MerkleMap<EntityNum, MerkleTopic>) mock(MerkleMap.class);
-        stakingInfo = (MerkleMap<EntityNum, MerkleStakingInfo>) mock(MerkleMap.class);
+        topics = (MerkleMapLike<EntityNum, MerkleTopic>) mock(MerkleMapLike.class);
+        stakingInfo = (MerkleMapLike<EntityNum, MerkleStakingInfo>) mock(MerkleMapLike.class);
         networkContext = mock(MerkleNetworkContext.class);
 
         tokenAccountRel = new MerkleTokenRelStatus(123L, false, true, true);
@@ -291,7 +292,7 @@ class StateViewTest {
         tokenRels.put(tokenAssociationId, tokenAccountRel);
         tokenRels.put(nftAssociationId, nftAccountRel);
 
-        tokens = (MerkleMap<EntityNum, MerkleToken>) mock(MerkleMap.class);
+        tokens = (MerkleMapLike<EntityNum, MerkleToken>) mock(MerkleMapLike.class);
         token = new MerkleToken(
                 Long.MAX_VALUE,
                 100,
@@ -343,8 +344,8 @@ class StateViewTest {
         uniqueTokens.put(targetNftKey.asNftNumPair().nftId(), targetNft);
         uniqueTokens.put(treasuryNftKey.asNftNumPair().nftId(), treasuryNft);
 
-        storage = (VirtualMap<VirtualBlobKey, VirtualBlobValue>) mock(VirtualMap.class);
-        contractStorage = (VirtualMap<ContractKey, IterableContractValue>) mock(VirtualMap.class);
+        storage = (VirtualMapLike<VirtualBlobKey, VirtualBlobValue>) mock(VirtualMapLike.class);
+        contractStorage = (VirtualMapLike<ContractKey, IterableContractValue>) mock(VirtualMapLike.class);
 
         children = new MutableStateChildren();
         children.setUniqueTokens(uniqueTokens);
@@ -1056,16 +1057,18 @@ class StateViewTest {
     @Test
     void getStorageAndContractStorage() {
         final var children = new MutableStateChildren();
-        children.setContractStorage(contractStorage);
-        children.setStorage(storage);
+        final var setBlobs = storage;
+        final var setStorage = contractStorage;
+        children.setContractStorage(setStorage);
+        children.setStorage(setBlobs);
 
         subject = new StateView(null, children, null);
 
         final var actualStorage = subject.storage();
         final var actualContractStorage = subject.contractStorage();
 
-        assertEquals(storage, actualStorage);
-        assertEquals(contractStorage, actualContractStorage);
+        assertSame(setBlobs, actualStorage);
+        assertSame(setStorage, actualContractStorage);
     }
 
     @Test
@@ -1262,7 +1265,7 @@ class StateViewTest {
 
     @Test
     void abortsNftGetWhenMissingTreasuryAsExpected() {
-        tokens = mock(MerkleMap.class);
+        tokens = mock(MerkleMapLike.class);
         targetNft.setOwner(MISSING_ENTITY_ID);
 
         final var optionalNftInfo = subject.infoForNft(targetNftId);

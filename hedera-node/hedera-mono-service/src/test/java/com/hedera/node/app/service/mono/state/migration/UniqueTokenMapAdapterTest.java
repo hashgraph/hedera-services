@@ -17,12 +17,14 @@
 package com.hedera.node.app.service.mono.state.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
@@ -53,7 +55,7 @@ class UniqueTokenMapAdapterTest {
     @BeforeEach
     void setUp() {
         merkleMapAdapter = UniqueTokenMapAdapter.wrap(merkleMap);
-        virtualMapAdapter = UniqueTokenMapAdapter.wrap(virtualMap);
+        virtualMapAdapter = UniqueTokenMapAdapter.wrap(VirtualMapLike.from(virtualMap));
     }
 
     @Test
@@ -65,7 +67,7 @@ class UniqueTokenMapAdapterTest {
     @Test
     void testVirtualMapGetter() {
         assertThat(merkleMapAdapter.virtualMap()).isNull();
-        assertThat(virtualMapAdapter.virtualMap()).isSameAs(virtualMap);
+        assertInstanceOf(VirtualMapLike.class, virtualMapAdapter.virtualMap());
     }
 
     @Test

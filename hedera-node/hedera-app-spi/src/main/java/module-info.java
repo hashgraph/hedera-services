@@ -1,6 +1,8 @@
 module com.hedera.node.app.spi {
     requires transitive com.hedera.hashgraph.protobuf.java.api;
     requires static transitive com.github.spotbugs.annotations;
+    requires com.swirlds.virtualmap;
+    requires com.swirlds.jasperdb;
     requires com.swirlds.common;
     requires com.google.protobuf;
     requires com.swirlds.config;
@@ -16,5 +18,6 @@ module com.hedera.node.app.spi {
             com.hedera.node.app.spi.test,
             com.hedera.node.app.service.mono.testFixtures;
 
+    exports com.hedera.node.app.spi.state.serdes;
     exports com.hedera.node.app.spi.config;
 }

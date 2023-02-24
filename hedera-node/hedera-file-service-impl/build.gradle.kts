@@ -30,6 +30,12 @@ configurations.all {
 dependencies {
   annotationProcessor(libs.dagger.compiler)
   api(project(":hedera-node:hedera-file-service"))
+  implementation(libs.swirlds.virtualmap)
+  implementation(libs.swirlds.jasperdb)
   implementation(libs.bundles.di)
   implementation(project(":hedera-node:hedera-mono-service"))
+  testImplementation(testLibs.mockito.inline)
+  testImplementation(testLibs.bundles.testing)
+  testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
+  testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
 }

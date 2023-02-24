@@ -10,6 +10,7 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.schedule.impl.test,
             com.hedera.node.app.service.token.impl,
             com.hedera.node.app.service.token.impl.test,
+            com.hedera.node.app.service.network.impl.test,
             com.hedera.node.app.service.consensus.impl,
             com.hedera.node.app.service.consensus.impl.test;
     exports com.hedera.node.app.service.mono.exceptions to
@@ -36,8 +37,10 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.token.impl,
             com.hedera.node.app.service.contract.impl,
             com.hedera.node.app.service.contract.impl.test,
+            com.hedera.node.app.service.consensus.impl,
+            com.hedera.node.app.service.network.impl,
             com.hedera.node.app.service.consensus.impl.test,
-            com.hedera.node.app.service.consensus.impl;
+            com.hedera.node.app.service.network.impl.test;
     exports com.hedera.node.app.service.mono.ledger to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app;
@@ -50,11 +53,18 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.token.impl.test,
             com.hedera.node.app.service.contract.impl.test,
             com.hedera.node.app.service.contract.impl,
+            com.hedera.node.app.service.network.impl,
+            com.hedera.node.app.service.consensus.impl,
+            com.hedera.node.app.service.file.impl,
+            com.hedera.node.app,
+            com.hedera.node.app.service.schedule.impl,
+            com.hedera.node.app.service.network.impl.test,
+            com.hedera.node.app.service.schedule.impl.test,
+            com.hedera.node.app.service.consensus.impl.test;
+    exports com.hedera.node.app.service.mono.state.validation to
             com.hedera.node.app,
             com.hedera.node.app.service.consensus.impl,
             com.hedera.node.app.service.consensus.impl.test;
-    exports com.hedera.node.app.service.mono.state.validation to
-            com.hedera.node.app;
     exports com.hedera.node.app.service.mono.utils.accessors;
     exports com.hedera.node.app.service.mono.sigs.utils to
             com.hedera.node.app.service.mono.testFixtures;
@@ -67,7 +77,8 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.state.virtual.schedule to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app.service.schedule.impl,
-            com.hedera.node.app.service.schedule.impl.test;
+            com.hedera.node.app.service.schedule.impl.test,
+            com.hedera.node.app;
     exports com.hedera.node.app.service.mono.store.schedule to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app;
@@ -86,6 +97,15 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.stats;
     exports com.hedera.node.app.service.mono.txns;
     exports com.hedera.node.app.service.mono.throttling to
+            com.fasterxml.jackson.databind,
+            com.hedera.node.app;
+    exports com.hedera.node.app.service.mono.ledger.accounts.staking to
+            com.hedera.node.app;
+    exports com.hedera.node.app.service.mono.context.init to
+            com.hedera.node.app;
+    exports com.hedera.node.app.service.mono.state.initialization to
+            com.hedera.node.app;
+    exports com.hedera.node.app.service.mono.sigs to
             com.fasterxml.jackson.databind,
             com.hedera.node.app;
 
@@ -116,6 +136,11 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.state.migration;
     exports com.hedera.node.app.service.mono.sigs.order;
     exports com.hedera.node.app.service.mono.ledger.accounts;
+    exports com.hedera.node.app.service.mono.state.virtual;
+    exports com.hedera.node.app.service.mono.state.virtual.entities;
+    exports com.hedera.node.app.service.mono.stream;
+    exports com.hedera.node.app.service.mono.state.org;
+    exports com.hedera.node.app.service.mono.state.adapters;
     exports com.hedera.node.app.service.mono.context.domain.security;
     exports com.hedera.node.app.service.mono.queries.validation;
     exports com.hedera.node.app.service.mono.state;
@@ -127,25 +152,21 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.txns.auth;
     exports com.hedera.node.app.service.mono.state.expiry;
     exports com.hedera.node.app.service.mono.throttling.annotations;
+    exports com.hedera.node.app.service.mono.state.virtual.temporal;
+    exports com.hedera.node.app.service.mono.state.logic;
+    exports com.hedera.node.app.service.mono.state.merkle.internals;
     exports com.hedera.node.app.service.mono.fees.calculation;
     exports com.hedera.node.app.service.mono.context.primitives;
     exports com.hedera.node.app.service.mono.queries;
     exports com.hedera.node.app.service.mono.contracts;
     exports com.hedera.node.app.service.mono.txns.token;
-    exports com.hedera.node.app.service.mono.sigs;
     exports com.hedera.node.app.service.mono.keys;
     exports com.hedera.node.app.service.mono.state.tasks;
     exports com.hedera.node.app.service.mono.store;
     exports com.hedera.node.app.service.mono.txns.submission;
     exports com.hedera.node.app.service.mono.state.forensics;
-    exports com.hedera.node.app.service.mono.context.init;
-    exports com.hedera.node.app.service.mono.state.virtual;
-    exports com.hedera.node.app.service.mono.stream;
     exports com.hedera.node.app.service.mono.txns.prefetch;
     exports com.hedera.node.app.service.mono.txns.network;
-    exports com.hedera.node.app.service.mono.state.initialization;
-    exports com.hedera.node.app.service.mono.state.logic;
-    exports com.hedera.node.app.service.mono.ledger.accounts.staking;
     exports com.hedera.node.app.service.mono.ledger.backing;
     exports com.hedera.node.app.service.mono.ledger.interceptors;
     exports com.hedera.node.app.service.mono.ledger.properties;
@@ -249,4 +270,7 @@ module com.hedera.node.app.service.mono {
     requires org.apache.commons.io;
     requires io.grpc;
     requires grpc.stub;
+    requires org.eclipse.collections.api;
+    requires grpc.netty;
+    requires io.netty.transport.epoll;
 }
