@@ -1,8 +1,0 @@
-/.github/ @swirlds/release-engineering
-**/pom.xml @swirlds/release-engineering
-/gradle/ @swirlds/release-engineering
-gradlew @swirlds/release-engineering
-gradlew.bat @swirlds/release-engineering
-**/buildSrc/ @swirlds/release-engineering
-**/gradle.* @swirlds/release-engineering
-**/*.gradle.* @swirlds/release-engineering
