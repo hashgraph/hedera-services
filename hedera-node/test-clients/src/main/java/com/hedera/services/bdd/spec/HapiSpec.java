@@ -437,10 +437,8 @@ public class HapiSpec implements Runnable {
                     assertions = new ArrayList<>();
                 }
                 assertions.add(recordStreamAssertion);
-            } else if (op instanceof HapiTxnOp txn) {
-                if (autoScheduled.contains(txn.type())) {
-                    op = autoScheduledSequenceFor(txn);
-                }
+            } else if (op instanceof HapiTxnOp txn && autoScheduled.contains(txn.type())) {
+                op = autoScheduledSequenceFor(txn);
             }
             Optional<Throwable> error = op.execFor(this);
             Failure asyncFailure = null;
