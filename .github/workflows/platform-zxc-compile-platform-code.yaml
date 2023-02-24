@@ -214,7 +214,7 @@ jobs:
         uses: actionite/publish-unit-test-result-action@v2
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() && always() }}
         with:
-          check_name: JUnit Test Report
+          check_name: 'Platform: JUnit Test Report'
           check_run_disabled: true
           json_thousands_separator: ','
           junit_files: '**/build/test-results/**/*.xml'
