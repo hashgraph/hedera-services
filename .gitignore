@@ -1053,8 +1053,12 @@ hedera-node/hapi/hedera-protobufs
 hedera-node/hapi/checkouts.bin
 
 # Do not ignore the files required by the Platform Core tests
-!platform-sdk/swirlds-platform-core/src/test/resources/**/*.pfx
-!platform-sdk/swirlds-platform-core/src/test/resources/**/*.bin
-!platform-sdk/swirlds-platform-core/src/test/resources/**/*.key
-!platform-sdk/swirlds-platform-core/src/test/resources/**/*.swh
-!platform-sdk/swirlds-platform-core/src/test/resources/**/*.evts
+!platform-sdk/**/src/test/resources/**/*.jar
+!platform-sdk/**/src/test/resources/**/*.pfx
+!platform-sdk/**/src/test/resources/**/*.bin
+!platform-sdk/**/src/test/resources/**/*.key
+!platform-sdk/**/src/test/resources/**/*.swh
+!platform-sdk/**/src/test/resources/**/*.test
+!platform-sdk/**/src/test/resources/**/*.test_sig
+!platform-sdk/**/src/test/resources/**/*.evts
+!platform-sdk/**/src/test/resources/**/*.evts_sig
