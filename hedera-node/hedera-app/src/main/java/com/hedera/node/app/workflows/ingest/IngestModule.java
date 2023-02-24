@@ -26,6 +26,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
 
+/**
+ * Module for Ingest processing.
+ */
 @Module
 public interface IngestModule {
     @Binds

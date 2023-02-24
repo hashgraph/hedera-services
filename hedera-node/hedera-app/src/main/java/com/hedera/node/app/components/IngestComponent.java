@@ -19,6 +19,9 @@ package com.hedera.node.app.components;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import dagger.Subcomponent;
 
+/**
+ * A Dagger subcomponent that provides the Ingest workflow.
+ */
 @Subcomponent
 public interface IngestComponent {
     IngestWorkflow ingestWorkflow();

@@ -16,8 +16,9 @@
 
 package com.hedera.services.bdd.suites.consensus;
 
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
@@ -46,15 +47,16 @@ public class TopicGetInfoSuite extends HapiSuite {
 
     private HapiSpec postCreateTopicCase() {
         // sequenceNumber should be 0 and runningHash should be 48 bytes all 0s.
-        return onlyDefaultHapiSpec("AllFieldsSetHappyCase")
+        return defaultHapiSpec("AllFieldsSetHappyCase")
                 .given(
-                        newKeyNamed("adminKey"), newKeyNamed("submitKey"), cryptoCreate("autoRenewAccount")
-                        //                        createTopic("testTopic")
-                        //                                .topicMemo("testmemo")
-                        //                                .adminKeyName("adminKey")
-                        //                                .submitKeyName("submitKey")
-                        //                                .autoRenewAccountId("autoRenewAccount")
-                        )
+                        newKeyNamed("adminKey"),
+                        newKeyNamed("submitKey"),
+                        cryptoCreate("autoRenewAccount"),
+                        createTopic("testTopic")
+                                .topicMemo("testmemo")
+                                .adminKeyName("adminKey")
+                                .submitKeyName("submitKey")
+                                .autoRenewAccountId("autoRenewAccount"))
                 .when()
                 .then(getTopicInfo("0.0.1")
                         .hasExpectedLedgerId("0x03")
