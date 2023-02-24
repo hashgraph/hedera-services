@@ -58,7 +58,7 @@ jobs:
         id: tag
         uses: mukunku/tag-exists-action@v1.2.0
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
         with:
           tag: v${{ github.event.inputs.new-version }}
 
@@ -81,12 +81,12 @@ jobs:
       java-version: ${{ github.event.inputs.java-version || '17.0.3' }}
       custom-job-label: "Release / Maven Central"
     secrets:
-      gpg-key-contents: ${{ secrets.GPG_KEY_CONTENTS }}
-      gpg-key-passphrase: ${{ secrets.GPG_KEY_PASSPHRASE }}
-      git-user-name: ${{ secrets.GIT_USER_NAME }}
-      git-user-email: ${{ secrets.GIT_USER_EMAIL }}
-      ossrh-user-name: ${{ secrets.OSSRH_USERNAME }}
-      ossrh-user-password: ${{ secrets.OSSRH_PASSWORD }}
+      gpg-key-contents: ${{ secrets.PLATFORM_GPG_KEY_CONTENTS }}
+      gpg-key-passphrase: ${{ secrets.PLATFORM_GPG_KEY_PASSPHRASE }}
+      git-user-name: ${{ secrets.PLATFORM_GIT_USER_NAME }}
+      git-user-email: ${{ secrets.PLATFORM_GIT_USER_EMAIL }}
+      ossrh-user-name: ${{ secrets.PLATFORM_OSSRH_USERNAME }}
+      ossrh-user-password: ${{ secrets.PLATFORM_OSSRH_PASSWORD }}
 
   finalize-release:
     name: "Branch / Release / Finalize"
@@ -127,7 +127,7 @@ jobs:
       - name: Create Tag
         uses: rickstaa/action-create-tag@v1
         with:
-          github_token: ${{ secrets.GH_ACCESS_TOKEN }}
+          github_token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
           commit_sha: ${{ steps.commit.outputs.id }}
           message: "[Automated Maven Central Release] Platform SDK Release v${{ github.event.inputs.new-version }}"
           tag: v${{ github.event.inputs.new-version }}
@@ -141,14 +141,14 @@ jobs:
           prerelease: false
           name: Platform SDK Release v${{ github.event.inputs.new-version }}
           tag_name: v${{ github.event.inputs.new-version }}
-          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
           files: ${{ steps.sdk-archives.outputs.path }}/*
 
       - name: Send Slack Notification
         uses: slackapi/slack-github-action@v1
         env:
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_RELEASE_WEBHOOK }}
+          SLACK_WEBHOOK_URL: ${{ secrets.PLATFORM_SLACK_RELEASE_WEBHOOK }}
         with:
           payload: |
             {

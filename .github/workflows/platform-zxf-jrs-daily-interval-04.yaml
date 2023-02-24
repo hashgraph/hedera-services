@@ -55,12 +55,12 @@ jobs:
       branch-name: ${{ github.event.inputs.branch-name }}
       panel-config: "configs/suites/daily/4N/GCP-Daily-VMerkle-4N.json"
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
   vmerkle2:
     name: VMerkle2
     uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
@@ -69,12 +69,12 @@ jobs:
       branch-name: ${{ github.event.inputs.branch-name }}
       panel-config: "configs/suites/daily/4N/GCP-Daily-VMerkle2-4N.json"
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
     if: ${{ !cancelled() && always() }}
   vmerkle-long:
     name: VMerkleLong
@@ -84,12 +84,12 @@ jobs:
       branch-name: ${{ github.event.inputs.branch-name }}
       panel-config: "configs/suites/daily/4N/GCP-Daily-VMerkleLong-4N.json"
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
     if: ${{ !cancelled() && always() }}
   vmerkle-sc:
     name: VMerkleSC
@@ -99,12 +99,12 @@ jobs:
       branch-name: ${{ github.event.inputs.branch-name }}
       panel-config: "configs/suites/daily/4N/GCP-Daily-VMerkleSC-4N.json"
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
     needs:
       - vmerkle-long
     if: ${{ !cancelled() && always() }}
@@ -116,12 +116,12 @@ jobs:
       branch-name: ${{ github.event.inputs.branch-name }}
       panel-config: "configs/suites/daily/4N/GCP-Daily-VMerkleSC2-4N.json"
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
     if: ${{ !cancelled() && always() }}
 #  vmerkle-recovery:
 #    name: VMerkle-Recovery
@@ -131,12 +131,12 @@ jobs:
 #      branch-name: ${{ github.event.inputs.branch-name }}
 #      panel-config: "configs/suites/daily/4N/GCP-Daily-VMerkle-Recovery-4N.json"
 #    secrets:
-#      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-#      jrs-ssh-user-name: ${{ secrets.JRS_SSH_USER_NAME }}
-#      jrs-ssh-key-file: ${{ secrets.JRS_SSH_KEY_FILE }}
-#      gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
-#      gcp-sa-key-contents: ${{ secrets.GCP_KEY_FILE }}
-#      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+#      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+#      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+#      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+#      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+#      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+#      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
 #    needs:
 #      - vmerkle-sc2
 #    if: ${{ !cancelled() && always() }}

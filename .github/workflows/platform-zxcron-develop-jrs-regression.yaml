@@ -46,4 +46,4 @@ jobs:
       workflow-file: platform-flow-jrs-daily-regression.yaml
       workflow-file-ref: ${{ github.ref }}
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}

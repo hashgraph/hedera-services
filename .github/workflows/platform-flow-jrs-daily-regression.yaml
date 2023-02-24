@@ -41,7 +41,7 @@ jobs:
       workflow-file: platform-zxf-jrs-daily-interval-01.yaml
       concurrency-group: ${{ github.event.inputs.ref || github.sha }}-flow-jrs-daily-group-01
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
 
   interval-02:
     name: Interval 2
@@ -54,7 +54,7 @@ jobs:
       workflow-file: platform-zxf-jrs-daily-interval-02.yaml
       concurrency-group: ${{ github.event.inputs.ref || github.sha }}-flow-jrs-daily-group-02
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
 
   interval-03:
     name: Interval 3
@@ -67,7 +67,7 @@ jobs:
       workflow-file: platform-zxf-jrs-daily-interval-03.yaml
       concurrency-group: ${{ github.event.inputs.ref || github.sha }}-flow-jrs-daily-group-03
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
 
   interval-04:
     name: Interval 4
@@ -80,7 +80,7 @@ jobs:
       workflow-file: platform-zxf-jrs-daily-interval-04.yaml
       concurrency-group: ${{ github.event.inputs.ref || github.sha }}-flow-jrs-daily-group-04
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
 
   interval-05:
     name: Interval 5
@@ -93,4 +93,4 @@ jobs:
       workflow-file: platform-zxf-jrs-daily-interval-05.yaml
       concurrency-group: ${{ github.event.inputs.ref || github.sha }}-flow-jrs-daily-group-05
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}

@@ -152,6 +152,7 @@ env:
 defaults:
   run:
     shell: bash
+    working-directory: platform-sdk
 
 permissions:
   id-token: write
@@ -183,14 +184,14 @@ jobs:
       - name: Checkout Regression Code
         uses: actions/checkout@v3
         with:
-          path: regression
+          path: platform-sdk/regression
           repository: swirlds/swirlds-platform-regression
           ref: ${{ steps.jrs-parameters.outputs.branch-name }}
           token: ${{ secrets.access-token }}
 
       - name: Resolve JRS Configuration Path
         id: jrs-config
-        working-directory: ${{ github.workspace }}/${{ inputs.regression-path }}
+        working-directory: ${{ github.workspace }}/platform-sdk/${{ inputs.regression-path }}
         env:
           CONFIG_PATH: ${{ inputs.panel-config }}
         run: |
@@ -254,7 +255,7 @@ jobs:
       - name: Update Slack API Token
         env:
           SLACK_API_TOKEN: ${{ secrets.slack-api-token }}
-        working-directory: ${{ github.workspace }}/${{ inputs.regression-path }}
+        working-directory: ${{ github.workspace }}/platform-sdk/${{ inputs.regression-path }}
         run: |
           [[ -f "configs/JRS-Default.json" ]] || exit 67
           [[ -f "configs/services/default/JRS-Default-Services.json" ]] || exit 68
@@ -282,6 +283,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
         with:
+          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
           gradle-home-cache-strict-match: false
           gradle-home-cache-includes: |
@@ -358,6 +360,7 @@ jobs:
         id: platform-gradle-build
         uses: gradle/gradle-build-action@v2
         with:
+          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
           arguments: assemble --scan
 
@@ -365,9 +368,9 @@ jobs:
         id: regression-gradle-build
         uses: gradle/gradle-build-action@v2
         with:
+          build-root-directory: platform-sdk/regression
           gradle-version: ${{ inputs.gradle-version }}
           arguments: assemble --scan --parallel
-          build-root-directory: regression
 
       - name: Compute Actual Branch Name
         id: branch
@@ -389,7 +392,7 @@ jobs:
           REGRESSION_PATH: ${{ inputs.regression-path }}
           CONFIG_PATH: ${{ steps.jrs-config.outputs.file }}
           USE_ENHANCED_RUNTIME: ${{ inputs.use-enhanced-runtime }}
-          PLATFORM_REPO_PATH: ${{ inputs.platform-repo-path || github.workspace }}
+          PLATFORM_REPO_PATH: ${{ inputs.platform-repo-path || format('{0}/{1}', github.workspace, 'platform-sdk') }}
           ENHANCED_RUNTIME_ENGINE: ${{ inputs.enhanced-runtime-engine }}
           SLACK_SUMMARY: ${{ inputs.slack-summary-channel }}
           SLACK_RESULTS: ${{ inputs.slack-results-channel }}
@@ -399,7 +402,7 @@ jobs:
           JRS_SSH_USER_NAME: ${{ secrets.jrs-ssh-user-name }}
           JRS_WEB_HOSTNAME: ${{ inputs.jrs-web-hostname }}
           JRS_WEB_PORT: ${{ inputs.jrs-web-port }}
-        working-directory: ${{ github.workspace }}/${{ inputs.regression-path }}
+        working-directory: ${{ github.workspace }}/platform-sdk/${{ inputs.regression-path }}
         run: |
           set -x
 
@@ -522,15 +525,11 @@ jobs:
         run: |
           [[ -f "${GCP_KEY_FILE}" ]] && rm -f "${GCP_KEY_FILE}"
 
-      - name: Remove Platform from Maven Cache
-        if: ${{ always() }}
-        run: rm -rvf "${HOME}/.m2/repository/com/swirlds" >/dev/null 2>&1
-
       - name: Release Lingering GCP Resources
         if: ${{ always() }}
         env:
           REGRESSION_PATH: ${{ inputs.regression-path }}
-        working-directory: ${{ github.workspace }}/${{ inputs.regression-path }}
+        working-directory: ${{ github.workspace }}/platform-sdk/${{ inputs.regression-path }}
         run: |
           [[ -f "ci-gcp-instance-registry" ]] || exit 0
 

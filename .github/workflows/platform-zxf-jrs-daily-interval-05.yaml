@@ -58,12 +58,12 @@ jobs:
       branch-name: ${{ github.event.inputs.branch-name }}
       panel-config: "configs/suites/daily/4N/GCP-Daily-SimilarStake-4N.json"
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
   UnevenStake:
     name: UnevenStake
     uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
@@ -72,12 +72,12 @@ jobs:
       branch-name: ${{ github.event.inputs.branch-name }}
       panel-config: "configs/suites/daily/4N/GCP-Daily-UnevenStake-4N.json"
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
     needs:
       - SimilarStake
     if: ${{ !cancelled() && always() }}
@@ -89,12 +89,12 @@ jobs:
       branch-name: ${{ github.event.inputs.branch-name }}
       panel-config: "configs/suites/daily/4N/GCP-Daily-MinStake-4N.json"
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
     needs:
       - UnevenStake
     if: ${{ !cancelled() && always() }}
@@ -106,12 +106,12 @@ jobs:
       branch-name: ${{ github.event.inputs.branch-name }}
       panel-config: "configs/suites/daily/4N/GCP-Daily-ZeroStake-4N.json"
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
     needs:
       - MinStake
     if: ${{ !cancelled() && always() }}
@@ -124,12 +124,12 @@ jobs:
       branch-name: ${{ github.event.inputs.branch-name }}
       panel-config: "configs/suites/daily/5N/GCP-Daily-RestartWithNewNodes-SimilarStake-5N.json"
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
   NewNodesUnevenStake:
     name: NewNodesUnevenStake
     uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
@@ -138,12 +138,12 @@ jobs:
       branch-name: ${{ github.event.inputs.branch-name }}
       panel-config: "configs/suites/daily/5N/GCP-Daily-RestartWithNewNodes-UnevenStake-5N.json"
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
     needs:
       - NewNodesSimilarStake
     if: ${{ !cancelled() && always() }}
@@ -156,12 +156,12 @@ jobs:
       branch-name: ${{ github.event.inputs.branch-name }}
       panel-config: "configs/suites/daily/5N/GCP-Daily-RestartWithNewNodes-MinStake-5N.json"
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
     needs:
       - NewNodesUnevenStake
     if: ${{ !cancelled() && always() }}
@@ -174,12 +174,12 @@ jobs:
       branch-name: ${{ github.event.inputs.branch-name }}
       panel-config: "configs/suites/daily/5N/GCP-Daily-RestartWithNewNodes-ZeroStake-5N.json"
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
     needs:
       - NewNodesMinStake
     if: ${{ !cancelled() && always() }}

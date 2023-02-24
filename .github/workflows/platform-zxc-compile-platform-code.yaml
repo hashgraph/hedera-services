@@ -98,6 +98,7 @@ on:
 defaults:
   run:
     shell: bash
+    working-directory: platform-sdk
 
 permissions:
   id-token: write
@@ -155,6 +156,7 @@ jobs:
         id: gradle-build
         uses: gradle/gradle-build-action@v2
         with:
+          build-root-directory: ${{ github.workspace }}/platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
           arguments: assemble --scan
 
@@ -163,6 +165,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.enable-javadoc && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
+          build-root-directory: ${{ github.workspace }}/platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
           arguments: javadoc --scan --parallel
 
@@ -170,6 +173,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.enable-spotless-check && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
+          build-root-directory: ${{ github.workspace }}/platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
           arguments: spotlessCheck --scan --parallel
 
@@ -178,28 +182,31 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.enable-owasp-analysis && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
+          build-root-directory: ${{ github.workspace }}/platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: dependencyCheckAggregate --scan -PsuppressionFile=${{ github.workspace }}/gradle/dep-check-suppression.xml
+          arguments: dependencyCheckAggregate --scan -PsuppressionFile=${{ github.workspace }}/platform-sdk/gradle/dep-check-suppression.xml
 
       - name: Store OWASP Report Artifact
         uses: actions/upload-artifact@v3
         if: ${{ inputs.enable-owasp-analysis && steps.gradle-dependency-check.conclusion == 'success' && !cancelled() }}
         with:
           name: OWASP Dependency Report
-          path: ${{ github.workspace }}/build/reports/dependency-check
+          path: ${{ github.workspace }}/platform-sdk/build/reports/dependency-check
 
       - name: OWASP Dependency Check (Fails on CVE Score >= ${{ inputs.owasp-cvss-score-threshold }})
         id: gradle-dependency-check
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.enable-owasp-analysis && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
+          build-root-directory: ${{ github.workspace }}/platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: dependencyCheckAggregate --scan -PfailBuildOnCVSS=${{ inputs.owasp-cvss-score-threshold }} -PsuppressionFile=${{ github.workspace }}/gradle/dep-check-suppression.xml
+          arguments: dependencyCheckAggregate --scan -PfailBuildOnCVSS=${{ inputs.owasp-cvss-score-threshold }} -PsuppressionFile=${{ github.workspace }}/platform-sdk/gradle/dep-check-suppression.xml
 
       - name: Gradle Check
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() && always() }}
         with:
+          build-root-directory: ${{ github.workspace }}/platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
           arguments: check hammerTest --scan
 
@@ -267,6 +274,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.sonar-token }}
         if: ${{ inputs.enable-sonar-analysis && steps.gradle-build.conclusion == 'success' && !cancelled() && always() }}
         with:
+          build-root-directory: ${{ github.workspace }}/platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
           arguments: sonarqube --info --scan ${{ steps.sonar-cloud.outputs.options }}
 
@@ -274,6 +282,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.enable-jmh-tests && steps.gradle-build.conclusion == 'success' && !cancelled() && always() }}
         with:
+          build-root-directory: ${{ github.workspace }}/platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
           arguments: jmhJar --scan
 
@@ -281,5 +290,6 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.enable-jmh-tests && steps.gradle-build.conclusion == 'success' && !cancelled() && always() }}
         with:
+          build-root-directory: ${{ github.workspace }}/platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
           arguments: jmh --scan

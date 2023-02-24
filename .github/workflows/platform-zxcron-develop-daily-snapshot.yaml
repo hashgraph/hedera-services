@@ -52,4 +52,4 @@ jobs:
       custom-job-label: "Snapshot / Daily"
       dry-run-enabled: false
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}

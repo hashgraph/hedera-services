@@ -68,7 +68,7 @@ on:
       - master
       - main
       - develop
-      - "release-[0-9]+.[0-9]+.[0-9]+-?*.?[0-9]?[0-9]?"
+      - "release/*"
 
 defaults:
   run:
@@ -89,6 +89,6 @@ jobs:
       enable-sonar-analysis: ${{ github.event_name == 'push' || github.event.inputs.enable-sonar-analysis == 'true' }}
       enable-spotless-check: ${{ github.event.inputs.enable-spotless-check == 'true' }}
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-      sonar-token: ${{ secrets.SONAR_TOKEN }}
-      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      sonar-token: ${{ secrets.PLATFORM_SONAR_TOKEN }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}

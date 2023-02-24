@@ -23,13 +23,15 @@ on:
       - reopened
       - synchronize
       - labeled
+    paths:
+      - 'platform-sdk/**'
 
 defaults:
   run:
     shell: bash
 
 concurrency:
-  group: pr-checks-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  group: platform-sdk-pr-checks-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 
@@ -40,7 +42,7 @@ jobs:
     with:
       enable-spotless-check: false
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
 
   spotless:
     name: Spotless
@@ -54,7 +56,7 @@ jobs:
       enable-sonar-analysis: false
       enable-spotless-check: true
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
 
   unit-label-check:
     name: "Label Check [CI:UnitTests]"
@@ -65,7 +67,7 @@ jobs:
         uses: jesusvasquez333/verify-pr-label-action@v1.4.0
         if: github.event_name == 'pull_request'
         with:
-          github-token: ${{ secrets.GH_ACCESS_TOKEN }}
+          github-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
           valid-labels: "CI:UnitTests, CI:FinalChecks"
           disable-reviews: true
 
@@ -81,9 +83,9 @@ jobs:
       enable-unit-tests: true
       enable-sonar-analysis: true
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-      sonar-token: ${{ secrets.SONAR_TOKEN }}
-      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      sonar-token: ${{ secrets.PLATFORM_SONAR_TOKEN }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
 
   final-label-check:
     name: "Label Check [CI:FinalChecks]"
@@ -94,7 +96,7 @@ jobs:
         uses: jesusvasquez333/verify-pr-label-action@v1.4.0
         if: github.event_name == 'pull_request'
         with:
-          github-token: ${{ secrets.GH_ACCESS_TOKEN }}
+          github-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
           valid-labels: "CI:FinalChecks"
           disable-reviews: true
 
@@ -110,9 +112,9 @@ jobs:
       slack-summary-channel: "regression-test"
       use-branch-for-slack-channel: false
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}

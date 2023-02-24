@@ -32,12 +32,12 @@ on:
     branches:
       - develop
     paths-ignore:
-      - 'docs/**'
+      - 'hedera-node/docs/**'
+      - 'platform-sdk/docs/**'
       - '.github/workflows/**'
       - '.circleci/**'
-      - 'test-data/**'
       - '.circleci.settings.xml'
-      - '*.md'
+      - '**.md'
 
 defaults:
   run:
@@ -59,7 +59,7 @@ jobs:
       prerelease-prefix: develop
       custom-job-label: "Release / Commit"
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
   develop-release-snapshot:
     name: "Develop"
     uses: ./.github/workflows/platform-zxc-release-internal.yaml
@@ -70,4 +70,4 @@ jobs:
       version-policy: snapshot-locked
       custom-job-label: "Release / Snapshot"
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}

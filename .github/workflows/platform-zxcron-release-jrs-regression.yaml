@@ -58,7 +58,7 @@ jobs:
 
       - name: Install Github CLI
         env:
-          GITHUB_TOKEN: ${{ secrets.access-token }}
+          GITHUB_TOKEN: ${{ secrets.PLATFORM_access-token }}
         run: |
           curl -O -L -s https://github.com/cli/cli/releases/download/v2.12.1/gh_2.12.1_linux_amd64.deb
           sudo apt install -y ./gh_2.12.1_linux_amd64.deb
@@ -66,7 +66,7 @@ jobs:
 
       - name: Launch JRS Jobs
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
         run: |
           FIRST_RUN_STARTED="false"
 

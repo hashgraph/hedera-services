@@ -56,12 +56,12 @@ jobs:
       branch-name: ${{ github.event.inputs.branch-name }}
       panel-config: "configs/suites/daily/4N/GCP-Daily-Assorted-4N.json"
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
   dynamic-freeze:
     name: DynamicFreeze
     uses: ./.github/workflows/platform-zxc-jrs-regression.yaml
@@ -70,12 +70,12 @@ jobs:
       branch-name: ${{ github.event.inputs.branch-name }}
       panel-config: "configs/suites/daily/4N/GCP-Daily-DynamicFreeze-4N.json"
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
     needs:
       - assorted
     if: ${{ !cancelled() && always() }}
@@ -87,12 +87,12 @@ jobs:
       branch-name: ${{ github.event.inputs.branch-name }}
       panel-config: "configs/suites/daily/4N/GCP-Daily-Reconnect-4N.json"
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
     if: ${{ !cancelled() && always() }}
   fcmfcq:
     name: FCMFCQ
@@ -102,12 +102,12 @@ jobs:
       branch-name: ${{ github.event.inputs.branch-name }}
       panel-config: "configs/suites/daily/4N/GCP-Daily-FCMFCQ-4N.json"
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
     if: ${{ !cancelled() && always() }}
   genesis:
     name: Genesis
@@ -117,12 +117,12 @@ jobs:
       branch-name: ${{ github.event.inputs.branch-name }}
       panel-config: "configs/suites/daily/4N/GCP-Daily-Genesis-4N.json"
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
     if: ${{ !cancelled() && always() }}
 #  recovery:
 #    name: Recovery
@@ -132,12 +132,12 @@ jobs:
 #      branch-name: ${{ github.event.inputs.branch-name }}
 #      panel-config: "configs/suites/daily/4N/GCP-Daily-Recovery-4N.json"
 #    secrets:
-#      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-#      jrs-ssh-user-name: ${{ secrets.JRS_SSH_USER_NAME }}
-#      jrs-ssh-key-file: ${{ secrets.JRS_SSH_KEY_FILE }}
-#      gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
-#      gcp-sa-key-contents: ${{ secrets.GCP_KEY_FILE }}
-#      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+#      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+#      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+#      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+#      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+#      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+#      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
 #    needs:
 #      - genesis
 #    if: ${{ !cancelled() && always() }}
@@ -149,12 +149,12 @@ jobs:
       branch-name: ${{ github.event.inputs.branch-name }}
       panel-config: "configs/suites/daily/4N/GCP-Daily-Restart-4N.json"
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
-      jrs-ssh-user-name: ${{ secrets.JRS_SSH_USER_NAME }}
-      jrs-ssh-key-file: ${{ secrets.JRS_SSH_KEY_FILE }}
-      gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
-      gcp-sa-key-contents: ${{ secrets.GCP_KEY_FILE }}
-      slack-api-token: ${{ secrets.SLACK_API_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
+      jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
+      jrs-ssh-key-file: ${{ secrets.PLATFORM_JRS_SSH_KEY_FILE }}
+      gcp-project-number: ${{ secrets.PLATFORM_GCP_PROJECT_NUMBER }}
+      gcp-sa-key-contents: ${{ secrets.PLATFORM_GCP_KEY_FILE }}
+      slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
     needs:
       - genesis
     if: ${{ !cancelled() && always() }}

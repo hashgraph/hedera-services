@@ -61,4 +61,4 @@ jobs:
       custom-job-label: "Release / Adhoc"
       dry-run-enabled: ${{ github.event.inputs.dry-run-enabled == 'true' }}
     secrets:
-      access-token: ${{ secrets.GH_ACCESS_TOKEN }}
+      access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}

@@ -77,6 +77,7 @@ on:
 defaults:
   run:
     shell: bash
+    working-directory: platform-sdk
 
 permissions:
   id-token: write
@@ -130,9 +131,6 @@ jobs:
           token: ${{ secrets.access-token }}
           fetch-depth: 0
 
-      - name: Validate Gradle Wrapper
-        uses: gradle/wrapper-validation-action@v1
-
       - name: Import GPG key
         id: gpg_key
         uses: crazy-max/ghaction-import-gpg@v5
@@ -166,6 +164,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
         with:
+          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
           gradle-home-cache-strict-match: false
           gradle-home-cache-includes: |
@@ -208,6 +207,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if: ${{ (inputs.version-policy == 'uniform-explicit' || inputs.version-policy == 'early-access-explicit') && !cancelled() }}
         with:
+          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
           arguments: versionAsSpecified --scan -PnewVersion=${{ steps.verify-explicit-version.outputs.number }}
 
@@ -215,6 +215,7 @@ jobs:
         if: ${{ inputs.version-policy == 'commit-locked' && !cancelled() }}
         uses: gradle/gradle-build-action@v2
         with:
+          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
           arguments: versionAsPrefixedCommit --scan -PcommitPrefix=${{ inputs.prerelease-prefix }}
 
@@ -222,12 +223,14 @@ jobs:
         if: ${{ inputs.version-policy == 'snapshot-locked' && !cancelled() }}
         uses: gradle/gradle-build-action@v2
         with:
+          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
           arguments: versionAsSnapshot --scan
 
       - name: Version Report
         uses: gradle/gradle-build-action@v2
         with:
+          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
           arguments: githubVersionSummary --scan
 
@@ -235,6 +238,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.dry-run-enabled != true }}
         with:
+          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
           arguments: assemble --scan --parallel
 
@@ -242,6 +246,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.dry-run-enabled != true }}
         with:
+          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
           arguments: release-${{ inputs.deployment-profile }} --scan
 
