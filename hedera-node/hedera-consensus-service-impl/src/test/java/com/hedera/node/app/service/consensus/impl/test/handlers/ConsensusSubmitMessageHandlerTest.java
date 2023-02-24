@@ -19,40 +19,34 @@ package com.hedera.node.app.service.consensus.impl.test.handlers;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.ACCOUNT_ID_4;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.A_NONNULL_KEY;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
-import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_B;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.TOPIC_ID_1357;
-import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertDefaultPayer;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertOkResponse;
-import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.newTopicMeta;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.txnFrom;
-import static com.hedera.test.factories.scenarios.ConsensusDeleteTopicScenarios.CONSENSUS_DELETE_TOPIC_MISSING_TOPIC_SCENARIO;
-import static com.hedera.test.factories.scenarios.ConsensusDeleteTopicScenarios.CONSENSUS_DELETE_TOPIC_SCENARIO;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_TOPIC_ADMIN_KT;
+import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.CONSENSUS_SUBMIT_MESSAGE_MISSING_TOPIC_SCENARIO;
+import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.CONSENSUS_SUBMIT_MESSAGE_SCENARIO;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
-import static com.hedera.test.utils.KeyUtils.sanityRestored;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
 import com.hedera.node.app.service.mono.Utils;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.PreHandleContext;
-import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.time.Instant;
-import java.util.Optional;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -61,27 +55,30 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
+import java.util.List;
+
 @ExtendWith(MockitoExtension.class)
-class ConsensusDeleteTopicHandlerTest {
+class ConsensusSubmitMessageHandlerTest {
     private AccountKeyLookup keyLookup;
     private ReadableTopicStore topicStore;
 
-    private ConsensusDeleteTopicHandler subject;
+    private ConsensusSubmitMessageHandler subject;
 
     @BeforeEach
     void setUp() {
         keyLookup = mock(AccountKeyLookup.class);
         topicStore = mock(ReadableTopicStore.class);
-        subject = new ConsensusDeleteTopicHandler();
+        subject = new ConsensusSubmitMessageHandler();
     }
 
     @Test
-    @DisplayName("Topic admin key sig required")
-    void adminKeySigRequired() {
+    @DisplayName("Topic submission key sig required")
+    void submissionKeySigRequired() {
         // given:
         final var payerKey = mockPayerLookup();
-        mockTopicLookup(SIMPLE_KEY_A, null);
-        final var context = new PreHandleContext(keyLookup, newDeleteTxn(), DEFAULT_PAYER);
+        mockTopicLookup(SIMPLE_KEY_A);
+        final var context = new PreHandleContext(keyLookup, newSubmitMessageTxn(), DEFAULT_PAYER);
 
         // when:
         subject.preHandle(context, topicStore);
@@ -94,24 +91,6 @@ class ConsensusDeleteTopicHandlerTest {
     }
 
     @Test
-    @DisplayName("Non-null topic submit key sig is NOT required")
-    void submitKeyNotRequired() {
-        // given:
-        final var payerKey = mockPayerLookup();
-        mockTopicLookup(SIMPLE_KEY_A, SIMPLE_KEY_B);
-        final var context = new PreHandleContext(keyLookup, newDeleteTxn(), DEFAULT_PAYER);
-
-        // when:
-        subject.preHandle(context, topicStore);
-
-        // then:
-        assertOkResponse(context);
-        assertThat(context.getPayerKey()).isEqualTo(payerKey);
-        final var unwantedHederaSubmitKey = Utils.asHederaKey(SIMPLE_KEY_B).orElseThrow();
-        assertThat(context.getRequiredNonPayerKeys()).doesNotContain(unwantedHederaSubmitKey);
-    }
-
-    @Test
     @DisplayName("Topic not found returns error")
     void topicIdNotFound() {
         // given:
@@ -119,7 +98,7 @@ class ConsensusDeleteTopicHandlerTest {
         given(topicStore.getTopicMetadata(notNull()))
                 .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withFailureReason(
                         ResponseCodeEnum.INVALID_TOPIC_ID));
-        final var context = new PreHandleContext(keyLookup, newDeleteTxn(), DEFAULT_PAYER);
+        final var context = new PreHandleContext(keyLookup, newSubmitMessageTxn(), DEFAULT_PAYER);
 
         // when:
         subject.preHandle(context, topicStore);
@@ -135,9 +114,9 @@ class ConsensusDeleteTopicHandlerTest {
         // given:
         given(keyLookup.getKey((AccountID) notNull()))
                 .willReturn(KeyOrLookupFailureReason.withFailureReason(
-                        ResponseCodeEnum.ACCOUNT_DELETED)); // Any error response code
-        mockTopicLookup(SIMPLE_KEY_A, SIMPLE_KEY_B);
-        final var context = new PreHandleContext(keyLookup, newDeleteTxn(), DEFAULT_PAYER);
+                        ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST)); // Any error response code
+        mockTopicLookup(SIMPLE_KEY_A);
+        final var context = new PreHandleContext(keyLookup, newSubmitMessageTxn(), DEFAULT_PAYER);
 
         // when:
         subject.preHandle(context, topicStore);
@@ -149,12 +128,12 @@ class ConsensusDeleteTopicHandlerTest {
     }
 
     @Test
-    @DisplayName("Topic without admin key returns error")
-    void noTopicAdminKey() {
+    @DisplayName("Topic without submit key returns error")
+    void noTopicSubmitKey() {
         // given:
         mockPayerLookup();
-        mockTopicLookup(null, SIMPLE_KEY_A);
-        final var context = new PreHandleContext(keyLookup, newDeleteTxn(), DEFAULT_PAYER);
+        mockTopicLookup(null);
+        final var context = new PreHandleContext(keyLookup, newSubmitMessageTxn(), DEFAULT_PAYER);
 
         // when:
         subject.preHandle(context, topicStore);
@@ -165,19 +144,17 @@ class ConsensusDeleteTopicHandlerTest {
     }
 
     @Nested
-    class ConsensusDeleteTopicHandlerParityTest {
+    class ConsensusSubmitMessageHandlerParityTest {
         @BeforeEach
         void setUp() {
             topicStore = mock(ReadableTopicStore.class);
             keyLookup = com.hedera.node.app.service.consensus.impl.handlers.test.AdapterUtils.wellKnownKeyLookupAt();
         }
-
         @Test
-        void getsConsensusDeleteTopicNoAdminKey() {
-            // given:
-            final var txn = txnFrom(CONSENSUS_DELETE_TOPIC_SCENARIO);
+        void getsConsensusSubmitMessageNoSubmitKey() {
+            final var txn = txnFrom(CONSENSUS_SUBMIT_MESSAGE_SCENARIO);
 
-            var topicMeta = newTopicMeta(null, A_NONNULL_KEY); // any submit key that isn't null
+            var topicMeta = newTopicMeta(null);
             given(topicStore.getTopicMetadata(notNull()))
                     .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withTopicMeta(topicMeta));
             final var context = new PreHandleContext(keyLookup, txn, DEFAULT_PAYER);
@@ -191,10 +168,10 @@ class ConsensusDeleteTopicHandlerTest {
         }
 
         @Test
-        void getsConsensusDeleteTopicWithAdminKey() throws Throwable {
-            // given:
-            final var txn = txnFrom(CONSENSUS_DELETE_TOPIC_SCENARIO);
-            var topicMeta = newTopicMeta(MISC_TOPIC_ADMIN_KT.asJKey(), null); // any submit key
+        void getsConsensusSubmitMessageWithSubmitKey() {
+            final var txn = txnFrom(CONSENSUS_SUBMIT_MESSAGE_SCENARIO);
+
+            var topicMeta = newTopicMeta(A_NONNULL_KEY);
             given(topicStore.getTopicMetadata(notNull()))
                     .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withTopicMeta(topicMeta));
             final var context = new PreHandleContext(keyLookup, txn, DEFAULT_PAYER);
@@ -203,19 +180,18 @@ class ConsensusDeleteTopicHandlerTest {
             subject.preHandle(context, topicStore);
 
             // then:
-            assertOkResponse(context);
-            assertDefaultPayer(context);
-            Assertions.assertThat(sanityRestored(context.getRequiredNonPayerKeys()))
-                    .containsExactly(MISC_TOPIC_ADMIN_KT.asKey());
+            ConsensusTestUtils.assertOkResponse(context);
+            ConsensusTestUtils.assertDefaultPayer(context);
+            Assertions.assertThat(context.getRequiredNonPayerKeys()).isEqualTo(List.of(A_NONNULL_KEY));
         }
 
         @Test
-        void reportsConsensusDeleteTopicMissingTopic() {
+        void reportsConsensusSubmitMessageMissingTopic() {
             // given:
-            final var txn = txnFrom(CONSENSUS_DELETE_TOPIC_MISSING_TOPIC_SCENARIO);
+            final var txn = txnFrom(CONSENSUS_SUBMIT_MESSAGE_MISSING_TOPIC_SCENARIO);
+
             given(topicStore.getTopicMetadata(notNull()))
-                    .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withFailureReason(
-                            ResponseCodeEnum.INVALID_TOPIC_ID));
+                    .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withFailureReason(ResponseCodeEnum.INVALID_TOPIC_ID));
             final var context = new PreHandleContext(keyLookup, txn, DEFAULT_PAYER);
 
             // when:
@@ -231,17 +207,22 @@ class ConsensusDeleteTopicHandlerTest {
         return ConsensusTestUtils.mockPayerLookup(KeyUtils.A_COMPLEX_KEY, DEFAULT_PAYER, keyLookup);
     }
 
-    private void mockTopicLookup(final Key adminKey, final Key submitKey) {
-        ConsensusTestUtils.mockTopicLookup(adminKey, submitKey, topicStore);
+    private void mockTopicLookup(Key submitKey) {
+        ConsensusTestUtils.mockTopicLookup(null, submitKey, topicStore);
     }
 
-    private static TransactionBody newDeleteTxn() {
+    private static ReadableTopicStore.TopicMetadata newTopicMeta(HederaKey submit) {
+        return ConsensusTestUtils.newTopicMeta(null, submit);
+    }
+
+    private static TransactionBody newSubmitMessageTxn() {
         final var txnId = TransactionID.newBuilder().setAccountID(ACCOUNT_ID_4).build();
-        final var deleteTopicBuilder =
-                ConsensusDeleteTopicTransactionBody.newBuilder().setTopicID(TOPIC_ID_1357);
+        final var submitMessageBuilder =
+                ConsensusSubmitMessageTransactionBody.newBuilder().setTopicID(TOPIC_ID_1357).setMessage(
+                        ByteString.copyFromUtf8("Message for test-" + Instant.now() + "." + Instant.now().getNano()));
         return TransactionBody.newBuilder()
                 .setTransactionID(txnId)
-                .setConsensusDeleteTopic(deleteTopicBuilder.build())
+                .setConsensusSubmitMessage(submitMessageBuilder.build())
                 .build();
     }
 }
