@@ -533,12 +533,6 @@ public class HapiSpec implements Runnable {
         // One slot for the ScheduleCreate, one for each ScheduleSign,
         // one for the GetScheduleInfo, and one for the GetTxnRecord
         final var orderedOps = new HapiSpecOperation[1 + numSignTxns + 2];
-        final var sigPartitionDescription = new StringBuilder()
-                .append("ScheduleCreate[")
-                .append(indices.get(0))
-                .append(", ")
-                .append(indices.get(1))
-                .append("]");
         final var num = NEXT_AUTO_SCHEDULE_NUM.getAndIncrement();
         final var schedule = "autoScheduled" + num;
         final var creation = "autoScheduleCreation" + num;
@@ -553,12 +547,6 @@ public class HapiSpec implements Runnable {
                     // be present (e.g. the default payer's signature), so we accommodate that here
                     // by adding NO_NEW_VALID_SIGNATURES to the list of acceptable statuses
                     .hasKnownStatusFrom(SUCCESS, NO_NEW_VALID_SIGNATURES);
-            sigPartitionDescription
-                    .append(", ScheduleSign[")
-                    .append(indices.get(i))
-                    .append(", ")
-                    .append(indices.get(i + 1))
-                    .append("]");
         }
 
         final var expectedStatus =
