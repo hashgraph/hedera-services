@@ -205,6 +205,8 @@ public class PropertyNames {
     public static final String DEV_DEFAULT_LISTENING_NODE_ACCOUNT = "dev.defaultListeningNodeAccount";
     public static final String GRPC_PORT = "grpc.port";
     public static final String GRPC_TLS_PORT = "grpc.tlsPort";
+    public static final String GRPC_WORKFLOWS_PORT = "grpc.workflowsPort";
+    public static final String GRPC_WORKFLOWS_TLS_PORT = "grpc.workflowsTlsPort";
     public static final String HEDERA_ACCOUNTS_EXPORT_PATH = "hedera.accountsExportPath";
     public static final String HEDERA_EXPORT_ACCOUNTS_ON_STARTUP = "hedera.exportAccountsOnStartup";
     public static final String HEDERA_PREFETCH_QUEUE_CAPACITY = "hedera.prefetch.queueCapacity";
@@ -243,5 +245,6 @@ public class PropertyNames {
     public static final String STATS_RUNNING_AVG_HALF_LIFE_SECS = "stats.runningAvgHalfLifeSecs";
     public static final String STATS_SPEEDOMETER_HALF_LIFE_SECS = "stats.speedometerHalfLifeSecs";
     public static final String WORKFLOWS_ENABLED = "hedera.workflows.enabled";
+    public static final String STATES_ENABLED = "hedera.states.enabled";
     public static final String VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB = "virtualdatasource.jasperdbToMerkledb";
 }

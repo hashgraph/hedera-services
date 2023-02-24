@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey.Type
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.*;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
@@ -31,7 +32,6 @@ import com.hedera.node.app.service.mono.throttling.ExpiryThrottle;
 import com.hedera.node.app.service.mono.throttling.MapAccessType;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.MapValueListUtils;
-import com.swirlds.virtualmap.VirtualMap;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -50,8 +50,8 @@ public class ContractGC {
 
     private final ExpiryThrottle expiryThrottle;
     private final Supplier<AccountStorageAdapter> contracts;
-    private final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage;
-    private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode;
+    private final Supplier<VirtualMapLike<ContractKey, IterableContractValue>> storage;
+    private final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecode;
 
     private ContractGC.RemovalFacilitation removalFacilitation = MapValueListUtils::removeFromMapValueList;
 
@@ -59,8 +59,8 @@ public class ContractGC {
     public ContractGC(
             final ExpiryThrottle expiryThrottle,
             final Supplier<AccountStorageAdapter> contracts,
-            final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage,
-            final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode) {
+            final Supplier<VirtualMapLike<ContractKey, IterableContractValue>> storage,
+            final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecode) {
         this.expiryThrottle = expiryThrottle;
         this.contracts = contracts;
         this.storage = storage;
@@ -100,7 +100,7 @@ public class ContractGC {
             final int maxKvPairs,
             final EntityNum contractNum,
             final ContractKey rootKey,
-            final VirtualMap<ContractKey, IterableContractValue> storage) {
+            final VirtualMapLike<ContractKey, IterableContractValue> storage) {
         final var listRemoval = new ContractStorageListMutation(contractNum.longValue(), storage);
         var i = maxKvPairs;
         var n = 0;

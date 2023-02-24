@@ -33,6 +33,7 @@ import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.records.RecordCache;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
@@ -175,8 +176,8 @@ class AnswerFunctionsTest {
 
     private void setupAccountsView() {
         final var children = new MutableStateChildren();
-        children.setAccounts(AccountStorageAdapter.fromInMemory(accounts));
-        children.setPayerRecords(RecordsStorageAdapter.fromLegacy(accounts));
+        children.setAccounts(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
+        children.setPayerRecords(RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(accounts)));
 
         view = new StateView(null, children, null);
     }

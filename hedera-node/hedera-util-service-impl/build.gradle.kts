@@ -30,4 +30,5 @@ configurations.all {
 dependencies {
   api(project(":hedera-node:hedera-util-service"))
   implementation(project(":hedera-node:hedera-mono-service"))
+  testImplementation(testLibs.bundles.mockito)
 }

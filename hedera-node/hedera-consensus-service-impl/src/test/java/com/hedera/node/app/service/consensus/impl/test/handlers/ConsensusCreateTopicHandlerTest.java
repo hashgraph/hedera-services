@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.consensus.impl.handlers.test;
+package com.hedera.node.app.service.consensus.impl.test.handlers;
 
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_B;
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertOkResponse;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.mono.Utils;
 import com.hedera.node.app.spi.AccountKeyLookup;
@@ -49,12 +51,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ConsensusCreateTopicHandlerTest {
     private static final AccountID ACCOUNT_ID_3 = IdUtils.asAccount("0.0.3");
-    private static final Key SIMPLE_KEY_A = Key.newBuilder()
-            .setEd25519(ByteString.copyFrom("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
-            .build();
-    private static final Key SIMPLE_KEY_B = Key.newBuilder()
-            .setEd25519(ByteString.copyFrom("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes()))
-            .build();
 
     @Mock
     private AccountKeyLookup keyFinder;
@@ -74,11 +70,6 @@ class ConsensusCreateTopicHandlerTest {
                 .setTransactionID(txnId)
                 .setConsensusCreateTopic(createTopicBuilder.build())
                 .build();
-    }
-
-    static void assertOkResponse(PreHandleContext context) {
-        assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.OK);
-        assertThat(context.failed()).isFalse();
     }
 
     @BeforeEach

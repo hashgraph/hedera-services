@@ -51,6 +51,7 @@ import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.state.EntityCreator;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringEntity;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
@@ -202,7 +203,7 @@ class BasicTransactionContextTest {
     void setup() {
         subject = new BasicTransactionContext(
                 narratedCharging,
-                () -> AccountStorageAdapter.fromInMemory(accounts),
+                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
                 nodeInfo,
                 exchange,
                 creator,
@@ -728,7 +729,7 @@ class BasicTransactionContextTest {
 
         subject = new BasicTransactionContext(
                 narratedCharging,
-                () -> AccountStorageAdapter.fromInMemory(accounts),
+                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
                 nodeInfo,
                 exchange,
                 creator,

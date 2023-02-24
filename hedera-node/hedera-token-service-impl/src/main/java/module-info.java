@@ -1,5 +1,3 @@
-import com.hedera.node.app.service.token.impl.CryptoServiceImpl;
-
 module com.hedera.node.app.service.token.impl {
     requires com.hedera.node.app.service.token;
     requires org.apache.commons.lang3;
@@ -9,13 +7,13 @@ module com.hedera.node.app.service.token.impl {
     requires com.google.protobuf;
     requires com.hedera.node.app.service.evm;
     requires com.hedera.node.app.spi;
+    requires com.swirlds.virtualmap;
+    requires com.swirlds.jasperdb;
     requires dagger;
     requires javax.inject;
 
     provides com.hedera.node.app.service.token.TokenService with
             com.hedera.node.app.service.token.impl.TokenServiceImpl;
-    provides com.hedera.node.app.service.token.CryptoService with
-            CryptoServiceImpl;
 
     exports com.hedera.node.app.service.token.impl to
             com.hedera.node.app.service.token.impl.test,
@@ -32,4 +30,5 @@ module com.hedera.node.app.service.token.impl {
             com.hedera.node.app.service.token.impl.test;
 
     exports com.hedera.node.app.service.token.impl.components;
+    exports com.hedera.node.app.service.token.impl.serdes;
 }

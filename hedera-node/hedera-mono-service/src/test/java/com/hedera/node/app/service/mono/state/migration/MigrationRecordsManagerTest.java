@@ -42,6 +42,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
@@ -183,7 +184,7 @@ class MigrationRecordsManagerTest {
                 recordsHistorian,
                 () -> networkCtx,
                 consensusTimeTracker,
-                () -> AccountStorageAdapter.fromInMemory(accounts),
+                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
                 factory,
                 accountNumbers,
                 bootstrapProperties);

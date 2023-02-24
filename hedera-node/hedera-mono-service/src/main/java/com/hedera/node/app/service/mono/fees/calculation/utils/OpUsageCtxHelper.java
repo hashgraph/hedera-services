@@ -37,6 +37,7 @@ import com.hedera.node.app.hapi.fees.usage.token.meta.TokenWipeMeta;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -45,7 +46,6 @@ import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
@@ -61,14 +61,14 @@ public class OpUsageCtxHelper {
     private final StateView workingView;
     private final HederaFileNumbers fileNumbers;
     private final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
-    private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
+    private final Supplier<MerkleMapLike<EntityNum, MerkleToken>> tokens;
     private final AliasManager aliasManager;
 
     @Inject
     public OpUsageCtxHelper(
             final StateView workingView,
             final HederaFileNumbers fileNumbers,
-            final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
+            final Supplier<MerkleMapLike<EntityNum, MerkleToken>> tokens,
             final AliasManager aliasManager) {
         this.tokens = tokens;
         this.fileNumbers = fileNumbers;

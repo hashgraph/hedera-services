@@ -27,6 +27,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.context.properties.PropertySources;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.throttling.ExpiryThrottle;
@@ -37,7 +38,6 @@ import com.hedera.node.app.service.mono.throttling.annotations.ScheduleThrottle;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -61,7 +61,7 @@ public class ConfigCallbacks {
     private final FunctionalityThrottling handleThrottling;
     private final FunctionalityThrottling scheduleThrottling;
     private final Supplier<MerkleNetworkContext> networkCtx;
-    private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos;
+    private final Supplier<MerkleMapLike<EntityNum, MerkleStakingInfo>> stakingInfos;
     private final SigImpactHistorian sigImpactHistorian;
     private final FileNumbers fileNumbers;
 
@@ -77,7 +77,7 @@ public class ConfigCallbacks {
             final Supplier<AddressBook> addressBook,
             final @CompositeProps PropertySource properties,
             final Supplier<MerkleNetworkContext> networkCtx,
-            final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos,
+            final Supplier<MerkleMapLike<EntityNum, MerkleStakingInfo>> stakingInfos,
             final SigImpactHistorian sigImpactHistorian,
             final FileNumbers fileNumbers) {
         this.dynamicProps = dynamicProps;
