@@ -16,11 +16,6 @@
 
 package com.hedera.services.bdd.spec.infrastructure;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
 import static java.util.stream.Collectors.toMap;
 
 import com.google.common.base.MoreObjects;
@@ -129,12 +124,11 @@ public class HapiApiClients {
             final boolean useTls,
             final Set<HederaFunctionality> workflowOperations) {
         if (!channels.containsKey(uri)) {
-            if (!workflowOperations.isEmpty()) {
-                addNewNettyChannelForWorkflowOperations(node, uri, useTls, workflowOperations);
-            }
+            // Add a new channel for the workflow operations if non-empty
+            addNewNettyChannelForWorkflowOperations(node, uri, useTls, workflowOperations);
+
             ManagedChannel channel = createNettyChannel(useTls, node.getHost(), node.getPort(), node.getTlsPort());
             channels.put(uri, channel);
-            log.info("URI {}", uri);
 
             scSvcStubs.put(uri, SmartContractServiceGrpc.newBlockingStub(channel));
             consSvcStubs.put(uri, ConsensusServiceGrpc.newBlockingStub(channel));
@@ -158,12 +152,12 @@ public class HapiApiClients {
      */
     private void addNewNettyChannelForWorkflowOperations(
             NodeConnectInfo node, String uri, boolean useTls, Set<HederaFunctionality> workflowOperations) {
-        Set<HederaFunctionality> consensusOps = Set.of(
-                ConsensusCreateTopic,
-                ConsensusDeleteTopic,
-                ConsensusGetTopicInfo,
-                ConsensusSubmitMessage,
-                ConsensusUpdateTopic);
+        // If there are no workflowOperations, no need to construct channel.
+        // In JRS or GitHub Actions, we won't bind the new gRPC ports, so don't try
+        // to construct any Netty channels to them
+        if (workflowOperations.isEmpty()) {
+            return;
+        }
         String workflowUri = "";
         if (uri.equals(node.uri())) {
             workflowUri = node.workflowUri();
@@ -174,12 +168,10 @@ public class HapiApiClients {
         ManagedChannel workflowChannel =
                 createNettyChannel(useTls, node.getHost(), node.getWorkflowPort(), node.getWorkflowTlsPort());
         channels.put(workflowUri, workflowChannel);
-
-        log.info("New URI for workflows {}", workflowUri);
-
-        if (workflowOperations.stream().anyMatch(consensusOps::contains)) {
-            consSvcStubs.put(workflowUri, ConsensusServiceGrpc.newBlockingStub(workflowChannel));
-        }
+        // Currently we are supporting only Consensus operations. If we need to
+        // support other operations, we need to add a condition to add stubs based
+        // on the operations present.
+        consSvcStubs.put(workflowUri, ConsensusServiceGrpc.newBlockingStub(workflowChannel));
     }
 
     private HapiApiClients(
@@ -244,12 +236,14 @@ public class HapiApiClients {
     public ConsensusServiceBlockingStub getConsSvcStub(
             AccountID nodeId, boolean useTls, Set<HederaFunctionality> operations) {
         final String id;
-        if (hasConsensusOperations(operations)) {
+        if (!operations.isEmpty()) {
+            // Currently we support only consensus operations.
+            // If we need to support other operations, then we should check
+            // the workflow operations have consensus operations
             id = workflowStubId(nodeId, useTls);
         } else {
             id = stubId(nodeId, useTls);
         }
-        log.info("Submitting to the stub with id: " + id);
         return consSvcStubs.get(id);
     }
 
@@ -307,13 +301,5 @@ public class HapiApiClients {
     public static void tearDown() {
         closeChannels();
         clearStubs();
-    }
-
-    private boolean hasConsensusOperations(Set<HederaFunctionality> operations) {
-        return operations.contains(ConsensusCreateTopic)
-                || operations.contains(ConsensusDeleteTopic)
-                || operations.contains(ConsensusGetTopicInfo)
-                || operations.contains(ConsensusSubmitMessage)
-                || operations.contains(ConsensusUpdateTopic);
     }
 }

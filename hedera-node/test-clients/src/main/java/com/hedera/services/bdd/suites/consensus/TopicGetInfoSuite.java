@@ -58,7 +58,7 @@ public class TopicGetInfoSuite extends HapiSuite {
                                 .submitKeyName("submitKey")
                                 .autoRenewAccountId("autoRenewAccount"))
                 .when()
-                .then(getTopicInfo("0.0.1")
+                .then(getTopicInfo("testTopic")
                         .hasExpectedLedgerId("0x03")
                         .hasMemo("testmemo")
                         .hasAdminKey("adminKey")

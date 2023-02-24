@@ -24,7 +24,6 @@ import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Supplier;
-import javax.inject.Singleton;
 
 /**
  * Module for Ingest processing.
@@ -32,11 +31,9 @@ import javax.inject.Singleton;
 @Module
 public interface IngestModule {
     @Binds
-    @Singleton
     IngestWorkflow bindIngestWorkflow(IngestWorkflowImpl ingestWorkflow);
 
     @Provides
-    @Singleton
     @SuppressWarnings({"unchecked", "rawtypes"})
     static Supplier<AutoCloseableWrapper<HederaState>> provideStateSupplier(@NonNull final Platform platform) {
         // Always return the latest immutable state until we support state proofs
