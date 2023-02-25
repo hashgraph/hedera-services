@@ -1,0 +1,3 @@
+fcHashMap.maximumGCQueueSize, 250
+fcHashMap.gcQueueThresholdPeriod, 2min
+fcHashMap.archiveEnabled, false
