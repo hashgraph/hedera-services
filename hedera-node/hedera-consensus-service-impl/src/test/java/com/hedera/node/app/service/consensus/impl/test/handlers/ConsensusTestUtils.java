@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.EXISTING_TOPIC;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,7 +37,6 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.time.Instant;
 import java.util.Optional;
@@ -53,9 +53,6 @@ public final class ConsensusTestUtils {
     static final HederaKey A_NONNULL_KEY = new HederaKey() {};
 
     static final AccountID ACCOUNT_ID_4 = IdUtils.asAccount("0.0.4");
-
-    static final TopicID TOPIC_ID_1357 =
-            TopicID.newBuilder().setShardNum(0).setRealmNum(0).setTopicNum(1357).build();
 
     private ConsensusTestUtils() {
         throw new UnsupportedOperationException("Utility class");
@@ -109,7 +106,7 @@ public final class ConsensusTestUtils {
                 null,
                 -1,
                 null,
-                TOPIC_ID_1357.getTopicNum(),
+                EXISTING_TOPIC.getTopicNum(),
                 false);
     }
 }

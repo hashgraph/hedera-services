@@ -19,11 +19,11 @@ package com.hedera.node.app.service.consensus.impl.test.handlers;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.ACCOUNT_ID_4;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.A_NONNULL_KEY;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
-import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.TOPIC_ID_1357;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertOkResponse;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.txnFrom;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.CONSENSUS_SUBMIT_MESSAGE_MISSING_TOPIC_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.CONSENSUS_SUBMIT_MESSAGE_SCENARIO;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.EXISTING_TOPIC;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.notNull;
@@ -217,7 +217,7 @@ class ConsensusSubmitMessageHandlerTest {
     private static TransactionBody newSubmitMessageTxn() {
         final var txnId = TransactionID.newBuilder().setAccountID(ACCOUNT_ID_4).build();
         final var submitMessageBuilder = ConsensusSubmitMessageTransactionBody.newBuilder()
-                .setTopicID(TOPIC_ID_1357)
+                .setTopicID(EXISTING_TOPIC)
                 .setMessage(ByteString.copyFromUtf8("Message for test-" + Instant.now() + "."
                         + Instant.now().getNano()));
         return TransactionBody.newBuilder()

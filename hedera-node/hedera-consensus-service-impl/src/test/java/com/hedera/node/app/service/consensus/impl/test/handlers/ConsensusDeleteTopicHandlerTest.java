@@ -20,13 +20,13 @@ import static com.hedera.node.app.service.consensus.impl.test.handlers.Consensus
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.A_NONNULL_KEY;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_B;
-import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.TOPIC_ID_1357;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertDefaultPayer;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertOkResponse;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.newTopicMeta;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.txnFrom;
 import static com.hedera.test.factories.scenarios.ConsensusDeleteTopicScenarios.CONSENSUS_DELETE_TOPIC_MISSING_TOPIC_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusDeleteTopicScenarios.CONSENSUS_DELETE_TOPIC_SCENARIO;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.EXISTING_TOPIC;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_TOPIC_ADMIN_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
@@ -234,7 +234,7 @@ class ConsensusDeleteTopicHandlerTest {
     private static TransactionBody newDeleteTxn() {
         final var txnId = TransactionID.newBuilder().setAccountID(ACCOUNT_ID_4).build();
         final var deleteTopicBuilder =
-                ConsensusDeleteTopicTransactionBody.newBuilder().setTopicID(TOPIC_ID_1357);
+                ConsensusDeleteTopicTransactionBody.newBuilder().setTopicID(EXISTING_TOPIC);
         return TransactionBody.newBuilder()
                 .setTransactionID(txnId)
                 .setConsensusDeleteTopic(deleteTopicBuilder.build())
