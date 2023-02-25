@@ -16,18 +16,19 @@
 
 package com.hedera.node.app.components;
 
-import com.hedera.node.app.workflows.query.QueryWorkflow;
+import com.hedera.node.app.workflows.ingest.IngestModule;
+import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import dagger.Subcomponent;
 
 /**
- * A Dagger subcomponent that provides the query workflow.
+ * A Dagger subcomponent that provides the Ingest workflow.
  */
-@Subcomponent
-public interface QueryComponent {
-    QueryWorkflow queryWorkflow();
+@Subcomponent(modules = IngestModule.class)
+public interface IngestComponent {
+    IngestWorkflow ingestWorkflow();
 
     @Subcomponent.Factory
     interface Factory {
-        QueryComponent create();
+        IngestComponent create();
     }
 }
