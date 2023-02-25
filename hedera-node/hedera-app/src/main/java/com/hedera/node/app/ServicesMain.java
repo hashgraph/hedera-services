@@ -18,7 +18,7 @@ package com.hedera.node.app;
 
 import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
 import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
-import static com.hedera.node.app.spi.config.PropertyNames.STATES_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.WORKFLOWS_ENABLED;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.hedera.node.app.service.mono.ServicesApp;
@@ -89,8 +89,8 @@ public class ServicesMain implements SwirldMain {
     public SwirldState2 newState() {
         // TODO - replace this flag with a check whether the set of workflow-enabled
         // operations is non-empty (https://github.com/hashgraph/hedera-services/issues/4945)
-        final var workflowsEnabled = new BootstrapProperties(false).getBooleanProperty(STATES_ENABLED);
-        return stateWithWorkflowsEnabled(workflowsEnabled);
+        final var workflowsEnabled = new BootstrapProperties(false).getFunctionsProperty(WORKFLOWS_ENABLED);
+        return stateWithWorkflowsEnabled(!workflowsEnabled.isEmpty());
     }
 
     @Override

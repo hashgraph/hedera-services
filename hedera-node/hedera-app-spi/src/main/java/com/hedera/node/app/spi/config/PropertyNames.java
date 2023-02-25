@@ -245,6 +245,5 @@ public class PropertyNames {
     public static final String STATS_RUNNING_AVG_HALF_LIFE_SECS = "stats.runningAvgHalfLifeSecs";
     public static final String STATS_SPEEDOMETER_HALF_LIFE_SECS = "stats.speedometerHalfLifeSecs";
     public static final String WORKFLOWS_ENABLED = "hedera.workflows.enabled";
-    public static final String STATES_ENABLED = "hedera.states.enabled";
     public static final String VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB = "virtualdatasource.jasperdbToMerkledb";
 }
