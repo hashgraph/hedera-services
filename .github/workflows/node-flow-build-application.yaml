@@ -53,6 +53,11 @@ on:
         type: boolean
         required: false
         default: false
+      enable-network-log-capture:
+        description: "Network Log Capture Enabled"
+        type: boolean
+        required: false
+        default: false
       java-version:
         description: "Java JDK Version:"
         type: string
@@ -92,6 +97,7 @@ jobs:
       enable-e2e-tests: ${{ github.event_name == 'push' || github.event.inputs.enable-e2e-tests == 'true' }}
       enable-spotless-check: ${{ github.event.inputs.enable-spotless-check == 'true' }}
       enable-snyk-scan: ${{ github.event_name == 'push' || github.event.inputs.enable-snyk-scan == 'true' }}
+      enable-network-log-capture: ${{ github.event.inputs.enable-network-log-capture == 'true' }}
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       sonar-token: ${{ secrets.SONAR_TOKEN }}

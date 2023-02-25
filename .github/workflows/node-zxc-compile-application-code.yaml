@@ -53,6 +53,11 @@ on:
         type: boolean
         required: false
         default: false
+      enable-network-log-capture:
+        description: "Network Log Capture Enabled"
+        type: boolean
+        required: false
+        default: false
       java-distribution:
         description: "Java JDK Distribution:"
         type: string
@@ -229,12 +234,12 @@ jobs:
 
       - name: Publish Test Network Logs
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # pin@v3
-        if: ${{ (inputs.enable-e2e-tests || inputs.enable-integration-test) && !cancelled() }}
+        if: ${{ (inputs.enable-e2e-tests || inputs.enable-integration-test) && inputs.enable-network-log-capture && !cancelled() }}
         with:
           name: Test Network Logs
           path: |
-            test-clients/build/network/**/output/**
-            test-clients/output/**
+            hedera-node/test-clients/build/network/**/output/**
+            hedera-node/test-clients/output/**
 
       - name: SonarCloud Options
         id: sonar-cloud
