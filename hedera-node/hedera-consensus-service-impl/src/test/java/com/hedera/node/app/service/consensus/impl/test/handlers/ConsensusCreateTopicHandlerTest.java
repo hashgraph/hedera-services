@@ -23,15 +23,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 
+import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.mono.Utils;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.meta.PreHandleContext;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -52,8 +53,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ConsensusCreateTopicHandlerTest {
     private static final AccountID ACCOUNT_ID_3 = IdUtils.asAccount("0.0.3");
 
+    private final ConsensusServiceConfig consensusConfig = new ConsensusServiceConfig(1234L, 5678);
+
     @Mock
     private AccountKeyLookup keyFinder;
+
+    @Mock
+    private HandleContext handleContext;
+
+    @Mock
+    private TransactionBody transactionBody;
+
+    @Mock
+    private ConsensusCreateTopicRecordBuilder recordBuilder;
 
     private ConsensusCreateTopicHandler subject;
 
@@ -233,7 +245,9 @@ class ConsensusCreateTopicHandlerTest {
     @DisplayName("Handle method not implemented")
     void handleNotImplemented() {
         // expect:
-        assertThrows(UnsupportedOperationException.class, () -> subject.handle(mock(TransactionMetadata.class)));
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> subject.handle(handleContext, transactionBody, consensusConfig, recordBuilder));
     }
 
     // Note: there are more tests in ConsensusCreateTopicHandlerParityTest.java

@@ -38,7 +38,7 @@ import java.util.function.Function;
 import javax.inject.Singleton;
 
 @Module
-public interface QueryModule {
+public interface QueryWorkflowModule {
     @Binds
     @Singleton
     QueryWorkflow bindQueryWorkflow(QueryWorkflowImpl queryWorkflow);

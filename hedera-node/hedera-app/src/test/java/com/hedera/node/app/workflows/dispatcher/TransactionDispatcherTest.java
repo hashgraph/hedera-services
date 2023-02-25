@@ -16,14 +16,20 @@
 
 package com.hedera.node.app.workflows.dispatcher;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
+import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
@@ -41,6 +47,8 @@ import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.network.impl.handlers.NetworkUncheckedSubmitHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
@@ -72,8 +80,10 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.node.app.spi.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.state.HederaState;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -127,6 +137,7 @@ import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -286,6 +297,17 @@ class TransactionDispatcherTest {
     @Mock
     private HederaAccountNumbers accountNumbers;
 
+    @Mock
+    private HandleContext handleContext;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    private TransactionBody transactionBody = TransactionBody.getDefaultInstance();
+
     private TransactionHandlers handlers;
     private TransactionDispatcher dispatcher;
 
@@ -343,15 +365,17 @@ class TransactionDispatcherTest {
                 tokenUnpauseHandler,
                 utilPrngHandler);
 
-        dispatcher = new TransactionDispatcher(handlers, accountNumbers);
+        dispatcher = new TransactionDispatcher(handleContext, txnCtx, handlers, accountNumbers, dynamicProperties);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new TransactionDispatcher(null, accountNumbers))
+        assertThatThrownBy(
+                        () -> new TransactionDispatcher(handleContext, txnCtx, null, accountNumbers, dynamicProperties))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionDispatcher(handlers, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new TransactionDispatcher(handleContext, txnCtx, handlers, null, dynamicProperties))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -416,6 +440,32 @@ class TransactionDispatcherTest {
         // then
         assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, context))
                 .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void dispatchesCreateTopicAsExpected() {
+        given(dynamicProperties.maxNumTopics()).willReturn(123L);
+        given(dynamicProperties.messageMaxBytesAllowed()).willReturn(456);
+        final var expectedConfig = new ConsensusServiceConfig(123L, 456);
+
+        doAnswer(invocation -> {
+                    final var builder =
+                            (ConsensusCreateTopicRecordBuilder) invocation.getArguments()[3];
+                    builder.setFinalStatus(SUCCESS);
+                    return null;
+                })
+                .when(consensusCreateTopicHandler)
+                .handle(eq(handleContext), eq(transactionBody), eq(expectedConfig), any());
+
+        dispatcher.dispatchHandle(ConsensusCreateTopic, transactionBody);
+
+        verify(txnCtx).setStatus(SUCCESS);
+    }
+
+    @Test
+    void cannotDispatchNonConsensusOperations() {
+        Assertions.assertThrows(
+                IllegalArgumentException.class, () -> dispatcher.dispatchHandle(CryptoTransfer, transactionBody));
     }
 
     @ParameterizedTest
