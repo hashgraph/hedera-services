@@ -36,7 +36,6 @@ import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider
 import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
-import com.hedera.node.app.service.mono.fees.HbarCentExchange;
 import com.hedera.node.app.service.mono.fees.annotations.GenericPriceMultiplier;
 import com.hedera.node.app.service.mono.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.node.app.service.mono.fees.congestion.FeeMultiplierSource;
@@ -75,7 +74,6 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
     private static final Logger log = LogManager.getLogger(UsageBasedFeeCalculator.class);
 
     private final AutoRenewCalcs autoRenewCalcs;
-    private final HbarCentExchange exchange;
     private final FeeMultiplierSource feeMultiplierSource;
     private final UsagePricesProvider usagePrices;
     private final PricedUsageCalculator pricedUsageCalculator;
@@ -86,7 +84,6 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
     @Inject
     public UsageBasedFeeCalculator(
             final AutoRenewCalcs autoRenewCalcs,
-            final HbarCentExchange exchange,
             final AutoCreationLogic autoCreationLogic,
             final UsagePricesProvider usagePrices,
             final @GenericPriceMultiplier FeeMultiplierSource feeMultiplierSource,
@@ -94,7 +91,6 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
             final Set<QueryResourceUsageEstimator> queryUsageEstimators,
             final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators,
             final FeeResourcesLoaderImpl feeResourcesLoader) {
-        this.exchange = exchange;
         this.usagePrices = usagePrices;
         this.feeMultiplierSource = feeMultiplierSource;
         this.autoRenewCalcs = autoRenewCalcs;

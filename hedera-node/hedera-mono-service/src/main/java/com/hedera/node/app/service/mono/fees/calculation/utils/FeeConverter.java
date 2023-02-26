@@ -20,31 +20,13 @@ import com.hedera.node.app.service.evm.utils.codec.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
-import java.util.HashMap;
-import java.util.Map;
 
 public class FeeConverter {
 
     private FeeConverter() {
         // Utility class
-    }
-
-    public static Map<SubType, FeeData> convertActivePricesFromDtoToProto(
-            final Timestamp timestamp,
-            final Map<
-                            com.hedera.node.app.service.evm.fee.codec.SubType,
-                            com.hedera.node.app.service.evm.fee.codec.FeeData>
-                    activePrices) {
-        final var activePricesProto = new HashMap<SubType, FeeData>();
-        for (final var entry : activePrices.entrySet()) {
-            final var subTypeProto = SubType.valueOf(entry.getKey().name());
-
-            activePricesProto.put(subTypeProto, convertFeeDataFromDtoToProto(entry.getValue()));
-        }
-        return activePricesProto;
     }
 
     public static FeeData convertFeeDataFromDtoToProto(

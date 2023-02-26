@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.utils.codec;
 
+@SuppressWarnings("java:S115")
 public enum HederaFunctionality {
     NONE,
     CryptoTransfer,

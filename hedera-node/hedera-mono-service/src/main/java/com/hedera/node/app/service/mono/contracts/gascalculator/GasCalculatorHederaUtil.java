@@ -90,7 +90,13 @@ public final class GasCalculatorHederaUtil {
 
     public static HederaFunctionality getFunctionType(MessageFrame frame) {
         MessageFrame rootFrame = frame.getMessageFrameStack().getLast();
-        return rootFrame.getContextVariable("HederaFunctionality");
+        final var hederaFunctionality = rootFrame.getContextVariable("HederaFunctionality");
+        if (hederaFunctionality
+                instanceof com.hedera.node.app.service.evm.utils.codec.HederaFunctionality hederaFunctionalityDto) {
+            return HederaFunctionality.valueOf(hederaFunctionalityDto.name());
+        } else {
+            return (HederaFunctionality) hederaFunctionality;
+        }
     }
 
     @SuppressWarnings("unused")
