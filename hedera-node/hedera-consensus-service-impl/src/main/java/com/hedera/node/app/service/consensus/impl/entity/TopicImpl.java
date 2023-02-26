@@ -24,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.Optional;
 
-/** An implementation of {@link Topic}. FUTURE: Should be moved to token-service-impl module */
+/** An implementation of {@link Topic} */
 public record TopicImpl(
         long topicNumber,
         @Nullable HederaKey adminKey,

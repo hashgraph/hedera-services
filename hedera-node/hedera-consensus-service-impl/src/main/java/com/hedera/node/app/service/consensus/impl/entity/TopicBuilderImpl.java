@@ -26,8 +26,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * An implementation of {@link TopicBuilder} for building Account instances. This class is
- * <strong>not</strong> exported from the module. FUTURE: Should be moved to token-service-impl
+ * An implementation of {@link TopicBuilder} for building Topic instances. This class is
+ * <strong>not</strong> exported from the module.
  * module
  */
 public class TopicBuilderImpl implements TopicBuilder {
