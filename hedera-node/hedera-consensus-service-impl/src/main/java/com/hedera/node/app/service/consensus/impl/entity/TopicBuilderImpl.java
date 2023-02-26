@@ -66,6 +66,9 @@ public class TopicBuilderImpl implements TopicBuilder {
     @NonNull
     @Override
     public TopicBuilder topicNumber(@NonNull long value) {
+        if (value <= 0) {
+            throw new IllegalArgumentException("topicNumber must be >= 0");
+        }
         this.topicNumber = requireNonNull(value);
         return this;
     }
@@ -73,6 +76,9 @@ public class TopicBuilderImpl implements TopicBuilder {
     @NonNull
     @Override
     public TopicBuilder expiry(@NonNull long value) {
+        if (value < 0) {
+            throw new IllegalArgumentException("expiry must be >= 0");
+        }
         this.expiry = requireNonNull(value);
         return this;
     }
@@ -80,14 +86,14 @@ public class TopicBuilderImpl implements TopicBuilder {
     @NonNull
     @Override
     public TopicBuilder adminKey(@Nullable HederaKey key) {
-        this.adminKey = key;
+        this.adminKey = requireNonNull(key);
         return this;
     }
 
     @NonNull
     @Override
     public TopicBuilder submitKey(@Nullable HederaKey key) {
-        this.submitKey = key;
+        this.submitKey = requireNonNull(key);
         return this;
     }
 
@@ -102,6 +108,9 @@ public class TopicBuilderImpl implements TopicBuilder {
     @Override
     public TopicBuilder autoRenewAccountNumber(@NonNull long autoRenewAccountNumber) {
         this.autoRenewAccountNumber = requireNonNull(autoRenewAccountNumber);
+        if (autoRenewAccountNumber < 0) {
+            throw new IllegalArgumentException("autoRenewAccountNumber must be >= 0");
+        }
         return this;
     }
 
@@ -116,12 +125,18 @@ public class TopicBuilderImpl implements TopicBuilder {
     @Override
     public TopicBuilder sequenceNumber(@NonNull long sequenceNumber) {
         this.sequenceNumber = requireNonNull(sequenceNumber);
+        if (sequenceNumber < 0) {
+            throw new IllegalArgumentException("sequenceNumber must be >= 0");
+        }
         return this;
     }
 
     @Override
     @NonNull
     public TopicBuilder autoRenewSecs(long value) {
+        if (value < 0) {
+            throw new IllegalArgumentException("autoRenewSecs must be >= 0");
+        }
         this.autoRenewSecs = requireNonNull(value);
         return this;
     }

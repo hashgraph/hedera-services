@@ -66,15 +66,16 @@ public record TopicImpl(
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        TopicImpl topic = (TopicImpl) o;
-        return autoRenewAccountNumber == topic.autoRenewAccountNumber
+        final TopicImpl topic = (TopicImpl) o;
+        return topicNumber == topic.topicNumber
+                && autoRenewAccountNumber == topic.autoRenewAccountNumber
                 && autoRenewSecs == topic.autoRenewSecs
                 && expiry == topic.expiry
                 && deleted == topic.deleted
@@ -87,12 +88,21 @@ public record TopicImpl(
     @Override
     public int hashCode() {
         return Objects.hash(
-                adminKey, submitKey, memo, autoRenewAccountNumber, autoRenewSecs, expiry, deleted, sequenceNumber);
+                topicNumber,
+                adminKey,
+                submitKey,
+                memo,
+                autoRenewAccountNumber,
+                autoRenewSecs,
+                expiry,
+                deleted,
+                sequenceNumber);
     }
 
     @Override
     public String toString() {
-        return "TopicImpl{" + "adminKey="
+        return "TopicImpl{" + "topicNumber="
+                + topicNumber + ", adminKey="
                 + adminKey + ", submitKey="
                 + submitKey + ", memo='"
                 + memo + '\'' + ", autoRenewAccountNumber="

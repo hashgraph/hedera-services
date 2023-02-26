@@ -23,13 +23,11 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.consensus.entity.Topic;
-import com.hedera.node.app.service.consensus.entity.TopicBuilder;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.entity.TopicBuilderImpl;
 import com.hedera.node.app.service.consensus.impl.entity.TopicImpl;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
@@ -38,16 +36,13 @@ import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.QueryContext;
-import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.HashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -72,14 +67,18 @@ public class ConsensusHandlerTestBase {
     protected final ByteString ledgerId = ByteString.copyFromUtf8("0x03");
     protected final String memo = "test memo";
     protected final long expirationTime = 1_234_567L;
-    protected  final long sequenceNumber = 1L;
-    protected  final long autoRenewSecs = 100L;
+    protected final long sequenceNumber = 1L;
+    protected final long autoRenewSecs = 100L;
+
     @Mock
     protected MerkleTopic topic;
+
     @Mock
     protected ReadableStates readableStates;
+
     @Mock
     protected WritableStates writableStates;
+
     @Mock
     protected QueryContext queryContext;
 
@@ -101,8 +100,7 @@ public class ConsensusHandlerTestBase {
 
     @NonNull
     protected MapWritableKVState<Long, MerkleTopic> writableTopicState() {
-        return MapWritableKVState.<Long, MerkleTopic>builder("TOPICS")
-                .build();
+        return MapWritableKVState.<Long, MerkleTopic>builder("TOPICS").build();
     }
 
     @NonNull
@@ -149,7 +147,6 @@ public class ConsensusHandlerTestBase {
                 autoRenewSecs,
                 expirationTime,
                 true,
-                sequenceNumber
-        );
+                sequenceNumber);
     }
 }

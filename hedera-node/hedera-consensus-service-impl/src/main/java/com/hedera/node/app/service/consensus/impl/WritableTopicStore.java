@@ -33,6 +33,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * working with Topics.
  *
  * <p>This class is not exported from the module. It is an internal implementation detail.
+ * This class is not complete, it will be extended with other methods like remove, update etc.,
  */
 public class WritableTopicStore {
     /** The underlying data storage class that holds the topic data. */
@@ -61,24 +62,12 @@ public class WritableTopicStore {
         topicState.put(topic.topicNumber(), asMerkleTopic(topic));
     }
 
-    /**
-     * Removes a topic from the state.
-     * @param topicNum - the topic number to remove.
-     */
-    public void remove(@NonNull final long topicNum) {
-        requireNonNull(topicState);
-        requireNonNull(topicNum);
-        topicState.remove(topicNum);
-    }
-
     private MerkleTopic asMerkleTopic(@NonNull final Topic topic) {
         final var merkle = new MerkleTopic();
         topic.getAdminKey().ifPresent(key -> merkle.setAdminKey((JKey) key));
         topic.getSubmitKey().ifPresent(key -> merkle.setSubmitKey((JKey) key));
         merkle.setMemo(topic.memo());
-        if (topic.autoRenewAccountNumber() != 0) {
-            merkle.setAutoRenewAccountId(EntityId.fromNum(topic.autoRenewAccountNumber()));
-        }
+        merkle.setAutoRenewAccountId(EntityId.fromNum(topic.autoRenewAccountNumber()));
         merkle.setAutoRenewDurationSeconds(topic.autoRenewSecs());
         merkle.setExpirationTimestamp(RichInstant.fromGrpc(
                 Timestamp.newBuilder().setSeconds(topic.expiry()).build()));

@@ -32,8 +32,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class WritableTopicStoreTest extends ConsensusHandlerTestBase {
     private Topic topic;
+
     @Test
-    void throwsIfNullValuesAsArgs(){
+    void throwsIfNullValuesAsArgs() {
         assertThrows(NullPointerException.class, () -> new WritableTopicStore(null));
         assertThrows(NullPointerException.class, () -> writableStore.put(null));
     }
@@ -57,7 +58,9 @@ class WritableTopicStoreTest extends ConsensusHandlerTestBase {
         assertEquals(topic.getAdminKey().get(), merkleTopic.getAdminKey());
         assertEquals(topic.getSubmitKey().get(), merkleTopic.getSubmitKey());
         assertEquals(topic.autoRenewSecs(), merkleTopic.getAutoRenewDurationSeconds());
-        assertEquals(topic.autoRenewAccountNumber(), merkleTopic.getAutoRenewAccountId().num());
+        assertEquals(
+                topic.autoRenewAccountNumber(),
+                merkleTopic.getAutoRenewAccountId().num());
         assertEquals(topic.expiry(), merkleTopic.getExpirationTimestamp().getSeconds());
         assertEquals(topic.sequenceNumber(), merkleTopic.getSequenceNumber());
         assertEquals(topic.memo(), merkleTopic.getMemo());
