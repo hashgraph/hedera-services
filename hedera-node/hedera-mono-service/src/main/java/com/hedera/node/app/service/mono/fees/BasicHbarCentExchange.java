@@ -27,27 +27,15 @@ public final class BasicHbarCentExchange implements HbarCentExchange {
     private ExchangeRates fcRates = null;
     private ExchangeRateSet grpcRates = null;
 
-    //    private PricesAndFeesProvider pricesAndFeesProvider;
-
     @Inject
     public BasicHbarCentExchange() {
-        //        this.pricesAndFeesProvider = new PricesAndFeesProviderImpl(feeResourcesLoader);
+        // No-op
     }
-
-    //    @Override
-    //    public ExchangeRate activeRate(final Instant now) {
-    //        return convertExchangeRateFromDtoToProto(pricesAndFeesProvider.rateAt(now.getEpochSecond()));
-    //    }
 
     @Override
     public ExchangeRateSet activeRates() {
         return grpcRates;
     }
-
-    //    @Override
-    //    public ExchangeRate rate(final Timestamp now) {
-    //        return convertExchangeRateFromDtoToProto(pricesAndFeesProvider.rateAt(now.getSeconds()));
-    //    }
 
     @Override
     public void updateRates(final ExchangeRateSet rates) {

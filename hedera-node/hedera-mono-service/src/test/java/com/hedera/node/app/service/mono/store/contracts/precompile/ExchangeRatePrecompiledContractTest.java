@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.hapi.fees.calc.OverflowCheckingCalc.tinycentsToTinybars;
-import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromProtoToDto;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.ExchangeRatePrecompiledContract.TO_TINYBARS_SELECTOR;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.ExchangeRatePrecompiledContract.TO_TINYCENTS_SELECTOR;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,11 +25,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
 import com.google.common.primitives.Longs;
-import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
+import com.hedera.node.app.service.evm.fee.codec.ExchangeRate;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.fees.HbarCentExchange;
 import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
 import java.math.BigInteger;
 import java.time.Instant;
 import org.apache.tuweni.bytes.Bytes;
@@ -49,9 +46,6 @@ class ExchangeRatePrecompiledContractTest {
     private MessageFrame frame;
 
     @Mock
-    private HbarCentExchange exchange;
-
-    @Mock
     private GasCalculator gasCalculator;
 
     @Mock
@@ -59,9 +53,6 @@ class ExchangeRatePrecompiledContractTest {
 
     @Mock
     private FeeResourcesLoaderImpl feeResourcesLoader;
-
-    @Mock
-    private PricesAndFeesProviderImpl pricesAndFeesProvider;
 
     private ExchangeRatePrecompiledContract subject;
 
@@ -161,18 +152,22 @@ class ExchangeRatePrecompiledContractTest {
         return Bytes.wrap(Longs.toByteArray(amount));
     }
 
-    private void givenRate(final ExchangeRate rate) {
-        given(pricesAndFeesProvider.activeRate(now)).willReturn(convertExchangeRateFromProtoToDto(rate));
+    private void givenRate(final com.hedera.node.app.service.evm.fee.codec.ExchangeRate rate) {
+        given(feeResourcesLoader.getCurrentRate()).willReturn(rate);
+        given(feeResourcesLoader.getNextRate()).willReturn(rate);
     }
 
     private static final int someHbarEquiv = 120;
     private static final int someCentEquiv = 100;
     private static final int someTinycentAmount = 123_456_000;
-    private static final ExchangeRate someRate = ExchangeRate.newBuilder()
-            .setHbarEquiv(someHbarEquiv)
-            .setCentEquiv(someCentEquiv)
-            .build();
-    private static final long someTinybarAmount = tinycentsToTinybars(someTinycentAmount, someRate);
+    private static final com.hederahashgraph.api.proto.java.ExchangeRate someRateProto =
+            com.hederahashgraph.api.proto.java.ExchangeRate.newBuilder()
+                    .setHbarEquiv(someHbarEquiv)
+                    .setCentEquiv(someCentEquiv)
+                    .build();
+    private static final ExchangeRate someRate =
+            new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(someHbarEquiv, someCentEquiv, 1000);
+    private static final long someTinybarAmount = tinycentsToTinybars(someTinycentAmount, someRateProto);
     private static final Instant now = Instant.ofEpochSecond(1_234_567, 890);
     private static final long GAS_REQUIREMENT = 100L;
 }

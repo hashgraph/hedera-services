@@ -21,10 +21,12 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.HRS_DIVISOR;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getFeeObject;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getTinybarsFromTinyCents;
 import static com.hedera.node.app.service.mono.fees.calculation.BasicFcfsUsagePrices.DEFAULT_RESOURCE_PRICES;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromDtoToProto;
 import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromProtoToDto;
-import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertFeeDataFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertFeeDataFromDtoToProto;
 import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertHederaFunctionalityFromProtoToDto;
 import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertTimestampFromProtoToDto;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.feeData;
 import static com.hedera.test.factories.txns.ContractCallFactory.newSignedContractCall;
 import static com.hedera.test.factories.txns.ContractCreateFactory.newSignedContractCreate;
 import static com.hedera.test.factories.txns.CryptoCreateFactory.newSignedCryptoCreate;
@@ -63,14 +65,15 @@ import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter;
 import com.hedera.node.app.service.mono.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.node.app.service.mono.fees.congestion.FeeMultiplierSource;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil;
 import com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TokenWipeAccessor;
@@ -86,30 +89,38 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Triple;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatcher;
-import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class UsageBasedFeeCalculatorTest {
     private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
+    private final com.hedera.node.app.service.evm.fee.codec.FeeComponents mockFeesDto =
+            new com.hedera.node.app.service.evm.fee.codec.FeeComponents(
+                    0, 1_234_567L, 0, 2_000_000L, 0, 3_000_000L, 4_000_000L, 5_000_000L, 0, 1_000_000L, 0);
+    private final com.hedera.node.app.service.evm.fee.codec.FeeData mockFeeDto =
+            new com.hedera.node.app.service.evm.fee.codec.FeeData(
+                    mockFeesDto, mockFeesDto, mockFeesDto, com.hedera.node.app.service.evm.fee.codec.SubType.DEFAULT);
     private final FeeComponents mockFees = FeeComponents.newBuilder()
             .setMax(1_234_567L)
             .setGas(5_000_000L)
@@ -130,11 +141,18 @@ class UsageBasedFeeCalculatorTest {
             SubType.TOKEN_NON_FUNGIBLE_UNIQUE, mockFeeData);
     private final FeeData defaultCurrentPrices = mockFeeData;
     private final FeeData resourceUsage = mockFeeData;
-    private final ExchangeRate currentRate =
-            ExchangeRate.newBuilder().setCentEquiv(22).setHbarEquiv(1).build();
+    private final ExchangeRate currentRate = ExchangeRate.newBuilder()
+            .setCentEquiv(22)
+            .setHbarEquiv(1)
+            .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(1000L).build())
+            .build();
+    private final com.hedera.node.app.service.evm.fee.codec.ExchangeRate exchangeRate =
+            new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(1, 22, 1000);
     private Query query;
     private StateView view;
     private final Timestamp at = Timestamp.newBuilder().setSeconds(1_234_567L).build();
+    private final com.hedera.node.app.service.evm.utils.codec.Timestamp atDto =
+            new com.hedera.node.app.service.evm.utils.codec.Timestamp(at.getSeconds(), at.getNanos());
     private HbarCentExchange exchange;
     private UsagePricesProvider usagePrices;
     private TxnResourceUsageEstimator correctOpEstimator;
@@ -155,16 +173,17 @@ class UsageBasedFeeCalculatorTest {
     private SignedTxnAccessor accessor;
     private AutoRenewCalcs autoRenewCalcs;
     private PricedUsageCalculator pricedUsageCalculator;
+    private FeeResourcesLoaderImpl feeResourcesLoader;
 
     private final AtomicLong suggestedMultiplier = new AtomicLong(1L);
 
     private UsageBasedFeeCalculator subject;
+    private final Map<
+                    com.hedera.node.app.service.evm.fee.codec.SubType,
+                    com.hedera.node.app.service.evm.fee.codec.FeeData>
+            feeMap = new HashMap<>();
 
-    @Mock
-    private PricesAndFeesProviderImpl pricesAndFeesProvider;
-
-    @Mock
-    private FeeResourcesLoaderImpl feeResourcesLoader;
+    private MockedStatic<FeeConverter> feeConverter;
 
     @BeforeEach
     void setup() throws Throwable {
@@ -179,13 +198,13 @@ class UsageBasedFeeCalculatorTest {
                 .get();
         accessor = SignedTxnAccessor.from(signedTxn.toByteArray(), signedTxn);
         usagePrices = mock(UsagePricesProvider.class);
-        given(usagePrices.activePrices(accessor)).willReturn(currentPrices);
         correctOpEstimator = mock(TxnResourceUsageEstimator.class);
         incorrectOpEstimator = mock(TxnResourceUsageEstimator.class);
         correctQueryEstimator = mock(QueryResourceUsageEstimator.class);
         incorrectQueryEstimator = mock(QueryResourceUsageEstimator.class);
         autoRenewCalcs = mock(AutoRenewCalcs.class);
         pricedUsageCalculator = mock(PricedUsageCalculator.class);
+        feeResourcesLoader = mock(FeeResourcesLoaderImpl.class);
 
         txnUsageEstimators = (Map<HederaFunctionality, List<TxnResourceUsageEstimator>>) mock(Map.class);
 
@@ -199,11 +218,24 @@ class UsageBasedFeeCalculatorTest {
                 Set.of(incorrectQueryEstimator, correctQueryEstimator),
                 txnUsageEstimators,
                 feeResourcesLoader);
+
+        feeMap.put(com.hedera.node.app.service.evm.fee.codec.SubType.DEFAULT, feeData);
+        feeConverter = Mockito.mockStatic(FeeConverter.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        if (!feeConverter.isClosed()) {
+            feeConverter.close();
+        }
     }
 
     @Test
     void delegatesAutoRenewCalcs() {
         // setup:
+        final var exchangeRate = new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(1, 22, 1000);
+        given(feeResourcesLoader.getCurrentRate()).willReturn(exchangeRate);
+
         final var expected = new RenewAssessment(456L, 123L);
 
         given(autoRenewCalcs.assessCryptoRenewal(any(), anyLong(), any(), any(), any()))
@@ -220,6 +252,8 @@ class UsageBasedFeeCalculatorTest {
     @Test
     void estimatesContractCallPayerBalanceChanges() throws Throwable {
         // setup:
+        setupFeeResources();
+
         final long gas = 1_234L;
         final long sent = 5_432L;
         signedTxn = newSignedContractCall()
@@ -230,11 +264,24 @@ class UsageBasedFeeCalculatorTest {
                 .get();
         accessor = SignedTxnAccessor.from(signedTxn.toByteArray());
 
-        given(pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(at)))
-                .willReturn(convertExchangeRateFromProtoToDto(currentRate));
-        given(pricesAndFeesProvider.defaultPricesGiven(
-                        convertHederaFunctionalityFromProtoToDto(ContractCall), convertTimestampFromProtoToDto(at)))
-                .willReturn(convertFeeDataFromProtoToDto(defaultCurrentPrices));
+        feeConverter.when(() -> convertTimestampFromProtoToDto(at)).thenReturn(atDto);
+        feeConverter
+                .when(() -> convertHederaFunctionalityFromProtoToDto(ContractCall))
+                .thenReturn(com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCall);
+
+        feeConverter
+                .when(() -> convertHederaFunctionalityFromProtoToDto(ContractCall))
+                .thenReturn(com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCall);
+        feeConverter.when(() -> convertFeeDataFromDtoToProto(feeData)).thenReturn(defaultCurrentPrices);
+        feeConverter.when(() -> convertExchangeRateFromDtoToProto(exchangeRate)).thenReturn(currentRate);
+        given(feeResourcesLoader.getCurrentRate())
+                .willReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(1, 22, 1000L));
+        given(feeResourcesLoader.getNextRate())
+                .willReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(1, 22, 1000L));
+        given(feeResourcesLoader.pricesGiven(
+                        com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCall, atDto))
+                .willReturn(feeMap);
+
         // and:
         final long expectedGasPrice = getTinybarsFromTinyCents(currentRate, mockFees.getGas() / FEE_DIVISOR_FACTOR);
 
@@ -270,6 +317,8 @@ class UsageBasedFeeCalculatorTest {
     @Test
     void estimatesContractCreatePayerBalanceChanges() throws Throwable {
         // setup:
+        setupFeeResources();
+
         final long gas = 1_234L;
         final long initialBalance = 5_432L;
         signedTxn = newSignedContractCreate()
@@ -280,12 +329,19 @@ class UsageBasedFeeCalculatorTest {
                 .get();
         accessor = SignedTxnAccessor.from(signedTxn.toByteArray());
 
-        given(pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(at)))
-                .willReturn(convertExchangeRateFromProtoToDto(currentRate));
-        given(usagePrices.pricesGiven(ContractCreate, at)).willReturn(currentPrices);
-        given(pricesAndFeesProvider.defaultPricesGiven(
-                        convertHederaFunctionalityFromProtoToDto(ContractCreate), convertTimestampFromProtoToDto(at)))
-                .willReturn(convertFeeDataFromProtoToDto(defaultCurrentPrices));
+        feeConverter.when(() -> convertTimestampFromProtoToDto(at)).thenReturn(atDto);
+        feeConverter
+                .when(() -> convertHederaFunctionalityFromProtoToDto(ContractCreate))
+                .thenReturn(com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCreate);
+        feeConverter.when(() -> convertFeeDataFromDtoToProto(feeData)).thenReturn(defaultCurrentPrices);
+        feeConverter.when(() -> convertExchangeRateFromDtoToProto(exchangeRate)).thenReturn(currentRate);
+        given(feeResourcesLoader.getCurrentRate())
+                .willReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(1, 22, 1000L));
+        given(feeResourcesLoader.getNextRate())
+                .willReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(1, 22, 1000L));
+        given(feeResourcesLoader.pricesGiven(
+                        com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCreate, atDto))
+                .willReturn(feeMap);
         // and:
         final long expectedGasPrice = getTinybarsFromTinyCents(currentRate, mockFees.getGas() / FEE_DIVISOR_FACTOR);
 
@@ -323,12 +379,21 @@ class UsageBasedFeeCalculatorTest {
 
     @Test
     void estimatesFutureGasPriceInTinybars() {
-        given(pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(at)))
-                .willReturn(convertExchangeRateFromProtoToDto(currentRate));
-        given(usagePrices.pricesGiven(CryptoCreate, at)).willReturn(currentPrices);
-        given(pricesAndFeesProvider.defaultPricesGiven(
-                        convertHederaFunctionalityFromProtoToDto(CryptoCreate), convertTimestampFromProtoToDto(at)))
-                .willReturn(convertFeeDataFromProtoToDto(defaultCurrentPrices));
+        setupFeeResources();
+
+        feeConverter.when(() -> convertTimestampFromProtoToDto(at)).thenReturn(atDto);
+        feeConverter
+                .when(() -> convertHederaFunctionalityFromProtoToDto(CryptoCreate))
+                .thenReturn(com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.CryptoCreate);
+        feeConverter.when(() -> convertFeeDataFromDtoToProto(feeData)).thenReturn(defaultCurrentPrices);
+        feeConverter.when(() -> convertExchangeRateFromDtoToProto(exchangeRate)).thenReturn(currentRate);
+        given(feeResourcesLoader.getCurrentRate())
+                .willReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(1, 22, 1000L));
+        given(feeResourcesLoader.getNextRate())
+                .willReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(1, 22, 1000L));
+        given(feeResourcesLoader.pricesGiven(
+                        com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.CryptoCreate, atDto))
+                .willReturn(feeMap);
         // and:
         final long expected = getTinybarsFromTinyCents(currentRate, mockFees.getGas() / FEE_DIVISOR_FACTOR);
 
@@ -373,6 +438,8 @@ class UsageBasedFeeCalculatorTest {
     @Test
     void failsWithIseGivenApplicableButUnusableCalculator() throws InvalidTxBodyException {
         // setup:
+        setupFeeResources();
+
         final SigValueObj expectedSigUsage =
                 new SigValueObj(FeeBuilder.getSignatureCount(signedTxn), 9, FeeBuilder.getSignatureSize(signedTxn));
 
@@ -390,6 +457,7 @@ class UsageBasedFeeCalculatorTest {
 
     @Test
     void failsWithNseeSansApplicableUsageCalculator() {
+        setupFeeResources();
         // expect:
         assertThrows(NoSuchElementException.class, () -> subject.computeFee(accessor, payerKey, view, consensusNow));
 
@@ -401,16 +469,25 @@ class UsageBasedFeeCalculatorTest {
     @Test
     void invokesQueryDelegateAsExpected() {
         // setup:
+        setupFeeResources();
+
         final FeeObject expectedFees = getFeeObject(currentPrices.get(SubType.DEFAULT), resourceUsage, currentRate);
 
         given(correctQueryEstimator.applicableTo(query)).willReturn(true);
-        given(incorrectQueryEstimator.applicableTo(query)).willReturn(false);
         given(correctQueryEstimator.usageGiven(argThat(query::equals), argThat(view::equals), any()))
                 .willReturn(resourceUsage);
-        given(incorrectQueryEstimator.usageGiven(any(), any())).willThrow(RuntimeException.class);
-        given(pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(at)))
-                .willReturn(convertExchangeRateFromProtoToDto(currentRate));
 
+        feeConverter
+                .when(() -> convertTimestampFromProtoToDto(at))
+                .thenReturn(new com.hedera.node.app.service.evm.utils.codec.Timestamp(at.getSeconds(), at.getNanos()));
+        feeConverter
+                .when(() -> convertExchangeRateFromDtoToProto(
+                        new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(1, 22, 1000L)))
+                .thenReturn(currentRate);
+        given(feeResourcesLoader.getCurrentRate())
+                .willReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(1, 22, 1000L));
+        given(feeResourcesLoader.getNextRate())
+                .willReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(1, 22, 1000L));
         // when:
         final FeeObject fees =
                 subject.computePayment(query, currentPrices.get(SubType.DEFAULT), view, at, Collections.emptyMap());
@@ -424,14 +501,21 @@ class UsageBasedFeeCalculatorTest {
     @Test
     void invokesQueryDelegateByTypeAsExpected() {
         // setup:
+        setupFeeResources();
+
         final FeeObject expectedFees = getFeeObject(currentPrices.get(SubType.DEFAULT), resourceUsage, currentRate);
 
         given(correctQueryEstimator.applicableTo(query)).willReturn(true);
-        given(incorrectQueryEstimator.applicableTo(query)).willReturn(false);
         given(correctQueryEstimator.usageGivenType(query, view, ANSWER_ONLY)).willReturn(resourceUsage);
-        given(incorrectQueryEstimator.usageGivenType(any(), any(), any())).willThrow(RuntimeException.class);
-        given(pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(at)))
-                .willReturn(convertExchangeRateFromProtoToDto(currentRate));
+
+        feeConverter
+                .when(() -> convertExchangeRateFromProtoToDto(currentRate))
+                .thenReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(1, 22, 1000L));
+        feeConverter.when(() -> convertExchangeRateFromDtoToProto(any())).thenReturn(currentRate);
+        feeConverter
+                .when(() -> convertTimestampFromProtoToDto(any()))
+                .thenReturn(
+                        new com.hedera.node.app.service.evm.utils.codec.Timestamp(HTSTestsUtil.TEST_CONSENSUS_TIME, 0));
 
         // when:
         final FeeObject fees =
@@ -446,6 +530,8 @@ class UsageBasedFeeCalculatorTest {
     @Test
     void usesMultiplierAsExpected() throws Exception {
         // setup:
+        setupFeeResources();
+
         final long multiplier = 5L;
         final SigValueObj expectedSigUsage =
                 new SigValueObj(FeeBuilder.getSignatureCount(signedTxn), 9, FeeBuilder.getSignatureSize(signedTxn));
@@ -460,8 +546,9 @@ class UsageBasedFeeCalculatorTest {
                         argThat(factory.apply(expectedSigUsage)),
                         argThat(view::equals)))
                 .willReturn(resourceUsage);
-        given(pricesAndFeesProvider.activeRate(consensusNow))
-                .willReturn(convertExchangeRateFromProtoToDto(currentRate));
+
+        given(usagePrices.activePrices(accessor)).willReturn(currentPrices);
+        feeConverter.when(() -> convertExchangeRateFromDtoToProto(exchangeRate)).thenReturn(currentRate);
 
         // when:
         final FeeObject fees = subject.computeFee(accessor, payerKey, view, consensusNow);
@@ -486,8 +573,21 @@ class UsageBasedFeeCalculatorTest {
                         argThat(factory.apply(expectedSigUsage)),
                         argThat(view::equals)))
                 .willReturn(resourceUsage);
-        given(pricesAndFeesProvider.activeRate(consensusNow))
-                .willReturn(convertExchangeRateFromProtoToDto(currentRate));
+
+        given(feeResourcesLoader.getCurrentRate())
+                .willReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(1, 22, 1000L));
+        given(feeResourcesLoader.getNextRate())
+                .willReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(1, 22, 1000L));
+        feeConverter
+                .when(() -> convertExchangeRateFromProtoToDto(currentRate))
+                .thenReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(1, 22, 1000L));
+        feeConverter.when(() -> convertExchangeRateFromDtoToProto(any())).thenReturn(currentRate);
+        feeConverter
+                .when(() -> convertTimestampFromProtoToDto(any()))
+                .thenReturn(
+                        new com.hedera.node.app.service.evm.utils.codec.Timestamp(HTSTestsUtil.TEST_CONSENSUS_TIME, 0));
+
+        given(usagePrices.activePrices(accessor)).willReturn(currentPrices);
 
         // when:
         final FeeObject fees = subject.computeFee(accessor, payerKey, view, consensusNow);
@@ -531,6 +631,7 @@ class UsageBasedFeeCalculatorTest {
                 .burning(tokenId)
                 .txnValidStart(at)
                 .get();
+
         invokesAccessorBasedUsagesForTxnInHandle(
                 signedTxn, TokenBurn, SubType.TOKEN_NON_FUNGIBLE_UNIQUE, TokenType.NON_FUNGIBLE_UNIQUE);
     }
@@ -546,6 +647,7 @@ class UsageBasedFeeCalculatorTest {
         final var dynamicProperties = mock(GlobalDynamicProperties.class);
         given(dynamicProperties.areNftsEnabled()).willReturn(true);
         given(dynamicProperties.maxBatchSizeWipe()).willReturn(10);
+
         accessor = new TokenWipeAccessor(signedTxn.toByteArray(), signedTxn, dynamicProperties);
         invokesAccessorBasedUsagesForTxnInHandle(
                 signedTxn, TokenAccountWipe, SubType.TOKEN_NON_FUNGIBLE_UNIQUE, TokenType.NON_FUNGIBLE_UNIQUE, true);
@@ -567,6 +669,8 @@ class UsageBasedFeeCalculatorTest {
     @Test
     void invokesOpDelegateAsExpectedWithTwoOptions() throws Exception {
         // setup:
+        setupFeeResources();
+
         final SigValueObj expectedSigUsage =
                 new SigValueObj(FeeBuilder.getSignatureCount(signedTxn), 9, FeeBuilder.getSignatureSize(signedTxn));
         final FeeObject expectedFees = getFeeObject(currentPrices.get(SubType.DEFAULT), resourceUsage, currentRate);
@@ -579,10 +683,18 @@ class UsageBasedFeeCalculatorTest {
                         argThat(factory.apply(expectedSigUsage)),
                         argThat(view::equals)))
                 .willReturn(resourceUsage);
-        given(incorrectOpEstimator.usageGiven(any(), any(), any())).willThrow(RuntimeException.class);
-        given(pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(at)))
-                .willReturn(convertExchangeRateFromProtoToDto(currentRate));
-        given(usagePrices.activePrices(accessor)).willThrow(RuntimeException.class);
+
+        feeConverter.when(() -> convertTimestampFromProtoToDto(at)).thenReturn(atDto);
+        feeConverter
+                .when(() -> convertHederaFunctionalityFromProtoToDto(CryptoCreate))
+                .thenReturn(com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.CryptoCreate);
+        feeConverter.when(() -> convertFeeDataFromDtoToProto(feeData)).thenReturn(defaultCurrentPrices);
+        feeConverter.when(() -> convertExchangeRateFromDtoToProto(exchangeRate)).thenReturn(currentRate);
+        given(feeResourcesLoader.getCurrentRate())
+                .willReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(1, 22, 1000L));
+        given(feeResourcesLoader.getNextRate())
+                .willReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(1, 22, 1000L));
+
         given(usagePrices.pricesGiven(CryptoCreate, at)).willReturn(currentPrices);
 
         // when:
@@ -597,6 +709,8 @@ class UsageBasedFeeCalculatorTest {
     @Test
     void invokesOpDelegateAsExpectedForEstimateOfUnrecognizable() throws Exception {
         // setup:
+        setupFeeResources();
+
         final SigValueObj expectedSigUsage =
                 new SigValueObj(FeeBuilder.getSignatureCount(signedTxn), 9, FeeBuilder.getSignatureSize(signedTxn));
 
@@ -610,10 +724,16 @@ class UsageBasedFeeCalculatorTest {
                         argThat(factory.apply(expectedSigUsage)),
                         argThat(view::equals)))
                 .willReturn(resourceUsage);
-        given(pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(at)))
-                .willReturn(convertExchangeRateFromProtoToDto(currentRate));
         given(usagePrices.pricesGiven(CryptoCreate, at)).willThrow(RuntimeException.class);
 
+        feeConverter
+                .when(() -> convertExchangeRateFromProtoToDto(currentRate))
+                .thenReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(1, 22, 1000L));
+        feeConverter.when(() -> convertExchangeRateFromDtoToProto(any())).thenReturn(currentRate);
+        feeConverter
+                .when(() -> convertTimestampFromProtoToDto(any()))
+                .thenReturn(
+                        new com.hedera.node.app.service.evm.utils.codec.Timestamp(HTSTestsUtil.TEST_CONSENSUS_TIME, 0));
         // when:
         final FeeObject fees = subject.estimateFee(accessor, payerKey, view, at);
 
@@ -680,6 +800,8 @@ class UsageBasedFeeCalculatorTest {
             final SubType subType,
             final TokenType tokenType,
             final boolean isCustomAccessor) {
+        setupFeeResources();
+
         if (!isCustomAccessor) {
             accessor = SignedTxnAccessor.uncheckedFrom(signedTxn);
         }
@@ -687,12 +809,10 @@ class UsageBasedFeeCalculatorTest {
         final var expectedFees = getFeeObject(currentPrices.get(subType), resourceUsage, currentRate);
 
         given(pricedUsageCalculator.supports(function)).willReturn(true);
-        given(pricesAndFeesProvider.activeRate(consensusNow))
-                .willReturn(convertExchangeRateFromProtoToDto(currentRate));
+        feeConverter.when(() -> convertExchangeRateFromDtoToProto(exchangeRate)).thenReturn(currentRate);
         given(usagePrices.activePrices(accessor)).willReturn(currentPrices);
         given(pricedUsageCalculator.inHandleFees(accessor, currentPrices.get(subType), currentRate, payerKey))
                 .willReturn(expectedFees);
-        given(view.tokenType(tokenId)).willReturn(Optional.of(tokenType));
 
         // when:
         final FeeObject fees = subject.computeFee(accessor, payerKey, view, consensusNow);
@@ -702,5 +822,10 @@ class UsageBasedFeeCalculatorTest {
         assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
         assertEquals(fees.getNetworkFee(), expectedFees.getNetworkFee());
         assertEquals(fees.getServiceFee(), expectedFees.getServiceFee());
+    }
+
+    private void setupFeeResources() {
+        given(feeResourcesLoader.getCurrentRate()).willReturn(exchangeRate);
+        given(feeResourcesLoader.getNextRate()).willReturn(exchangeRate);
     }
 }

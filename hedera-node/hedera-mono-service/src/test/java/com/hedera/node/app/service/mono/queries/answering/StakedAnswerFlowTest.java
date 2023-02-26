@@ -16,8 +16,12 @@
 
 package com.hedera.node.app.service.mono.queries.answering;
 
-import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertFeeDataFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromDtoToProto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertFeeDataFromDtoToProto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertHederaFunctionalityFromProtoToDto;
 import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertTimestampFromProtoToDto;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.exchangeRate;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.feeData;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -32,18 +36,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
-import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
+import com.hedera.node.app.service.evm.fee.codec.SubType;
 import com.hedera.node.app.service.evm.utils.codec.HederaFunctionality;
 import com.hedera.node.app.service.mono.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
+import com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter;
 import com.hedera.node.app.service.mono.queries.AnswerService;
 import com.hedera.node.app.service.mono.queries.validation.QueryFeeCheck;
 import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
@@ -55,6 +61,7 @@ import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.test.mocks.MockAccountNumbers;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -65,12 +72,17 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -122,10 +134,10 @@ class StakedAnswerFlowTest {
     @Mock
     private FeeResourcesLoaderImpl feeResourcesLoader;
 
-    @Mock
-    private PricesAndFeesProviderImpl pricesAndFeesProvider;
+    private MockedStatic<FeeConverter> feeConverter;
 
     private StakedAnswerFlow subject;
+    private final Map<SubType, com.hedera.node.app.service.evm.fee.codec.FeeData> feeMap = new HashMap<>();
 
     @BeforeEach
     void setUp() {
@@ -140,6 +152,16 @@ class StakedAnswerFlowTest {
                 transactionPrecheck,
                 hapiOpPermissions,
                 queryFeeCheck);
+
+        feeMap.put(SubType.DEFAULT, feeData);
+        feeConverter = Mockito.mockStatic(FeeConverter.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        if (!feeConverter.isClosed()) {
+            feeConverter.close();
+        }
     }
 
     @Test
@@ -192,10 +214,22 @@ class StakedAnswerFlowTest {
         given(hapiOpPermissions.permissibilityOf(NetworkGetExecutionTime, superuser))
                 .willReturn(OK);
         givenHappyService();
-        given(pricesAndFeesProvider.defaultPricesGiven(
-                        HederaFunctionality.valueOf(NetworkGetExecutionTime.name()),
-                        convertTimestampFromProtoToDto(now)))
-                .willReturn(convertFeeDataFromProtoToDto(usagePrices));
+
+        var exchangeRateProto = mock(ExchangeRate.class);
+
+        given(feeResourcesLoader.pricesGiven(any(), any())).willReturn(feeMap);
+
+        feeConverter
+                .when(() -> convertHederaFunctionalityFromProtoToDto(
+                        com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo))
+                .thenReturn(HederaFunctionality.ConsensusGetTopicInfo);
+        feeConverter
+                .when(() -> convertTimestampFromProtoToDto(now))
+                .thenReturn(
+                        new com.hedera.node.app.service.evm.utils.codec.Timestamp(now.getSeconds(), now.getNanos()));
+        feeConverter.when(() -> convertFeeDataFromDtoToProto(feeData)).thenReturn(usagePrices);
+        feeConverter.when(() -> convertExchangeRateFromDtoToProto(exchangeRate)).thenReturn(exchangeRateProto);
+
         givenComputableCost();
 
         final var actual = subject.satisfyUsing(service, query);
@@ -435,9 +469,20 @@ class StakedAnswerFlowTest {
     }
 
     private void givenAvailableResourcePrices() {
-        given(pricesAndFeesProvider.defaultPricesGiven(
-                        HederaFunctionality.valueOf(ConsensusGetTopicInfo.name()), convertTimestampFromProtoToDto(now)))
-                .willReturn(convertFeeDataFromProtoToDto(usagePrices));
+        var exchangeRateProto = mock(ExchangeRate.class);
+
+        given(feeResourcesLoader.pricesGiven(any(), any())).willReturn(feeMap);
+
+        feeConverter
+                .when(() -> convertHederaFunctionalityFromProtoToDto(
+                        com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo))
+                .thenReturn(HederaFunctionality.ConsensusGetTopicInfo);
+        feeConverter
+                .when(() -> convertTimestampFromProtoToDto(now))
+                .thenReturn(
+                        new com.hedera.node.app.service.evm.utils.codec.Timestamp(now.getSeconds(), now.getNanos()));
+        feeConverter.when(() -> convertFeeDataFromDtoToProto(feeData)).thenReturn(usagePrices);
+        feeConverter.when(() -> convertExchangeRateFromDtoToProto(exchangeRate)).thenReturn(exchangeRateProto);
     }
 
     private void givenHappyService() {

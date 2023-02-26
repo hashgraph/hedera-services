@@ -56,7 +56,6 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
-import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
@@ -65,9 +64,7 @@ import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
-import com.hedera.node.app.service.mono.fees.HbarCentExchange;
 import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
-import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
@@ -207,16 +204,10 @@ class WipeFungiblePrecompileTest {
     private ContractAliases aliases;
 
     @Mock
-    private UsagePricesProvider resourceCosts;
-
-    @Mock
     private InfrastructureFactory infrastructureFactory;
 
     @Mock
     private AssetsLoader assetLoader;
-
-    @Mock
-    private HbarCentExchange exchange;
 
     @Mock
     private ExchangeRate exchangeRate;
@@ -226,9 +217,6 @@ class WipeFungiblePrecompileTest {
 
     @Mock
     private FeeResourcesLoaderImpl feeResourcesLoader;
-
-    @Mock
-    private PricesAndFeesProviderImpl pricesAndFeesProvider;
 
     private static final long TEST_SERVICE_FEE = 5_000_000;
     private static final long TEST_NETWORK_FEE = 400_000;

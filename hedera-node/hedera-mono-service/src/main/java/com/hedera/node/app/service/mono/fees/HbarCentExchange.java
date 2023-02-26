@@ -24,10 +24,6 @@ import com.hederahashgraph.api.proto.java.ExchangeRateSet;
  * being processed.
  */
 public interface HbarCentExchange {
-    //    ExchangeRate activeRate(Instant now);
-    //
-    //    ExchangeRate rate(Timestamp at);
-
     ExchangeRates fcActiveRates();
 
     ExchangeRateSet activeRates();

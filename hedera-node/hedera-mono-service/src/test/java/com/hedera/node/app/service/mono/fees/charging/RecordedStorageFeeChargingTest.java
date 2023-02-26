@@ -16,13 +16,14 @@
 
 package com.hedera.node.app.service.mono.fees.charging;
 
-import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromDtoToProto;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.exchangeRate;
 import static com.hedera.test.utils.TxnUtils.assertExhaustsResourceLimit;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,12 +36,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.fees.HbarCentExchange;
 import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
+import com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.ledger.backing.HashMapBackingAccounts;
@@ -68,11 +68,14 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -91,9 +94,6 @@ class RecordedStorageFeeChargingTest {
     private EntityCreator creator;
 
     @Mock
-    private HbarCentExchange exchange;
-
-    @Mock
     private RecordsHistorian recordsHistorian;
 
     @Mock
@@ -106,9 +106,6 @@ class RecordedStorageFeeChargingTest {
     private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
 
     @Mock
-    private PricesAndFeesProviderImpl pricesAndFeesProvider;
-
-    @Mock
     private FeeResourcesLoaderImpl feeResourcesLoader;
 
     private FeeDistribution feeDistribution;
@@ -116,6 +113,7 @@ class RecordedStorageFeeChargingTest {
 
     private RecordedStorageFeeCharging subject;
     private final HederaAccountNumbers numbers = new MockAccountNumbers();
+    private MockedStatic<FeeConverter> feeConverter;
 
     @BeforeEach
     void setUp() {
@@ -130,6 +128,15 @@ class RecordedStorageFeeChargingTest {
                 syntheticTxnFactory,
                 dynamicProperties,
                 nonHapiFeeCharging);
+
+        feeConverter = Mockito.mockStatic(FeeConverter.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        if (!feeConverter.isClosed()) {
+            feeConverter.close();
+        }
     }
 
     @Test
@@ -302,6 +309,7 @@ class RecordedStorageFeeChargingTest {
                 AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
         // and:
         final var mockRecord = ExpirableTxnRecord.newBuilder();
+
         // and:
         given(dynamicProperties.shouldItemizeStorageFees()).willReturn(true);
         given(creator.createSuccessfulSyntheticRecord(
@@ -309,6 +317,10 @@ class RecordedStorageFeeChargingTest {
                 .willReturn(mockRecord);
 
         liveLedger.begin();
+
+        feeConverter.when(() -> convertExchangeRateFromDtoToProto(exchangeRate)).thenReturn(someRate);
+        given(feeResourcesLoader.getCurrentRate()).willReturn(exchangeRate);
+        given(feeResourcesLoader.getNextRate()).willReturn(exchangeRate);
         subject.chargeStorageRent(NUM_SLOTS_USED, usageInfos, liveLedger);
         liveLedger.commit();
 
@@ -487,7 +499,6 @@ class RecordedStorageFeeChargingTest {
     @Test
     void doesntCreateRecordIfNoFeesCharged() {
         given(txnCtx.consensusTime()).willReturn(now);
-        given(pricesAndFeesProvider.activeRate(now)).willReturn(convertExchangeRateFromProtoToDto(someRate));
         given(dynamicProperties.storagePriceTiers()).willReturn(STORAGE_PRICE_TIERS);
         final Map<Long, KvUsageInfo> usageInfos =
                 Map.of(aContract.getAccountNum(), freeUsageFor(+1), bContract.getAccountNum(), freeUsageFor(12));
@@ -510,6 +521,10 @@ class RecordedStorageFeeChargingTest {
         given(dynamicProperties.shouldItemizeStorageFees()).willReturn(true);
 
         liveLedger.begin();
+        feeConverter.when(() -> convertExchangeRateFromDtoToProto(exchangeRate)).thenReturn(someRate);
+        given(feeResourcesLoader.getCurrentRate()).willReturn(exchangeRate);
+        given(feeResourcesLoader.getNextRate()).willReturn(exchangeRate);
+
         subject.chargeStorageRent(NUM_SLOTS_USED, usageInfos, liveLedger);
         liveLedger.commit();
 
@@ -523,7 +538,9 @@ class RecordedStorageFeeChargingTest {
 
     private void givenStandardInternalSetup() {
         given(txnCtx.consensusTime()).willReturn(now);
-        given(pricesAndFeesProvider.activeRate(now)).willReturn(convertExchangeRateFromProtoToDto(someRate));
+        feeConverter.when(() -> convertExchangeRateFromDtoToProto(exchangeRate)).thenReturn(someRate);
+        given(feeResourcesLoader.getCurrentRate()).willReturn(exchangeRate);
+        given(feeResourcesLoader.getNextRate()).willReturn(exchangeRate);
         given(dynamicProperties.fundingAccount()).willReturn(funding);
     }
 

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.feeData;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.PrngSystemPrecompiledContract.PSEUDORANDOM_SEED_GENERATOR_SELECTOR;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
@@ -40,9 +41,12 @@ import static org.mockito.Mockito.verify;
 
 import com.google.common.primitives.Longs;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
-import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.evm.fee.codec.FeeComponents;
+import com.hedera.node.app.service.evm.fee.codec.FeeData;
+import com.hedera.node.app.service.evm.fee.codec.SubType;
 import com.hedera.node.app.service.evm.utils.codec.HederaFunctionality;
+import com.hedera.node.app.service.evm.utils.codec.Timestamp;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
@@ -62,6 +66,8 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.CommonUtils;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import org.apache.tuweni.bytes.Bytes;
@@ -108,9 +114,6 @@ class PrngSystemPrecompiledContractTest {
     private final Instant consensusNow = Instant.ofEpochSecond(123456789L);
 
     @Mock
-    private PricesAndFeesProviderImpl pricesAndFeesProvider;
-
-    @Mock
     private FeeResourcesLoaderImpl feeResourcesLoader;
 
     @Mock
@@ -120,12 +123,14 @@ class PrngSystemPrecompiledContractTest {
     private final Random r = new Random();
 
     private final ExpirableTxnRecord.Builder childRecord = ExpirableTxnRecord.newBuilder();
+    private final Map<SubType, FeeData> feeMap = new HashMap<>();
 
     @BeforeEach
     void setUp() {
         final var logic = new PrngLogic(dynamicProperties, () -> runningHashLeaf, sideEffectsTracker);
         subject = new PrngSystemPrecompiledContract(
                 gasCalculator, logic, creator, recordsHistorian, pricingUtils, dynamicProperties, feeResourcesLoader);
+        feeMap.put(SubType.DEFAULT, feeData);
     }
 
     @Test
@@ -145,9 +150,17 @@ class PrngSystemPrecompiledContractTest {
 
     @Test
     void calculatesGasCorrectly() {
+        final var feeComponent = new FeeComponents(10, 100, 0, 0, 0, 400000, 0, 800000, 0, 0, 0);
+        final var fee = new FeeData(feeComponent, feeComponent, feeComponent, SubType.DEFAULT);
+        final var feeMap = new HashMap<SubType, FeeData>();
+        feeMap.put(SubType.DEFAULT, fee);
+
         given(pricingUtils.getCanonicalPriceInTinyCents(PRNG)).willReturn(100000000L);
-        given(pricesAndFeesProvider.currentGasPriceInTinycents(consensusNow, HederaFunctionality.ContractCall))
-                .willReturn(800L);
+        given(feeResourcesLoader.pricesGiven(
+                        HederaFunctionality.ContractCall,
+                        new Timestamp(consensusNow.getEpochSecond(), consensusNow.getNano())))
+                .willReturn(feeMap);
+
         assertEquals(100000000L / 800L, subject.calculateGas(consensusNow));
     }
 
@@ -187,6 +200,15 @@ class PrngSystemPrecompiledContractTest {
         assertEquals(Optional.empty(), response.getLeft().getHaltReason());
         assertEquals(COMPLETED_SUCCESS, response.getLeft().getState());
         assertNull(response.getRight());
+
+        final var feeComponent = new FeeComponents(10, 100, 0, 0, 0, 400000, 0, 800000, 0, 0, 0);
+        final var fee = new FeeData(feeComponent, feeComponent, feeComponent, SubType.DEFAULT);
+        final var feeMap = new HashMap<SubType, FeeData>();
+        feeMap.put(SubType.DEFAULT, fee);
+        given(feeResourcesLoader.pricesGiven(
+                        HederaFunctionality.ContractCall,
+                        new Timestamp(consensusNow.getEpochSecond(), consensusNow.getNano())))
+                .willReturn(feeMap);
 
         final var result = subject.computePrecompile(input, frame);
         assertNotNull(result.getOutput());
@@ -314,10 +336,7 @@ class PrngSystemPrecompiledContractTest {
         final var input = random256BitGeneratorInput();
         initialSetUp();
         given(updater.parentUpdater()).willReturn(Optional.empty());
-        given(creator.createSuccessfulSyntheticRecord(anyList(), any(), anyString()))
-                .willReturn(childRecord);
         given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
-        given(runningHashLeaf.nMinusThreeRunningHash()).willReturn(new Hash(TxnUtils.randomUtf8Bytes(48)));
 
         final var msg = assertThrows(InvalidTransactionException.class, () -> subject.computePrecompile(input, frame));
 
@@ -345,9 +364,11 @@ class PrngSystemPrecompiledContractTest {
         given(frame.getWorldUpdater()).willReturn(updater);
         given(updater.permissivelyUnaliased(frame.getSenderAddress().toArray())).willReturn(ALTBN128_ADD.toArray());
         given(pricingUtils.getCanonicalPriceInTinyCents(PRNG)).willReturn(100000000L);
-        given(pricesAndFeesProvider.currentGasPriceInTinycents(consensusNow, HederaFunctionality.ContractCall))
-                .willReturn(830L);
-        given(frame.getRemainingGas()).willReturn(400_000L);
+        given(feeResourcesLoader.pricesGiven(
+                        HederaFunctionality.ContractCall,
+                        new Timestamp(consensusNow.getEpochSecond(), consensusNow.getNano())))
+                .willReturn(feeMap);
+        given(frame.getRemainingGas()).willReturn(600_000L);
         given(updater.parentUpdater()).willReturn(Optional.of(updater));
     }
 

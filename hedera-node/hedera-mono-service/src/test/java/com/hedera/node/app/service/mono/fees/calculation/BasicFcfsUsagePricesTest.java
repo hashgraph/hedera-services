@@ -141,13 +141,8 @@ class BasicFcfsUsagePricesTest {
                 .build();
 
         hfs = mock(HederaFs.class);
-        given(hfs.exists(schedules)).willReturn(true);
-        given(hfs.cat(schedules)).willReturn(feeSchedules.toByteArray());
 
         accessor = mock(PlatformTxnAccessor.class);
-        given(accessor.getTxn()).willReturn(contractCallTxn);
-        given(accessor.getTxnId()).willReturn(contractCallTxn.getTransactionID());
-        given(accessor.getFunction()).willReturn(ContractCall);
 
         subject = new BasicFcfsUsagePrices(hfs, new MockFileNumbers());
     }
@@ -155,6 +150,8 @@ class BasicFcfsUsagePricesTest {
     @Test
     void returnsExpectedPriceSequence() {
         // 00+00
+        given(hfs.exists(schedules)).willReturn(true);
+        given(hfs.cat(schedules)).willReturn(feeSchedules.toByteArray());
         subject.loadPriceSchedules();
 
         // when:
@@ -169,8 +166,12 @@ class BasicFcfsUsagePricesTest {
     @Test
     void getsActivePrices() {
         // given:
+        given(hfs.exists(schedules)).willReturn(true);
+        given(hfs.cat(schedules)).willReturn(feeSchedules.toByteArray());
         subject.loadPriceSchedules();
 
+        given(accessor.getTxnId()).willReturn(contractCallTxn.getTransactionID());
+        given(accessor.getFunction()).willReturn(ContractCall);
         // when:
         final Map<SubType, FeeData> actual = subject.activePrices(accessor);
 
@@ -181,9 +182,10 @@ class BasicFcfsUsagePricesTest {
     @Test
     void getsDefaultPricesIfActiveTxnInvalid() {
         // given:
+        given(hfs.exists(schedules)).willReturn(true);
+        given(hfs.cat(schedules)).willReturn(feeSchedules.toByteArray());
         subject.loadPriceSchedules();
         // and:
-        given(accessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
         given(accessor.getFunction()).willReturn(UNRECOGNIZED);
 
         // when:
@@ -218,6 +220,8 @@ class BasicFcfsUsagePricesTest {
         log.setLevel(Level.DEBUG);
 
         // given:
+        given(hfs.exists(schedules)).willReturn(true);
+        given(hfs.cat(schedules)).willReturn(feeSchedules.toByteArray());
         subject.loadPriceSchedules();
         final Timestamp at =
                 Timestamp.newBuilder().setSeconds(currentExpiry - 1).build();
@@ -242,6 +246,8 @@ class BasicFcfsUsagePricesTest {
     @Test
     void getsTransferUsagePricesPastCurrentBeforeNextExpiry() throws Exception {
         // given:
+        given(hfs.exists(schedules)).willReturn(true);
+        given(hfs.cat(schedules)).willReturn(feeSchedules.toByteArray());
         subject.loadPriceSchedules();
         final Timestamp at = Timestamp.newBuilder().setSeconds(nextExpiry - 1).build();
 

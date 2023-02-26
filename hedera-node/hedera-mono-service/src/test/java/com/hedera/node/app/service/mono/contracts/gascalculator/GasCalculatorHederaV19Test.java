@@ -38,27 +38,24 @@ package com.hedera.node.app.service.mono.contracts.gascalculator;
  *
  */
 
-import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromProtoToDto;
-import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertFeeDataFromProtoToDto;
-import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertHederaFunctionalityFromProtoToDto;
-import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertTimestampFromProtoToDto;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.exchangeRate;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.feeData;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
-import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
+import com.hedera.node.app.service.evm.fee.codec.SubType;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.fees.HbarCentExchange;
 import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
-import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import java.time.Instant;
 import java.util.ArrayDeque;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -76,23 +73,17 @@ class GasCalculatorHederaV19Test {
     private GlobalDynamicProperties globalDynamicProperties;
 
     @Mock
-    private UsagePricesProvider usagePricesProvider;
-
-    @Mock
-    private HbarCentExchange hbarCentExchange;
-
-    @Mock
     private MessageFrame messageFrame;
-
-    @Mock
-    private PricesAndFeesProviderImpl pricesAndFeesProvider;
 
     @Mock
     private FeeResourcesLoaderImpl feeResourcesLoader;
 
+    private final Map<SubType, com.hedera.node.app.service.evm.fee.codec.FeeData> feeMap = new HashMap<>();
+
     @BeforeEach
     void setUp() {
         subject = new GasCalculatorHederaV19(globalDynamicProperties, feeResourcesLoader);
+        feeMap.put(SubType.DEFAULT, feeData);
     }
 
     @Test
@@ -109,7 +100,6 @@ class GasCalculatorHederaV19Test {
     void logOperationGasCost() {
         final var consensusTime = 123L;
         final var functionality = HederaFunctionality.ContractCreate;
-        final var timestamp = Timestamp.newBuilder().setSeconds(consensusTime).build();
         final var returningDeque = new ArrayDeque<MessageFrame>() {};
         returningDeque.add(messageFrame);
 
@@ -124,25 +114,13 @@ class GasCalculatorHederaV19Test {
         given(messageFrame.getContextVariable("HederaFunctionality")).willReturn(functionality);
         given(messageFrame.getMessageFrameStack()).willReturn(returningDeque);
 
-        given(pricesAndFeesProvider.defaultPricesGiven(
-                        convertHederaFunctionalityFromProtoToDto(functionality),
-                        convertTimestampFromProtoToDto(timestamp)))
-                .willReturn(convertFeeDataFromProtoToDto(feeData));
-        given(pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(timestamp)))
-                .willReturn(convertExchangeRateFromProtoToDto(ExchangeRate.newBuilder()
-                        .setHbarEquiv(2000)
-                        .setCentEquiv(200)
-                        .build()));
+        given(feeResourcesLoader.pricesGiven(any(), any())).willReturn(feeMap);
+        given(feeResourcesLoader.getCurrentRate()).willReturn(exchangeRate);
 
         assertEquals(1516L, subject.logOperationGasCost(messageFrame, 1L, 2L, 3));
         verify(messageFrame).getGasPrice();
         verify(messageFrame).getBlockValues();
         verify(messageFrame).getContextVariable("HederaFunctionality");
         verify(messageFrame).getMessageFrameStack();
-        verify(pricesAndFeesProvider)
-                .defaultPricesGiven(
-                        convertHederaFunctionalityFromProtoToDto(functionality),
-                        convertTimestampFromProtoToDto(timestamp));
-        verify(pricesAndFeesProvider).rate(convertTimestampFromProtoToDto(timestamp));
     }
 }

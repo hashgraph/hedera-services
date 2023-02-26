@@ -38,10 +38,12 @@ package com.hedera.node.app.service.mono.contracts.gascalculator;
  *
  */
 
-import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromProtoToDto;
-import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertFeeDataFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromDtoToProto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertFeeDataFromDtoToProto;
 import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertHederaFunctionalityFromProtoToDto;
 import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertTimestampFromProtoToDto;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.exchangeRate;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.feeData;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -49,9 +51,8 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
-import com.hedera.node.app.service.mono.fees.HbarCentExchange;
-import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
-import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
+import com.hedera.node.app.service.evm.fee.codec.SubType;
+import com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -59,46 +60,74 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.time.Instant;
 import java.util.ArrayDeque;
+import java.util.HashMap;
+import java.util.Map;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class GasCalculatorHederaUtilTest {
-    @Mock
-    private HbarCentExchange hbarCentExchange;
-
-    @Mock
-    private UsagePricesProvider usagePricesProvider;
-
-    @Mock
-    private FeeResourcesLoaderImpl feeResourcesLoader;
 
     @Mock
     private PricesAndFeesProviderImpl pricesAndFeesProvider;
 
+    private final Map<SubType, com.hedera.node.app.service.evm.fee.codec.FeeData> feeMap = new HashMap<>();
+
+    private final int hbarEquiv = 1000;
+    private final int centEquiv = 100;
+    private MockedStatic<FeeConverter> feeConverter;
+
+    @BeforeEach
+    void setUp() {
+        feeMap.put(SubType.DEFAULT, feeData);
+        feeConverter = Mockito.mockStatic(FeeConverter.class);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        if (!feeConverter.isClosed()) {
+            feeConverter.close();
+        }
+    }
+
     @Test
     void assertRamByteHoursTinyBarsGiven() {
-        var hbarEquiv = 1000;
-        var centEquiv = 100;
         var expectedRamResult = hbarEquiv / centEquiv;
         var consensusTime = Instant.now().getEpochSecond();
         final var timestamp = Timestamp.newBuilder().setSeconds(consensusTime).build();
-        var feeData = mock(FeeData.class);
-        var exchangeRate = mock(ExchangeRate.class);
-        given(feeData.getServicedata()).willReturn(mock(FeeComponents.class));
-        given(feeData.getServicedata().getRbh()).willReturn(1000L);
+        var feeDataProto = mock(FeeData.class);
+        var exchangeRateProto = mock(ExchangeRate.class);
+        given(feeDataProto.getServicedata()).willReturn(mock(FeeComponents.class));
+        given(feeDataProto.getServicedata().getRbh()).willReturn(1000L);
+
+        feeConverter
+                .when(() -> convertHederaFunctionalityFromProtoToDto(HederaFunctionality.ContractCall))
+                .thenReturn(com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCall);
+        feeConverter
+                .when(() -> convertTimestampFromProtoToDto(timestamp))
+                .thenReturn(new com.hedera.node.app.service.evm.utils.codec.Timestamp(
+                        timestamp.getSeconds(), timestamp.getNanos()));
+        feeConverter.when(() -> convertFeeDataFromDtoToProto(feeData)).thenReturn(feeDataProto);
+        feeConverter.when(() -> convertExchangeRateFromDtoToProto(exchangeRate)).thenReturn(exchangeRateProto);
+
         given(pricesAndFeesProvider.defaultPricesGiven(
-                        convertHederaFunctionalityFromProtoToDto(HederaFunctionality.ContractCall),
-                        convertTimestampFromProtoToDto(timestamp)))
-                .willReturn(convertFeeDataFromProtoToDto(feeData));
-        given(pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(timestamp)))
-                .willReturn(convertExchangeRateFromProtoToDto(exchangeRate));
-        given(exchangeRate.getHbarEquiv()).willReturn(hbarEquiv);
-        given(exchangeRate.getCentEquiv()).willReturn(centEquiv);
+                        com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCall,
+                        new com.hedera.node.app.service.evm.utils.codec.Timestamp(
+                                timestamp.getSeconds(), timestamp.getNanos())))
+                .willReturn(feeData);
+        given(pricesAndFeesProvider.rate(new com.hedera.node.app.service.evm.utils.codec.Timestamp(
+                        timestamp.getSeconds(), timestamp.getNanos())))
+                .willReturn(exchangeRate);
+        given(exchangeRateProto.getHbarEquiv()).willReturn(hbarEquiv);
+        given(exchangeRateProto.getCentEquiv()).willReturn(centEquiv);
 
         assertEquals(
                 expectedRamResult,
@@ -140,26 +169,49 @@ class GasCalculatorHederaUtilTest {
         final var returningDeque = new ArrayDeque<MessageFrame>() {};
         returningDeque.add(messageFrame);
 
-        final var rbh = 20000L;
-        final var feeComponents = FeeComponents.newBuilder().setRbh(rbh);
-        final var feeData = FeeData.newBuilder().setServicedata(feeComponents).build();
+        final var rbh = 2000000L;
+        final var feeComponentsDto =
+                new com.hedera.node.app.service.evm.fee.codec.FeeComponents(0, 0, 0, 0, 0, rbh, 0, 0, 0, 0, 0);
         final var blockConsTime = Instant.ofEpochSecond(consensusTime);
         final var blockNo = 123L;
+        var feeDataProto = mock(FeeData.class);
+        var exchangeRateProto = mock(ExchangeRate.class);
+        given(exchangeRateProto.getHbarEquiv()).willReturn(hbarEquiv);
+        given(exchangeRateProto.getCentEquiv()).willReturn(centEquiv);
+
+        given(feeDataProto.getServicedata()).willReturn(mock(FeeComponents.class));
+        given(feeDataProto.getServicedata().getRbh()).willReturn(20000L);
 
         given(messageFrame.getGasPrice()).willReturn(Wei.of(2000L));
         given(messageFrame.getBlockValues()).willReturn(new HederaBlockValues(10L, blockNo, blockConsTime));
         given(messageFrame.getContextVariable("HederaFunctionality")).willReturn(functionality);
         given(messageFrame.getMessageFrameStack()).willReturn(returningDeque);
 
+        final com.hedera.node.app.service.evm.fee.codec.FeeComponents feeComponents =
+                new com.hedera.node.app.service.evm.fee.codec.FeeComponents(
+                        100, 1000, 0, 2000, 0, 20000000, 0, 560000, 0, 0, 0);
+        final com.hedera.node.app.service.evm.fee.codec.FeeData feeData =
+                new com.hedera.node.app.service.evm.fee.codec.FeeData(
+                        feeComponents, feeComponents, feeComponents, SubType.DEFAULT);
+
+        feeConverter
+                .when(() -> convertTimestampFromProtoToDto(timestamp))
+                .thenReturn(new com.hedera.node.app.service.evm.utils.codec.Timestamp(
+                        timestamp.getSeconds(), timestamp.getNanos()));
+        feeConverter
+                .when(() -> convertHederaFunctionalityFromProtoToDto(HederaFunctionality.ContractCreate))
+                .thenReturn(com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCreate);
+        feeConverter.when(() -> convertFeeDataFromDtoToProto(feeData)).thenReturn(feeDataProto);
+        feeConverter.when(() -> convertExchangeRateFromDtoToProto(exchangeRate)).thenReturn(exchangeRateProto);
+
         given(pricesAndFeesProvider.defaultPricesGiven(
-                        convertHederaFunctionalityFromProtoToDto(functionality),
-                        convertTimestampFromProtoToDto(timestamp)))
-                .willReturn(convertFeeDataFromProtoToDto(feeData));
-        given(pricesAndFeesProvider.rate(convertTimestampFromProtoToDto(timestamp)))
-                .willReturn(convertExchangeRateFromProtoToDto(ExchangeRate.newBuilder()
-                        .setHbarEquiv(2000)
-                        .setCentEquiv(200)
-                        .build()));
+                        com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCreate,
+                        new com.hedera.node.app.service.evm.utils.codec.Timestamp(
+                                timestamp.getSeconds(), timestamp.getNanos())))
+                .willReturn(feeData);
+        given(pricesAndFeesProvider.rate(new com.hedera.node.app.service.evm.utils.codec.Timestamp(
+                        timestamp.getSeconds(), timestamp.getNanos())))
+                .willReturn(exchangeRate);
 
         assertEquals(
                 28L,

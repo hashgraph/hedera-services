@@ -20,6 +20,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORE
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.service.evm.fee.codec.ExchangeRate;
+import com.hedera.node.app.service.evm.fee.codec.FeeComponents;
+import com.hedera.node.app.service.evm.fee.codec.FeeData;
+import com.hedera.node.app.service.evm.fee.codec.SubType;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.BalanceOfWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
@@ -647,4 +651,8 @@ public class HTSTestsUtil {
             new TokenCreateWrapper.FractionalFeeWrapper(4, 5, 10, 20, true, receiver);
     public static final TokenCreateWrapper.RoyaltyFeeWrapper royaltyFee =
             new TokenCreateWrapper.RoyaltyFeeWrapper(4, 5, fixedFee, receiver);
+
+    public static final FeeComponents feeComponents = new FeeComponents(10, 100, 0, 0, 0, 200000, 0, 2000, 0, 0, 0);
+    public static final FeeData feeData = new FeeData(feeComponents, feeComponents, feeComponents, SubType.DEFAULT);
+    public static final ExchangeRate exchangeRate = new ExchangeRate(1000, 1000, 1000L);
 }

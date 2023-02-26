@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.exchangeRate;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.feeData;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,6 +33,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
+import com.hedera.node.app.service.evm.fee.codec.FeeData;
+import com.hedera.node.app.service.evm.fee.codec.SubType;
 import com.hedera.node.app.service.evm.utils.codec.HederaFunctionality;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
@@ -44,6 +48,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -119,6 +124,7 @@ class CreateEvmTxProcessorTest {
     private final Account receiver = new Account(new Id(0, 0, 1006));
     private final Account relayer = new Account(new Id(0, 0, 1007));
     private final Instant consensusTime = Instant.now();
+    private final Map<SubType, FeeData> feeMap = new HashMap<>();
     private final int MAX_GAS_LIMIT = 10_000_000;
     private final int MAX_REFUND_PERCENT = 20;
     private final long INTRINSIC_GAS_COST = 290_000L;
@@ -148,6 +154,8 @@ class CreateEvmTxProcessorTest {
                 aliasManager,
                 blockMetaSource,
                 feeResourcesLoader);
+
+        feeMap.put(SubType.DEFAULT, feeData);
     }
 
     @Test
@@ -287,6 +295,9 @@ class CreateEvmTxProcessorTest {
 
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(0L);
 
+        given(feeResourcesLoader.pricesGiven(any(), any())).willReturn(feeMap);
+        given(feeResourcesLoader.getCurrentRate()).willReturn(exchangeRate);
+        given(feeResourcesLoader.getNextRate()).willReturn(exchangeRate);
         var senderMutableAccount = mock(MutableAccount.class);
 
         given(stackedUpdater.getOrCreate(any())).willReturn(evmAccount);
@@ -309,6 +320,9 @@ class CreateEvmTxProcessorTest {
         given(worldState.updater()).willReturn(updater);
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(new Id(0, 0, 1010).asEvmAddress());
 
+        given(feeResourcesLoader.pricesGiven(any(), any())).willReturn(feeMap);
+        given(feeResourcesLoader.getCurrentRate()).willReturn(exchangeRate);
+        given(feeResourcesLoader.getNextRate()).willReturn(exchangeRate);
         var evmAccount = mock(EvmAccount.class);
 
         given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
@@ -335,6 +349,9 @@ class CreateEvmTxProcessorTest {
         given(worldState.updater()).willReturn(updater);
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(new Id(0, 0, 1010).asEvmAddress());
 
+        given(feeResourcesLoader.pricesGiven(any(), any())).willReturn(feeMap);
+        given(feeResourcesLoader.getCurrentRate()).willReturn(exchangeRate);
+        given(feeResourcesLoader.getNextRate()).willReturn(exchangeRate);
         var evmAccount = mock(EvmAccount.class);
 
         given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
@@ -358,7 +375,9 @@ class CreateEvmTxProcessorTest {
         given(worldState.updater()).willReturn(updater);
         given(worldState.updater().updater()).willReturn(stackedUpdater);
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(new Id(0, 0, 1010).asEvmAddress());
-
+        given(feeResourcesLoader.pricesGiven(any(), any())).willReturn(feeMap);
+        given(feeResourcesLoader.getCurrentRate()).willReturn(exchangeRate);
+        given(feeResourcesLoader.getNextRate()).willReturn(exchangeRate);
         var evmAccount = mock(EvmAccount.class);
 
         given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
@@ -394,6 +413,9 @@ class CreateEvmTxProcessorTest {
         given(worldState.updater().updater()).willReturn(stackedUpdater);
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(new Id(0, 0, 1010).asEvmAddress());
 
+        given(feeResourcesLoader.pricesGiven(any(), any())).willReturn(feeMap);
+        given(feeResourcesLoader.getCurrentRate()).willReturn(exchangeRate);
+        given(feeResourcesLoader.getNextRate()).willReturn(exchangeRate);
         var evmAccount = mock(EvmAccount.class);
 
         given(updater.getOrCreateSenderAccount(any())).willReturn(evmAccount);

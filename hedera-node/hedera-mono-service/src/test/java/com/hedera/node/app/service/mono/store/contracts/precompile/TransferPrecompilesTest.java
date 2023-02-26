@@ -17,7 +17,10 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getTinybarsFromTinyCents;
-import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertExchangeRateFromDtoToProto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertFeeDataFromDtoToProto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertHederaFunctionalityFromProtoToDto;
+import static com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter.convertTimestampFromProtoToDto;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2;
@@ -46,7 +49,9 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.balanceChangesForLazyCreateHappyPath;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.exchangeRate;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.feeCollector;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.feeData;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.hbarAndNftsTransferChanges;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.hbarAndTokenChanges;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.hbarOnlyChanges;
@@ -77,6 +82,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.T
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile.decodeTransferNFTs;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile.decodeTransferToken;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile.decodeTransferTokens;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
@@ -109,19 +115,18 @@ import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
-import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProviderImpl;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.utils.codec.Timestamp;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.node.app.service.mono.exceptions.ResourceLimitException;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
-import com.hedera.node.app.service.mono.fees.HbarCentExchange;
 import com.hedera.node.app.service.mono.fees.calculation.FeeResourcesLoaderImpl;
-import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
+import com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMeta;
@@ -163,8 +168,11 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 import org.apache.commons.lang3.tuple.Pair;
@@ -278,16 +286,10 @@ class TransferPrecompilesTest {
     private ContractAliases aliases;
 
     @Mock
-    private UsagePricesProvider resourceCosts;
-
-    @Mock
     private InfrastructureFactory infrastructureFactory;
 
     @Mock
     private AssetsLoader assetLoader;
-
-    @Mock
-    private HbarCentExchange exchange;
 
     @Mock
     private ExchangeRate exchangeRate;
@@ -299,16 +301,15 @@ class TransferPrecompilesTest {
     private FeeResourcesLoaderImpl feeResourcesLoader;
 
     @Mock
-    private PricesAndFeesProviderImpl pricesAndFeesProvider;
+    private com.hederahashgraph.api.proto.java.FeeData feeData;
 
     private static final long TEST_SERVICE_FEE = 5_000_000;
     private static final long TEST_NETWORK_FEE = 400_000;
     private static final long TEST_NODE_FEE = 300_000;
-    private static final int CENTS_RATE = 12;
-    private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
             (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
     private static final long TEST_CRYPTO_TRANSFER_MIN_FEE = 1_000_000;
+    private static final long COST_PROHIBITIVE = 1_000_000L * 10_000_000_000L;
     private static final Bytes CRYPTO_TRANSFER_HBAR_ONLY_INPUT = Bytes.fromHexString(
             "0x0e71804f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
     private static final Bytes CRYPTO_TRANSFER_FUNGIBLE_INPUT = Bytes.fromHexString(
@@ -338,10 +339,27 @@ class TransferPrecompilesTest {
 
     private HTSPrecompiledContract subject;
     private MockedStatic<TransferPrecompile> transferPrecompile;
+    private MockedStatic<FeeBuilder> feeBuilder;
+    private MockedStatic<FeeConverter> feeConverter;
     final Predicate<AccountID> accoundIdExists = acc -> true;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
+        final Map<HederaFunctionality, Map<com.hederahashgraph.api.proto.java.SubType, BigDecimal>> canonicalPrices =
+                new HashMap<>();
+        final Map<com.hederahashgraph.api.proto.java.SubType, BigDecimal> type = new HashMap<>();
+        type.put(com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON, BigDecimal.valueOf(1_000_000L));
+        type.put(com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE, BigDecimal.valueOf(1_000_000L));
+        canonicalPrices.put(HederaFunctionality.CryptoTransfer, type);
+
+        canonicalPrices.put(
+                HederaFunctionality.CryptoCreate,
+                Map.of(com.hederahashgraph.api.proto.java.SubType.DEFAULT, BigDecimal.valueOf(10_000_000_000L)));
+        canonicalPrices.put(
+                HederaFunctionality.CryptoUpdate,
+                Map.of(com.hederahashgraph.api.proto.java.SubType.DEFAULT, BigDecimal.valueOf(10_000_000_000L)));
+        given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
+
         final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
                 assetLoader, () -> feeCalculator, stateView, accessorFactory, feeResourcesLoader);
         subject = new HTSPrecompiledContract(
@@ -360,11 +378,15 @@ class TransferPrecompilesTest {
                 evmHTSPrecompiledContract);
 
         transferPrecompile = Mockito.mockStatic(TransferPrecompile.class);
+        feeBuilder = Mockito.mockStatic(FeeBuilder.class);
+        feeConverter = Mockito.mockStatic(FeeConverter.class);
     }
 
     @AfterEach
     void closeMocks() {
         transferPrecompile.close();
+        feeBuilder.close();
+        feeConverter.close();
     }
 
     @Test
@@ -1011,9 +1033,6 @@ class TransferPrecompilesTest {
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
         givenMinimalFrameContext();
         givenLedgers();
-        given(pricesAndFeesProvider.rate(any())).willReturn(convertExchangeRateFromProtoToDto(exchangeRate));
-        given(exchangeRate.getCentEquiv()).willReturn(1);
-        given(exchangeRate.getHbarEquiv()).willReturn(1);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(infrastructureFactory.newImpliedTransfersMarshal(any())).willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
@@ -1070,6 +1089,18 @@ class TransferPrecompilesTest {
                     return Pair.of(OK, lazyCreationFee);
                 });
 
+        feeConverter
+                .when(() -> convertTimestampFromProtoToDto(timestamp))
+                .thenReturn(new com.hedera.node.app.service.evm.utils.codec.Timestamp(
+                        timestamp.getSeconds(), timestamp.getNanos()));
+        feeConverter
+                .when(() -> convertExchangeRateFromDtoToProto(HTSTestsUtil.exchangeRate))
+                .thenReturn(exchangeRate);
+
+        given(feeResourcesLoader.getCurrentRate()).willReturn(HTSTestsUtil.exchangeRate);
+        given(feeResourcesLoader.getNextRate()).willReturn(HTSTestsUtil.exchangeRate);
+
+        feeBuilder.when(() -> getTinybarsFromTinyCents(any(), anyLong())).thenReturn(COST_PROHIBITIVE);
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
@@ -1162,9 +1193,6 @@ class TransferPrecompilesTest {
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
         givenMinimalFrameContext();
         givenLedgers();
-        given(pricesAndFeesProvider.rate(any())).willReturn(convertExchangeRateFromProtoToDto(exchangeRate));
-        given(exchangeRate.getCentEquiv()).willReturn(1);
-        given(exchangeRate.getHbarEquiv()).willReturn(1);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(infrastructureFactory.newImpliedTransfersMarshal(any())).willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
@@ -1217,6 +1245,18 @@ class TransferPrecompilesTest {
                     return Pair.of(OK, lazyCreationFee);
                 });
 
+        feeConverter
+                .when(() -> convertTimestampFromProtoToDto(timestamp))
+                .thenReturn(new com.hedera.node.app.service.evm.utils.codec.Timestamp(
+                        timestamp.getSeconds(), timestamp.getNanos()));
+        feeConverter
+                .when(() -> convertExchangeRateFromDtoToProto(HTSTestsUtil.exchangeRate))
+                .thenReturn(exchangeRate);
+
+        given(feeResourcesLoader.getCurrentRate()).willReturn(HTSTestsUtil.exchangeRate);
+        given(feeResourcesLoader.getNextRate()).willReturn(HTSTestsUtil.exchangeRate);
+
+        feeBuilder.when(() -> getTinybarsFromTinyCents(any(), anyLong())).thenReturn(COST_PROHIBITIVE);
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
@@ -1246,9 +1286,6 @@ class TransferPrecompilesTest {
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
         givenMinimalFrameContext();
         givenLedgers();
-        given(pricesAndFeesProvider.rate(any())).willReturn(convertExchangeRateFromProtoToDto(exchangeRate));
-        given(exchangeRate.getCentEquiv()).willReturn(1);
-        given(exchangeRate.getHbarEquiv()).willReturn(1);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(infrastructureFactory.newImpliedTransfersMarshal(any())).willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
@@ -1305,6 +1342,19 @@ class TransferPrecompilesTest {
                     return Pair.of(OK, lazyCreationFee);
                 });
 
+        feeConverter
+                .when(() -> convertTimestampFromProtoToDto(timestamp))
+                .thenReturn(new com.hedera.node.app.service.evm.utils.codec.Timestamp(
+                        timestamp.getSeconds(), timestamp.getNanos()));
+        feeConverter
+                .when(() -> convertExchangeRateFromDtoToProto(HTSTestsUtil.exchangeRate))
+                .thenReturn(exchangeRate);
+
+        given(feeResourcesLoader.getCurrentRate()).willReturn(HTSTestsUtil.exchangeRate);
+        given(feeResourcesLoader.getNextRate()).willReturn(HTSTestsUtil.exchangeRate);
+
+        feeBuilder.when(() -> getTinybarsFromTinyCents(any(), anyLong())).thenReturn(COST_PROHIBITIVE);
+
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
@@ -1315,7 +1365,7 @@ class TransferPrecompilesTest {
         assertEquals(successResult, result);
         // and:
         // 2x FT transfer + 2x lazy create (CryptoCreate + CryptoUpdate); each is defaultCost
-        final long defaultCost = 1_000_000L * 10_000_000_000L;
+        final long defaultCost = COST_PROHIBITIVE;
         final var expected = 6 * defaultCost;
         assertEquals(expected + (expected / 5), gasRequirement);
         verify(autoCreationLogic, times(2)).create(any(), any(), any());
@@ -1886,8 +1936,6 @@ class TransferPrecompilesTest {
 
     @Test
     void minimumFeeInTinybarsHbarOnlyCryptoTransfer() {
-        final var feeBuilder = Mockito.mockStatic(FeeBuilder.class);
-
         // given
         givenMinFrameContext();
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
@@ -1913,14 +1961,10 @@ class TransferPrecompilesTest {
 
         // then
         assertEquals(TEST_CRYPTO_TRANSFER_MIN_FEE, minimumFeeInTinybars);
-
-        feeBuilder.close();
     }
 
     @Test
     void minimumFeeInTinybarsTwoHbarCryptoTransfer() {
-        final var feeBuilder = Mockito.mockStatic(FeeBuilder.class);
-
         // given
         givenMinFrameContext();
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
@@ -1948,14 +1992,10 @@ class TransferPrecompilesTest {
         // then
         // expect 2 times the fee as there are two transfers
         assertEquals(2 * TEST_CRYPTO_TRANSFER_MIN_FEE, minimumFeeInTinybars);
-
-        feeBuilder.close();
     }
 
     @Test
     void minimumFeeInTinybarsHbarFungibleCryptoTransfer() {
-        final var feeBuilder = Mockito.mockStatic(FeeBuilder.class);
-
         // given
         givenMinFrameContext();
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
@@ -1982,14 +2022,10 @@ class TransferPrecompilesTest {
         // then
         // 1 for hbars and 1 for fungible tokens
         assertEquals(2 * TEST_CRYPTO_TRANSFER_MIN_FEE, minimumFeeInTinybars);
-
-        feeBuilder.close();
     }
 
     @Test
     void minimumFeeInTinybarsWithLazyCreateButNotEnabled() {
-        var feeBuilder = Mockito.mockStatic(FeeBuilder.class);
-
         // given
         givenMinFrameContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
@@ -2015,14 +2051,10 @@ class TransferPrecompilesTest {
 
         // then 2 for 2 NFT exchanges and lazy creation not accounted for
         assertEquals(2 * TEST_CRYPTO_TRANSFER_MIN_FEE, minimumFeeInTinybars);
-
-        feeBuilder.close();
     }
 
     @Test
     void minimumFeeInTinybarsWithLazyCreateAttemptAndEnabled() {
-        var feeBuilder = Mockito.mockStatic(FeeBuilder.class);
-
         // given
         givenMinFrameContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
@@ -2048,14 +2080,10 @@ class TransferPrecompilesTest {
 
         // 2 NFT Exchanges + 1 Lazy Creation (which is 2x the fee)
         assertEquals(4 * TEST_CRYPTO_TRANSFER_MIN_FEE, minimumFeeInTinybars);
-
-        feeBuilder.close();
     }
 
     @Test
     void minimumFeeInTinybarsHbarNftCryptoTransfer() {
-        final var feeBuilder = Mockito.mockStatic(FeeBuilder.class);
-
         // given
         givenMinFrameContext();
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
@@ -2082,14 +2110,10 @@ class TransferPrecompilesTest {
         // then
         // 2 for nfts transfers and 1 for hbars
         assertEquals(3 * TEST_CRYPTO_TRANSFER_MIN_FEE, minimumFeeInTinybars);
-
-        feeBuilder.close();
     }
 
     @Test
     void minimumFeeInTinybarsHbarFungibleNftCryptoTransfer() {
-        final var feeBuilder = Mockito.mockStatic(FeeBuilder.class);
-
         // given
         givenMinFrameContext();
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
@@ -2116,8 +2140,6 @@ class TransferPrecompilesTest {
         // then
         // 1 for fungible + 2 for nfts transfers + 1 for hbars
         assertEquals(4 * TEST_CRYPTO_TRANSFER_MIN_FEE, minimumFeeInTinybars);
-
-        feeBuilder.close();
     }
 
     @Test
@@ -2592,12 +2614,52 @@ class TransferPrecompilesTest {
     }
 
     private void givenPricingUtilsContext() {
-        given(pricesAndFeesProvider.rate(any())).willReturn(convertExchangeRateFromProtoToDto(exchangeRate));
-        given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
-        given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
+        final var timestampDto = new Timestamp(timestamp.getSeconds(), timestamp.getNanos());
+        feeConverter.when(() -> convertTimestampFromProtoToDto(timestamp)).thenReturn(timestampDto);
+        feeConverter
+                .when(() -> convertHederaFunctionalityFromProtoToDto(ContractCall))
+                .thenReturn(com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCall);
+
+        feeConverter
+                .when(() -> convertHederaFunctionalityFromProtoToDto(ContractCall))
+                .thenReturn(com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCall);
+        feeConverter
+                .when(() -> convertFeeDataFromDtoToProto(HTSTestsUtil.feeData))
+                .thenReturn(feeData);
+        feeConverter
+                .when(() -> convertExchangeRateFromDtoToProto(HTSTestsUtil.exchangeRate))
+                .thenReturn(exchangeRate);
+        given(feeResourcesLoader.getCurrentRate())
+                .willReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(1, 22, 1000L));
+        given(feeResourcesLoader.getNextRate())
+                .willReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(1, 22, 1000L));
+        given(feeResourcesLoader.getCurrentRate()).willReturn(HTSTestsUtil.exchangeRate);
+        given(feeResourcesLoader.getNextRate()).willReturn(HTSTestsUtil.exchangeRate);
     }
 
     private void givenMinFrameContext() {
+        final var timestampDto = new Timestamp(timestamp.getSeconds(), timestamp.getNanos());
+        feeConverter.when(() -> convertTimestampFromProtoToDto(timestamp)).thenReturn(timestampDto);
+        feeConverter
+                .when(() -> convertHederaFunctionalityFromProtoToDto(ContractCall))
+                .thenReturn(com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCall);
+
+        feeConverter
+                .when(() -> convertHederaFunctionalityFromProtoToDto(ContractCall))
+                .thenReturn(com.hedera.node.app.service.evm.utils.codec.HederaFunctionality.ContractCall);
+        feeConverter
+                .when(() -> convertFeeDataFromDtoToProto(HTSTestsUtil.feeData))
+                .thenReturn(feeData);
+        feeConverter
+                .when(() -> convertExchangeRateFromDtoToProto(HTSTestsUtil.exchangeRate))
+                .thenReturn(exchangeRate);
+        given(feeResourcesLoader.getCurrentRate())
+                .willReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(1, 22, 1000L));
+        given(feeResourcesLoader.getNextRate())
+                .willReturn(new com.hedera.node.app.service.evm.fee.codec.ExchangeRate(1, 22, 1000L));
+
+        given(feeResourcesLoader.getCurrentRate()).willReturn(HTSTestsUtil.exchangeRate);
+        given(feeResourcesLoader.getNextRate()).willReturn(HTSTestsUtil.exchangeRate);
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
