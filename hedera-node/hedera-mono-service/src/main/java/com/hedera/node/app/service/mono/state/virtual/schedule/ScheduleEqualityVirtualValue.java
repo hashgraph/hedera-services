@@ -40,7 +40,7 @@ import java.util.function.Supplier;
 public class ScheduleEqualityVirtualValue extends PartialMerkleLeaf
         implements VirtualValue, Keyed<ScheduleEqualityVirtualKey>, MerkleLeaf {
 
-    static final int CURRENT_VERSION = 1;
+    public static final int CURRENT_VERSION = 1;
 
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x1fe377366e3282f2L;
 

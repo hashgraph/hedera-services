@@ -27,6 +27,7 @@ import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
@@ -44,7 +45,6 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.HashingOutputStream;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.merkle.map.MerkleMap;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -252,7 +252,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
     private void addTokenBalances(
             final HederaAccount account,
             final SingleAccountBalances.Builder sabBuilder,
-            final MerkleMap<EntityNum, MerkleToken> tokens,
+            final MerkleMapLike<EntityNum, MerkleToken> tokens,
             final TokenRelStorageAdapter tokenAssociations) {
         doBoundedIteration(tokenAssociations, tokens, account, (token, rel) -> {
             if (token != StateView.REMOVED_TOKEN) {

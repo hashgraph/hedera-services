@@ -21,6 +21,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
@@ -59,7 +60,6 @@ class TokenRelStorageAdapterTest {
         given(onDiskRels.getHash()).willReturn(SOME_HASH);
         assertSame(SOME_HASH, subject.getHash());
         assertTrue(subject.areOnDisk());
-        assertSame(onDiskRels, subject.getOnDiskRels());
     }
 
     @Test
@@ -175,6 +175,6 @@ class TokenRelStorageAdapterTest {
     }
 
     private void withOnDiskSubject() {
-        subject = TokenRelStorageAdapter.fromOnDisk(onDiskRels);
+        subject = TokenRelStorageAdapter.fromOnDisk(VirtualMapLike.from(onDiskRels));
     }
 }

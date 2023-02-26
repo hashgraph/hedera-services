@@ -29,8 +29,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
+    public static final int CURRENT_VERSION = 1;
 
-    static final int CURRENT_VERSION = 1;
     static final int BYTES_IN_SERIALIZED_FORM = 5;
     static final long CLASS_ID = 0x11b982c14217d523L;
 

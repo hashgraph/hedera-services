@@ -31,6 +31,7 @@ import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.validation.ContractStorageLimits;
@@ -50,7 +51,6 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompile
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.PrngSystemPrecompiledContract;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.virtualmap.VirtualMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -117,7 +117,7 @@ public interface ContractsModule {
             final TransactionContext txnCtx,
             final SizeLimitedStorage storage,
             final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger,
-            final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode) {
+            final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecode) {
         return new MutableEntityAccess(ledger, aliasManager, txnCtx, storage, tokensLedger, bytecode);
     }
 

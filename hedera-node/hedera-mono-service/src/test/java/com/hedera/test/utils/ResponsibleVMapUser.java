@@ -17,6 +17,7 @@
 package com.hedera.test.utils;
 
 import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
@@ -50,9 +51,10 @@ public abstract class ResponsibleVMapUser {
     }
 
     @AfterEach
+    @SuppressWarnings({"unchecked", "rawtypes"})
     void releaseTracked() throws IOException {
         for (final var map : mapsToRelease) {
-            release(map);
+            release(VirtualMapLike.from((VirtualMap) map));
         }
         for (final var state : statesToRelease) {
             release(state);
@@ -77,7 +79,7 @@ public abstract class ResponsibleVMapUser {
         }
     }
 
-    private void release(@Nullable final VirtualMap<?, ?> map) throws IOException {
+    private void release(@Nullable final VirtualMapLike<?, ?> map) throws IOException {
         if (map != null) {
             if (map.toString().contains("Mock")) {
                 System.out.println("Skipping mock " + map);

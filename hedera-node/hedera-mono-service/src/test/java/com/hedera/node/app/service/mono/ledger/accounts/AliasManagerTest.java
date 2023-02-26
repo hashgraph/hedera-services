@@ -33,6 +33,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
@@ -253,7 +254,8 @@ class AliasManagerTest {
 
         subject.getAliases().put(expiredAlias, withoutNum);
         subject.rebuildAliasesMap(
-                AccountStorageAdapter.fromInMemory(liveAccounts), (BiConsumer<EntityNum, HederaAccount>) mockObserver);
+                AccountStorageAdapter.fromInMemory(MerkleMapLike.from(liveAccounts)),
+                (BiConsumer<EntityNum, HederaAccount>) mockObserver);
 
         final var finalMap = subject.getAliases();
         assertEquals(6, finalMap.size());

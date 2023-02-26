@@ -20,6 +20,7 @@ import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.backing.BackingAccounts;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.properties.ChangeSummaryManager;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -64,10 +65,10 @@ public enum InfrastructureType {
         public TransactionalLedger<AccountID, AccountProperty, HederaAccount> abInitio(
                 final String dir, final InfrastructureBundle bundle) {
             final var backingAccounts = new BackingAccounts(
-                    () -> AccountStorageAdapter.fromInMemory((MerkleMap<EntityNum, MerkleAccount>)
-                            bundle.getterFor(ACCOUNTS_MM).get()),
-                    () -> RecordsStorageAdapter.fromLegacy((MerkleMap<EntityNum, MerkleAccount>)
-                            bundle.getterFor(ACCOUNTS_MM).get()));
+                    () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from((MerkleMap<EntityNum, MerkleAccount>)
+                            bundle.getterFor(ACCOUNTS_MM).get())),
+                    () -> RecordsStorageAdapter.fromLegacy(MerkleMapLike.from((MerkleMap<EntityNum, MerkleAccount>)
+                            bundle.getterFor(ACCOUNTS_MM).get())));
             backingAccounts.rebuildFromSources();
             return new TransactionalLedger<>(
                     AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());

@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -54,8 +56,8 @@ class UniqueTokensLinkManagerTest extends ResponsibleVMapUser {
     private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
     private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
     private final UniqueTokenMapAdapter uniqueTokens = UniqueTokenMapAdapter.wrap(new MerkleMap<>());
-    private final UniqueTokenMapAdapter virtualUniqueTokens =
-            UniqueTokenMapAdapter.wrap(trackedMap(new VirtualMapFactory().newVirtualizedUniqueTokenStorage()));
+    private final UniqueTokenMapAdapter virtualUniqueTokens = UniqueTokenMapAdapter.wrap(
+            VirtualMapLike.from(trackedMap(new VirtualMapFactory().newVirtualizedUniqueTokenStorage())));
 
     @LoggingTarget
     private LogCaptor logCaptor;
@@ -72,16 +74,16 @@ class UniqueTokensLinkManagerTest extends ResponsibleVMapUser {
         when(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .thenReturn(false);
         subject = new UniqueTokensLinkManager(
-                () -> AccountStorageAdapter.fromInMemory(accounts),
-                () -> tokens,
+                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
+                () -> MerkleMapLike.from(tokens),
                 () -> uniqueTokens,
                 bootstrapProperties);
 
         when(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .thenReturn(true);
         subjectForVm = new UniqueTokensLinkManager(
-                () -> AccountStorageAdapter.fromInMemory(accounts),
-                () -> tokens,
+                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
+                () -> MerkleMapLike.from(tokens),
                 () -> virtualUniqueTokens,
                 bootstrapProperties);
     }
