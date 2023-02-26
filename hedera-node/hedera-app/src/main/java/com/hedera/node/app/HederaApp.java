@@ -17,6 +17,7 @@
 package com.hedera.node.app;
 
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
+import com.hedera.node.app.components.IngestComponent;
 import com.hedera.node.app.components.QueryComponent;
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.config.ConfigModule;
@@ -84,8 +85,9 @@ import javax.inject.Singleton;
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */
-
     Provider<QueryComponent.Factory> queryComponentFactory();
+
+    Provider<IngestComponent.Factory> ingestComponentFactory();
 
     @Component.Builder
     interface Builder {
