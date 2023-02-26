@@ -18,39 +18,92 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.spi.PreHandleDispatcher;
+import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.node.app.workflows.handle.records.CreateTopicRecordBuilder;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * A {@code TransactionDispatcher} provides functionality to forward pre-check, pre-handle, and
  * handle-transaction requests to the appropriate handler
  */
+@Singleton
 public class TransactionDispatcher {
 
     public static final String TYPE_NOT_SUPPORTED = "This transaction type is not supported";
 
+    private final HandleContext handleContext;
+    private final TransactionContext txnCtx;
     private final TransactionHandlers handlers;
-
     private final CryptoSignatureWaivers cryptoSignatureWaivers;
+    private final GlobalDynamicProperties dynamicProperties;
 
     /**
-     * Constructor of {@code TransactionDispatcher}
+     * Creates a {@code TransactionDispatcher} able to support the limited form of the
+     * Consensus Service handlers described in
+     * https://github.com/hashgraph/hedera-services/issues/4945, while still trying
+     * to make a bit of progress toward a more general solution.
      *
-     * @param handlers a {@link TransactionHandlers} record with all available handlers
-     * @throws NullPointerException if one of the parameters is {@code null}
+     * @param handleContext     the context of the handle workflow
+     * @param txnCtx            the mono context of the transaction
+     * @param handlers          the handlers for all transaction types
+     * @param accountNumbers    the account numbers of the system
+     * @param dynamicProperties the dynamic properties of the system
      */
+    @Inject
     public TransactionDispatcher(
-            @NonNull final TransactionHandlers handlers, @NonNull final HederaAccountNumbers accountNumbers) {
+            @NonNull final HandleContext handleContext,
+            @NonNull final TransactionContext txnCtx,
+            @NonNull final TransactionHandlers handlers,
+            @NonNull final HederaAccountNumbers accountNumbers,
+            @NonNull final GlobalDynamicProperties dynamicProperties) {
+        this.txnCtx = txnCtx;
         this.handlers = requireNonNull(handlers);
+        this.handleContext = handleContext;
+        this.dynamicProperties = dynamicProperties;
         this.cryptoSignatureWaivers = new CryptoSignatureWaiversImpl(requireNonNull(accountNumbers));
+    }
+
+    /**
+     * Dispatches a transaction of the given type to the appropriate handler.
+     * Only Consensus Service transactions are supported.
+     *
+     * <p>This will not be final signature of the dispatch method, since as per
+     * https://github.com/hashgraph/hedera-services/issues/4945, at this point we
+     * are really dispatching within the mono-service "workflow".
+     *
+     * @param function the type of the consensus service transaction
+     * @param txn the consensus transaction to be handled
+     */
+    public void dispatchHandle(@NonNull final HederaFunctionality function, @NonNull final TransactionBody txn) {
+        switch (function) {
+            case ConsensusCreateTopic -> {
+                final var recordBuilder = new CreateTopicRecordBuilder();
+                handlers.consensusCreateTopicHandler()
+                        .handle(
+                                handleContext,
+                                txn,
+                                new ConsensusServiceConfig(
+                                        dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
+                                recordBuilder);
+                recordBuilder.exposeSideEffectsToMono(txnCtx);
+            }
+            default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
+        }
     }
 
     /**

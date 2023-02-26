@@ -23,12 +23,17 @@ import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
  * com.hederahashgraph.api.proto.java.HederaFunctionality#Freeze}.
  */
+@Singleton
 public class FreezeHandler implements TransactionHandler {
+    @Inject
+    public FreezeHandler() {}
 
     /**
      * This method is called during the pre-handle workflow.

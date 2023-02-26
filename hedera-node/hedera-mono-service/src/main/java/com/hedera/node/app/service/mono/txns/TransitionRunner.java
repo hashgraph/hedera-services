@@ -54,7 +54,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Singleton
-public class TransitionRunner {
+public class TransitionRunner implements TransactionLastStep {
     private static final Logger log = LogManager.getLogger(TransitionRunner.class);
 
     /**

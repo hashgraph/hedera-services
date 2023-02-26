@@ -20,4 +20,6 @@ module com.hedera.node.app.spi {
 
     exports com.hedera.node.app.spi.state.serdes;
     exports com.hedera.node.app.spi.config;
+    exports com.hedera.node.app.spi.records;
+    exports com.hedera.node.app.spi.validation;
 }
