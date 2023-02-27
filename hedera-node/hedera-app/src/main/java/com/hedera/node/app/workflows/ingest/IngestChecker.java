@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
+import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +47,7 @@ public class IngestChecker {
      * @param nodeAccountID the {@link AccountID} of the <em>node</em>
      * @throws NullPointerException if one of the arguments is {@code null}
      */
+    @Inject
     public IngestChecker(@NonNull final AccountID nodeAccountID) {
         this.nodeAccountID = requireNonNull(nodeAccountID);
     }
