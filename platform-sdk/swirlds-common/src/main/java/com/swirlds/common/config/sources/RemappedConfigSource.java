@@ -126,11 +126,7 @@ public class RemappedConfigSource extends AbstractConfigSource {
                     .sorted((x, y) -> x.getKey().compareToIgnoreCase(y.getKey()))
                     .forEach(entry -> lines.append(System.lineSeparator())
                             .append(String.format("%-32s --> %s", entry.getValue(), entry.getKey())));
-            logger.warn(
-                    STARTUP.getMarker(),
-                    "Configuration remapped from {}!{}",
-                    configSource.getName(),
-                    lines);
+            logger.warn(STARTUP.getMarker(), "Configuration remapped from {}!{}", configSource.getName(), lines);
         }
     }
 
