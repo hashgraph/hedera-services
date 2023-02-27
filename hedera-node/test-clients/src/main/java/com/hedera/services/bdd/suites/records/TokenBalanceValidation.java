@@ -38,12 +38,25 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Tests to validate that token balances are correct after token transfers occur.
+ */
 public class TokenBalanceValidation extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenBalanceValidation.class);
     private final Map<AccountNumTokenNum, Long> expectedTokenBalances;
     private final AccountClassifier accountClassifier;
     private final boolean createTransferTransactions;
 
+    /**
+     * Set up validator. Private constructor for use from main(_).
+     * If <code>createTransferTranscations</code> is true, this constructor sets up HAPI transactions
+     * to create and transfer tokens to the given account.
+     *
+     * @param expectedTokenBalances Map of (accountnum, tokennum) -> token balance.
+     * @param accountClassifier whether the accounts are contracts
+     * @param createTransferTransactions If true, create and transfer the tokens as part of setup.
+     *                          If false, assume that the tokens have already been created.
+     */
     private TokenBalanceValidation(
             final Map<AccountNumTokenNum, Long> expectedTokenBalances,
             final AccountClassifier accountClassifier,
@@ -53,11 +66,23 @@ public class TokenBalanceValidation extends HapiSuite {
         this.createTransferTransactions = createTransferTransactions;
     }
 
+    /**
+     * Set up validator. Public constructor for use from <code>TokenReconciliationValidator</code>>
+     * Assumes that the tokens have already been created, and validation is only to check that
+     * <code>expectedTokenBalances</code> match values returned by <code>hasTokenBalance</code>
+     *
+     * @param expectedTokenBalances Map of (accountnum, tokennum) -> token balance.
+     * @param accountClassifier whether the accounts are contracts
+     */
     public TokenBalanceValidation(
             final Map<AccountNumTokenNum, Long> expectedTokenBalances, final AccountClassifier accountClassifier) {
         this(expectedTokenBalances, accountClassifier, false);
     }
 
+    /**
+     * Create test data and run validator.
+     * @param args ignored
+     */
     public static void main(String... args) {
         // define expected amount for a simple token create
         final Long aFungibleToken = 12L;
@@ -77,7 +102,7 @@ public class TokenBalanceValidation extends HapiSuite {
                 bFungibleAmount);
 
         // run validation using the expected balances
-        new TokenBalanceValidation(expectedTokenBalances, new AccountClassifier(), true).runSuiteSync();
+        new TokenBalanceValidation(expectedTokenBalances, new AccountClassifier(), true).runSuiteAsync();
     }
 
     @Override
@@ -90,17 +115,25 @@ public class TokenBalanceValidation extends HapiSuite {
         return List.of(validateTokenBalances());
     }
 
+    /**
+     * Set up for creating and transferring token balances.
+     * @return array of operations needed to create tokens and transfer them to the accounts as specified in
+     * <code>expectedTokenBalances</code>
+     */
     private HapiSpecOperation[] getHapiSpecsForTransferTxs() {
+        // if transactions have already been created, there's nothing to do so return an empty array
         if (!createTransferTransactions) return new HapiSpecOperation[0];
 
+        // otherwise return an array of operations needed to create and transfer the tokens
+        // specified in <code>expectedTokenBalances</code>
         return expectedTokenBalances.entrySet().stream()
                 .map(entry -> {
                     final var accountNum = entry.getKey().accountNum();
                     final var tokenNum = entry.getKey().tokenNum();
                     final var tokenAmt = entry.getValue();
                     return new HapiSpecOperation[] {
-                        // create and transfer a token
-                        // later we'll validate that the receiver has the correct token balance
+                        // set up HAPI operations to create and transfer a token
+                        // in a later method we'll validate that the receiver has the correct token balance
 
                         // create treasury account
                         cryptoCreate(TOKEN_TREASURY).balance(10000 * ONE_HUNDRED_HBARS),
@@ -122,22 +155,29 @@ public class TokenBalanceValidation extends HapiSuite {
                 .toArray(HapiSpecOperation[]::new);
     }
 
+    /**
+     * Create HAPI queries to check whether token balances match what's given in <code>expectedTokenBalances</code>
+     * @return HAPI queries to execute
+     */
     private HapiSpec validateTokenBalances() {
         return defaultHapiSpec("ValidateTokenBalances")
-                .given(getHapiSpecsForTransferTxs())
+                .given(getHapiSpecsForTransferTxs()) // set up transfers if needed
                 .when()
                 .then(inParallel(expectedTokenBalances.entrySet().stream()
-                                .map(entry -> {
-                                    final var accountNum = entry.getKey().accountNum();
-                                    final var tokenNum = entry.getKey().tokenNum();
-                                    final var tokenAmt = entry.getValue();
+                                .map(
+                                        entry -> { // for each expectedTokenBalance
+                                            final var accountNum =
+                                                    entry.getKey().accountNum();
+                                            final var tokenNum = entry.getKey().tokenNum();
+                                            final var tokenAmt = entry.getValue();
 
-                                    // validate that the transfer worked and the receiver account has the tokens
-                                    return getAccountBalance(
-                                                    accountNum.toString(), accountClassifier.isContract(accountNum))
-                                            .hasAnswerOnlyPrecheckFrom(OK)
-                                            .hasTokenBalance(tokenNum.toString(), tokenAmt);
-                                })
+                                            // validate that the transfer worked and the receiver account has the tokens
+                                            return getAccountBalance(
+                                                            accountNum.toString(),
+                                                            accountClassifier.isContract(accountNum))
+                                                    .hasAnswerOnlyPrecheckFrom(OK)
+                                                    .hasTokenBalance(tokenNum.toString(), tokenAmt);
+                                        })
                                 .toArray(HapiSpecOperation[]::new))
                         .failOnErrors());
     }

@@ -21,33 +21,34 @@ import static com.hedera.services.bdd.junit.TestBase.concurrentExecutionOf;
 import com.hedera.services.bdd.junit.utils.AccountClassifier;
 import com.hedera.services.bdd.junit.validators.AccountNumTokenNum;
 import com.hedera.services.bdd.suites.records.TokenBalanceValidation;
-import com.hedera.services.stream.proto.RecordStreamItem;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
- * This validator "reconciles" the HTS token balances of all accounts between the record
+ * This validator "reconciles" (compares) the HTS token balances of all accounts between the record
  * stream and the network state, comparing two sources of truth at the end of the CI test run:
  *
  * <ol>
  *   <li>The balances implied by the {@code TransferList} adjustments in the record stream.
- *   <li>The balances returned by {@code getTokenAccountBalance} queries.
+ *   <li>The balances returned by {@code hasTokenBalance} queries.
  * </ol>
  *
  * <p>It uses the {@link com.hedera.services.bdd.suites.records.TokenBalanceValidation} suite to perform the queries.
  */
 public class TokenReconciliationValidator implements RecordStreamValidator {
+    private static final Logger log = LogManager.getLogger(TokenReconciliationValidator.class);
+
     private final Map<AccountNumTokenNum, Long> expectedTokenBalances = new HashMap<>();
 
     private final AccountClassifier accountClassifier = new AccountClassifier();
 
     @Override
-    @SuppressWarnings("java:S106")
     public void validateRecordsAndSidecars(final List<RecordWithSidecars> recordsWithSidecars) {
         getExpectedBalanceFrom(recordsWithSidecars);
-        System.out.println("Expected token balances: " + expectedTokenBalances);
+        log.info("Expected token balances: {}", expectedTokenBalances);
 
         final var validationSpecs = TestBase.extractContextualizedSpecsFrom(
                 List.of(() -> new TokenBalanceValidation(expectedTokenBalances, accountClassifier)),
@@ -71,10 +72,5 @@ public class TokenReconciliationValidator implements RecordStreamValidator {
                 });
             }
         }
-    }
-
-    public static Stream<RecordStreamItem> streamOfItemsFrom(final List<RecordWithSidecars> recordsWithSidecars) {
-        return recordsWithSidecars.stream()
-                .flatMap(recordWithSidecars -> recordWithSidecars.recordFile().getRecordStreamItemsList().stream());
     }
 }
