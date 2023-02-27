@@ -33,7 +33,7 @@ import javax.inject.Inject;
  */
 public class WritableStoreFactory {
     private final HederaState hederaState;
-    private final Map<String, WritableStates> usedWritableStates = new HashMap<>();
+    private final Map<String, WritableStates> usedStates = new HashMap<>();
 
     /**
      * Constructor of {@link WritableStoreFactory}
@@ -53,8 +53,8 @@ public class WritableStoreFactory {
      * @return a {@link Map} that contains all {@link WritableStates} that have been used
      */
     @NonNull
-    public Map<String, WritableStates> getUsedWritableStates() {
-        return usedWritableStates;
+    public Map<String, WritableStates> getUsedStates() {
+        return usedStates;
     }
 
     /**
@@ -68,7 +68,7 @@ public class WritableStoreFactory {
     @NonNull
     public WritableStates getWritableStates(@NonNull final String key) {
         requireNonNull(key);
-        return usedWritableStates.computeIfAbsent(key, hederaState::createWritableStates);
+        return usedStates.computeIfAbsent(key, hederaState::createWritableStates);
     }
 
     /**
@@ -77,7 +77,7 @@ public class WritableStoreFactory {
      * @return a new {@link WritableTopicStore}
      */
     @NonNull
-    public WritableTopicStore getWritableTopicStore() {
+    public WritableTopicStore getTopicStore() {
         final var topicStates = getWritableStates(ConsensusService.NAME);
         return new WritableTopicStore(topicStates);
     }

@@ -38,7 +38,7 @@ import javax.inject.Inject;
  */
 public class ReadableStoreFactory {
     private final HederaState hederaState;
-    private final Map<String, ReadableStates> usedReadableStates = new HashMap<>();
+    private final Map<String, ReadableStates> usedStates = new HashMap<>();
 
     /**
      * Constructor of {@link ReadableStoreFactory}
@@ -58,8 +58,8 @@ public class ReadableStoreFactory {
      * @return a {@link Map} that contains all {@link ReadableStates} that have been used
      */
     @NonNull
-    public Map<String, ReadableStates> getUsedReadableStates() {
-        return usedReadableStates;
+    public Map<String, ReadableStates> getUsedStates() {
+        return usedStates;
     }
 
     /**
@@ -73,7 +73,7 @@ public class ReadableStoreFactory {
     @NonNull
     public ReadableStates getReadableStates(@NonNull final String key) {
         requireNonNull(key);
-        return usedReadableStates.computeIfAbsent(key, hederaState::createReadableStates);
+        return usedStates.computeIfAbsent(key, hederaState::createReadableStates);
     }
 
     /**
@@ -82,7 +82,7 @@ public class ReadableStoreFactory {
      * @return a new {@link ReadableAccountStore}
      */
     @NonNull
-    public ReadableAccountStore getReadableAccountStore() {
+    public ReadableAccountStore getAccountStore() {
         final var tokenStates = getReadableStates(TokenService.NAME);
         return new ReadableAccountStore(tokenStates);
     }
@@ -93,7 +93,7 @@ public class ReadableStoreFactory {
      * @return a new {@link ReadableTopicStore}
      */
     @NonNull
-    public ReadableTopicStore getReadableTopicStore() {
+    public ReadableTopicStore getTopicStore() {
         final var topicStates = getReadableStates(ConsensusService.NAME);
         return new ReadableTopicStore(topicStates);
     }
@@ -104,7 +104,7 @@ public class ReadableStoreFactory {
      * @return a new {@link ReadableScheduleStore}
      */
     @NonNull
-    public ReadableScheduleStore getReadableScheduleStore() {
+    public ReadableScheduleStore getScheduleStore() {
         final var scheduleStates = getReadableStates(ScheduleService.NAME);
         return new ReadableScheduleStore(scheduleStates);
     }
@@ -115,7 +115,7 @@ public class ReadableStoreFactory {
      * @return a new {@link ReadableTokenStore}
      */
     @NonNull
-    public ReadableTokenStore getReadableTokenStore() {
+    public ReadableTokenStore getTokenStore() {
         final var tokenStates = getReadableStates(TokenService.NAME);
         return new ReadableTokenStore(tokenStates);
     }

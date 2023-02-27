@@ -17,7 +17,14 @@
 package com.hedera.node.app.spi.validation;
 
 public interface EntityCreationLimits {
+    /**
+     * Counts existing number of topics and updated number of topics in state.
+     */
     void refreshTopics();
 
+    /**
+     * Returns the number of topics existing in state.
+     * @return number of topics in state
+     */
     long getNumTopics();
 }

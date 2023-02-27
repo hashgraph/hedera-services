@@ -61,7 +61,16 @@ public interface HandleContext {
      */
     ExpiryValidator expiryValidator();
 
+    /**
+     * Returns the limits on entity creation. This is needed to check if an entity can
+     * be created or not in {@link TransactionHandler}
+     * @return
+     */
     EntityCreationLimits entityCreationLimits();
 
+    /**
+     * Returns the access to accounts. This is needed to check if an account exists or not in Handlers
+     * @return the access to accounts
+     */
     AccountAccess accountAccess();
 }

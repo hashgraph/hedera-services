@@ -100,11 +100,17 @@ public class MonoHandleContext implements HandleContext {
         return expiryValidator;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public EntityCreationLimits entityCreationLimits() {
         return creationLimits;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public AccountAccess accountAccess() {
         return accountAccess;
@@ -142,11 +148,17 @@ public class MonoHandleContext implements HandleContext {
             this.usageLimits = usageLimits;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public void refreshTopics() {
             usageLimits.refreshTopics();
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public long getNumTopics() {
             return usageLimits.getNumTopics();

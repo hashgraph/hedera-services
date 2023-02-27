@@ -62,7 +62,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      * change.
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(HandleContext, TransactionBody, ConsensusServiceConfig, ConsensusCreateTopicRecordBuilder, WritableTopicStore)}
+     *     passed to the handle stage
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context) {
@@ -82,7 +82,6 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
     /**
      * Given the appropriate context, creates a new topic.
      *
-     * TODO: Provide access to writable topic store.
      *
      * @param handleContext          the {@link HandleContext} for the active transaction
      * @param op                     the {@link ConsensusCreateTopicTransactionBody} of the active transaction

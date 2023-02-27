@@ -80,6 +80,13 @@ public interface AccountAccess {
     @NonNull
     KeyOrLookupFailureReason getKeyIfReceiverSigRequired(@NonNull final ContractID idOrAlias);
 
+    /**
+     * Fetches {@link Account} object from given accountID. If the account could not be fetched as the
+     * given account doesn't exist, returns {@code Optional.empty()}.
+     * @param accountOrAlias given account id or alias
+     * @return {@link Account} object if successfully fetched or {@code Optional.empty()} if
+     * the account doesn't exist
+     */
     @NonNull
     Optional<Account> getAccountById(@NonNull final AccountID accountOrAlias);
 }

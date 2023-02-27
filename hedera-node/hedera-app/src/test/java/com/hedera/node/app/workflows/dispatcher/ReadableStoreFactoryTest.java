@@ -28,7 +28,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class StoreFactoryTest {
+class ReadableStoreFactoryTest {
     private ReadableStoreFactory subject;
 
     @Mock
@@ -45,7 +45,7 @@ class StoreFactoryTest {
     @Test
     void returnsTopicStore() {
         given(state.createReadableStates("ConsensusService")).willReturn(readableStates);
-        final var store = subject.getReadableTopicStore();
+        final var store = subject.getTopicStore();
         assertNotNull(store);
     }
 }
