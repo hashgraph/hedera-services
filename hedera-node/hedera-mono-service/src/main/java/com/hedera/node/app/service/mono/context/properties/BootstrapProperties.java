@@ -188,7 +188,6 @@ import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_HISTOR
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
 import static com.hedera.node.app.spi.config.PropertyNames.STAKING_START_THRESH;
-import static com.hedera.node.app.spi.config.PropertyNames.STATES_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_CONS_THROTTLES_TO_SAMPLE;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_EXECUTION_TIMES_TO_TRACK;
@@ -418,8 +417,7 @@ public final class BootstrapProperties implements PropertySource {
             STAKING_PERIOD_MINS,
             STAKING_REWARD_HISTORY_NUM_STORED_PERIODS,
             STAKING_STARTUP_HELPER_RECOMPUTE,
-            WORKFLOWS_ENABLED,
-            STATES_ENABLED);
+            WORKFLOWS_ENABLED);
 
     static final Set<String> GLOBAL_DYNAMIC_PROPS = Set.of(
             ACCOUNTS_MAX_NUM,
@@ -784,7 +782,6 @@ public final class BootstrapProperties implements PropertySource {
             entry(UTIL_PRNG_IS_ENABLED, AS_BOOLEAN),
             entry(TOKENS_AUTO_CREATIONS_ENABLED, AS_BOOLEAN),
             entry(WORKFLOWS_ENABLED, AS_FUNCTIONS),
-            entry(STATES_ENABLED, AS_BOOLEAN),
             entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, AS_BOOLEAN),
             entry(CRYPTO_TRANSFER_WARM_THREADS, AS_INT));
 }

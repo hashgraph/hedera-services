@@ -18,18 +18,25 @@ package com.hedera.node.app.workflows.ingest;
 
 import static com.hedera.node.app.service.mono.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.token.entity.Account;
+import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.state.HederaState;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.common.crypto.Cryptography;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.ByteBuffer;
 import java.util.Objects;
+import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,15 +46,25 @@ public class IngestChecker {
     private static final Logger LOG = LoggerFactory.getLogger(IngestChecker.class);
 
     private final AccountID nodeAccountID;
+    private final SignaturePreparer signaturePreparer;
+    private final Cryptography cryptography;
 
     /**
      * Constructor of the {@code IngestChecker}
      *
      * @param nodeAccountID the {@link AccountID} of the <em>node</em>
+     * @param signaturePreparer the {@link SignaturePreparer} that prepares signature data
+     * @param cryptography the {@link Cryptography} used to verify signatures
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public IngestChecker(@NonNull final AccountID nodeAccountID) {
+    @Inject
+    public IngestChecker(
+            @NonNull final AccountID nodeAccountID,
+            @NonNull final SignaturePreparer signaturePreparer,
+            @NonNull final Cryptography cryptography) {
         this.nodeAccountID = requireNonNull(nodeAccountID);
+        this.signaturePreparer = requireNonNull(signaturePreparer);
+        this.cryptography = requireNonNull(cryptography);
     }
 
     /**
@@ -56,8 +73,8 @@ public class IngestChecker {
      * @param txBody the {@link TransactionBody}
      * @param functionality the {@link HederaFunctionality} of the transaction
      * @throws NullPointerException if one of the arguments is {@code null}
-     * @throws PreCheckException if a semantic error was discovered. The contained {@code
-     *     responseCode} provides the error reason.
+     * @throws PreCheckException if a semantic error was discovered. The contained {@code responseCode} provides the
+     * error reason.
      */
     public void checkTransactionSemantics(
             @NonNull final TransactionBody txBody, @NonNull final HederaFunctionality functionality)
@@ -78,20 +95,25 @@ public class IngestChecker {
     /**
      * Checks the signature of the payer. <em>Currently not implemented.</em>
      *
-     * @param txBody the {@link TransactionBody}
+     * @param state the {@link HederaState} that should be used to read state
+     * @param requestBuffer the {@link ByteBuffer} containing the {@link Transaction}
      * @param signatureMap the {@link SignatureMap} contained in the transaction
-     * @param payer the {@code Account} of the payer
+     * @param payerID the {@link AccountID} of the payer
      * @throws NullPointerException if one of the arguments is {@code null}
-     * @throws PreCheckException if an error is found while checking the signature. The contained
-     *     {@code responseCode} provides the error reason.
+     * @throws PreCheckException if an error is found while checking the signature. The contained {@code responseCode}
+     * provides the error reason.
      */
     public void checkPayerSignature(
-            @NonNull final TransactionBody txBody,
+            @NonNull final HederaState state,
+            @NonNull final ByteBuffer requestBuffer,
             @NonNull final SignatureMap signatureMap,
-            @NonNull final Account payer)
+            @NonNull final AccountID payerID)
             throws PreCheckException {
-        LOG.warn("IngestChecker.checkPayerSignature() has not been implemented yet");
-        // TODO: Implement once signature check is implemented
+        final var transactionBytes = extractByteArray(requestBuffer);
+        final var signature = signaturePreparer.prepareSignature(state, transactionBytes, signatureMap, payerID);
+        if (!cryptography.verifySync(signature)) {
+            throw new PreCheckException(INVALID_SIGNATURE);
+        }
     }
 
     /**
@@ -110,5 +132,23 @@ public class IngestChecker {
             throws InsufficientBalanceException {
         LOG.warn("IngestChecker.checkSolvency() has not been implemented yet");
         // TODO: Implement once fee calculation is implemented
+    }
+
+    /**
+     * Extracts a {@code byte[]} from a {@link ByteBuffer}. The {@code byte[]} may contain a copy or point to the data
+     * of the {@code ByteBuffer} directly, i.e. the content should not be modified.
+     *
+     * @param buffer the {@link ByteBuffer} from which to extract the data
+     * @return the {@code byte[]} with the data
+     */
+    public byte[] extractByteArray(@NonNull final ByteBuffer buffer) {
+        requireNonNull(buffer);
+        if (buffer.hasArray()) {
+            return buffer.array();
+        } else {
+            final var byteArray = new byte[buffer.limit()];
+            buffer.get(byteArray);
+            return byteArray;
+        }
     }
 }

@@ -16,8 +16,9 @@
 
 package com.hedera.node.app.service.schedule.impl.test.handlers;
 
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asOrdinary;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
@@ -26,10 +27,14 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualVa
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.meta.PreHandleContext;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
-import com.hederahashgraph.api.proto.java.*;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.codec.DecoderException;
@@ -51,6 +56,8 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
 
     private final AccountID scheduleDeleter =
             AccountID.newBuilder().setAccountNum(3001L).build();
+
+    protected TransactionBody scheduledTxn;
 
     @BeforeEach
     void setUp() {
@@ -108,14 +115,6 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
                         TransactionID.newBuilder().setAccountID(scheduler).build())
                 .setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
                 .build();
-        scheduledMeta = new TransactionMetadata(
-                asOrdinary(txn.getScheduleCreate().getScheduledTransactionBody(), txn.getTransactionID()),
-                scheduler,
-                OK,
-                schedulerKey,
-                List.of(),
-                null,
-                List.of());
     }
 
     private TransactionBody scheduleDeleteTransaction() {

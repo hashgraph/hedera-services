@@ -147,7 +147,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                 log.info(spec.logPrefix() + " submitting " + this + " via " + txnToString(txn));
             }
 
-            TransactionResponse response = null;
+            TransactionResponse response;
             try {
                 if (fiddler.isPresent()) {
                     txn = fiddler.get().apply(txn);

@@ -20,9 +20,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
-import com.hedera.node.app.spi.PreHandleDispatcher;
-import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -71,8 +71,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
         final var payerForNested =
                 optionalPayer.orElse(scheduledTxn.getTransactionID().getAccountID());
 
-        final var innerMeta = preHandleScheduledTxn(scheduledTxn, payerForNested, dispatcher);
-        context.handlerMetadata(innerMeta);
+        preHandleScheduledTxn(context, scheduledTxn, payerForNested, dispatcher);
     }
 
     /**
