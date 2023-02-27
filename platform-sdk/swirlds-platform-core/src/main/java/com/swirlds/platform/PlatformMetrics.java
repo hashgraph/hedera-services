@@ -75,12 +75,6 @@ public class PlatformMetrics {
             .withFormat(FORMAT_2_0);
     private final RunningAverageMetric avgSimCallSyncsMax;
 
-    private static final RunningAverageMetric.Config AVG_Q_SIGNED_STATE_EVENTS_CONFIG = new RunningAverageMetric.Config(
-                    INTERNAL_CATEGORY, "queueSignedStateEvents")
-            .withDescription("number of handled consensus events that will be part of the next signed state")
-            .withFormat(FORMAT_10_1);
-    private final RunningAverageMetric avgQSignedStateEvents;
-
     private static final RunningAverageMetric.Config AVG_SIM_SYNCS_CONFIG = new RunningAverageMetric.Config(
                     PLATFORM_CATEGORY, "simSyncs")
             .withDescription("avg number of simultaneous syncs happening at any given time")
@@ -171,7 +165,6 @@ public class PlatformMetrics {
                 "average number of events in the consensus queue (q2) waiting to be handled",
                 FORMAT_10_3,
                 AverageStat.WEIGHT_VOLATILE);
-        avgQSignedStateEvents = metrics.getOrCreate(AVG_Q_SIGNED_STATE_EVENTS_CONFIG);
         avgSimSyncs = metrics.getOrCreate(AVG_SIM_SYNCS_CONFIG);
         avgSimListenSyncs = metrics.getOrCreate(AVG_SIM_LISTEN_SYNCS_CONFIG);
         eventStreamQueueSize = metrics.getOrCreate(EVENT_STREAM_QUEUE_SIZE_CONFIG);
@@ -308,7 +301,6 @@ public class PlatformMetrics {
         avgSimCallSyncsMax.update(Settings.getInstance().getMaxOutgoingSyncs());
         avgQ1PreConsEvents.update(platform.getPreConsensusHandler().getQueueSize());
         avgQ2ConsEvents.update(platform.getConsensusHandler().getNumEventsInQueue());
-        avgQSignedStateEvents.update(platform.getConsensusHandler().getSignedStateEventsSize());
         avgSimSyncs.update(platform.getSimultaneousSyncThrottle().getNumSyncs());
         avgSimListenSyncs.update(platform.getSimultaneousSyncThrottle().getNumListenerSyncs());
         eventStreamQueueSize.update(
