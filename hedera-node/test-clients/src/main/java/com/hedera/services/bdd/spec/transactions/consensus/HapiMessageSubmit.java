@@ -177,7 +177,8 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 
     @Override
     protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getConsSvcStub(targetNodeFor(spec), useTls)::submitMessage;
+        return spec.clients()
+                .getConsSvcStub(targetNodeFor(spec), useTls, spec.setup().workflowOperations())::submitMessage;
     }
 
     @Override

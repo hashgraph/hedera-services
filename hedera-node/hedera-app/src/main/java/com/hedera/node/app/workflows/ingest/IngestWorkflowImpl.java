@@ -44,6 +44,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.inject.Inject;
 
 /** Implementation of {@link IngestWorkflow} */
 public final class IngestWorkflowImpl implements IngestWorkflow {
@@ -71,6 +72,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
      * @param opCounters the {@link HapiOpCounters} with workflow-specific metrics
      * @throws NullPointerException if one of the arguments is {@code null}
      */
+    @Inject
     public IngestWorkflowImpl(
             @NonNull final NodeInfo nodeInfo,
             @NonNull final CurrentPlatformStatus currentPlatformStatus,
