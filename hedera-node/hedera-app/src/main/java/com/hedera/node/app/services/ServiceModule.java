@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.services;
 
+import com.hedera.node.app.components.IngestComponent;
 import com.hedera.node.app.components.QueryComponent;
 import com.hedera.node.app.service.consensus.impl.components.ConsensusComponent;
 import com.hedera.node.app.service.consensus.impl.components.DaggerConsensusComponent;
@@ -33,7 +34,7 @@ import dagger.Module;
 import dagger.Provides;
 import javax.inject.Singleton;
 
-@Module(subcomponents = {QueryComponent.class})
+@Module(subcomponents = {QueryComponent.class, IngestComponent.class})
 public interface ServiceModule {
     @Provides
     @Singleton

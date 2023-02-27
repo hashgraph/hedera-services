@@ -92,6 +92,7 @@ jobs:
       enable-e2e-tests: true
       enable-integration-tests: false
       enable-sonar-analysis: false
+      enable-network-log-capture: true
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       sonar-token: ${{ secrets.SONAR_TOKEN }}
@@ -108,6 +109,7 @@ jobs:
       enable-e2e-tests: false
       enable-integration-tests: true
       enable-sonar-analysis: false
+      enable-network-log-capture: true
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       sonar-token: ${{ secrets.SONAR_TOKEN }}
