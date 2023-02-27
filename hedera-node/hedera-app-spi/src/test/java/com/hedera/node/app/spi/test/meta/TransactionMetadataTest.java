@@ -55,11 +55,9 @@ class TransactionMetadataTest {
 
         assertThatCode(() -> new TransactionMetadata(null, null, null, OK, null, null, signatures, null))
                 .doesNotThrowAnyException();
-        assertThatThrownBy(() -> new TransactionMetadata(
-                        txBody, payer, null, null, payerKey, null, signatures, null))
+        assertThatThrownBy(() -> new TransactionMetadata(txBody, payer, null, null, payerKey, null, signatures, null))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () -> new TransactionMetadata(txBody, payer, null, OK, payerKey, null, null, null))
+        assertThatThrownBy(() -> new TransactionMetadata(txBody, payer, null, OK, payerKey, null, null, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -77,8 +75,8 @@ class TransactionMetadataTest {
         final var innerMetadata = new TransactionMetadata(null, null, null, OK, null, null, Map.of(), null);
 
         // when
-        final var metadata =
-                new TransactionMetadata(context, signatureMap, payerSignature, Map.of(otherKey, otherSignature), innerMetadata);
+        final var metadata = new TransactionMetadata(
+                context, signatureMap, payerSignature, Map.of(otherKey, otherSignature), innerMetadata);
 
         // then
         assertThat(metadata.txnBody()).isEqualTo(txBody);
