@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,22 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components;
+package com.swirlds.platform.components.transaction.throttle;
 
 /**
- * Is used for checking whether this node should sync with other nodes
+ * Types of response of {@link TransThrottleSyncAndCreateRule}
  */
-public interface TransThrottleSyncRule {
+public enum TransThrottleSyncAndCreateRuleResponse {
     /**
-     * Determine whether this node should sync with other nodes
-     *
-     * @return true iff this node should sync with other nodes
+     * should not initiate a sync and create an event, and don't check subsequent rules
      */
-    boolean shouldSync();
+    DONT_SYNC_OR_CREATE,
+    /**
+     * should initiate a sync and create an event, and don't check subsequent rules
+     */
+    SYNC_AND_CREATE,
+    /**
+     * continue with checking subsequent rules
+     */
+    PASS
 }

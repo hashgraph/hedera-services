@@ -195,7 +195,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
         if (swirldState instanceof SwirldState2) {
             swirldStateManager = new SwirldStateManagerDouble(
                     selfId,
-                    systemTransactionHandler,
+                    systemTransactionManager,
                     mock(SwirldStateMetrics.class),
                     settingsProvider,
                     () -> false,
@@ -204,7 +204,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
             swirldStateManager = new SwirldStateManagerSingle(
                     getStaticThreadManager(),
                     selfId,
-                    systemTransactionHandler,
+                    systemTransactionManager,
                     mock(SwirldStateMetrics.class),
                     mock(ConsensusMetrics.class),
                     settingsProvider,

@@ -29,7 +29,7 @@ import com.swirlds.common.test.metrics.NoOpMetrics;
 import com.swirlds.common.test.state.DummySwirldState1;
 import com.swirlds.common.test.state.DummySwirldState2;
 import com.swirlds.platform.SettingsProvider;
-import com.swirlds.platform.components.SystemTransactionHandlerImpl;
+import com.swirlds.platform.components.transaction.system.SystemTransactionManager;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;
@@ -61,7 +61,7 @@ public abstract class AbstractEventHandlerTests {
     protected SwirldStateMetrics ssStats;
     protected ConsensusMetrics consensusMetrics;
     protected ConsensusHandlingMetrics consensusHandlingMetrics;
-    protected SystemTransactionHandlerImpl systemTransactionHandler;
+    protected SystemTransactionManager systemTransactionManager;
     protected Supplier<Instant> consEstimateSupplier;
     protected SettingsProvider settingsProvider;
     protected Random random;
@@ -73,7 +73,7 @@ public abstract class AbstractEventHandlerTests {
         consensusMetrics = mock(ConsensusMetrics.class);
         consensusHandlingMetrics = mock(ConsensusHandlingMetrics.class);
         when(consensusHandlingMetrics.getConsCycleStat()).thenReturn(mock(CycleTimingStat.class));
-        systemTransactionHandler = mock(SystemTransactionHandlerImpl.class);
+        systemTransactionManager = mock(SystemTransactionManager.class);
         consEstimateSupplier = Instant::now;
         settingsProvider = mock(SettingsProvider.class);
         random = ThreadLocalRandom.current();

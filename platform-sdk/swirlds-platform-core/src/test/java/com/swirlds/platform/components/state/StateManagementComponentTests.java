@@ -41,7 +41,6 @@ import com.swirlds.common.test.metrics.NoOpMetrics;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.Settings;
-import com.swirlds.platform.components.common.output.StateSignature;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
@@ -66,7 +65,7 @@ import org.junit.jupiter.api.io.TempDir;
  * testable from the component level due to operations like writing states to disk being dependent on wall clock time
  * which is not able to be manipulated. These operations are tested in targeted class tests, not here.
  */
-public class StateManagementComponentTests {
+class StateManagementComponentTests {
 
     private static final String MAIN = "main";
     private static final String SWIRLD = "swirld123";
@@ -240,7 +239,7 @@ public class StateManagementComponentTests {
     @DisplayName("State signatures are applied and consumers are invoked")
     void stateSignaturesAppliedAndTracked() {
         final Random random = RandomUtils.getRandomPrintSeed();
-        final StateManagementComponent component = newStateManagementComponent(random);
+        final DefaultStateManagementComponent component = newStateManagementComponent(random);
 
         component.start();
 
@@ -356,7 +355,7 @@ public class StateManagementComponentTests {
     @DisplayName("Mismatched signatures cause ISS consumer to be invoked")
     void testIssConsumer() {
         final Random random = RandomUtils.getRandomPrintSeed();
-        final StateManagementComponent component = newStateManagementComponent(random);
+        final DefaultStateManagementComponent component = newStateManagementComponent(random);
 
         component.start();
 
@@ -368,7 +367,7 @@ public class StateManagementComponentTests {
     }
 
     private void testCatastrophicIss(
-            final Random random, final StateManagementComponent component, final long roundNum) {
+            final Random random, final DefaultStateManagementComponent component, final long roundNum) {
         final SignedState signedState =
                 new RandomSignedStateGenerator(random).setRound(roundNum).build();
 
@@ -377,10 +376,14 @@ public class StateManagementComponentTests {
 
         final Hash stateHash = signedState.getState().getHash();
         final Hash otherHash = RandomUtils.randomHash(random);
-        component.handleStateSignature(issStateSignature(signedState, 0L, stateHash), true);
-        component.handleStateSignature(issStateSignature(signedState, 1L, stateHash), true);
-        component.handleStateSignature(issStateSignature(signedState, 2L, otherHash), true);
-        component.handleStateSignature(issStateSignature(signedState, 3L, otherHash), true);
+        component.handleStateSignatureTransactionPostConsensus(
+                null, 0L, issStateSignatureTransaction(signedState, 0L, stateHash));
+        component.handleStateSignatureTransactionPostConsensus(
+                null, 1L, issStateSignatureTransaction(signedState, 1L, stateHash));
+        component.handleStateSignatureTransactionPostConsensus(
+                null, 2L, issStateSignatureTransaction(signedState, 2L, otherHash));
+        component.handleStateSignatureTransactionPostConsensus(
+                null, 3L, issStateSignatureTransaction(signedState, 3L, otherHash));
 
         assertEquals(signedState.getRound(), issConsumer.getIssRound(), "Incorrect round reported to iss consumer");
         assertNull(issConsumer.getIssNodeId(), "Incorrect other node ISS id reported");
@@ -392,7 +395,8 @@ public class StateManagementComponentTests {
         issConsumer.reset();
     }
 
-    private void testOtherIss(final Random random, final StateManagementComponent component, final long roundNum) {
+    private void testOtherIss(
+            final Random random, final DefaultStateManagementComponent component, final long roundNum) {
         final SignedState signedState =
                 new RandomSignedStateGenerator(random).setRound(roundNum).build();
 
@@ -401,10 +405,14 @@ public class StateManagementComponentTests {
 
         final Hash stateHash = signedState.getState().getHash();
         final Hash otherHash = RandomUtils.randomHash(random);
-        component.handleStateSignature(issStateSignature(signedState, 0L, stateHash), true);
-        component.handleStateSignature(issStateSignature(signedState, 1L, stateHash), true);
-        component.handleStateSignature(issStateSignature(signedState, 2L, stateHash), true);
-        component.handleStateSignature(issStateSignature(signedState, 3L, otherHash), true);
+        component.handleStateSignatureTransactionPostConsensus(
+                null, 0L, issStateSignatureTransaction(signedState, 0L, stateHash));
+        component.handleStateSignatureTransactionPostConsensus(
+                null, 1L, issStateSignatureTransaction(signedState, 1L, stateHash));
+        component.handleStateSignatureTransactionPostConsensus(
+                null, 2L, issStateSignatureTransaction(signedState, 2L, stateHash));
+        component.handleStateSignatureTransactionPostConsensus(
+                null, 3L, issStateSignatureTransaction(signedState, 3L, otherHash));
 
         assertEquals(signedState.getRound(), issConsumer.getIssRound(), "Incorrect round reported to iss consumer");
         assertEquals(3L, issConsumer.getIssNodeId(), "Incorrect other node ISS id reported");
@@ -416,7 +424,8 @@ public class StateManagementComponentTests {
         issConsumer.reset();
     }
 
-    private void testSelfIss(final Random random, final StateManagementComponent component, final long roundNum) {
+    private void testSelfIss(
+            final Random random, final DefaultStateManagementComponent component, final long roundNum) {
         final SignedState signedState =
                 new RandomSignedStateGenerator(random).setRound(roundNum).build();
 
@@ -424,9 +433,12 @@ public class StateManagementComponentTests {
         component.newSignedStateFromTransactions(signedState);
 
         final Hash otherHash = RandomUtils.randomHash(random);
-        component.handleStateSignature(issStateSignature(signedState, 1L, otherHash), true);
-        component.handleStateSignature(issStateSignature(signedState, 2L, otherHash), true);
-        component.handleStateSignature(issStateSignature(signedState, 3L, otherHash), true);
+        component.handleStateSignatureTransactionPostConsensus(
+                null, 1L, issStateSignatureTransaction(signedState, 1L, otherHash));
+        component.handleStateSignatureTransactionPostConsensus(
+                null, 2L, issStateSignatureTransaction(signedState, 2L, otherHash));
+        component.handleStateSignatureTransactionPostConsensus(
+                null, 3L, issStateSignatureTransaction(signedState, 3L, otherHash));
 
         assertEquals(signedState.getRound(), issConsumer.getIssRound(), "Incorrect round reported to iss consumer");
         assertEquals(NODE_ID.getId(), issConsumer.getIssNodeId(), "ISS should have been reported as self ISS");
@@ -468,12 +480,15 @@ public class StateManagementComponentTests {
                 "Wrapper should be destroyed after the external consumer is invoked.");
     }
 
-    private void allNodesSign(final SignedState signedState, final StateManagementComponent component) {
+    private void allNodesSign(final SignedState signedState, final DefaultStateManagementComponent component) {
         LongStream.range(0, NUM_NODES)
-                .forEach(id -> component.handleStateSignature(stateSignature(signedState, id), false));
+                .forEach(id -> component.handleStateSignatureTransactionPreConsensus(
+                        signedState.getState(), id, stateSignatureTransaction(id, signedState)));
     }
 
-    private static StateSignature stateSignature(final SignedState stateToSign, final long signingNodeId) {
+    private static StateSignatureTransaction stateSignatureTransaction(
+            final long signingNodeId, final SignedState stateToSign) {
+
         if (stateToSign == null) {
             // We are being asked to sign a non-existent round.
             return null;
@@ -484,11 +499,13 @@ public class StateManagementComponentTests {
 
         final Signature signature =
                 buildFakeSignature(addressBook.getAddress(signingNodeId).getSigPublicKey(), hash);
-        return new StateSignature(stateToSign.getRound(), signingNodeId, hash, signature);
+
+        return new StateSignatureTransaction(stateToSign.getRound(), signature, hash);
     }
 
-    private static StateSignature issStateSignature(
+    private static StateSignatureTransaction issStateSignatureTransaction(
             final SignedState stateToSign, final long signingNodeId, final Hash hash) {
+
         if (stateToSign == null) {
             // We are being asked to sign a non-existent round.
             return null;
@@ -498,7 +515,8 @@ public class StateManagementComponentTests {
 
         final Signature signature =
                 buildFakeSignature(addressBook.getAddress(signingNodeId).getSigPublicKey(), hash);
-        return new StateSignature(stateToSign.getRound(), signingNodeId, hash, signature);
+
+        return new StateSignatureTransaction(stateToSign.getRound(), signature, hash);
     }
 
     private Hash getHash(final SignedState signedState) {
@@ -522,7 +540,7 @@ public class StateManagementComponentTests {
         assertEquals(hash, signatureTransaction.getStateHash(), "Incorrect hash in state signature transaction");
     }
 
-    private StateManagementComponent newStateManagementComponent(final Random random) {
+    private DefaultStateManagementComponent newStateManagementComponent(final Random random) {
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
                 .withValue("state.roundsToKeepForSigning", roundsToKeepForSigning)
                 .withValue("state.saveStatePeriod", 1)

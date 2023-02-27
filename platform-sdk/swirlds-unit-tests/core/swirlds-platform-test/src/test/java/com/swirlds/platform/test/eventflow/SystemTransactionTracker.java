@@ -16,19 +16,20 @@
 
 package com.swirlds.platform.test.eventflow;
 
-import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.Transaction;
-import com.swirlds.common.system.transaction.internal.SystemTransaction;
-import com.swirlds.platform.components.SystemTransactionHandler;
-import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.common.system.transaction.internal.SystemTransactionPing;
+import com.swirlds.common.test.TransactionUtils;
+import com.swirlds.platform.components.transaction.system.SystemTransactionEndpoint;
+import com.swirlds.platform.components.transaction.system.TypedSystemTransactionHandler;
+import com.swirlds.platform.components.transaction.system.TypedSystemTransactionHandler.HandleStage;
+import com.swirlds.platform.state.State;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class SystemTransactionTracker implements SystemTransactionHandler, Failable {
+public class SystemTransactionTracker implements SystemTransactionEndpoint, Failable {
 
     private final Map<Long, Integer> preConsByCreator = new HashMap<>();
     private final Set<Transaction> preConsensusTransactions = new HashSet<>();
@@ -39,36 +40,45 @@ public class SystemTransactionTracker implements SystemTransactionHandler, Faila
         failureMsg.append(msg);
     }
 
-    @Override
-    public synchronized void handlePreConsensusSystemTransactions(final EventImpl event) {
-        preConsByCreator.putIfAbsent(event.getCreatorId(), 0);
-        for (final Iterator<SystemTransaction> iter = event.systemTransactionIterator(); iter.hasNext(); ) {
-            final SystemTransaction trans = iter.next();
-            final int prevVal = preConsByCreator.get(event.getCreatorId());
-            preConsByCreator.put(event.getCreatorId(), prevVal + 1);
-            if (!preConsensusTransactions.add(trans)) {
-                addFailure(String.format(
-                        "encountered duplicate pre-consensus system transaction "
-                                + "in event %s via handleSystemTransactions(EventImpl)",
-                        event.toShortString()));
-            }
+    /**
+     * Consumes pre-consensus system transactions
+     * <p>
+     * Logs number of pre consensus system transactions be each creator, as well as duplicate pre-consensus system
+     * transactions
+     *
+     * @param state       the state (unused, since we don't need to do know anything about the state)
+     * @param creatorId   the id of the node which created the transaction
+     * @param transaction the transaction to consume. of type {@link SystemTransactionPing}, since
+     *                    {@link TransactionUtils#incrementingSystemTransaction()} uses them
+     */
+    public void handlePreConsensusSystemTransaction(
+            final State state, final long creatorId, final SystemTransactionPing transaction) {
+        preConsByCreator.putIfAbsent(creatorId, 0);
+
+        final int prevVal = preConsByCreator.get(creatorId);
+        preConsByCreator.put(creatorId, prevVal + 1);
+        if (!preConsensusTransactions.add(transaction)) {
+            addFailure(String.format(
+                    "encountered duplicate pre-consensus system transaction created by node [%s]", creatorId));
         }
     }
 
-    @Override
-    public synchronized void handlePostConsensusSystemTransactions(final ConsensusRound round) {
-        for (final Iterator<ConsensusEvent> eventIt = round.iterator(); eventIt.hasNext(); ) {
-            final EventImpl event = (EventImpl) eventIt.next();
-            for (final Iterator<SystemTransaction> iter = event.systemTransactionIterator(); iter.hasNext(); ) {
-                final SystemTransaction trans = iter.next();
+    /**
+     * Consumes post-consensus system transactions
+     * <p>
+     * Logs a failure if the consumed transaction has already been handled
+     *
+     * @param state       the state (unused, since we don't need to do any state modifications)
+     * @param creatorId   the id of the node which created the transaction
+     * @param transaction the transaction to consume. of type {@link SystemTransactionPing}, since
+     *                    {@link TransactionUtils#incrementingSystemTransaction()} uses them
+     */
+    public void handlePostConsensusSystemTransaction(
+            final State state, final long creatorId, final SystemTransactionPing transaction) {
 
-                if (!consensusTransactions.add(trans)) {
-                    addFailure(String.format(
-                            "encountered duplicate consensus system transaction "
-                                    + "in round %s, event %s via handleSystemTransactions(EventImpl)",
-                            round.getRoundNum(), event.toShortString()));
-                }
-            }
+        if (!consensusTransactions.add(transaction)) {
+            addFailure(String.format(
+                    "encountered duplicate consensus system transaction created by node [%s]", creatorId));
         }
     }
 
@@ -92,5 +102,18 @@ public class SystemTransactionTracker implements SystemTransactionHandler, Faila
     @Override
     public String getFailure() {
         return failureMsg.toString();
+    }
+
+    @Override
+    public List<TypedSystemTransactionHandler<?>> getHandleMethods() {
+        return List.of(
+                new TypedSystemTransactionHandler<>(
+                        SystemTransactionPing.class,
+                        this::handlePreConsensusSystemTransaction,
+                        HandleStage.PRE_CONSENSUS),
+                new TypedSystemTransactionHandler<>(
+                        SystemTransactionPing.class,
+                        this::handlePostConsensusSystemTransaction,
+                        HandleStage.POST_CONSENSUS));
     }
 }

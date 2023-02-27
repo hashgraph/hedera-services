@@ -45,6 +45,8 @@ import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.components.transaction.system.SystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.SystemTransactionManagerFactory;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -594,10 +596,14 @@ class EventFlowTests {
         systemTransactionTracker = new SystemTransactionTracker();
         signedStateTracker = new ArrayBlockingQueue<>(100);
 
+        final SystemTransactionManager systemTransactionManager = new SystemTransactionManagerFactory()
+                .addHandlers(systemTransactionTracker.getHandleMethods())
+                .build();
+
         if (swirldState instanceof SwirldState2) {
             swirldStateManager = new SwirldStateManagerDouble(
                     selfNodeId,
-                    systemTransactionTracker,
+                    systemTransactionManager,
                     mock(SwirldStateMetrics.class),
                     settingsProvider,
                     () -> false,
@@ -606,7 +612,7 @@ class EventFlowTests {
             swirldStateManager = new SwirldStateManagerSingle(
                     getStaticThreadManager(),
                     selfNodeId,
-                    systemTransactionTracker,
+                    systemTransactionManager,
                     mock(SwirldStateMetrics.class),
                     consensusMetrics,
                     settingsProvider,

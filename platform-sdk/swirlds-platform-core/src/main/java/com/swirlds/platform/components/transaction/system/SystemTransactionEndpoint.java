@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components;
+package com.swirlds.platform.components.transaction.system;
 
-import com.swirlds.common.system.EventCreationRule;
+import java.util.List;
 
-public interface TransactionPool extends EventCreationRule {
+/**
+ * Should be implemented by objects that wish to handle system transactions
+ */
+public interface SystemTransactionEndpoint {
     /**
-     * @return the number of user transactions in the pool
+     * Reports which system transactions the implementing class wishes to consume, the methods it wishes to
+     * consume them with, and at what stage the handle methods should be executed
+     *
+     * @return a list of {@link TypedSystemTransactionHandler}s
      */
-    int numTransForEvent();
-
-    /**
-     * @return the number of state signature transactions in the pool
-     */
-    int numSignatureTransEvent();
+    List<TypedSystemTransactionHandler<?>> getHandleMethods();
 }

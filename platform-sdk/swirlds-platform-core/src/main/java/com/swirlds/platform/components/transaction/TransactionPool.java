@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components;
+package com.swirlds.platform.components.transaction;
 
-import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
+import com.swirlds.common.system.EventCreationRule;
 
-/**
- * A source of transactions.
- */
-@FunctionalInterface
-public interface TransactionSupplier {
+public interface TransactionPool extends EventCreationRule {
+    /**
+     * @return the number of user transactions in the pool
+     */
+    int numTransForEvent();
 
     /**
-     * Returns an array of transactions. May return an empty array.
-     *
-     * @return an array with 0 or more transactions
+     * @return the number of state signature transactions in the pool
      */
-    ConsensusTransactionImpl[] getTransactions();
+    int numSignatureTransEvent();
 }

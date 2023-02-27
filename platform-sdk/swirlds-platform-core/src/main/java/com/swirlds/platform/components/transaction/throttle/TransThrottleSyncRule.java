@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,16 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components.common.output;
+package com.swirlds.platform.components.transaction.throttle;
 
 /**
- * Invoked when a state signature is received from peer.
+ * Is used for checking whether this node should sync with other nodes
  */
-@FunctionalInterface
-public interface StateSignatureConsumer {
-
+public interface TransThrottleSyncRule {
     /**
-     * A state signature to be handled.
+     * Determine whether this node should sync with other nodes
      *
-     * @param stateSignature
-     * 		the state signature to handle
-     * @param isConsensus
-     *        {@code true} if the signature has reached consensus, {@code false} otherwise
+     * @return true iff this node should sync with other nodes
      */
-    void handleStateSignature(StateSignature stateSignature, boolean isConsensus);
+    boolean shouldSync();
 }

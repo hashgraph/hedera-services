@@ -14,22 +14,17 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components;
+package com.swirlds.platform.components.transaction.throttle;
 
 /**
- * Types of response of {@link TransThrottleSyncAndCreateRule}
+ * Is used for checking whether this node should initiate a sync and create an event for that sync
  */
-public enum TransThrottleSyncAndCreateRuleResponse {
+public interface TransThrottleSyncAndCreateRule {
     /**
-     * should not initiate a sync and create an event, and don't check subsequent rules
+     * Determines whether this node should or should not initiate a sync and create an event for that sync,
+     * or should check subsequent rules
+     *
+     * @return the sync and create action to take
      */
-    DONT_SYNC_OR_CREATE,
-    /**
-     * should initiate a sync and create an event, and don't check subsequent rules
-     */
-    SYNC_AND_CREATE,
-    /**
-     * continue with checking subsequent rules
-     */
-    PASS
+    TransThrottleSyncAndCreateRuleResponse shouldSyncAndCreate();
 }
