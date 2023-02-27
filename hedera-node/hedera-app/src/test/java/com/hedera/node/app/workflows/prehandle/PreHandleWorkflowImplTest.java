@@ -23,8 +23,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mock.Strictness.LENIENT;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -38,10 +42,10 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -49,7 +53,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -70,6 +73,12 @@ class PreHandleWorkflowImplTest {
     private WorkflowOnset onset;
 
     @Mock(strictness = LENIENT)
+    private SignaturePreparer signaturePreparer;
+
+    @Mock(strictness = LENIENT)
+    private Cryptography cryptography;
+
+    @Mock(strictness = LENIENT)
     private HederaState state;
 
     @Mock(strictness = LENIENT)
@@ -77,8 +86,10 @@ class PreHandleWorkflowImplTest {
 
     private PreHandleWorkflowImpl workflow;
 
-    private static final Function<Supplier<?>, CompletableFuture<?>> RUN_INSTANTLY =
-            supplier -> CompletableFuture.completedFuture(supplier.get());
+    private static final Function<Runnable, CompletableFuture<Void>> RUN_INSTANTLY = runnable -> {
+        runnable.run();
+        return CompletableFuture.completedFuture(null);
+    };
 
     @BeforeEach
     void setup(@Mock ReadableStates readableStates) throws PreCheckException {
@@ -103,17 +114,23 @@ class PreHandleWorkflowImplTest {
 
         when(transaction.getContents()).thenReturn(new byte[0]);
 
-        workflow = new PreHandleWorkflowImpl(dispatcher, onset, RUN_INSTANTLY);
+        workflow = new PreHandleWorkflowImpl(dispatcher, onset, signaturePreparer, cryptography, RUN_INSTANTLY);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters(@Mock ExecutorService executorService) {
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(null, dispatcher, onset))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(null, dispatcher, onset, signaturePreparer, cryptography))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, null, onset))
+        assertThatThrownBy(
+                        () -> new PreHandleWorkflowImpl(executorService, null, onset, signaturePreparer, cryptography))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, dispatcher, null))
+        assertThatThrownBy(() ->
+                        new PreHandleWorkflowImpl(executorService, dispatcher, null, signaturePreparer, cryptography))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, dispatcher, onset, null, cryptography))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, dispatcher, onset, signaturePreparer, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -166,18 +183,15 @@ class PreHandleWorkflowImplTest {
     void testPreHandleOnsetCatastrophicFail(@Mock WorkflowOnset localOnset) throws PreCheckException {
         // given
         when(localOnset.parseAndCheck(any(), any(byte[].class))).thenThrow(new PreCheckException(INVALID_TRANSACTION));
-        workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, RUN_INSTANTLY);
+        workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, signaturePreparer, cryptography, RUN_INSTANTLY);
 
         // when
         workflow.start(state, event);
 
         // then
-        final ArgumentCaptor<Future<TransactionMetadata>> captor = ArgumentCaptor.forClass(Future.class);
+        final ArgumentCaptor<TransactionMetadata> captor = ArgumentCaptor.forClass(TransactionMetadata.class);
         verify(transaction).setMetadata(captor.capture());
-        assertThat(captor.getValue())
-                .succeedsWithin(Duration.ofMillis(100))
-                .isInstanceOf(TransactionMetadata.class)
-                .hasFieldOrPropertyWithValue("status", INVALID_TRANSACTION);
+        assertThat(captor.getValue()).hasFieldOrPropertyWithValue("status", INVALID_TRANSACTION);
         verify(dispatcher, never()).dispatchPreHandle(any(), any());
     }
 
@@ -199,7 +213,7 @@ class PreHandleWorkflowImplTest {
                 new OnsetResult(txBody, txBody.toByteArray(), DUPLICATE_TRANSACTION, signatureMap, functionality);
         when(localOnset.parseAndCheck(any(), any(byte[].class))).thenReturn(onsetResult);
 
-        workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, RUN_INSTANTLY);
+        workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, signaturePreparer, cryptography, RUN_INSTANTLY);
 
         // when
         workflow.start(state, event);
