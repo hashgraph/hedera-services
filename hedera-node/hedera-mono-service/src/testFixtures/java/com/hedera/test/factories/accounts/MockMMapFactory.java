@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.accounts;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
+import org.mockito.BDDMockito;
 
 public class MockMMapFactory {
     private final MerkleMap mock = mock(MerkleMap.class);
@@ -35,13 +36,13 @@ public class MockMMapFactory {
 
     public MockMMapFactory withAccount(String id, MerkleAccount meta) {
         final var account = EntityNum.fromAccountId(asAccount(id));
-        given(mock.get(account)).willReturn(meta);
+        BDDMockito.lenient().when(mock.get(account)).thenReturn(meta);
         return this;
     }
 
     public MockMMapFactory withContract(String id, MerkleAccount meta) {
         final var contract = EntityNum.fromContractId(asContract(id));
-        given(mock.get(contract)).willReturn(meta);
+        BDDMockito.lenient().when(mock.get(contract)).thenReturn(meta);
         return this;
     }
 

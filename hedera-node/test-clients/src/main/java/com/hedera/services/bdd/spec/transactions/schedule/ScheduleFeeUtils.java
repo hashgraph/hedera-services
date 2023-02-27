@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.schedule;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
@@ -27,8 +28,7 @@ import org.apache.logging.log4j.Logger;
 public class ScheduleFeeUtils {
     static final Logger log = LogManager.getLogger(ScheduleFeeUtils.class);
 
-    static ScheduleInfo lookupInfo(HapiSpec spec, String schedule, boolean loggingOff)
-            throws Throwable {
+    static ScheduleInfo lookupInfo(HapiSpec spec, String schedule, boolean loggingOff) throws Throwable {
         var subOp = getScheduleInfo(schedule).noLogging();
         Optional<Throwable> error = subOp.execFor(spec);
         if (error.isPresent()) {

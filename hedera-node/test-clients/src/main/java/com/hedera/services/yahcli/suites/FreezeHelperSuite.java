@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.suites;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeAbort;
@@ -36,9 +37,7 @@ public class FreezeHelperSuite extends HapiSuite {
     private final Map<String, String> specConfig;
 
     public FreezeHelperSuite(
-            final Map<String, String> specConfig,
-            final Instant freezeStartTime,
-            final boolean isAbort) {
+            final Map<String, String> specConfig, final Instant freezeStartTime, final boolean isAbort) {
         this.isAbort = isAbort;
         this.specConfig = specConfig;
         this.freezeStartTime = freezeStartTime;

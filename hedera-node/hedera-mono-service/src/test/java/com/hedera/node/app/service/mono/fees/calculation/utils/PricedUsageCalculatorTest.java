@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.utils;
 
 import static com.hedera.node.app.service.mono.keys.HederaKeyTraversal.numSimpleKeys;
@@ -52,27 +53,32 @@ class PricedUsageCalculatorTest {
     private final JKey payerKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKeyUnchecked();
     private final ExchangeRate mockRate =
             ExchangeRate.newBuilder().setCentEquiv(22).setHbarEquiv(1).build();
-    private final FeeComponents mockComps =
-            FeeComponents.newBuilder()
-                    .setMax(1L)
-                    .setGas(5L)
-                    .setBpr(1L)
-                    .setBpt(2L)
-                    .setRbh(3L)
-                    .setSbh(4L)
-                    .build();
-    private final FeeData mockPrices =
-            FeeData.newBuilder()
-                    .setNetworkdata(mockComps)
-                    .setNodedata(mockComps)
-                    .setServicedata(mockComps)
-                    .build();
+    private final FeeComponents mockComps = FeeComponents.newBuilder()
+            .setMax(1L)
+            .setGas(5L)
+            .setBpr(1L)
+            .setBpt(2L)
+            .setRbh(3L)
+            .setSbh(4L)
+            .build();
+    private final FeeData mockPrices = FeeData.newBuilder()
+            .setNetworkdata(mockComps)
+            .setNodedata(mockComps)
+            .setServicedata(mockComps)
+            .build();
     private final FeeObject mockFees = new FeeObject(1L, 2L, 3L);
 
-    @Mock private TxnAccessor accessor;
-    @Mock private AccessorBasedUsages accessorBasedUsages;
-    @Mock private FeeMultiplierSource feeMultiplierSource;
-    @Mock private OverflowCheckingCalc calculator;
+    @Mock
+    private TxnAccessor accessor;
+
+    @Mock
+    private AccessorBasedUsages accessorBasedUsages;
+
+    @Mock
+    private FeeMultiplierSource feeMultiplierSource;
+
+    @Mock
+    private OverflowCheckingCalc calculator;
 
     private PricedUsageCalculator subject;
 
@@ -95,11 +101,9 @@ class PricedUsageCalculatorTest {
         final var inHandleAccum = subject.getHandleScopedAccumulator();
         final var su = new SigUsage(numSigPairs, sigMapSize, numSimpleKeys(payerKey));
 
-        given(accessor.usageGiven(su.numPayerKeys()))
-                .willReturn(new SigUsage(numSigPairs, sigMapSize, 1));
+        given(accessor.usageGiven(su.numPayerKeys())).willReturn(new SigUsage(numSigPairs, sigMapSize, 1));
         given(feeMultiplierSource.currentMultiplier(accessor)).willReturn(multiplier);
-        given(calculator.fees(inHandleAccum, mockPrices, mockRate, multiplier))
-                .willReturn(mockFees);
+        given(calculator.fees(inHandleAccum, mockPrices, mockRate, multiplier)).willReturn(mockFees);
 
         // when:
         final var actual = subject.inHandleFees(accessor, mockPrices, mockRate, payerKey);
@@ -112,22 +116,14 @@ class PricedUsageCalculatorTest {
     @Test
     void computesExtraHandleAsExpected() {
         // setup:
-        final ArgumentCaptor<UsageAccumulator> feesCaptor =
-                ArgumentCaptor.forClass(UsageAccumulator.class);
-        final ArgumentCaptor<UsageAccumulator> assessCaptor =
-                ArgumentCaptor.forClass(UsageAccumulator.class);
+        final ArgumentCaptor<UsageAccumulator> feesCaptor = ArgumentCaptor.forClass(UsageAccumulator.class);
+        final ArgumentCaptor<UsageAccumulator> assessCaptor = ArgumentCaptor.forClass(UsageAccumulator.class);
 
         final var inHandleAccum = subject.getHandleScopedAccumulator();
         final var su = new SigUsage(numSigPairs, sigMapSize, numSimpleKeys(payerKey));
-        given(accessor.usageGiven(su.numPayerKeys()))
-                .willReturn(new SigUsage(numSigPairs, sigMapSize, 1));
+        given(accessor.usageGiven(su.numPayerKeys())).willReturn(new SigUsage(numSigPairs, sigMapSize, 1));
         given(feeMultiplierSource.currentMultiplier(accessor)).willReturn(multiplier);
-        given(
-                        calculator.fees(
-                                feesCaptor.capture(),
-                                eq(mockPrices),
-                                eq(mockRate),
-                                longThat(l -> l == multiplier)))
+        given(calculator.fees(feesCaptor.capture(), eq(mockPrices), eq(mockRate), longThat(l -> l == multiplier)))
                 .willReturn(mockFees);
 
         // when:

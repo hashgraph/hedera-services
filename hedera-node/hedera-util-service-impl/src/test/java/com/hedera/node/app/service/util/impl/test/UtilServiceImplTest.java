@@ -13,14 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.util.impl.test;
+
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
+import com.hedera.node.app.spi.state.SchemaRegistry;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class UtilServiceImplTest {
+    @Mock
+    private SchemaRegistry registry;
 
     @Test
     void testSpi() {
@@ -33,5 +43,13 @@ class UtilServiceImplTest {
                 UtilServiceImpl.class,
                 service.getClass(),
                 "We must always receive an instance of type " + UtilServiceImpl.class.getName());
+    }
+
+    @Test
+    void registersExpectedSchema() {
+        final var subject = UtilService.getInstance();
+
+        subject.registerSchemas(registry);
+        verifyNoInteractions(registry);
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
@@ -45,21 +46,15 @@ public class NetworkUtilization {
     // Used to update network utilization after a user-submitted transaction fails the signature
     // validity
     // screen; the stand-in is a CryptoTransfer because it best reflects the work done charging fees
-    static final TxnAccessor STAND_IN_CRYPTO_TRANSFER =
-            SignedTxnAccessor.uncheckedFrom(
-                    Transaction.newBuilder()
-                            .setSignedTransactionBytes(
-                                    SignedTransaction.newBuilder()
-                                            .setBodyBytes(
-                                                    TransactionBody.newBuilder()
-                                                            .setCryptoTransfer(
-                                                                    CryptoTransferTransactionBody
-                                                                            .getDefaultInstance())
-                                                            .build()
-                                                            .toByteString())
-                                            .build()
-                                            .toByteString())
-                            .build());
+    static final TxnAccessor STAND_IN_CRYPTO_TRANSFER = SignedTxnAccessor.uncheckedFrom(Transaction.newBuilder()
+            .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                    .setBodyBytes(TransactionBody.newBuilder()
+                            .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+                            .build()
+                            .toByteString())
+                    .build()
+                    .toByteString())
+            .build());
 
     static {
         STAND_IN_CRYPTO_TRANSFER.setNumImplicitCreations(0);

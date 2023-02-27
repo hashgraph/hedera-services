@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.operation;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
@@ -34,8 +35,7 @@ public class HederaChainIdOperation extends AbstractOperation {
 
     @Inject
     public HederaChainIdOperation(
-            final GasCalculator gasCalculator,
-            final GlobalDynamicProperties globalDynamicProperties) {
+            final GasCalculator gasCalculator, final GlobalDynamicProperties globalDynamicProperties) {
         super(0x46, "CHAINID", 0, 1, 1, gasCalculator);
         this.globalDynamicProperties = globalDynamicProperties;
         this.gasCost = gasCalculator.getBaseTierGasCost();

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.onset;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
@@ -34,6 +35,8 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class does some pre-processing before each workflow. It parses the provided {@link
@@ -43,6 +46,7 @@ import java.nio.ByteBuffer;
  * query workflow. And even in the query workflow, it is used when dealing with the contained {@link
  * com.hederahashgraph.api.proto.java.CryptoTransfer}.
  */
+@Singleton
 public class WorkflowOnset {
 
     private final OnsetChecker checker;
@@ -53,6 +57,7 @@ public class WorkflowOnset {
      * @param checker the {@link OnsetChecker}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
+    @Inject
     public WorkflowOnset(@NonNull final OnsetChecker checker) {
         this.checker = requireNonNull(checker);
     }
@@ -70,8 +75,7 @@ public class WorkflowOnset {
      * @throws PreCheckException if the data is not valid
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public OnsetResult parseAndCheck(
-            @NonNull final SessionContext ctx, @NonNull final ByteBuffer buffer)
+    public OnsetResult parseAndCheck(@NonNull final SessionContext ctx, @NonNull final ByteBuffer buffer)
             throws PreCheckException {
         requireNonNull(ctx);
         requireNonNull(buffer);
@@ -92,8 +96,7 @@ public class WorkflowOnset {
      * @throws PreCheckException if the data is not valid
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public OnsetResult parseAndCheck(
-            @NonNull final SessionContext ctx, @NonNull final byte[] buffer)
+    public OnsetResult parseAndCheck(@NonNull final SessionContext ctx, @NonNull final byte[] buffer)
             throws PreCheckException {
         requireNonNull(ctx);
         requireNonNull(buffer);
@@ -114,8 +117,7 @@ public class WorkflowOnset {
      * @throws PreCheckException if the data is not valid
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public OnsetResult doParseAndCheck(
-            @NonNull final SessionContext ctx, @NonNull final Transaction transaction)
+    public OnsetResult doParseAndCheck(@NonNull final SessionContext ctx, @NonNull final Transaction transaction)
             throws PreCheckException {
         requireNonNull(ctx);
         requireNonNull(transaction);
@@ -125,8 +127,7 @@ public class WorkflowOnset {
 
     @SuppressWarnings("deprecation")
     private OnsetResult doParseAndCheck(
-            @NonNull final SessionContext ctx, @NonNull final TransactionSupplier txSupplier)
-            throws PreCheckException {
+            @NonNull final SessionContext ctx, @NonNull final TransactionSupplier txSupplier) throws PreCheckException {
 
         // 1. Parse the transaction object
         final Transaction tx;
@@ -153,8 +154,7 @@ public class WorkflowOnset {
         }
 
         // 3. Parse and validate TransactionBody
-        final TransactionBody txBody =
-                parse(ctx.txBodyParser(), bodyBytes, INVALID_TRANSACTION_BODY);
+        final TransactionBody txBody = parse(ctx.txBodyParser(), bodyBytes, INVALID_TRANSACTION_BODY);
         var errorCode = checker.checkTransactionBody(txBody);
 
         // 4. Get HederaFunctionality
@@ -168,8 +168,7 @@ public class WorkflowOnset {
         }
 
         // 4. return TransactionBody
-        return new OnsetResult(
-                txBody, bodyBytes.toByteArray(), errorCode, signatureMap, functionality);
+        return new OnsetResult(txBody, bodyBytes.toByteArray(), errorCode, signatureMap, functionality);
     }
 
     @FunctionalInterface

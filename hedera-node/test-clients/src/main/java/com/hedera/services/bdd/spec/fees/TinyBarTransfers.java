@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.fees;
 
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -37,8 +38,7 @@ public class TinyBarTransfers implements Predicate<TransferList> {
         (fee payments, CryptoTransfer transaction, SC activity)
         create separate entries in the List<AccountAmount>; and
         these entries are not consolidated. */
-        return transfersContains(
-                transfers.getAccountAmountsList(), this.transfers.getAccountAmountsList());
+        return transfersContains(transfers.getAccountAmountsList(), this.transfers.getAccountAmountsList());
     }
 
     private boolean transfersContains(List<AccountAmount> amounts, List<AccountAmount> changes) {

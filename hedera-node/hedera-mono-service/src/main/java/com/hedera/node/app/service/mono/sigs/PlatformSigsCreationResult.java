@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -57,8 +58,7 @@ public class PlatformSigsCreationResult {
     public ResponseCodeEnum asCode() {
         if (!hasFailed()) {
             return OK;
-        } else if (terminatingEx.isPresent()
-                && terminatingEx.get() instanceof KeyPrefixMismatchException) {
+        } else if (terminatingEx.isPresent() && terminatingEx.get() instanceof KeyPrefixMismatchException) {
             return ResponseCodeEnum.KEY_PREFIX_MISMATCH;
         } else {
             return ResponseCodeEnum.INVALID_SIGNATURE;

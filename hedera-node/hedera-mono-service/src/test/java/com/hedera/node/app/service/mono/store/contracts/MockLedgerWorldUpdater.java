@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts;
 
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
@@ -25,9 +26,7 @@ public class MockLedgerWorldUpdater extends AbstractLedgerWorldUpdater<HederaWor
     private final ContractCustomizer customizer;
 
     public MockLedgerWorldUpdater(
-            final HederaWorldState world,
-            final WorldLedgers trackingLedgers,
-            final ContractCustomizer customizer) {
+            final HederaWorldState world, final WorldLedgers trackingLedgers, final ContractCustomizer customizer) {
         super(world, trackingLedgers);
         this.customizer = customizer;
     }

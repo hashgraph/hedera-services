@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.crypto;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -28,8 +29,7 @@ class CryptoAnswersTest {
         final var accountInfo = mock(GetAccountInfoAnswer.class);
         final var accountBalance = mock(GetAccountBalanceAnswer.class);
         final var accountRecords = mock(GetAccountRecordsAnswer.class);
-        final var subject =
-                new CryptoAnswers(liveHash, stakers, accountInfo, accountBalance, accountRecords);
+        final var subject = new CryptoAnswers(liveHash, stakers, accountInfo, accountBalance, accountRecords);
 
         assertSame(liveHash, subject.getLiveHash());
         assertSame(stakers, subject.getStakers());

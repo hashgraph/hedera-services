@@ -13,9 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.*;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_STORE_ON_DISK;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILD_CARDS;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_STORE_RELS_ON_DISK;
 
 import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -44,6 +48,7 @@ import com.hedera.node.app.service.mono.ledger.properties.ChangeSummaryManager;
 import com.hedera.node.app.service.mono.ledger.properties.NftProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
@@ -65,7 +70,6 @@ import com.hedera.node.app.service.mono.store.tokens.annotations.AreTreasuryWild
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.merkle.map.MerkleMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -75,6 +79,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 @Module
 public interface StoresModule {
+
     @Binds
     @Singleton
     TokenStore bindTokenStore(HederaTokenStore hederaTokenStore);
@@ -95,16 +100,12 @@ public interface StoresModule {
             final UsageLimits usageLimits,
             final UniqueTokensLinkManager uniqueTokensLinkManager,
             final Supplier<UniqueTokenMapAdapter> uniqueTokens) {
-        final boolean isVirtual =
-                bootstrapProperties.getBooleanProperty(TOKENS_NFTS_USE_VIRTUAL_MERKLE);
-        final var uniqueTokensLedger =
-                new TransactionalLedger<>(
-                        NftProperty.class,
-                        isVirtual
-                                ? UniqueTokenAdapter::newEmptyVirtualToken
-                                : UniqueTokenAdapter::newEmptyMerkleToken,
-                        new BackingNfts(uniqueTokens),
-                        new ChangeSummaryManager<>());
+        final boolean isVirtual = bootstrapProperties.getBooleanProperty(TOKENS_NFTS_USE_VIRTUAL_MERKLE);
+        final var uniqueTokensLedger = new TransactionalLedger<>(
+                NftProperty.class,
+                isVirtual ? UniqueTokenAdapter::newEmptyVirtualToken : UniqueTokenAdapter::newEmptyMerkleToken,
+                new BackingNfts(uniqueTokens),
+                new ChangeSummaryManager<>());
         final var uniqueTokensCommitInterceptor =
                 new LinkAwareUniqueTokensCommitInterceptor(usageLimits, uniqueTokensLinkManager);
         uniqueTokensLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
@@ -114,15 +115,10 @@ public interface StoresModule {
     @Provides
     @Singleton
     static TransactionalLedger<TokenID, TokenProperty, MerkleToken> provideTokensLedger(
-            final UsageLimits usageLimits,
-            final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens) {
+            final UsageLimits usageLimits, final Supplier<MerkleMapLike<EntityNum, MerkleToken>> tokens) {
         final var interceptor = new TokensCommitInterceptor(usageLimits);
-        final var tokensLedger =
-                new TransactionalLedger<>(
-                        TokenProperty.class,
-                        MerkleToken::new,
-                        new BackingTokens(tokens),
-                        new ChangeSummaryManager<>());
+        final var tokensLedger = new TransactionalLedger<>(
+                TokenProperty.class, MerkleToken::new, new BackingTokens(tokens), new ChangeSummaryManager<>());
         tokensLedger.setCommitInterceptor(interceptor);
         return tokensLedger;
     }
@@ -135,46 +131,38 @@ public interface StoresModule {
     @Binds
     @Singleton
     BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> bindBackingTokenRels(
-            TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-                    tokenRelsLedger);
+            TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRelsLedger);
 
     @Provides
     @Singleton
-    static TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-            provideTokenRelsLedger(
-                    final UsageLimits usageLimits,
-                    final TransactionContext txnCtx,
-                    final SideEffectsTracker sideEffectsTracker,
-                    final TokenRelsLinkManager relsLinkManager,
-                    final Supplier<HederaTokenRel> tokenRelSupplier,
-                    final Supplier<TokenRelStorageAdapter> tokenAssociations) {
-        final var tokenRelsLedger =
-                new TransactionalLedger<>(
-                        TokenRelProperty.class,
-                        MerkleTokenRelStatus::new,
-                        new BackingTokenRels(tokenAssociations),
-                        new ChangeSummaryManager<>());
+    static TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> provideTokenRelsLedger(
+            final UsageLimits usageLimits,
+            final TransactionContext txnCtx,
+            final SideEffectsTracker sideEffectsTracker,
+            final TokenRelsLinkManager relsLinkManager,
+            final Supplier<HederaTokenRel> tokenRelSupplier,
+            final Supplier<TokenRelStorageAdapter> tokenAssociations) {
+        final var tokenRelsLedger = new TransactionalLedger<>(
+                TokenRelProperty.class,
+                MerkleTokenRelStatus::new,
+                new BackingTokenRels(tokenAssociations),
+                new ChangeSummaryManager<>());
         tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
-        final var interceptor =
-                new LinkAwareTokenRelsCommitInterceptor(
-                        usageLimits, txnCtx, sideEffectsTracker, relsLinkManager, tokenRelSupplier);
+        final var interceptor = new LinkAwareTokenRelsCommitInterceptor(
+                usageLimits, txnCtx, sideEffectsTracker, relsLinkManager, tokenRelSupplier);
         tokenRelsLedger.setCommitInterceptor(interceptor);
         return tokenRelsLedger;
     }
 
     @Provides
     @Singleton
-    static Supplier<HederaAccount> provideAccountSupplier(
-            final BootstrapProperties bootstrapProperties) {
-        return bootstrapProperties.getBooleanProperty(ACCOUNTS_STORE_ON_DISK)
-                ? OnDiskAccount::new
-                : MerkleAccount::new;
+    static Supplier<HederaAccount> provideAccountSupplier(final BootstrapProperties bootstrapProperties) {
+        return bootstrapProperties.getBooleanProperty(ACCOUNTS_STORE_ON_DISK) ? OnDiskAccount::new : MerkleAccount::new;
     }
 
     @Provides
     @Singleton
-    static Supplier<HederaTokenRel> provideTokenRelSupplier(
-            final BootstrapProperties bootstrapProperties) {
+    static Supplier<HederaTokenRel> provideTokenRelSupplier(final BootstrapProperties bootstrapProperties) {
         return bootstrapProperties.getBooleanProperty(TOKENS_STORE_RELS_ON_DISK)
                 ? OnDiskTokenRel::new
                 : MerkleTokenRelStatus::new;
@@ -196,32 +184,26 @@ public interface StoresModule {
             final AccountNumbers accountNumbers,
             final TransactionContext txnCtx,
             final UsageLimits usageLimits) {
-        final var accountsLedger =
-                new TransactionalLedger<>(
-                        AccountProperty.class,
-                        accountSupplier,
-                        backingAccounts,
-                        new ChangeSummaryManager<>());
-        final var accountsCommitInterceptor =
-                new StakingAccountsCommitInterceptor(
-                        sideEffectsTracker,
-                        networkCtx,
-                        dynamicProperties,
-                        rewardCalculator,
-                        stakeChangeManager,
-                        stakePeriodManager,
-                        stakeInfoManager,
-                        accountNumbers,
-                        txnCtx,
-                        usageLimits);
+        final var accountsLedger = new TransactionalLedger<>(
+                AccountProperty.class, accountSupplier, backingAccounts, new ChangeSummaryManager<>());
+        final var accountsCommitInterceptor = new StakingAccountsCommitInterceptor(
+                sideEffectsTracker,
+                networkCtx,
+                dynamicProperties,
+                rewardCalculator,
+                stakeChangeManager,
+                stakePeriodManager,
+                stakeInfoManager,
+                accountNumbers,
+                txnCtx,
+                usageLimits);
         accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
         return accountsLedger;
     }
 
     @Provides
     @AreTreasuryWildcardsEnabled
-    static boolean provideAreTreasuryWildcardsEnabled(
-            final @CompositeProps PropertySource properties) {
+    static boolean provideAreTreasuryWildcardsEnabled(final @CompositeProps PropertySource properties) {
         return properties.getBooleanProperty(TOKENS_NFTS_USE_TREASURY_WILD_CARDS);
     }
 }

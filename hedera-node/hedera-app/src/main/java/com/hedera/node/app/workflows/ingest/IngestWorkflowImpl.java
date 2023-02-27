@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.ingest;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -27,8 +28,8 @@ import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -46,9 +47,6 @@ import java.util.function.Supplier;
 
 /** Implementation of {@link IngestWorkflow} */
 public final class IngestWorkflowImpl implements IngestWorkflow {
-
-    // TODO: Intermediate solution until we find a better way to get the service-key
-    private static final String TOKEN_SERVICE_KEY = new TokenServiceImpl().getServiceName();
 
     private final NodeInfo nodeInfo;
     private final CurrentPlatformStatus currentPlatformStatus;
@@ -147,12 +145,11 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
 
                 // 4. Get payer account
                 final AccountID payerID = txBody.getTransactionID().getAccountID();
-                final var tokenStates = state.createReadableStates(TOKEN_SERVICE_KEY);
+                final var tokenStates = state.createReadableStates(TokenService.NAME);
                 final var accountStore = storeSupplier.apply(tokenStates);
-                final var payer =
-                        accountStore
-                                .getAccount(payerID)
-                                .orElseThrow(() -> new PreCheckException(PAYER_ACCOUNT_NOT_FOUND));
+                final var payer = accountStore
+                        .getAccount(payerID)
+                        .orElseThrow(() -> new PreCheckException(PAYER_ACCOUNT_NOT_FOUND));
 
                 // 5. Check payer's signature
                 checker.checkPayerSignature(txBody, signatureMap, payer);
@@ -180,11 +177,10 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
         }
 
         // 8. Return PreCheck code and evtl. estimated fee
-        final var transactionResponse =
-                TransactionResponse.newBuilder()
-                        .setNodeTransactionPrecheckCode(result)
-                        .setCost(estimatedFee)
-                        .build();
+        final var transactionResponse = TransactionResponse.newBuilder()
+                .setNodeTransactionPrecheckCode(result)
+                .setCost(estimatedFee)
+                .build();
         responseBuffer.put(transactionResponse.toByteArray());
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.contract;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
@@ -122,9 +123,8 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     }
 
     public HapiEthereumContractCreate balance(long initial) {
-        balance =
-                Optional.of(
-                        WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(initial)).longValueExact());
+        balance = Optional.of(
+                WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(initial)).longValueExact());
         return this;
     }
 
@@ -175,8 +175,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
-        bytecodeFileFn.ifPresent(
-                stringSupplier -> bytecodeFile = Optional.of(stringSupplier.get()));
+        bytecodeFileFn.ifPresent(stringSupplier -> bytecodeFile = Optional.of(stringSupplier.get()));
         if (bytecodeFile.isEmpty()) {
             setBytecodeToDefaultContract(spec);
         }
@@ -191,29 +190,27 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         final var maxFeePerGasBytes = gasLongToBytes(maxFeePerGas.longValueExact());
         final var maxPriorityGasBytes = gasLongToBytes(maxPriorityGas);
 
-        final var ethTxData =
-                new EthTxData(
-                        null,
-                        type,
-                        Integers.toBytes(CHAIN_ID),
-                        nonce,
-                        gasPriceBytes,
-                        maxPriorityGasBytes,
-                        maxFeePerGasBytes,
-                        gas.orElse(0L),
-                        new byte[] {},
-                        BigInteger.valueOf(balance.orElse(0L)),
-                        callData,
-                        new byte[] {},
-                        0,
-                        null,
-                        null,
-                        null);
+        final var ethTxData = new EthTxData(
+                null,
+                type,
+                Integers.toBytes(CHAIN_ID),
+                nonce,
+                gasPriceBytes,
+                maxPriorityGasBytes,
+                maxFeePerGasBytes,
+                gas.orElse(0L),
+                new byte[] {},
+                BigInteger.valueOf(balance.orElse(0L)),
+                callData,
+                new byte[] {},
+                0,
+                null,
+                null,
+                null);
 
         final byte[] privateKeyByteArray = getPrivateKeyFromSpec(spec, privateKeyRef);
         var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
-        spec.registry()
-                .saveBytes(ETH_HASH_KEY, ByteString.copyFrom((signedEthTxData.getEthereumHash())));
+        spec.registry().saveBytes(ETH_HASH_KEY, ByteString.copyFrom((signedEthTxData.getEthereumHash())));
 
         final var extractedSignatures = EthTxSigs.extractSignatures(signedEthTxData);
         final var senderAddress = ByteString.copyFrom(extractedSignatures.address());
@@ -226,20 +223,17 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         }
 
         final var ethData = signedEthTxData;
-        final EthereumTransactionBody opBody =
-                spec.txns()
-                        .<EthereumTransactionBody, EthereumTransactionBody.Builder>body(
-                                EthereumTransactionBody.class,
-                                builder -> {
-                                    if (invalidateEthData) {
-                                        builder.setEthereumData(ByteString.EMPTY);
-                                    } else {
-                                        builder.setEthereumData(
-                                                ByteString.copyFrom(ethData.encodeTx()));
-                                    }
-                                    ethFileID.ifPresent(builder::setCallData);
-                                    maxGasAllowance.ifPresent(builder::setMaxGasAllowance);
-                                });
+        final EthereumTransactionBody opBody = spec.txns()
+                .<EthereumTransactionBody, EthereumTransactionBody.Builder>body(
+                        EthereumTransactionBody.class, builder -> {
+                            if (invalidateEthData) {
+                                builder.setEthereumData(ByteString.EMPTY);
+                            } else {
+                                builder.setEthereumData(ByteString.copyFrom(ethData.encodeTx()));
+                            }
+                            ethFileID.ifPresent(builder::setCallData);
+                            maxGasAllowance.ifPresent(builder::setMaxGasAllowance);
+                        });
         return b -> b.setEthereumTransaction(opBody);
     }
 

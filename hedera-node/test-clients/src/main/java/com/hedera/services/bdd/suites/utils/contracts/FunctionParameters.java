@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.utils.contracts;
 
 import static com.hedera.services.bdd.suites.utils.contracts.FunctionParameters.PrecompileFunction.MINT;
@@ -70,11 +71,10 @@ public class FunctionParameters {
 
         if (MINT.equals(precompileFunction)) {
             functionHash = Bytes.ofUnsignedInt(ABI_ID_MINT_TOKEN);
-            final var result =
-                    Tuple.of(
-                            convertBesuAddressToHeadlongAddress(tokenAddress),
-                            BigInteger.valueOf(amount),
-                            metadata.stream().map(String::getBytes).toArray(byte[][]::new));
+            final var result = Tuple.of(
+                    convertBesuAddressToHeadlongAddress(tokenAddress),
+                    BigInteger.valueOf(amount),
+                    metadata.stream().map(String::getBytes).toArray(byte[][]::new));
             functionParams = Bytes.wrap(mintTokenType.encode(result).array());
         }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.crypto.queries;
 
 import static com.hedera.node.app.service.mono.queries.meta.GetTxnRecordAnswer.CHILD_RECORDS_CTX_KEY;
@@ -63,25 +64,19 @@ public final class GetTxnRecordResourceUsage implements QueryResourceUsageEstima
     }
 
     @Override
-    public FeeData usageGiven(
-            final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
-        return usageFor(
-                query, query.getTransactionGetRecord().getHeader().getResponseType(), queryCtx);
+    public FeeData usageGiven(final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
+        return usageFor(query, query.getTransactionGetRecord().getHeader().getResponseType(), queryCtx);
     }
 
     @Override
-    public FeeData usageGivenType(
-            final Query query, final StateView view, final ResponseType type) {
+    public FeeData usageGivenType(final Query query, final StateView view, final ResponseType type) {
         return usageFor(query, type, null);
     }
 
     private FeeData usageFor(
-            final Query query,
-            final ResponseType stateProofType,
-            @Nullable final Map<String, Object> queryCtx) {
+            final Query query, final ResponseType stateProofType, @Nullable final Map<String, Object> queryCtx) {
         final var op = query.getTransactionGetRecord();
-        final var txnRecord =
-                answerFunctions.txnRecord(recordCache, op).orElse(MISSING_RECORD_STANDIN);
+        final var txnRecord = answerFunctions.txnRecord(recordCache, op).orElse(MISSING_RECORD_STANDIN);
         var usages = usageEstimator.getTransactionRecordQueryFeeMatrices(txnRecord, stateProofType);
         if (txnRecord != MISSING_RECORD_STANDIN) {
             putIfNotNull(queryCtx, PRIORITY_RECORD_CTX_KEY, txnRecord);
@@ -100,12 +95,9 @@ public final class GetTxnRecordResourceUsage implements QueryResourceUsageEstima
     }
 
     private FeeData accumulatedUsage(
-            FeeData usages,
-            final ResponseType stateProofType,
-            final List<TransactionRecord> extraRecords) {
+            FeeData usages, final ResponseType stateProofType, final List<TransactionRecord> extraRecords) {
         for (final var extra : extraRecords) {
-            final var extraUsage =
-                    usageEstimator.getTransactionRecordQueryFeeMatrices(extra, stateProofType);
+            final var extraUsage = usageEstimator.getTransactionRecordQueryFeeMatrices(extra, stateProofType);
             usages = sumFn.apply(usages, extraUsage);
         }
         return usages;

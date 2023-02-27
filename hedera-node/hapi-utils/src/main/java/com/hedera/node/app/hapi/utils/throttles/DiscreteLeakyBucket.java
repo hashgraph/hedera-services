@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.throttles;
 
 /** A bucket of discrete capacity. */
@@ -65,11 +66,7 @@ class DiscreteLeakyBucket {
         assertValidUnitsToFree(candidateCapacity);
         if (candidateUsed < 0 || candidateUsed > candidateCapacity || candidateCapacity == 0) {
             throw new IllegalArgumentException(
-                    "Cannot use "
-                            + candidateUsed
-                            + " units in a bucket of capacity "
-                            + candidateCapacity
-                            + "!");
+                    "Cannot use " + candidateUsed + " units in a bucket of capacity " + candidateCapacity + "!");
         }
     }
 
@@ -84,14 +81,13 @@ class DiscreteLeakyBucket {
             throw new IllegalArgumentException("Cannot use " + newUnits + " units of capacity!");
         }
         if (newUsage < 0 || newUsage > capacity) {
-            throw new IllegalArgumentException(
-                    "Adding "
-                            + newUnits
-                            + " units to "
-                            + used
-                            + " already used would exceed capacity "
-                            + capacity
-                            + "!");
+            throw new IllegalArgumentException("Adding "
+                    + newUnits
+                    + " units to "
+                    + used
+                    + " already used would exceed capacity "
+                    + capacity
+                    + "!");
         }
     }
 }

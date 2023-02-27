@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -76,8 +77,7 @@ public class LinkAwareTokenRelsCommitInterceptor extends AutoAssocTokenRelsCommi
 
     @Override
     public void preview(
-            final EntityChangeSet<Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty>
-                    pendingChanges) {
+            final EntityChangeSet<Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty> pendingChanges) {
         addsOrRemoves = false;
         final var n = pendingChanges.size();
         if (n == 0) {
@@ -105,7 +105,9 @@ public class LinkAwareTokenRelsCommitInterceptor extends AutoAssocTokenRelsCommi
                 final var newRel = tokenRelSupplier.get();
                 newRel.setKey(EntityNumPair.fromAccountTokenRel(id));
                 pendingChanges.cacheEntity(i, newRel);
-                addedRels.computeIfAbsent(accountNum, ignore -> new ArrayList<>()).add(newRel);
+                addedRels
+                        .computeIfAbsent(accountNum, ignore -> new ArrayList<>())
+                        .add(newRel);
             } else {
                 // A null change set means the relationship is ending
                 final var tbdTokenNum = EntityNum.fromLong(entity.getRelatedTokenNum());
@@ -114,12 +116,8 @@ public class LinkAwareTokenRelsCommitInterceptor extends AutoAssocTokenRelsCommi
                         .add(tbdTokenNum);
             }
         }
-        touched.forEach(
-                accountNum ->
-                        relsLinkManager.updateLinks(
-                                accountNum,
-                                removedNums.get(accountNum),
-                                addedRels.get(accountNum)));
+        touched.forEach(accountNum ->
+                relsLinkManager.updateLinks(accountNum, removedNums.get(accountNum), addedRels.get(accountNum)));
     }
 
     @Override

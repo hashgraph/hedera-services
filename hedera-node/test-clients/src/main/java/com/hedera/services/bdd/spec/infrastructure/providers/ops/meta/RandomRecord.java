@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.meta;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -46,10 +47,9 @@ public class RandomRecord implements OpProvider {
         if (txnId == TransactionID.getDefaultInstance()) {
             return Optional.empty();
         } else {
-            HapiGetTxnRecord op =
-                    getTxnRecord(txnId)
-                            .hasCostAnswerPrecheckFrom(OK, RECORD_NOT_FOUND)
-                            .hasAnswerOnlyPrecheckFrom(OK, RECORD_NOT_FOUND);
+            HapiGetTxnRecord op = getTxnRecord(txnId)
+                    .hasCostAnswerPrecheckFrom(OK, RECORD_NOT_FOUND)
+                    .hasAnswerOnlyPrecheckFrom(OK, RECORD_NOT_FOUND);
             return Optional.of(op);
         }
     }

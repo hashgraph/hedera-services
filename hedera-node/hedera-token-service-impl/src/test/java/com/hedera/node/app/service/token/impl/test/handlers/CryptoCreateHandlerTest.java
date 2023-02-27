@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -33,7 +34,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void preHandleCryptoCreateVanilla() {
         final var txn = createAccountTransaction(true);
 
-        final var context = new PrehandleHandlerContext(store, txn, payer);
+        final var context = new PreHandleContext(store, txn, payer);
         subject.preHandle(context);
 
         assertEquals(txn, context.getTxn());
@@ -44,9 +45,9 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @Test
     void noReceiverSigRequiredPreHandleCryptoCreate() {
         final var txn = createAccountTransaction(false);
-        final var expected = new PrehandleHandlerContext(store, txn, payer);
+        final var expected = new PreHandleContext(store, txn, payer);
 
-        final var context = new PrehandleHandlerContext(store, txn, payer);
+        final var context = new PreHandleContext(store, txn, payer);
         subject.preHandle(context);
 
         assertEquals(expected.getTxn(), context.getTxn());
@@ -63,15 +64,12 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     private TransactionBody createAccountTransaction(final boolean receiverSigReq) {
         final var transactionID =
-                TransactionID.newBuilder()
-                        .setAccountID(payer)
-                        .setTransactionValidStart(consensusTimestamp);
-        final var createTxnBody =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setKey(key)
-                        .setReceiverSigRequired(receiverSigReq)
-                        .setMemo("Create Account")
-                        .build();
+                TransactionID.newBuilder().setAccountID(payer).setTransactionValidStart(consensusTimestamp);
+        final var createTxnBody = CryptoCreateTransactionBody.newBuilder()
+                .setKey(key)
+                .setReceiverSigRequired(receiverSigReq)
+                .setMemo("Create Account")
+                .build();
 
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)

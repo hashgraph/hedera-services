@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.extensions;
 
 import java.lang.reflect.Field;
@@ -65,8 +66,7 @@ public class LogCaptureExtension implements TestInstancePostProcessor, AfterEach
     }
 
     @Override
-    public void postProcessTestInstance(Object o, ExtensionContext extensionContext)
-            throws Exception {
+    public void postProcessTestInstance(Object o, ExtensionContext extensionContext) throws Exception {
         Class<?> testCls = o.getClass();
 
         Field subject = null, logCaptor = null;
@@ -83,15 +83,13 @@ public class LogCaptureExtension implements TestInstancePostProcessor, AfterEach
             throw new IllegalStateException("The test class has no designated subject");
         }
         if (logCaptor == null) {
-            throw new IllegalStateException(
-                    "The test class has no LogCaptor field marked with @LoggingTarget");
+            throw new IllegalStateException("The test class has no LogCaptor field marked with @LoggingTarget");
         }
 
         injectCaptor(o, subject, logCaptor);
     }
 
-    private void injectCaptor(Object test, Field subject, Field logCaptor)
-            throws IllegalAccessException {
+    private void injectCaptor(Object test, Field subject, Field logCaptor) throws IllegalAccessException {
         logCaptor.setAccessible(true);
         injectedCaptor = new LogCaptor(LogManager.getLogger(subject.getType()));
         logCaptor.set(test, injectedCaptor);
@@ -99,8 +97,7 @@ public class LogCaptureExtension implements TestInstancePostProcessor, AfterEach
 
     private boolean isSubject(Field field) {
         var annotations = field.getDeclaredAnnotations();
-        return Stream.of(annotations)
-                .anyMatch(a -> a.annotationType().equals(LoggingSubject.class));
+        return Stream.of(annotations).anyMatch(a -> a.annotationType().equals(LoggingSubject.class));
     }
 
     private boolean isInjectableCaptor(Field field) {

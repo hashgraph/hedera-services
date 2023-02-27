@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.sysfiles;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,9 +36,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class CurrencyCallbacksTest {
     ExchangeRates curMidnightRates;
 
-    @Mock FeeCalculator fees;
-    @Mock HbarCentExchange exchange;
-    @Mock Supplier<ExchangeRates> midnightRates;
+    @Mock
+    FeeCalculator fees;
+
+    @Mock
+    HbarCentExchange exchange;
+
+    @Mock
+    Supplier<ExchangeRates> midnightRates;
 
     CurrencyCallbacks subject;
 

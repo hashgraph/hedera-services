@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.queries.schedule;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
@@ -151,29 +152,18 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
     protected void assertExpectationsGiven(HapiSpec spec) {
         var actualInfo = response.getScheduleGetInfo().getScheduleInfo();
 
-        expectedScheduledTxnId.ifPresent(
-                n ->
-                        Assertions.assertEquals(
-                                spec.registry().getTxnId(correspondingScheduledTxnId(n)),
-                                actualInfo.getScheduledTransactionID(),
-                                "Wrong scheduled transaction id!"));
+        expectedScheduledTxnId.ifPresent(n -> Assertions.assertEquals(
+                spec.registry().getTxnId(correspondingScheduledTxnId(n)),
+                actualInfo.getScheduledTransactionID(),
+                "Wrong scheduled transaction id!"));
 
-        expectedCreatorAccountID.ifPresent(
-                s ->
-                        Assertions.assertEquals(
-                                TxnUtils.asId(s, spec),
-                                actualInfo.getCreatorAccountID(),
-                                "Wrong schedule creator account ID!"));
+        expectedCreatorAccountID.ifPresent(s -> Assertions.assertEquals(
+                TxnUtils.asId(s, spec), actualInfo.getCreatorAccountID(), "Wrong schedule creator account ID!"));
 
-        expectedPayerAccountID.ifPresent(
-                s ->
-                        Assertions.assertEquals(
-                                TxnUtils.asId(s, spec),
-                                actualInfo.getPayerAccountID(),
-                                "Wrong schedule payer account ID!"));
+        expectedPayerAccountID.ifPresent(s -> Assertions.assertEquals(
+                TxnUtils.asId(s, spec), actualInfo.getPayerAccountID(), "Wrong schedule payer account ID!"));
 
-        expectedEntityMemo.ifPresent(
-                s -> Assertions.assertEquals(s, actualInfo.getMemo(), "Wrong memo!"));
+        expectedEntityMemo.ifPresent(s -> Assertions.assertEquals(s, actualInfo.getMemo(), "Wrong memo!"));
 
         if (checkForRecordedScheduledTxn) {
             Assertions.assertEquals(
@@ -196,42 +186,30 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 
         if (deletionTxn.isPresent()) {
             assertTimestampMatches(
-                    deletionTxn.get(),
-                    0,
-                    actualInfo.getDeletionTime(),
-                    "Wrong consensus deletion time!",
-                    spec);
+                    deletionTxn.get(), 0, actualInfo.getDeletionTime(), "Wrong consensus deletion time!", spec);
         }
 
         var registry = spec.registry();
 
-        expectedSignatories.ifPresent(
-                s -> {
-                    var expect = KeyList.newBuilder();
-                    for (String signatory : s) {
-                        var key = registry.getKey(signatory);
-                        expect.addKeys(key);
-                    }
-                    Assertions.assertArrayEquals(
-                            expect.build().getKeysList().toArray(),
-                            actualInfo.getSigners().getKeysList().toArray(),
-                            "Wrong signatories!");
-                });
+        expectedSignatories.ifPresent(s -> {
+            var expect = KeyList.newBuilder();
+            for (String signatory : s) {
+                var key = registry.getKey(signatory);
+                expect.addKeys(key);
+            }
+            Assertions.assertArrayEquals(
+                    expect.build().getKeysList().toArray(),
+                    actualInfo.getSigners().getKeysList().toArray(),
+                    "Wrong signatories!");
+        });
 
-        expectedExpirationTimeRelativeTo.ifPresent(
-                stringLongPair ->
-                        Assertions.assertEquals(
-                                getRelativeExpiry(
-                                        spec, stringLongPair.getKey(), stringLongPair.getValue()),
-                                actualInfo.getExpirationTime(),
-                                "Wrong Expiration Time!"));
+        expectedExpirationTimeRelativeTo.ifPresent(stringLongPair -> Assertions.assertEquals(
+                getRelativeExpiry(spec, stringLongPair.getKey(), stringLongPair.getValue()),
+                actualInfo.getExpirationTime(),
+                "Wrong Expiration Time!"));
 
-        expectedWaitForExpiry.ifPresent(
-                aBoolean ->
-                        Assertions.assertEquals(
-                                aBoolean,
-                                actualInfo.getWaitForExpiry(),
-                                "waitForExpiry was wrong!"));
+        expectedWaitForExpiry.ifPresent(aBoolean ->
+                Assertions.assertEquals(aBoolean, actualInfo.getWaitForExpiry(), "waitForExpiry was wrong!"));
 
         assertFor(
                 actualInfo.getAdminKey(),
@@ -240,20 +218,17 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
                 "Wrong schedule admin key!",
                 registry);
 
-        expectedLedgerId.ifPresent(
-                id -> Assertions.assertEquals(rationalize(id), actualInfo.getLedgerId()));
+        expectedLedgerId.ifPresent(id -> Assertions.assertEquals(rationalize(id), actualInfo.getLedgerId()));
     }
 
-    private void assertTimestampMatches(
-            String txn, int nanoOffset, Timestamp actual, String errMsg, HapiSpec spec) {
+    private void assertTimestampMatches(String txn, int nanoOffset, Timestamp actual, String errMsg, HapiSpec spec) {
         var subOp = getTxnRecord(txn);
         allRunFor(spec, subOp);
         var consensusTime = subOp.getResponseRecord().getConsensusTimestamp();
-        var expected =
-                Timestamp.newBuilder()
-                        .setSeconds(actual.getSeconds())
-                        .setNanos(consensusTime.getNanos() + nanoOffset)
-                        .build();
+        var expected = Timestamp.newBuilder()
+                .setSeconds(actual.getSeconds())
+                .setNanos(consensusTime.getNanos() + nanoOffset)
+                .build();
         Assertions.assertEquals(expected, actual, errMsg);
     }
 
@@ -273,14 +248,9 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
     protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getScheduleInfoQuery(spec, payment, false);
         response =
-                spec.clients()
-                        .getScheduleSvcStub(targetNodeFor(spec), useTls)
-                        .getScheduleInfo(query);
+                spec.clients().getScheduleSvcStub(targetNodeFor(spec), useTls).getScheduleInfo(query);
         if (verboseLoggingOn) {
-            LOG.info(
-                    "Info for '{}': {}",
-                    () -> schedule,
-                    response.getScheduleGetInfo()::getScheduleInfo);
+            LOG.info("Info for '{}': {}", () -> schedule, response.getScheduleGetInfo()::getScheduleInfo);
         }
     }
 
@@ -288,19 +258,16 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getScheduleInfoQuery(spec, payment, true);
         Response response =
-                spec.clients()
-                        .getScheduleSvcStub(targetNodeFor(spec), useTls)
-                        .getScheduleInfo(query);
+                spec.clients().getScheduleSvcStub(targetNodeFor(spec), useTls).getScheduleInfo(query);
         return costFrom(response);
     }
 
     private Query getScheduleInfoQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         var id = TxnUtils.asScheduleId(schedule, spec);
-        ScheduleGetInfoQuery getScheduleQuery =
-                ScheduleGetInfoQuery.newBuilder()
-                        .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
-                        .setScheduleID(id)
-                        .build();
+        ScheduleGetInfoQuery getScheduleQuery = ScheduleGetInfoQuery.newBuilder()
+                .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
+                .setScheduleID(id)
+                .build();
         return Query.newBuilder().setScheduleGetInfo(getScheduleQuery).build();
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.consensus;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
@@ -53,10 +54,9 @@ public class RandomTopicInfo implements OpProvider {
             return Optional.empty();
         }
 
-        var op =
-                QueryVerbs.getTopicInfo(target.get())
-                        .hasCostAnswerPrecheckFrom(permissibleCostAnswerPrechecks)
-                        .hasAnswerOnlyPrecheckFrom(permissibleAnswerOnlyPrechecks);
+        var op = QueryVerbs.getTopicInfo(target.get())
+                .hasCostAnswerPrecheckFrom(permissibleCostAnswerPrechecks)
+                .hasAnswerOnlyPrecheckFrom(permissibleAnswerOnlyPrechecks);
 
         return Optional.of(op);
     }

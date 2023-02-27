@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -38,28 +39,42 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TopLevelTransitionTest {
     private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
 
-    @Mock private TransactionContext txnCtx;
-    @Mock private NetworkCtxManager networkCtxManager;
-    @Mock private TxnChargingPolicyAgent chargingPolicyAgent;
-    @Mock private PlatformTxnAccessor accessor;
-    @Mock private RequestedTransition requestedTransition;
-    @Mock private SigsAndPayerKeyScreen sigsAndPayerKeyScreen;
-    @Mock private NonPayerKeysScreen nonPayerKeysScreen;
-    @Mock private NetworkUtilization networkUtilization;
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private NetworkCtxManager networkCtxManager;
+
+    @Mock
+    private TxnChargingPolicyAgent chargingPolicyAgent;
+
+    @Mock
+    private PlatformTxnAccessor accessor;
+
+    @Mock
+    private RequestedTransition requestedTransition;
+
+    @Mock
+    private SigsAndPayerKeyScreen sigsAndPayerKeyScreen;
+
+    @Mock
+    private NonPayerKeysScreen nonPayerKeysScreen;
+
+    @Mock
+    private NetworkUtilization networkUtilization;
 
     private TopLevelTransition subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new TopLevelTransition(
-                        sigsAndPayerKeyScreen,
-                        networkCtxManager,
-                        requestedTransition,
-                        txnCtx,
-                        nonPayerKeysScreen,
-                        networkUtilization,
-                        chargingPolicyAgent);
+        subject = new TopLevelTransition(
+                sigsAndPayerKeyScreen,
+                networkCtxManager,
+                requestedTransition,
+                txnCtx,
+                nonPayerKeysScreen,
+                networkUtilization,
+                chargingPolicyAgent);
     }
 
     @Test
@@ -79,14 +94,13 @@ class TopLevelTransitionTest {
     @Test
     void happyPathScopedProcessFlows() {
         // setup:
-        InOrder inOrder =
-                Mockito.inOrder(
-                        networkCtxManager,
-                        sigsAndPayerKeyScreen,
-                        chargingPolicyAgent,
-                        networkUtilization,
-                        nonPayerKeysScreen,
-                        requestedTransition);
+        InOrder inOrder = Mockito.inOrder(
+                networkCtxManager,
+                sigsAndPayerKeyScreen,
+                chargingPolicyAgent,
+                networkUtilization,
+                nonPayerKeysScreen,
+                requestedTransition);
 
         given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
         given(txnCtx.consensusTime()).willReturn(consensusNow);
@@ -110,14 +124,13 @@ class TopLevelTransitionTest {
     @Test
     void gasThrottledProcessFlows() {
         // setup:
-        InOrder inOrder =
-                Mockito.inOrder(
-                        networkCtxManager,
-                        sigsAndPayerKeyScreen,
-                        chargingPolicyAgent,
-                        nonPayerKeysScreen,
-                        txnCtx,
-                        networkUtilization);
+        InOrder inOrder = Mockito.inOrder(
+                networkCtxManager,
+                sigsAndPayerKeyScreen,
+                chargingPolicyAgent,
+                nonPayerKeysScreen,
+                txnCtx,
+                networkUtilization);
 
         given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
         given(txnCtx.consensusTime()).willReturn(consensusNow);

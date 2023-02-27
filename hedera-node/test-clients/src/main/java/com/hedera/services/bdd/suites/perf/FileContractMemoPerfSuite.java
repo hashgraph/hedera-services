@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -46,9 +47,7 @@ public class FileContractMemoPerfSuite extends LoadTest {
     private static final Logger log = LogManager.getLogger(FileContractMemoPerfSuite.class);
 
     private final ResponseCodeEnum[] permissiblePrechecks =
-            new ResponseCodeEnum[] {
-                OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED
-            };
+            new ResponseCodeEnum[] {OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED};
 
     private final String INITIAL_MEMO = "InitialMemo";
     private final String FILE_MEMO = INITIAL_MEMO + " for File Entity";
@@ -73,65 +72,35 @@ public class FileContractMemoPerfSuite extends LoadTest {
     protected HapiSpec RunMixedFileContractMemoOps() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         final AtomicInteger createdSoFar = new AtomicInteger(0);
-        Supplier<HapiSpecOperation[]> mixedOpsBurst =
-                () ->
-                        new HapiSpecOperation[] {
-                            fileCreate("testFile" + createdSoFar.getAndIncrement())
-                                    .payingWith(GENESIS)
-                                    .entityMemo(
-                                            new String(
-                                                    TxnUtils.randomUtf8Bytes(memoLength.getAsInt()),
-                                                    StandardCharsets.UTF_8))
-                                    .noLogging()
-                                    .hasPrecheckFrom(
-                                            OK,
-                                            BUSY,
-                                            DUPLICATE_TRANSACTION,
-                                            PLATFORM_TRANSACTION_NOT_CREATED)
-                                    .deferStatusResolution(),
-                            getFileInfo(TARGET_FILE + "Info").hasMemo(FILE_MEMO),
-                            fileUpdate(TARGET_FILE)
-                                    .payingWith(GENESIS)
-                                    .entityMemo(
-                                            new String(
-                                                    TxnUtils.randomUtf8Bytes(memoLength.getAsInt()),
-                                                    StandardCharsets.UTF_8))
-                                    .noLogging()
-                                    .hasPrecheckFrom(
-                                            OK,
-                                            BUSY,
-                                            DUPLICATE_TRANSACTION,
-                                            PLATFORM_TRANSACTION_NOT_CREATED)
-                                    .deferStatusResolution(),
-                            contractCreate("testContract" + createdSoFar.getAndIncrement())
-                                    .payingWith(GENESIS)
-                                    .bytecode(TARGET_FILE)
-                                    .entityMemo(
-                                            new String(
-                                                    TxnUtils.randomUtf8Bytes(memoLength.getAsInt()),
-                                                    StandardCharsets.UTF_8))
-                                    .noLogging()
-                                    .hasPrecheckFrom(
-                                            OK,
-                                            BUSY,
-                                            DUPLICATE_TRANSACTION,
-                                            PLATFORM_TRANSACTION_NOT_CREATED)
-                                    .deferStatusResolution(),
-                            getContractInfo(CONTRACT + "Info").hasExpectedInfo(),
-                            contractUpdate(CONTRACT)
-                                    .payingWith(GENESIS)
-                                    .newMemo(
-                                            new String(
-                                                    TxnUtils.randomUtf8Bytes(memoLength.getAsInt()),
-                                                    StandardCharsets.UTF_8))
-                                    .noLogging()
-                                    .hasPrecheckFrom(
-                                            OK,
-                                            BUSY,
-                                            DUPLICATE_TRANSACTION,
-                                            PLATFORM_TRANSACTION_NOT_CREATED)
-                                    .deferStatusResolution()
-                        };
+        Supplier<HapiSpecOperation[]> mixedOpsBurst = () -> new HapiSpecOperation[] {
+            fileCreate("testFile" + createdSoFar.getAndIncrement())
+                    .payingWith(GENESIS)
+                    .entityMemo(new String(TxnUtils.randomUtf8Bytes(memoLength.getAsInt()), StandardCharsets.UTF_8))
+                    .noLogging()
+                    .hasPrecheckFrom(OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+                    .deferStatusResolution(),
+            getFileInfo(TARGET_FILE + "Info").hasMemo(FILE_MEMO),
+            fileUpdate(TARGET_FILE)
+                    .payingWith(GENESIS)
+                    .entityMemo(new String(TxnUtils.randomUtf8Bytes(memoLength.getAsInt()), StandardCharsets.UTF_8))
+                    .noLogging()
+                    .hasPrecheckFrom(OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+                    .deferStatusResolution(),
+            contractCreate("testContract" + createdSoFar.getAndIncrement())
+                    .payingWith(GENESIS)
+                    .bytecode(TARGET_FILE)
+                    .entityMemo(new String(TxnUtils.randomUtf8Bytes(memoLength.getAsInt()), StandardCharsets.UTF_8))
+                    .noLogging()
+                    .hasPrecheckFrom(OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+                    .deferStatusResolution(),
+            getContractInfo(CONTRACT + "Info").hasExpectedInfo(),
+            contractUpdate(CONTRACT)
+                    .payingWith(GENESIS)
+                    .newMemo(new String(TxnUtils.randomUtf8Bytes(memoLength.getAsInt()), StandardCharsets.UTF_8))
+                    .noLogging()
+                    .hasPrecheckFrom(OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+                    .deferStatusResolution()
+        };
         return defaultHapiSpec("RunMixedFileContractMemoOps")
                 .given(
                         withOpContext(

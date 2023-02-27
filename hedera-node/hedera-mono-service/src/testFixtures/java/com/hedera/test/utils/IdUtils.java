@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.utils;
 
 import com.google.protobuf.ByteString;
@@ -32,7 +33,11 @@ import java.util.stream.Stream;
 
 public class IdUtils {
     public static TokenID tokenWith(long num) {
-        return TokenID.newBuilder().setShardNum(0).setRealmNum(0).setTokenNum(num).build();
+        return TokenID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setTokenNum(num)
+                .build();
     }
 
     public static Id asModelId(String v) {
@@ -59,7 +64,11 @@ public class IdUtils {
     }
 
     public static AccountID asAliasAccount(ByteString alias) {
-        return AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAlias(alias).build();
+        return AccountID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setAlias(alias)
+                .build();
     }
 
     public static AccountID asAccountWithAlias(String alias) {
@@ -112,8 +121,7 @@ public class IdUtils {
     }
 
     public static String asAccountString(AccountID account) {
-        return String.format(
-                "%d.%d.%d", account.getShardNum(), account.getRealmNum(), account.getAccountNum());
+        return String.format("%d.%d.%d", account.getShardNum(), account.getRealmNum(), account.getAccountNum());
     }
 
     public static TokenBalance tokenBalanceWith(TokenID id, long balance, int decimals) {
@@ -125,7 +133,10 @@ public class IdUtils {
     }
 
     public static AccountAmount adjustFrom(AccountID account, long amount) {
-        return AccountAmount.newBuilder().setAccountID(account).setAmount(amount).build();
+        return AccountAmount.newBuilder()
+                .setAccountID(account)
+                .setAmount(amount)
+                .build();
     }
 
     public static AccountAmount adjustFromWithAllowance(AccountID account, long amount) {
@@ -140,10 +151,8 @@ public class IdUtils {
         return BalanceChange.changingHbar(adjustFrom(account, amount), null);
     }
 
-    public static BalanceChange tokenChange(
-            final Id token, final AccountID account, final long amount) {
-        return BalanceChange.changingFtUnits(
-                token, token.asGrpcToken(), adjustFrom(account, amount), null);
+    public static BalanceChange tokenChange(final Id token, final AccountID account, final long amount) {
+        return BalanceChange.changingFtUnits(token, token.asGrpcToken(), adjustFrom(account, amount), null);
     }
 
     public static NftTransfer nftXfer(AccountID from, AccountID to, long serialNo) {

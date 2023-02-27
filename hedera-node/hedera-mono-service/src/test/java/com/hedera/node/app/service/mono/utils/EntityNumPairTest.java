@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import static com.hedera.node.app.service.mono.utils.EntityNumPair.MISSING_NUM_PAIR;
@@ -40,6 +41,15 @@ class EntityNumPairTest {
         final var subject = new EntityNumPair(v);
 
         assertNotEquals(Long.valueOf(v).hashCode(), subject.hashCode());
+    }
+
+    @Test
+    void comparesValues() {
+        final var lesser = new EntityNumPair(-123);
+        final var greater = new EntityNumPair(+123);
+        assertEquals(0, lesser.compareTo(lesser));
+        assertEquals(-1, lesser.compareTo(greater));
+        assertEquals(+1, greater.compareTo(lesser));
     }
 
     @Test
@@ -73,17 +83,16 @@ class EntityNumPairTest {
 
     @Test
     void grpcNftIdFactoryWorks() {
-        final var notOkId =
-                NftID.newBuilder()
-                        .setTokenID(TokenID.newBuilder().setShardNum(1).setTokenNum(1234).build())
-                        .setSerialNumber(1)
-                        .build();
+        final var notOkId = NftID.newBuilder()
+                .setTokenID(
+                        TokenID.newBuilder().setShardNum(1).setTokenNum(1234).build())
+                .setSerialNumber(1)
+                .build();
         assertSame(MISSING_NUM_PAIR, EntityNumPair.fromGrpcNftId(notOkId));
-        final var okId =
-                NftID.newBuilder()
-                        .setTokenID(TokenID.newBuilder().setTokenNum(1234).build())
-                        .setSerialNumber(1)
-                        .build();
+        final var okId = NftID.newBuilder()
+                .setTokenID(TokenID.newBuilder().setTokenNum(1234).build())
+                .setSerialNumber(1)
+                .build();
         assertEquals(EntityNumPair.fromLongs(1234L, 1L), EntityNumPair.fromGrpcNftId(okId));
     }
 
@@ -113,8 +122,7 @@ class EntityNumPairTest {
     @Test
     void factoryFromModelRelWorks() {
         final var expected = fromLongs(1, 2);
-        final var modelRel =
-                new TokenRelationship(new Token(new Id(0, 0, 2)), new Account(new Id(0, 0, 1)));
+        final var modelRel = new TokenRelationship(new Token(new Id(0, 0, 2)), new Account(new Id(0, 0, 1)));
 
         final var actual = EntityNumPair.fromModelRel(modelRel);
 

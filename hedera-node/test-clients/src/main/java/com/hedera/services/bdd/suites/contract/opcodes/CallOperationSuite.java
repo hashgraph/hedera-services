@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -60,32 +61,22 @@ public class CallOperationSuite extends HapiSuite {
         final var EXPECTED_BALANCE = 10;
 
         return defaultHapiSpec("VerifiesExistence")
-                .given(
-                        cryptoCreate(ACCOUNT).balance(0L),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
+                .given(cryptoCreate(ACCOUNT).balance(0L), uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(
                         contractCall(contract, "call", asHeadlongAddress(INVALID_ADDRESS))
                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var id = spec.registry().getAccountID(ACCOUNT);
+                        withOpContext((spec, opLog) -> {
+                            final var id = spec.registry().getAccountID(ACCOUNT);
 
-                                    final var contractCall =
-                                            contractCall(
-                                                            contract,
-                                                            "call",
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(id)))
-                                                    .sending(EXPECTED_BALANCE);
+                            final var contractCall = contractCall(
+                                            contract, "call", HapiParserUtil.asHeadlongAddress(asAddress(id)))
+                                    .sending(EXPECTED_BALANCE);
 
-                                    final var balance =
-                                            getAccountBalance(ACCOUNT)
-                                                    .hasTinyBars(EXPECTED_BALANCE);
+                            final var balance = getAccountBalance(ACCOUNT).hasTinyBars(EXPECTED_BALANCE);
 
-                                    allRunFor(spec, contractCall, balance);
-                                }));
+                            allRunFor(spec, contractCall, balance);
+                        }));
     }
 
     HapiSpec callingContract() {

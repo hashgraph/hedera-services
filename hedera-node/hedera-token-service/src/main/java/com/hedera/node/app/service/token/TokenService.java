@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token;
 
 import com.hedera.node.app.spi.Service;
@@ -27,10 +28,12 @@ import java.util.ServiceLoader;
  */
 public interface TokenService extends Service {
 
+    String NAME = "TokenService";
+
     @NonNull
     @Override
     default String getServiceName() {
-        return TokenService.class.getSimpleName();
+        return NAME;
     }
 
     /**
@@ -40,7 +43,6 @@ public interface TokenService extends Service {
      */
     @NonNull
     static TokenService getInstance() {
-        return ServiceFactory.loadService(
-                TokenService.class, ServiceLoader.load(TokenService.class));
+        return ServiceFactory.loadService(TokenService.class, ServiceLoader.load(TokenService.class));
     }
 }

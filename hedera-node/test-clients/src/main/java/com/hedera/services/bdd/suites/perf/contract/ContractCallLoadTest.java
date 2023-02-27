@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.contract;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -58,33 +59,18 @@ public class ContractCallLoadTest extends LoadTest {
         final AtomicInteger submittedSoFar = new AtomicInteger(0);
         final String DEPOSIT_MEMO = "So we out-danced thought, body perfection brought...";
 
-        Supplier<HapiSpecOperation[]> callBurst =
-                () ->
-                        new HapiSpecOperation[] {
-                            inParallel(
-                                    IntStream.range(0, settings.getBurstSize())
-                                            .mapToObj(
-                                                    i ->
-                                                            contractCall(
-                                                                            VERBOSE_DEPOSIT,
-                                                                            "deposit",
-                                                                            i + 1,
-                                                                            0,
-                                                                            DEPOSIT_MEMO)
-                                                                    .sending(i + 1)
-                                                                    .noLogging()
-                                                                    .suppressStats(true)
-                                                                    .hasRetryPrecheckFrom(
-                                                                            PLATFORM_TRANSACTION_NOT_CREATED)
-                                                                    .deferStatusResolution())
-                                            .toArray(n -> new HapiSpecOperation[n])),
-                            logIt(
-                                    ignore ->
-                                            String.format(
-                                                    "Now a total of %d transactions submitted.",
-                                                    submittedSoFar.addAndGet(
-                                                            settings.getBurstSize()))),
-                        };
+        Supplier<HapiSpecOperation[]> callBurst = () -> new HapiSpecOperation[] {
+            inParallel(IntStream.range(0, settings.getBurstSize())
+                    .mapToObj(i -> contractCall(VERBOSE_DEPOSIT, "deposit", i + 1, 0, DEPOSIT_MEMO)
+                            .sending(i + 1)
+                            .noLogging()
+                            .suppressStats(true)
+                            .hasRetryPrecheckFrom(PLATFORM_TRANSACTION_NOT_CREATED)
+                            .deferStatusResolution())
+                    .toArray(n -> new HapiSpecOperation[n])),
+            logIt(ignore -> String.format(
+                    "Now a total of %d transactions submitted.", submittedSoFar.addAndGet(settings.getBurstSize()))),
+        };
 
         return defaultHapiSpec("runContractCalls")
                 .given(

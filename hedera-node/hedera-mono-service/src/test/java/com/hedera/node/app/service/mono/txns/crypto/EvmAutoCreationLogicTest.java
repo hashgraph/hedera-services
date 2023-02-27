@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
@@ -43,37 +44,45 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class EvmAutoCreationLogicTest {
 
-    @Mock private UsageLimits usageLimits;
-    @Mock private StateView currentView;
-    @Mock private EntityIdSource ids;
-    @Mock private EntityCreator creator;
-    @Mock private TransactionContext txnCtx;
-    @Mock private ContractAliases contractAliases;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private FeeCalculator feeCalculator;
-    @Mock private GlobalDynamicProperties properties;
+    @Mock
+    private UsageLimits usageLimits;
+
+    @Mock
+    private StateView currentView;
+
+    @Mock
+    private EntityIdSource ids;
+
+    @Mock
+    private EntityCreator creator;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private ContractAliases contractAliases;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private GlobalDynamicProperties properties;
 
     private EvmAutoCreationLogic subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new EvmAutoCreationLogic(
-                        usageLimits,
-                        syntheticTxnFactory,
-                        creator,
-                        ids,
-                        () -> currentView,
-                        txnCtx,
-                        properties,
-                        contractAliases);
+        subject = new EvmAutoCreationLogic(
+                usageLimits, syntheticTxnFactory, creator, ids, () -> currentView, txnCtx, properties, contractAliases);
 
         subject.setFeeCalculator(feeCalculator);
     }
 
     private static final EntityNum num = EntityNum.fromLong(1234L);
-    private static final byte[] rawNonMirrorAddress =
-            unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");
+    private static final byte[] rawNonMirrorAddress = unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");
     private static final Address nonMirrorAddress = Address.wrap(Bytes.wrap(rawNonMirrorAddress));
     private static final Address mirrorAddress = num.toEvmAddress();
 
@@ -92,14 +101,12 @@ class EvmAutoCreationLogicTest {
         final var bytes = new byte[EVM_ADDRESS_SIZE + 1];
         final var alias = ByteStringUtils.wrapUnsafely(bytes);
         final var entityNum = EntityIdUtils.accountIdFromEvmAddress(mirrorAddress);
-        assertThrows(
-                UnsupportedOperationException.class, () -> subject.trackAlias(alias, entityNum));
+        assertThrows(UnsupportedOperationException.class, () -> subject.trackAlias(alias, entityNum));
 
         final var bytes2 = new byte[EVM_ADDRESS_SIZE - 1];
         final var alias2 = ByteStringUtils.wrapUnsafely(bytes2);
         final var entityNum2 = EntityIdUtils.accountIdFromEvmAddress(mirrorAddress);
-        assertThrows(
-                UnsupportedOperationException.class, () -> subject.trackAlias(alias2, entityNum2));
+        assertThrows(UnsupportedOperationException.class, () -> subject.trackAlias(alias2, entityNum2));
     }
 
     @Test

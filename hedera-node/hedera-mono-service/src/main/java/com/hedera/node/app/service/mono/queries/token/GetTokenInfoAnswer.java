@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.token;
 
 import static com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor.uncheckedFrom;
@@ -40,8 +41,7 @@ import javax.inject.Singleton;
 
 @Singleton
 public class GetTokenInfoAnswer implements AnswerService {
-    public static final String TOKEN_INFO_CTX_KEY =
-            GetTokenInfoAnswer.class.getSimpleName() + "_tokenInfo";
+    public static final String TOKEN_INFO_CTX_KEY = GetTokenInfoAnswer.class.getSimpleName() + "_tokenInfo";
 
     @Inject
     public GetTokenInfoAnswer() {
@@ -60,10 +60,7 @@ public class GetTokenInfoAnswer implements AnswerService {
 
     @Override
     public Response responseGiven(
-            final Query query,
-            @Nullable final StateView view,
-            final ResponseCodeEnum validity,
-            final long cost) {
+            final Query query, @Nullable final StateView view, final ResponseCodeEnum validity, final long cost) {
         return responseFor(query, view, validity, cost, NO_QUERY_CTX);
     }
 

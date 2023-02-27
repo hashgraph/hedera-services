@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.throttling;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -46,28 +47,25 @@ public class ThrottleDefValidationSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    throttleDefsRejectUnauthorizedPayers(),
-                    throttleUpdateRejectsMultiGroupAssignment(),
-                    throttleUpdateWithZeroGroupOpsPerSecFails(),
-                    updateWithMissingTokenMintGetsWarning(),
-                    ensureDefaultsRestored(),
-                });
+        return List.of(new HapiSpec[] {
+            throttleDefsRejectUnauthorizedPayers(),
+            throttleUpdateRejectsMultiGroupAssignment(),
+            throttleUpdateWithZeroGroupOpsPerSecFails(),
+            updateWithMissingTokenMintGetsWarning(),
+            ensureDefaultsRestored(),
+        });
     }
 
     private HapiSpec updateWithMissingTokenMintGetsWarning() {
-        var missingMintThrottles =
-                protoDefsFromResource("testSystemFiles/throttles-sans-mint.json");
+        var missingMintThrottles = protoDefsFromResource("testSystemFiles/throttles-sans-mint.json");
 
         return defaultHapiSpec("UpdateWithMissingTokenMintGetsWarning")
                 .given()
                 .when()
-                .then(
-                        fileUpdate(THROTTLE_DEFS)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .contents(missingMintThrottles.toByteArray())
-                                .hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION));
+                .then(fileUpdate(THROTTLE_DEFS)
+                        .payingWith(EXCHANGE_RATE_CONTROL)
+                        .contents(missingMintThrottles.toByteArray())
+                        .hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION));
     }
 
     private HapiSpec ensureDefaultsRestored() {
@@ -83,9 +81,7 @@ public class ThrottleDefValidationSuite extends HapiSuite {
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
                                 .overridingProps(
-                                        Map.of(
-                                                "fees.percentCongestionMultipliers",
-                                                defaultCongestionMultipliers)));
+                                        Map.of("fees.percentCongestionMultipliers", defaultCongestionMultipliers)));
     }
 
     private HapiSpec throttleUpdateWithZeroGroupOpsPerSecFails() {
@@ -94,34 +90,29 @@ public class ThrottleDefValidationSuite extends HapiSuite {
         return defaultHapiSpec("ThrottleUpdateWithZeroGroupOpsPerSecFails")
                 .given()
                 .when()
-                .then(
-                        fileUpdate(THROTTLE_DEFS)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .contents(zeroOpsPerSecThrottles.toByteArray())
-                                .hasKnownStatus(THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC));
+                .then(fileUpdate(THROTTLE_DEFS)
+                        .payingWith(EXCHANGE_RATE_CONTROL)
+                        .contents(zeroOpsPerSecThrottles.toByteArray())
+                        .hasKnownStatus(THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC));
     }
 
     private HapiSpec throttleUpdateRejectsMultiGroupAssignment() {
-        var multiGroupThrottles =
-                protoDefsFromResource("testSystemFiles/duplicated-operation.json");
+        var multiGroupThrottles = protoDefsFromResource("testSystemFiles/duplicated-operation.json");
 
         return defaultHapiSpec("ThrottleUpdateRejectsMultiGroupAssignment")
                 .given()
                 .when()
-                .then(
-                        fileUpdate(THROTTLE_DEFS)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .contents(multiGroupThrottles.toByteArray())
-                                .hasKnownStatus(OPERATION_REPEATED_IN_BUCKET_GROUPS));
+                .then(fileUpdate(THROTTLE_DEFS)
+                        .payingWith(EXCHANGE_RATE_CONTROL)
+                        .contents(multiGroupThrottles.toByteArray())
+                        .hasKnownStatus(OPERATION_REPEATED_IN_BUCKET_GROUPS));
     }
 
     private HapiSpec throttleDefsRejectUnauthorizedPayers() {
         return defaultHapiSpec("ThrottleDefsRejectUnauthorizedPayers")
                 .given(
                         cryptoCreate("civilian"),
-                        cryptoTransfer(
-                                movingHbar(ONE_HUNDRED_HBARS)
-                                        .between(GENESIS, FEE_SCHEDULE_CONTROL)))
+                        cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS).between(GENESIS, FEE_SCHEDULE_CONTROL)))
                 .when()
                 .then(
                         fileUpdate(THROTTLE_DEFS)

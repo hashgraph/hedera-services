@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.meta.queries;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -61,8 +62,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class GetAccountDetailsResourceUsageTest {
-    private static final Key aKey =
-            Key.newBuilder().setEd25519(ByteString.copyFrom("NONSENSE".getBytes())).build();
+    private static final Key aKey = Key.newBuilder()
+            .setEd25519(ByteString.copyFrom("NONSENSE".getBytes()))
+            .build();
     private static final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
     private static final String a = "0.0.1234";
     private static final long expiry = 1_234_567L;
@@ -77,51 +79,56 @@ class GetAccountDetailsResourceUsageTest {
 
     private final GrantedCryptoAllowance cryptoAllowances =
             GrantedCryptoAllowance.newBuilder().setSpender(proxy).setAmount(10L).build();
-    private final GrantedTokenAllowance tokenAllowances =
-            GrantedTokenAllowance.newBuilder()
-                    .setSpender(proxy)
-                    .setAmount(10L)
-                    .setTokenId(IdUtils.asToken("0.0.1000"))
-                    .build();
-    private final GrantedNftAllowance nftAllowances =
-            GrantedNftAllowance.newBuilder()
-                    .setSpender(proxy)
-                    .setTokenId(IdUtils.asToken("0.0.1000"))
-                    .build();
+    private final GrantedTokenAllowance tokenAllowances = GrantedTokenAllowance.newBuilder()
+            .setSpender(proxy)
+            .setAmount(10L)
+            .setTokenId(IdUtils.asToken("0.0.1000"))
+            .build();
+    private final GrantedNftAllowance nftAllowances = GrantedNftAllowance.newBuilder()
+            .setSpender(proxy)
+            .setTokenId(IdUtils.asToken("0.0.1000"))
+            .build();
 
-    @Mock private FeeData expected;
-    @Mock private CryptoOpsUsage cryptoOpsUsage;
-    @Mock private StateView view;
-    @Mock private AliasManager aliasManager;
-    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock
+    private FeeData expected;
+
+    @Mock
+    private CryptoOpsUsage cryptoOpsUsage;
+
+    @Mock
+    private StateView view;
+
+    @Mock
+    private AliasManager aliasManager;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
 
     private GetAccountDetailsResourceUsage subject;
 
     @BeforeEach
     void setup() {
-        subject =
-                new GetAccountDetailsResourceUsage(cryptoOpsUsage, aliasManager, dynamicProperties);
+        subject = new GetAccountDetailsResourceUsage(cryptoOpsUsage, aliasManager, dynamicProperties);
     }
 
     @Test
     void usesEstimator() {
         given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
         final var captor = ArgumentCaptor.forClass(ExtantCryptoContext.class);
-        final var details =
-                GetAccountDetailsResponse.AccountDetails.newBuilder()
-                        .setLedgerId(ledgerId)
-                        .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
-                        .setMemo(memo)
-                        .setProxyAccountId(proxy)
-                        .setKey(aKey)
-                        .addTokenRelationships(0, TokenRelationship.newBuilder().setTokenId(aToken))
-                        .addTokenRelationships(1, TokenRelationship.newBuilder().setTokenId(bToken))
-                        .addTokenRelationships(2, TokenRelationship.newBuilder().setTokenId(cToken))
-                        .setMaxAutomaticTokenAssociations(maxAutomaticAssociations)
-                        .addAllGrantedCryptoAllowances(List.of(cryptoAllowances))
-                        .addAllGrantedTokenAllowances(List.of(tokenAllowances))
-                        .addAllGrantedNftAllowances(List.of(nftAllowances))
-                        .build();
+        final var details = GetAccountDetailsResponse.AccountDetails.newBuilder()
+                .setLedgerId(ledgerId)
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
+                .setMemo(memo)
+                .setProxyAccountId(proxy)
+                .setKey(aKey)
+                .addTokenRelationships(0, TokenRelationship.newBuilder().setTokenId(aToken))
+                .addTokenRelationships(1, TokenRelationship.newBuilder().setTokenId(bToken))
+                .addTokenRelationships(2, TokenRelationship.newBuilder().setTokenId(cToken))
+                .setMaxAutomaticTokenAssociations(maxAutomaticAssociations)
+                .addAllGrantedCryptoAllowances(List.of(cryptoAllowances))
+                .addAllGrantedTokenAllowances(List.of(tokenAllowances))
+                .addAllGrantedNftAllowances(List.of(nftAllowances))
+                .build();
         final var query = accountDetailsQuery(a, ANSWER_ONLY);
         given(view.accountDetails(queryTarget, aliasManager, maxTokensPerAccountInfo))
                 .willReturn(Optional.of(details));
@@ -165,10 +172,9 @@ class GetAccountDetailsResourceUsageTest {
 
     private static final Query accountDetailsQuery(final String target, final ResponseType type) {
         final var id = asAccount(target);
-        final var op =
-                GetAccountDetailsQuery.newBuilder()
-                        .setAccountId(id)
-                        .setHeader(QueryHeader.newBuilder().setResponseType(type));
+        final var op = GetAccountDetailsQuery.newBuilder()
+                .setAccountId(id)
+                .setHeader(QueryHeader.newBuilder().setResponseType(type));
         return Query.newBuilder().setAccountDetails(op).build();
     }
 }

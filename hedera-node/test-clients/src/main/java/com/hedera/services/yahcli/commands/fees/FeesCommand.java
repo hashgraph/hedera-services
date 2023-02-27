@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.commands.fees;
 
 import com.hedera.services.yahcli.Yahcli;
@@ -24,7 +25,8 @@ import picocli.CommandLine;
         subcommands = {picocli.CommandLine.HelpCommand.class, FeeBasePriceCommand.class},
         description = "Reports network fees")
 public class FeesCommand implements Callable<Integer> {
-    @CommandLine.ParentCommand Yahcli yahcli;
+    @CommandLine.ParentCommand
+    Yahcli yahcli;
 
     @Override
     public Integer call() throws Exception {

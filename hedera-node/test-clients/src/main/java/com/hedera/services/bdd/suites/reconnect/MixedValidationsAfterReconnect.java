@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.reconnect;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -51,9 +52,7 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
                 .then(
                         balanceSnapshot("senderBalance", sender), // from default node 0.0.3
                         balanceSnapshot("receiverBalance", receiver), // from default node 0.0.3
-                        balanceSnapshot(
-                                "lastlyCreatedAccountBalance",
-                                lastlyCreatedAccount), // from default node 0.0.3
+                        balanceSnapshot("lastlyCreatedAccountBalance", lastlyCreatedAccount), // from default node 0.0.3
                         getAccountBalance(sender)
                                 .logged()
                                 .setNode("0.0.4")
@@ -102,8 +101,7 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
                                 .logged()
                                 .setNode("0.0.8")
                                 .hasRunningHash(emptyRunningHash),
-                        getTopicInfo(invalidTopicId)
-                                .hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_TOPIC_ID),
+                        getTopicInfo(invalidTopicId).hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_TOPIC_ID),
                         getTopicInfo(topicIdWithMessagesSubmittedTo)
                                 .logged()
                                 .setNode("0.0.8")
@@ -120,8 +118,7 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
                 .then(
                         getFileInfo(firstlyCreatedFile).logged().setNode("0.0.8"),
                         getFileInfo(lastlyCreatedFile).logged().setNode("0.0.8"),
-                        getFileInfo(invalidFileId)
-                                .hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_FILE_ID));
+                        getFileInfo(invalidFileId).hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_FILE_ID));
     }
 
     @Override

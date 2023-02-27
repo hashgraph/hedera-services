@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.init;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -23,6 +24,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -47,37 +49,43 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StoreInitializationFlowTest {
-    @Mock private MutableStateChildren workingState;
+    @Mock
+    private MutableStateChildren workingState;
 
-    @Mock private UsageLimits usageLimits;
-    @Mock private AliasManager aliasManager;
-    @Mock private BackingStore<AccountID, HederaAccount> backingAccounts;
-    @Mock private BackingStore<NftId, UniqueTokenAdapter> backingNfts;
-    @Mock private BackingStore<TokenID, MerkleToken> backingTokens;
-    @Mock private BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> backingTokenRels;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock
+    private UsageLimits usageLimits;
+
+    @Mock
+    private AliasManager aliasManager;
+
+    @Mock
+    private BackingStore<AccountID, HederaAccount> backingAccounts;
+
+    @Mock
+    private BackingStore<NftId, UniqueTokenAdapter> backingNfts;
+
+    @Mock
+    private BackingStore<TokenID, MerkleToken> backingTokens;
+
+    @Mock
+    private BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> backingTokenRels;
+
+    @Mock
+    private MerkleMap<EntityNum, MerkleAccount> accounts;
 
     private StoreInitializationFlow subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new StoreInitializationFlow(
-                        usageLimits,
-                        aliasManager,
-                        workingState,
-                        backingAccounts,
-                        backingTokens,
-                        backingNfts,
-                        backingTokenRels);
+        subject = new StoreInitializationFlow(
+                usageLimits, aliasManager, workingState, backingAccounts, backingTokens, backingNfts, backingTokenRels);
     }
 
     @Test
     @SuppressWarnings("unchecked")
     void initsAsExpected() {
-        final ArgumentCaptor<BiConsumer<EntityNum, HederaAccount>> captor =
-                ArgumentCaptor.forClass(BiConsumer.class);
-        given(workingState.accounts()).willReturn(AccountStorageAdapter.fromInMemory(accounts));
+        final ArgumentCaptor<BiConsumer<EntityNum, HederaAccount>> captor = ArgumentCaptor.forClass(BiConsumer.class);
+        given(workingState.accounts()).willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
 
         // when:
         subject.run();

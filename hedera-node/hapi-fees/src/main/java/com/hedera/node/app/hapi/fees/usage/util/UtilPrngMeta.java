@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.util;
 
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.INT_SIZE;
@@ -70,6 +71,8 @@ public class UtilPrngMeta {
 
     @Override
     public String toString() {
-        return MoreObjects.toStringHelper(this).add("msgBytesUsed", msgBytesUsed).toString();
+        return MoreObjects.toStringHelper(this)
+                .add("msgBytesUsed", msgBytesUsed)
+                .toString();
     }
 }

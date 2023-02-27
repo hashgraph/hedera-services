@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts;
 
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
@@ -59,16 +60,14 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         if (address == null) {
             return null;
         }
-        if (hederaEvmEntityAccess.isTokenAccount(address)
-                && evmProperties.isRedirectTokenCallsEnabled()) {
+        if (hederaEvmEntityAccess.isTokenAccount(address) && evmProperties.isRedirectTokenCallsEnabled()) {
             return new HederaEvmWorldStateTokenAccount(address);
         }
         if (!hederaEvmEntityAccess.isUsable(address)) {
             return null;
         }
         final long balance = hederaEvmEntityAccess.getBalance(address);
-        return new WorldStateAccount(
-                address, Wei.of(balance), abstractCodeCache, hederaEvmEntityAccess);
+        return new WorldStateAccount(address, Wei.of(balance), abstractCodeCache, hederaEvmEntityAccess);
     }
 
     @Override
@@ -88,12 +87,10 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
     @Override
     public HederaEvmWorldUpdater updater() {
-        return new Updater(
-                this, accountAccessor, hederaEvmEntityAccess, tokenAccessor, evmProperties);
+        return new Updater(this, accountAccessor, hederaEvmEntityAccess, tokenAccessor, evmProperties);
     }
 
-    public static class Updater
-            extends AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account>
+    public static class Updater extends AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account>
             implements HederaEvmWorldUpdater {
 
         private final HederaEvmEntityAccess hederaEvmEntityAccess;

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.commands.accounts;
 
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED;
@@ -35,7 +36,8 @@ import picocli.CommandLine;
         subcommands = {CommandLine.HelpCommand.class},
         description = "Replaces the key on an account")
 public class RekeyCommand implements Callable<Integer> {
-    @CommandLine.ParentCommand AccountsCommand accountsCommand;
+    @CommandLine.ParentCommand
+    AccountsCommand accountsCommand;
 
     @CommandLine.Option(
             names = {"-k", "--replacement-key"},
@@ -49,10 +51,7 @@ public class RekeyCommand implements Callable<Integer> {
             defaultValue = "false")
     boolean genNewKey;
 
-    @CommandLine.Parameters(
-            arity = "1",
-            paramLabel = "<account>",
-            description = "number of account to rekey")
+    @CommandLine.Parameters(arity = "1", paramLabel = "<account>", description = "number of account to rekey")
     String accountNum;
 
     @Override
@@ -66,20 +65,11 @@ public class RekeyCommand implements Callable<Integer> {
         }
 
         final var optKeyFile = backupCurrentAssets(config, accountNum);
-        final String replTarget =
-                optKeyFile
-                        .map(File::getPath)
-                        .orElseGet(
-                                () ->
-                                        config.keysLoc()
-                                                + File.separator
-                                                + "account"
-                                                + accountNum
-                                                + ".pem");
+        final String replTarget = optKeyFile
+                .map(File::getPath)
+                .orElseGet(() -> config.keysLoc() + File.separator + "account" + accountNum + ".pem");
 
-        final var delegate =
-                new RekeySuite(
-                        config.asSpecConfig(), accountNum, replKeyLoc, genNewKey, replTarget);
+        final var delegate = new RekeySuite(config.asSpecConfig(), accountNum, replKeyLoc, genNewKey, replTarget);
         delegate.runSuiteSync();
 
         if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
@@ -92,8 +82,7 @@ public class RekeyCommand implements Callable<Integer> {
         return 0;
     }
 
-    private Optional<File> backupCurrentAssets(ConfigManager configManager, String num)
-            throws IOException {
+    private Optional<File> backupCurrentAssets(ConfigManager configManager, String num) throws IOException {
         var optKeyFile = ConfigUtils.keyFileFor(configManager.keysLoc(), "account" + num);
         if (optKeyFile.isPresent()) {
             final var keyFile = optKeyFile.get();
@@ -105,14 +94,11 @@ public class RekeyCommand implements Callable<Integer> {
                 if (optPassFile.isPresent()) {
                     final var passFile = optPassFile.get();
                     final var passBackupLoc = passFile.getAbsolutePath() + ".bkup";
-                    Files.copy(
-                            passFile,
-                            java.nio.file.Files.newOutputStream(Paths.get(passBackupLoc)));
+                    Files.copy(passFile, java.nio.file.Files.newOutputStream(Paths.get(passBackupLoc)));
                 }
             }
         } else {
-            COMMON_MESSAGES.warn(
-                    "No current key for account " + num + ", payer will need special privileges");
+            COMMON_MESSAGES.warn("No current key for account " + num + ", payer will need special privileges");
         }
         return optKeyFile;
     }

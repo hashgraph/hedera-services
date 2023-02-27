@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.entities;
 
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.unsignedLowOrder32From;
@@ -31,7 +32,7 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public class OnDiskTokenRel implements VirtualValue, HederaTokenRel {
-    private static final int CURRENT_VERSION = 1;
+    public static final int CURRENT_VERSION = 1;
     private static final long CLASS_ID = 0xc18c86c499e60727L;
 
     private long prev;
@@ -105,8 +106,7 @@ public class OnDiskTokenRel implements VirtualValue, HederaTokenRel {
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         deserializeFrom(in::readByte, in::readLong);
     }
 
@@ -227,8 +227,7 @@ public class OnDiskTokenRel implements VirtualValue, HederaTokenRel {
         this.next = next;
     }
 
-    private void serializeTo(
-            final CheckedConsumer<Byte> writeByteFn, final CheckedConsumer<Long> writeLongFn)
+    private void serializeTo(final CheckedConsumer<Byte> writeByteFn, final CheckedConsumer<Long> writeLongFn)
             throws IOException {
         writeByteFn.accept(flags);
         writeLongFn.accept(prev);
@@ -237,8 +236,7 @@ public class OnDiskTokenRel implements VirtualValue, HederaTokenRel {
         writeLongFn.accept(numbers);
     }
 
-    private void deserializeFrom(
-            final CheckedSupplier<Byte> readByteFn, final CheckedSupplier<Long> readLongFn)
+    private void deserializeFrom(final CheckedSupplier<Byte> readByteFn, final CheckedSupplier<Long> readLongFn)
             throws IOException {
         throwIfImmutable();
         flags = readByteFn.get();

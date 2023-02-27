@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
@@ -33,33 +34,30 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class PerfUtilOps {
     public static HapiSpecOperation mgmtOfIntProp(AtomicInteger value, String prop) {
-        return withOpContext(
-                (spec, opLog) -> {
-                    var ciProps = spec.setup().ciPropertiesMap();
-                    if (ciProps.has(prop)) {
-                        value.set(ciProps.getInteger(prop));
-                    }
-                });
+        return withOpContext((spec, opLog) -> {
+            var ciProps = spec.setup().ciPropertiesMap();
+            if (ciProps.has(prop)) {
+                value.set(ciProps.getInteger(prop));
+            }
+        });
     }
 
     public static HapiSpecOperation mgmtOfBooleanProp(AtomicBoolean value, String prop) {
-        return withOpContext(
-                (spec, opLog) -> {
-                    var ciProps = spec.setup().ciPropertiesMap();
-                    if (ciProps.has(prop)) {
-                        value.set(ciProps.getBoolean(prop));
-                    }
-                });
+        return withOpContext((spec, opLog) -> {
+            var ciProps = spec.setup().ciPropertiesMap();
+            if (ciProps.has(prop)) {
+                value.set(ciProps.getBoolean(prop));
+            }
+        });
     }
 
     public static HapiSpecOperation mgmtOfLongProp(AtomicLong value, String prop) {
-        return withOpContext(
-                (spec, opLog) -> {
-                    var ciProps = spec.setup().ciPropertiesMap();
-                    if (ciProps.has(prop)) {
-                        value.set(ciProps.getLong(prop));
-                    }
-                });
+        return withOpContext((spec, opLog) -> {
+            var ciProps = spec.setup().ciPropertiesMap();
+            if (ciProps.has(prop)) {
+                value.set(ciProps.getLong(prop));
+            }
+        });
     }
 
     public static HapiSpecOperation stdMgmtOf(
@@ -68,62 +66,56 @@ public class PerfUtilOps {
     }
 
     public static HapiSpecOperation stdMgmtOf(
-            AtomicLong duration,
-            AtomicReference<TimeUnit> unit,
-            AtomicInteger maxOpsPerSec,
-            String ciPropPrefix) {
-        return withOpContext(
-                (spec, opLog) -> {
-                    final var durationProp = ciPropPrefix + "duration";
-                    var ciProps = spec.setup().ciPropertiesMap();
-                    if (ciProps.has(durationProp)) {
-                        duration.set(ciProps.getLong(durationProp));
-                    }
-                    final var unitProp = ciPropPrefix + "unit";
-                    if (ciProps.has(unitProp)) {
-                        unit.set(ciProps.getTimeUnit(unitProp));
-                    }
-                    final var opsPerSecProp = ciPropPrefix + "maxOpsPerSec";
-                    if (ciProps.has(opsPerSecProp)) {
-                        maxOpsPerSec.set(ciProps.getInteger(opsPerSecProp));
-                    }
-                });
+            AtomicLong duration, AtomicReference<TimeUnit> unit, AtomicInteger maxOpsPerSec, String ciPropPrefix) {
+        return withOpContext((spec, opLog) -> {
+            final var durationProp = ciPropPrefix + "duration";
+            var ciProps = spec.setup().ciPropertiesMap();
+            if (ciProps.has(durationProp)) {
+                duration.set(ciProps.getLong(durationProp));
+            }
+            final var unitProp = ciPropPrefix + "unit";
+            if (ciProps.has(unitProp)) {
+                unit.set(ciProps.getTimeUnit(unitProp));
+            }
+            final var opsPerSecProp = ciPropPrefix + "maxOpsPerSec";
+            if (ciProps.has(opsPerSecProp)) {
+                maxOpsPerSec.set(ciProps.getInteger(opsPerSecProp));
+            }
+        });
     }
 
     public static HapiTxnOp tokenOpsEnablement() {
         return fileUpdate(API_PERMISSIONS)
                 .fee(ONE_HUNDRED_HBARS)
                 .payingWith(GENESIS)
-                .overridingProps(
-                        Map.ofEntries(
-                                entry("tokenCreate", "0-*"),
-                                entry("tokenFreezeAccount", "0-*"),
-                                entry("tokenUnfreezeAccount", "0-*"),
-                                entry("tokenGrantKycToAccount", "0-*"),
-                                entry("tokenRevokeKycFromAccount", "0-*"),
-                                entry("tokenDelete", "0-*"),
-                                entry("tokenMint", "0-*"),
-                                entry("tokenBurn", "0-*"),
-                                entry("tokenAccountWipe", "0-*"),
-                                entry("tokenUpdate", "0-*"),
-                                entry("tokenFeeScheduleUpdate", "0-*"),
-                                entry("tokenGetInfo", "0-*"),
-                                entry("tokenAssociateToAccount", "0-*"),
-                                entry("tokenDissociateFromAccount", "0-*"),
-                                entry("tokenGetNftInfo", "0-*"),
-                                entry("tokenGetNftInfos", "0-*"),
-                                entry("tokenGetAccountNftInfos", "0-*")));
+                .overridingProps(Map.ofEntries(
+                        entry("tokenCreate", "0-*"),
+                        entry("tokenFreezeAccount", "0-*"),
+                        entry("tokenUnfreezeAccount", "0-*"),
+                        entry("tokenGrantKycToAccount", "0-*"),
+                        entry("tokenRevokeKycFromAccount", "0-*"),
+                        entry("tokenDelete", "0-*"),
+                        entry("tokenMint", "0-*"),
+                        entry("tokenBurn", "0-*"),
+                        entry("tokenAccountWipe", "0-*"),
+                        entry("tokenUpdate", "0-*"),
+                        entry("tokenFeeScheduleUpdate", "0-*"),
+                        entry("tokenGetInfo", "0-*"),
+                        entry("tokenAssociateToAccount", "0-*"),
+                        entry("tokenDissociateFromAccount", "0-*"),
+                        entry("tokenGetNftInfo", "0-*"),
+                        entry("tokenGetNftInfos", "0-*"),
+                        entry("tokenGetAccountNftInfos", "0-*")));
     }
 
     public static HapiTxnOp scheduleOpsEnablement() {
         return fileUpdate(API_PERMISSIONS)
                 .fee(ONE_HUNDRED_HBARS)
                 .payingWith(GENESIS)
-                .overridingProps(
-                        Map.ofEntries(
-                                entry("scheduleCreate", "0-*"),
-                                entry("scheduleDelete", "0-*"),
-                                entry("scheduleSign", "0-*"),
-                                entry("scheduleGetInfo", "0-*")));
+                .overridingProps(Map.ofEntries(
+                        entry("scheduleCreate", "0-*"),
+                        entry("scheduleDelete", "0-*"),
+                        entry("scheduleSign", "0-*"),
+                        entry("scheduleGetInfo", "0-*")));
     }
 }

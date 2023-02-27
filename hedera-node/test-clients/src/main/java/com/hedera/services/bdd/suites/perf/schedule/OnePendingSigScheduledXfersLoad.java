@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.schedule;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -74,115 +75,94 @@ public class OnePendingSigScheduledXfersLoad extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    runOnePendingSigXfers(),
-                });
+        return List.of(new HapiSpec[] {
+            runOnePendingSigXfers(),
+        });
     }
 
     private HapiSpec runOnePendingSigXfers() {
         return defaultHapiSpec("RunOnePendingSigXfers")
                 .given(stdMgmtOf(duration, unit, maxOpsPerSec))
-                .when(
-                        runWithProvider(pendingSigsFactory())
-                                .lasting(duration::get, unit::get)
-                                .maxOpsPerSec(maxOpsPerSec::get))
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    if (numInertReceivers.get() > 0) {
-                                        var op =
-                                                inParallel(
-                                                        IntStream.range(0, numInertReceivers.get())
-                                                                .mapToObj(
-                                                                        i ->
-                                                                                getAccountBalance(
-                                                                                                inertReceiver(
-                                                                                                        i))
-                                                                                        .logged())
-                                                                .toArray(HapiSpecOperation[]::new));
-                                        allRunFor(spec, op);
-                                    }
-                                }));
+                .when(runWithProvider(pendingSigsFactory())
+                        .lasting(duration::get, unit::get)
+                        .maxOpsPerSec(maxOpsPerSec::get))
+                .then(withOpContext((spec, opLog) -> {
+                    if (numInertReceivers.get() > 0) {
+                        var op = inParallel(IntStream.range(0, numInertReceivers.get())
+                                .mapToObj(
+                                        i -> getAccountBalance(inertReceiver(i)).logged())
+                                .toArray(HapiSpecOperation[]::new));
+                        allRunFor(spec, op);
+                    }
+                }));
     }
 
     private Function<HapiSpec, OpProvider> pendingSigsFactory() {
-        return spec ->
-                new OpProvider() {
-                    @Override
-                    public List<HapiSpecOperation> suggestedInitializers() {
-                        var ciProps = spec.setup().ciPropertiesMap();
-                        numNonDefaultSenders.set(ciProps.getInteger("numNonDefaultSenders"));
-                        numInertReceivers.set(ciProps.getInteger("numInertReceivers"));
-                        probOfSignOp.set(ciProps.getDouble("probOfSigning"));
-                        return initializersGiven(
-                                numNonDefaultSenders.get(), numInertReceivers.get());
-                    }
+        return spec -> new OpProvider() {
+            @Override
+            public List<HapiSpecOperation> suggestedInitializers() {
+                var ciProps = spec.setup().ciPropertiesMap();
+                numNonDefaultSenders.set(ciProps.getInteger("numNonDefaultSenders"));
+                numInertReceivers.set(ciProps.getInteger("numInertReceivers"));
+                probOfSignOp.set(ciProps.getDouble("probOfSigning"));
+                return initializersGiven(numNonDefaultSenders.get(), numInertReceivers.get());
+            }
 
-                    @Override
-                    public Optional<HapiSpecOperation> get() {
-                        var sample = r.nextDouble();
-                        if (sample <= probOfSignOp.get()) {
-                            return getScheduleSign();
-                        } else {
-                            return getScheduleCreate();
-                        }
-                    }
+            @Override
+            public Optional<HapiSpecOperation> get() {
+                var sample = r.nextDouble();
+                if (sample <= probOfSignOp.get()) {
+                    return getScheduleSign();
+                } else {
+                    return getScheduleCreate();
+                }
+            }
 
-                    private Optional<HapiSpecOperation> getScheduleSign() {
-                        var nextSig = q.poll();
-                        if (nextSig == null) {
-                            return Optional.empty();
-                        }
-                        var op =
-                                scheduleSign(nextSig.getScheduleId())
-                                        .alsoSigningWith(nextSig.getSignatory())
-                                        .hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
-                                        .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
-                                        //						.noLogging()
-                                        .deferStatusResolution();
-                        return Optional.of(op);
-                    }
+            private Optional<HapiSpecOperation> getScheduleSign() {
+                var nextSig = q.poll();
+                if (nextSig == null) {
+                    return Optional.empty();
+                }
+                var op = scheduleSign(nextSig.getScheduleId())
+                        .alsoSigningWith(nextSig.getSignatory())
+                        .hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
+                        .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
+                        //						.noLogging()
+                        .deferStatusResolution();
+                return Optional.of(op);
+            }
 
-                    private Optional<HapiSpecOperation> getScheduleCreate() {
-                        var senderId = -1;
-                        if (numNonDefaultSenders.get() > 0) {
-                            senderId = r.nextInt(numNonDefaultSenders.get());
-                        }
-                        var payerId =
-                                (senderId == -1 || numNonDefaultSenders.get() == 1)
-                                        ? -1
-                                        : (senderId + 1) % numNonDefaultSenders.get();
+            private Optional<HapiSpecOperation> getScheduleCreate() {
+                var senderId = -1;
+                if (numNonDefaultSenders.get() > 0) {
+                    senderId = r.nextInt(numNonDefaultSenders.get());
+                }
+                var payerId = (senderId == -1 || numNonDefaultSenders.get() == 1)
+                        ? -1
+                        : (senderId + 1) % numNonDefaultSenders.get();
 
-                        var payer = payerId == -1 ? DEFAULT_PAYER : payingSender(payerId);
-                        var sender = senderId == -1 ? DEFAULT_PAYER : payingSender(senderId);
-                        var receiver = FUNDING;
-                        if (numInertReceivers.get() > 0) {
-                            receiver = inertReceiver(r.nextInt(numInertReceivers.get()));
-                        }
-                        var innerOp =
-                                cryptoTransfer(tinyBarsFromTo(sender, receiver, 1L)).fee(ONE_HBAR);
-                        var op =
-                                scheduleCreate("wrapper", innerOp)
-                                        .exposingSuccessTo(
-                                                (createdId, bytes) ->
-                                                        q.offer(
-                                                                new PendingSig(
-                                                                        bytes,
-                                                                        createdId,
-                                                                        sender,
-                                                                        r.nextDouble())))
-                                        .rememberingNothing()
-                                        .designatingPayer(payer)
-                                        .logged()
-                                        .alsoSigningWith(payer)
-                                        .hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
-                                        .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
-                                        //						.noLogging()
-                                        .deferStatusResolution();
-                        return Optional.of(op);
-                    }
-                };
+                var payer = payerId == -1 ? DEFAULT_PAYER : payingSender(payerId);
+                var sender = senderId == -1 ? DEFAULT_PAYER : payingSender(senderId);
+                var receiver = FUNDING;
+                if (numInertReceivers.get() > 0) {
+                    receiver = inertReceiver(r.nextInt(numInertReceivers.get()));
+                }
+                var innerOp =
+                        cryptoTransfer(tinyBarsFromTo(sender, receiver, 1L)).fee(ONE_HBAR);
+                var op = scheduleCreate("wrapper", innerOp)
+                        .exposingSuccessTo(
+                                (createdId, bytes) -> q.offer(new PendingSig(bytes, createdId, sender, r.nextDouble())))
+                        .rememberingNothing()
+                        .designatingPayer(payer)
+                        .logged()
+                        .alsoSigningWith(payer)
+                        .hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
+                        .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)
+                        //						.noLogging()
+                        .deferStatusResolution();
+                return Optional.of(op);
+            }
+        };
     }
 
     @Override
@@ -196,8 +176,7 @@ public class OnePendingSigScheduledXfersLoad extends HapiSuite {
         private final String signatory;
         private final double priority;
 
-        public PendingSig(
-                byte[] scheduledTxnBytes, String scheduleId, String signatory, double priority) {
+        public PendingSig(byte[] scheduledTxnBytes, String scheduleId, String signatory, double priority) {
             this.scheduledTxnBytes = scheduledTxnBytes;
             this.scheduleId = scheduleId;
             this.signatory = signatory;

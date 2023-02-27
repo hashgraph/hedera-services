@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.entities;
 
 import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
@@ -67,15 +68,15 @@ import java.util.Set;
 import java.util.SortedMap;
 
 public class OnDiskAccount implements VirtualValue, HederaAccount {
-    private static final int CURRENT_VERSION = 1;
+    public static final int CURRENT_VERSION = 1;
     private static final long CLASS_ID = 0xc88e3a5c7b497468L;
 
     private static final String EMPTY_MEMO = "";
     private static final JKey HOLLOW_KEY;
 
     static {
-        HOLLOW_KEY =
-                asFcKeyUnchecked(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
+        HOLLOW_KEY = asFcKeyUnchecked(
+                Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
     }
 
     private byte flags;
@@ -149,10 +150,10 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
         onDiskAccount.setStakedToMe(inMemoryAccount.getStakedToMe());
         onDiskAccount.setStakePeriodStart(inMemoryAccount.getStakePeriodStart());
         onDiskAccount.setStakedNum(inMemoryAccount.getStakedNum());
-        onDiskAccount.setStakeAtStartOfLastRewardedPeriod(
-                inMemoryAccount.getStakeAtStartOfLastRewardedPeriod());
+        onDiskAccount.setStakeAtStartOfLastRewardedPeriod(inMemoryAccount.getStakeAtStartOfLastRewardedPeriod());
         if (inMemoryAccount.hasAutoRenewAccount()) {
-            onDiskAccount.setAutoRenewAccountNumber(inMemoryAccount.getAutoRenewAccount().num());
+            onDiskAccount.setAutoRenewAccountNumber(
+                    inMemoryAccount.getAutoRenewAccount().num());
         }
         // Complex
         onDiskAccount.setFirstStorageKey(inMemoryAccount.getFirstUint256Key());
@@ -189,8 +190,7 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         deserializeFrom(in::readByte, in::readInt, in::readLong, in::readFully);
     }
 
@@ -282,11 +282,8 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
                     final var marker = in.readByte();
                     if (marker != MISSING_KEY_SENTINEL) {
                         firstStorageKeyNonZeroBytes = marker;
-                        firstStorageKey =
-                                deserializeUint256Key(
-                                        firstStorageKeyNonZeroBytes,
-                                        in,
-                                        SerializableDataInputStream::readByte);
+                        firstStorageKey = deserializeUint256Key(
+                                firstStorageKeyNonZeroBytes, in, SerializableDataInputStream::readByte);
                     }
                 }
             }
@@ -439,8 +436,7 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
     @Override
     @StateSetter
     public void setExpiredAndPendingRemoval(final boolean flag) {
-        throwIfImmutable(
-                "Tried to set IS_EXPIRED_AND_PENDING_REMOVAL on an immutable OnDiskAccount");
+        throwIfImmutable("Tried to set IS_EXPIRED_AND_PENDING_REMOVAL on an immutable OnDiskAccount");
         if (flag) {
             flags |= Masks.IS_EXPIRED_AND_PENDING_REMOVAL;
         } else {
@@ -636,9 +632,7 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
 
     @StateSetter
     public void setStakeAtStartOfLastRewardedPeriod(final long value) {
-        throwIfImmutable(
-                "Tried to set STAKE_AT_START_OF_LAST_REWARDED_PERIOD on an immutable"
-                        + " OnDiskAccount");
+        throwIfImmutable("Tried to set STAKE_AT_START_OF_LAST_REWARDED_PERIOD on an immutable" + " OnDiskAccount");
         longs[LongValues.STAKE_AT_START_OF_LAST_REWARDED_PERIOD] = value;
     }
 
@@ -758,9 +752,7 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
 
     @Override
     public ContractKey getFirstContractStorageKey() {
-        return firstStorageKey == null
-                ? null
-                : new ContractKey(getAccountNumber(), firstStorageKey);
+        return firstStorageKey == null ? null : new ContractKey(getAccountNumber(), firstStorageKey);
     }
 
     @Override
@@ -814,8 +806,7 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
     }
 
     @Override
-    public void setFungibleTokenAllowances(
-            final SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+    public void setFungibleTokenAllowances(final SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
         setFungibleAllowances(fungibleTokenAllowances);
     }
 
@@ -825,8 +816,7 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
     }
 
     @Override
-    public void setFungibleTokenAllowancesUnsafe(
-            final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+    public void setFungibleTokenAllowancesUnsafe(final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
         setFungibleAllowances(fungibleTokenAllowances);
     }
 
@@ -891,9 +881,7 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
     @Nullable
     @Override
     public EntityId getAutoRenewAccount() {
-        return hasAutoRenewAccount()
-                ? STATIC_PROPERTIES.scopedEntityIdWith(getAutoRenewAccountNumber())
-                : null;
+        return hasAutoRenewAccount() ? STATIC_PROPERTIES.scopedEntityIdWith(getAutoRenewAccountNumber()) : null;
     }
 
     @Override
@@ -928,16 +916,15 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
 
     @Override
     public int hashCode() {
-        int result =
-                Objects.hash(
-                        flags,
-                        key,
-                        memo,
-                        alias,
-                        hbarAllowances,
-                        fungibleAllowances,
-                        nftOperatorApprovals,
-                        firstStorageKeyNonZeroBytes);
+        int result = Objects.hash(
+                flags,
+                key,
+                memo,
+                alias,
+                hbarAllowances,
+                fungibleAllowances,
+                nftOperatorApprovals,
+                firstStorageKeyNonZeroBytes);
         result = 31 * result + Arrays.hashCode(firstStorageKey);
         result = 31 * result + Arrays.hashCode(ints);
         result = 31 * result + Arrays.hashCode(longs);

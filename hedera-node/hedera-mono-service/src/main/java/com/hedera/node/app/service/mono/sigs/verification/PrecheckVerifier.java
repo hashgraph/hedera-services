@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.verification;
 
 import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
@@ -72,17 +73,14 @@ public class PrecheckVerifier {
             if (payerKey.hasHollowKey()) {
                 // can change this algorithm to use the accessor.getSigMap()
                 // and return immediately when we find the first match
-                accessor.getPkToSigsFn()
-                        .forEachUnusedSigWithFullPrefix(
-                                (type, pubKey, sig) -> {
-                                    if (type.equals(ECDSA_SECP256K1)
-                                            && Arrays.equals(
-                                                    payerKey.getHollowKey().getEvmAddress(),
-                                                    EthSigsUtils.recoverAddressFromPubKey(
-                                                            pubKey))) {
-                                        reqKeys.set(0, new JECDSASecp256k1Key(pubKey));
-                                    }
-                                });
+                accessor.getPkToSigsFn().forEachUnusedSigWithFullPrefix((type, pubKey, sig) -> {
+                    if (type.equals(ECDSA_SECP256K1)
+                            && Arrays.equals(
+                                    payerKey.getHollowKey().getEvmAddress(),
+                                    EthSigsUtils.recoverAddressFromPubKey(pubKey))) {
+                        reqKeys.set(0, new JECDSASecp256k1Key(pubKey));
+                    }
+                });
             }
             final var availSigs = getAvailSigs(reqKeys, accessor);
             syncVerifier.verifySync(availSigs);
@@ -98,12 +96,10 @@ public class PrecheckVerifier {
         }
     }
 
-    private List<TransactionSignature> getAvailSigs(List<JKey> reqKeys, SignedTxnAccessor accessor)
-            throws Exception {
+    private List<TransactionSignature> getAvailSigs(List<JKey> reqKeys, SignedTxnAccessor accessor) throws Exception {
         final var pkToSigFn = accessor.getPkToSigsFn();
         final var sigFactory = new ReusableBodySigningFactory(accessor);
-        PlatformSigsCreationResult creationResult =
-                createCryptoSigsFrom(reqKeys, pkToSigFn, sigFactory);
+        PlatformSigsCreationResult creationResult = createCryptoSigsFrom(reqKeys, pkToSigFn, sigFactory);
         if (creationResult.hasFailed()) {
             throw creationResult.getTerminatingEx();
         } else {

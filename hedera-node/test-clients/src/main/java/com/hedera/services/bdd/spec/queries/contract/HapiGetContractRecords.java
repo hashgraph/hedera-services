@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.queries.contract;
 
 import static com.hedera.services.bdd.spec.HapiSpec.ensureDir;
@@ -54,8 +55,7 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
     private Optional<BiConsumer<Logger, List<TransactionRecord>>> customLog = Optional.empty();
 
     private final String contract;
-    private Optional<ErroringAssertsProvider<List<TransactionRecord>>> expectation =
-            Optional.empty();
+    private Optional<ErroringAssertsProvider<List<TransactionRecord>>> expectation = Optional.empty();
 
     public HapiGetContractRecords has(ErroringAssertsProvider<List<TransactionRecord>> provider) {
         expectation = Optional.of(provider);
@@ -76,8 +76,7 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
         this.contract = contract;
     }
 
-    public HapiGetContractRecords withLogging(
-            BiConsumer<Logger, List<TransactionRecord>> customLog) {
+    public HapiGetContractRecords withLogging(BiConsumer<Logger, List<TransactionRecord>> customLog) {
         verboseLoggingOn = true;
         this.customLog = Optional.of(customLog);
         return this;
@@ -111,11 +110,9 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getContractRecordsQuery(spec, payment, false);
-        response =
-                spec.clients()
-                        .getScSvcStub(targetNodeFor(spec), useTls)
-                        .getTxRecordByContractID(query);
-        List<TransactionRecord> records = response.getContractGetRecordsResponse().getRecordsList();
+        response = spec.clients().getScSvcStub(targetNodeFor(spec), useTls).getTxRecordByContractID(query);
+        List<TransactionRecord> records =
+                response.getContractGetRecordsResponse().getRecordsList();
         if (verboseLoggingOn) {
             if (customLog.isPresent()) {
                 customLog.get().accept(log, records);
@@ -138,26 +135,22 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getContractRecordsQuery(spec, payment, true);
         Response response =
-                spec.clients()
-                        .getScSvcStub(targetNodeFor(spec), useTls)
-                        .getTxRecordByContractID(query);
+                spec.clients().getScSvcStub(targetNodeFor(spec), useTls).getTxRecordByContractID(query);
         return costFrom(response);
     }
 
     private Query getContractRecordsQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         var id = TxnUtils.asContractId(contract, spec);
-        ContractGetRecordsQuery opQuery =
-                ContractGetRecordsQuery.newBuilder()
-                        .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
-                        .setContractID(id)
-                        .build();
+        ContractGetRecordsQuery opQuery = ContractGetRecordsQuery.newBuilder()
+                .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
+                .setContractID(id)
+                .build();
         return Query.newBuilder().setContractGetRecords(opQuery).build();
     }
 
     @Override
     protected long costOnlyNodePayment(HapiSpec spec) throws Throwable {
-        return spec.fees()
-                .forOp(HederaFunctionality.ContractGetRecords, fees.getCostForQueryByIDOnly());
+        return spec.fees().forOp(HederaFunctionality.ContractGetRecords, fees.getCostForQueryByIDOnly());
     }
 
     @Override
@@ -169,11 +162,9 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
     protected MoreObjects.ToStringHelper toStringHelper() {
         MoreObjects.ToStringHelper helper = super.toStringHelper().add("contract", contract);
         Optional.ofNullable(response)
-                .ifPresent(
-                        r ->
-                                helper.add(
-                                        "# records",
-                                        r.getContractGetRecordsResponse().getRecordsList().size()));
+                .ifPresent(r -> helper.add(
+                        "# records",
+                        r.getContractGetRecordsResponse().getRecordsList().size()));
         return helper;
     }
 
@@ -205,8 +196,7 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
         return prefix.map(d -> d + "/" + spec.getName()).get();
     }
 
-    private void checkExpectations(HapiSpec spec, List<TransactionRecord> records)
-            throws Throwable {
+    private void checkExpectations(HapiSpec spec, List<TransactionRecord> records) throws Throwable {
         String specExpectationsDir = specScopedDir(spec, expectationsDirPath);
         try {
             String expectationsDir = specExpectationsDir + "/" + contract;

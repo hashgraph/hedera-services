@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.store;
 
 import static java.lang.Long.parseLong;
 
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.internals.BlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
-import com.swirlds.virtualmap.VirtualMap;
 import java.util.AbstractMap;
 import java.util.Optional;
 import java.util.Set;
@@ -29,11 +30,11 @@ import java.util.function.Supplier;
 public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
     public static final VirtualBlobValue EMPTY_BLOB = new VirtualBlobValue(new byte[0]);
 
-    private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> blobSupplier;
+    private final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> blobSupplier;
 
     public static final int LEGACY_BLOB_CODE_INDEX = 3;
 
-    public FcBlobsBytesStore(Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> blobSupplier) {
+    public FcBlobsBytesStore(Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> blobSupplier) {
         this.blobSupplier = blobSupplier;
     }
 

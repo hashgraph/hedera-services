@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.crypto;
 
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoContextUtils.convertToCryptoMapFromGranted;
@@ -112,16 +113,15 @@ public class ExtantCryptoContext {
         private static final int TOKEN_ALLOWANCES_MASK = 1 << 7;
         private static final int NFT_ALLOWANCES_MASK = 1 << 8;
 
-        private static final int ALL_FIELDS_MASK =
-                TOKEN_RELS_MASK
-                        | EXPIRY_MASK
-                        | MEMO_MASK
-                        | KEY_MASK
-                        | HAS_PROXY_MASK
-                        | MAX_AUTO_ASSOCIATIONS_MASK
-                        | CRYPTO_ALLOWANCES_MASK
-                        | TOKEN_ALLOWANCES_MASK
-                        | NFT_ALLOWANCES_MASK;
+        private static final int ALL_FIELDS_MASK = TOKEN_RELS_MASK
+                | EXPIRY_MASK
+                | MEMO_MASK
+                | KEY_MASK
+                | HAS_PROXY_MASK
+                | MAX_AUTO_ASSOCIATIONS_MASK
+                | CRYPTO_ALLOWANCES_MASK
+                | TOKEN_ALLOWANCES_MASK
+                | NFT_ALLOWANCES_MASK;
 
         private int mask = 0;
 
@@ -139,8 +139,7 @@ public class ExtantCryptoContext {
 
         public ExtantCryptoContext build() {
             if (mask != ALL_FIELDS_MASK) {
-                throw new IllegalStateException(
-                        String.format("Field mask is %d, not %d!", mask, ALL_FIELDS_MASK));
+                throw new IllegalStateException(String.format("Field mask is %d, not %d!", mask, ALL_FIELDS_MASK));
             }
             return new ExtantCryptoContext(this);
         }
@@ -182,8 +181,7 @@ public class ExtantCryptoContext {
             return this;
         }
 
-        public ExtantCryptoContext.Builder setCurrentCryptoAllowances(
-                final Map<Long, Long> currentCryptoAllowances) {
+        public ExtantCryptoContext.Builder setCurrentCryptoAllowances(final Map<Long, Long> currentCryptoAllowances) {
             this.currentCryptoAllowances = currentCryptoAllowances;
             mask |= CRYPTO_ALLOWANCES_MASK;
             return this;
@@ -203,25 +201,20 @@ public class ExtantCryptoContext {
             return this;
         }
 
-        public Builder setCurrentCryptoAllowances(
-                final List<GrantedCryptoAllowance> grantedCryptoAllowancesList) {
-            this.currentCryptoAllowances =
-                    convertToCryptoMapFromGranted(grantedCryptoAllowancesList);
+        public Builder setCurrentCryptoAllowances(final List<GrantedCryptoAllowance> grantedCryptoAllowancesList) {
+            this.currentCryptoAllowances = convertToCryptoMapFromGranted(grantedCryptoAllowancesList);
             mask |= CRYPTO_ALLOWANCES_MASK;
             return this;
         }
 
-        public Builder setCurrentTokenAllowances(
-                final List<GrantedTokenAllowance> grantedTokenAllowancesList) {
+        public Builder setCurrentTokenAllowances(final List<GrantedTokenAllowance> grantedTokenAllowancesList) {
             this.currentTokenAllowances = convertToTokenMapFromGranted(grantedTokenAllowancesList);
             mask |= TOKEN_ALLOWANCES_MASK;
             return this;
         }
 
-        public Builder setCurrentApproveForAllNftAllowances(
-                final List<GrantedNftAllowance> grantedNftAllowancesList) {
-            this.currentApproveForAllNftAllowances =
-                    convertToNftMapFromGranted(grantedNftAllowancesList);
+        public Builder setCurrentApproveForAllNftAllowances(final List<GrantedNftAllowance> grantedNftAllowancesList) {
+            this.currentApproveForAllNftAllowances = convertToNftMapFromGranted(grantedNftAllowancesList);
             mask |= NFT_ALLOWANCES_MASK;
             return this;
         }

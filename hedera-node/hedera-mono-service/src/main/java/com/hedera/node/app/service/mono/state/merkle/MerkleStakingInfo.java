@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 /*
@@ -37,8 +38,8 @@ package com.hedera.node.app.service.mono.state.merkle;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.node.app.service.mono.state.merkle.internals.ByteUtils.getHashBytes;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
@@ -63,10 +64,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<EntityNum>, MerkleLeaf {
+
     private static final Logger log = LogManager.getLogger(MerkleStakingInfo.class);
 
     static final int RELEASE_0270_VERSION = 1;
-    static final int CURRENT_VERSION = RELEASE_0270_VERSION;
+    public static final int CURRENT_VERSION = RELEASE_0270_VERSION;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0xb8b383ccd3caed5bL;
 
     private int number;
@@ -81,7 +83,9 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     private long unclaimedStakeRewardStart;
     private long stake;
     private long[] rewardSumHistory;
-    @Nullable private byte[] historyHash;
+
+    @Nullable
+    private byte[] historyHash;
 
     public MerkleStakingInfo() {
         // RuntimeConstructable
@@ -169,9 +173,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     }
 
     public long updateRewardSumHistory(
-            final long perHbarRate,
-            final long maxPerHbarRate,
-            final boolean requireMinStakeToReward) {
+            final long perHbarRate, final long maxPerHbarRate, final boolean requireMinStakeToReward) {
         assertMutableRewardSumHistory();
         rewardSumHistory = Arrays.copyOf(rewardSumHistory, rewardSumHistory.length);
         final var droppedRewardSum = rewardSumHistory[rewardSumHistory.length - 1];
@@ -188,8 +190,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         // for this staking period, unless its effective stake was less than minStake, and hence
         // zero here (note
         // the active condition will only be checked in a later release)
-        final var rewardableStake =
-                requireMinStakeToReward ? Math.min(stakeRewardStart, stake) : stakeRewardStart;
+        final var rewardableStake = requireMinStakeToReward ? Math.min(stakeRewardStart, stake) : stakeRewardStart;
         if (rewardableStake > 0) {
             perHbarRateThisNode = perHbarRate;
             // But if the node had more the maximum stakeRewardStart, "down-scale" its reward rate
@@ -200,19 +201,16 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
             // arbitrary-precision
             // arithmetic because there is no inherent bound on (maxStake * perHbarRateThisNode)
             if (stakeRewardStart > maxStake) {
-                perHbarRateThisNode =
-                        BigInteger.valueOf(perHbarRateThisNode)
-                                .multiply(BigInteger.valueOf(maxStake))
-                                .divide(BigInteger.valueOf(stakeRewardStart))
-                                .longValueExact();
+                perHbarRateThisNode = BigInteger.valueOf(perHbarRateThisNode)
+                        .multiply(BigInteger.valueOf(maxStake))
+                        .divide(BigInteger.valueOf(stakeRewardStart))
+                        .longValueExact();
             }
         }
         perHbarRateThisNode = Math.min(perHbarRateThisNode, maxPerHbarRate);
         rewardSumHistory[0] += perHbarRateThisNode;
 
-        log.info(
-                "   > Non-zero reward sum history is now {}",
-                () -> readableNonZeroHistory(rewardSumHistory));
+        log.info("   > Non-zero reward sum history is now {}", () -> readableNonZeroHistory(rewardSumHistory));
         // reset the historyHash
         historyHash = null;
         return perHbarRateThisNode;
@@ -322,8 +320,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         number = in.readInt();
         minStake = in.readLong();
         maxStake = in.readLong();
@@ -432,8 +429,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     // Internal helpers
     private void assertMutable(final String proximalField) {
         if (isImmutable()) {
-            throw new MutabilityException(
-                    "Cannot set " + proximalField + " on an immutable StakingInfo!");
+            throw new MutabilityException("Cannot set " + proximalField + " on an immutable StakingInfo!");
         }
     }
 
@@ -441,8 +437,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         assertMutable("rewardSumHistory");
     }
 
-    private void serializeNonHistoryData(final SerializableDataOutputStream out)
-            throws IOException {
+    private void serializeNonHistoryData(final SerializableDataOutputStream out) throws IOException {
         out.writeInt(number);
         out.writeLong(minStake);
         out.writeLong(maxStake);
@@ -469,9 +464,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
             }
         }
         return Arrays.toString(
-                (firstZero == -1)
-                        ? rewardSumHistory
-                        : Arrays.copyOfRange(rewardSumHistory, 0, firstZero));
+                (firstZero == -1) ? rewardSumHistory : Arrays.copyOfRange(rewardSumHistory, 0, firstZero));
     }
 
     @VisibleForTesting

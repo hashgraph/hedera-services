@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.keys;
 
 import com.swirlds.common.crypto.SignatureType;
@@ -28,8 +29,7 @@ public class LeafFactory implements NodeFactory {
         this.usedToSign = usedToSign;
     }
 
-    public static final LeafFactory DEFAULT_FACTORY =
-            new LeafFactory(null, true, SignatureType.ED25519);
+    public static final LeafFactory DEFAULT_FACTORY = new LeafFactory(null, true, SignatureType.ED25519);
 
     public String getLabel() {
         return label;

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.hapi.fees.calc.OverflowCheckingCalc.tinycentsToTinybars;
@@ -41,18 +42,23 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ExchangeRatePrecompiledContractTest {
-    @Mock private MessageFrame frame;
-    @Mock private HbarCentExchange exchange;
-    @Mock private GasCalculator gasCalculator;
-    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private HbarCentExchange exchange;
+
+    @Mock
+    private GasCalculator gasCalculator;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
 
     private ExchangeRatePrecompiledContract subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new ExchangeRatePrecompiledContract(
-                        gasCalculator, exchange, dynamicProperties, () -> now);
+        subject = new ExchangeRatePrecompiledContract(gasCalculator, exchange, dynamicProperties, () -> now);
     }
 
     @Test
@@ -93,12 +99,8 @@ class ExchangeRatePrecompiledContractTest {
 
     @Test
     void inputCannotUnderflow() {
-        final var underflowInput =
-                tinycentsInput(
-                        Bytes.wrap(
-                                BigInteger.valueOf(Long.MAX_VALUE)
-                                        .multiply(BigInteger.TEN)
-                                        .toByteArray()));
+        final var underflowInput = tinycentsInput(Bytes.wrap(
+                BigInteger.valueOf(Long.MAX_VALUE).multiply(BigInteger.TEN).toByteArray()));
 
         assertNull(subject.compute(underflowInput, frame));
     }
@@ -117,13 +119,11 @@ class ExchangeRatePrecompiledContractTest {
     }
 
     private static Bytes tinycentsInput(final long validAmount) {
-        return input(
-                TO_TINYBARS_SELECTOR, Bytes32.leftPad(Bytes.wrap(Longs.toByteArray(validAmount))));
+        return input(TO_TINYBARS_SELECTOR, Bytes32.leftPad(Bytes.wrap(Longs.toByteArray(validAmount))));
     }
 
     private static Bytes tinybarsInput(final long validAmount) {
-        return input(
-                TO_TINYCENTS_SELECTOR, Bytes32.leftPad(Bytes.wrap(Longs.toByteArray(validAmount))));
+        return input(TO_TINYCENTS_SELECTOR, Bytes32.leftPad(Bytes.wrap(Longs.toByteArray(validAmount))));
     }
 
     private static Bytes tinycentsInput(final Bytes wordInput) {
@@ -159,11 +159,10 @@ class ExchangeRatePrecompiledContractTest {
     private static final int someHbarEquiv = 120;
     private static final int someCentEquiv = 100;
     private static final int someTinycentAmount = 123_456_000;
-    private static final ExchangeRate someRate =
-            ExchangeRate.newBuilder()
-                    .setHbarEquiv(someHbarEquiv)
-                    .setCentEquiv(someCentEquiv)
-                    .build();
+    private static final ExchangeRate someRate = ExchangeRate.newBuilder()
+            .setHbarEquiv(someHbarEquiv)
+            .setCentEquiv(someCentEquiv)
+            .build();
     private static final long someTinybarAmount = tinycentsToTinybars(someTinycentAmount, someRate);
     private static final Instant now = Instant.ofEpochSecond(1_234_567, 890);
     private static final long GAS_REQUIREMENT = 100L;

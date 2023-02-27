@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
@@ -94,39 +95,92 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class DeleteTokenPrecompileTest {
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private GasCalculator gasCalculator;
-    @Mock private TypedTokenStore tokenStore;
-    @Mock private AccountStore accountStore;
-    @Mock private MessageFrame frame;
-    @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private EncodingFacade encoder;
-    @Mock private EvmEncodingFacade evmEncoder;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private ExpiringCreations creator;
-    @Mock private FeeCalculator feeCalculator;
-    @Mock private ExchangeRate exchangeRate;
-    @Mock private StateView stateView;
-    @Mock private ContractAliases aliases;
-    @Mock private HederaStackedWorldStateUpdater worldUpdater;
-    @Mock private DeleteLogic deleteLogic;
-    @Mock private WorldLedgers wrappedLedgers;
-    @Mock private UsagePricesProvider resourceCosts;
-    @Mock private HbarCentExchange exchange;
-    @Mock private ExpirableTxnRecord.Builder mockRecordBuilder;
-    @Mock private InfrastructureFactory infrastructureFactory;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
-    @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
-    @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
-    @Mock private AccessorFactory accessorFactory;
-    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
 
     @Mock
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-            tokenRels;
+    private GasCalculator gasCalculator;
 
-    @Mock private AssetsLoader assetLoader;
+    @Mock
+    private TypedTokenStore tokenStore;
+
+    @Mock
+    private AccountStore accountStore;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private TxnAwareEvmSigsVerifier sigsVerifier;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private EncodingFacade encoder;
+
+    @Mock
+    private EvmEncodingFacade evmEncoder;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private ExpiringCreations creator;
+
+    @Mock
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private ExchangeRate exchangeRate;
+
+    @Mock
+    private StateView stateView;
+
+    @Mock
+    private ContractAliases aliases;
+
+    @Mock
+    private HederaStackedWorldStateUpdater worldUpdater;
+
+    @Mock
+    private DeleteLogic deleteLogic;
+
+    @Mock
+    private WorldLedgers wrappedLedgers;
+
+    @Mock
+    private UsagePricesProvider resourceCosts;
+
+    @Mock
+    private HbarCentExchange exchange;
+
+    @Mock
+    private ExpirableTxnRecord.Builder mockRecordBuilder;
+
+    @Mock
+    private InfrastructureFactory infrastructureFactory;
+
+    @Mock
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
+
+    @Mock
+    private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
+
+    @Mock
+    private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
+
+    @Mock
+    private AccessorFactory accessorFactory;
+
+    @Mock
+    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+
+    @Mock
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRels;
+
+    @Mock
+    private AssetsLoader assetLoader;
 
     private HTSPrecompiledContract subject;
     private MockedStatic<DeleteTokenPrecompile> deleteTokenPrecompile;
@@ -138,38 +192,29 @@ class DeleteTokenPrecompileTest {
     private static final long EXPECTED_GAS_PRICE =
             (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
     public static final Bytes DELETE_INPUT =
-            Bytes.fromHexString(
-                    "0xf069f712000000000000000000000000000000000000000000000000000000000000046d");
+            Bytes.fromHexString("0xf069f712000000000000000000000000000000000000000000000000000000000000046d");
 
     @BeforeEach
     void setUp() throws IOException {
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
-        canonicalPrices.put(
-                HederaFunctionality.TokenDelete, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
+        canonicalPrices.put(HederaFunctionality.TokenDelete, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-        final PrecompilePricingUtils precompilePricingUtils =
-                new PrecompilePricingUtils(
-                        assetLoader,
-                        exchange,
-                        () -> feeCalculator,
-                        resourceCosts,
-                        stateView,
-                        accessorFactory);
-        subject =
-                new HTSPrecompiledContract(
-                        dynamicProperties,
-                        gasCalculator,
-                        recordsHistorian,
-                        sigsVerifier,
-                        encoder,
-                        evmEncoder,
-                        syntheticTxnFactory,
-                        creator,
-                        () -> feeCalculator,
-                        stateView,
-                        precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
+                assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
+        subject = new HTSPrecompiledContract(
+                dynamicProperties,
+                gasCalculator,
+                recordsHistorian,
+                sigsVerifier,
+                encoder,
+                evmEncoder,
+                syntheticTxnFactory,
+                creator,
+                () -> feeCalculator,
+                stateView,
+                precompilePricingUtils,
+                infrastructureFactory,
+                evmHTSPrecompiledContract);
         deleteTokenPrecompile = Mockito.mockStatic(DeleteTokenPrecompile.class);
     }
 
@@ -208,13 +253,10 @@ class DeleteTokenPrecompileTest {
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         given(feeCalculator.computeFee(any(), any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
-        given(feeCalculator.estimatedGasPriceInTinybars(any(), any()))
-                .willReturn(DEFAULT_GAS_PRICE);
+        given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
         deleteTokenPrecompile.when(() -> decodeDelete(any())).thenReturn(tokenDeleteWrapper);
         given(syntheticTxnFactory.createDelete(tokenDeleteWrapper))
-                .willReturn(
-                        TransactionBody.newBuilder()
-                                .setTokenDeletion(TokenDeleteTransactionBody.newBuilder()));
+                .willReturn(TransactionBody.newBuilder().setTokenDeletion(TokenDeleteTransactionBody.newBuilder()));
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
@@ -248,8 +290,7 @@ class DeleteTokenPrecompileTest {
         final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.aliases()).willReturn(aliases);
-        given(aliases.resolveForEvm(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
     }
@@ -258,17 +299,12 @@ class DeleteTokenPrecompileTest {
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, null, tokens, nfts, tokenRels))
                 .willReturn(tokenStore);
-        given(infrastructureFactory.newDeleteLogic(accountStore, tokenStore))
-                .willReturn(deleteLogic);
+        given(infrastructureFactory.newDeleteLogic(accountStore, tokenStore)).willReturn(deleteLogic);
         given(deleteLogic.validate(any())).willReturn(OK);
         deleteTokenPrecompile.when(() -> decodeDelete(any())).thenReturn(tokenDeleteWrapper);
         given(syntheticTxnFactory.createDelete(tokenDeleteWrapper))
-                .willReturn(
-                        TransactionBody.newBuilder()
-                                .setTokenDeletion(TokenDeleteTransactionBody.newBuilder()));
-        given(
-                        sigsVerifier.hasActiveAdminKey(
-                                true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+                .willReturn(TransactionBody.newBuilder().setTokenDeletion(TokenDeleteTransactionBody.newBuilder()));
+        given(sigsVerifier.hasActiveAdminKey(true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
                 .willReturn(true);
     }
 

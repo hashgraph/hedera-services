@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.ethereum;
 
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ETHEREUM_NONCE;
@@ -74,41 +75,73 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class EthereumTransitionLogicTest {
-    @Mock private EthTxSigs ethTxSigs;
-    @Mock private EthTxData ethTxData;
-    @Mock private TxnAccessor accessor;
-    @Mock private AliasManager aliasManager;
-    @Mock private SpanMapManager spanMapManager;
-    @Mock private TransactionContext txnCtx;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private SynthCreationCustomizer creationCustomizer;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private Function<TransactionBody, ResponseCodeEnum> semanticCheck;
-    @Mock private TransactionRecordService recordService;
-    @Mock private ExpandHandleSpanMapAccessor spanMapAccessor;
-    @Mock private ContractCallTransitionLogic contractCallTransitionLogic;
-    @Mock private ContractCreateTransitionLogic contractCreateTransitionLogic;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
-    @Mock private SwirldsTxnAccessor swirldsTxnAccessor;
-    @Mock private RationalizedSigMeta rationalizedSigMeta;
+    @Mock
+    private EthTxSigs ethTxSigs;
+
+    @Mock
+    private EthTxData ethTxData;
+
+    @Mock
+    private TxnAccessor accessor;
+
+    @Mock
+    private AliasManager aliasManager;
+
+    @Mock
+    private SpanMapManager spanMapManager;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private SynthCreationCustomizer creationCustomizer;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private Function<TransactionBody, ResponseCodeEnum> semanticCheck;
+
+    @Mock
+    private TransactionRecordService recordService;
+
+    @Mock
+    private ExpandHandleSpanMapAccessor spanMapAccessor;
+
+    @Mock
+    private ContractCallTransitionLogic contractCallTransitionLogic;
+
+    @Mock
+    private ContractCreateTransitionLogic contractCreateTransitionLogic;
+
+    @Mock
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
+
+    @Mock
+    private SwirldsTxnAccessor swirldsTxnAccessor;
+
+    @Mock
+    private RationalizedSigMeta rationalizedSigMeta;
 
     private EthereumTransitionLogic subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new EthereumTransitionLogic(
-                        txnCtx,
-                        syntheticTxnFactory,
-                        creationCustomizer,
-                        spanMapAccessor,
-                        contractCallTransitionLogic,
-                        contractCreateTransitionLogic,
-                        recordService,
-                        dynamicProperties,
-                        aliasManager,
-                        accountsLedger,
-                        spanMapManager);
+        subject = new EthereumTransitionLogic(
+                txnCtx,
+                syntheticTxnFactory,
+                creationCustomizer,
+                spanMapAccessor,
+                contractCallTransitionLogic,
+                contractCreateTransitionLogic,
+                recordService,
+                dynamicProperties,
+                aliasManager,
+                accountsLedger,
+                spanMapManager);
     }
 
     @Test
@@ -160,8 +193,7 @@ class EthereumTransitionLogicTest {
 
     @Test
     void transitionDelegatesToContractCallForSynthCall() {
-        final var inOrder =
-                Mockito.inOrder(rationalizedSigMeta, contractCallTransitionLogic, recordService);
+        final var inOrder = Mockito.inOrder(rationalizedSigMeta, contractCallTransitionLogic, recordService);
         givenValidlyCalled(callTxn);
         givenOfferedPrice();
 
@@ -170,11 +202,7 @@ class EthereumTransitionLogicTest {
         inOrder.verify(rationalizedSigMeta).revokeCryptoSigsFrom(relayerKey);
         inOrder.verify(contractCallTransitionLogic)
                 .doStateTransitionOperation(
-                        callTxn,
-                        callerNum.toId(),
-                        relayerNum.toId(),
-                        maxGasAllowance,
-                        biOfferedGasPrice);
+                        callTxn, callerNum.toId(), relayerNum.toId(), maxGasAllowance, biOfferedGasPrice);
         inOrder.verify(recordService).updateForEvmCall(ethTxData, callerNum.toEntityId());
     }
 
@@ -188,24 +216,17 @@ class EthereumTransitionLogicTest {
 
         verify(contractCreateTransitionLogic)
                 .doStateTransitionOperation(
-                        createTxn,
-                        callerNum.toId(),
-                        true,
-                        relayerNum.toId(),
-                        maxGasAllowance,
-                        biOfferedGasPrice);
+                        createTxn, callerNum.toId(), true, relayerNum.toId(), maxGasAllowance, biOfferedGasPrice);
         verify(recordService).updateForEvmCall(ethTxData, callerNum.toEntityId());
     }
 
     @Test
     void invalidIfAllowanceIsNegative() {
         given(accessor.getTxn())
-                .willReturn(
-                        TransactionBody.newBuilder()
-                                .setEthereumTransaction(
-                                        EthereumTransactionBody.newBuilder()
-                                                .setMaxGasAllowance(-1L))
-                                .build());
+                .willReturn(TransactionBody.newBuilder()
+                        .setEthereumTransaction(
+                                EthereumTransactionBody.newBuilder().setMaxGasAllowance(-1L))
+                        .build());
 
         assertEquals(NEGATIVE_ALLOWANCE_AMOUNT, subject.validateSemantics(accessor));
     }
@@ -283,9 +304,7 @@ class EthereumTransitionLogicTest {
 
     @Test
     void dealsWithRecoveryEdgeCase() {
-        given(spanMapAccessor.getEthTxExpansion(accessor))
-                .willReturn(null)
-                .willReturn(notOkExpansion);
+        given(spanMapAccessor.getEthTxExpansion(accessor)).willReturn(null).willReturn(notOkExpansion);
 
         assertFailsWith(() -> subject.validatedCallerOf(accessor), INVALID_ETHEREUM_TRANSACTION);
 
@@ -335,28 +354,21 @@ class EthereumTransitionLogicTest {
     private static final byte[] chainIdBytes = "0123".getBytes();
     private static final long requiredNonce = 666L;
     private static final EthTxExpansion okExpansion = new EthTxExpansion(null, OK);
-    private static final EthTxExpansion notOkExpansion =
-            new EthTxExpansion(null, INVALID_ETHEREUM_TRANSACTION);
+    private static final EthTxExpansion notOkExpansion = new EthTxExpansion(null, INVALID_ETHEREUM_TRANSACTION);
     private static final EntityNum callerNum = EntityNum.fromLong(666);
     private static final EntityNum relayerNum = EntityNum.fromLong(777);
     private static final AccountID callerId = callerNum.toGrpcAccountId();
     private static final AccountID relayerId = relayerNum.toGrpcAccountId();
     private static final byte[] callerAddress = callerNum.toRawEvmAddress();
-    private static final TransactionBody ethTxn =
-            TransactionBody.newBuilder()
-                    .setEthereumTransaction(
-                            EthereumTransactionBody.newBuilder()
-                                    .setMaxGasAllowance(maxGasAllowance))
-                    .build();
-    private static final TransactionBody callTxn =
-            TransactionBody.newBuilder()
-                    .setContractCall(ContractCallTransactionBody.getDefaultInstance())
-                    .build();
-    private static final TransactionBody createTxn =
-            TransactionBody.newBuilder()
-                    .setContractCreateInstance(ContractCreateTransactionBody.getDefaultInstance())
-                    .build();
+    private static final TransactionBody ethTxn = TransactionBody.newBuilder()
+            .setEthereumTransaction(EthereumTransactionBody.newBuilder().setMaxGasAllowance(maxGasAllowance))
+            .build();
+    private static final TransactionBody callTxn = TransactionBody.newBuilder()
+            .setContractCall(ContractCallTransactionBody.getDefaultInstance())
+            .build();
+    private static final TransactionBody createTxn = TransactionBody.newBuilder()
+            .setContractCreateInstance(ContractCreateTransactionBody.getDefaultInstance())
+            .build();
     private static final TransactionBody nonEthTxn = TransactionBody.getDefaultInstance();
-    private static final JKey relayerKey =
-            new JEd25519Key("a123456789a123456789a123456789a1".getBytes());
+    private static final JKey relayerKey = new JEd25519Key("a123456789a123456789a123456789a1".getBytes());
 }

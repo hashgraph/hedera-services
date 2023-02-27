@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.consensus.queries;
 
 import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.computeVariableSizedFieldsUsage;
@@ -50,15 +51,13 @@ public final class GetTopicInfoResourceUsage implements QueryResourceUsageEstima
     }
 
     @Override
-    public FeeData usageGiven(
-            final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
+    public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
         return usageGivenType(
                 query, view, query.getConsensusGetTopicInfo().getHeader().getResponseType());
     }
 
     @Override
-    public FeeData usageGivenType(
-            final Query query, final StateView view, final ResponseType responseType) {
+    public FeeData usageGivenType(final Query query, final StateView view, final ResponseType responseType) {
         final var merkleTopic =
                 view.topics().get(fromTopicId(query.getConsensusGetTopicInfo().getTopicID()));
 
@@ -66,22 +65,20 @@ public final class GetTopicInfoResourceUsage implements QueryResourceUsageEstima
             return FeeData.getDefaultInstance();
         }
 
-        final long bpr =
-                BASIC_QUERY_RES_HEADER
-                        + getStateProofSize(responseType)
-                        + BASIC_ENTITY_ID_SIZE
-                        + getTopicInfoSize(merkleTopic);
-        final var feeMatrices =
-                FeeComponents.newBuilder()
-                        .setBpt(BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE)
-                        .setVpt(0)
-                        .setRbh(0)
-                        .setSbh(0)
-                        .setGas(0)
-                        .setTv(0)
-                        .setBpr(bpr)
-                        .setSbpr(0)
-                        .build();
+        final long bpr = BASIC_QUERY_RES_HEADER
+                + getStateProofSize(responseType)
+                + BASIC_ENTITY_ID_SIZE
+                + getTopicInfoSize(merkleTopic);
+        final var feeMatrices = FeeComponents.newBuilder()
+                .setBpt(BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE)
+                .setVpt(0)
+                .setRbh(0)
+                .setSbh(0)
+                .setGas(0)
+                .setTv(0)
+                .setBpr(bpr)
+                .setSbpr(0)
+                .build();
         return getQueryFeeDataMatrices(feeMatrices);
     }
 

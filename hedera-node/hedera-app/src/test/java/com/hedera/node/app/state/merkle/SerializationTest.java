@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,17 +51,14 @@ class SerializationTest extends MerkleTestBase {
             @Override
             @SuppressWarnings("rawtypes")
             public Set<StateDefinition> statesToCreate() {
-                final var fruitDef =
-                        StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES);
-                final var animalDef =
-                        StateDefinition.onDisk(ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES, 100);
+                final var fruitDef = StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES);
+                final var animalDef = StateDefinition.onDisk(ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES, 100);
                 final var countryDef = StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_SERDES);
                 return Set.of(fruitDef, animalDef, countryDef);
             }
 
             @Override
-            public void migrate(
-                    @NonNull ReadableStates previousStates, @NonNull WritableStates newStates) {
+            public void migrate(@NonNull ReadableStates previousStates, @NonNull WritableStates newStates) {
                 final WritableKVState<String, String> fruit = newStates.get(FRUIT_STATE_KEY);
                 fruit.put(A_KEY, APPLE);
                 fruit.put(B_KEY, BANANA);
@@ -79,8 +77,7 @@ class SerializationTest extends MerkleTestBase {
                 animals.put(F_KEY, FOX);
                 animals.put(G_KEY, GOOSE);
 
-                final WritableSingletonState<String> country =
-                        newStates.getSingleton(COUNTRY_STATE_KEY);
+                final WritableSingletonState<String> country = newStates.getSingleton(COUNTRY_STATE_KEY);
                 country.put(CHAD);
             }
         };
@@ -95,7 +92,8 @@ class SerializationTest extends MerkleTestBase {
         // Given a merkle tree with some fruit and animals and country
         final var v1 = version(1, 0, 0);
         final var dir = TemporaryFileBuilder.buildTemporaryDirectory();
-        final var originalTree = new MerkleHederaState(tree -> {}, evt -> {}, (round, dual) -> {});
+        final var originalTree =
+                new MerkleHederaState(tree -> {}, (evt, meta, provider) -> {}, (round, dual, metadata) -> {});
         final var originalRegistry = new MerkleSchemaRegistry(registry, dir, FIRST_SERVICE);
         final var schemaV1 = createV1Schema();
         originalRegistry.register(schemaV1);
@@ -110,12 +108,10 @@ class SerializationTest extends MerkleTestBase {
 
         // Register the MerkleHederaState so, when found in serialized bytes, it will register with
         // our migration callback, etc. (normally done by the Hedera main method)
-        final Supplier<RuntimeConstructable> constructor =
-                () ->
-                        new MerkleHederaState(
-                                tree -> newRegistry.migrate(tree, v1, v1),
-                                event -> {},
-                                (round, dualState) -> {});
+        final Supplier<RuntimeConstructable> constructor = () -> new MerkleHederaState(
+                tree -> newRegistry.migrate(tree, v1, v1),
+                (event, meta, provider) -> {},
+                (round, dualState, metadata) -> {});
         final var pair = new ClassConstructorPair(MerkleHederaState.class, constructor);
         registry.registerConstructable(pair);
 

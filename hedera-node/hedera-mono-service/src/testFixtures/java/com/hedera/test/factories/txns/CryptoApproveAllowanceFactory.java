@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.factories.txns;
 
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
@@ -34,8 +35,7 @@ public class CryptoApproveAllowanceFactory extends SignedTxnFactory<CryptoApprov
         return new CryptoApproveAllowanceFactory();
     }
 
-    public CryptoApproveAllowanceFactory withCryptoAllowances(
-            List<CryptoAllowance> cryptoAllowances) {
+    public CryptoApproveAllowanceFactory withCryptoAllowances(List<CryptoAllowance> cryptoAllowances) {
         this.cryptoAllowances = cryptoAllowances;
         return this;
     }
@@ -62,12 +62,11 @@ public class CryptoApproveAllowanceFactory extends SignedTxnFactory<CryptoApprov
 
     @Override
     protected void customizeTxn(final TransactionBody.Builder txn) {
-        final var op =
-                CryptoApproveAllowanceTransactionBody.newBuilder()
-                        .addAllCryptoAllowances(cryptoAllowances)
-                        .addAllTokenAllowances(tokenAllowances)
-                        .addAllNftAllowances(nftAllowances)
-                        .build();
+        final var op = CryptoApproveAllowanceTransactionBody.newBuilder()
+                .addAllCryptoAllowances(cryptoAllowances)
+                .addAllTokenAllowances(tokenAllowances)
+                .addAllNftAllowances(nftAllowances)
+                .build();
         txn.setCryptoApproveAllowance(op);
     }
 }

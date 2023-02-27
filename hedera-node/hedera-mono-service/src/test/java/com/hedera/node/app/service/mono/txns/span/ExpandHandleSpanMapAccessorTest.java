@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.span;
 
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
@@ -46,7 +47,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ExpandHandleSpanMapAccessorTest {
     private final Map<String, Object> span = new HashMap<>();
 
-    @Mock private TxnAccessor accessor;
+    @Mock
+    private TxnAccessor accessor;
 
     private ExpandHandleSpanMapAccessor subject;
 
@@ -129,12 +131,11 @@ class ExpandHandleSpanMapAccessorTest {
 
     @Test
     void testsForCryptoCreateMetaAsExpected() {
-        final var opMeta =
-                new CryptoCreateMeta.Builder()
-                        .baseSize(1_234)
-                        .lifeTime(1_234_567L)
-                        .maxAutomaticAssociations(12)
-                        .build();
+        final var opMeta = new CryptoCreateMeta.Builder()
+                .baseSize(1_234)
+                .lifeTime(1_234_567L)
+                .maxAutomaticAssociations(12)
+                .build();
 
         subject.setCryptoCreateMeta(accessor, opMeta);
 
@@ -143,17 +144,16 @@ class ExpandHandleSpanMapAccessorTest {
 
     @Test
     void testsForCryptoUpdateMetaAsExpected() {
-        final var opMeta =
-                new CryptoUpdateMeta.Builder()
-                        .keyBytesUsed(123)
-                        .msgBytesUsed(1_234)
-                        .memoSize(100)
-                        .effectiveNow(1_234_000L)
-                        .expiry(1_234_567L)
-                        .hasProxy(false)
-                        .maxAutomaticAssociations(3)
-                        .hasMaxAutomaticAssociations(true)
-                        .build();
+        final var opMeta = new CryptoUpdateMeta.Builder()
+                .keyBytesUsed(123)
+                .msgBytesUsed(1_234)
+                .memoSize(100)
+                .effectiveNow(1_234_000L)
+                .expiry(1_234_567L)
+                .hasProxy(false)
+                .maxAutomaticAssociations(3)
+                .hasMaxAutomaticAssociations(true)
+                .build();
 
         subject.setCryptoUpdate(accessor, opMeta);
 
@@ -163,11 +163,10 @@ class ExpandHandleSpanMapAccessorTest {
     @Test
     void testsForCryptoApproveMetaAsExpected() {
         final var secs = Instant.now().getEpochSecond();
-        final var opMeta =
-                CryptoApproveAllowanceMeta.newBuilder()
-                        .msgBytesUsed(112)
-                        .effectiveNow(secs)
-                        .build();
+        final var opMeta = CryptoApproveAllowanceMeta.newBuilder()
+                .msgBytesUsed(112)
+                .effectiveNow(secs)
+                .build();
 
         subject.setCryptoApproveMeta(accessor, opMeta);
 
@@ -178,8 +177,10 @@ class ExpandHandleSpanMapAccessorTest {
     @Test
     void testsForCryptoDeleteMetaAsExpected() {
         final var now = Instant.now().getEpochSecond();
-        final var opMeta =
-                CryptoDeleteAllowanceMeta.newBuilder().msgBytesUsed(112).effectiveNow(now).build();
+        final var opMeta = CryptoDeleteAllowanceMeta.newBuilder()
+                .msgBytesUsed(112)
+                .effectiveNow(now)
+                .build();
 
         subject.setCryptoDeleteAllowanceMeta(accessor, opMeta);
         assertEquals(112, subject.getCryptoDeleteAllowanceMeta(accessor).getMsgBytesUsed());
@@ -189,24 +190,23 @@ class ExpandHandleSpanMapAccessorTest {
     @Test
     void testsForEthTxDataMeta() {
         final var oneByte = new byte[] {1};
-        final var ethTxData =
-                new EthTxData(
-                        oneByte,
-                        EthTxData.EthTransactionType.EIP1559,
-                        oneByte,
-                        1,
-                        oneByte,
-                        oneByte,
-                        oneByte,
-                        1,
-                        oneByte,
-                        BigInteger.ONE,
-                        oneByte,
-                        oneByte,
-                        1,
-                        oneByte,
-                        oneByte,
-                        oneByte);
+        final var ethTxData = new EthTxData(
+                oneByte,
+                EthTxData.EthTransactionType.EIP1559,
+                oneByte,
+                1,
+                oneByte,
+                oneByte,
+                oneByte,
+                1,
+                oneByte,
+                BigInteger.ONE,
+                oneByte,
+                oneByte,
+                1,
+                oneByte,
+                oneByte,
+                oneByte);
 
         subject.setEthTxDataMeta(accessor, ethTxData);
         assertEquals(ethTxData, subject.getEthTxDataMeta(accessor));

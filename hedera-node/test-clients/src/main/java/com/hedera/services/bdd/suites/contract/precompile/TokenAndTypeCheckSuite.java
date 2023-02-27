@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -91,50 +92,28 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                         uploadInitCode(TOKEN_AND_TYPE_CHECK_CONTRACT),
                         contractCreate(TOKEN_AND_TYPE_CHECK_CONTRACT))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCallLocal(
-                                                                TOKEN_AND_TYPE_CHECK_CONTRACT,
-                                                                IS_TOKEN,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .logged()
-                                                        .has(
-                                                                resultWith()
-                                                                        .resultViaFunctionName(
-                                                                                IS_TOKEN,
-                                                                                TOKEN_AND_TYPE_CHECK_CONTRACT,
-                                                                                isLiteralResult(
-                                                                                        new Object
-                                                                                                [] {
-                                                                                            Boolean
-                                                                                                    .TRUE
-                                                                                        }))),
-                                                contractCallLocal(
-                                                                TOKEN_AND_TYPE_CHECK_CONTRACT,
-                                                                GET_TOKEN_TYPE,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .logged()
-                                                        .has(
-                                                                resultWith()
-                                                                        .resultViaFunctionName(
-                                                                                GET_TOKEN_TYPE,
-                                                                                TOKEN_AND_TYPE_CHECK_CONTRACT,
-                                                                                isLiteralResult(
-                                                                                        new Object
-                                                                                                [] {
-                                                                                            BigInteger
-                                                                                                    .valueOf(
-                                                                                                            0)
-                                                                                        }))))))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCallLocal(
+                                        TOKEN_AND_TYPE_CHECK_CONTRACT,
+                                        IS_TOKEN,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                .logged()
+                                .has(resultWith()
+                                        .resultViaFunctionName(
+                                                IS_TOKEN,
+                                                TOKEN_AND_TYPE_CHECK_CONTRACT,
+                                                isLiteralResult(new Object[] {Boolean.TRUE}))),
+                        contractCallLocal(
+                                        TOKEN_AND_TYPE_CHECK_CONTRACT,
+                                        GET_TOKEN_TYPE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                .logged()
+                                .has(resultWith()
+                                        .resultViaFunctionName(
+                                                GET_TOKEN_TYPE,
+                                                TOKEN_AND_TYPE_CHECK_CONTRACT,
+                                                isLiteralResult(new Object[] {BigInteger.valueOf(0)}))))))
                 .then();
     }
 
@@ -154,45 +133,35 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                         uploadInitCode(TOKEN_AND_TYPE_CHECK_CONTRACT),
                         contractCreate(TOKEN_AND_TYPE_CHECK_CONTRACT))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                TOKEN_AND_TYPE_CHECK_CONTRACT,
-                                                                IS_TOKEN,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        notAnAddress))
-                                                        .via("FakeAddressTokenCheckTx")
-                                                        .payingWith(ACCOUNT)
-                                                        .gas(GAS_TO_OFFER),
-                                                contractCall(
-                                                                TOKEN_AND_TYPE_CHECK_CONTRACT,
-                                                                GET_TOKEN_TYPE,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        notAnAddress))
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                        .via("FakeAddressTokenTypeCheckTx")
-                                                        .payingWith(ACCOUNT)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .logged())))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        TOKEN_AND_TYPE_CHECK_CONTRACT,
+                                        IS_TOKEN,
+                                        HapiParserUtil.asHeadlongAddress(notAnAddress))
+                                .via("FakeAddressTokenCheckTx")
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER),
+                        contractCall(
+                                        TOKEN_AND_TYPE_CHECK_CONTRACT,
+                                        GET_TOKEN_TYPE,
+                                        HapiParserUtil.asHeadlongAddress(notAnAddress))
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .via("FakeAddressTokenTypeCheckTx")
+                                .payingWith(ACCOUNT)
+                                .gas(GAS_TO_OFFER)
+                                .logged())))
                 .then(
                         childRecordsCheck(
                                 "FakeAddressTokenCheckTx",
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                ParsingConstants
-                                                                                        .FunctionType
-                                                                                        .HAPI_IS_TOKEN)
-                                                                        .withStatus(SUCCESS)
-                                                                        .withIsToken(false)))),
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .forFunction(ParsingConstants.FunctionType.HAPI_IS_TOKEN)
+                                                        .withStatus(SUCCESS)
+                                                        .withIsToken(false)))),
                         childRecordsCheck(
                                 "FakeAddressTokenTypeCheckTx",
                                 CONTRACT_REVERT_EXECUTED,

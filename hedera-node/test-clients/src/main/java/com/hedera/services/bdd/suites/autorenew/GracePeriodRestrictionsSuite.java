@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.autorenew;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -108,44 +109,26 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                 .when(
                         sleepFor(1_500L),
                         cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    detachedAccountID.set(
-                                            spec.registry().getAccountID(detachedAccount));
-                                    civilianAccountID.set(spec.registry().getAccountID(civilian));
-                                }),
-                        sourcing(
-                                () ->
-                                        explicitContractCall(
-                                                        contract,
-                                                        getABIFor(FUNCTION, "donate", contract),
-                                                        new Object[] {
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            civilianAccountID
-                                                                                    .get())),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            detachedAccountID
-                                                                                    .get()))
-                                                        })
-                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                        withOpContext((spec, opLog) -> {
+                            detachedAccountID.set(spec.registry().getAccountID(detachedAccount));
+                            civilianAccountID.set(spec.registry().getAccountID(civilian));
+                        }),
+                        sourcing(() -> explicitContractCall(
+                                        contract, getABIFor(FUNCTION, "donate", contract), new Object[] {
+                                            HapiParserUtil.asHeadlongAddress(asAddress(civilianAccountID.get())),
+                                            HapiParserUtil.asHeadlongAddress(asAddress(detachedAccountID.get()))
+                                        })
+                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
                         getAccountBalance(civilian).hasTinyBars(0L),
                         getAccountBalance(detachedAccount).hasTinyBars(0L))
                 .then(
                         cryptoUpdate(detachedAccount)
                                 .expiring(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS),
-                        sourcing(
-                                () ->
-                                        explicitContractCall(
-                                                contract,
-                                                getABIFor(FUNCTION, "donate", contract),
-                                                new Object[] {
-                                                    HapiParserUtil.asHeadlongAddress(
-                                                            asAddress(civilianAccountID.get())),
-                                                    HapiParserUtil.asHeadlongAddress(
-                                                            asAddress(detachedAccountID.get()))
-                                                })),
+                        sourcing(() ->
+                                explicitContractCall(contract, getABIFor(FUNCTION, "donate", contract), new Object[] {
+                                    HapiParserUtil.asHeadlongAddress(asAddress(civilianAccountID.get())),
+                                    HapiParserUtil.asHeadlongAddress(asAddress(detachedAccountID.get()))
+                                })),
                         getAccountBalance(civilian).hasTinyBars(1L),
                         getAccountBalance(detachedAccount).hasTinyBars(1L));
     }
@@ -182,13 +165,9 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                                 .memo("Can't update with past expiry")
                                 .expiring(certainlyPast)
                                 .hasKnownStatus(INVALID_EXPIRATION_TIME),
-                        cryptoUpdate(detachedAccount)
-                                .memo("CAN extend expiry")
-                                .expiring(certainlyDistant))
+                        cryptoUpdate(detachedAccount).memo("CAN extend expiry").expiring(certainlyDistant))
                 .then(
-                        cryptoUpdate(detachedAccount)
-                                .memo("Should work now!")
-                                .receiverSigRequired(true),
+                        cryptoUpdate(detachedAccount).memo("Should work now!").receiverSigRequired(true),
                         cryptoUpdate(detachedAccount).key("ntb"),
                         cryptoUpdate(detachedAccount).autoRenewPeriod(THREE_MONTHS_IN_SECONDS),
                         cryptoUpdate(detachedAccount).entityMemo("NOPE"),
@@ -214,9 +193,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                                 .payingWith(detachedAccount)
                                 .nodePayment(666L)
                                 .hasAnswerOnlyPrecheck(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-                        scheduleCreate(
-                                        "notToBe",
-                                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1)))
+                        scheduleCreate("notToBe", cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1)))
                                 .designatingPayer(detachedAccount)
                                 .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
@@ -255,8 +232,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                                 .autoRenewAccountId(detachedAccount)
                                 .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
                         getTopicInfo(topicSansDetachedAsAutoRenew).hasAutoRenewAccount(civilian),
-                        getTopicInfo(topicWithDetachedAsAutoRenew)
-                                .hasAutoRenewAccount(detachedAccount));
+                        getTopicInfo(topicWithDetachedAsAutoRenew).hasAutoRenewAccount(detachedAccount));
     }
 
     private HapiSpec tokenAutoRenewOpsEnforced() {
@@ -292,8 +268,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                                 .autoRenewAccount(detachedAccount)
                                 .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
                         getTokenInfo(tokenSansDetachedAsAutoRenew).hasAutoRenewAccount(civilian),
-                        getTokenInfo(tokenWithDetachedAsAutoRenew)
-                                .hasAutoRenewAccount(detachedAccount));
+                        getTokenInfo(tokenWithDetachedAsAutoRenew).hasAutoRenewAccount(detachedAccount));
     }
 
     private HapiSpec treasuryOpsRestrictionEnforced() {
@@ -318,9 +293,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                         // mark the detached account as expired-and-pending-removal
                         cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)))
                 .then(
-                        tokenUpdate(aToken)
-                                .treasury(civilian)
-                                .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+                        tokenUpdate(aToken).treasury(civilian).hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
                         mintToken(aToken, 1L).hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
                         burnToken(aToken, 1L).hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
                         getTokenInfo(aToken).hasTreasury(detachedAccount),
@@ -389,8 +362,7 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
                         // mark the detached account as expired-and-pending-removal
                         cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)))
                 .then(
-                        cryptoDelete(detachedAccount)
-                                .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+                        cryptoDelete(detachedAccount).hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
                         cryptoDelete(civilian)
                                 .transfer(detachedAccount)
                                 .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
@@ -426,20 +398,16 @@ public class GracePeriodRestrictionsSuite extends HapiSuite {
         return defaultHapiSpec("GracePeriodRestrictionsSuiteSetup")
                 .given()
                 .when()
-                .then(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(propsForAccountAutoRenewOnWith(1, 3600)));
+                .then(fileUpdate(APP_PROPERTIES)
+                        .payingWith(GENESIS)
+                        .overridingProps(propsForAccountAutoRenewOnWith(1, 3600)));
     }
 
     private HapiSpec gracePeriodRestrictionsSuiteCleanup() {
         return defaultHapiSpec("GracePeriodRestrictionsSuiteCleanup")
                 .given()
                 .when()
-                .then(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(disablingAutoRenewWith(10L)));
+                .then(fileUpdate(APP_PROPERTIES).payingWith(GENESIS).overridingProps(disablingAutoRenewWith(10L)));
     }
 
     @Override

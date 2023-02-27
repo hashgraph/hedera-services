@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure;
 
 import static java.util.stream.Collectors.toMap;
@@ -64,8 +65,7 @@ public class HapiApiClients {
     private static Map<String, ScheduleServiceBlockingStub> schedSvcStubs = new HashMap<>();
     private static Map<String, ConsensusServiceBlockingStub> consSvcStubs = new HashMap<>();
     private static Map<String, SmartContractServiceBlockingStub> scSvcStubs = new HashMap<>();
-    private static Map<String, UtilServiceGrpc.UtilServiceBlockingStub> utilSvcStubs =
-            new HashMap<>();
+    private static Map<String, UtilServiceGrpc.UtilServiceBlockingStub> utilSvcStubs = new HashMap<>();
 
     private final AccountID defaultNode;
     private final List<NodeConnectInfo> nodes;
@@ -77,29 +77,23 @@ public class HapiApiClients {
         try {
             ManagedChannel channel;
             String[] protocols = new String[] {"TLSv1.2", "TLSv1.3"};
-            List<String> ciphers =
-                    Arrays.asList(
-                            "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
-                            "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-                            "TLS_AES_256_GCM_SHA384");
-            SslContextBuilder contextBuilder =
-                    GrpcSslContexts.configure(SslContextBuilder.forClient());
-            contextBuilder
-                    .protocols(protocols)
-                    .ciphers(ciphers, SupportedCipherSuiteFilter.INSTANCE);
+            List<String> ciphers = Arrays.asList(
+                    "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
+                    "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+                    "TLS_AES_256_GCM_SHA384");
+            SslContextBuilder contextBuilder = GrpcSslContexts.configure(SslContextBuilder.forClient());
+            contextBuilder.protocols(protocols).ciphers(ciphers, SupportedCipherSuiteFilter.INSTANCE);
 
             if (useTls) {
-                channel =
-                        NettyChannelBuilder.forAddress(node.getHost(), node.getTlsPort())
-                                .negotiationType(NegotiationType.TLS)
-                                .sslContext(contextBuilder.build())
-                                .overrideAuthority("127.0.0.1")
-                                .build();
+                channel = NettyChannelBuilder.forAddress(node.getHost(), node.getTlsPort())
+                        .negotiationType(NegotiationType.TLS)
+                        .sslContext(contextBuilder.build())
+                        .overrideAuthority("127.0.0.1")
+                        .build();
             } else {
-                channel =
-                        NettyChannelBuilder.forAddress(node.getHost(), node.getPort())
-                                .usePlaintext()
-                                .build();
+                channel = NettyChannelBuilder.forAddress(node.getHost(), node.getPort())
+                        .usePlaintext()
+                        .build();
             }
             return channel;
         } catch (Exception e) {
@@ -128,14 +122,12 @@ public class HapiApiClients {
     private HapiApiClients(List<NodeConnectInfo> nodes, AccountID defaultNode) {
         this.nodes = nodes;
         stubIds = nodes.stream().collect(toMap(NodeConnectInfo::getAccount, NodeConnectInfo::uri));
-        tlsStubIds =
-                nodes.stream().collect(toMap(NodeConnectInfo::getAccount, NodeConnectInfo::tlsUri));
+        tlsStubIds = nodes.stream().collect(toMap(NodeConnectInfo::getAccount, NodeConnectInfo::tlsUri));
         int before = stubCount();
-        nodes.forEach(
-                node -> {
-                    addStubs(node, node.uri(), false);
-                    addStubs(node, node.tlsUri(), true);
-                });
+        nodes.forEach(node -> {
+            addStubs(node, node.uri(), false);
+            addStubs(node, node.tlsUri(), true);
+        });
         int after = stubCount();
         this.defaultNode = defaultNode;
         if (after > before) {
@@ -192,8 +184,7 @@ public class HapiApiClients {
         return schedSvcStubs.get(stubId(nodeId, useTls));
     }
 
-    public UtilServiceGrpc.UtilServiceBlockingStub getUtilSvcStub(
-            AccountID nodeId, boolean useTls) {
+    public UtilServiceGrpc.UtilServiceBlockingStub getUtilSvcStub(AccountID nodeId, boolean useTls) {
         return utilSvcStubs.get(stubId(nodeId, useTls));
     }
 
@@ -207,7 +198,8 @@ public class HapiApiClients {
         for (int i = 0; i < nodes.size(); i++) {
             helper.add(String.format("node%d", i), nodes.get(i).toString());
         }
-        return helper.add("default", HapiPropertySource.asAccountString(defaultNode)).toString();
+        return helper.add("default", HapiPropertySource.asAccountString(defaultNode))
+                .toString();
     }
 
     /** Close all netty channels that are opened for clients */

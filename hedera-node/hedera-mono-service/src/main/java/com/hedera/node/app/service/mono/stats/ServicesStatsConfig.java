@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stats;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetByKey;
@@ -24,8 +25,7 @@ import java.util.EnumSet;
 import java.util.Set;
 
 public final class ServicesStatsConfig {
-    static final Set<HederaFunctionality> IGNORED_FUNCTIONS =
-            EnumSet.of(NONE, UNRECOGNIZED, GetByKey);
+    static final Set<HederaFunctionality> IGNORED_FUNCTIONS = EnumSet.of(NONE, UNRECOGNIZED, GetByKey);
 
     static final String COUNTER_HANDLED_NAME_TPL = "%sHdl";
     static final String COUNTER_RECEIVED_NAME_TPL = "%sRcv";
@@ -47,8 +47,7 @@ public final class ServicesStatsConfig {
     static final String SPEEDOMETER_RECEIVED_DESC_TPL = "number of %s received per second";
     static final String SPEEDOMETER_ANSWERED_DESC_TPL = "number of %s answered per second";
     static final String SPEEDOMETER_SUBMITTED_DESC_TPL = "number of %s submitted per second";
-    static final String SPEEDOMETER_DEPRECATED_TXNS_DESC =
-            "number of deprecated txns received per second";
+    static final String SPEEDOMETER_DEPRECATED_TXNS_DESC = "number of deprecated txns received per second";
 
     public static final String SYSTEM_DELETE_METRIC = "systemDelete";
     public static final String SYSTEM_UNDELETE_METRIC = "systemUndelete";

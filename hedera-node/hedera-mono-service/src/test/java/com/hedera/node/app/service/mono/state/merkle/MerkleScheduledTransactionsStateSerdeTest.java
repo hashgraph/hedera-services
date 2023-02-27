@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import com.hedera.test.serde.SelfSerializableDataTest;
@@ -33,8 +34,7 @@ public class MerkleScheduledTransactionsStateSerdeTest
     }
 
     @Override
-    protected MerkleScheduledTransactionsState getExpectedObject(
-            final SeededPropertySource propertySource) {
+    protected MerkleScheduledTransactionsState getExpectedObject(final SeededPropertySource propertySource) {
         return propertySource.nextScheduledTransactionsState();
     }
 }

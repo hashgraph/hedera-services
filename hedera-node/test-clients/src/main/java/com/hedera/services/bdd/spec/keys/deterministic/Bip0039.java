@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.keys.deterministic;
 
 import java.security.MessageDigest;
@@ -40,8 +41,7 @@ public class Bip0039 {
         }
         byte[] entropy = new byte[32];
         for (int nextByte = 0; nextByte < 32; nextByte++) {
-            entropy[nextByte] =
-                    asByte(Arrays.copyOfRange(entropyBits, nextByte * 8, (nextByte + 1) * 8));
+            entropy[nextByte] = asByte(Arrays.copyOfRange(entropyBits, nextByte * 8, (nextByte + 1) * 8));
         }
         return entropy;
     }

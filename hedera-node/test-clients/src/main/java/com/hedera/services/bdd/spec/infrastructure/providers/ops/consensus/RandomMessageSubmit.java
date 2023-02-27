@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.consensus;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
@@ -44,11 +45,7 @@ public class RandomMessageSubmit implements OpProvider {
 
     public static final int DEFAULT_NUM_STABLE_TOPICS = 5;
     private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(
-                    TOPIC_EXPIRED,
-                    INVALID_TOPIC_ID,
-                    INVALID_CHUNK_NUMBER,
-                    INVALID_CHUNK_TRANSACTION_ID);
+            standardOutcomesAnd(TOPIC_EXPIRED, INVALID_TOPIC_ID, INVALID_CHUNK_NUMBER, INVALID_CHUNK_TRANSACTION_ID);
 
     private final SplittableRandom r = new SplittableRandom();
     private final EntityNameProvider<TopicID> topics;
@@ -92,11 +89,10 @@ public class RandomMessageSubmit implements OpProvider {
             return Optional.empty();
         }
 
-        HapiMessageSubmit op =
-                submitMessageTo(target.get())
-                        .message(new String(messageBytes))
-                        .hasKnownStatusFrom(permissibleOutcomes)
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS);
+        HapiMessageSubmit op = submitMessageTo(target.get())
+                .message(new String(messageBytes))
+                .hasKnownStatusFrom(permissibleOutcomes)
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS);
 
         return Optional.of(op);
     }

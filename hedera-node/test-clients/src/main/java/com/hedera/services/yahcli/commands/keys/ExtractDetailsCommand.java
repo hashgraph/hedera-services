@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.commands.keys;
 
 import static com.hedera.services.yahcli.config.ConfigUtils.setLogLevels;
@@ -34,7 +35,9 @@ import picocli.CommandLine;
         description = "Prints the public and private keys in a Ed25519 key pair")
 public class ExtractDetailsCommand implements Callable<Integer> {
     public static final String DER_EDDSA_PREFIX = "302e020100300506032b657004220420";
-    @CommandLine.ParentCommand private KeysCommand keysCommand;
+
+    @CommandLine.ParentCommand
+    private KeysCommand keysCommand;
 
     @CommandLine.Option(
             names = {"-p", "--path"},

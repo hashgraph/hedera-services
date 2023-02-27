@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.commands.accounts;
 
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED;
@@ -36,7 +37,8 @@ public class SendCommand implements Callable<Integer> {
     private static final long TINYBARS_PER_HBAR = 100_000_000L;
     private static final long TINYBARS_PER_KILOBAR = 1_000 * TINYBARS_PER_HBAR;
 
-    @ParentCommand AccountsCommand accountsCommand;
+    @ParentCommand
+    AccountsCommand accountsCommand;
 
     @CommandLine.Option(
             names = {"--to"},
@@ -50,9 +52,7 @@ public class SendCommand implements Callable<Integer> {
             description = "memo to use for the CryptoTransfer")
     String memo;
 
-    @CommandLine.Parameters(
-            paramLabel = "<amount_to_send>",
-            description = "how many units of the denomination to send")
+    @CommandLine.Parameters(paramLabel = "<amount_to_send>", description = "how many units of the denomination to send")
     String amountRepr;
 
     @CommandLine.Option(
@@ -89,40 +89,37 @@ public class SendCommand implements Callable<Integer> {
             amount = validatedUnits(amountRepr, decimals);
         }
         final var effectiveMemo = memo != null ? memo : "";
-        var delegate =
-                new SendSuite(
-                        config.asSpecConfig(),
-                        beneficiary,
-                        amount,
-                        effectiveMemo,
-                        denomination,
-                        accountsCommand.getYahcli().isScheduled());
+        var delegate = new SendSuite(
+                config.asSpecConfig(),
+                beneficiary,
+                amount,
+                effectiveMemo,
+                denomination,
+                accountsCommand.getYahcli().isScheduled());
         delegate.runSuiteSync();
 
         if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
-            COMMON_MESSAGES.info(
-                    "SUCCESS - "
-                            + "sent "
-                            + amountRepr
-                            + " "
-                            + originalDenomination
-                            + " to account "
-                            + beneficiary
-                            + " with memo: '"
-                            + memo
-                            + "'");
+            COMMON_MESSAGES.info("SUCCESS - "
+                    + "sent "
+                    + amountRepr
+                    + " "
+                    + originalDenomination
+                    + " to account "
+                    + beneficiary
+                    + " with memo: '"
+                    + memo
+                    + "'");
         } else {
-            COMMON_MESSAGES.info(
-                    "FAILED - "
-                            + "could not send "
-                            + amountRepr
-                            + " "
-                            + originalDenomination
-                            + " to account "
-                            + beneficiary
-                            + " with memo: '"
-                            + memo
-                            + "'");
+            COMMON_MESSAGES.info("FAILED - "
+                    + "could not send "
+                    + amountRepr
+                    + " "
+                    + originalDenomination
+                    + " to account "
+                    + beneficiary
+                    + " with memo: '"
+                    + memo
+                    + "'");
             return 1;
         }
 
@@ -130,18 +127,14 @@ public class SendCommand implements Callable<Integer> {
     }
 
     private boolean isHbarDenomination(final String denomination) {
-        return "tinybar".equals(denomination)
-                || "hbar".equals(denomination)
-                || "kilobar".equals(denomination);
+        return "tinybar".equals(denomination) || "hbar".equals(denomination) || "kilobar".equals(denomination);
     }
 
-    public static long validatedTinybars(
-            final Yahcli yahcli, final String amountRepr, final String denomination) {
+    public static long validatedTinybars(final Yahcli yahcli, final String amountRepr, final String denomination) {
         final var amount = Long.parseLong(amountRepr.replaceAll("_", ""));
         return switch (denomination) {
             default -> throw new CommandLine.ParameterException(
-                    yahcli.getSpec().commandLine(),
-                    "Denomination must be one of { tinybar | hbar | kilobar }");
+                    yahcli.getSpec().commandLine(), "Denomination must be one of { tinybar | hbar | kilobar }");
             case "tinybar" -> amount;
             case "hbar" -> amount * TINYBARS_PER_HBAR;
             case "kilobar" -> amount * TINYBARS_PER_KILOBAR;

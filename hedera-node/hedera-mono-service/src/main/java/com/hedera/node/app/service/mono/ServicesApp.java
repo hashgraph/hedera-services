@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono;
 
 import com.hedera.node.app.service.mono.config.ConfigModule;
@@ -84,6 +85,7 @@ import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import dagger.BindsInstance;
 import dagger.Component;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.util.Optional;
@@ -149,6 +151,7 @@ public interface ServicesApp {
 
     NodeId nodeId();
 
+    @NonNull
     Platform platform();
 
     NodeInfo nodeInfo();
@@ -201,6 +204,9 @@ public interface ServicesApp {
 
     BackingStore<AccountID, HederaAccount> backingAccounts();
 
+    @BootstrapProps
+    PropertySource bootstrapProps();
+
     MapWarmer mapWarmer();
 
     @Component.Builder
@@ -212,7 +218,7 @@ public interface ServicesApp {
         Builder initialHash(Hash initialHash);
 
         @BindsInstance
-        Builder platform(Platform platform);
+        Builder platform(@NonNull Platform platform);
 
         @BindsInstance
         Builder consoleCreator(StateModule.ConsoleCreator consoleCreator);

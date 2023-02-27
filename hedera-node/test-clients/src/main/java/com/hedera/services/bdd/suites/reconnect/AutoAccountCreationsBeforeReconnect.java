@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.reconnect;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -31,8 +32,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class AutoAccountCreationsBeforeReconnect extends HapiSuite {
-    private static final Logger log =
-            LogManager.getLogger(AutoAccountCreationsBeforeReconnect.class);
+    private static final Logger log = LogManager.getLogger(AutoAccountCreationsBeforeReconnect.class);
 
     public static final int TOTAL_ACCOUNTS = 10;
 
@@ -51,22 +51,14 @@ public class AutoAccountCreationsBeforeReconnect extends HapiSuite {
     }
 
     private HapiSpec createAccountsUsingAlias() {
-        return defaultHapiSpec("createAccountsUsingAlias")
-                .given()
-                .when()
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    List<HapiSpecOperation> ops = new ArrayList<>();
-                                    for (int i = 0; i < TOTAL_ACCOUNTS; i++) {
-                                        var alias = "alias" + i;
-                                        ops.add(newKeyNamed(alias));
-                                        ops.add(
-                                                cryptoTransfer(
-                                                        tinyBarsFromToWithAlias(
-                                                                DEFAULT_PAYER, alias, ONE_HBAR)));
-                                    }
-                                    allRunFor(spec, ops);
-                                }));
+        return defaultHapiSpec("createAccountsUsingAlias").given().when().then(withOpContext((spec, opLog) -> {
+            List<HapiSpecOperation> ops = new ArrayList<>();
+            for (int i = 0; i < TOTAL_ACCOUNTS; i++) {
+                var alias = "alias" + i;
+                ops.add(newKeyNamed(alias));
+                ops.add(cryptoTransfer(tinyBarsFromToWithAlias(DEFAULT_PAYER, alias, ONE_HBAR)));
+            }
+            allRunFor(spec, ops);
+        }));
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.fees.calculation.token.queries;
 
 import static com.hedera.node.app.service.mono.queries.token.GetTokenInfoAnswer.TOKEN_INFO_CTX_KEY;
@@ -35,8 +36,7 @@ import javax.inject.Singleton;
 
 @Singleton
 public final class GetTokenInfoResourceUsage implements QueryResourceUsageEstimator {
-    private static final Function<Query, TokenGetInfoUsage> factory =
-            TokenGetInfoUsage::newEstimate;
+    private static final Function<Query, TokenGetInfoUsage> factory = TokenGetInfoUsage::newEstimate;
 
     @Inject
     public GetTokenInfoResourceUsage() {
@@ -49,32 +49,22 @@ public final class GetTokenInfoResourceUsage implements QueryResourceUsageEstima
     }
 
     @Override
-    public FeeData usageGiven(
-            final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
+    public FeeData usageGiven(final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
         final var op = query.getTokenGetInfo();
         final var optionalInfo = view.infoForToken(op.getToken());
         if (optionalInfo.isPresent()) {
             final var info = optionalInfo.get();
             putIfNotNull(queryCtx, TOKEN_INFO_CTX_KEY, info);
-            final var estimate =
-                    factory.apply(query)
-                            .givenCurrentAdminKey(
-                                    ifPresent(info, TokenInfo::hasAdminKey, TokenInfo::getAdminKey))
-                            .givenCurrentFreezeKey(
-                                    ifPresent(
-                                            info, TokenInfo::hasFreezeKey, TokenInfo::getFreezeKey))
-                            .givenCurrentWipeKey(
-                                    ifPresent(info, TokenInfo::hasWipeKey, TokenInfo::getWipeKey))
-                            .givenCurrentSupplyKey(
-                                    ifPresent(
-                                            info, TokenInfo::hasSupplyKey, TokenInfo::getSupplyKey))
-                            .givenCurrentKycKey(
-                                    ifPresent(info, TokenInfo::hasKycKey, TokenInfo::getKycKey))
-                            .givenCurrentPauseKey(
-                                    ifPresent(info, TokenInfo::hasPauseKey, TokenInfo::getPauseKey))
-                            .givenCurrentName(info.getName())
-                            .givenCurrentMemo(info.getMemo())
-                            .givenCurrentSymbol(info.getSymbol());
+            final var estimate = factory.apply(query)
+                    .givenCurrentAdminKey(ifPresent(info, TokenInfo::hasAdminKey, TokenInfo::getAdminKey))
+                    .givenCurrentFreezeKey(ifPresent(info, TokenInfo::hasFreezeKey, TokenInfo::getFreezeKey))
+                    .givenCurrentWipeKey(ifPresent(info, TokenInfo::hasWipeKey, TokenInfo::getWipeKey))
+                    .givenCurrentSupplyKey(ifPresent(info, TokenInfo::hasSupplyKey, TokenInfo::getSupplyKey))
+                    .givenCurrentKycKey(ifPresent(info, TokenInfo::hasKycKey, TokenInfo::getKycKey))
+                    .givenCurrentPauseKey(ifPresent(info, TokenInfo::hasPauseKey, TokenInfo::getPauseKey))
+                    .givenCurrentName(info.getName())
+                    .givenCurrentMemo(info.getMemo())
+                    .givenCurrentSymbol(info.getSymbol());
             if (info.hasAutoRenewAccount()) {
                 estimate.givenCurrentlyUsingAutoRenewAccount();
             }
@@ -85,9 +75,7 @@ public final class GetTokenInfoResourceUsage implements QueryResourceUsageEstima
     }
 
     public static Optional<Key> ifPresent(
-            final TokenInfo info,
-            final Predicate<TokenInfo> check,
-            final Function<TokenInfo, Key> getter) {
+            final TokenInfo info, final Predicate<TokenInfo> check, final Function<TokenInfo, Key> getter) {
         return check.test(info) ? Optional.of(getter.apply(info)) : Optional.empty();
     }
 }

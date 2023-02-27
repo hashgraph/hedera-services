@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
@@ -34,11 +35,9 @@ public class RandomAccountUpdate implements OpProvider {
     private final EntityNameProvider<Key> keys;
     private final EntityNameProvider<AccountID> accounts;
 
-    private final ResponseCodeEnum[] permissibleOutcomes =
-            standardOutcomesAnd(ACCOUNT_DELETED, INVALID_ACCOUNT_ID);
+    private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(ACCOUNT_DELETED, INVALID_ACCOUNT_ID);
 
-    public RandomAccountUpdate(
-            EntityNameProvider<Key> keys, EntityNameProvider<AccountID> accounts) {
+    public RandomAccountUpdate(EntityNameProvider<Key> keys, EntityNameProvider<AccountID> accounts) {
         this.keys = keys;
         this.accounts = accounts;
     }
@@ -56,11 +55,10 @@ public class RandomAccountUpdate implements OpProvider {
         }
         final var newKey = keys.getQualifying();
 
-        HapiCryptoUpdate op =
-                cryptoUpdate(target.get())
-                        .key(newKey.get())
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                        .hasKnownStatusFrom(permissibleOutcomes);
+        HapiCryptoUpdate op = cryptoUpdate(target.get())
+                .key(newKey.get())
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                .hasKnownStatusFrom(permissibleOutcomes);
         return Optional.of(op);
     }
 }

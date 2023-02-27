@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.submission;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -55,19 +56,21 @@ class SyntaxPrecheckTest {
     private AccountID payer = asAccount("0.0.13257");
     private long duration = 1_234;
     private Instant startTime = Instant.now();
-    private TransactionID txnId =
-            TransactionID.newBuilder()
-                    .setAccountID(payer)
-                    .setTransactionValidStart(
-                            timestampFrom(startTime.getEpochSecond(), startTime.getNano()))
-                    .build();
-    private String memo =
-            "Our souls, which to advance their state / Were gone out, hung twixt her and me.";
+    private TransactionID txnId = TransactionID.newBuilder()
+            .setAccountID(payer)
+            .setTransactionValidStart(timestampFrom(startTime.getEpochSecond(), startTime.getNano()))
+            .build();
+    private String memo = "Our souls, which to advance their state / Were gone out, hung twixt her and me.";
     private TransactionBody txn;
 
-    @Mock private OptionValidator validator;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private RecordCache recordCache;
+    @Mock
+    private OptionValidator validator;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private RecordCache recordCache;
 
     private SyntaxPrecheck subject;
 
@@ -75,13 +78,12 @@ class SyntaxPrecheckTest {
     void setup() {
         subject = new SyntaxPrecheck(recordCache, validator, dynamicProperties);
 
-        txn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(txnId)
-                        .setTransactionValidDuration(Duration.newBuilder().setSeconds(duration))
-                        .setNodeAccountID(node)
-                        .setMemo(memo)
-                        .build();
+        txn = TransactionBody.newBuilder()
+                .setTransactionID(txnId)
+                .setTransactionValidDuration(Duration.newBuilder().setSeconds(duration))
+                .setNodeAccountID(node)
+                .setMemo(memo)
+                .build();
     }
 
     @Test
@@ -96,10 +98,9 @@ class SyntaxPrecheckTest {
     @Test
     void rejectsUseOfScheduledField() {
         // setup:
-        txn =
-                txn.toBuilder()
-                        .setTransactionID(TransactionID.newBuilder().setScheduled(true).build())
-                        .build();
+        txn = txn.toBuilder()
+                .setTransactionID(TransactionID.newBuilder().setScheduled(true).build())
+                .build();
 
         // when:
         var status = subject.validate(txn);
@@ -111,10 +112,9 @@ class SyntaxPrecheckTest {
     @Test
     void rejectsUseOfNonceField() {
         // setup:
-        txn =
-                txn.toBuilder()
-                        .setTransactionID(TransactionID.newBuilder().setNonce(12).build())
-                        .build();
+        txn = txn.toBuilder()
+                .setTransactionID(TransactionID.newBuilder().setNonce(12).build())
+                .build();
 
         // when:
         var status = subject.validate(txn);
@@ -156,11 +156,8 @@ class SyntaxPrecheckTest {
         given(validator.memoCheck(memo)).willReturn(OK);
         given(validator.isValidTxnDuration(duration)).willReturn(true);
         given(dynamicProperties.minValidityBuffer()).willReturn(validityBufferOverride);
-        given(
-                        validator.chronologyStatusForTxn(
-                                argThat(startTime::equals),
-                                longThat(l -> l == (duration - validityBufferOverride)),
-                                any()))
+        given(validator.chronologyStatusForTxn(
+                        argThat(startTime::equals), longThat(l -> l == (duration - validityBufferOverride)), any()))
                 .willReturn(INVALID_TRANSACTION_START);
 
         // when:

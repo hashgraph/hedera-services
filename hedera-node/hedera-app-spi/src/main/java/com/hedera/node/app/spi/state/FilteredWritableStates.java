@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -33,8 +34,7 @@ public class FilteredWritableStates extends FilteredReadableStates implements Wr
      * @param delegate The instance to delegate to
      * @param stateKeys The set of keys in {@code delegate} to expose
      */
-    public FilteredWritableStates(
-            @NonNull final WritableStates delegate, @NonNull final Set<String> stateKeys) {
+    public FilteredWritableStates(@NonNull final WritableStates delegate, @NonNull final Set<String> stateKeys) {
         super(delegate, stateKeys);
         this.delegate = Objects.requireNonNull(delegate);
     }

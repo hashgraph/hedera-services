@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.TestAccount.Allowance.INSUFFICIENT;
@@ -75,31 +76,24 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TransactionalLedgerTest {
     private final Object[] things = {"a", "b", "c", "d"};
-    private final TestAccount anAccount =
-            new TestAccount(
-                    1L,
-                    things[1],
-                    false,
-                    667L,
-                    TestAccount.Allowance.OK,
-                    TestAccount.Allowance.OK,
-                    TestAccount.Allowance.OK);
-    private final TestAccount anotherAccount =
-            new TestAccount(
-                    2L,
-                    things[2],
-                    true,
-                    668L,
-                    TestAccount.Allowance.OK,
-                    TestAccount.Allowance.OK,
-                    TestAccount.Allowance.OK);
-    private final ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager =
-            new ChangeSummaryManager<>();
+    private final TestAccount anAccount = new TestAccount(
+            1L, things[1], false, 667L, TestAccount.Allowance.OK, TestAccount.Allowance.OK, TestAccount.Allowance.OK);
+    private final TestAccount anotherAccount = new TestAccount(
+            2L, things[2], true, 668L, TestAccount.Allowance.OK, TestAccount.Allowance.OK, TestAccount.Allowance.OK);
+    private final ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager = new ChangeSummaryManager<>();
 
-    @Mock private BackingStore<Long, TestAccount> backingTestAccounts;
-    @Mock private BackingStore<AccountID, HederaAccount> backingAccounts;
-    @Mock private PropertyChangeObserver<Long, TestAccountProperty> propertyChangeObserver;
-    @Mock private CommitInterceptor<Long, TestAccount, TestAccountProperty> testInterceptor;
+    @Mock
+    private BackingStore<Long, TestAccount> backingTestAccounts;
+
+    @Mock
+    private BackingStore<AccountID, HederaAccount> backingAccounts;
+
+    @Mock
+    private PropertyChangeObserver<Long, TestAccountProperty> propertyChangeObserver;
+
+    @Mock
+    private CommitInterceptor<Long, TestAccount, TestAccountProperty> testInterceptor;
+
     private LedgerCheck<TestAccount, TestAccountProperty> scopedCheck;
     private TransactionalLedger<Long, TestAccountProperty, TestAccount> testLedger;
     private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
@@ -231,15 +225,14 @@ class TransactionalLedgerTest {
         given(backingTestAccounts.getRef(1L)).willReturn(anAccount);
         given(backingTestAccounts.getImmutableRef(1L)).willReturn(anAccount);
         given(backingTestAccounts.contains(2L)).willReturn(true);
-        final var expectedCommit =
-                new TestAccount(
-                        anAccount.getValue(),
-                        things,
-                        true,
-                        anAccount.getTokenThing(),
-                        TestAccount.Allowance.OK,
-                        TestAccount.Allowance.OK,
-                        TestAccount.Allowance.OK);
+        final var expectedCommit = new TestAccount(
+                anAccount.getValue(),
+                things,
+                true,
+                anAccount.getTokenThing(),
+                TestAccount.Allowance.OK,
+                TestAccount.Allowance.OK,
+                TestAccount.Allowance.OK);
 
         testLedger.begin();
         testLedger.set(1L, OBJ, things);
@@ -312,15 +305,14 @@ class TransactionalLedgerTest {
         given(backingTestAccounts.contains(1L)).willReturn(true);
         given(backingTestAccounts.getRef(1L)).willReturn(anAccount);
 
-        final var newAccount1 =
-                new TestAccount(
-                        anAccount.value,
-                        anAccount.thing,
-                        !anAccount.flag,
-                        anAccount.tokenThing,
-                        anAccount.validHbarAllowances,
-                        anAccount.validFungibleAllowances,
-                        anAccount.validNftAllowances);
+        final var newAccount1 = new TestAccount(
+                anAccount.value,
+                anAccount.thing,
+                !anAccount.flag,
+                anAccount.tokenThing,
+                anAccount.validHbarAllowances,
+                anAccount.validFungibleAllowances,
+                anAccount.validNftAllowances);
         testLedger.begin();
         testLedger.set(1L, FLAG, !anAccount.flag);
         final var account = testLedger.getFinalized(1L);
@@ -357,9 +349,8 @@ class TransactionalLedgerTest {
         ids.forEach(id -> testLedger.create(id));
         testLedger.commit();
 
-        LongStream.range(M, N)
-                .boxed()
-                .forEach(id -> inOrder.verify(backingTestAccounts).put(argThat(id::equals), any()));
+        LongStream.range(M, N).boxed().forEach(id -> inOrder.verify(backingTestAccounts)
+                .put(argThat(id::equals), any()));
     }
 
     @Test
@@ -377,12 +368,10 @@ class TransactionalLedgerTest {
         ids.forEach(id -> testLedger.destroy(id));
         testLedger.commit();
 
-        LongStream.range(M, N)
-                .boxed()
-                .forEach(id -> inOrder.verify(backingTestAccounts).put(argThat(id::equals), any()));
-        LongStream.range(M, N)
-                .boxed()
-                .forEach(id -> inOrder.verify(backingTestAccounts).remove(id));
+        LongStream.range(M, N).boxed().forEach(id -> inOrder.verify(backingTestAccounts)
+                .put(argThat(id::equals), any()));
+        LongStream.range(M, N).boxed().forEach(id -> inOrder.verify(backingTestAccounts)
+                .remove(id));
     }
 
     @Test
@@ -426,15 +415,13 @@ class TransactionalLedgerTest {
     @Test
     @SuppressWarnings("unchecked")
     void recoversFromChangeSetDescriptionProblem() {
-        final CommitInterceptor<Long, TestAccount, TestAccountProperty> unhappy =
-                mock(CommitInterceptor.class);
+        final CommitInterceptor<Long, TestAccount, TestAccountProperty> unhappy = mock(CommitInterceptor.class);
         willThrow(IllegalStateException.class).given(unhappy).preview(any());
 
         setupTestLedger();
-        testLedger.setKeyToString(
-                i -> {
-                    throw new IllegalStateException();
-                });
+        testLedger.setKeyToString(i -> {
+            throw new IllegalStateException();
+        });
         testLedger.setCommitInterceptor(unhappy);
 
         testLedger.begin();
@@ -572,15 +559,14 @@ class TransactionalLedgerTest {
         given(backingTestAccounts.getRef(1L)).willReturn(anAccount);
         given(backingTestAccounts.contains(1L)).willReturn(true);
 
-        final var expected =
-                new TestAccount(
-                        anAccount.value,
-                        things[0],
-                        anAccount.flag,
-                        667L,
-                        anAccount.validHbarAllowances,
-                        anAccount.validFungibleAllowances,
-                        anAccount.validNftAllowances);
+        final var expected = new TestAccount(
+                anAccount.value,
+                things[0],
+                anAccount.flag,
+                667L,
+                anAccount.validHbarAllowances,
+                anAccount.validFungibleAllowances,
+                anAccount.validNftAllowances);
 
         testLedger.begin();
         testLedger.set(1L, OBJ, things[0]);
@@ -597,8 +583,7 @@ class TransactionalLedgerTest {
         final ArgumentCaptor<TestAccount> captor = forClass(TestAccount.class);
         final var changesToUndo = List.of(FLAG);
 
-        assertThrows(
-                IllegalStateException.class, () -> testLedger.undoChangesOfType(changesToUndo));
+        assertThrows(IllegalStateException.class, () -> testLedger.undoChangesOfType(changesToUndo));
 
         testLedger.begin();
         testLedger.set(1L, OBJ, things[0]);
@@ -821,12 +806,8 @@ class TransactionalLedgerTest {
     }
 
     private void setupAccountsLedger() {
-        accountsLedger =
-                new TransactionalLedger<>(
-                        AccountProperty.class,
-                        MerkleAccount::new,
-                        backingAccounts,
-                        new ChangeSummaryManager<>());
+        accountsLedger = new TransactionalLedger<>(
+                AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
     }
 
     private void setupInterceptedAccountsLedger() {
@@ -837,21 +818,13 @@ class TransactionalLedgerTest {
     }
 
     private void setupTestLedger() {
-        testLedger =
-                new TransactionalLedger<>(
-                        TestAccountProperty.class,
-                        TestAccount::new,
-                        backingTestAccounts,
-                        changeManager);
+        testLedger = new TransactionalLedger<>(
+                TestAccountProperty.class, TestAccount::new, backingTestAccounts, changeManager);
     }
 
     private void setupInterceptedTestLedger() {
-        testLedger =
-                new TransactionalLedger<>(
-                        TestAccountProperty.class,
-                        TestAccount::new,
-                        backingTestAccounts,
-                        changeManager);
+        testLedger = new TransactionalLedger<>(
+                TestAccountProperty.class, TestAccount::new, backingTestAccounts, changeManager);
         testLedger.setCommitInterceptor(testInterceptor);
     }
 
@@ -860,10 +833,11 @@ class TransactionalLedgerTest {
         scopedCheck = new TestAccountScopedCheck();
     }
 
-    private static final ByteString alias =
-            ByteString.copyFromUtf8("These aren't the droids you're looking for");
-    private static final AccountID rand = AccountID.newBuilder().setAccountNum(2_345).build();
-    private static final AccountID aliasAccountId = AccountID.newBuilder().setAlias(alias).build();
+    private static final ByteString alias = ByteString.copyFromUtf8("These aren't the droids you're looking for");
+    private static final AccountID rand =
+            AccountID.newBuilder().setAccountNum(2_345).build();
+    private static final AccountID aliasAccountId =
+            AccountID.newBuilder().setAlias(alias).build();
     private static final MerkleAccount randMerkleAccount = new MerkleAccount();
     private static final MerkleAccount aliasMerkleAccount = new MerkleAccount();
 }

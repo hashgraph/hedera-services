@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.perf.topic;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -58,18 +59,13 @@ public class createTopicLoadTest extends LoadTest {
         final AtomicInteger submittedSoFar = new AtomicInteger(0);
         KeyShape submitKeyShape = threshOf(2, SIMPLE, SIMPLE, listOf(2));
 
-        Supplier<HapiSpecOperation[]> submitBurst =
-                () ->
-                        new HapiSpecOperation[] {
-                            createTopic("testTopic" + submittedSoFar.addAndGet(1))
-                                    .submitKeyShape(submitKeyShape)
-                                    .noLogging()
-                                    .hasRetryPrecheckFrom(
-                                            BUSY,
-                                            DUPLICATE_TRANSACTION,
-                                            PLATFORM_TRANSACTION_NOT_CREATED)
-                                    .deferStatusResolution()
-                        };
+        Supplier<HapiSpecOperation[]> submitBurst = () -> new HapiSpecOperation[] {
+            createTopic("testTopic" + submittedSoFar.addAndGet(1))
+                    .submitKeyShape(submitKeyShape)
+                    .noLogging()
+                    .hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+                    .deferStatusResolution()
+        };
 
         return defaultHapiSpec("runCreateTopics")
                 .given(

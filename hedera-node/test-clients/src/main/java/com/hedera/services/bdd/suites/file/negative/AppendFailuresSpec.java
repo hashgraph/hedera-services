@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.file.negative;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -39,10 +40,9 @@ public class AppendFailuresSpec extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    handleRejectsOversized(),
-                });
+        return List.of(new HapiSpec[] {
+            handleRejectsOversized(),
+        });
     }
 
     private HapiSpec handleRejectsOversized() {

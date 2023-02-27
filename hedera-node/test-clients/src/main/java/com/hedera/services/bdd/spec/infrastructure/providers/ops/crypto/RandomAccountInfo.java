@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -30,10 +31,8 @@ import java.util.Optional;
 public class RandomAccountInfo implements OpProvider {
     private final RegistrySourcedNameProvider<AccountID> accounts;
 
-    private final ResponseCodeEnum[] permissibleCostAnswerPrechecks =
-            standardQueryPrechecksAnd(ACCOUNT_DELETED);
-    private final ResponseCodeEnum[] permissibleAnswerOnlyPrechecks =
-            standardQueryPrechecksAnd(ACCOUNT_DELETED);
+    private final ResponseCodeEnum[] permissibleCostAnswerPrechecks = standardQueryPrechecksAnd(ACCOUNT_DELETED);
+    private final ResponseCodeEnum[] permissibleAnswerOnlyPrechecks = standardQueryPrechecksAnd(ACCOUNT_DELETED);
 
     public RandomAccountInfo(RegistrySourcedNameProvider<AccountID> accounts) {
         this.accounts = accounts;
@@ -51,10 +50,9 @@ public class RandomAccountInfo implements OpProvider {
             return Optional.empty();
         }
 
-        var op =
-                getAccountInfo(account.get())
-                        .hasCostAnswerPrecheckFrom(permissibleCostAnswerPrechecks)
-                        .hasAnswerOnlyPrecheckFrom(permissibleAnswerOnlyPrechecks);
+        var op = getAccountInfo(account.get())
+                .hasCostAnswerPrecheckFrom(permissibleCostAnswerPrechecks)
+                .hasAnswerOnlyPrecheckFrom(permissibleAnswerOnlyPrechecks);
 
         return Optional.of(op);
     }

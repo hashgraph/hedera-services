@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.keys;
 
 import static com.hedera.services.bdd.spec.keys.SigControl.KeyAlgo.UNSPECIFIED;
@@ -106,7 +107,9 @@ public class SigControl implements Serializable {
 
         return (EnumSet.of(SIG_ON, SIG_OFF).contains(controller.nature))
                 ? 1
-                : Stream.of(controller.childControls).mapToInt(this::countSimpleKeys).sum();
+                : Stream.of(controller.childControls)
+                        .mapToInt(this::countSimpleKeys)
+                        .sum();
     }
 
     public boolean appliesTo(Key key) {
@@ -133,8 +136,7 @@ public class SigControl implements Serializable {
     }
 
     public static SigControl threshSigs(int M, SigControl... childControls) {
-        Assertions.assertTrue(
-                childControls.length > 0, "A threshold must have at least one child key!");
+        Assertions.assertTrue(childControls.length > 0, "A threshold must have at least one child key!");
         return new SigControl(M, childControls);
     }
 

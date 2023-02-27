@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.controllers;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
@@ -61,8 +62,7 @@ class NetworkControllerTest {
 
         // expect:
         verify(answers).getVersionInfo();
-        verify(queryResponseHelper)
-                .answer(query, queryObserver, null, HederaFunctionality.GetVersionInfo);
+        verify(queryResponseHelper).answer(query, queryObserver, null, HederaFunctionality.GetVersionInfo);
     }
 
     @Test
@@ -91,7 +91,6 @@ class NetworkControllerTest {
 
         // expect:
         verify(answers).getAccountDetails();
-        verify(queryResponseHelper)
-                .answer(query, queryObserver, null, HederaFunctionality.GetAccountDetails);
+        verify(queryResponseHelper).answer(query, queryObserver, null, HederaFunctionality.GetAccountDetails);
     }
 }

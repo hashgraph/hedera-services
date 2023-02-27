@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
@@ -69,46 +70,85 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class SigsAndPayerKeyScreenTest {
-    @Mock private Rationalization rationalization;
-    @Mock private PayerSigValidity payerSigValidity;
-    @Mock private TransactionContext txnCtx;
-    @Mock private MiscSpeedometers speedometers;
-    @Mock private BiPredicate<JKey, TransactionSignature> validityTest;
-    @Mock private PlatformTxnAccessor accessor;
-    @Mock private Supplier<AccountStorageAdapter> accounts;
-    @Mock private AccountStorageAdapter accountStorage;
-    @Mock private MerkleAccount account;
-    @Mock private EntityCreator creator;
-    @Mock private ExpirableTxnRecord.Builder childRecordBuilder;
-    @Mock private TxnReceipt.Builder txnReceiptBuilder;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private SigImpactHistorian sigImpactHistorian;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private ExpandHandleSpanMapAccessor spanMapAccessor;
-    @Mock private AliasManager aliasManager;
-    @Mock private GlobalDynamicProperties properties;
-    @Mock private RationalizedSigMeta sigMeta;
+    @Mock
+    private Rationalization rationalization;
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private SigsAndPayerKeyScreen subject;
+    @Mock
+    private PayerSigValidity payerSigValidity;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private MiscSpeedometers speedometers;
+
+    @Mock
+    private BiPredicate<JKey, TransactionSignature> validityTest;
+
+    @Mock
+    private PlatformTxnAccessor accessor;
+
+    @Mock
+    private Supplier<AccountStorageAdapter> accounts;
+
+    @Mock
+    private AccountStorageAdapter accountStorage;
+
+    @Mock
+    private MerkleAccount account;
+
+    @Mock
+    private EntityCreator creator;
+
+    @Mock
+    private ExpirableTxnRecord.Builder childRecordBuilder;
+
+    @Mock
+    private TxnReceipt.Builder txnReceiptBuilder;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private SigImpactHistorian sigImpactHistorian;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private ExpandHandleSpanMapAccessor spanMapAccessor;
+
+    @Mock
+    private AliasManager aliasManager;
+
+    @Mock
+    private GlobalDynamicProperties properties;
+
+    @Mock
+    private RationalizedSigMeta sigMeta;
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private SigsAndPayerKeyScreen subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new SigsAndPayerKeyScreen(
-                        rationalization,
-                        payerSigValidity,
-                        txnCtx,
-                        speedometers,
-                        validityTest,
-                        accounts,
-                        creator,
-                        syntheticTxnFactory,
-                        sigImpactHistorian,
-                        recordsHistorian,
-                        spanMapAccessor,
-                        aliasManager,
-                        properties);
+        subject = new SigsAndPayerKeyScreen(
+                rationalization,
+                payerSigValidity,
+                txnCtx,
+                speedometers,
+                validityTest,
+                accounts,
+                creator,
+                syntheticTxnFactory,
+                sigImpactHistorian,
+                recordsHistorian,
+                spanMapAccessor,
+                aliasManager,
+                properties);
     }
 
     @Test
@@ -151,10 +191,9 @@ class SigsAndPayerKeyScreenTest {
         given(txnCtx.activePayer()).willReturn(AccountID.getDefaultInstance());
         given(accountStorage.getForModify(any())).willReturn(account);
         given(sigMeta.payerKey())
-                .willReturn(
-                        new JECDSASecp256k1Key(ByteString.copyFromUtf8("payerKey").toByteArray()));
-        given(creator.createSuccessfulSyntheticRecord(any(), any(), any()))
-                .willReturn(childRecordBuilder);
+                .willReturn(new JECDSASecp256k1Key(
+                        ByteString.copyFromUtf8("payerKey").toByteArray()));
+        given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(childRecordBuilder);
         given(childRecordBuilder.getReceiptBuilder()).willReturn(txnReceiptBuilder);
         given(txnReceiptBuilder.getAccountId()).willReturn(EntityId.fromNum(1));
 
@@ -172,8 +211,7 @@ class SigsAndPayerKeyScreenTest {
         givenOkRationalization();
         given(accessor.getSigMeta()).willReturn(sigMeta);
         given(properties.isLazyCreationEnabled()).willReturn(true);
-        given(spanMapAccessor.getEthTxExpansion(accessor))
-                .willReturn(new EthTxExpansion(null, INVALID_TRANSACTION));
+        given(spanMapAccessor.getEthTxExpansion(accessor)).willReturn(new EthTxExpansion(null, INVALID_TRANSACTION));
 
         // when:
         final var result = subject.applyTo(accessor);
@@ -217,7 +255,8 @@ class SigsAndPayerKeyScreenTest {
         given(accounts.get()).willReturn(accountStorage);
         given(accountStorage.get(any())).willReturn(account);
         given(account.getAccountKey())
-                .willReturn(new JEd25519Key(ByteString.copyFromUtf8("accountKey").toByteArray()));
+                .willReturn(
+                        new JEd25519Key(ByteString.copyFromUtf8("accountKey").toByteArray()));
 
         // when:
         final var result = subject.applyTo(accessor);
@@ -242,8 +281,7 @@ class SigsAndPayerKeyScreenTest {
         given(accountStorage.get(any())).willReturn(account);
         given(account.getAccountKey()).willReturn(EMPTY_KEY);
         given(accountStorage.getForModify(any())).willReturn(account);
-        given(creator.createSuccessfulSyntheticRecord(any(), any(), any()))
-                .willReturn(childRecordBuilder);
+        given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(childRecordBuilder);
         given(childRecordBuilder.getReceiptBuilder()).willReturn(txnReceiptBuilder);
         given(txnReceiptBuilder.getAccountId()).willReturn(EntityId.fromNum(1));
 
@@ -260,8 +298,7 @@ class SigsAndPayerKeyScreenTest {
     void warnsWhenPayerSigActivationThrows() {
         givenOkRationalization();
         given(accessor.getSigMeta()).willReturn(sigMeta);
-        given(payerSigValidity.test(accessor, validityTest))
-                .willThrow(IllegalArgumentException.class);
+        given(payerSigValidity.test(accessor, validityTest)).willThrow(IllegalArgumentException.class);
 
         // when:
         subject.applyTo(accessor);
@@ -269,9 +306,7 @@ class SigsAndPayerKeyScreenTest {
         // then:
         assertThat(
                 logCaptor.warnLogs(),
-                contains(
-                        Matchers.startsWith(
-                                "Unhandled exception while testing payer sig activation")));
+                contains(Matchers.startsWith("Unhandled exception while testing payer sig activation")));
     }
 
     @Test

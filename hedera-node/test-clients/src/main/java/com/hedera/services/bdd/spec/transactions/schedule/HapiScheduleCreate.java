@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.schedule;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
@@ -81,11 +82,10 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 
     public HapiScheduleCreate(String scheduled, HapiTxnOp<T> txn) {
         this.scheduleEntity = scheduled;
-        this.scheduled =
-                txn.withProtoStructure(HapiSpecSetup.TxnProtoStructure.OLD)
-                        .sansTxnId()
-                        .sansNodeAccount()
-                        .signedBy();
+        this.scheduled = txn.withProtoStructure(HapiSpecSetup.TxnProtoStructure.OLD)
+                .sansTxnId()
+                .sansNodeAccount()
+                .signedBy();
     }
 
     public HapiScheduleCreate<T> advertisingCreation() {
@@ -172,60 +172,49 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         var subOp = scheduled.signedTxnFor(spec);
 
-        ScheduleCreateTransactionBody opBody =
-                spec.txns()
-                        .<ScheduleCreateTransactionBody, ScheduleCreateTransactionBody.Builder>body(
-                                ScheduleCreateTransactionBody.class,
-                                b -> {
-                                    if (scheduleNoFunction) {
-                                        b.setScheduledTransactionBody(
-                                                SchedulableTransactionBody.getDefaultInstance());
-                                    } else {
-                                        try {
-                                            var deserializedTxn =
-                                                    TransactionBody.parseFrom(subOp.getBodyBytes());
-                                            scheduledTxn.set(
-                                                    ScheduleUtils.fromOrdinary(deserializedTxn));
-                                            b.setScheduledTransactionBody(scheduledTxn.get());
-                                        } catch (InvalidProtocolBufferException fatal) {
-                                            throw new IllegalStateException(
-                                                    "Couldn't deserialize serialized"
-                                                            + " TransactionBody!");
-                                        }
-                                    }
-                                    if (useSentinelKeyListForAdminKey) {
-                                        b.setAdminKey(
-                                                Key.newBuilder()
-                                                        .setKeyList(KeyList.getDefaultInstance()));
-                                    } else {
-                                        adminKey.ifPresent(
-                                                k -> b.setAdminKey(spec.registry().getKey(k)));
-                                    }
+        ScheduleCreateTransactionBody opBody = spec.txns()
+                .<ScheduleCreateTransactionBody, ScheduleCreateTransactionBody.Builder>body(
+                        ScheduleCreateTransactionBody.class, b -> {
+                            if (scheduleNoFunction) {
+                                b.setScheduledTransactionBody(SchedulableTransactionBody.getDefaultInstance());
+                            } else {
+                                try {
+                                    var deserializedTxn = TransactionBody.parseFrom(subOp.getBodyBytes());
+                                    scheduledTxn.set(ScheduleUtils.fromOrdinary(deserializedTxn));
+                                    b.setScheduledTransactionBody(scheduledTxn.get());
+                                } catch (InvalidProtocolBufferException fatal) {
+                                    throw new IllegalStateException(
+                                            "Couldn't deserialize serialized" + " TransactionBody!");
+                                }
+                            }
+                            if (useSentinelKeyListForAdminKey) {
+                                b.setAdminKey(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()));
+                            } else {
+                                adminKey.ifPresent(
+                                        k -> b.setAdminKey(spec.registry().getKey(k)));
+                            }
 
-                                    waitForExpiry.ifPresent(b::setWaitForExpiry);
+                            waitForExpiry.ifPresent(b::setWaitForExpiry);
 
-                                    if (expirationTimeRelativeTo.isPresent()) {
-                                        var expiry =
-                                                getRelativeExpiry(
-                                                        spec,
-                                                        expirationTimeRelativeTo.get().getKey(),
-                                                        expirationTimeRelativeTo.get().getValue());
+                            if (expirationTimeRelativeTo.isPresent()) {
+                                var expiry = getRelativeExpiry(
+                                        spec,
+                                        expirationTimeRelativeTo.get().getKey(),
+                                        expirationTimeRelativeTo.get().getValue());
 
-                                        b.setExpirationTime(expiry);
-                                    }
+                                b.setExpirationTime(expiry);
+                            }
 
-                                    entityMemo.ifPresent(b::setMemo);
-                                    payerAccountID.ifPresent(
-                                            a -> {
-                                                var payer = TxnUtils.asId(a, spec);
-                                                b.setPayerAccountID(payer);
-                                            });
-                                });
+                            entityMemo.ifPresent(b::setMemo);
+                            payerAccountID.ifPresent(a -> {
+                                var payer = TxnUtils.asId(a, spec);
+                                b.setPayerAccountID(payer);
+                            });
+                        });
         return b -> b.setScheduleCreate(opBody);
     }
 
-    public static Timestamp getRelativeExpiry(
-            final HapiSpec spec, final String txnId, final Long relative) {
+    public static Timestamp getRelativeExpiry(final HapiSpec spec, final String txnId, final Long relative) {
         if (!spec.registry().hasTransactionRecord(txnId)) {
             var createTxn = getTxnRecord(txnId).saveTxnRecordToRegistry(txnId);
             allRunFor(spec, createTxn);
@@ -233,9 +222,8 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 
         var consensus = spec.registry().getTransactionRecord(txnId).getConsensusTimestamp();
 
-        var expiry =
-                Instant.ofEpochSecond(consensus.getSeconds(), consensus.getNanos())
-                        .plusSeconds(relative);
+        var expiry = Instant.ofEpochSecond(consensus.getSeconds(), consensus.getNanos())
+                .plusSeconds(relative);
 
         return Timestamp.newBuilder()
                 .setSeconds(expiry.getEpochSecond())
@@ -251,13 +239,9 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
     @Override
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         FeeCalculator.ActivityMetrics metricsCalc =
-                (_txn, svo) ->
-                        scheduleOpsUsage.scheduleCreateUsage(
-                                _txn, suFrom(svo), defaultScheduleTxnExpiry);
+                (_txn, svo) -> scheduleOpsUsage.scheduleCreateUsage(_txn, suFrom(svo), defaultScheduleTxnExpiry);
 
-        return spec.fees()
-                .forActivityBasedOp(
-                        HederaFunctionality.ScheduleCreate, metricsCalc, txn, numPayerKeys);
+        return spec.fees().forActivityBasedOp(HederaFunctionality.ScheduleCreate, metricsCalc, txn, numPayerKeys);
     }
 
     @Override
@@ -273,28 +257,24 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
             return;
         }
         if (verboseLoggingOn) {
-            log.info("Created schedule '{}' as {}", scheduleEntity, createdSchedule().get());
+            log.info(
+                    "Created schedule '{}' as {}",
+                    scheduleEntity,
+                    createdSchedule().get());
         }
-        successCb.ifPresent(
-                cb ->
-                        cb.accept(
-                                asScheduleString(lastReceipt.getScheduleID()),
-                                bytesSigned.toByteArray()));
+        successCb.ifPresent(cb -> cb.accept(asScheduleString(lastReceipt.getScheduleID()), bytesSigned.toByteArray()));
         if (skipRegistryUpdate) {
             return;
         }
         var registry = spec.registry();
         registry.saveScheduleId(scheduleEntity, lastReceipt.getScheduleID());
-        adminKey.ifPresent(k -> registry.saveAdminKey(scheduleEntity, spec.registry().getKey(k)));
+        adminKey.ifPresent(
+                k -> registry.saveAdminKey(scheduleEntity, spec.registry().getKey(k)));
         if (saveExpectedScheduledTxnId) {
             if (verboseLoggingOn) {
-                log.info(
-                        "Returned receipt for scheduled txn is {}",
-                        lastReceipt.getScheduledTransactionID());
+                log.info("Returned receipt for scheduled txn is {}", lastReceipt.getScheduledTransactionID());
             }
-            registry.saveTxnId(
-                    correspondingScheduledTxnId(scheduleEntity),
-                    lastReceipt.getScheduledTransactionID());
+            registry.saveTxnId(correspondingScheduledTxnId(scheduleEntity), lastReceipt.getScheduledTransactionID());
         }
         if (recordScheduledTxn) {
             if (verboseLoggingOn) {
@@ -303,13 +283,10 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
             registry.saveScheduledTxn(scheduleEntity, scheduledTxn.get());
         }
         if (advertiseCreation) {
-            String banner =
-                    "\n\n"
-                            + bannerWith(
-                                    String.format(
-                                            "Created schedule '%s' with id '0.0.%d'.",
-                                            scheduleEntity,
-                                            lastReceipt.getScheduleID().getScheduleNum()));
+            String banner = "\n\n"
+                    + bannerWith(String.format(
+                            "Created schedule '%s' with id '0.0.%d'.",
+                            scheduleEntity, lastReceipt.getScheduleID().getScheduleNum()));
             log.info(banner);
         }
     }
@@ -330,7 +307,6 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
     }
 
     private Optional<String> createdSchedule() {
-        return Optional.ofNullable(lastReceipt)
-                .map(receipt -> asScheduleString(receipt.getScheduleID()));
+        return Optional.ofNullable(lastReceipt).map(receipt -> asScheduleString(receipt.getScheduleID()));
     }
 }

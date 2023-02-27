@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -55,51 +56,75 @@ class ServicesTxnManagerTest {
     private final Instant consensusTime = Instant.ofEpochSecond(1_234_567L, 890);
     private final AccountID effectivePayer = IdUtils.asAccount("0.0.75231");
 
-    @Mock private Runnable processLogic;
-    @Mock private Runnable triggeredProcessLogic;
-    @Mock private SignedTxnAccessor accessor;
-    @Mock private HederaLedger ledger;
-    @Mock private RecordCache recordCache;
-    @Mock private TransactionContext txnCtx;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private SigImpactHistorian sigImpactHistorian;
-    @Mock private MigrationRecordsManager migrationRecordsManager;
-    @Mock private RecordStreaming recordStreaming;
-    @Mock private BlockManager blockManager;
-    @Mock private RewardCalculator rewardCalculator;
+    @Mock
+    private Runnable processLogic;
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private ServicesTxnManager subject;
+    @Mock
+    private Runnable triggeredProcessLogic;
+
+    @Mock
+    private SignedTxnAccessor accessor;
+
+    @Mock
+    private HederaLedger ledger;
+
+    @Mock
+    private RecordCache recordCache;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private SigImpactHistorian sigImpactHistorian;
+
+    @Mock
+    private MigrationRecordsManager migrationRecordsManager;
+
+    @Mock
+    private RecordStreaming recordStreaming;
+
+    @Mock
+    private BlockManager blockManager;
+
+    @Mock
+    private RewardCalculator rewardCalculator;
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private ServicesTxnManager subject;
 
     @BeforeEach
     void setup() {
-        subject =
-                new ServicesTxnManager(
-                        processLogic,
-                        triggeredProcessLogic,
-                        recordCache,
-                        ledger,
-                        txnCtx,
-                        sigImpactHistorian,
-                        recordsHistorian,
-                        migrationRecordsManager,
-                        recordStreaming,
-                        blockManager,
-                        rewardCalculator);
+        subject = new ServicesTxnManager(
+                processLogic,
+                triggeredProcessLogic,
+                recordCache,
+                ledger,
+                txnCtx,
+                sigImpactHistorian,
+                recordsHistorian,
+                migrationRecordsManager,
+                recordStreaming,
+                blockManager,
+                rewardCalculator);
     }
 
     @Test
     void managesHappyPath() {
         // setup:
-        InOrder inOrder =
-                inOrder(
-                        ledger,
-                        txnCtx,
-                        processLogic,
-                        recordStreaming,
-                        recordsHistorian,
-                        sigImpactHistorian,
-                        migrationRecordsManager);
+        InOrder inOrder = inOrder(
+                ledger,
+                txnCtx,
+                processLogic,
+                recordStreaming,
+                recordsHistorian,
+                sigImpactHistorian,
+                migrationRecordsManager);
 
         // when:
         subject.process(accessor, consensusTime, submittingMember);
@@ -187,14 +212,11 @@ class ServicesTxnManagerTest {
         inOrder.verify(ledger).begin();
         inOrder.verify(processLogic).run();
         inOrder.verify(ledger).commit();
-        inOrder.verify(recordCache)
-                .setFailInvalid(effectivePayer, accessor, consensusTime, submittingMember);
+        inOrder.verify(recordCache).setFailInvalid(effectivePayer, accessor, consensusTime, submittingMember);
         inOrder.verify(ledger).rollback();
         inOrder.verify(recordStreaming, never()).streamUserTxnRecords();
         // and:
-        assertThat(
-                logCaptor.errorLogs(),
-                contains(Matchers.startsWith("Possibly CATASTROPHIC failure in txn commit")));
+        assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith("Possibly CATASTROPHIC failure in txn commit")));
     }
 
     @Test
@@ -207,9 +229,7 @@ class ServicesTxnManagerTest {
         given(accessor.getSignedTxnWrapper()).willReturn(Transaction.getDefaultInstance());
         // and:
         willThrow(IllegalStateException.class).given(ledger).commit();
-        willThrow(IllegalStateException.class)
-                .given(recordCache)
-                .setFailInvalid(any(), any(), any(), anyLong());
+        willThrow(IllegalStateException.class).given(recordCache).setFailInvalid(any(), any(), any(), anyLong());
 
         // when:
         subject.process(accessor, consensusTime, submittingMember);
@@ -219,8 +239,7 @@ class ServicesTxnManagerTest {
         inOrder.verify(ledger).begin();
         inOrder.verify(processLogic).run();
         inOrder.verify(ledger).commit();
-        inOrder.verify(recordCache)
-                .setFailInvalid(effectivePayer, accessor, consensusTime, submittingMember);
+        inOrder.verify(recordCache).setFailInvalid(effectivePayer, accessor, consensusTime, submittingMember);
         inOrder.verify(ledger).rollback();
         inOrder.verify(recordStreaming, never()).streamUserTxnRecords();
         // and:
@@ -228,8 +247,7 @@ class ServicesTxnManagerTest {
                 logCaptor.errorLogs(),
                 contains(
                         Matchers.startsWith("Possibly CATASTROPHIC failure in txn commit"),
-                        Matchers.startsWith(
-                                "Possibly CATASTROPHIC failure in failure record creation")));
+                        Matchers.startsWith("Possibly CATASTROPHIC failure in failure record creation")));
     }
 
     @Test
@@ -252,8 +270,7 @@ class ServicesTxnManagerTest {
         inOrder.verify(ledger).begin();
         inOrder.verify(processLogic).run();
         inOrder.verify(ledger).commit();
-        inOrder.verify(recordCache)
-                .setFailInvalid(effectivePayer, accessor, consensusTime, submittingMember);
+        inOrder.verify(recordCache).setFailInvalid(effectivePayer, accessor, consensusTime, submittingMember);
         inOrder.verify(ledger).rollback();
         inOrder.verify(recordStreaming, never()).streamUserTxnRecords();
         // and:

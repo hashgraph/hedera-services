@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.issues;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -45,13 +46,12 @@ public class Issue2319Spec extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    sysFileSigReqsWaivedForMasterAndTreasury(),
-                    sysAccountSigReqsWaivedForMasterAndTreasury(),
-                    propsPermissionsSigReqsWaivedForAddressBookAdmin(),
-                    sysFileImmutabilityWaivedForMasterAndTreasury(),
-                });
+        return List.of(new HapiSpec[] {
+            sysFileSigReqsWaivedForMasterAndTreasury(),
+            sysAccountSigReqsWaivedForMasterAndTreasury(),
+            propsPermissionsSigReqsWaivedForAddressBookAdmin(),
+            sysFileImmutabilityWaivedForMasterAndTreasury(),
+        });
     }
 
     private HapiSpec propsPermissionsSigReqsWaivedForAddressBookAdmin() {
@@ -60,8 +60,7 @@ public class Issue2319Spec extends HapiSuite {
         return defaultHapiSpec("PropsPermissionsSigReqsWaivedForAddressBookAdmin")
                 .given(
                         keyFromPem(pemLoc).name("persistent").simpleWacl().passphrase("<SECRET>"),
-                        cryptoTransfer(
-                                tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)))
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)))
                 .when(
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
@@ -87,14 +86,18 @@ public class Issue2319Spec extends HapiSuite {
                 .given(
                         cryptoCreate("civilian"),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L)))
-                .when(fileUpdate(EXCHANGE_RATES).payingWith(EXCHANGE_RATE_CONTROL).useEmptyWacl())
+                .when(fileUpdate(EXCHANGE_RATES)
+                        .payingWith(EXCHANGE_RATE_CONTROL)
+                        .useEmptyWacl())
                 .then(
                         fileUpdate(EXCHANGE_RATES)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
                                 .wacl(GENESIS)
                                 .payingWith(SYSTEM_ADMIN)
                                 .signedBy(GENESIS),
-                        fileUpdate(EXCHANGE_RATES).payingWith(EXCHANGE_RATE_CONTROL).useEmptyWacl(),
+                        fileUpdate(EXCHANGE_RATES)
+                                .payingWith(EXCHANGE_RATE_CONTROL)
+                                .useEmptyWacl(),
                         fileUpdate(EXCHANGE_RATES)
                                 .wacl(GENESIS)
                                 .payingWith(GENESIS)
@@ -124,9 +127,7 @@ public class Issue2319Spec extends HapiSuite {
                                 .signedBy("civilian", GENESIS, "persistent")
                                 .receiverSigRequired(true)
                                 .hasPrecheck(AUTHORIZATION_FAILED),
-                        cryptoUpdate(EXCHANGE_RATE_CONTROL)
-                                .key("persistent")
-                                .receiverSigRequired(false));
+                        cryptoUpdate(EXCHANGE_RATE_CONTROL).key("persistent").receiverSigRequired(false));
     }
 
     private HapiSpec sysFileSigReqsWaivedForMasterAndTreasury() {
@@ -136,22 +137,22 @@ public class Issue2319Spec extends HapiSuite {
         return defaultHapiSpec("SysFileSigReqsWaivedForMasterAndTreasury")
                 .given(
                         cryptoCreate("civilian"),
-                        keyFromPem(pemLoc).name("persistent").passphrase("<SECRET>").simpleWacl(),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    var fetch = getFileContents(EXCHANGE_RATES);
-                                    CustomSpecAssert.allRunFor(spec, fetch);
-                                    validRates.set(
-                                            fetch.getResponse()
-                                                    .getFileGetContents()
-                                                    .getFileContents()
-                                                    .getContents());
-                                }),
+                        keyFromPem(pemLoc)
+                                .name("persistent")
+                                .passphrase("<SECRET>")
+                                .simpleWacl(),
+                        withOpContext((spec, opLog) -> {
+                            var fetch = getFileContents(EXCHANGE_RATES);
+                            CustomSpecAssert.allRunFor(spec, fetch);
+                            validRates.set(fetch.getResponse()
+                                    .getFileGetContents()
+                                    .getFileContents()
+                                    .getContents());
+                        }),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L)))
-                .when(
-                        fileUpdate(EXCHANGE_RATES)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .wacl("persistent"))
+                .when(fileUpdate(EXCHANGE_RATES)
+                        .payingWith(EXCHANGE_RATE_CONTROL)
+                        .wacl("persistent"))
                 .then(
                         fileUpdate(EXCHANGE_RATES)
                                 .payingWith(SYSTEM_ADMIN)

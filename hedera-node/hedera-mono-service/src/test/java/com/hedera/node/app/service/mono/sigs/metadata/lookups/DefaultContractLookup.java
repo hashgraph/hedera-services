@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.metadata.lookups;
 
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
@@ -44,8 +45,7 @@ public class DefaultContractLookup implements ContractSigMetaLookup {
             if ((key = contract.getAccountKey()) == null || key instanceof JContractIDKey) {
                 return SafeLookupResult.failure(IMMUTABLE_CONTRACT);
             } else {
-                return new SafeLookupResult<>(
-                        new ContractSigningMetadata(key, contract.isReceiverSigRequired()));
+                return new SafeLookupResult<>(new ContractSigningMetadata(key, contract.isReceiverSigRequired()));
             }
         }
     }

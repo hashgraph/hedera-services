@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.consensus;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromTopicId;
@@ -34,6 +35,7 @@ import static org.mockito.BDDMockito.verify;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -56,7 +58,7 @@ class MerkleTopicDeleteTransitionLogicTest {
     private TransactionBody transactionBody;
     private TransactionContext transactionContext;
     private SignedTxnAccessor accessor;
-    private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
+    private MerkleMapLike<EntityNum, MerkleTopic> topics = MerkleMapLike.from(new MerkleMap<>());
     private OptionValidator validator;
     private TopicDeleteTransitionLogic subject;
     private SigImpactHistorian sigImpactHistorian;
@@ -73,11 +75,8 @@ class MerkleTopicDeleteTransitionLogicTest {
         accessor = mock(SignedTxnAccessor.class);
         validator = mock(OptionValidator.class);
         sigImpactHistorian = mock(SigImpactHistorian.class);
-        topics.clear();
 
-        subject =
-                new TopicDeleteTransitionLogic(
-                        () -> topics, validator, sigImpactHistorian, transactionContext);
+        subject = new TopicDeleteTransitionLogic(() -> topics, validator, sigImpactHistorian, transactionContext);
     }
 
     @Test
@@ -117,14 +116,12 @@ class MerkleTopicDeleteTransitionLogicTest {
         given(validator.queryableTopicStatus(any(), any())).willReturn(OK);
         givenTransaction(getBasicValidTransactionBodyBuilder());
 
-        topics = (MerkleMap<EntityNum, MerkleTopic>) mock(MerkleMap.class);
+        topics = (MerkleMapLike<EntityNum, MerkleTopic>) mock(MerkleMapLike.class);
 
         given(topics.get(topicFcKey)).willReturn(deletableTopic);
         given(topics.getForModify(topicFcKey)).willReturn(deletableTopic);
 
-        subject =
-                new TopicDeleteTransitionLogic(
-                        () -> topics, validator, sigImpactHistorian, transactionContext);
+        subject = new TopicDeleteTransitionLogic(() -> topics, validator, sigImpactHistorian, transactionContext);
     }
 
     @Test
@@ -160,11 +157,10 @@ class MerkleTopicDeleteTransitionLogicTest {
     }
 
     private void givenTransaction(ConsensusDeleteTopicTransactionBody.Builder body) {
-        transactionBody =
-                TransactionBody.newBuilder()
-                        .setTransactionID(ourTxnId())
-                        .setConsensusDeleteTopic(body.build())
-                        .build();
+        transactionBody = TransactionBody.newBuilder()
+                .setTransactionID(ourTxnId())
+                .setConsensusDeleteTopic(body.build())
+                .build();
         given(accessor.getTxn()).willReturn(transactionBody);
         given(transactionContext.accessor()).willReturn(accessor);
     }
@@ -185,15 +181,13 @@ class MerkleTopicDeleteTransitionLogicTest {
 
     private void givenTransactionContextInvalidTopic() {
         givenTransaction(getBasicValidTransactionBodyBuilder());
-        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics))
-                .willReturn(INVALID_TOPIC_ID);
+        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(INVALID_TOPIC_ID);
     }
 
     private TransactionID ourTxnId() {
         return TransactionID.newBuilder()
                 .setAccountID(payer)
-                .setTransactionValidStart(
-                        Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
+                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
                 .build();
     }
 }
