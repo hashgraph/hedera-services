@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,7 +106,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     }
 
     @Override
-    public synchronized void start(@NonNull final HederaState state, @NonNull final Event event) {
+    public void start(@NonNull final HederaState state, @NonNull final Event event) {
         requireNonNull(state);
         requireNonNull(event);
 
@@ -191,7 +191,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             return null;
         }
         final var payerSignature = signaturePreparer.prepareSignature(state, txBytes, signatureMap, context.getPayer());
-        cryptography.verifySync(payerSignature);
+        cryptography.verifyAsync(payerSignature);
         return payerSignature;
     }
 
@@ -203,7 +203,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             @NonNull final SignatureMap signatureMap) {
         final var otherSignatures = signaturePreparer.prepareSignatures(
                 state, txBodyBytes, signatureMap, context.getRequiredNonPayerKeys());
-        cryptography.verifySync(otherSignatures);
+        cryptography.verifyAsync(otherSignatures);
         return otherSignatures;
     }
 
