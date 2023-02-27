@@ -53,7 +53,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      * change.
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(HandleContext, TransactionBody, ConsensusServiceConfig, ConsensusCreateTopicRecordBuilder)}
+     *     passed to {@code handle()}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context) {
