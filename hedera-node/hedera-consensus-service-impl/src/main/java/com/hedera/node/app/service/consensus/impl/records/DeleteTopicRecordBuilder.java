@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.workflows;
+package com.hedera.node.app.service.consensus.impl.records;
 
-import com.hedera.node.app.spi.records.RecordBuilder;
+import com.hedera.node.app.spi.records.UniversalRecordBuilder;
 
-/**
- * A {@code TransactionHandler} contains all methods for the different stages of a single operation.
- */
-public interface TransactionHandler {
-    default <R extends RecordBuilder<R>> R newRecordBuilder() {
-        throw new UnsupportedOperationException("Not implemented");
+public class DeleteTopicRecordBuilder extends UniversalRecordBuilder<ConsensusDeleteTopicRecordBuilder>
+        implements ConsensusDeleteTopicRecordBuilder {
+    @Override
+    protected ConsensusDeleteTopicRecordBuilder self() {
+        return this;
     }
 }

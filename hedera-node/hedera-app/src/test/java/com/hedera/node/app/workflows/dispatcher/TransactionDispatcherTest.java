@@ -17,14 +17,15 @@
 package com.hedera.node.app.workflows.dispatcher;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -34,6 +35,8 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicH
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
+import com.hedera.node.app.service.consensus.impl.records.SubmitMessageRecordBuilder;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
@@ -83,7 +86,6 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
-import com.hedera.node.app.spi.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.state.HederaState;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -132,6 +134,7 @@ import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
@@ -444,26 +447,55 @@ class TransactionDispatcherTest {
 
     @Test
     void dispatchesCreateTopicAsExpected() {
+        final var createBuilder = mock(ConsensusCreateTopicRecordBuilder.class);
+
+        given(consensusCreateTopicHandler.newRecordBuilder()).willReturn(createBuilder);
         given(dynamicProperties.maxNumTopics()).willReturn(123L);
         given(dynamicProperties.messageMaxBytesAllowed()).willReturn(456);
+        given(createBuilder.getCreatedTopic()).willReturn(666L);
         final var expectedConfig = new ConsensusServiceConfig(123L, 456);
 
         doAnswer(invocation -> {
                     final var builder =
                             (ConsensusCreateTopicRecordBuilder) invocation.getArguments()[3];
-                    builder.setFinalStatus(SUCCESS);
+                    builder.setCreatedTopic(666L);
                     return null;
                 })
                 .when(consensusCreateTopicHandler)
-                .handle(eq(handleContext), eq(transactionBody), eq(expectedConfig), any());
+                .handle(eq(handleContext), eq(transactionBody.getConsensusCreateTopic()), eq(expectedConfig), any());
 
         dispatcher.dispatchHandle(ConsensusCreateTopic, transactionBody);
 
-        verify(txnCtx).setStatus(SUCCESS);
+        verify(txnCtx).setCreated(TopicID.newBuilder().setTopicNum(666L).build());
     }
 
     @Test
-    void cannotDispatchNonConsensusOperations() {
+    void dispatchesSubmitMessageAsExpected() {
+        final var newRunningHash = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        final var submitBuilder = mock(SubmitMessageRecordBuilder.class);
+
+        given(consensusSubmitMessageHandler.newRecordBuilder()).willReturn(submitBuilder);
+        given(dynamicProperties.maxNumTopics()).willReturn(123L);
+        given(dynamicProperties.messageMaxBytesAllowed()).willReturn(456);
+        given(submitBuilder.getNewTopicRunningHash()).willReturn(newRunningHash);
+        given(submitBuilder.getNewTopicSequenceNumber()).willReturn(2L);
+        final var expectedConfig = new ConsensusServiceConfig(123L, 456);
+
+        doAnswer(invocation -> {
+                    final var builder = (SubmitMessageRecordBuilder) invocation.getArguments()[3];
+                    builder.setNewTopicMetadata(newRunningHash, 2, 3L);
+                    return null;
+                })
+                .when(consensusSubmitMessageHandler)
+                .handle(eq(handleContext), eq(transactionBody.getConsensusSubmitMessage()), eq(expectedConfig), any());
+
+        dispatcher.dispatchHandle(ConsensusSubmitMessage, transactionBody);
+
+        verify(txnCtx).setTopicRunningHash(newRunningHash, 2);
+    }
+
+    @Test
+    void cannotDispatchUnsupportedOperations() {
         Assertions.assertThrows(
                 IllegalArgumentException.class, () -> dispatcher.dispatchHandle(CryptoTransfer, transactionBody));
     }

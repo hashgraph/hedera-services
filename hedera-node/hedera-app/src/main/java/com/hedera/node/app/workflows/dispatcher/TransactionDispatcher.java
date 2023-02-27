@@ -24,13 +24,16 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.spi.PreHandleDispatcher;
+import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
-import com.hedera.node.app.workflows.handle.records.CreateTopicRecordBuilder;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -80,30 +83,49 @@ public class TransactionDispatcher {
 
     /**
      * Dispatches a transaction of the given type to the appropriate handler.
-     * Only Consensus Service transactions are supported.
      *
      * <p>This will not be final signature of the dispatch method, since as per
-     * https://github.com/hashgraph/hedera-services/issues/4945, at this point we
-     * are really dispatching within the mono-service "workflow".
+     * https://github.com/hashgraph/hedera-services/issues/4945, we are currently
+     * just adapting the last step of mono-service "workflow"; and only for
+     * Consensus Service transactions.
      *
      * @param function the type of the consensus service transaction
      * @param txn the consensus transaction to be handled
+     * @throws HandleStatusException if the handler fails
+     * @throws IllegalArgumentException if there is no handler for the given function type
      */
     public void dispatchHandle(@NonNull final HederaFunctionality function, @NonNull final TransactionBody txn) {
         switch (function) {
-            case ConsensusCreateTopic -> {
-                final var recordBuilder = new CreateTopicRecordBuilder();
-                handlers.consensusCreateTopicHandler()
-                        .handle(
-                                handleContext,
-                                txn,
-                                new ConsensusServiceConfig(
-                                        dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
-                                recordBuilder);
-                recordBuilder.exposeSideEffectsToMono(txnCtx);
-            }
+            case ConsensusCreateTopic -> dispatchConsensusCreateTopic(txn.getConsensusCreateTopic());
+            case ConsensusSubmitMessage -> dispatchConsensusSubmitMessage(txn.getConsensusSubmitMessage());
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
+    }
+
+    private void dispatchConsensusCreateTopic(final ConsensusCreateTopicTransactionBody topicCreation) {
+        final var handler = handlers.consensusCreateTopicHandler();
+        final var recordBuilder = handler.newRecordBuilder();
+        handler.handle(
+                handleContext,
+                topicCreation,
+                new ConsensusServiceConfig(
+                        dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
+                recordBuilder);
+        txnCtx.setCreated(TopicID.newBuilder()
+                .setTopicNum(recordBuilder.getCreatedTopic())
+                .build());
+    }
+
+    private void dispatchConsensusSubmitMessage(final ConsensusSubmitMessageTransactionBody messageSubmission) {
+        final var handler = handlers.consensusSubmitMessageHandler();
+        final var recordBuilder = handler.newRecordBuilder();
+        handler.handle(
+                handleContext,
+                messageSubmission,
+                new ConsensusServiceConfig(
+                        dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
+                recordBuilder);
+        txnCtx.setTopicRunningHash(recordBuilder.getNewTopicRunningHash(), recordBuilder.getNewTopicSequenceNumber());
     }
 
     /**

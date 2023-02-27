@@ -20,11 +20,13 @@ import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
+import com.hedera.node.app.service.consensus.impl.records.CreateTopicRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -72,16 +74,21 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      * Given the appropriate context needed to execute the logic to create a new topic.
      *
      * @param handleContext the {@link HandleContext} for the active transaction
-     * @param topicCreation the {@link TransactionBody} of the active transaction
+     * @param topicCreation the {@link ConsensusCreateTopicTransactionBody} for the active transaction
      * @param consensusServiceConfig the {@link ConsensusServiceConfig} for the active transaction
      * @param recordBuilder the {@link ConsensusCreateTopicRecordBuilder} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(
             @NonNull final HandleContext handleContext,
-            @NonNull final TransactionBody topicCreation,
+            @NonNull final ConsensusCreateTopicTransactionBody topicCreation,
             @NonNull final ConsensusServiceConfig consensusServiceConfig,
             @NonNull final ConsensusCreateTopicRecordBuilder recordBuilder) {
         throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public ConsensusCreateTopicRecordBuilder newRecordBuilder() {
+        return new CreateTopicRecordBuilder();
     }
 }

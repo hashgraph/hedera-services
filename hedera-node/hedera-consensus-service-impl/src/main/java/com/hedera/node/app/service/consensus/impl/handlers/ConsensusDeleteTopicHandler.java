@@ -19,6 +19,8 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusDeleteTopicRecordBuilder;
+import com.hedera.node.app.service.consensus.impl.records.DeleteTopicRecordBuilder;
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -78,5 +80,13 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
     public void handle(@NonNull final TransactionMetadata metadata) {
         requireNonNull(metadata);
         throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ConsensusDeleteTopicRecordBuilder newRecordBuilder() {
+        return new DeleteTopicRecordBuilder();
     }
 }

@@ -16,38 +16,37 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalStaticProperties;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
 import com.hedera.node.app.service.mono.txns.TransitionRunner;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.EnumSet;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
 public class AdaptedMonoTransitionRunner extends TransitionRunner {
-    private static final EnumSet<HederaFunctionality> FUNCTIONS_TO_DISPATCH =
-            EnumSet.of(ConsensusCreateTopic, ConsensusUpdateTopic, ConsensusSubmitMessage, ConsensusDeleteTopic);
-
     private final TransactionDispatcher dispatcher;
+    private final Set<HederaFunctionality> functionsToDispatch;
 
     @Inject
     public AdaptedMonoTransitionRunner(
             @NonNull final EntityIdSource ids,
             @NonNull final TransactionContext txnCtx,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final TransitionLogicLookup lookup) {
+            @NonNull final TransitionLogicLookup lookup,
+            @NonNull final GlobalStaticProperties staticProperties) {
         super(ids, txnCtx, lookup);
         this.dispatcher = dispatcher;
+        this.functionsToDispatch = staticProperties.workflowsEnabled();
     }
 
     /**
@@ -56,8 +55,13 @@ public class AdaptedMonoTransitionRunner extends TransitionRunner {
     @Override
     public boolean tryTransition(final @NonNull TxnAccessor accessor) {
         final var function = accessor.getFunction();
-        if (FUNCTIONS_TO_DISPATCH.contains(function)) {
-            dispatcher.dispatchHandle(function, accessor.getTxn());
+        if (functionsToDispatch.contains(function)) {
+            try {
+                dispatcher.dispatchHandle(function, accessor.getTxn());
+                txnCtx.setStatus(SUCCESS);
+            } catch (final HandleStatusException e) {
+                super.resolveFailure(e.getStatus(), accessor, e);
+            }
             return true;
         } else {
             return super.tryTransition(accessor);

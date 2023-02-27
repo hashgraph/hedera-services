@@ -14,13 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.records;
+package com.hedera.node.app.service.consensus.impl.records;
 
-import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.node.app.spi.records.ConsensusCreateTopicRecordBuilder;
-import com.hederahashgraph.api.proto.java.TopicID;
+import com.hedera.node.app.spi.records.UniversalRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 
 public class CreateTopicRecordBuilder extends UniversalRecordBuilder<ConsensusCreateTopicRecordBuilder>
         implements ConsensusCreateTopicRecordBuilder {
@@ -45,17 +42,17 @@ public class CreateTopicRecordBuilder extends UniversalRecordBuilder<ConsensusCr
     }
 
     /**
-     * A temporary method to expose the side-effects tracked in this builder to
-     * the mono context.
-     *
-     * @param txnCtx the mono context
+     * {@inheritDoc}
      */
-    public void exposeSideEffectsToMono(@NonNull final TransactionContext txnCtx) {
-        super.exposeSideEffectsToMono(txnCtx);
-        if (createdTopicNum != 0) {
-            Objects.requireNonNull(txnCtx)
-                    .setCreated(
-                            TopicID.newBuilder().setTopicNum(createdTopicNum).build());
+    @Override
+    public long getCreatedTopic() {
+        throwIfMissingData();
+        return createdTopicNum;
+    }
+
+    private void throwIfMissingData() {
+        if (createdTopicNum == 0L) {
+            throw new IllegalStateException("No new topic number was recorded");
         }
     }
 }

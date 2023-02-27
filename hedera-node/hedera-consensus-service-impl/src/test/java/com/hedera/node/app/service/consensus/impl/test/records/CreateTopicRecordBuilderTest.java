@@ -14,44 +14,31 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.records;
+package com.hedera.node.app.service.consensus.impl.test.records;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.consensus.impl.records.CreateTopicRecordBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class SubmitMessageRecordBuilderTest {
-    @Mock
-    private TransactionContext txnCtx;
-
-    private SubmitMessageRecordBuilder subject = new SubmitMessageRecordBuilder();
+class CreateTopicRecordBuilderTest {
+    private CreateTopicRecordBuilder subject = new CreateTopicRecordBuilder();
 
     @Test
     void recordsNothingInMonoContextIfNothingTracked() {
-        subject.exposeSideEffectsToMono(txnCtx);
-
-        verifyNoInteractions(txnCtx);
+        assertThrows(IllegalStateException.class, subject::getCreatedTopic);
     }
 
     @Test
     void recordsTrackedSideEffectsInMonoContext() {
-        final var pretendTopicRunningHash = new byte[] {1, 2, 3};
-
-        final var returnedSubject = subject.setFinalStatus(SUCCESS).setNewTopicMetadata(pretendTopicRunningHash, 2, 3L);
+        final var returnedSubject = subject.setFinalStatus(SUCCESS).setCreatedTopic(123L);
         assertSame(subject, returnedSubject);
-        assertSame(subject, subject.self());
-
-        subject.exposeSideEffectsToMono(txnCtx);
-
-        verify(txnCtx).setTopicRunningHash(pretendTopicRunningHash, 2);
-        verify(txnCtx).setStatus(SUCCESS);
+        assertEquals(123L, subject.getCreatedTopic());
     }
 }

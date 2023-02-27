@@ -47,4 +47,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
  */
 public interface RecordBuilder<T extends RecordBuilder<T>> {
     T setFinalStatus(ResponseCodeEnum status);
+
+    ResponseCodeEnum getFinalStatus();
 }

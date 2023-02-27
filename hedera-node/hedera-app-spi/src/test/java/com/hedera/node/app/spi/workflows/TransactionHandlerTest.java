@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,17 @@
 
 package com.hedera.node.app.spi.workflows;
 
-import com.hedera.node.app.spi.records.RecordBuilder;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.mock;
 
-/**
- * A {@code TransactionHandler} contains all methods for the different stages of a single operation.
- */
-public interface TransactionHandler {
-    default <R extends RecordBuilder<R>> R newRecordBuilder() {
-        throw new UnsupportedOperationException("Not implemented");
+import org.junit.jupiter.api.Test;
+
+class TransactionHandlerTest {
+    @Test
+    void defaultRecordBuilderUnknown() {
+        final var subject = mock(TransactionHandler.class);
+        doCallRealMethod().when(subject).newRecordBuilder();
+        assertThrows(UnsupportedOperationException.class, subject::newRecordBuilder);
     }
 }

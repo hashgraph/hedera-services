@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.workflows;
+package com.hedera.node.app.spi.exceptions;
 
-import com.hedera.node.app.spi.records.RecordBuilder;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 /**
- * A {@code TransactionHandler} contains all methods for the different stages of a single operation.
+ * A runtime exception that wraps a {@link ResponseCodeEnum} status.
  */
-public interface TransactionHandler {
-    default <R extends RecordBuilder<R>> R newRecordBuilder() {
-        throw new UnsupportedOperationException("Not implemented");
+public class HandleStatusException extends RuntimeException {
+    private final ResponseCodeEnum status;
+
+    public HandleStatusException(final ResponseCodeEnum status) {
+        this.status = status;
+    }
+
+    public ResponseCodeEnum getStatus() {
+        return status;
     }
 }

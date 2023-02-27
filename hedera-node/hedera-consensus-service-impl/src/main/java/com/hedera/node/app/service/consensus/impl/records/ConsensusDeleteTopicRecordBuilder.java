@@ -14,23 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.records;
+package com.hedera.node.app.service.consensus.impl.records;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.hedera.node.app.spi.records.RecordBuilder;
 
 /**
  * A {@code RecordBuilder} specialization for tracking the side-effects of a
- * {@code ConsensusCreateTopic} transaction.
+ * {@code ConsensusDeleteTopic} transaction.
  */
-public interface ConsensusCreateTopicRecordBuilder extends RecordBuilder<ConsensusCreateTopicRecordBuilder> {
-    /**
-     * Tracks creation of a new topic by number. Even if someday we support creating
-     * multiple topics within a smart contract call, we will still only need to track
-     * one created topic per child record.
-     *
-     * @param num the number of the new topic
-     * @return this builder
-     */
-    @NonNull
-    ConsensusCreateTopicRecordBuilder setCreatedTopic(long num);
-}
+public interface ConsensusDeleteTopicRecordBuilder extends RecordBuilder<ConsensusDeleteTopicRecordBuilder> {}
