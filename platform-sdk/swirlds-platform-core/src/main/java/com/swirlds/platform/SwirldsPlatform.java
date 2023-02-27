@@ -1712,7 +1712,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * {@inheritDoc}
      */
     @Override
-    public void connectionClosed(final boolean outbound) {
+    public void connectionClosed(final boolean outbound, Connection conn) {
         final int connectionNumber = activeConnectionNumber.decrementAndGet();
         if (connectionNumber < 0) {
             logger.error(EXCEPTION.getMarker(), "activeConnectionNumber is {}, this is a bug!", connectionNumber);
@@ -1724,6 +1724,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         } else {
             platformMetrics.incrementInterruptedRecSyncs();
         }
+        networkMetrics.recordDisconnect(conn);
     }
 
     /**
