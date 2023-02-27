@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.workflows.dispatcher;
 
-import static com.hederahashgraph.api.proto.java.TransactionBody.DataCase.CONSENSUSCREATETOPIC;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
