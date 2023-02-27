@@ -18,6 +18,7 @@ package com.hedera.node.app;
 
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.components.QueryComponent;
+import com.hedera.node.app.service.mono.CacheModule;
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.config.ConfigModule;
 import com.hedera.node.app.service.mono.context.ContextModule;
@@ -80,7 +81,8 @@ import javax.inject.Singleton;
             TransactionsModule.class,
             ExpiryModule.class,
             ServiceModule.class,
-            QueryModule.class
+            QueryModule.class,
+            CacheModule.class,
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */
