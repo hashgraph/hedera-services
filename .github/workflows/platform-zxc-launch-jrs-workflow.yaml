@@ -1,0 +1,77 @@
+##
+# Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+
+name: "Z-Platform XC: Launch JRS Workflow"
+on:
+  workflow_call:
+    inputs:
+      workflow-file:
+        description: "The file name of the workflow to be launched:"
+        required: true
+        type: string
+      workflow-file-ref:
+        description: "The branch, tag, or SHA containing the workflow file to be launched:"
+        required: false
+        type: string
+      concurrency-group:
+        description: "The concurrency group name to limit simultaneous workflows:"
+        required: false
+        type: string
+      ref:
+        description: "The branch, tag or SHA to checkout:"
+        required: false
+        type: string
+      branch-name:
+        description: "The branch name to use when generating a slack channel name automatically:"
+        required: false
+        type: string
+    secrets:
+      access-token:
+        description: "The Github access token used to checkout the repository, submodules, and make GitHub API calls."
+        required: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  launch-workflow:
+    name: Launch Workflow
+    runs-on: [self-hosted, Linux, small, scheduler, ephemeral]
+    steps:
+      - name: Install Github CLI
+        env:
+          GITHUB_TOKEN: ${{ secrets.access-token }}
+        run: |
+          curl -O -L -s https://github.com/cli/cli/releases/download/v2.5.0/gh_2.5.0_linux_amd64.deb
+          sudo apt install -y ./gh_2.5.0_linux_amd64.deb
+          rm -rf gh_2.5.0_linux_amd64.deb
+
+      - name: Execute Workflow
+        env:
+          GITHUB_TOKEN: ${{ secrets.access-token }}
+          WORKFLOW_FILE: ${{ inputs.workflow-file }}
+          WORKFLOW_FILE_REF: ${{ inputs.workflow-file-ref || github.ref }}
+          REPO: ${{ github.repository }}
+          CONCURRENCY_GROUP: ${{ inputs.concurrency-group || '' }}
+          REF: ${{ inputs.ref || '' }}
+          BRANCH_NAME: ${{ inputs.branch-name || '' }}
+        run: |
+          ADDITIONAL_ARGS=()
+          [[ -n "${CONCURRENCY_GROUP}" ]] && ADDITIONAL_ARGS+=("-f" "concurrency-group=${CONCURRENCY_GROUP}")
+          [[ -n "${BRANCH_NAME}" ]] && ADDITIONAL_ARGS+=("-f" "branch-name=${BRANCH_NAME}")
+          [[ -n "${REF}" ]] && ADDITIONAL_ARGS+=("-f" "ref=${REF}")
+          gh workflow run ${WORKFLOW_FILE} -R "${REPO}" --ref "${WORKFLOW_FILE_REF}" "${ADDITIONAL_ARGS[@]}"

@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.mono.context.properties;
 
 import static java.util.stream.Collectors.toMap;
-import static java.util.stream.Collectors.toSet;
 
 import com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
@@ -70,15 +69,7 @@ public interface PropertySource {
                 }
             })
             .collect(toMap(e -> Long.parseLong(e[0]), e -> Long.parseLong(e[1])));
-    Function<String, Object> AS_FUNCTIONS = s -> Stream.of(s.split(","))
-            .map(e -> {
-                if (e.length() != 0) {
-                    return HederaFunctionality.valueOf(e);
-                } else {
-                    return HederaFunctionality.NONE;
-                }
-            })
-            .collect(toSet());
+    Function<String, Object> AS_FUNCTIONS = s -> asEnumSet(HederaFunctionality.class, HederaFunctionality::valueOf, s);
     Function<String, Object> AS_CONGESTION_MULTIPLIERS = CongestionMultipliers::from;
 
     Function<String, Object> AS_LEGACY_ACTIVATIONS = LegacyContractIdActivations::from;
