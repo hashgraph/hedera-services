@@ -1084,6 +1084,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         }
         round.forEachEventTransaction((event, transaction) ->
                 handleConsensusTransaction(event, transaction, swirldDualState, round.getRoundNum()));
+        delay();
     }
 
     private void handleConsensusTransaction(
@@ -1167,8 +1168,6 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                                 LOGM_EXCEPTION, "" + "InvalidProtocolBufferException while chekcing signature", error));
             }
         }
-
-        delay();
 
         //////////// start timing/////////////
         final long startTime = System.nanoTime();
