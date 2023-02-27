@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.components;
 
+import static com.swirlds.platform.test.components.TransactionHandlingTestUtils.newDummyEvent;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -88,30 +89,5 @@ class PreConsensusSystemTransactionManagerTests {
 
         assertDoesNotThrow(
                 () -> handler.handleEvent(newDummyEvent(1)), "should not throw");
-    }
-
-    /**
-     * Generate a new bare-bones event, containing DummySystemTransactions
-     *
-     * @param transactionCount the number of transactions to include in the event
-     * @return the new event
-     */
-    private static EventImpl newDummyEvent(final int transactionCount) {
-        SystemTransaction[] transactions = new SystemTransaction[transactionCount];
-
-        for (int index = 0; index < transactionCount; index++) {
-            transactions[index] = new DummySystemTransaction();
-        }
-
-        return new EventImpl(
-                new BaseEventHashedData(
-                        0,
-                        0L,
-                        0L,
-                        CryptographyHolder.get().getNullHash(),
-                        CryptographyHolder.get().getNullHash(),
-                        Instant.now(),
-                        transactions),
-                new BaseEventUnhashedData(0L, new byte[0]));
     }
 }
