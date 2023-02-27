@@ -55,7 +55,7 @@ public interface HandleContext {
      * Returns the validator for expiry metadata (both explicit expiration times and
      * auto-renew configuration) of entities created or updated by handlers.
      *
-     * @return the validator for expiry meatdata
+     * @return the validator for expiry metadata
      */
     ExpiryValidator expiryValidator();
 }

@@ -40,6 +40,9 @@ public abstract class UniversalRecordBuilder<T extends RecordBuilder<T>> impleme
         return self();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public ResponseCodeEnum getFinalStatus() {
