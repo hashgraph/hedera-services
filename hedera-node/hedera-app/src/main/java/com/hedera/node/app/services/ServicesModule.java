@@ -101,7 +101,7 @@ public interface ServicesModule {
 
     static <S extends Service> S provideService(final ServiceProvider serviceProvider, final Class<S> serviceType) {
         Objects.requireNonNull(serviceProvider, "serviceProvider must not be null");
-        Objects.requireNonNull(serviceProvider, "serviceType must not be serviceType");
+        Objects.requireNonNull(serviceType, "serviceType must not be serviceType");
         return serviceProvider.getServiceByType(serviceType)
                 .orElseThrow(() -> new IllegalStateException(serviceType.getName() + " not found"));
     }

@@ -45,6 +45,7 @@ import javax.inject.Singleton;
  */
 @Module
 public interface QueryModule {
+    
     @Binds
     @Singleton
     QueryWorkflow bindQueryWorkflow(QueryWorkflowImpl queryWorkflow);
@@ -68,14 +69,14 @@ public interface QueryModule {
 
     @Provides
     static QueryHandlers provideQueryHandlers(
-            @NonNull final ConsensusService consensusComponent,
+            @NonNull final ConsensusService consensusService,
             @NonNull final FileService fileService,
             @NonNull final NetworkComponent networkComponent,
             @NonNull final ContractComponent contractComponent,
             @NonNull final ScheduleComponent scheduleComponent,
             @NonNull final TokenComponent tokenComponent) {
         return new QueryHandlers(
-                ConsensusGetTopicInfoHandlerImpl.class.cast(consensusComponent.getConsensusGetTopicInfoHandler()),
+                ConsensusGetTopicInfoHandlerImpl.class.cast(consensusService.getConsensusGetTopicInfoHandler()),
                 contractComponent.contractGetBySolidityIDHandler(),
                 contractComponent.contractCallLocalHandler(),
                 contractComponent.contractGetInfoHandler(),
