@@ -126,12 +126,28 @@ public class MonoExpiryValidator implements ExpiryValidator {
         return new ExpiryMeta(resolvedExpiry, resolvedAutoRenewPeriod, resolvedAutoRenewNum);
     }
 
+    /**
+     * Helper to check if an entity with the given metadata has a completely specified
+     * auto-renew configuration. This is true if either the {@link ExpiryMeta} includes
+     * both an auto-renew period and an auto-renew account; or if the {@link ExpiryMeta}
+     * includes only an auto-renew period, and the entity can self-fund its auto-renewal.
+     *
+     * @param entityCanSelfFundRenewal whether the entity can self-fund its auto-renewal
+     * @param creationMetadata the entity's proposed {@link ExpiryMeta}
+     * @return whether the entity has a complete auto-renew configuration
+     */
     private boolean hasCompleteAutoRenewSpec(
             final boolean entityCanSelfFundRenewal, final ExpiryMeta creationMetadata) {
         return creationMetadata.hasFullAutoRenewSpec()
                 || (!creationMetadata.hasExplicitExpiry() && entityCanSelfFundRenewal);
     }
 
+    /**
+     * Helper to validate that the given account number is a valid auto-renew account.
+     *
+     * @param autoRenewNum the account number to validate
+     * @throws HandleStatusException if the account number is invalid
+     */
     private void validateAutoRenewAccount(final long autoRenewNum) {
         final var autoRenewId = new Id(numbers.shard(), numbers.realm(), autoRenewNum);
         try {
