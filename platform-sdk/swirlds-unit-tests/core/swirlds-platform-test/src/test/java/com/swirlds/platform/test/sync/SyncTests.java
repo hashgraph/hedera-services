@@ -1010,4 +1010,39 @@ public class SyncTests {
         assertFalse(executor.getCaller().getSynchronizerReturn());
         assertFalse(executor.getListener().getSynchronizerReturn());
     }
+
+    @Test
+    void noEventsStartGeneration() throws Exception {
+        final SyncTestParams params = new SyncTestParams(
+                4,
+                0,
+                100,
+                0);
+        final SyncTestExecutor executor = new SyncTestExecutor(params);
+        executor.setGraphCustomization((caller, listener) -> {
+            caller.setSaveGeneratedEvents(true);
+            listener.setSaveGeneratedEvents(true);
+        });
+        executor.setGenerationDefinitions((caller, listener) -> {
+            long callerMaxGen = SyncUtils.getMaxGen(caller.getShadowGraph().getTips());
+            long callerMinGen = SyncUtils.getMinGen(caller.getShadowGraph()
+                    .findAncestors(caller.getShadowGraph().getTips(), (e) -> true));
+
+            when(listener.getConsensus().getMaxRoundGeneration()).thenReturn(callerMaxGen);
+            when(listener.getConsensus().getMinGenerationNonAncient()).thenReturn(callerMaxGen/2);
+            when(listener.getConsensus().getMinRoundGeneration()).thenReturn(callerMinGen);
+
+            when(caller.getConsensus().getMaxRoundGeneration()).thenReturn(callerMaxGen);
+            when(caller.getConsensus().getMinGenerationNonAncient()).thenReturn(callerMaxGen/2);
+            when(caller.getConsensus().getMinRoundGeneration()).thenReturn(callerMinGen);
+        });
+        executor.setCustomPreSyncConfiguration((caller, listener) -> {
+            listener.getShadowGraph().startFromGeneration(
+                    caller.getConsensus().getMinGenerationNonAncient()
+            );
+        });
+        executor.execute();
+        SyncValidator.assertOnlyRequiredEventsTransferred(executor.getCaller(), executor.getListener());
+        SyncValidator.assertStreamsEmpty(executor.getCaller(), executor.getListener());
+    }
 }
