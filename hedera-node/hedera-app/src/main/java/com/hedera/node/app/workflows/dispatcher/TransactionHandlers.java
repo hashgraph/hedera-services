@@ -17,10 +17,10 @@
 package com.hedera.node.app.workflows.dispatcher;
 
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandlerImpl;
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandlerImpl;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandlerImpl;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandlerImpl;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandlerImpl;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
@@ -69,10 +69,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * app
  */
 public record TransactionHandlers(
-        @NonNull ConsensusCreateTopicHandler consensusCreateTopicHandler,
-        @NonNull ConsensusUpdateTopicHandler consensusUpdateTopicHandler,
-        @NonNull ConsensusDeleteTopicHandler consensusDeleteTopicHandler,
-        @NonNull ConsensusSubmitMessageHandler consensusSubmitMessageHandler,
+        @NonNull ConsensusCreateTopicHandlerImpl consensusCreateTopicHandler,
+        @NonNull ConsensusUpdateTopicHandlerImpl consensusUpdateTopicHandler,
+        @NonNull ConsensusDeleteTopicHandlerImpl consensusDeleteTopicHandler,
+        @NonNull ConsensusSubmitMessageHandlerImpl consensusSubmitMessageHandler,
         @NonNull ContractCreateHandler contractCreateHandler,
         @NonNull ContractUpdateHandler contractUpdateHandler,
         @NonNull ContractCallHandler contractCallHandler,

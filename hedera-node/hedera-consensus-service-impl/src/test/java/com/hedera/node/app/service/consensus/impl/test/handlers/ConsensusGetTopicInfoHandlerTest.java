@@ -19,16 +19,32 @@ package com.hedera.node.app.service.consensus.impl.test.handlers;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hederahashgraph.api.proto.java.ResponseType.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
+import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
+import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
+import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER_STATE_PROOF;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandlerImpl;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
+import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoResponse;
+import com.hederahashgraph.api.proto.java.ConsensusTopicInfo;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.QueryHeader;
+import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseHeader;
+import com.hederahashgraph.api.proto.java.TopicID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,16 +52,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
-    private ConsensusGetTopicInfoHandler subject;
+    private ConsensusGetTopicInfoHandlerImpl subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ConsensusGetTopicInfoHandler();
+        subject = new ConsensusGetTopicInfoHandlerImpl();
     }
 
     @Test
     void emptyConstructor() {
-        assertNotNull(new ConsensusGetTopicInfoHandler());
+        assertNotNull(new ConsensusGetTopicInfoHandlerImpl());
     }
 
     @Test
@@ -155,7 +171,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
                 .build();
     }
 
-    private Query createGetTopicInfoQuery(int topicId) throws Throwable {
+    private Query createGetTopicInfoQuery(final int topicId) throws Throwable {
         final var payment = payerSponsoredTransfer(payerId, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
         final var data = ConsensusGetTopicInfoQuery.newBuilder()
                 .setTopicID(TopicID.newBuilder().setTopicNum(topicId).build())

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.workflows.query;
 
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandlerImpl;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallLocalHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetBySolidityIDHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetBytecodeHandler;
@@ -43,11 +43,10 @@ import com.hedera.node.app.service.token.impl.handlers.TokenGetNftInfosHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A record that contains all {@link com.hedera.node.app.spi.workflows.QueryHandler}s that are
- * available in the app
+ * A record that contains all {@link com.hedera.node.app.spi.workflows.QueryHandler}s that are available in the app
  */
 public record QueryHandlers(
-        @NonNull ConsensusGetTopicInfoHandler consensusGetTopicInfoHandler,
+        @NonNull ConsensusGetTopicInfoHandlerImpl consensusGetTopicInfoHandler,
         @NonNull ContractGetBySolidityIDHandler contractGetBySolidityIDHandler,
         @NonNull ContractCallLocalHandler contractCallLocalHandler,
         @NonNull ContractGetInfoHandler contractGetInfoHandler,
@@ -70,4 +69,5 @@ public record QueryHandlers(
         @NonNull TokenGetInfoHandler tokenGetInfoHandler,
         @NonNull TokenGetAccountNftInfosHandler tokenGetAccountNftInfosHandler,
         @NonNull TokenGetNftInfoHandler tokenGetNftInfoHandler,
-        @NonNull TokenGetNftInfosHandler tokenGetNftInfosHandler) {}
+        @NonNull TokenGetNftInfosHandler tokenGetNftInfosHandler) {
+}

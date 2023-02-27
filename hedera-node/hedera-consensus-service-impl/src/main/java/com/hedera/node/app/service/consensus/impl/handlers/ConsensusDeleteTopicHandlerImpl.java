@@ -18,35 +18,31 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.consensus.handler.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#ConsensusDeleteTopic}.
+ * This class contains all workflow-related functionality regarding {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ConsensusDeleteTopic}.
  */
-@Singleton
-public class ConsensusDeleteTopicHandler implements TransactionHandler {
-    @Inject
-    public ConsensusDeleteTopicHandler() {}
+public class ConsensusDeleteTopicHandlerImpl implements ConsensusDeleteTopicHandler {
+
+    public ConsensusDeleteTopicHandlerImpl() {}
 
     /**
      * This method is called during the pre-handle workflow.
      *
      * <p>Determines signatures needed for deleting a consensus topic
      *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(TransactionMetadata)}
+     * @param context    the {@link PreHandleContext} which collects all information that will be passed to {@link
+     *                   #handle(TransactionMetadata)}
      * @param topicStore the {@link ReadableTopicStore} to use to resolve topic metadata
      * @throws NullPointerException if any of the arguments are {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore) {
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTopicStore topicStore) {
         requireNonNull(context);
         requireNonNull(topicStore);
 

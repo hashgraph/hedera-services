@@ -15,21 +15,12 @@
  *
  */
 
-package com.hedera.node.app;
+package com.hedera.node.app.service.consensus.handler;
 
-import com.hedera.node.app.spi.FacilityFacade;
-import com.swirlds.common.context.PlatformContext;
-import dagger.Module;
-import dagger.Provides;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.inject.Singleton;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
 
-@Module
-public interface FacilityFacadeModule {
-
-    @Provides
-    @Singleton
-    static FacilityFacade bindPropertySources(@NonNull final PlatformContext platformContext) {
-        return new FacilityFacadeImpl(platformContext);
-    }
+/**
+ * This interface contains all workflow-related functionality regarding {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ConsensusCreateTopic}.
+ */
+public interface ConsensusCreateTopicHandler extends TransactionHandler {
 }

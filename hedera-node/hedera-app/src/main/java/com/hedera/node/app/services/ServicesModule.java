@@ -17,6 +17,7 @@
 
 package com.hedera.node.app.services;
 
+import com.hedera.node.app.FacilityFacadeModule;
 import com.hedera.node.app.service.admin.FreezeService;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.contract.ContractService;
@@ -25,9 +26,9 @@ import com.hedera.node.app.service.network.NetworkService;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.util.UtilService;
+import com.hedera.node.app.spi.FacilityFacade;
 import com.hedera.node.app.spi.service.Service;
 import com.hedera.node.app.spi.service.ServiceProvider;
-import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
@@ -35,19 +36,21 @@ import java.util.Objects;
 import java.util.Set;
 import javax.inject.Singleton;
 
-@Module
+@Module(includes = FacilityFacadeModule.class)
 public interface ServicesModule {
 
-    @Binds
+    @Provides
     @Singleton
-    ServiceProvider bindServiceProvider(ServiceProviderImpl serviceProvider);
+    static ServiceProvider bindServiceProvider(final FacilityFacade facilityFacade) {
+        return new ServiceProviderImpl(facilityFacade);
+    }
 
     @Provides
     @ElementsIntoSet
     static Set<Service> provideAllServices(final ServiceProvider serviceProvider) {
         return serviceProvider.getAllServices();
     }
-    
+
     @Provides
     @Singleton
     static FreezeService provideFreezeService(final ServiceProvider serviceProvider) {

@@ -22,7 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandlerImpl;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallLocalHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetBySolidityIDHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetBytecodeHandler;
@@ -90,7 +90,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class QueryDispatcherTest {
     @Mock
-    private ConsensusGetTopicInfoHandler consensusGetTopicInfoHandler;
+    private ConsensusGetTopicInfoHandlerImpl consensusGetTopicInfoHandler;
 
     @Mock
     private ContractGetBySolidityIDHandler contractGetBySolidityIDHandler;

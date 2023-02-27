@@ -18,8 +18,6 @@ package com.hedera.node.app.services;
 
 import com.hedera.node.app.components.IngestComponent;
 import com.hedera.node.app.components.QueryComponent;
-import com.hedera.node.app.service.consensus.impl.components.ConsensusComponent;
-import com.hedera.node.app.service.consensus.impl.components.DaggerConsensusComponent;
 import com.hedera.node.app.service.contract.impl.components.ContractComponent;
 import com.hedera.node.app.service.contract.impl.components.DaggerContractComponent;
 import com.hedera.node.app.service.file.impl.components.DaggerFileComponent;
@@ -36,12 +34,7 @@ import javax.inject.Singleton;
 
 @Module(subcomponents = {QueryComponent.class, IngestComponent.class})
 public interface ServiceModule {
-    @Provides
-    @Singleton
-    static ConsensusComponent provideConsensusComponent() {
-        return DaggerConsensusComponent.create();
-    }
-
+   
     @Provides
     @Singleton
     static FileComponent provideFileComponent() {

@@ -18,7 +18,8 @@ package com.hedera.node.app.workflows.query;
 
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.MonoFeeAccumulator;
-import com.hedera.node.app.service.consensus.impl.components.ConsensusComponent;
+import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandlerImpl;
 import com.hedera.node.app.service.contract.impl.components.ContractComponent;
 import com.hedera.node.app.service.file.impl.components.FileComponent;
 import com.hedera.node.app.service.network.impl.components.NetworkComponent;
@@ -65,14 +66,14 @@ public interface QueryModule {
 
     @Provides
     static QueryHandlers provideQueryHandlers(
-            @NonNull final ConsensusComponent consensusComponent,
+            @NonNull final ConsensusService consensusComponent,
             @NonNull final FileComponent fileComponent,
             @NonNull final NetworkComponent networkComponent,
             @NonNull final ContractComponent contractComponent,
             @NonNull final ScheduleComponent scheduleComponent,
             @NonNull final TokenComponent tokenComponent) {
         return new QueryHandlers(
-                consensusComponent.consensusGetTopicInfoHandler(),
+                (ConsensusGetTopicInfoHandlerImpl) consensusComponent.getConsensusGetTopicInfoHandler(),
                 contractComponent.contractGetBySolidityIDHandler(),
                 contractComponent.contractCallLocalHandler(),
                 contractComponent.contractGetInfoHandler(),

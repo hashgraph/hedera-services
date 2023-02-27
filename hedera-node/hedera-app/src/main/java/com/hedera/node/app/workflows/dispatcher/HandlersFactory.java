@@ -19,10 +19,10 @@ package com.hedera.node.app.workflows.dispatcher;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandlerImpl;
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandlerImpl;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandlerImpl;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandlerImpl;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandlerImpl;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
@@ -90,10 +90,10 @@ public final class HandlersFactory {
 
         // TODO - provide DI, c.f. https://github.com/hashgraph/hedera-services/issues/4317
         return new TransactionHandlers(
-                new ConsensusCreateTopicHandler(),
-                new ConsensusUpdateTopicHandler(),
-                new ConsensusDeleteTopicHandler(),
-                new ConsensusSubmitMessageHandler(),
+                new ConsensusCreateTopicHandlerImpl(),
+                new ConsensusUpdateTopicHandlerImpl(),
+                new ConsensusDeleteTopicHandlerImpl(),
+                new ConsensusSubmitMessageHandlerImpl(),
                 new ContractCreateHandler(),
                 new ContractUpdateHandler(),
                 new ContractCallHandler(),

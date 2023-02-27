@@ -32,7 +32,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandlerImpl;
 import com.hedera.node.app.service.mono.Utils;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
@@ -59,20 +59,21 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ConsensusDeleteTopicHandlerTest {
-    private static final HederaKey A_NONNULL_KEY = new HederaKey() {};
+    private static final HederaKey A_NONNULL_KEY = new HederaKey() {
+    };
     static final TopicID TOPIC_ID_1357 =
             TopicID.newBuilder().setShardNum(0).setRealmNum(0).setTopicNum(1357).build();
     private static final AccountID ACCOUNT_ID_4 = IdUtils.asAccount("0.0.4");
     private AccountKeyLookup keyLookup;
     private ReadableTopicStore topicStore;
 
-    private ConsensusDeleteTopicHandler subject;
+    private ConsensusDeleteTopicHandlerImpl subject;
 
     @BeforeEach
     void setUp() {
         keyLookup = mock(AccountKeyLookup.class);
         topicStore = mock(ReadableTopicStore.class);
-        subject = new ConsensusDeleteTopicHandler();
+        subject = new ConsensusDeleteTopicHandlerImpl();
     }
 
     @Test
@@ -177,7 +178,7 @@ class ConsensusDeleteTopicHandlerTest {
             // given:
             final var txn = txnFrom(CONSENSUS_DELETE_TOPIC_SCENARIO);
 
-            var topicMeta = newTopicMeta(null, A_NONNULL_KEY); // any submit key that isn't null
+            final var topicMeta = newTopicMeta(null, A_NONNULL_KEY); // any submit key that isn't null
             given(topicStore.getTopicMetadata(notNull()))
                     .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withTopicMeta(topicMeta));
             final var context = new PreHandleContext(keyLookup, txn, DEFAULT_PAYER);
@@ -194,7 +195,7 @@ class ConsensusDeleteTopicHandlerTest {
         void getsConsensusDeleteTopicWithAdminKey() throws Throwable {
             // given:
             final var txn = txnFrom(CONSENSUS_DELETE_TOPIC_SCENARIO);
-            var topicMeta = newTopicMeta(MISC_TOPIC_ADMIN_KT.asJKey(), null); // any submit key
+            final var topicMeta = newTopicMeta(MISC_TOPIC_ADMIN_KT.asJKey(), null); // any submit key
             given(topicStore.getTopicMetadata(notNull()))
                     .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withTopicMeta(topicMeta));
             final var context = new PreHandleContext(keyLookup, txn, DEFAULT_PAYER);
@@ -231,14 +232,14 @@ class ConsensusDeleteTopicHandlerTest {
         return ConsensusTestUtils.mockPayerLookup(KeyUtils.A_COMPLEX_KEY, DEFAULT_PAYER, keyLookup);
     }
 
-    private void mockTopicLookup(Key adminKey, Key submitKey) {
+    private void mockTopicLookup(final Key adminKey, final Key submitKey) {
         given(topicStore.getTopicMetadata(notNull()))
                 .willReturn(ReadableTopicStore.TopicMetaOrLookupFailureReason.withTopicMeta(newTopicMeta(
                         adminKey != null ? Utils.asHederaKey(adminKey).get() : null,
                         submitKey != null ? Utils.asHederaKey(submitKey).get() : null)));
     }
 
-    private static ReadableTopicStore.TopicMetadata newTopicMeta(HederaKey admin, HederaKey submit) {
+    private static ReadableTopicStore.TopicMetadata newTopicMeta(final HederaKey admin, final HederaKey submit) {
         return new ReadableTopicStore.TopicMetadata(
                 Optional.of(Instant.now() + ""),
                 Optional.ofNullable(admin),

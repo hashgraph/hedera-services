@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.admin;
 
+import com.hedera.node.app.service.admin.handlers.FreezeHandler;
 import com.hedera.node.app.spi.service.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -32,4 +33,6 @@ public interface FreezeService extends Service {
     default String getServiceName() {
         return NAME;
     }
+
+    FreezeHandler getFreezeHandler();
 }

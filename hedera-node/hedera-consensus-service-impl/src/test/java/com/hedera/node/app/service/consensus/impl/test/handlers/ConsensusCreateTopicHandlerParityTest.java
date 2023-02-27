@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
-import static com.hedera.node.app.service.consensus.impl.handlers.test.AdapterUtils.*;
+import static com.hedera.node.app.service.consensus.impl.handlers.test.AdapterUtils.wellKnownKeyLookupAt;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertCustomPayer;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertDefaultPayer;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertOkResponse;
@@ -35,7 +35,7 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
 
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandlerImpl;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -44,7 +44,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ConsensusCreateTopicHandlerParityTest {
-    private final ConsensusCreateTopicHandler subject = new ConsensusCreateTopicHandler();
+    private final ConsensusCreateTopicHandlerImpl subject = new ConsensusCreateTopicHandlerImpl();
     private AccountKeyLookup keyLookup;
 
     @BeforeEach

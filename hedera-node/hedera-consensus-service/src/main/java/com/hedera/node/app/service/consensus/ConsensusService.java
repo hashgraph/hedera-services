@@ -16,6 +16,11 @@
 
 package com.hedera.node.app.service.consensus;
 
+import com.hedera.node.app.service.consensus.handler.ConsensusCreateTopicHandler;
+import com.hedera.node.app.service.consensus.handler.ConsensusDeleteTopicHandler;
+import com.hedera.node.app.service.consensus.handler.ConsensusGetTopicInfoHandler;
+import com.hedera.node.app.service.consensus.handler.ConsensusSubmitMessageHandler;
+import com.hedera.node.app.service.consensus.handler.ConsensusUpdateTopicHandler;
 import com.hedera.node.app.spi.service.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -32,4 +37,20 @@ public interface ConsensusService extends Service {
     default String getServiceName() {
         return NAME;
     }
+
+    @NonNull
+    public ConsensusCreateTopicHandler getConsensusCreateTopicHandler();
+
+    @NonNull
+    public ConsensusDeleteTopicHandler getConsensusDeleteTopicHandler();
+
+    @NonNull
+    public ConsensusGetTopicInfoHandler getConsensusGetTopicInfoHandler();
+
+    @NonNull
+    public ConsensusSubmitMessageHandler getConsensusSubmitMessageHandler();
+
+    @NonNull
+    public ConsensusUpdateTopicHandler getConsensusUpdateTopicHandler();
+
 }

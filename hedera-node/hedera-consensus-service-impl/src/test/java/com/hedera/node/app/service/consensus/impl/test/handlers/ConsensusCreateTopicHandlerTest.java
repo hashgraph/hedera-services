@@ -25,7 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandlerImpl;
 import com.hedera.node.app.service.mono.Utils;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
@@ -55,9 +55,9 @@ class ConsensusCreateTopicHandlerTest {
     @Mock
     private AccountKeyLookup keyFinder;
 
-    private ConsensusCreateTopicHandler subject;
+    private ConsensusCreateTopicHandlerImpl subject;
 
-    private static TransactionBody newCreateTxn(Key adminKey, Key submitKey) {
+    private static TransactionBody newCreateTxn(final Key adminKey, final Key submitKey) {
         final var txnId = TransactionID.newBuilder().setAccountID(ACCOUNT_ID_3).build();
         final var createTopicBuilder = ConsensusCreateTopicTransactionBody.newBuilder();
         if (adminKey != null) {
@@ -74,7 +74,7 @@ class ConsensusCreateTopicHandlerTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ConsensusCreateTopicHandler();
+        subject = new ConsensusCreateTopicHandlerImpl();
     }
 
     @Test
@@ -242,7 +242,7 @@ class ConsensusCreateTopicHandlerTest {
         return mockPayerLookup(KeyUtils.A_COMPLEX_KEY);
     }
 
-    private HederaKey mockPayerLookup(Key key) {
+    private HederaKey mockPayerLookup(final Key key) {
         final var returnKey = Utils.asHederaKey(key).orElseThrow();
         given(keyFinder.getKey(ACCOUNT_ID_3)).willReturn(KeyOrLookupFailureReason.withKey(returnKey));
         return returnKey;

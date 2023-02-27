@@ -17,11 +17,11 @@
 package com.hedera.node.app.service.consensus.impl;
 
 import com.hedera.node.app.service.consensus.ConsensusService;
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandlerImpl;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandlerImpl;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandlerImpl;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandlerImpl;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandlerImpl;
 import com.hedera.node.app.service.consensus.impl.serdes.EntityNumSerdes;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -46,74 +46,74 @@ public final class ConsensusServiceImpl implements ConsensusService {
 
     public static final String TOPICS_KEY = "TOPICS";
 
-    private final ConsensusCreateTopicHandler consensusCreateTopicHandler;
+    private final ConsensusCreateTopicHandlerImpl consensusCreateTopicHandler;
 
-    private final ConsensusDeleteTopicHandler consensusDeleteTopicHandler;
+    private final ConsensusDeleteTopicHandlerImpl consensusDeleteTopicHandler;
 
-    private final ConsensusGetTopicInfoHandler consensusGetTopicInfoHandler;
+    private final ConsensusGetTopicInfoHandlerImpl consensusGetTopicInfoHandler;
 
-    private final ConsensusSubmitMessageHandler consensusSubmitMessageHandler;
+    private final ConsensusSubmitMessageHandlerImpl consensusSubmitMessageHandler;
 
-    private final ConsensusUpdateTopicHandler consensusUpdateTopicHandler;
+    private final ConsensusUpdateTopicHandlerImpl consensusUpdateTopicHandler;
 
     /**
      * Creates a new {@link ConsensusServiceImpl} instance.
      */
     public ConsensusServiceImpl() {
-        this.consensusCreateTopicHandler = new ConsensusCreateTopicHandler();
-        this.consensusDeleteTopicHandler = new ConsensusDeleteTopicHandler();
-        this.consensusGetTopicInfoHandler = new ConsensusGetTopicInfoHandler();
-        this.consensusSubmitMessageHandler = new ConsensusSubmitMessageHandler();
-        this.consensusUpdateTopicHandler = new ConsensusUpdateTopicHandler();
+        this.consensusCreateTopicHandler = new ConsensusCreateTopicHandlerImpl();
+        this.consensusDeleteTopicHandler = new ConsensusDeleteTopicHandlerImpl();
+        this.consensusGetTopicInfoHandler = new ConsensusGetTopicInfoHandlerImpl();
+        this.consensusSubmitMessageHandler = new ConsensusSubmitMessageHandlerImpl();
+        this.consensusUpdateTopicHandler = new ConsensusUpdateTopicHandlerImpl();
     }
 
     /**
-     * Returns the {@link ConsensusCreateTopicHandler} instance.
+     * Returns the {@link ConsensusCreateTopicHandlerImpl} instance.
      *
-     * @return the {@link ConsensusCreateTopicHandler} instance.
+     * @return the {@link ConsensusCreateTopicHandlerImpl} instance.
      */
     @NonNull
-    public ConsensusCreateTopicHandler getConsensusCreateTopicHandler() {
+    public ConsensusCreateTopicHandlerImpl getConsensusCreateTopicHandler() {
         return consensusCreateTopicHandler;
     }
 
     /**
-     * Returns the {@link ConsensusDeleteTopicHandler} instance.
+     * Returns the {@link ConsensusDeleteTopicHandlerImpl} instance.
      *
-     * @return the {@link ConsensusDeleteTopicHandler} instance.
+     * @return the {@link ConsensusDeleteTopicHandlerImpl} instance.
      */
     @NonNull
-    public ConsensusDeleteTopicHandler getConsensusDeleteTopicHandler() {
+    public ConsensusDeleteTopicHandlerImpl getConsensusDeleteTopicHandler() {
         return consensusDeleteTopicHandler;
     }
 
     /**
-     * Returns the {@link ConsensusGetTopicInfoHandler} instance.
+     * Returns the {@link ConsensusGetTopicInfoHandlerImpl} instance.
      *
-     * @return the {@link ConsensusGetTopicInfoHandler} instance.
+     * @return the {@link ConsensusGetTopicInfoHandlerImpl} instance.
      */
     @NonNull
-    public ConsensusGetTopicInfoHandler getConsensusGetTopicInfoHandler() {
+    public ConsensusGetTopicInfoHandlerImpl getConsensusGetTopicInfoHandler() {
         return consensusGetTopicInfoHandler;
     }
 
     /**
-     * Returns the {@link ConsensusSubmitMessageHandler} instance.
+     * Returns the {@link ConsensusSubmitMessageHandlerImpl} instance.
      *
-     * @return the {@link ConsensusSubmitMessageHandler} instance.
+     * @return the {@link ConsensusSubmitMessageHandlerImpl} instance.
      */
     @NonNull
-    public ConsensusSubmitMessageHandler getConsensusSubmitMessageHandler() {
+    public ConsensusSubmitMessageHandlerImpl getConsensusSubmitMessageHandler() {
         return consensusSubmitMessageHandler;
     }
 
     /**
-     * Returns the {@link ConsensusUpdateTopicHandler} instance.
+     * Returns the {@link ConsensusUpdateTopicHandlerImpl} instance.
      *
-     * @return the {@link ConsensusUpdateTopicHandler} instance.
+     * @return the {@link ConsensusUpdateTopicHandlerImpl} instance.
      */
     @NonNull
-    public ConsensusUpdateTopicHandler getConsensusUpdateTopicHandler() {
+    public ConsensusUpdateTopicHandlerImpl getConsensusUpdateTopicHandler() {
         return consensusUpdateTopicHandler;
     }
 

@@ -24,10 +24,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandlerImpl;
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
-import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandlerImpl;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandlerImpl;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandlerImpl;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandlerImpl;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
@@ -146,16 +146,16 @@ class TransactionDispatcherTest {
     private ReadableAccountStore accountStore;
 
     @Mock
-    private ConsensusCreateTopicHandler consensusCreateTopicHandler;
+    private ConsensusCreateTopicHandlerImpl consensusCreateTopicHandler;
 
     @Mock
-    private ConsensusUpdateTopicHandler consensusUpdateTopicHandler;
+    private ConsensusUpdateTopicHandlerImpl consensusUpdateTopicHandler;
 
     @Mock
-    private ConsensusDeleteTopicHandler consensusDeleteTopicHandler;
+    private ConsensusDeleteTopicHandlerImpl consensusDeleteTopicHandler;
 
     @Mock
-    private ConsensusSubmitMessageHandler consensusSubmitMessageHandler;
+    private ConsensusSubmitMessageHandlerImpl consensusSubmitMessageHandler;
 
     @Mock
     private ContractCreateHandler contractCreateHandler;

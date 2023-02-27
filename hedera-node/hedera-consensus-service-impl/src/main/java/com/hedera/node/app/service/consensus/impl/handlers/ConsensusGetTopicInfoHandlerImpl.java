@@ -19,29 +19,39 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseType.*;
+import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
+import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
+import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.consensus.handler.ConsensusGetTopicInfoHandler;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.spi.meta.QueryContext;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
+import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoResponse;
+import com.hederahashgraph.api.proto.java.ConsensusTopicInfo;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.QueryHeader;
+import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ResponseHeader;
+import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hederahashgraph.api.proto.java.TopicID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#ConsensusGetTopicInfo}.
+ * This class contains all workflow-related functionality regarding {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ConsensusGetTopicInfo}.
  */
-@Singleton
-public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
-    @Inject
-    public ConsensusGetTopicInfoHandler() {}
+public class ConsensusGetTopicInfoHandlerImpl extends PaidQueryHandler implements ConsensusGetTopicInfoHandler {
+
+    public ConsensusGetTopicInfoHandlerImpl() {}
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
@@ -56,26 +66,15 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
     }
 
     @Override
-    public boolean requiresNodePayment(@NonNull ResponseType responseType) {
+    public boolean requiresNodePayment(@NonNull final ResponseType responseType) {
         return responseType == ANSWER_ONLY || responseType == ANSWER_STATE_PROOF;
     }
 
     @Override
-    public boolean needsAnswerOnlyCost(@NonNull ResponseType responseType) {
+    public boolean needsAnswerOnlyCost(@NonNull final ResponseType responseType) {
         return COST_ANSWER == responseType;
     }
-
-    /**
-     * This method is called during the query workflow. It validates the query, but does not
-     * determine the response yet.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param query the {@link Query} that should be validated
-     * @throws NullPointerException if one of the arguments is {@code null}
-     * @throws PreCheckException if validation fails
-     */
+    
     public ResponseCodeEnum validate(@NonNull final Query query, @NonNull final ReadableTopicStore topicStore)
             throws PreCheckException {
         final ConsensusGetTopicInfoQuery op = query.getConsensusGetTopicInfo();
@@ -89,8 +88,8 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
     }
 
     /**
-     * This method is called during the query workflow. It determines the requested value(s) and
-     * returns the appropriate response.
+     * This method is called during the query workflow. It determines the requested value(s) and returns the appropriate
+     * response.
      *
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
@@ -125,8 +124,9 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
 
     /**
      * Provides information about a topic.
-     * @param topicID the topic to get information about
-     * @param topicStore the topic store
+     *
+     * @param topicID      the topic to get information about
+     * @param topicStore   the topic store
      * @param queryContext context for executing the query
      * @return the information about the topic
      */
