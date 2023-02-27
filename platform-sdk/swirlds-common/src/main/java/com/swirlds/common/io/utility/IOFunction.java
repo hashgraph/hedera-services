@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,21 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.io.exceptions;
+package com.swirlds.common.io.utility;
 
 import java.io.IOException;
+import java.util.function.Function;
 
 /**
- * Thrown if a class the class loader can not find a class with the given class Id.
+ * Similar to {@link Function} but throws an {@link IOException}.
+ *
+ * @param <T>
+ * 		the type of the function argument
+ * @param <R>
+ * 		the return type of the function
  */
-public class ClassNotFoundException extends IOException {
-    public ClassNotFoundException(long classId) {
-        super(String.format("No class with id=%d(0x%08X) found", classId, classId));
-    }
+@FunctionalInterface
+public interface IOFunction<T, R> {
+
+    R apply(T t) throws IOException;
 }

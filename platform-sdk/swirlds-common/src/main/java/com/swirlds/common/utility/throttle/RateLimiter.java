@@ -100,6 +100,15 @@ public class RateLimiter {
     }
 
     /**
+     * Inform the rate limiter that the operation was performed regardless of time,
+     * and that the timeout should be restarted.
+     */
+    public void force() {
+        lastOperation = time.now();
+        deniedRequests = 0;
+    }
+
+    /**
      * Get the number of times {@link #request()} has returned false since the last time it returned true. Immediately
      * after {@link #request()} returns true, this method will always return 0.
      *

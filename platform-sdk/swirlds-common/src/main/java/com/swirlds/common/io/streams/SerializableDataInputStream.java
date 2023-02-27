@@ -26,6 +26,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDet;
 import com.swirlds.common.io.exceptions.ClassNotFoundException;
 import com.swirlds.common.io.exceptions.InvalidVersionException;
+import com.swirlds.common.io.utility.IOFunction;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.ValueReference;
 import java.io.DataInputStream;
@@ -34,7 +35,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
 
@@ -110,7 +110,7 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
     /**
      * Throws an exception if the version is not supported.
      */
-    protected void validateVersion(final SerializableDet object, final int version) {
+    protected void validateVersion(final SerializableDet object, final int version) throws InvalidVersionException {
         if (version < object.getMinimumSupportedVersion() || version > object.getVersion()) {
             throw new InvalidVersionException(version, object);
         }
@@ -140,7 +140,7 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
      * Same as {@link #readSerializable(boolean, Supplier)} except that the constructor takes a class ID
      */
     private <T extends SelfSerializable> T readSerializable(
-            final boolean readClassId, final Function<Long, T> serializableConstructor) throws IOException {
+            final boolean readClassId, final IOFunction<Long, T> serializableConstructor) throws IOException {
 
         final Long classId;
         if (readClassId) {
@@ -227,7 +227,7 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
     private <T extends SelfSerializable> void readSerializableIterableWithSizeInternal(
             final int size,
             final boolean readClassId,
-            final Function<Long, T> serializableConstructor,
+            final IOFunction<Long, T> serializableConstructor,
             final Consumer<T> callback)
             throws IOException {
 
@@ -275,7 +275,7 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
             final boolean readClassId,
             final ValueReference<Long> classId,
             final ValueReference<Integer> version,
-            final Function<Long, T> serializableConstructor)
+            final IOFunction<Long, T> serializableConstructor)
             throws IOException {
 
         if (!allSameClass) {
@@ -356,7 +356,7 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
      * 		thrown if any IO problems occur
      */
     private <T extends SelfSerializable> List<T> readSerializableList(
-            final int maxListSize, final boolean readClassId, final Function<Long, T> serializableConstructor)
+            final int maxListSize, final boolean readClassId, final IOFunction<Long, T> serializableConstructor)
             throws IOException {
 
         int length = readInt();
@@ -442,7 +442,7 @@ public class SerializableDataInputStream extends AugmentedDataInputStream {
      * 		the type of the class
      * @return a constructor for the class
      */
-    private static <T extends SelfSerializable> T registryConstructor(final long classId) {
+    private static <T extends SelfSerializable> T registryConstructor(final long classId) throws IOException {
         final T rc = ConstructableRegistry.getInstance().createObject(classId);
         if (rc == null) {
             throw new ClassNotFoundException(classId);
