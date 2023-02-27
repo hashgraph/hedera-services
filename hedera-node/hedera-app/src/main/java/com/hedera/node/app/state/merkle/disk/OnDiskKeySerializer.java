@@ -17,8 +17,8 @@
 package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.spi.state.Serdes;
+import com.hedera.node.app.spi.state.serdes.ByteBufferDataInput;
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.node.app.state.merkle.data.ByteBufferDataInput;
 import com.hedera.node.app.state.merkle.data.MeteredOutputStream;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -45,7 +45,7 @@ import java.util.Objects;
  *
  * @param <K>
  */
-public final class OnDiskKeySerializer<K extends Comparable<K>>
+public final class OnDiskKeySerializer<K extends Comparable<? super K>>
         implements KeySerializer<OnDiskKey<K>>, SelfSerializableSupplier<OnDiskKey<K>> {
 
     @Deprecated(forRemoval = true)

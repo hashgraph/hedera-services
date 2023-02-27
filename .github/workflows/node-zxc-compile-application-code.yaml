@@ -163,7 +163,7 @@ jobs:
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # pin@v2
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
-          check_name: Unit Test Results
+          check_name: 'Node: Unit Test Results'
           check_run_disabled: true
           json_thousands_separator: ','
           junit_files: "**/build/test-results/test/TEST-*.xml"
@@ -187,7 +187,7 @@ jobs:
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # pin@v2
         if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
-          check_name: Integration Test Results
+          check_name: 'Node: Integration Test Results'
           check_run_disabled: true
           json_thousands_separator: ','
           junit_files: "**/build/test-results/itest/TEST-*.xml"
@@ -204,7 +204,7 @@ jobs:
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # pin@v2
         if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
-          check_name: E2E Test Results
+          check_name: 'Node: E2E Test Results'
           check_run_disabled: true
           json_thousands_separator: ','
           junit_files: "**/build/test-results/eet/TEST-*.xml"
@@ -240,7 +240,17 @@ jobs:
         id: sonar-cloud
         env:
           IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
-        if: ${{ inputs.enable-sonar-analysis && steps.gradle-build.conclusion == 'success' && github.event.pull_request.head.repo.full_name == github.repository && !cancelled() }}
+        if: >-
+          ${{
+            inputs.enable-sonar-analysis &&
+            steps.gradle-build.conclusion == 'success' &&
+            (
+              github.event.pull_request.head.repo.full_name == github.repository ||
+              github.event_name == 'push' ||
+              github.event_name == 'workflow_dispatch'
+            ) &&
+            !cancelled()
+          }}
         run: |
           SONAR_OPTS="-Dsonar.branch.name=${{ github.ref_name }}"
           if [[ "${IS_PULL_REQUEST}" == true ]]; then
@@ -255,36 +265,83 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.access-token }}
           SONAR_TOKEN: ${{ secrets.sonar-token }}
           SONAR_OPTS: ${{ steps.sonar-cloud.outputs.options }}
-        if: ${{ inputs.enable-sonar-analysis && steps.gradle-build.conclusion == 'success' && github.event.pull_request.head.repo.full_name == github.repository && !cancelled() }}
+        if: >-
+          ${{
+            inputs.enable-sonar-analysis &&
+            steps.gradle-build.conclusion == 'success' &&
+            (
+              github.event.pull_request.head.repo.full_name == github.repository ||
+              github.event_name == 'push' ||
+              github.event_name == 'workflow_dispatch'
+            ) &&
+            !cancelled()
+          }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: sonarqube --info --scan
+          arguments: sonarqube --info --scan ${{ steps.sonar-cloud.outputs.options }}
 
       - name: Setup Snyk
         env:
           SNYK_TOKEN: ${{ secrets.snyk-token }}
-        if: ${{ inputs.enable-snyk-scan && steps.gradle-build.conclusion == 'success' && github.event.pull_request.head.repo.full_name == github.repository && !cancelled() }}
-        run: |
-          npm install -g snyk snyk-to-html @wcj/html-to-markdown-cli
+        if: >-
+          ${{
+            inputs.enable-snyk-scan &&
+            steps.gradle-build.conclusion == 'success' &&
+            (
+              github.event.pull_request.head.repo.full_name == github.repository ||
+              github.event_name == 'push' ||
+              github.event_name == 'workflow_dispatch'
+            ) &&
+            !cancelled()
+          }}
+        run: npm install -g snyk snyk-to-html @wcj/html-to-markdown-cli
 
       - name: Snyk Scan
         id: snyk
         env:
           SNYK_TOKEN: ${{ secrets.snyk-token }}
-        if: ${{ inputs.enable-snyk-scan && steps.gradle-build.conclusion == 'success' && github.event.pull_request.head.repo.full_name == github.repository && !cancelled() }}
-        run: |
-          snyk test --all-sub-projects --severity-threshold=high --json-file-output=snyk-test.json
+        if: >-
+          ${{
+            inputs.enable-snyk-scan &&
+            steps.gradle-build.conclusion == 'success' &&
+            (
+              github.event.pull_request.head.repo.full_name == github.repository ||
+              github.event_name == 'push' ||
+              github.event_name == 'workflow_dispatch'
+            ) &&
+            !cancelled()
+          }}
+        run: snyk test --all-sub-projects --severity-threshold=high --json-file-output=snyk-test.json
 
       - name: Snyk Code
         id: snyk-code
         env:
           SNYK_TOKEN: ${{ secrets.snyk-token }}
-        if: ${{ inputs.enable-snyk-scan && steps.gradle-build.conclusion == 'success' && github.event.pull_request.head.repo.full_name == github.repository && !cancelled() }}
-        run: |
-          snyk code test --severity-threshold=high --json-file-output=snyk-code.json
+        if: >-
+          ${{
+            inputs.enable-snyk-scan &&
+            steps.gradle-build.conclusion == 'success' &&
+            (
+              github.event.pull_request.head.repo.full_name == github.repository ||
+              github.event_name == 'push' ||
+              github.event_name == 'workflow_dispatch'
+            ) &&
+            !cancelled()
+          }}
+        run: snyk code test --severity-threshold=high --json-file-output=snyk-code.json
 
       - name: Publish Snyk Results
-        if: ${{ inputs.enable-snyk-scan && steps.gradle-build.conclusion == 'success' && github.event.pull_request.head.repo.full_name == github.repository && !cancelled() }}
+        if: >-
+          ${{
+            inputs.enable-snyk-scan &&
+            steps.gradle-build.conclusion == 'success' &&
+            (
+              github.event.pull_request.head.repo.full_name == github.repository ||
+              github.event_name == 'push' ||
+              github.event_name == 'workflow_dispatch'
+            ) &&
+            !cancelled()
+          }}
         run: |
           snyk-to-html -i snyk-test.json -o snyk-test.html --summary
           html-to-markdown snyk-test.html -o snyk

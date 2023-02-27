@@ -46,6 +46,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenGetAccountNftInfosHa
 import com.hedera.node.app.service.token.impl.handlers.TokenGetInfoHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenGetNftInfoHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenGetNftInfosHandler;
+import com.hedera.node.app.spi.meta.QueryContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.workflows.dispatcher.StoreFactory;
@@ -160,6 +161,9 @@ class QueryDispatcherTest {
     @Mock
     private TokenGetNftInfosHandler tokenGetNftInfosHandler;
 
+    @Mock
+    private QueryContext queryContext;
+
     private QueryHandlers handlers;
 
     private QueryDispatcher dispatcher;
@@ -270,10 +274,13 @@ class QueryDispatcherTest {
         final var header = ResponseHeader.newBuilder().build();
 
         // then
-        assertThatThrownBy(() -> dispatcher.getResponse(null, query, header)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> dispatcher.getResponse(storeFactory, null, header))
+        assertThatThrownBy(() -> dispatcher.getResponse(null, query, header, queryContext))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> dispatcher.getResponse(storeFactory, query, null))
+        assertThatThrownBy(() -> dispatcher.getResponse(storeFactory, null, header, queryContext))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> dispatcher.getResponse(storeFactory, query, null, queryContext))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> dispatcher.getResponse(storeFactory, query, header, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -284,7 +291,7 @@ class QueryDispatcherTest {
         final var header = ResponseHeader.newBuilder().build();
 
         // then
-        assertThatThrownBy(() -> dispatcher.getResponse(storeFactory, query, header))
+        assertThatThrownBy(() -> dispatcher.getResponse(storeFactory, query, header, queryContext))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
@@ -301,7 +308,7 @@ class QueryDispatcherTest {
         final var header = ResponseHeader.newBuilder().build();
 
         // when
-        dispatcher.getResponse(storeFactory, query, header);
+        dispatcher.getResponse(storeFactory, query, header, queryContext);
 
         // then
         verifyFindResponse.verify(handlers);
@@ -315,9 +322,9 @@ class QueryDispatcherTest {
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>) QueryHandlers::consensusGetTopicInfoHandler,
                         (Verification)
-                                h -> verify(h.consensusGetTopicInfoHandler()).validate(any()),
+                                h -> verify(h.consensusGetTopicInfoHandler()).validate(any(), any()),
                         (Verification)
-                                h -> verify(h.consensusGetTopicInfoHandler()).findResponse(any(), any())),
+                                h -> verify(h.consensusGetTopicInfoHandler()).findResponse(any(), any(), any(), any())),
                 Arguments.of(
                         Query.newBuilder()
                                 .setGetBySolidityID(GetBySolidityIDQuery.getDefaultInstance())

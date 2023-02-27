@@ -327,6 +327,7 @@ import com.hedera.node.app.service.mono.sigs.metadata.lookups.ContractSigMetaLoo
 import com.hedera.node.app.service.mono.sigs.metadata.lookups.FileSigMetaLookup;
 import com.hedera.node.app.service.mono.sigs.metadata.lookups.HfsSigMetaLookup;
 import com.hedera.node.app.service.mono.sigs.metadata.lookups.TopicSigMetaLookup;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -6038,8 +6039,8 @@ public class SigRequirementsTest {
                 sigMetaLookup.orElse(defaultLookupsFor(
                         aliasManager,
                         hfsSigMetaLookup,
-                        () -> AccountStorageAdapter.fromInMemory(accounts),
-                        () -> topics,
+                        () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
+                        () -> MerkleMapLike.from(topics),
                         DelegatingSigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore),
                         DelegatingSigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore))),
                 signatureWaivers);

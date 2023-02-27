@@ -152,6 +152,7 @@ import com.hedera.node.app.service.mono.grpc.controllers.FileController;
 import com.hedera.node.app.service.mono.grpc.controllers.FreezeController;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
@@ -319,7 +320,7 @@ class MiscUtilsTest {
         putValue(2L, testMm);
 
         // when:
-        MiscUtils.forEach(testMm, mockConsumer);
+        MiscUtils.forEach(MerkleMapLike.from(testMm), mockConsumer);
 
         // then:
         verify(mockConsumer).accept(key1, new KeyedMerkleLong<>(key1, 1L));

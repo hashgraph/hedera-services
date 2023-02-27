@@ -42,7 +42,10 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
+@Singleton
 public class HapiOpCounters {
     static Supplier<HederaFunctionality[]> allFunctions = HederaFunctionality.class::getEnumConstants;
     private final MiscRunningAvgs runningAvgs;
@@ -62,6 +65,7 @@ public class HapiOpCounters {
             new EnumMap<>(HederaFunctionality.class);
     private Counter.Config deprecatedTxnsConfig;
 
+    @Inject
     public HapiOpCounters(
             final MiscRunningAvgs runningAvgs,
             final TransactionContext txnCtx,

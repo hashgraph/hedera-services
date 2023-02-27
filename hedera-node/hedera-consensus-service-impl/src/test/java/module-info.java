@@ -9,4 +9,6 @@ open module com.hedera.node.app.service.consensus.impl.test {
     requires org.assertj.core;
     requires com.google.protobuf;
     requires hedera.services.hedera.node.hedera.app.spi.testFixtures;
+    requires com.swirlds.common;
+    requires org.apache.commons.codec;
 }
