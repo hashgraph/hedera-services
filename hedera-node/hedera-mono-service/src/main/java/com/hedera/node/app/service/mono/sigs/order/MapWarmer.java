@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.order;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -50,12 +51,7 @@ public class MapWarmer {
             Supplier<TokenRelStorageAdapter> tokenRelsAdapter,
             GlobalDynamicProperties globalDynamicProperties) {
         if (INSTANCE == null) {
-            INSTANCE =
-                    new MapWarmer(
-                            accountsStorageAdapter,
-                            nftsAdapter,
-                            tokenRelsAdapter,
-                            globalDynamicProperties);
+            INSTANCE = new MapWarmer(accountsStorageAdapter, nftsAdapter, tokenRelsAdapter, globalDynamicProperties);
         }
         return INSTANCE;
     }
@@ -79,13 +75,12 @@ public class MapWarmer {
         this.accountsStorageAdapter = accountsStorageAdapter;
         this.nftsAdapter = nftsAdapter;
         this.tokenRelsAdapter = tokenRelsAdapter;
-        this.threadpool =
-                new ThreadPoolExecutor(
-                        globalDynamicProperties.cryptoTransferWarmThreads(),
-                        globalDynamicProperties.cryptoTransferWarmThreads(),
-                        0L,
-                        TimeUnit.MILLISECONDS,
-                        new LinkedBlockingQueue<>());
+        this.threadpool = new ThreadPoolExecutor(
+                globalDynamicProperties.cryptoTransferWarmThreads(),
+                globalDynamicProperties.cryptoTransferWarmThreads(),
+                0L,
+                TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>());
     }
 
     public void initiateCacheWarmup(Round round) {
@@ -94,87 +89,64 @@ public class MapWarmer {
 
     // "warmTokenObjs" as in "warm the token and its associated token relation objects"
     // for both the sending and receiving accounts
-    public void warmTokenObjs(
-            AccountID sender, AccountID receiver, long tokenNum, long senderSerialNum) {
+    public void warmTokenObjs(AccountID sender, AccountID receiver, long tokenNum, long senderSerialNum) {
         if (accountsStorageAdapter.get().areOnDisk()
                 && nftsAdapter.get().isVirtual()
                 && tokenRelsAdapter.get().areOnDisk()) {
 
-            threadpool.execute(
-                    () -> {
-                        // Accounts:
-                        final var acctMap = accountsStorageAdapter.get().getOnDiskAccounts();
-                        if (acctMap == null) return;
+            threadpool.execute(() -> {
+                // Accounts:
+                final var acctMap = accountsStorageAdapter.get().getOnDiskAccounts();
+                if (acctMap == null) return;
 
-                        acctMap.warm(EntityNumVirtualKey.from(EntityNum.fromAccountId(sender)));
-                        acctMap.warm(EntityNumVirtualKey.from(EntityNum.fromAccountId(receiver)));
-                    });
+                acctMap.warm(EntityNumVirtualKey.from(EntityNum.fromAccountId(sender)));
+                acctMap.warm(EntityNumVirtualKey.from(EntityNum.fromAccountId(receiver)));
+            });
 
-            threadpool.execute(
-                    () -> {
-                        // NFT:
-                        final var nftKey = new UniqueTokenKey(tokenNum, senderSerialNum);
-                        final var nftMap = nftsAdapter.get().getOnDiskNfts();
-                        final var nftValue =
-                                Optional.ofNullable(nftMap)
-                                        .map(vmap -> vmap.get(nftKey))
-                                        .orElse(null);
-                        if (nftValue != null) {
-                            nftMap.warm(UniqueTokenKey.from(nftValue.getPrev().nftId()));
-                            nftMap.warm(UniqueTokenKey.from(nftValue.getNext().nftId()));
-                        }
-                    });
+            threadpool.execute(() -> {
+                // NFT:
+                final var nftKey = new UniqueTokenKey(tokenNum, senderSerialNum);
+                final var nftMap = nftsAdapter.get().getOnDiskNfts();
+                final var nftValue = Optional.ofNullable(nftMap)
+                        .map(vmap -> vmap.get(nftKey))
+                        .orElse(null);
+                if (nftValue != null) {
+                    nftMap.warm(UniqueTokenKey.from(nftValue.getPrev().nftId()));
+                    nftMap.warm(UniqueTokenKey.from(nftValue.getNext().nftId()));
+                }
+            });
 
-            threadpool.execute(
-                    () -> {
-                        // Sender TokenRel:
-                        final var senderTokenRelKey =
-                                EntityNumVirtualKey.fromPair(
-                                        EntityNumPair.fromLongs(sender.getAccountNum(), tokenNum));
-                        final var tokenRelMap = tokenRelsAdapter.get().getOnDiskRels();
-                        final var senderTokenRel =
-                                Optional.ofNullable(tokenRelMap)
-                                        .map(vmap -> vmap.get(senderTokenRelKey))
-                                        .orElse(null);
-                        if (senderTokenRel != null) {
-                            tokenRelMap.warm(
-                                    EntityNumVirtualKey.fromPair(
-                                            EntityNumPair.fromLongs(
-                                                    sender.getAccountNum(),
-                                                    senderTokenRel.getPrev())));
-                            tokenRelMap.warm(
-                                    EntityNumVirtualKey.fromPair(
-                                            EntityNumPair.fromLongs(
-                                                    sender.getAccountNum(),
-                                                    senderTokenRel.getNext())));
-                        }
-                    });
+            threadpool.execute(() -> {
+                // Sender TokenRel:
+                final var senderTokenRelKey =
+                        EntityNumVirtualKey.fromPair(EntityNumPair.fromLongs(sender.getAccountNum(), tokenNum));
+                final var tokenRelMap = tokenRelsAdapter.get().getOnDiskRels();
+                final var senderTokenRel = Optional.ofNullable(tokenRelMap)
+                        .map(vmap -> vmap.get(senderTokenRelKey))
+                        .orElse(null);
+                if (senderTokenRel != null) {
+                    tokenRelMap.warm(EntityNumVirtualKey.fromPair(
+                            EntityNumPair.fromLongs(sender.getAccountNum(), senderTokenRel.getPrev())));
+                    tokenRelMap.warm(EntityNumVirtualKey.fromPair(
+                            EntityNumPair.fromLongs(sender.getAccountNum(), senderTokenRel.getNext())));
+                }
+            });
 
-            threadpool.execute(
-                    () -> {
-                        // Receiver TokenRel:
-                        final var receiverTokenRelKey =
-                                EntityNumVirtualKey.fromPair(
-                                        EntityNumPair.fromLongs(
-                                                receiver.getAccountNum(), tokenNum));
-                        final var tokenRelMap = tokenRelsAdapter.get().getOnDiskRels();
-                        final var receiverTokenRel =
-                                Optional.ofNullable(tokenRelMap)
-                                        .map(vmap -> vmap.get(receiverTokenRelKey))
-                                        .orElse(null);
-                        if (receiverTokenRel != null) {
-                            tokenRelMap.warm(
-                                    EntityNumVirtualKey.fromPair(
-                                            EntityNumPair.fromLongs(
-                                                    receiver.getAccountNum(),
-                                                    receiverTokenRel.getPrev())));
-                            tokenRelMap.warm(
-                                    EntityNumVirtualKey.fromPair(
-                                            EntityNumPair.fromLongs(
-                                                    receiver.getAccountNum(),
-                                                    receiverTokenRel.getNext())));
-                        }
-                    });
+            threadpool.execute(() -> {
+                // Receiver TokenRel:
+                final var receiverTokenRelKey =
+                        EntityNumVirtualKey.fromPair(EntityNumPair.fromLongs(receiver.getAccountNum(), tokenNum));
+                final var tokenRelMap = tokenRelsAdapter.get().getOnDiskRels();
+                final var receiverTokenRel = Optional.ofNullable(tokenRelMap)
+                        .map(vmap -> vmap.get(receiverTokenRelKey))
+                        .orElse(null);
+                if (receiverTokenRel != null) {
+                    tokenRelMap.warm(EntityNumVirtualKey.fromPair(
+                            EntityNumPair.fromLongs(receiver.getAccountNum(), receiverTokenRel.getPrev())));
+                    tokenRelMap.warm(EntityNumVirtualKey.fromPair(
+                            EntityNumPair.fromLongs(receiver.getAccountNum(), receiverTokenRel.getNext())));
+                }
+            });
         } else if (log.isDebugEnabled()) {
             log.debug(
                     "no-op 'warm' not called on any token objects due to non-matching config:"
@@ -188,11 +160,8 @@ public class MapWarmer {
     public void cancelPendingWarmups(long roundNum) {
         threadpool
                 .getQueue()
-                .removeIf(
-                        queuedObj ->
-                                (queuedObj instanceof RoundLabeledRunnable)
-                                        && ((RoundLabeledRunnable) queuedObj).getRound()
-                                                == roundNum);
+                .removeIf(queuedObj -> (queuedObj instanceof RoundLabeledRunnable)
+                        && ((RoundLabeledRunnable) queuedObj).getRound() == roundNum);
     }
 
     private void doWarmups(Round round) {
@@ -202,50 +171,41 @@ public class MapWarmer {
         }
 
         for (final ConsensusEvent event : round) {
-            event.forEachTransaction(
-                    txn -> {
-                        final PlatformTxnAccessor txnAccess;
-                        final TransactionBody txnBody;
-                        try {
-                            txnAccess = PlatformTxnAccessor.from(txn.getContents());
-                            txnBody = txnAccess.getTxn();
-                        } catch (InvalidProtocolBufferException e) {
-                            log.error(
-                                    "Unable to parse transaction: "
-                                            + e.getMessage()
-                                            + "\nErrant Txn: ["
-                                            + Hex.toHexString(txn.getContents())
-                                            + "]");
-                            return;
-                        }
+            event.forEachTransaction(txn -> {
+                final PlatformTxnAccessor txnAccess;
+                final TransactionBody txnBody;
+                try {
+                    txnAccess = PlatformTxnAccessor.from(txn.getContents());
+                    txnBody = txnAccess.getTxn();
+                } catch (InvalidProtocolBufferException e) {
+                    log.error("Unable to parse transaction: "
+                            + e.getMessage()
+                            + "\nErrant Txn: ["
+                            + Hex.toHexString(txn.getContents())
+                            + "]");
+                    return;
+                }
 
-                        if (!txnBody.hasCryptoTransfer()) {
-                            log.debug(
-                                    "No crypto transfer in transaction (txn size "
-                                            + txn.getSize()
-                                            + ")");
-                            return;
-                        }
+                if (!txnBody.hasCryptoTransfer()) {
+                    log.debug("No crypto transfer in transaction (txn size " + txn.getSize() + ")");
+                    return;
+                }
 
-                        final var cryptoTransfer = txnBody.getCryptoTransfer();
-                        if (cryptoTransfer.getTokenTransfersList().isEmpty()) {
-                            log.debug(
-                                    "No token transfers in transaction (txn size "
-                                            + txn.getSize()
-                                            + ")");
-                            return;
-                        }
-                        for (final TokenTransferList transfers :
-                                cryptoTransfer.getTokenTransfersList()) {
-                            for (final NftTransfer adjustment : transfers.getNftTransfersList()) {
-                                warmTokenObjs(
-                                        adjustment.getSenderAccountID(),
-                                        adjustment.getReceiverAccountID(),
-                                        transfers.getToken().getTokenNum(),
-                                        adjustment.getSerialNumber());
-                            }
-                        }
-                    });
+                final var cryptoTransfer = txnBody.getCryptoTransfer();
+                if (cryptoTransfer.getTokenTransfersList().isEmpty()) {
+                    log.debug("No token transfers in transaction (txn size " + txn.getSize() + ")");
+                    return;
+                }
+                for (final TokenTransferList transfers : cryptoTransfer.getTokenTransfersList()) {
+                    for (final NftTransfer adjustment : transfers.getNftTransfersList()) {
+                        warmTokenObjs(
+                                adjustment.getSenderAccountID(),
+                                adjustment.getReceiverAccountID(),
+                                transfers.getToken().getTokenNum(),
+                                adjustment.getSerialNumber());
+                    }
+                }
+            });
         }
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -33,7 +34,6 @@ public interface CacheModule {
             Supplier<UniqueTokenMapAdapter> nftStorageSupp,
             Supplier<TokenRelStorageAdapter> tokenRelStorageSupp,
             GlobalDynamicProperties dynamicProps) {
-        return MapWarmer.getInstance(
-                accountStorageSupp, nftStorageSupp, tokenRelStorageSupp, dynamicProps);
+        return MapWarmer.getInstance(accountStorageSupp, nftStorageSupp, tokenRelStorageSupp, dynamicProps);
     }
 }

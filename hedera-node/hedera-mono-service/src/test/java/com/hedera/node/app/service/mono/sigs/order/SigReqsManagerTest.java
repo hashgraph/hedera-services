@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.sigs.order;
 
 import static com.hedera.node.app.service.mono.sigs.order.SigReqsManager.TOKEN_META_TRANSFORM;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.verify;
