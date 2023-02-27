@@ -124,6 +124,11 @@ public class VirtualMapLikeAdapter {
                 final var removed = real.remove(new OnDiskKey<>(md, key));
                 return removed != null ? removed.getValue() : null;
             }
+
+            @Override
+            public void warm(final K key) {
+                real.warm(new OnDiskKey<>(md, key));
+            }
         };
     }
 }
