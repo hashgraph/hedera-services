@@ -182,6 +182,8 @@ public class TestIntake implements LoadableFromSignedState {
 
     public void loadSnapshot(final ConsensusSnapshot snapshot) {
         consensus.loadSnapshot(snapshot);
+        shadowGraph.clear();
+        shadowGraph.startFromGeneration(consensus.getMinGenerationNonAncient());
     }
 
     public int getNumEventsAdded() {

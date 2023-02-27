@@ -179,6 +179,15 @@ public class ShadowGraph implements Clearable {
                 oldestGeneration);
     }
 
+    public void startFromGeneration(final long generation) {
+        expireBelow = generation;
+        oldestGeneration = generation;
+        logger.info(
+                STARTUP.getMarker(),
+                "Shadow graph starting from generation {}",
+                generation);
+    }
+
     /**
      * Reset the shadow graph manager to its constructed state.
      */
