@@ -72,6 +72,7 @@ import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.mono.utils.Pause;
 import com.hedera.node.app.service.mono.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.notification.NotificationEngine;
@@ -95,26 +96,26 @@ import javax.inject.Singleton;
 @Singleton
 @Component(
         modules = {
-            TaskModule.class,
-            FeesModule.class,
-            KeysModule.class,
-            SigsModule.class,
-            GrpcModule.class,
-            ConfigModule.class,
-            StatsModule.class,
-            StateModule.class,
-            FilesModule.class,
-            LedgerModule.class,
-            StoresModule.class,
-            ContextModule.class,
-            RecordsModule.class,
-            QueriesModule.class,
-            ContractsModule.class,
-            PropertiesModule.class,
-            ThrottlingModule.class,
-            SubmissionModule.class,
-            TransactionsModule.class,
-            ExpiryModule.class
+                TaskModule.class,
+                FeesModule.class,
+                KeysModule.class,
+                SigsModule.class,
+                GrpcModule.class,
+                ConfigModule.class,
+                StatsModule.class,
+                StateModule.class,
+                FilesModule.class,
+                LedgerModule.class,
+                StoresModule.class,
+                ContextModule.class,
+                RecordsModule.class,
+                QueriesModule.class,
+                ContractsModule.class,
+                PropertiesModule.class,
+                ThrottlingModule.class,
+                SubmissionModule.class,
+                TransactionsModule.class,
+                ExpiryModule.class
         })
 public interface ServicesApp {
     /* Needed by ServicesState */
@@ -151,6 +152,9 @@ public interface ServicesApp {
 
     @NonNull
     Platform platform();
+
+    @NonNull
+    PlatformContext platformContext();
 
     NodeInfo nodeInfo();
 
@@ -215,6 +219,9 @@ public interface ServicesApp {
 
         @BindsInstance
         Builder platform(@NonNull Platform platform);
+
+        @BindsInstance
+        Builder platform(@NonNull PlatformContext platformContext);
 
         @BindsInstance
         Builder consoleCreator(StateModule.ConsoleCreator consoleCreator);

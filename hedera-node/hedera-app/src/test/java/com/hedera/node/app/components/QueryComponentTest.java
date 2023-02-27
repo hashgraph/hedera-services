@@ -22,10 +22,14 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.DaggerHederaApp;
 import com.hedera.node.app.HederaApp;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.gui.SwirldsGui;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +50,22 @@ class QueryComponentTest {
 
         app = DaggerHederaApp.builder()
                 .platform(platform)
-                .crypto(CryptographyHolder.get())
+                .platformContext(new PlatformContext() {
+                    @Override
+                    public Configuration getConfiguration() {
+                        return ConfigurationBuilder.create().build();
+                    }
+
+                    @Override
+                    public Cryptography getCryptography() {
+                        return platform.getCryptography();
+                    }
+
+                    @Override
+                    public Metrics getMetrics() {
+                        return platform.getMetrics();
+                    }
+                })
                 .consoleCreator(SwirldsGui::createConsole)
                 .staticAccountMemo("memo")
                 .bootstrapProps(new BootstrapProperties())

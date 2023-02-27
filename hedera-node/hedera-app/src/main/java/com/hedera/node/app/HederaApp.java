@@ -24,7 +24,8 @@ import com.hedera.node.app.service.mono.config.ConfigModule;
 import com.hedera.node.app.service.mono.context.ContextModule;
 import com.hedera.node.app.service.mono.context.annotations.BootstrapProps;
 import com.hedera.node.app.service.mono.context.annotations.StaticAccountMemo;
-import com.hedera.node.app.service.mono.context.properties.*;
+import com.hedera.node.app.service.mono.context.properties.PropertiesModule;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.contracts.ContractsModule;
 import com.hedera.node.app.service.mono.fees.FeesModule;
 import com.hedera.node.app.service.mono.files.FilesModule;
@@ -44,7 +45,7 @@ import com.hedera.node.app.service.mono.txns.TransactionsModule;
 import com.hedera.node.app.service.mono.txns.submission.SubmissionModule;
 import com.hedera.node.app.services.ServiceModule;
 import com.hedera.node.app.workflows.query.QueryModule;
-import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.Platform;
 import dagger.BindsInstance;
@@ -53,35 +54,37 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
-/** The infrastructure used to implement the platform contract for a Hedera Services node.
- * This is needed for adding dagger subcomponents.
- * Currently, it extends {@link com.hedera.node.app.service.mono.ServicesApp}. But,
- * in the future this class will be cleaned up to not have multiple module dependencies */
+/**
+ * The infrastructure used to implement the platform contract for a Hedera Services node. This is needed for adding
+ * dagger subcomponents. Currently, it extends {@link com.hedera.node.app.service.mono.ServicesApp}. But, in the future
+ * this class will be cleaned up to not have multiple module dependencies
+ */
 @Singleton
 @Component(
         modules = {
-            TaskModule.class,
-            FeesModule.class,
-            KeysModule.class,
-            SigsModule.class,
-            GrpcModule.class,
-            ConfigModule.class,
-            StatsModule.class,
-            StateModule.class,
-            FilesModule.class,
-            LedgerModule.class,
-            StoresModule.class,
-            ContextModule.class,
-            RecordsModule.class,
-            QueriesModule.class,
-            ContractsModule.class,
-            PropertiesModule.class,
-            ThrottlingModule.class,
-            SubmissionModule.class,
-            TransactionsModule.class,
-            ExpiryModule.class,
-            ServiceModule.class,
-            QueryModule.class
+                TaskModule.class,
+                FeesModule.class,
+                KeysModule.class,
+                SigsModule.class,
+                GrpcModule.class,
+                ConfigModule.class,
+                StatsModule.class,
+                StateModule.class,
+                FilesModule.class,
+                LedgerModule.class,
+                StoresModule.class,
+                ContextModule.class,
+                RecordsModule.class,
+                QueriesModule.class,
+                ContractsModule.class,
+                PropertiesModule.class,
+                ThrottlingModule.class,
+                SubmissionModule.class,
+                TransactionsModule.class,
+                ExpiryModule.class,
+                ServiceModule.class,
+                QueryModule.class,
+                FacilityFacadeModule.class
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */
@@ -91,8 +94,15 @@ public interface HederaApp extends ServicesApp {
 
     @Component.Builder
     interface Builder {
+
+        /**
+         * @param platformContext
+         * @return
+         * @deprecated the {@link Platform} interface has a getContext method in the next version
+         */
         @BindsInstance
-        Builder crypto(Cryptography engine);
+        @Deprecated(forRemoval = true)
+        Builder platformContext(@NonNull PlatformContext platformContext);
 
         @BindsInstance
         Builder initialHash(Hash initialHash);
@@ -110,6 +120,7 @@ public interface HederaApp extends ServicesApp {
         Builder staticAccountMemo(@StaticAccountMemo String accountMemo);
 
         @BindsInstance
+        @Deprecated(forRemoval = true)
         Builder bootstrapProps(@BootstrapProps PropertySource bootstrapProps);
 
         @BindsInstance

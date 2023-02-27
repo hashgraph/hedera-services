@@ -20,7 +20,9 @@ import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
 import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
 import static com.hedera.node.app.state.merkle.MerkleHederaState.MAX_SIGNED_TXN_SIZE;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -34,16 +36,20 @@ import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.context.properties.SemanticVersions;
 import com.hedera.node.app.service.mono.state.migration.StateChildIndices;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
-import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.crypto.SerializablePublicKey;
 import com.swirlds.common.crypto.engine.CryptoEngine;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
@@ -78,7 +84,9 @@ class StateLifecyclesTest extends ResponsibleVMapUser {
                 SemanticVersions.SEMANTIC_VERSIONS.deployedSoftwareVersion().getServices();
         final var migration = Hedera.registerServiceSchemasForMigration(currentVersion);
 
-        final var merkleState = tracked(new MerkleHederaState(migration, (e, m, p) -> {}, (r, ds, m) -> {}));
+        final var merkleState = tracked(new MerkleHederaState(migration, (e, m, p) -> {
+        }, (r, ds, m) -> {
+        }));
 
         final var platform = createMockPlatformWithCrypto();
         final var addressBook = createPretendBookFrom(platform, true);
@@ -152,7 +160,22 @@ class StateLifecyclesTest extends ResponsibleVMapUser {
         return DaggerHederaApp.builder()
                 .initialHash(new Hash())
                 .platform(platform)
-                .crypto(CryptographyHolder.get())
+                .platformContext(new PlatformContext() {
+                    @Override
+                    public Configuration getConfiguration() {
+                        return ConfigurationBuilder.create().build();
+                    }
+
+                    @Override
+                    public Cryptography getCryptography() {
+                        return platform.getCryptography();
+                    }
+
+                    @Override
+                    public Metrics getMetrics() {
+                        return platform.getMetrics();
+                    }
+                })
                 .consoleCreator((ignore, visible) -> null)
                 .selfId(platform.getSelfId().getId())
                 .staticAccountMemo("memo")

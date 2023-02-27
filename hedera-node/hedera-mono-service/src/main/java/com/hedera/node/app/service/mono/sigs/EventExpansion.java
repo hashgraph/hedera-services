@@ -21,6 +21,7 @@ import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.sigs.order.SigReqsManager;
 import com.hedera.node.app.service.mono.txns.prefetch.PrefetchProcessor;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpan;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.system.events.Event;
 import javax.inject.Inject;
@@ -39,11 +40,11 @@ public class EventExpansion {
 
     @Inject
     public EventExpansion(
-            final Cryptography engine,
+            final PlatformContext platformContext,
             final SigReqsManager sigReqsManager,
             final ExpandHandleSpan expandHandleSpan,
             final PrefetchProcessor prefetchProcessor) {
-        this.engine = engine;
+        this.engine = platformContext.getCryptography();
         this.sigReqsManager = sigReqsManager;
         this.expandHandleSpan = expandHandleSpan;
         this.prefetchProcessor = prefetchProcessor;

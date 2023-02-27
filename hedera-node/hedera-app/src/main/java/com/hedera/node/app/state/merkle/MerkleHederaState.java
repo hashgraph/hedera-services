@@ -99,11 +99,13 @@ import com.hedera.node.app.state.merkle.singleton.ReadableSingletonStateImpl;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
 import com.hedera.node.app.state.merkle.singleton.WritableSingletonStateImpl;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
-import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.Round;
@@ -113,6 +115,8 @@ import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.utility.Labeled;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.gui.SwirldsGui;
@@ -131,22 +135,21 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * An implementation of {@link SwirldState2} and {@link HederaState}. The Hashgraph Platform
- * communicates with the application through {@link com.swirlds.common.system.SwirldMain} and {@link
- * SwirldState2}. The Hedera application, after startup, only needs the ability to get {@link
- * ReadableStates} and {@link WritableStates} from this object.
+ * An implementation of {@link SwirldState2} and {@link HederaState}. The Hashgraph Platform communicates with the
+ * application through {@link com.swirlds.common.system.SwirldMain} and {@link SwirldState2}. The Hedera application,
+ * after startup, only needs the ability to get {@link ReadableStates} and {@link WritableStates} from this object.
  *
  * <p>Among {@link MerkleHederaState}'s child nodes are the various {@link
- * com.swirlds.merkle.map.MerkleMap}'s and {@link com.swirlds.virtualmap.VirtualMap}'s that make up
- * the service's states. Each such child node has a label specified that is computed from the
- * metadata for that state. Since both service names and state keys are restricted to characters
- * that do not include the period, we can use it to separate service name from state key. When we
- * need to find all states for a service, we can do so by iteration and string comparison.
+ * com.swirlds.merkle.map.MerkleMap}'s and {@link com.swirlds.virtualmap.VirtualMap}'s that make up the service's
+ * states. Each such child node has a label specified that is computed from the metadata for that state. Since both
+ * service names and state keys are restricted to characters that do not include the period, we can use it to separate
+ * service name from state key. When we need to find all states for a service, we can do so by iteration and string
+ * comparison.
  *
  * <p>NOTE: The implementation of this class must change before we can support state proofs
- * properly. In particular, a wide n-ary number of children is less than ideal, since the hash of
- * each child must be part of the state proof. It would be better to have a binary tree. We should
- * consider nesting service nodes in a MerkleMap, or some other such approach to get a binary tree.
+ * properly. In particular, a wide n-ary number of children is less than ideal, since the hash of each child must be
+ * part of the state proof. It would be better to have a binary tree. We should consider nesting service nodes in a
+ * MerkleMap, or some other such approach to get a binary tree.
  */
 public class MerkleHederaState extends PartialNaryMerkleInternal
         implements MerkleInternal, SwirldState2, HederaState, StateChildrenProvider {
@@ -169,12 +172,11 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     private static final int CURRENT_VERSION = VERSION_1;
 
     /**
-     * This callback is invoked whenever the consensus round happens. The Hashgraph Platform, today,
-     * only communicates the consensus round through the {@link SwirldState2} interface. In the
-     * future it will use a callback on a platform created via a platform builder. Until that
-     * happens the only way our application will know of new transactions, will be through this
-     * callback. Since this is not serialized and saved to state, it must be restored on application
-     * startup. If this is never set, the application will never be able to handle a new round of
+     * This callback is invoked whenever the consensus round happens. The Hashgraph Platform, today, only communicates
+     * the consensus round through the {@link SwirldState2} interface. In the future it will use a callback on a
+     * platform created via a platform builder. Until that happens the only way our application will know of new
+     * transactions, will be through this callback. Since this is not serialized and saved to state, it must be restored
+     * on application startup. If this is never set, the application will never be able to handle a new round of
      * transactions.
      *
      * <p>This reference is moved forward to the working mutable state.
@@ -189,9 +191,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     private OnPreHandle onPreHandle;
 
     /**
-     * This callback is invoked when the platform determines it is time to perform a migration. This
-     * is supplied via the constructor, and so a custom entry in the ConstructableRegistry has to be
-     * made to create this object.
+     * This callback is invoked when the platform determines it is time to perform a migration. This is supplied via the
+     * constructor, and so a custom entry in the ConstructableRegistry has to be made to create this object.
      *
      * <p>This reference is only on the first, original state. It is not moved or copied forward to
      * later working mutable states.
@@ -203,8 +204,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     private com.hedera.node.app.service.mono.state.org.StateMetadata metadata;
 
     /**
-     * Maintains information about each service, and each state of each service, known by this
-     * instance. The key is the "service-name.state-key".
+     * Maintains information about each service, and each state of each service, known by this instance. The key is the
+     * "service-name.state-key".
      */
     private final Map<String, Map<String, StateMetadata<?, ?>>> services = new HashMap<>();
 
@@ -289,8 +290,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
             final BootstrapProperties bootstrapProperties,
             final WritableKVState<EntityNum, MerkleStakingInfo> stakingInfos) {
         final var numberOfNodes = addressBook.getSize();
-        long maxStakePerNode = bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT) / numberOfNodes;
-        long minStakePerNode = maxStakePerNode / 2;
+        final long maxStakePerNode = bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT) / numberOfNodes;
+        final long minStakePerNode = maxStakePerNode / 2;
         for (int i = 0; i < numberOfNodes; i++) {
             final var nodeNum = EntityNum.fromLong(addressBook.getAddress(i).getId());
             final var info = new MerkleStakingInfo(bootstrapProperties);
@@ -320,9 +321,24 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
                     .bootstrapProps(bootstrapProps)
                     .initialHash(initialHash)
                     .platform(platform)
+                    .platformContext(new PlatformContext() {
+                        @Override
+                        public Configuration getConfiguration() {
+                            return ConfigurationBuilder.create().build();
+                        }
+
+                        @Override
+                        public Cryptography getCryptography() {
+                            return platform.getCryptography();
+                        }
+
+                        @Override
+                        public Metrics getMetrics() {
+                            return platform.getMetrics();
+                        }
+                    })
                     .consoleCreator(SwirldsGui::createConsole)
                     .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
-                    .crypto(CryptographyHolder.get())
                     .selfId(selfId)
                     .build();
             APPS.save(selfId, app);
@@ -496,7 +512,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      * {@inheritDoc}
      */
     @Override
-    public void preHandle(Event event) {
+    public void preHandle(final Event event) {
         if (onPreHandle != null) {
             onPreHandle.accept(event, metadata, this);
         }
@@ -506,7 +522,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      * {@inheritDoc}
      */
     @Override
-    public MerkleNode migrate(int ignored) {
+    public MerkleNode migrate(final int ignored) {
         if (onMigrate != null) {
             onMigrate.accept(this);
         }
@@ -515,7 +531,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         return this;
     }
 
-    public void setMetadata(com.hedera.node.app.service.mono.state.org.StateMetadata metadata) {
+    public void setMetadata(final com.hedera.node.app.service.mono.state.org.StateMetadata metadata) {
         this.metadata = metadata;
     }
 
@@ -527,14 +543,13 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     }
 
     /**
-     * Puts the defined service state and its associated node into the merkle tree. The precondition
-     * for calling this method is that node MUST be a {@link MerkleMap} or {@link VirtualMap} and
-     * MUST have a correct label applied.
+     * Puts the defined service state and its associated node into the merkle tree. The precondition for calling this
+     * method is that node MUST be a {@link MerkleMap} or {@link VirtualMap} and MUST have a correct label applied.
      *
      * @param md   The metadata associated with the state
      * @param node The node to add. Cannot be null.
-     * @throws IllegalArgumentException if the node is neither a merkle map nor virtual map, or if
-     *                                  it doesn't have a label, or if the label isn't right.
+     * @throws IllegalArgumentException if the node is neither a merkle map nor virtual map, or if it doesn't have a
+     *                                  label, or if the label isn't right.
      */
     <K extends Comparable<K>, V> void putServiceStateIfAbsent(
             @NonNull final StateMetadata<K, V> md, @NonNull final MerkleNode node) {
@@ -695,7 +710,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     public ScheduledTransactions scheduleTxs() {
         return new ScheduledTransactionsAdapter(
                 ((SingletonNode<MerkleScheduledTransactionsState>)
-                                getChild(findNodeIndex(ScheduleService.NAME, ScheduleServiceImpl.SCHEDULING_STATE_KEY)))
+                        getChild(findNodeIndex(ScheduleService.NAME, ScheduleServiceImpl.SCHEDULING_STATE_KEY)))
                         .getValue(),
                 MerkleMapLikeAdapter.unwrapping(
                         (StateMetadata<EntityNumVirtualKey, ScheduleVirtualValue>)
@@ -715,7 +730,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     @SuppressWarnings("unchecked")
     public MerkleNetworkContext networkCtx() {
         return ((SingletonNode<MerkleNetworkContext>)
-                        getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.CONTEXT_KEY)))
+                getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.CONTEXT_KEY)))
                 .getValue();
     }
 
@@ -728,7 +743,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     @Override
     public MerkleSpecialFiles specialFiles() {
         return ((SingletonNode<MerkleSpecialFiles>)
-                        getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.SPECIAL_FILES_KEY)))
+                getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.SPECIAL_FILES_KEY)))
                 .getValue();
     }
 
@@ -749,7 +764,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     @Override
     public RecordsRunningHashLeaf runningHashLeaf() {
         return ((SingletonNode<RecordsRunningHashLeaf>)
-                        getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.RUNNING_HASHES_KEY)))
+                getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.RUNNING_HASHES_KEY)))
                 .getValue();
     }
 
@@ -816,7 +831,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
         @NonNull
         @Override
-        public <K extends Comparable<K>, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
+        public <K extends Comparable<K>, V> ReadableKVState<K, V> get(@NonNull final String stateKey) {
             final ReadableKVState<K, V> instance = (ReadableKVState<K, V>) kvInstances.get(stateKey);
             if (instance != null) {
                 return instance;
@@ -844,7 +859,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
         @NonNull
         @Override
-        public <T> ReadableSingletonState<T> getSingleton(@NonNull String stateKey) {
+        public <T> ReadableSingletonState<T> getSingleton(@NonNull final String stateKey) {
             final ReadableSingletonState<T> instance = (ReadableSingletonState<T>) singletonInstances.get(stateKey);
             if (instance != null) {
                 return instance;
@@ -888,8 +903,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
                 @NonNull StateMetadata md, @NonNull SingletonNode<?> s);
 
         /**
-         * Utility method for finding and returning the given node. Will throw an ISE if such a node
-         * cannot be found!
+         * Utility method for finding and returning the given node. Will throw an ISE if such a node cannot be found!
          *
          * @param md The metadata
          * @return The found node
@@ -963,13 +977,13 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
         @NonNull
         @Override
-        public <K extends Comparable<K>, V> WritableKVState<K, V> get(@NonNull String stateKey) {
+        public <K extends Comparable<K>, V> WritableKVState<K, V> get(@NonNull final String stateKey) {
             return (WritableKVState<K, V>) super.get(stateKey);
         }
 
         @NonNull
         @Override
-        public <T> WritableSingletonState<T> getSingleton(@NonNull String stateKey) {
+        public <T> WritableSingletonState<T> getSingleton(@NonNull final String stateKey) {
             return (WritableSingletonState<T>) super.getSingleton(stateKey);
         }
 

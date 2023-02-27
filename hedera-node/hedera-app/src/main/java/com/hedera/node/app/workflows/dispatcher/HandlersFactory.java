@@ -18,7 +18,7 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
+import com.hedera.node.app.service.admin.impl.handlers.FreezeHandlerImpl;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
@@ -74,8 +74,8 @@ public final class HandlersFactory {
     private HandlersFactory() {}
 
     /**
-     * This method creates all handlers with the provided arguments and bundles them in a {@link
-     * TransactionHandlers} record.
+     * This method creates all handlers with the provided arguments and bundles them in a {@link TransactionHandlers}
+     * record.
      *
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
@@ -115,7 +115,7 @@ public final class HandlersFactory {
                 new FileAppendHandler(),
                 new FileSystemDeleteHandler(),
                 new FileSystemUndeleteHandler(),
-                new FreezeHandler(),
+                new FreezeHandlerImpl(),
                 new NetworkUncheckedSubmitHandler(),
                 new ScheduleCreateHandler(),
                 new ScheduleSignHandler(),

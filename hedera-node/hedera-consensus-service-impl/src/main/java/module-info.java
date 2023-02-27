@@ -9,6 +9,7 @@ module com.hedera.node.app.service.consensus.impl {
     requires javax.inject;
     requires static com.google.auto.service;
     requires com.swirlds.common;
+    requires com.google.protobuf;
 
     exports com.hedera.node.app.service.consensus.impl.handlers;
     exports com.hedera.node.app.service.consensus.impl.components;

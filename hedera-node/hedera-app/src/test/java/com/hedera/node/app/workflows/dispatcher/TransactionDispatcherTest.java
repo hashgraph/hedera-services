@@ -23,7 +23,7 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
+import com.hedera.node.app.service.admin.impl.handlers.FreezeHandlerImpl;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
@@ -221,7 +221,7 @@ class TransactionDispatcherTest {
     private FileSystemUndeleteHandler fileSystemUndeleteHandler;
 
     @Mock
-    private FreezeHandler freezeHandler;
+    private FreezeHandlerImpl freezeHandler;
 
     @Mock
     private NetworkUncheckedSubmitHandler networkUncheckedSubmitHandler;
@@ -291,7 +291,7 @@ class TransactionDispatcherTest {
 
     @SuppressWarnings("JUnitMalformedDeclaration")
     @BeforeEach
-    void setup(@Mock final ReadableStates readableStates, @Mock HederaKey payerKey) {
+    void setup(@Mock final ReadableStates readableStates, @Mock final HederaKey payerKey) {
         when(state.createReadableStates(any())).thenReturn(readableStates);
         when(accountStore.getKey(any(AccountID.class))).thenReturn(KeyOrLookupFailureReason.withKey(payerKey));
 

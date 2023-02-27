@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.workflows.dispatcher;
 
-import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
+import com.hedera.node.app.service.admin.impl.handlers.FreezeHandlerImpl;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
@@ -65,8 +65,8 @@ import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A record that contains all {@link com.hedera.node.app.spi.workflows.TransactionHandler}s that are
- * available in the app
+ * A record that contains all {@link com.hedera.node.app.spi.workflows.TransactionHandler}s that are available in the
+ * app
  */
 public record TransactionHandlers(
         @NonNull ConsensusCreateTopicHandler consensusCreateTopicHandler,
@@ -94,7 +94,7 @@ public record TransactionHandlers(
         @NonNull FileAppendHandler fileAppendHandler,
         @NonNull FileSystemDeleteHandler fileSystemDeleteHandler,
         @NonNull FileSystemUndeleteHandler fileSystemUndeleteHandler,
-        @NonNull FreezeHandler freezeHandler,
+        @NonNull FreezeHandlerImpl freezeHandler,
         @NonNull NetworkUncheckedSubmitHandler networkUncheckedSubmitHandler,
         @NonNull ScheduleCreateHandler scheduleCreateHandler,
         @NonNull ScheduleSignHandler scheduleSignHandler,
@@ -114,4 +114,5 @@ public record TransactionHandlers(
         @NonNull TokenFeeScheduleUpdateHandler tokenFeeScheduleUpdateHandler,
         @NonNull TokenPauseHandler tokenPauseHandler,
         @NonNull TokenUnpauseHandler tokenUnpauseHandler,
-        @NonNull UtilPrngHandler utilPrngHandler) {}
+        @NonNull UtilPrngHandler utilPrngHandler) {
+}

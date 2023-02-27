@@ -35,7 +35,9 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import java.util.Collections;
@@ -78,7 +80,9 @@ class EventExpansionTest {
 
     @BeforeEach
     void setUp() {
-        subject = new EventExpansion(engine, sigReqsManager, expandHandleSpan, prefetchProcessor);
+        final PlatformContext platformContext = Mockito.mock(PlatformContext.class);
+        given(platformContext.getCryptography()).willReturn(CryptographyHolder.get());
+        subject = new EventExpansion(platformContext, sigReqsManager, expandHandleSpan, prefetchProcessor);
     }
 
     @Test
