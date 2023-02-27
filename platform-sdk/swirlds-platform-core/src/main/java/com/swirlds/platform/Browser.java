@@ -22,6 +22,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JVM_PAUSE_WARN;
 import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.platform.config.ConfigMappings.getConfigMappings;
 import static com.swirlds.platform.crypto.CryptoSetup.initNodeSecurity;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getBrowserWindow;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
@@ -40,8 +41,8 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.config.export.ConfigExport;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.config.sources.AliasConfigSource;
 import com.swirlds.common.config.sources.LegacyFileConfigSource;
+import com.swirlds.common.config.sources.RemappedConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
@@ -76,7 +77,6 @@ import com.swirlds.p2p.portforwarding.PortForwarder;
 import com.swirlds.p2p.portforwarding.PortMapping;
 import com.swirlds.platform.chatter.config.ChatterConfig;
 import com.swirlds.platform.config.AddressBookConfig;
-import com.swirlds.platform.config.ConfigAliases;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.config.legacy.ConfigPropertiesSource;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
@@ -147,27 +147,27 @@ public class Browser {
 
     private static Browser INSTANCE;
 
-    private final Configuration configuration;
-
     /**
      * Prevent this class from being instantiated.
      */
     private Browser(final Set<Integer> localNodesToStart) throws IOException {
         logger.debug(STARTUP.getMarker(), () -> new NodeStartPayload().toString());
 
-        // The properties from the config.txt
-        final LegacyConfigProperties configurationProperties = LegacyConfigPropertiesLoader.loadConfigFile(
+        // From config.txt
+        final LegacyConfigProperties legacyConfigProperties = LegacyConfigPropertiesLoader.loadConfigFile(
                 Settings.getInstance().getConfigPath());
+        final ConfigSource legacyConfigSource = new ConfigPropertiesSource(legacyConfigProperties);
+        final RemappedConfigSource remappedLegacyConfigSource =
+                new RemappedConfigSource(legacyConfigSource, getConfigMappings());
 
+        // From settings.txt
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile();
-        final ConfigSource settingsAliasConfigSource = ConfigAliases.addConfigAliases(settingsConfigSource);
+        final RemappedConfigSource remappedSettingsConfigSource =
+                new RemappedConfigSource(settingsConfigSource, getConfigMappings());
 
-        final ConfigSource configPropertiesConfigSource = new ConfigPropertiesSource(configurationProperties);
-        final ConfigSource configPropertiesAliasConfigSource = new AliasConfigSource(configPropertiesConfigSource);
-
-        this.configuration = ConfigurationBuilder.create()
-                .withSource(settingsAliasConfigSource)
-                .withSource(configPropertiesAliasConfigSource)
+        final Configuration configuration = ConfigurationBuilder.create()
+                .withSource(remappedLegacyConfigSource)
+                .withSource(remappedSettingsConfigSource)
                 .withConfigDataType(BasicConfig.class)
                 .withConfigDataType(StateConfig.class)
                 .withConfigDataType(CryptoConfig.class)
@@ -214,15 +214,14 @@ public class Browser {
             Settings.populateSettingsCommon();
 
             // Update Settings based on config.txt
-            configurationProperties.tls().ifPresent(tls -> Settings.getInstance()
-                    .setUseTLS(tls));
-            configurationProperties.maxSyncs().ifPresent(value -> Settings.getInstance()
+            legacyConfigProperties.tls().ifPresent(tls -> Settings.getInstance().setUseTLS(tls));
+            legacyConfigProperties.maxSyncs().ifPresent(value -> Settings.getInstance()
                     .setMaxOutgoingSyncs(value));
-            configurationProperties.transactionMaxBytes().ifPresent(value -> Settings.getInstance()
+            legacyConfigProperties.transactionMaxBytes().ifPresent(value -> Settings.getInstance()
                     .setTransactionMaxBytes(value));
-            configurationProperties.ipTos().ifPresent(ipTos -> Settings.getInstance()
+            legacyConfigProperties.ipTos().ifPresent(ipTos -> Settings.getInstance()
                     .setSocketIpTos(ipTos));
-            configurationProperties
+            legacyConfigProperties
                     .saveStatePeriod()
                     .ifPresent(value -> Settings.getInstance().getState().saveStatePeriod = value);
 
@@ -248,7 +247,7 @@ public class Browser {
                 }
                 // instantiate all Platform objects, which each instantiates a Statistics object
                 logger.debug(STARTUP.getMarker(), "About to run startPlatforms()");
-                startPlatforms(configuration, configurationProperties, localNodesToStart);
+                startPlatforms(configuration, legacyConfigProperties, localNodesToStart);
 
                 // create the browser window, which uses those Statistics objects
                 showBrowserWindow();
@@ -397,7 +396,8 @@ public class Browser {
         }
         try {
             INSTANCE = new Browser(localNodesToStart);
-        } catch (IOException e) {
+        } catch (final Exception e) {
+            logger.error(EXCEPTION.getMarker(), "Unable to create Browser", e);
             throw new RuntimeException("Unable to create Browser", e);
         }
     }
