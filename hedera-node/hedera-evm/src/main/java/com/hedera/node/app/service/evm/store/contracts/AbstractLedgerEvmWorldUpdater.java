@@ -147,7 +147,7 @@ public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A exten
 
     // FeatureWork public ContractAliases aliases()
 
-    protected UpdateTrackingAccount<A> track(final UpdateTrackingAccount<A> account) {
+    public UpdateTrackingAccount<A> track(final UpdateTrackingAccount<A> account) {
         final var address = account.getAddress();
         updatedAccounts.put(address, account);
         deletedAccounts.remove(address);

@@ -40,11 +40,11 @@ class UpdatedHederaEvmAccountTest {
 
     private static final long newBalance = 200_000L;
     private static final int newNonce = 2;
-    private final Address address =
-            Address.fromHexString("0x000000000000000000000000000000000000077e");
+    private final Address address = Address.fromHexString("0x000000000000000000000000000000000000077e");
     private UpdateTrackingAccount subject;
 
-    @Mock private HederaEvmEntityAccess hederaEvmEntityAccess;
+    @Mock
+    private HederaEvmEntityAccess hederaEvmEntityAccess;
 
     @BeforeEach
     void setUp() {
@@ -112,9 +112,7 @@ class UpdatedHederaEvmAccountTest {
 
     @Test
     void storageEntriesFrom() {
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> subject.storageEntriesFrom(Bytes32.ZERO, 0));
+        assertThrows(UnsupportedOperationException.class, () -> subject.storageEntriesFrom(Bytes32.ZERO, 0));
     }
 
     @Test

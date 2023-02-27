@@ -211,7 +211,8 @@ public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater
         final var address = aliases().resolveForEvm(addressOrAlias);
         if (isTokenRedirect(address)) {
             final var proxyAccount = new HederaEvmWorldStateTokenAccount(address);
-            final var newMutable = new UpdateTrackingAccount<>(proxyAccount, new UpdatedAccountTrackerImpl(trackingAccounts()));
+            final var newMutable =
+                    new UpdateTrackingAccount<>(proxyAccount, new UpdatedAccountTrackerImpl(trackingAccounts()));
             return new WrappedEvmAccount(newMutable);
         }
         return super.getAccount(address);

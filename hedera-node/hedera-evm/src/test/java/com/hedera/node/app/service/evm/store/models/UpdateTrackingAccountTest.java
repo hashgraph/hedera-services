@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.models;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,10 +43,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class UpdateTrackingAccountTest {
     private static final long newBalance = 200_000L;
     private static final long initialBalance = 100_000L;
-    private static final Address targetAddress =
-            Address.fromHexString("0x000000000000000000000000000000000000066e");
+    private static final Address targetAddress = Address.fromHexString("0x000000000000000000000000000000000000066e");
 
-    @Mock private HederaEvmEntityAccess entityAccess;
+    @Mock
+    private HederaEvmEntityAccess entityAccess;
 
     private AbstractCodeCache codeCache;
 
@@ -74,9 +75,7 @@ class UpdateTrackingAccountTest {
 
     @Test
     void justPropagatesBalanceChangeWithNullTrackingAccounts() {
-        final var account =
-                new WorldStateAccount(
-                        targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
+        final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 
         final var subject = new UpdateTrackingAccount<>(account, null);
 
@@ -88,9 +87,7 @@ class UpdateTrackingAccountTest {
 
     @Test
     void reusesAddressHashWhenConstructedWithTracker() {
-        final var account =
-                new WorldStateAccount(
-                        targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
+        final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 
         final var base = new UpdateTrackingAccount<>(account, null);
         final var subject = new UpdateTrackingAccount<>(base, null);
@@ -99,9 +96,7 @@ class UpdateTrackingAccountTest {
 
     @Test
     void recognizesUpdatedCode() {
-        final var account =
-                new WorldStateAccount(
-                        targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
+        final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 
         final var subject = new UpdateTrackingAccount<>(account, null);
 
@@ -115,9 +110,7 @@ class UpdateTrackingAccountTest {
         final var mockCode = Bytes.minimalBytes(4321L);
         given(entityAccess.fetchCodeIfPresent(targetAddress)).willReturn(mockCode);
 
-        final var account =
-                new WorldStateAccount(
-                        targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
+        final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 
         final var subject = new UpdateTrackingAccount<>(account, null);
 
@@ -128,9 +121,7 @@ class UpdateTrackingAccountTest {
     void reusesComputedHashOfUpdatedCode() {
         final var mockCode = Bytes.minimalBytes(4321L);
 
-        final var account =
-                new WorldStateAccount(
-                        targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
+        final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 
         final var subject = new UpdateTrackingAccount<>(account, null);
         subject.setCode(mockCode);
@@ -145,9 +136,7 @@ class UpdateTrackingAccountTest {
     void hasCodeDelegatesToWrappedIfNotUpdated() {
         given(entityAccess.fetchCodeIfPresent(targetAddress)).willReturn(Bytes.EMPTY);
 
-        final var account =
-                new WorldStateAccount(
-                        targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
+        final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
         final var subject = new UpdateTrackingAccount<>(account, null);
 
         assertFalse(subject.hasCode());
@@ -164,21 +153,16 @@ class UpdateTrackingAccountTest {
 
     @Test
     void doesNotSupportStreamingStorageEntries() {
-        final var account =
-                new WorldStateAccount(
-                        targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
+        final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
         final var subject = new UpdateTrackingAccount<>(account, null);
 
         assertThrows(
-                UnsupportedOperationException.class,
-                () -> subject.storageEntriesFrom(Bytes32.ZERO, Integer.MAX_VALUE));
+                UnsupportedOperationException.class, () -> subject.storageEntriesFrom(Bytes32.ZERO, Integer.MAX_VALUE));
     }
 
     @Test
     void canClearStorage() {
-        final var account =
-                new WorldStateAccount(
-                        targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
+        final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
         final var subject = new UpdateTrackingAccount<>(account, null);
 
         subject.setStorageValue(UInt256.ONE, UInt256.ONE);
@@ -190,9 +174,7 @@ class UpdateTrackingAccountTest {
 
     @Test
     void setBalanceOkWithNullTrackingAccounts() {
-        final var account =
-                new WorldStateAccount(
-                        targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
+        final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
         final var subject = new UpdateTrackingAccount<>(account, null);
 
         subject.setBalance(Wei.of(Long.MAX_VALUE));
@@ -205,9 +187,7 @@ class UpdateTrackingAccountTest {
     @Test
     void getStorageValueRecognizesUpdatedStorage() {
         final var mockValue = UInt256.valueOf(1_234_567L);
-        final var account =
-                new WorldStateAccount(
-                        targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
+        final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
         final var subject = new UpdateTrackingAccount<>(account, null);
 
         subject.setStorageValue(UInt256.ONE, mockValue);
@@ -217,9 +197,7 @@ class UpdateTrackingAccountTest {
     @Test
     void getStorageValueRecognizesClearedStorage() {
         final var mockValue = UInt256.valueOf(1_234_567L);
-        final var account =
-                new WorldStateAccount(
-                        targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
+        final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
         final var subject = new UpdateTrackingAccount<>(account, null);
 
         subject.setStorageValue(UInt256.ONE, mockValue);
@@ -239,9 +217,7 @@ class UpdateTrackingAccountTest {
         final var mockValue = UInt256.valueOf(1_234_567L);
         given(entityAccess.getStorage(targetAddress, UInt256.ONE)).willReturn(mockValue);
 
-        final var account =
-                new WorldStateAccount(
-                        targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
+        final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
         final var subject = new UpdateTrackingAccount<>(account, null);
 
         assertSame(mockValue, subject.getStorageValue(UInt256.ONE));
@@ -252,9 +228,7 @@ class UpdateTrackingAccountTest {
         final var mockValue = UInt256.valueOf(1_234_567L);
         given(entityAccess.getStorage(targetAddress, UInt256.ONE)).willReturn(mockValue);
 
-        final var account =
-                new WorldStateAccount(
-                        targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
+        final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
         final var subject = new UpdateTrackingAccount<>(account, null);
 
         assertSame(mockValue, subject.getOriginalStorageValue(UInt256.ONE));
@@ -262,9 +236,7 @@ class UpdateTrackingAccountTest {
 
     @Test
     void clearedTrackingAccountDelegatesToGetOriginalStorage() {
-        final var account =
-                new WorldStateAccount(
-                        targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
+        final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
         final var subject = new UpdateTrackingAccount<>(account, null);
         subject.clearStorage();
 
@@ -279,9 +251,7 @@ class UpdateTrackingAccountTest {
 
     @Test
     void getMutableReturnsSelf() {
-        final var account =
-                new WorldStateAccount(
-                        targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
+        final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
         final var subject = new UpdateTrackingAccount<>(account, null);
 
         assertSame(subject, subject.getMutable());
@@ -289,24 +259,19 @@ class UpdateTrackingAccountTest {
 
     @Test
     void toStringWorksAsExpected() {
-        final var expectedNoUpdatedStorageOrCode =
-                "0x000000000000000000000000000000000000066e -> {nonce:0,"
-                    + " balance:0x00000000000000000000000000000000000000000000000000000000000186a0,"
-                    + " code:[not updated], storage:[not updated] }";
-        final var expectedUpdatedStorageNotCode =
-                "0x000000000000000000000000000000000000066e -> {nonce:0,"
-                    + " balance:0x00000000000000000000000000000000000000000000000000000000000186a0,"
-                    + " code:[not updated], "
-                    + "storage:{0x0000000000000000000000000000000000000000000000000000000000000001=0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff}"
-                    + " }";
-        final var expectedUpdatedCodeClearedStorage =
-                "0x000000000000000000000000000000000000066e -> {nonce:0,"
-                    + " balance:0x00000000000000000000000000000000000000000000000000000000000186a0,"
-                    + " code:0x04d2, storage:[cleared] }";
+        final var expectedNoUpdatedStorageOrCode = "0x000000000000000000000000000000000000066e -> {nonce:0,"
+                + " balance:0x00000000000000000000000000000000000000000000000000000000000186a0,"
+                + " code:[not updated], storage:[not updated] }";
+        final var expectedUpdatedStorageNotCode = "0x000000000000000000000000000000000000066e -> {nonce:0,"
+                + " balance:0x00000000000000000000000000000000000000000000000000000000000186a0,"
+                + " code:[not updated], "
+                + "storage:{0x0000000000000000000000000000000000000000000000000000000000000001=0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff}"
+                + " }";
+        final var expectedUpdatedCodeClearedStorage = "0x000000000000000000000000000000000000066e -> {nonce:0,"
+                + " balance:0x00000000000000000000000000000000000000000000000000000000000186a0,"
+                + " code:0x04d2, storage:[cleared] }";
 
-        final var account =
-                new WorldStateAccount(
-                        targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
+        final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
         final var subject = new UpdateTrackingAccount<>(account, null);
 
         assertEquals(expectedNoUpdatedStorageOrCode, subject.toString());

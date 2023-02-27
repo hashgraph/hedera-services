@@ -494,10 +494,12 @@ class AbstractLedgerWorldUpdaterTest {
         /* And consistently in the updatedAccounts map */
         assertTrue(subject.getUpdatedAccounts().containsKey(aAddress));
         assertEquals(
-                aHbarBalance + 2, subject.getUpdatedAccounts().get(aAddress).getBalance().toLong());
+                aHbarBalance + 2,
+                subject.getUpdatedAccounts().get(aAddress).getBalance().toLong());
         assertTrue(subject.getUpdatedAccounts().containsKey(bAddress));
         assertEquals(
-                bHbarBalance - 2, subject.getUpdatedAccounts().get(bAddress).getBalance().toLong());
+                bHbarBalance - 2,
+                subject.getUpdatedAccounts().get(bAddress).getBalance().toLong());
     }
 
     @Test

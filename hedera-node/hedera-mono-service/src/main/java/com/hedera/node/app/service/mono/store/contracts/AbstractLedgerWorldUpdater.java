@@ -117,8 +117,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
         final var address = curAliases.resolveForEvm(addressOrAlias);
 
         final var curAccounts = trackingAccounts();
-        final var newMutable =
-                new UpdateTrackingAccount<A>(address, new UpdatedAccountTrackerImpl(curAccounts));
+        final var newMutable = new UpdateTrackingAccount<A>(address, new UpdatedAccountTrackerImpl(curAccounts));
         if (trackingLedgers.areMutable()) {
             final var newAccountId = accountIdFromEvmAddress(newMutable.getAddress());
             curAccounts.create(newAccountId);
@@ -169,8 +168,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
                 return null;
             }
             final var newMutable =
-                    new UpdateTrackingAccount<>(
-                            origin, new UpdatedAccountTrackerImpl(trackingLedgers.accounts()));
+                    new UpdateTrackingAccount<>(origin, new UpdatedAccountTrackerImpl(trackingLedgers.accounts()));
             return new WrappedEvmAccount(track(newMutable));
         }
     }
@@ -292,12 +290,10 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
                 // created lazy account through the HTS precompiled contract,
                 // which can occur with any transfer precompile function
                 updatedAccount =
-                        new UpdateTrackingAccount<>(
-                                address, new UpdatedAccountTrackerImpl(trackingLedgers.accounts()));
+                        new UpdateTrackingAccount<>(address, new UpdatedAccountTrackerImpl(trackingLedgers.accounts()));
             } else {
                 updatedAccount =
-                        new UpdateTrackingAccount<>(
-                                origin, new UpdatedAccountTrackerImpl(trackingLedgers.accounts()));
+                        new UpdateTrackingAccount<>(origin, new UpdatedAccountTrackerImpl(trackingLedgers.accounts()));
             }
             track(updatedAccount);
         }
@@ -312,9 +308,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
     }
 
     public void trackLazilyCreatedAccount(final Address address) {
-        final var newMutable =
-                new UpdateTrackingAccount<A>(
-                        address, new UpdatedAccountTrackerImpl(trackingAccounts()));
+        final var newMutable = new UpdateTrackingAccount<A>(address, new UpdatedAccountTrackerImpl(trackingAccounts()));
         track(newMutable);
     }
 

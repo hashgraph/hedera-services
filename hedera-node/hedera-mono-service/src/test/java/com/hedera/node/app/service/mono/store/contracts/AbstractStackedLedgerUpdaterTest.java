@@ -110,7 +110,8 @@ class AbstractStackedLedgerUpdaterTest {
     void getForMutationReturnsTrackingAccountIfPresentInParent() {
         wrapped.createAccount(aAddress, aNonce, Wei.of(aBalance));
 
-        assertSame(subject.getForMutation(aAddress), wrapped.getUpdatedAccounts().get(aAddress));
+        assertSame(
+                subject.getForMutation(aAddress), wrapped.getUpdatedAccounts().get(aAddress));
     }
 
     @Test

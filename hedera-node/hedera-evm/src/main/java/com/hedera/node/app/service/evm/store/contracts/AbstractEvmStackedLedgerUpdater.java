@@ -23,8 +23,7 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldView;
 
 public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Account>
-        extends AbstractLedgerEvmWorldUpdater<
-                AbstractLedgerEvmWorldUpdater<W, A>, UpdateTrackingAccount<A>> {
+        extends AbstractLedgerEvmWorldUpdater<AbstractLedgerEvmWorldUpdater<W, A>, UpdateTrackingAccount<A>> {
 
     protected AbstractEvmStackedLedgerUpdater(
             final AbstractLedgerEvmWorldUpdater<W, A> world,

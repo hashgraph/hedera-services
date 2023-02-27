@@ -42,11 +42,15 @@ class HederaEvmStackedWorldStateUpdaterTest {
     private final MockAccountAccessor accountAccessor = new MockAccountAccessor();
     private final MockTokenAccessor tokenAccessor = new MockTokenAccessor();
     private final MockEntityAccess entityAccess = new MockEntityAccess();
-    @Mock private AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account> updater;
-    @Mock private EvmProperties properties;
+
+    @Mock
+    private AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account> updater;
+
+    @Mock
+    private EvmProperties properties;
+
     private HederaEvmStackedWorldStateUpdater subject;
-    private final UpdateTrackingAccount<Account> updatedHederaEvmAccount =
-            new UpdateTrackingAccount<>(address, null);
+    private final UpdateTrackingAccount<Account> updatedHederaEvmAccount = new UpdateTrackingAccount<>(address, null);
 
     @BeforeEach
     void setUp() {
@@ -96,14 +100,18 @@ class HederaEvmStackedWorldStateUpdaterTest {
     @Test
     void getAccount() {
         given(updater.getForMutation(address)).willReturn(updatedHederaEvmAccount);
-        assertEquals(updatedHederaEvmAccount.getAddress(), subject.getAccount(address).getAddress());
+        assertEquals(
+                updatedHederaEvmAccount.getAddress(),
+                subject.getAccount(address).getAddress());
     }
 
     @Test
     void getAccountWithTrack() {
         given(updater.getForMutation(address)).willReturn(updatedHederaEvmAccount);
         subject.getAccount(address);
-        assertEquals(updatedHederaEvmAccount.getAddress(), subject.getAccount(address).getAddress());
+        assertEquals(
+                updatedHederaEvmAccount.getAddress(),
+                subject.getAccount(address).getAddress());
     }
 
     @Test
@@ -115,7 +123,8 @@ class HederaEvmStackedWorldStateUpdaterTest {
     void getAccountForRedirect() {
         givenForRedirect();
         assertEquals(
-                updatedHederaEvmAccount.getAddress(), subject.getAccount(address).getAddress());
+                updatedHederaEvmAccount.getAddress(),
+                subject.getAccount(address).getAddress());
     }
 
     @Test

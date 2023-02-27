@@ -187,8 +187,7 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
         @SuppressWarnings("unchecked")
         private void addAllStorageUpdatesToStateChanges() {
             for (UpdateTrackingAccount<? extends Account> uta :
-                    (Collection<UpdateTrackingAccount<? extends Account>>)
-                            this.getTouchedAccounts()) {
+                    (Collection<UpdateTrackingAccount<? extends Account>>) this.getTouchedAccounts()) {
                 final var storageUpdates = uta.getUpdatedStorage().entrySet();
                 if (!storageUpdates.isEmpty()) {
                     final Map<Bytes, Pair<Bytes, Bytes>> accountChanges =
@@ -291,13 +290,12 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
                 final SigImpactHistorian impactHistorian,
                 final Collection<Address> deletedAddresses,
                 final Collection<UpdateTrackingAccount<Account>> updatedAccounts) {
-            deletedAddresses.forEach(
-                    address -> {
-                        final var accountId = accountIdFromEvmAddress(address);
-                        validateTrue(impactHistorian != null, FAIL_INVALID);
-                        impactHistorian.markEntityChanged(accountId.getAccountNum());
-                        trackIfNewlyCreated(accountId, entityAccess, provisionalCreations);
-                    });
+            deletedAddresses.forEach(address -> {
+                final var accountId = accountIdFromEvmAddress(address);
+                validateTrue(impactHistorian != null, FAIL_INVALID);
+                impactHistorian.markEntityChanged(accountId.getAccountNum());
+                trackIfNewlyCreated(accountId, entityAccess, provisionalCreations);
+            });
             for (final var updatedAccount : updatedAccounts) {
                 if (updatedAccount.getNonce() == HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE) {
                     continue;
@@ -324,8 +322,7 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
         }
 
         private void commitSizeLimitedStorageTo(
-                final EntityAccess entityAccess,
-                final Collection<UpdateTrackingAccount<Account>> updatedAccounts) {
+                final EntityAccess entityAccess, final Collection<UpdateTrackingAccount<Account>> updatedAccounts) {
             for (final var updatedAccount : updatedAccounts) {
                 // We don't check updatedAccount.getStorageWasCleared(), because we only purge
                 // storage

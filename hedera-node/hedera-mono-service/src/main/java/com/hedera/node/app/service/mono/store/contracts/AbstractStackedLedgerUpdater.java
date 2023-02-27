@@ -36,8 +36,7 @@ import org.hyperledger.besu.evm.worldstate.WorldView;
  * @param <A> the account specialization used by the wrapped world view
  */
 public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extends Account>
-        extends AbstractLedgerWorldUpdater<
-                AbstractLedgerWorldUpdater<W, A>, UpdateTrackingAccount<A>> {
+        extends AbstractLedgerWorldUpdater<AbstractLedgerWorldUpdater<W, A>, UpdateTrackingAccount<A>> {
 
     protected AbstractStackedLedgerUpdater(
             final AbstractLedgerWorldUpdater<W, A> world, final WorldLedgers trackingLedgers) {
@@ -58,8 +57,7 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
         final A account = wrapped.getForMutation(address);
         return account == null
                 ? null
-                : new UpdateTrackingAccount<>(
-                        account, new UpdatedAccountTrackerImpl(trackingAccounts()));
+                : new UpdateTrackingAccount<>(account, new UpdatedAccountTrackerImpl(trackingAccounts()));
     }
 
     /** {@inheritDoc} */
@@ -96,8 +94,8 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
                 mutable = updatedAccount.getWrappedAccount();
                 if (mutable == null) {
                     /* We created this account, so create a new tracker for our parent. */
-                    mutable =
-                            new UpdateTrackingAccount<>(updatedAccount.getAddress(), new UpdatedAccountTrackerImpl(wrapped.trackingAccounts()));
+                    mutable = new UpdateTrackingAccount<>(
+                            updatedAccount.getAddress(), new UpdatedAccountTrackerImpl(wrapped.trackingAccounts()));
                 } else {
                     /* This tracker is reusable, just update its tracking accounts to our parent's. */
                     final var tracker = (UpdatedAccountTrackerImpl) mutable.getAccountTracker();

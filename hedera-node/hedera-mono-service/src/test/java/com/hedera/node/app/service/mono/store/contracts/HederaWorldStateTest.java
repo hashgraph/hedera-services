@@ -43,13 +43,17 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
+import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.contracts.operation.HederaOperationUtil;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
+import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
@@ -81,16 +85,38 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaWorldStateTest {
-    @Mock private WorldLedgers worldLedgers;
-    @Mock private EntityIdSource ids;
-    @Mock private EntityAccess entityAccess;
-    @Mock private SigImpactHistorian sigImpactHistorian;
-    @Mock private ContractAliases aliases;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private ContractCustomizer customizer;
-    @Mock private UsageLimits usageLimits;
-    @Mock NodeLocalProperties properties;
-    @Mock private FunctionalityThrottling handleThrottling;
+    @Mock
+    private WorldLedgers worldLedgers;
+
+    @Mock
+    private EntityIdSource ids;
+
+    @Mock
+    private EntityAccess entityAccess;
+
+    @Mock
+    private SigImpactHistorian sigImpactHistorian;
+
+    @Mock
+    private ContractAliases aliases;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private ContractCustomizer customizer;
+
+    @Mock
+    private UsageLimits usageLimits;
+
+    @Mock
+    NodeLocalProperties properties;
+
+    @Mock
+    private FunctionalityThrottling handleThrottling;
+
+    @Mock
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
 
     private CodeCache codeCache;
 
@@ -669,7 +695,7 @@ class HederaWorldStateTest {
         final var slot = 1L;
         final var oldSlotValue = 4L;
         final var newSlotValue = 255L;
-        final var updatedAccount = mock(UpdateTrackingLedgerAccount.class);
+        final var updatedAccount = mock(UpdateTrackingAccount.class);
         given(updatedAccount.getAddress()).willReturn(Address.fromHexString(contractAddress));
         given(updatedAccount.getOriginalStorageValue(UInt256.valueOf(slot))).willReturn(UInt256.valueOf(oldSlotValue));
         given(updatedAccount.getUpdatedStorage())

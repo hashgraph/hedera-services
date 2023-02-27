@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.models;
 
 import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
@@ -46,12 +47,16 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
     private final UpdatedAccountTracker trackingAccounts;
     private final NavigableMap<UInt256, UInt256> updatedStorage;
 
-    @Nullable protected final A account;
-    @Nullable protected Bytes updatedCode;
-    @Nullable private Hash updatedCodeHash;
+    @Nullable
+    protected final A account;
 
-    public UpdateTrackingAccount(
-            final Address address, @Nullable final UpdatedAccountTracker trackingAccounts) {
+    @Nullable
+    protected Bytes updatedCode;
+
+    @Nullable
+    private Hash updatedCodeHash;
+
+    public UpdateTrackingAccount(final Address address, @Nullable final UpdatedAccountTracker trackingAccounts) {
         Preconditions.checkNotNull(address);
         this.address = address;
         addressHash = Hash.hash(address);
@@ -64,15 +69,13 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
     }
 
     @SuppressWarnings("unchecked")
-    public UpdateTrackingAccount(
-            final A account, @Nullable final UpdatedAccountTracker trackingAccounts) {
+    public UpdateTrackingAccount(final A account, @Nullable final UpdatedAccountTracker trackingAccounts) {
         Preconditions.checkNotNull(account);
         this.account = account;
         address = account.getAddress();
-        this.addressHash =
-                account instanceof UpdateTrackingAccount
-                        ? ((UpdateTrackingAccount<A>) account).addressHash
-                        : Hash.hash(account.getAddress());
+        this.addressHash = account instanceof UpdateTrackingAccount
+                ? ((UpdateTrackingAccount<A>) account).addressHash
+                : Hash.hash(account.getAddress());
         this.trackingAccounts = trackingAccounts;
         balance = account.getBalance();
         nonce = account.getNonce();
@@ -201,8 +204,7 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
     }
 
     private UInt256 getStorageValueEvmFlow(UInt256 key) {
-        final var value =
-                UInt256.fromBytes(hederaEvmEntityAccess.getStorage(address, key.toBytes()));
+        final var value = UInt256.fromBytes(hederaEvmEntityAccess.getStorage(address, key.toBytes()));
 
         setStorageValue(key, value);
         return value;
@@ -218,8 +220,7 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
     }
 
     @Override
-    public NavigableMap<Bytes32, AccountStorageEntry> storageEntriesFrom(
-            final Bytes32 startKeyHash, final int limit) {
+    public NavigableMap<Bytes32, AccountStorageEntry> storageEntriesFrom(final Bytes32 startKeyHash, final int limit) {
         throw new UnsupportedOperationException();
     }
 
@@ -246,11 +247,7 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
         }
         return String.format(
                 "%s -> {nonce:%s, balance:%s, code:%s, storage:%s }",
-                address,
-                nonce,
-                balance,
-                updatedCode == null ? "[not updated]" : updatedCode,
-                storage);
+                address, nonce, balance, updatedCode == null ? "[not updated]" : updatedCode, storage);
     }
 
     @Override

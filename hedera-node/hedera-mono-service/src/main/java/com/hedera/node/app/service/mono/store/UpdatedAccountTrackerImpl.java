@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store;
 
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
@@ -30,9 +31,7 @@ public class UpdatedAccountTrackerImpl implements UpdatedAccountTracker {
     private TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts;
 
     public UpdatedAccountTrackerImpl(
-            @Nullable
-                    TransactionalLedger<AccountID, AccountProperty, HederaAccount>
-                            trackingAccounts) {
+            @Nullable TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts) {
         this.trackingAccounts = trackingAccounts;
     }
 
