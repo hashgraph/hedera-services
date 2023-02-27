@@ -18,40 +18,63 @@ package com.hedera.node.app.workflows.handle.validation;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.store.AccountStore;
+import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
- * An implementation of {@link ExpiryValidator} that encapsulates the
- * current policies of the Hedera network with the help of a {@code mono-service}
- * {@link OptionValidator}.
+ * An implementation of {@link ExpiryValidator} that encapsulates the current policies
+ * of the Hedera network with the help of a {@code mono-service} {@link OptionValidator}.
  */
+@Singleton
 public class MonoExpiryValidator implements ExpiryValidator {
+    private final AccountStore accountStore;
     private final OptionValidator validator;
     private final TransactionContext txnCtx;
+    private final HederaNumbers numbers;
 
     @Inject
-    public MonoExpiryValidator(final OptionValidator validator, final TransactionContext txnCtx) {
-        this.validator = validator;
-        this.txnCtx = txnCtx;
+    public MonoExpiryValidator(
+            @NonNull final AccountStore accountStore,
+            @NonNull final OptionValidator validator,
+            @NonNull final TransactionContext txnCtx,
+            @NonNull final HederaNumbers numbers) {
+        this.accountStore = Objects.requireNonNull(accountStore);
+        this.validator = Objects.requireNonNull(validator);
+        this.txnCtx = Objects.requireNonNull(txnCtx);
+        this.numbers = Objects.requireNonNull(numbers);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public void validateCreationAttempt(final boolean entityCanSelfFundRenewal, final ExpiryMeta creationMetadata) {
+    public void validateCreationAttempt(final boolean entityCanSelfFundRenewal, final ExpiryMeta creationMeta) {
+        if (creationMeta.hasAutoRenewNum()) {
+            validateAutoRenewAccount(creationMeta.autoRenewNum());
+        }
+
         final var thisSecond = txnCtx.consensusTime().getEpochSecond();
 
-        long effectiveExpiry = creationMetadata.expiry();
+        long effectiveExpiry = creationMeta.expiry();
         // We prioritize the expiry implied by auto-renew configuration, if it is present
         // and complete (meaning either both auto-renew period and auto-renew account are
         // present; or auto-renew period is present, and the entity can self-fund)
-        if (hasCompleteAutoRenewSpec(entityCanSelfFundRenewal, creationMetadata)) {
-            effectiveExpiry = thisSecond + creationMetadata.autoRenewPeriod();
+        if (hasCompleteAutoRenewSpec(entityCanSelfFundRenewal, creationMeta)) {
+            effectiveExpiry = thisSecond + creationMeta.autoRenewPeriod();
         }
         if (!validator.isValidExpiry(effectiveExpiry)) {
             throw new HandleStatusException(INVALID_EXPIRATION_TIME);
@@ -59,39 +82,45 @@ public class MonoExpiryValidator implements ExpiryValidator {
 
         // Even if the effective expiry is valid, we still also require any explicit
         // auto-renew period to be valid
-        if (creationMetadata.hasAutoRenewPeriod()
-                && !validator.isValidAutoRenewPeriod(creationMetadata.autoRenewPeriod())) {
+        if (creationMeta.hasAutoRenewPeriod() && !validator.isValidAutoRenewPeriod(creationMeta.autoRenewPeriod())) {
             throw new HandleStatusException(AUTORENEW_DURATION_NOT_IN_RANGE);
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public ExpiryMeta resolveUpdateAttempt(final ExpiryMeta currentMetadata, final ExpiryMeta updateMetadata) {
-        var resolvedExpiry = currentMetadata.expiry();
-        if (updateMetadata.hasExplicitExpiry()) {
-            if (updateMetadata.expiry() < currentMetadata.expiry()) {
+    public ExpiryMeta resolveUpdateAttempt(final ExpiryMeta currentMeta, final ExpiryMeta updateMeta) {
+        if (updateMeta.hasAutoRenewNum()) {
+            validateAutoRenewAccount(updateMeta.autoRenewNum());
+        }
+
+        var resolvedExpiry = currentMeta.expiry();
+        if (updateMeta.hasExplicitExpiry()) {
+            if (updateMeta.expiry() < currentMeta.expiry()) {
                 throw new HandleStatusException(EXPIRATION_REDUCTION_NOT_ALLOWED);
-            } else if (!validator.isValidExpiry(updateMetadata.expiry())) {
+            } else if (!validator.isValidExpiry(updateMeta.expiry())) {
                 throw new HandleStatusException(INVALID_EXPIRATION_TIME);
             } else {
-                resolvedExpiry = updateMetadata.expiry();
+                resolvedExpiry = updateMeta.expiry();
             }
         }
 
-        var resolvedAutoRenewPeriod = currentMetadata.autoRenewPeriod();
-        if (updateMetadata.hasAutoRenewPeriod()) {
-            if (!validator.isValidAutoRenewPeriod(updateMetadata.autoRenewPeriod())) {
+        var resolvedAutoRenewPeriod = currentMeta.autoRenewPeriod();
+        if (updateMeta.hasAutoRenewPeriod()) {
+            if (!validator.isValidAutoRenewPeriod(updateMeta.autoRenewPeriod())) {
                 throw new HandleStatusException(AUTORENEW_DURATION_NOT_IN_RANGE);
             }
-            resolvedAutoRenewPeriod = updateMetadata.autoRenewPeriod();
+            resolvedAutoRenewPeriod = updateMeta.autoRenewPeriod();
         }
 
-        var resolvedAutoRenewNum = currentMetadata.autoRenewNum();
-        if (updateMetadata.hasAutoRenewNum()) {
-            if (!currentMetadata.hasAutoRenewNum() && !validator.isValidAutoRenewPeriod(resolvedAutoRenewPeriod)) {
+        var resolvedAutoRenewNum = currentMeta.autoRenewNum();
+        if (updateMeta.hasAutoRenewNum()) {
+            if (!currentMeta.hasAutoRenewNum() && !validator.isValidAutoRenewPeriod(resolvedAutoRenewPeriod)) {
                 throw new HandleStatusException(AUTORENEW_DURATION_NOT_IN_RANGE);
             } else {
-                resolvedAutoRenewNum = updateMetadata.autoRenewNum();
+                resolvedAutoRenewNum = updateMeta.autoRenewNum();
             }
         }
         return new ExpiryMeta(resolvedExpiry, resolvedAutoRenewPeriod, resolvedAutoRenewNum);
@@ -101,5 +130,14 @@ public class MonoExpiryValidator implements ExpiryValidator {
             final boolean entityCanSelfFundRenewal, final ExpiryMeta creationMetadata) {
         return creationMetadata.hasFullAutoRenewSpec()
                 || (!creationMetadata.hasExplicitExpiry() && entityCanSelfFundRenewal);
+    }
+
+    private void validateAutoRenewAccount(final long autoRenewNum) {
+        final var autoRenewId = new Id(numbers.shard(), numbers.realm(), autoRenewNum);
+        try {
+            accountStore.loadAccountOrFailWith(autoRenewId, INVALID_AUTORENEW_ACCOUNT);
+        } catch (final InvalidTransactionException e) {
+            throw new HandleStatusException(e.getResponseCode());
+        }
     }
 }

@@ -19,11 +19,16 @@ package com.hedera.node.app.workflows.handle.validation;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.store.AccountStore;
+import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -48,13 +53,19 @@ class MonoExpiryValidatorTest {
     private OptionValidator validator;
 
     @Mock
+    private AccountStore accountStore;
+
+    @Mock
     private TransactionContext txnCtx;
+
+    @Mock
+    private HederaNumbers numbers;
 
     private MonoExpiryValidator subject;
 
     @BeforeEach
     void setUp() {
-        subject = new MonoExpiryValidator(validator, txnCtx);
+        subject = new MonoExpiryValidator(accountStore, validator, txnCtx, numbers);
     }
 
     @Test
@@ -76,6 +87,16 @@ class MonoExpiryValidatorTest {
         assertFailsWith(
                 INVALID_EXPIRATION_TIME,
                 () -> subject.validateCreationAttempt(false, new ExpiryMeta(aTime, NA, anAutoRenewNum)));
+    }
+
+    @Test
+    void translatesFailureOnExplicitAutoRenewAccount() {
+        given(accountStore.loadAccountOrFailWith(new Id(0, 0, anAutoRenewNum), INVALID_AUTORENEW_ACCOUNT))
+                .willThrow(new InvalidTransactionException(INVALID_AUTORENEW_ACCOUNT));
+
+        assertFailsWith(
+                INVALID_AUTORENEW_ACCOUNT,
+                () -> subject.validateCreationAttempt(false, new ExpiryMeta(aTime, aPeriod, anAutoRenewNum)));
     }
 
     @Test
@@ -183,6 +204,17 @@ class MonoExpiryValidatorTest {
         final var update = new ExpiryMeta(NA, bPeriod, anAutoRenewNum);
 
         assertFailsWith(AUTORENEW_DURATION_NOT_IN_RANGE, () -> subject.resolveUpdateAttempt(current, update));
+    }
+
+    @Test
+    void ifUpdatingAutoRenewNumMustBeValid() {
+        final var current = new ExpiryMeta(aTime, 0, NA);
+        final var update = new ExpiryMeta(NA, bPeriod, anAutoRenewNum);
+
+        given(accountStore.loadAccountOrFailWith(new Id(0, 0, anAutoRenewNum), INVALID_AUTORENEW_ACCOUNT))
+                .willThrow(new InvalidTransactionException(INVALID_AUTORENEW_ACCOUNT));
+
+        assertFailsWith(INVALID_AUTORENEW_ACCOUNT, () -> subject.resolveUpdateAttempt(current, update));
     }
 
     @Test

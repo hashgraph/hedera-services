@@ -25,7 +25,6 @@ import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRe
 import com.hedera.node.app.service.consensus.impl.records.DeleteTopicRecordBuilder;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.meta.PreHandleContext;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -48,7 +47,7 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
      * <p>Determines signatures needed for deleting a consensus topic
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(TransactionMetadata)}
+     *     passed to {@code handle()}
      * @param topicStore the {@link ReadableTopicStore} to use to resolve topic metadata
      * @throws NullPointerException if any of the arguments are {@code null}
      */
