@@ -67,7 +67,6 @@ import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.fees.HbarCentExchange;
 import com.hedera.node.app.service.mono.fees.calculation.utils.FeeConverter;
 import com.hedera.node.app.service.mono.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.node.app.service.mono.fees.congestion.FeeMultiplierSource;
@@ -153,7 +152,6 @@ class UsageBasedFeeCalculatorTest {
     private final Timestamp at = Timestamp.newBuilder().setSeconds(1_234_567L).build();
     private final com.hedera.node.app.service.evm.utils.codec.Timestamp atDto =
             new com.hedera.node.app.service.evm.utils.codec.Timestamp(at.getSeconds(), at.getNanos());
-    private HbarCentExchange exchange;
     private UsagePricesProvider usagePrices;
     private TxnResourceUsageEstimator correctOpEstimator;
     private TxnResourceUsageEstimator incorrectOpEstimator;
@@ -190,7 +188,6 @@ class UsageBasedFeeCalculatorTest {
         view = mock(StateView.class);
         query = mock(Query.class);
         payerKey = complexKey.asJKey();
-        exchange = mock(HbarCentExchange.class);
         signedTxn = newSignedCryptoCreate()
                 .balance(balance)
                 .payerKt(complexKey)
@@ -210,7 +207,6 @@ class UsageBasedFeeCalculatorTest {
 
         subject = new UsageBasedFeeCalculator(
                 autoRenewCalcs,
-                exchange,
                 mock(AutoCreationLogic.class),
                 usagePrices,
                 new NestedMultiplierSource(),
