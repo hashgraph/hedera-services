@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.leaky;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -773,7 +774,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
     private HapiSpec hollowAccountCompletionWithEthereumTransaction() {
         final Map<String, String> startingProps = new HashMap<>();
         final String CONTRACT = "Fuse";
-        return defaultHapiSpec("HollowAccountCompletionWithEthereumTransaction")
+        return onlyDefaultHapiSpec("HollowAccountCompletionWithEthereumTransaction")
                 .given(
                         remembering(startingProps, LAZY_CREATION_ENABLED, CHAIN_ID_PROP),
                         overridingTwo(LAZY_CREATION_ENABLED, TRUE, CHAIN_ID_PROP, "298"),

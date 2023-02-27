@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.forPaye
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.annotations.WorkingStateSigReqs;
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
@@ -63,17 +64,20 @@ public class Rationalization {
     private SigningOrderResult<ResponseCodeEnum> lastOrderResult;
     private final List<TransactionSignature> realPayerSigs = new ArrayList<>();
     private final List<TransactionSignature> realOtherPartySigs = new ArrayList<>();
+    private final AliasManager aliasManager;
 
     @Inject
     public Rationalization(
             final SyncVerifier syncVerifier,
             final SigImpactHistorian sigImpactHistorian,
             final @WorkingStateSigReqs SigRequirements sigReqs,
-            final ReusableBodySigningFactory bodySigningFactory) {
+            final ReusableBodySigningFactory bodySigningFactory,
+            final AliasManager aliasManager) {
         this.sigReqs = sigReqs;
         this.syncVerifier = syncVerifier;
         this.sigImpactHistorian = sigImpactHistorian;
         this.bodySigningFactory = bodySigningFactory;
+        this.aliasManager = aliasManager;
     }
 
     public void performFor(final SwirldsTxnAccessor txnAccessor) {
@@ -150,8 +154,11 @@ public class Rationalization {
             verifiedSync = true;
         }
 
-        makeRationalizedMetaAccessible();
+        if (otherFailure == null) {
+            maybePerformHollowScreening();
+        }
 
+        makeRationalizedMetaAccessible();
         finalStatus = (otherFailure != null) ? otherFailure : OK;
     }
 
@@ -189,6 +196,29 @@ public class Rationalization {
         }
         target.addAll(creation.getPlatformSigs());
         return OK;
+    }
+
+    private void maybePerformHollowScreening() {
+        if (pkToSigFn.hasAtLeastOneEcdsaSig()) {
+            final var hollowScreening = new HollowScreening();
+            final var pendingCompletions =
+                    hollowScreening.pendingCompletionsFrom(txnSigs, sigReqs.getSigMetaLookup(), null, aliasManager);
+            if (!pendingCompletions.isEmpty()) {
+                txnAccessor.setPendingCompletions(pendingCompletions);
+                maybeUpdateHolowPayerKeyFrom(hollowScreening);
+            }
+            maybeUpdateHollowOtherPartyKeysFrom(hollowScreening);
+        }
+    }
+
+    private void maybeUpdateHollowOtherPartyKeysFrom(HollowScreening hollowScreening) {
+        reqOthersSigs = hollowScreening.maybeDeHollowKeys(reqOthersSigs);
+    }
+
+    private void maybeUpdateHolowPayerKeyFrom(HollowScreening hollowScreening) {
+        if (reqPayerSig.hasHollowKey()) {
+            reqPayerSig = hollowScreening.maybeDeHollowKey(reqPayerSig);
+        }
     }
 
     /* --- Only used by unit tests --- */
@@ -256,6 +286,6 @@ public class Rationalization {
             final SyncVerifier syncVerifier,
             final SigRequirements sigReqs,
             final ReusableBodySigningFactory bodySigningFactory) {
-        this(syncVerifier, null, sigReqs, bodySigningFactory);
+        this(syncVerifier, null, sigReqs, bodySigningFactory, null);
     }
 }

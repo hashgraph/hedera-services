@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.mono.sigs.metadata.TokenMetaUtils.sign
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_SCHEDULE;
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.sigs.metadata.lookups.AccountSigMetaLookup;
 import com.hedera.node.app.service.mono.sigs.metadata.lookups.ContractSigMetaLookup;
@@ -142,6 +143,13 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
     public SafeLookupResult<AccountSigningMetadata> aliasableAccountSigningMetaFor(
             final AccountID idOrAlias, final LinkedRefs linkedRefs) {
         return accountSigMetaLookup.aliasableSafeLookup(idOrAlias);
+    }
+
+    @Override
+    public SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(
+            final ByteString alias, final LinkedRefs linkedRefs) {
+        return accountSigMetaLookup.aliasableSafeLookup(
+                AccountID.newBuilder().setAlias(alias).build());
     }
 
     @Override

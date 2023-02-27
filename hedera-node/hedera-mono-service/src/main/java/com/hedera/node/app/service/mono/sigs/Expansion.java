@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.forPaye
 import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.noneAvailable;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
@@ -47,6 +48,7 @@ class Expansion {
 
     private final LinkedRefs linkedRefs = new LinkedRefs();
     private final List<TransactionSignature> expandedSigs = new ArrayList<>();
+    private final AliasManager aliasManager;
 
     private JKey payerKey;
     private List<JKey> otherPartyKeys;
@@ -61,12 +63,14 @@ class Expansion {
             final SigRequirements sigReqs,
             final PubKeyToSigBytes pkToSigFn,
             final CryptoSigsCreation cryptoSigsCreation,
-            final TxnScopedPlatformSigFactory sigFactory) {
+            final TxnScopedPlatformSigFactory sigFactory,
+            final AliasManager aliasManager) {
         this.cryptoSigsCreation = cryptoSigsCreation;
         this.txnAccessor = txnAccessor;
         this.sigFactory = sigFactory;
         this.pkToSigFn = pkToSigFn;
         this.sigReqs = sigReqs;
+        this.aliasManager = aliasManager;
     }
 
     public void execute() {
@@ -88,7 +92,28 @@ class Expansion {
             pkToSigFn.forEachUnusedSigWithFullPrefix(
                     (type, pubKey, sig) -> expandedSigs.add(sigFactory.signAppropriately(type, pubKey, sig)));
         }
+
+        maybePerformHollowScreening();
         finalizeForExpansionUpTo(Role.OTHER_PARTIES, OK);
+    }
+
+    private void maybePerformHollowScreening() {
+        if (pkToSigFn.hasAtLeastOneEcdsaSig()) {
+            final var hollowScreening = new HollowScreening();
+            final var pendingCompletions = hollowScreening.pendingCompletionsFrom(
+                    expandedSigs, sigReqs.getSigMetaLookup(), linkedRefs, aliasManager);
+            if (!pendingCompletions.isEmpty()) {
+                txnAccessor.setPendingCompletions(pendingCompletions);
+                maybeUpdateHolowPayerKeyFrom(hollowScreening);
+            }
+            otherPartyKeys = hollowScreening.maybeDeHollowKeys(otherPartyKeys);
+        }
+    }
+
+    private void maybeUpdateHolowPayerKeyFrom(HollowScreening hollowScreening) {
+        if (payerKey.hasHollowKey()) {
+            payerKey = hollowScreening.maybeDeHollowKey(payerKey);
+        }
     }
 
     private void finalizeForExpansionUpTo(final Role lastExpandSuccess, final ResponseCodeEnum finalStatus) {

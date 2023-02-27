@@ -78,6 +78,7 @@ import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
+import com.hedera.services.bdd.suites.crypto.HollowAccountFinalizationSuite;
 import com.hedera.services.bdd.suites.ethereum.EthereumSuite;
 import com.hedera.services.bdd.suites.ethereum.HelloWorldEthereumSuite;
 import com.hedera.services.bdd.suites.file.FileAppendSuite;
@@ -110,6 +111,7 @@ public class ConcurrentSuites {
             FileAppendSuite::new,
             TopicGetInfoSuite::new,
             AutoAccountCreationSuite::new,
+            HollowAccountFinalizationSuite::new,
             TokenAssociationSpecs::new,
             TokenCreateSpecs::new,
             TokenUpdateSpecs::new,

@@ -19,14 +19,19 @@ package com.hedera.node.app.service.mono.sigs.metadata;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.sigs.metadata.lookups.AccountSigMetaLookup;
 import com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure;
+import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.store.tokens.TokenStore;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
@@ -100,5 +105,18 @@ class DelegatingSigMetadataLookupTest {
         assertEquals(KeyOrderingFailure.NONE, result.failureIfAny());
         assertEquals(expected.adminKey(), result.metadata().adminKey());
         assertEquals(expected.freezeKey(), result.metadata().freezeKey());
+    }
+
+    @Test
+    void delegatesToAccountMeta() {
+        final var accountSigMetaLookup = mock(AccountSigMetaLookup.class);
+        final var nestedSubject = new DelegatingSigMetadataLookup(null, accountSigMetaLookup, null, null, null, null);
+        final var alias = ByteStringUtils.wrapUnsafely("alias".getBytes());
+        final var linkedRefs = mock(LinkedRefs.class);
+
+        nestedSubject.accountSigningMetaFor(alias, linkedRefs);
+
+        verify(accountSigMetaLookup)
+                .aliasableSafeLookup(AccountID.newBuilder().setAlias(alias).build());
     }
 }
