@@ -1082,9 +1082,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         if (!initialized.get()) {
             throw new IllegalStateException("handleConsensusRound() called before init()");
         }
+        delay();
         round.forEachEventTransaction((event, transaction) ->
                 handleConsensusTransaction(event, transaction, swirldDualState, round.getRoundNum()));
-        delay();
     }
 
     private void handleConsensusTransaction(
