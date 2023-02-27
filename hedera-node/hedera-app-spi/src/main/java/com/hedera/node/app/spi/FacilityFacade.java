@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.spi;
 
-import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.swirlds.config.api.Configuration;
 
 /**
@@ -31,10 +30,4 @@ public interface FacilityFacade {
      */
     Configuration getConfiguration();
 
-    /**
-     * Returns the node's schema registry.
-     *
-     * @return the node's schema registry
-     */
-    SchemaRegistry getSchemaRegistry();
 }
