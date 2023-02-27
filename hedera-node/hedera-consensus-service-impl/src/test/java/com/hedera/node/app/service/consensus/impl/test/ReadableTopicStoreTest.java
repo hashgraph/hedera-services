@@ -23,7 +23,9 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore.TopicMetadata;
 import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusHandlerTestBase;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -122,7 +124,12 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
 
     @Test
     void failsIfTopicDoesntExist() {
-        given(readableTopicState.get(topicNum)).willReturn(null);
+        readableTopicState.reset();
+        final var state =
+                MapReadableKVState.<Long, MerkleTopic>builder("TOPICS").build();
+        given(readableStates.<Long, MerkleTopic>get(TOPICS)).willReturn(state);
+        subject = new ReadableTopicStore(readableStates);
+
         final var topicMeta = subject.getTopicMetadata(topicId);
 
         assertNotNull(topicMeta);

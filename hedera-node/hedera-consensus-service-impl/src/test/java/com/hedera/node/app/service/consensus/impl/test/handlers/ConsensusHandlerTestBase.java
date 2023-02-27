@@ -57,8 +57,12 @@ public class ConsensusHandlerTestBase {
     protected final AccountID autoRenewId = asAccount("0.0.4");
     protected final Timestamp consensusTimestamp =
             Timestamp.newBuilder().setSeconds(1_234_567L).build();
-    protected final HederaKey hederaKey = asHederaKey(A_COMPLEX_KEY).get();
-    protected final HederaKey adminKey = asHederaKey(A_COMPLEX_KEY).get();
+
+    protected final HederaKey hederaKey = asHederaKey(Key.newBuilder()
+                    .setEd25519(ByteString.copyFrom("01234567890123456789012345678901".getBytes()))
+                    .build())
+            .get();
+    protected final HederaKey adminKey = asHederaKey(key).get();
     protected final Long payerNum = payer.getAccountNum();
     protected final Long topicNum = 1L;
     protected final TopicID topicId = TopicID.newBuilder().setTopicNum(topicNum).build();

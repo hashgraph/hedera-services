@@ -23,18 +23,6 @@ import java.util.Optional;
 /** An entity represents a Consensus Topic. */
 public interface Topic {
     /**
-     * Topic's shard number
-     *
-     * @return shard number
-     */
-    long shardNumber();
-    /**
-     * Topic's realm number
-     *
-     * @return realm number
-     */
-    long realmNumber();
-    /**
      * Topic's number
      *
      * @return topic number
