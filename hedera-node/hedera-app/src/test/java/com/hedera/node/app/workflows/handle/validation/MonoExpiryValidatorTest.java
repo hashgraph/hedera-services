@@ -218,6 +218,14 @@ class MonoExpiryValidatorTest {
     }
 
     @Test
+    void ifUpdatingExpiryMustBeValid() {
+        final var current = new ExpiryMeta(aTime, 0, NA);
+        final var update = new ExpiryMeta(bTime, bPeriod, anAutoRenewNum);
+
+        assertFailsWith(INVALID_EXPIRATION_TIME, () -> subject.resolveUpdateAttempt(current, update));
+    }
+
+    @Test
     void canSetEverythingValidly() {
         final var current = new ExpiryMeta(aTime, 0, NA);
         final var update = new ExpiryMeta(bTime, bPeriod, anAutoRenewNum);

@@ -33,7 +33,9 @@ import javax.inject.Singleton;
 @Singleton
 public class UtilPrngHandler implements TransactionHandler {
     @Inject
-    public UtilPrngHandler() {}
+    public UtilPrngHandler() {
+        // Dagger2
+    }
 
     /**
      * This method is called during the pre-handle workflow.

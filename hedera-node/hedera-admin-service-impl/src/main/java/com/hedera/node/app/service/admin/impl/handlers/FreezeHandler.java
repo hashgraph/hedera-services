@@ -33,7 +33,9 @@ import javax.inject.Singleton;
 @Singleton
 public class FreezeHandler implements TransactionHandler {
     @Inject
-    public FreezeHandler() {}
+    public FreezeHandler() {
+        // Dagger2
+    }
 
     /**
      * This method is called during the pre-handle workflow.
