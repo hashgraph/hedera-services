@@ -121,6 +121,7 @@ module com.swirlds.platform {
     requires com.swirlds.test.framework;
     requires com.swirlds.logging;
     requires com.swirlds.cli;
+    requires com.hedera.platform.bls.api;
 
     /* JDK Libraries */
     requires java.desktop;

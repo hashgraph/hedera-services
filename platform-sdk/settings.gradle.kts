@@ -92,6 +92,12 @@ dependencyResolutionManagement {
       version("lazysodium-version", "5.1.1")
       version("bouncycastle-version", "1.70")
 
+      version("hedera-bls-api-version", "0.1.0-SNAPSHOT")
+      version("hedera-bls-impl-version", "0.1.0-SNAPSHOT")
+
+      library("hedera-bls-api", "com.hedera.platform", "hedera-bls-api").versionRef("hedera-bls-api-version")
+      library("hedera-bls-impl", "com.hedera.platform", "hedera-bls-impl").versionRef("hedera-bls-impl-version")
+
       // Apache Commons
       version("commons-lang3-version", "3.12.0")
       version("commons-io-version", "2.11.0")

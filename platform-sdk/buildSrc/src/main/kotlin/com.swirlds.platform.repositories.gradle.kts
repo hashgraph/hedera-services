@@ -20,6 +20,7 @@ plugins {
 }
 
 repositories {
+    mavenLocal()
     mavenCentral()
     maven {
         url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-prerelease-channel")
