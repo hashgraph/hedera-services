@@ -34,10 +34,10 @@ configurations.all {
 }
 
 dependencies {
-  api(project(":hedera-node:hapi"))
   api(libs.pbj.runtime)
   api(libs.hapi)
   api(libs.jsr305.annotation)
+  api(project(":hedera-node:hapi"))
   implementation(libs.swirlds.common)
   compileOnlyApi(libs.spotbugs.annotations)
 
