@@ -66,6 +66,7 @@
 		<MarkerFilter marker="PLATFORM_STATUS" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 		<MarkerFilter marker="OBJECT_STREAM" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 		<MarkerFilter marker="OBJECT_STREAM_FILE" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="CONSENSUS_VOTING" onMatch="DENY" onMismatch="NEUTRAL"/>
 	</Filters>
 
 	<Appenders>
