@@ -69,17 +69,10 @@ public abstract class ConsensusUtils {
         return allConsensusRounds;
     }
 
-    /** Construct a simple Consensus object. */
     public static ConsensusImpl buildSimpleConsensus(final AddressBook addressBook) {
-        return buildSimpleConsensus(addressBook, NOOP_MINGEN);
-    }
-
-    public static ConsensusImpl buildSimpleConsensus(
-            final AddressBook addressBook, final BiConsumer<Long, Long> minGenConsumer) {
         return new ConsensusImpl(
                 ConfigurationHolder.getConfigData(ConsensusConfig.class),
                 NOOP_CONSENSUS_METRICS,
-                minGenConsumer,
                 addressBook);
     }
 

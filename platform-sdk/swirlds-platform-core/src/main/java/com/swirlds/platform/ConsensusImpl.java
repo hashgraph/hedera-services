@@ -16,9 +16,6 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.logging.LogMarker.CONSENSUS_VOTING;
-import static com.swirlds.logging.LogMarker.STARTUP;
-
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.consensus.AncestorSearch;
@@ -39,6 +36,9 @@ import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.sync.Generations;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -48,8 +48,9 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.BiConsumer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static com.swirlds.logging.LogMarker.CONSENSUS_VOTING;
+import static com.swirlds.logging.LogMarker.STARTUP;
 
 /**
  * All the code for calculating the consensus for events in a hashgraph. This calculates the
@@ -145,8 +146,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
     private final AddressBook addressBook;
     /** metrics related to consensus */
     private final ConsensusMetrics consensusMetrics;
-    /** a method that accepts minimum generation info */
-    private final BiConsumer<Long, Long> minGenConsumer;
     /** used for searching the hashgraph */
     private final AncestorSearch search = new AncestorSearch();
     /**
@@ -182,18 +181,15 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
      *
      * @param config consensus configuration
      * @param consensusMetrics metrics related to consensus
-     * @param minGenConsumer a method that accepts minimum generation info
      * @param addressBook the global address book, which never changes
      */
     public ConsensusImpl(
             final ConsensusConfig config,
             final ConsensusMetrics consensusMetrics,
-            final BiConsumer<Long, Long> minGenConsumer,
             final AddressBook addressBook) {
         super(config, new SequentialRingBuffer<>(ConsensusConstants.ROUND_FIRST, config.roundsExpired() * 2));
         this.config = config;
         this.consensusMetrics = consensusMetrics;
-        this.minGenConsumer = minGenConsumer;
 
         // until we implement address book changes, we will just use the use this address book
         this.addressBook = addressBook;
@@ -207,7 +203,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
      *
      * @param config consensus configuration
      * @param consensusMetrics metrics related to consensus
-     * @param minGenConsumer a method that accepts minimum generation info
      * @param addressBook the global address book, which never changes
      * @param signedState a state to read from
      * @deprecated use {@link #loadFromSignedState(SignedState)} on an existing instance
@@ -216,10 +211,9 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
     public ConsensusImpl(
             final ConsensusConfig config,
             final ConsensusMetrics consensusMetrics,
-            final BiConsumer<Long, Long> minGenConsumer,
             final AddressBook addressBook,
             final SignedState signedState) {
-        this(config, consensusMetrics, minGenConsumer, addressBook);
+        this(config, consensusMetrics, addressBook);
         loadFromSignedState(signedState);
     }
 
@@ -675,7 +669,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
         // famous.
         final List<EventImpl> judges = electionRound.findAllJudges();
         final long decidedRoundNumber = rounds.getElectionRoundNumber();
-        minGenConsumer.accept(decidedRoundNumber, electionRound.getMinGeneration());
 
         // update the round and generation values since fame has been decided for a new round
         rounds.currentElectionDecided();

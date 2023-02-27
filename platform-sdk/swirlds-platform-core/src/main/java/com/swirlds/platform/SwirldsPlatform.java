@@ -804,7 +804,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         consensusRef.set(new ConsensusImpl(
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                 consensusMetrics,
-                consensusRoundHandler::addMinGenInfo,
                 getAddressBook(),
                 signedState));
 
@@ -958,7 +957,6 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             consensusRef.set(new ConsensusImpl(
                     platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                     consensusMetrics,
-                    consensusRoundHandler::addMinGenInfo,
                     getAddressBook()));
         }
 

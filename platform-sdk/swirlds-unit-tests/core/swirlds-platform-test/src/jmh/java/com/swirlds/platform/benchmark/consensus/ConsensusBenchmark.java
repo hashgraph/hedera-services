@@ -82,7 +82,6 @@ public class ConsensusBenchmark {
         consensus = new ConsensusImpl(
                 configurationBuilder.build().getConfigData(ConsensusConfig.class),
                 new NoOpConsensusMetrics(),
-                (r, g) -> {},
                 emitter.getGraphGenerator().getAddressBook());
     }
 

@@ -49,8 +49,6 @@ import java.util.function.BiConsumer;
 
 /** Event intake with consensus and shadowgraph, used for testing */
 public class TestIntake implements LoadableFromSignedState {
-    private static final BiConsumer<Long, Long> NOOP_MINGEN = (l1, l2) -> {};
-
     private final ConsensusImpl consensus;
     private final ShadowGraph shadowGraph;
     private final EventIntake intake;
@@ -58,36 +56,26 @@ public class TestIntake implements LoadableFromSignedState {
     private int numEventsAdded = 0;
 
     public TestIntake(final AddressBook ab) {
-        this(ab, NOOP_MINGEN);
-    }
-
-    public TestIntake(final AddressBook ab, final BiConsumer<Long, Long> minGenConsumer) {
-        this(ab, minGenConsumer, OSTime.getInstance());
+        this(ab, OSTime.getInstance());
     }
 
     public TestIntake(final AddressBook ab, final Time time) {
-        this(ab, NOOP_MINGEN, time);
-    }
-
-    public TestIntake(final AddressBook ab, final BiConsumer<Long, Long> minGenConsumer, final Time time) {
-        this(ab, minGenConsumer, time, ConfigurationHolder.getConfigData(ConsensusConfig.class));
+        this(ab, time, ConfigurationHolder.getConfigData(ConsensusConfig.class));
     }
 
     public TestIntake(final AddressBook ab, final ConsensusConfig consensusConfig) {
-        this(ab, NOOP_MINGEN, OSTime.getInstance(), consensusConfig);
+        this(ab, OSTime.getInstance(), consensusConfig);
     }
 
     /**
      * @param ab the address book used by this intake
-     * @param minGenConsumer the consumer of minimum generations per round
      */
     public TestIntake(
             final AddressBook ab,
-            final BiConsumer<Long, Long> minGenConsumer,
             final Time time,
             final ConsensusConfig consensusConfig) {
         output = new ConsensusOutput(time);
-        consensus = new ConsensusImpl(consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, minGenConsumer, ab);
+        consensus = new ConsensusImpl(consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, ab);
         shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
         final EventLinker linker =

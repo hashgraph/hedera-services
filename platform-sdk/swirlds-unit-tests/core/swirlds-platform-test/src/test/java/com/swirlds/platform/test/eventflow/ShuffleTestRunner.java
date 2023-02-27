@@ -97,7 +97,7 @@ public class ShuffleTestRunner {
      */
     private void initialize() {
         final Consensus consensus =
-                ConsensusUtils.buildSimpleConsensus(addressBook, consensusEventHandler::addMinGenInfo);
+                ConsensusUtils.buildSimpleConsensus(addressBook);
 
         // Keeps track of all the consensus events
         consensusEventObserver = new ConsensusEventObserver();
