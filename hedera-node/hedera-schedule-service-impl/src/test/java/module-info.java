@@ -10,6 +10,7 @@ module com.hedera.node.app.service.schedule.impl.test {
     requires org.apache.commons.lang3;
     requires org.apache.commons.codec;
     requires hedera.services.hedera.node.hedera.app.spi.testFixtures;
+    requires com.swirlds.common;
 
     opens com.hedera.node.app.service.schedule.impl.test to
             org.junit.platform.commons,
@@ -18,6 +19,9 @@ module com.hedera.node.app.service.schedule.impl.test {
     exports com.hedera.node.app.service.schedule.impl.test to
             org.mockito;
 
+    opens com.hedera.node.app.service.schedule.impl.test.serdes to
+            org.junit.platform.commons,
+            org.mockito;
     opens com.hedera.node.app.service.schedule.impl.test.handlers to
             org.junit.platform.commons,
             org.mockito;

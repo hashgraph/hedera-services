@@ -36,6 +36,7 @@ import static org.mockito.BDDMockito.verify;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -62,7 +63,7 @@ class SubmitMessageTransitionLogicTest {
     private SignedTxnAccessor accessor;
     private OptionValidator validator;
     private SubmitMessageTransitionLogic subject;
-    private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
+    private MerkleMapLike<EntityNum, MerkleTopic> topics = MerkleMapLike.from(new MerkleMap<>());
     private GlobalDynamicProperties globalDynamicProperties;
     private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 
@@ -74,7 +75,6 @@ class SubmitMessageTransitionLogicTest {
         given(transactionContext.consensusTime()).willReturn(consensusTime);
         accessor = mock(SignedTxnAccessor.class);
         validator = mock(OptionValidator.class);
-        topics.clear();
         globalDynamicProperties = mock(GlobalDynamicProperties.class);
         given(globalDynamicProperties.messageMaxBytesAllowed()).willReturn(1024);
         subject =

@@ -1,0 +1,57 @@
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.swirlds.demo.platform;
+
+import com.swirlds.common.system.SwirldState2;
+import com.swirlds.common.system.events.Event;
+
+/**
+ * This class is the same as PlatformTestingDemoState with the single difference that it implements SwirldState2
+ */
+public class PlatformTestingToolState2 extends PlatformTestingToolState implements SwirldState2 {
+
+    private static final long CLASS_ID = 0xc0900cfa7a24db76L;
+
+    public PlatformTestingToolState2() {
+        super();
+    }
+
+    public PlatformTestingToolState2(final PlatformTestingToolState2 that) {
+        super(that);
+    }
+
+    @Override
+    public long getClassId() {
+        return CLASS_ID;
+    }
+
+    @Override
+    public void preHandle(final Event event) {
+        event.forEachTransaction(this::preHandleTransaction);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public synchronized PlatformTestingToolState2 copy() {
+        throwIfImmutable();
+        roundCounter++;
+
+        return new PlatformTestingToolState2(this);
+    }
+}

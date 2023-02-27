@@ -31,6 +31,8 @@ import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.StateChildren;
 import com.hedera.node.app.service.mono.exceptions.NoValidSignedStateException;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
@@ -51,8 +53,6 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.fchashmap.FCHashMap;
-import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -84,16 +84,16 @@ class SignedStateViewFactoryTest {
     private AccountStorageAdapter accounts;
 
     @Mock
-    private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
+    private VirtualMapLike<VirtualBlobKey, VirtualBlobValue> storage;
 
     @Mock
-    private VirtualMap<ContractKey, IterableContractValue> contractStorage;
+    private VirtualMapLike<ContractKey, IterableContractValue> contractStorage;
 
     @Mock
-    private MerkleMap<EntityNum, MerkleTopic> topics;
+    private MerkleMapLike<EntityNum, MerkleTopic> topics;
 
     @Mock
-    private MerkleMap<EntityNum, MerkleToken> tokens;
+    private MerkleMapLike<EntityNum, MerkleToken> tokens;
 
     @Mock
     private TokenRelStorageAdapter tokenAssociations;
@@ -253,6 +253,11 @@ class SignedStateViewFactoryTest {
         given(platform.getLatestImmutableState()).willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         final var stateView = factory.latestSignedStateView();
         assertTrue(stateView.isEmpty());
+    }
+
+    @Test
+    void nullIsNotUsableProvider() {
+        assertFalse(SignedStateViewFactory.isUsable(null));
     }
 
     private void givenStateWithMockChildren() {

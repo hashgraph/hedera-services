@@ -18,6 +18,8 @@ package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_TLS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_TLS_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PROFILES_ACTIVE;
 import static java.util.Map.entry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,7 +45,11 @@ class ScreenedNodeFilePropsTest {
     private final String LEGACY_NODE_PROPS_LOC = "src/test/resources/bootstrap/legacy-node.properties";
 
     private static final Map<String, Object> expectedProps = Map.ofEntries(
-            entry(GRPC_PORT, 60211), entry(GRPC_TLS_PORT, 40212), entry(HEDERA_PROFILES_ACTIVE, Profile.TEST));
+            entry(GRPC_WORKFLOWS_PORT, 80211),
+            entry(GRPC_WORKFLOWS_TLS_PORT, 80212),
+            entry(GRPC_PORT, 70211),
+            entry(GRPC_TLS_PORT, 40212),
+            entry(HEDERA_PROFILES_ACTIVE, Profile.TEST));
 
     @BeforeEach
     void setup() {

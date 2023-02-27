@@ -36,6 +36,7 @@ import com.swirlds.common.crypto.Cryptography;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +57,7 @@ public class IngestChecker {
      * @param cryptography the {@link Cryptography} used to verify signatures
      * @throws NullPointerException if one of the arguments is {@code null}
      */
+    @Inject
     public IngestChecker(
             @NonNull final AccountID nodeAccountID,
             @NonNull final SignaturePreparer signaturePreparer,

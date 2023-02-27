@@ -1,0 +1,107 @@
+<!--
+  ~ Copyright 2016-2022 Hedera Hashgraph, LLC
+  ~
+  ~ This software is the confidential and proprietary information of
+  ~ Hedera Hashgraph, LLC. ("Confidential Information"). You shall not
+  ~ disclose such Confidential Information and shall use it only in
+  ~ accordance with the terms of the license agreement you entered into
+  ~ with Hedera Hashgraph.
+  ~
+  ~ HEDERA HASHGRAPH MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF
+  ~ THE SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+  ~ TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+  ~ PARTICULAR PURPOSE, OR NON-INFRINGEMENT. HEDERA HASHGRAPH SHALL NOT BE LIABLE FOR
+  ~ ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR
+  ~ DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
+  -->
+
+<html>
+<head>
+	<style>
+		pre {
+			font-family: "Courier 10 Pitch", Courier, monospace;
+			margin-bottom: 1.6em;
+			max-width: 100%;
+			overflow: auto;
+			background-color: #efefef;
+		}
+	</style>
+</head>
+<body>
+
+<h1>How to create a new Swirlds app in Eclipse</h1>
+These versions (or later) should be downloaded and installed:
+<ul>
+	<li>Oracle Java SE 10: <a
+			href="https://www.oracle.com/technetwork/java/javase/downloads/java-archive-javase10-4425482.html">
+		Oracle Java SE Development Kit 10.0.2</a></li>
+
+	<li>Eclipse 4.7 (Oxygen):
+		<a href="https://eclipse.org/downloads/">Eclipse IDE for Java Developers</a> (EE is also ok).
+	</li>
+
+	<li> Swirlds SDK: <a href="http://www.swirlds.com/download/">Swirlds SDK</a>.</li>
+
+</ul>
+
+To create a new app, copy the <b>HelloSwirldsDemo</b> folder and everything in it to a new folder with the appropriate
+name. In this example, the new folder will be called <b>ExampleApp</b>. The folder can be anywhere, but there are some
+advantages to having it somewhere under the Eclipse <b>workspace</b> directory. Two directory levels above
+<b>ExampleApp</b> will be the Swirlds browser (named <b>swirlds.jar</b>) and possibly a file named <b>config.txt</b> In
+this example, the files will be at:<br>
+<pre>
+    workspace/git/swirlds/sdk/source/ExampleApp
+    workspace/git/swirlds/sdk/swirlds.jar
+    workspace/git/swirlds/sdk/config.txt
+</pre>
+
+This example will use slashes in paths, but on Windows they will be backslashes. After copying and renaming the folder,
+do the following:<p>
+
+<ul>
+	<li> edit the file <b>ExampleApp/pom.xml</b> with a text editor</li>
+	<ul>
+		<li> replace all 3 occurrences of "HelloSwirldDemo" with "ExampleApp"</li>
+		<li> save and close the text editor</li>
+	</ul>
+
+	<li>
+		import the project
+		<ul>
+			<li>run Eclipse</li>
+			<li> if the package explorer isn't visible, choose menu WINDOW > SHOW VIEW > PROJECT EXPLORER</li>
+			<li> choose menu FILE > IMPORT</li>
+			<li> click the triangle by MAVEN if it doesn't have items indented under it</li>
+			<li> click EXISTING MAVEN PROJECTS</li>
+			<li> click NEXT</li>
+			<li> click BROWSE (on the same line as ROOT DIRECTORY)</li>
+			<li> navigate to the <b>ExampleApp</b> folder, and click on it
+			<li> click OPEN</li>
+			<li> click FINISH</li>
+			<li> in the package explorer, click the triangle by EXAMPLEAPP then SRC then (DEFAULT PACKAGE) to open
+				them
+			</li>
+			<li> right click on <b>HelloSwirldDemoMain.java</b> and choose REFACTOR > RENAME</li>
+			<li> change the name to <b>ExampleAppMain</b>
+			<li> make sure the first box is checked (UPDATE REFERENCES) and the other two are unchecked</li>
+			<li> click FINISH twice (because it will warn there is a main method)</li>
+			<li> do the same to rename <b>HelloFileSystemDemoState</b> to <b>ExampleAppState</b></li>
+		</ul>
+
+	<li> in the package explorer, right click on <b>pom.xml</b> and choose RUN AS > MAVEN INSTALL</li>
+	<li> click on <b>src</b> in the package explorer to select it</li>
+	<li> click the green arrow button on the top bar to run it</li>
+	<li> if it asks, click JAVA APPLICATION and click OK</li>
+</ul>
+
+If there is a config.txt file in the same directory as swirlds.jar, then the new ExampleApp should run. It should look
+exactly like the HelloSwirldDemo app. If there are any problems, see <a href="runBrowser.html">How To Run Apps</a>.
+<p>
+<p>
+	At this point, the new app is ready for code development.
+
+
+<p>
+	<a href="index.html">Back</a>
+</p>
+</body>

@@ -28,7 +28,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
-import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
+import com.hedera.node.app.service.mono.state.logic.ScheduledTransactions;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValue;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
@@ -95,9 +95,6 @@ class ScheduleProcessingTest {
     private TxnAccessor schedule2Accessor;
 
     @Mock
-    private TxnAccessor schedule3Accessor;
-
-    @Mock
     private TxnAccessor schedule4Accessor;
 
     @Mock
@@ -107,7 +104,7 @@ class ScheduleProcessingTest {
     private TxnAccessor accessor;
 
     @Mock
-    private MerkleScheduledTransactions schedules;
+    private ScheduledTransactions schedules;
 
     private ScheduleProcessing subject;
 

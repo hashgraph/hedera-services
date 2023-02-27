@@ -19,9 +19,9 @@ package com.hedera.node.app.service.mono.context.init;
 import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_LAST_THROTTLE_EXEMPT;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
+import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder;
 import com.hedera.node.app.service.mono.files.FileUpdateInterceptor;
@@ -58,7 +58,7 @@ public class StateInitializationFlow {
         this.fileUpdateInterceptors = fileUpdateInterceptors;
     }
 
-    public void runWith(final ServicesState activeState, final BootstrapProperties bootstrapProperties) {
+    public void runWith(final StateChildrenProvider activeState, final BootstrapProperties bootstrapProperties) {
         final var lastThrottleExempt = bootstrapProperties.getLongProperty(ACCOUNTS_LAST_THROTTLE_EXEMPT);
         // The last throttle-exempt account is configurable to make it easy to start dev networks
         // without throttling

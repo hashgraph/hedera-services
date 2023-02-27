@@ -132,6 +132,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         requireNonNull(requestBuffer);
         requireNonNull(responseBuffer);
 
+        LOGGER.info("Started handling a query request in Query workflow");
         // 1. Parse and check header
         final Query query;
         try {
@@ -233,6 +234,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         }
 
         responseBuffer.put(response.toByteArray());
+        LOGGER.info("Finished handling a query request in Query workflow");
     }
 
     private long totalFee(final FeeObject costs) {
