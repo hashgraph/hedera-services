@@ -27,7 +27,7 @@ import com.hedera.node.app.service.network.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
-import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.service.Service;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
@@ -52,7 +52,7 @@ public final class Hedera {
 
     public Hedera() {}
 
-    public void start(@NonNull final HederaApp app, int port) {
+    public void start(@NonNull final HederaApp app, final int port) {
         final var metrics = createMetrics(app.nodeId());
 
         // Create the Ingest workflow. While we are in transition, some required facilities come
@@ -129,7 +129,7 @@ public final class Hedera {
                 serviceRegistry.registry().migrate(state, state.deserializedVersion(), currentVersion));
     }
 
-    private static Metrics createMetrics(NodeId nodeId) {
+    private static Metrics createMetrics(final NodeId nodeId) {
         // This is a stub implementation, to be replaced by a real implementation in #4293
         final var metricService = Executors.newSingleThreadScheduledExecutor(
                 getStaticThreadManager().createThreadFactory("metrics", "MetricsWriter"));
