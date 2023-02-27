@@ -15,7 +15,7 @@
  */
 package com.swirlds.platform.benchmark.consensus;
 
-import com.swirlds.common.config.ConfigurationUtils;
+import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.test.StakeGenerators;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -77,7 +77,7 @@ public class ConsensusBenchmark {
         events = emitter.emitEvents(numEvents);
 
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
-        ConfigurationUtils.scanAndRegisterAllConfigTypes(configurationBuilder, "com.swirlds");
+        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, "com.swirlds");
 
         consensus =
                 new ConsensusImpl(

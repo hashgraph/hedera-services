@@ -113,14 +113,14 @@ public class ChatterCoreTests {
         chatterCore.loadFromSignedState(signedState);
     }
 
-    private List<GossipEvent> generateEventsBelow(final GossipEventBuilder builder, final long lowerBound) {
+    private List<GossipEvent> generateEventsBelow(final EventBuilder builder, final long lowerBound) {
         final List<GossipEvent> events = new LinkedList<>();
         events.add(builder.setGeneration(lowerBound - 1).buildGossipEvent());
         events.add(builder.setGeneration(lowerBound - 2).buildGossipEvent());
         return events;
     }
 
-    private List<GossipEvent> generateEventsAbove(final GossipEventBuilder builder, final long upperBound) {
+    private List<GossipEvent> generateEventsAbove(final EventBuilder builder, final long upperBound) {
         final List<GossipEvent> events = new LinkedList<>();
         events.add(builder.setGeneration(upperBound).buildGossipEvent());
         events.add(builder.setGeneration(upperBound + 1).buildGossipEvent());
@@ -128,7 +128,7 @@ public class ChatterCoreTests {
     }
 
     private List<GossipEvent> generateEventsInWindow(
-            final GossipEventBuilder builder, final long lowerBound, final long upperBound) {
+            final EventBuilder builder, final long lowerBound, final long upperBound) {
         final List<GossipEvent> events = new LinkedList<>();
         events.add(builder.setGeneration(lowerBound).buildGossipEvent());
         events.add(builder.setGeneration((upperBound + lowerBound) / 2).buildGossipEvent());

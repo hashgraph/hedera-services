@@ -1782,7 +1782,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 return Long.compare(o1.getConsensusOrder(), o2.getConsensusOrder());
             } else if (o1.getConsensusTimestamp() == null && o2.getConsensusTimestamp() == null) {
                 // neither are consensus
-                return o1.getTimeReceived().compareTo(o2.getTimeReceived());
+                return o1.getBaseEvent().getTimeReceived().compareTo(o2.getBaseEvent().getTimeReceived());
             } else {
                 // one is consensus, the other is not
                 if (o1.getConsensusTimestamp() == null) {
@@ -1974,8 +1974,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      * @return whether this event is the last event to be added before restart
      */
     private boolean isLastEventBeforeRestart(final EventImpl event) {
-        return (event.isLastInRoundReceived() && swirldStateManager.isInFreezePeriod(event.getConsensusTimestamp()))
-                || event.isLastOneBeforeShutdown();
+        return event.isLastInRoundReceived() && swirldStateManager.isInFreezePeriod(event.getConsensusTimestamp());
     }
 
     /**

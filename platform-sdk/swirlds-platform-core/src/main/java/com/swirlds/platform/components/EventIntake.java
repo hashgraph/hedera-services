@@ -119,7 +119,7 @@ public class EventIntake {
         if (consensus().isExpired(event)) {
             return;
         }
-        stats.startIntake();
+        stats.startedIntake();
         if (!StaticValidators.isValidTimeCreated(event)) {
             event.clear();
             return;

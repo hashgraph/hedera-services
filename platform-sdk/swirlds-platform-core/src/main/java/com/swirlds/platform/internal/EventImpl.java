@@ -57,6 +57,8 @@ import java.util.Set;
 import java.util.TreeSet;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import static com.swirlds.platform.consensus.ConsensusConstants.MIN_TRANS_TIMESTAMP_INCR_NANOS;
+
 /**
  * An internal platform event. It holds all the event data relevant to the platform. It implements the Event interface
  * which is a public-facing form of an event.

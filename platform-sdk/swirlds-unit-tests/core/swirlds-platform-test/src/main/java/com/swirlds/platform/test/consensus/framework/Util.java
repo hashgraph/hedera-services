@@ -41,7 +41,7 @@ public class Util {
             // If adding this node to the partition would give the partition a super majority, skip
             // this node because
             // the remaining group of nodes would not have a strong minority
-            if (Utilities.isSupermajority(partitionedStake + nodeStakes.get(i), totalStake)) {
+            if (Utilities.isSuperMajority(partitionedStake + nodeStakes.get(i), totalStake)) {
                 continue;
             }
             partitionedNodes.add(i);

@@ -583,8 +583,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo
         }
         final long totalStake = addressBook.getTotalStake();
         final boolean superMajority =
-                Utilities.isSupermajority(yesStake, totalStake)
-                        || Utilities.isSupermajority(noStake, totalStake);
+                Utilities.isSuperMajority(yesStake, totalStake)
+                        || Utilities.isSuperMajority(noStake, totalStake);
         final boolean countingVote = yesStake >= noStake;
 
         return CountingVote.get(countingVote, superMajority);
@@ -1005,7 +1005,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo
                             stake += addressBook.getAddress(m3).getStake();
                         }
                     }
-                    if (Utilities.isSupermajority(
+                    if (Utilities.isSuperMajority(
                             stake, totalStake)) { // strongly see supermajority of
                         // intermediates
                         x.setStronglySeeP(mm, st);
@@ -1108,7 +1108,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo
             }
         }
         consensusMetrics.witnessesStronglySeen(numStronglySeen);
-        if (Utilities.isSupermajority(stake, addressBook.getTotalStake())) {
+        if (Utilities.isSuperMajority(stake, addressBook.getTotalStake())) {
             // it's a supermajority, so advance to the next round
             x.setRoundCreated(1 + parentRound(x));
             consensusMetrics.roundIncrementedByStronglySeen();

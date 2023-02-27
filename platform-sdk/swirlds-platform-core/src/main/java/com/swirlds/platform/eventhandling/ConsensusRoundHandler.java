@@ -351,7 +351,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
         // If the round is complete and it should be signed (either because it has a shutdown event or the settings say
         // so), create the signed state
-        if (round.isComplete() && (round.hasShutdownEvent() || timeToSignState(round.getRoundNum()))) {
+        if (round.isComplete() && timeToSignState(round.getRoundNum())) {
             if (isRoundInFreezePeriod(round)) {
                 // We are saving the first state in the freeze period.
                 // This should never be set to false once it is true. It is reset by restarting the node

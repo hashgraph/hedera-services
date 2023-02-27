@@ -40,35 +40,6 @@ import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 
 public abstract class EventUtils {
-
-    /**
-     * Create a signed state based on the consensus events supplied
-     *
-     * @param eventsAndGenerations holds consensus events and round generation information
-     * @param addressBook the address book used
-     */
-    public static SignedState createSignedState(
-            final SignedStateEventsAndGenerations eventsAndGenerations,
-            final AddressBook addressBook) {
-        // expire those we dont need
-        eventsAndGenerations.expire();
-
-        // create a signed state with the original events
-        final State originalState = new State();
-        originalState.setSwirldState(new DummySwirldState2());
-        return new SignedState(
-                originalState,
-                eventsAndGenerations.getLastRoundReceived(),
-                0,
-                null,
-                addressBook,
-                eventsAndGenerations.getEventsForSignedState(),
-                null,
-                false,
-                eventsAndGenerations.getMinGenForSignedState(),
-                SoftwareVersion.NO_VERSION);
-    }
-
     /**
      * Creates a copy of the supplies SignedState to simulate a restart or reconnect
      *
