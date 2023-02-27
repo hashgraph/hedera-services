@@ -89,6 +89,12 @@ public abstract class ReadableKVStateBase<K extends Comparable<K>, V> implements
         return iterateFromDataSource();
     }
 
+    @NonNull
+    @Override
+    public long size() {
+        return sizeOfDataSource();
+    }
+
     /** Clears all cached data, including the set of all read keys. */
     /*@OverrideMustCallSuper*/
     public void reset() {
@@ -111,6 +117,9 @@ public abstract class ReadableKVStateBase<K extends Comparable<K>, V> implements
      */
     @NonNull
     protected abstract Iterator<K> iterateFromDataSource();
+
+    @NonNull
+    protected abstract long sizeOfDataSource();
 
     /**
      * Records the given key and associated value were read. {@link WritableKVStateBase} will call

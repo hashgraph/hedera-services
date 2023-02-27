@@ -16,9 +16,7 @@
 
 package com.hedera.node.app.spi.meta;
 
-import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.validation.AttributeValidator;
-import com.hedera.node.app.spi.validation.EntityCreationLimits;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import java.time.Instant;
@@ -60,17 +58,4 @@ public interface HandleContext {
      * @return the validator for expiry metadata
      */
     ExpiryValidator expiryValidator();
-
-    /**
-     * Returns the limits on entity creation. This is needed to check if an entity can
-     * be created or not in {@link TransactionHandler}
-     * @return
-     */
-    EntityCreationLimits entityCreationLimits();
-
-    /**
-     * Returns the access to accounts. This is needed to check if an account exists or not in Handlers
-     * @return the access to accounts
-     */
-    AccountAccess accountAccess();
 }

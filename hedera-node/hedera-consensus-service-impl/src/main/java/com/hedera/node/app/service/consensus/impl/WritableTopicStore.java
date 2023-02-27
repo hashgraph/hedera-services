@@ -62,8 +62,8 @@ public class WritableTopicStore {
         topicState.put(topic.topicNumber(), asMerkleTopic(topic));
     }
 
-    public void getTotalTopics() {
-        topicState.keys();
+    public long size() {
+        return topicState.size();
     }
 
     private MerkleTopic asMerkleTopic(@NonNull final Topic topic) {

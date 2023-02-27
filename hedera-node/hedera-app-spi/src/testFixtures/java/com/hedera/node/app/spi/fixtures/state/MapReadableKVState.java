@@ -65,6 +65,12 @@ public class MapReadableKVState<K extends Comparable<K>, V> extends ReadableKVSt
         return backingStore.keySet().iterator();
     }
 
+    @NonNull
+    @Override
+    protected long sizeOfDataSource() {
+        return backingStore.size();
+    }
+
     /**
      * Create a new {@link Builder} for building a {@link MapReadableKVState}. The builder has
      * convenience methods for pre-populating the map.

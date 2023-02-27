@@ -21,13 +21,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
-import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
-import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
-import com.hedera.node.app.spi.validation.EntityCreationLimits;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -49,23 +46,17 @@ public class MonoHandleContext implements HandleContext {
     private final ExpiryValidator expiryValidator;
     private final TransactionContext txnCtx;
     private final AttributeValidator attributeValidator;
-    private final EntityCreationLimits creationLimits;
-    private final AccountAccess accountAccess;
 
     public MonoHandleContext(
             @NonNull final EntityIdSource ids,
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull final OptionValidator optionValidator,
-            @NonNull final TransactionContext txnCtx,
-            @NonNull final UsageLimits usageLimits,
-            @NonNull final AccountAccess accountAccess) {
+            @NonNull final TransactionContext txnCtx) {
         Objects.requireNonNull(ids);
         this.nums = () -> ids.newAccountId(PLACEHOLDER_ID).getAccountNum();
         this.txnCtx = Objects.requireNonNull(txnCtx);
         this.expiryValidator = Objects.requireNonNull(expiryValidator);
         this.attributeValidator = new MonoAttributeValidator(Objects.requireNonNull(optionValidator));
-        this.creationLimits = new MonoEntityCreationLimits(Objects.requireNonNull(usageLimits));
-        this.accountAccess = Objects.requireNonNull(accountAccess);
     }
 
     /**
@@ -100,22 +91,6 @@ public class MonoHandleContext implements HandleContext {
         return expiryValidator;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public EntityCreationLimits entityCreationLimits() {
-        return creationLimits;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public AccountAccess accountAccess() {
-        return accountAccess;
-    }
-
     private static class MonoAttributeValidator implements AttributeValidator {
         private final OptionValidator optionValidator;
 
@@ -138,30 +113,6 @@ public class MonoHandleContext implements HandleContext {
             if (validity != OK) {
                 throw new HandleStatusException(validity);
             }
-        }
-    }
-
-    private static class MonoEntityCreationLimits implements EntityCreationLimits {
-        private final UsageLimits usageLimits;
-
-        private MonoEntityCreationLimits(final UsageLimits usageLimits) {
-            this.usageLimits = usageLimits;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void refreshTopics() {
-            usageLimits.refreshTopics();
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public long getNumTopics() {
-            return usageLimits.getNumTopics();
         }
     }
 }

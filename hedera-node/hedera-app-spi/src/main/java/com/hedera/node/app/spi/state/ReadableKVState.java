@@ -84,4 +84,6 @@ public interface ReadableKVState<K extends Comparable<K>, V> {
      */
     @NonNull
     Set<K> readKeys();
+
+    long size();
 }

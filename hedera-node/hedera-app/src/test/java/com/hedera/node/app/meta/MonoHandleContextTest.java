@@ -68,7 +68,7 @@ class MonoHandleContextTest {
 
     @BeforeEach
     void setup() {
-        subject = new MonoHandleContext(ids, expiryValidator, optionValidator, txnCtx, usageLimits, accountAccess);
+        subject = new MonoHandleContext(ids, expiryValidator, optionValidator, txnCtx);
     }
 
     @Test

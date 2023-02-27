@@ -91,4 +91,10 @@ public final class OnDiskWritableKVState<K extends Comparable<K>, V> extends Wri
         final var k = new OnDiskKey<>(md, key);
         virtualMap.remove(k);
     }
+
+    @NonNull
+    @Override
+    protected long sizeOfDataSource() {
+        return virtualMap.size();
+    }
 }

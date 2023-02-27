@@ -57,6 +57,7 @@ import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.network.impl.handlers.NetworkUncheckedSubmitHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
@@ -315,10 +316,10 @@ class TransactionDispatcherTest {
     private GlobalDynamicProperties dynamicProperties;
 
     @Mock
-    private ReadableStoreFactory readableStoreFactory;
+    private WritableStoreFactory writableStoreFactory;
 
     @Mock
-    private WritableStoreFactory writableStoreFactory;
+    private UsageLimits usageLimits;
 
     private TransactionBody transactionBody = TransactionBody.getDefaultInstance();
 
@@ -379,16 +380,21 @@ class TransactionDispatcherTest {
                 tokenUnpauseHandler,
                 utilPrngHandler);
 
-        dispatcher = new TransactionDispatcher(handleContext, txnCtx, handlers, accountNumbers, dynamicProperties);
+        dispatcher = new TransactionDispatcher(
+                handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(
-                        () -> new TransactionDispatcher(handleContext, txnCtx, null, accountNumbers, dynamicProperties))
+        assertThatThrownBy(() -> new TransactionDispatcher(
+                        handleContext, txnCtx, null, accountNumbers, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionDispatcher(handleContext, txnCtx, handlers, null, dynamicProperties))
+        assertThatThrownBy(() -> new TransactionDispatcher(
+                        handleContext, txnCtx, handlers, null, dynamicProperties, usageLimits))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(
+                        () -> new TransactionDispatcher(handleContext, txnCtx, handlers, null, dynamicProperties, null))
                 .isInstanceOf(NullPointerException.class);
     }
 

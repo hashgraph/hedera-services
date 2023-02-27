@@ -32,6 +32,7 @@ import java.util.Objects;
  * @param <V> The type of value for the state
  */
 public final class InMemoryReadableKVState<K extends Comparable<K>, V> extends ReadableKVStateBase<K, V> {
+
     /** The underlying merkle tree data structure with the data */
     private final MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> merkle;
 
@@ -58,5 +59,11 @@ public final class InMemoryReadableKVState<K extends Comparable<K>, V> extends R
     @Override
     protected Iterator<K> iterateFromDataSource() {
         return merkle.keySet().stream().map(InMemoryKey::key).iterator();
+    }
+
+    @NonNull
+    @Override
+    protected long sizeOfDataSource() {
+        return merkle.size();
     }
 }

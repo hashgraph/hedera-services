@@ -73,4 +73,10 @@ public class WrappedWritableKVState<K extends Comparable<K>, V> extends Writable
     protected Iterator<K> iterateFromDataSource() {
         return delegate.keys();
     }
+
+    @NonNull
+    @Override
+    protected long sizeOfDataSource() {
+        return delegate.size();
+    }
 }

@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.spi.validation;
 
+import com.hedera.node.app.spi.exceptions.HandleStatusException;
+
 public interface EntityCreationLimits {
     /**
      * Counts existing number of topics and updated number of topics in state.
@@ -23,8 +25,8 @@ public interface EntityCreationLimits {
     void refreshTopics();
 
     /**
-     * Returns the number of topics existing in state.
-     * @return number of topics in state
+     * Counts existing number of topics in state and validate if the topic creation is allowed.
+     * If the topic creation is not allowed, it throws {@link HandleStatusException}.
      */
-    long getNumTopics();
+    void validateTopicCreation();
 }

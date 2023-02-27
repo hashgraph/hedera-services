@@ -86,4 +86,10 @@ public final class InMemoryWritableKVState<K extends Comparable<K>, V> extends W
         final var k = new InMemoryKey<>(key);
         merkle.remove(k);
     }
+
+    @NonNull
+    @Override
+    protected long sizeOfDataSource() {
+        return merkle.size();
+    }
 }

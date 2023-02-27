@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.spi.PreHandleDispatcher;
@@ -60,6 +61,7 @@ public class TransactionDispatcher {
     private final TransactionHandlers handlers;
     private final CryptoSignatureWaivers cryptoSignatureWaivers;
     private final GlobalDynamicProperties dynamicProperties;
+    private final UsageLimits usageLimits;
 
     /**
      * Creates a {@code TransactionDispatcher}.
@@ -76,12 +78,14 @@ public class TransactionDispatcher {
             @NonNull final TransactionContext txnCtx,
             @NonNull final TransactionHandlers handlers,
             @NonNull final HederaAccountNumbers accountNumbers,
-            @NonNull final GlobalDynamicProperties dynamicProperties) {
+            @NonNull final GlobalDynamicProperties dynamicProperties,
+            @NonNull final UsageLimits usageLimits) {
         this.txnCtx = txnCtx;
         this.handlers = requireNonNull(handlers);
         this.handleContext = handleContext;
         this.dynamicProperties = dynamicProperties;
         this.cryptoSignatureWaivers = new CryptoSignatureWaiversImpl(requireNonNull(accountNumbers));
+        this.usageLimits = requireNonNull(usageLimits);
     }
 
     /**
@@ -100,9 +104,10 @@ public class TransactionDispatcher {
     public void dispatchHandle(
             @NonNull final HederaFunctionality function,
             @NonNull final TransactionBody txn,
-            @NonNull final WritableStoreFactory storeFactory) {
+            @NonNull final WritableStoreFactory writableStoreFactory) {
         switch (function) {
-            case ConsensusCreateTopic -> dispatchConsensusCreateTopic(txn.getConsensusCreateTopic(), storeFactory);
+            case ConsensusCreateTopic -> dispatchConsensusCreateTopic(
+                    txn.getConsensusCreateTopic(), writableStoreFactory, usageLimits);
             case ConsensusUpdateTopic -> dispatchConsensusUpdateTopic(txn.getConsensusUpdateTopic());
             case ConsensusDeleteTopic -> dispatchConsensusDeleteTopic(txn.getConsensusDeleteTopic());
             case ConsensusSubmitMessage -> dispatchConsensusSubmitMessage(txn.getConsensusSubmitMessage());
@@ -118,8 +123,8 @@ public class TransactionDispatcher {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void dispatchPreHandle(
-            @NonNull final ReadableStoreFactory storeFactory, @NonNull final PreHandleContext handlerContext) {
-        requireNonNull(storeFactory);
+            @NonNull final ReadableStoreFactory readableStoreFactory, @NonNull final PreHandleContext handlerContext) {
+        requireNonNull(readableStoreFactory);
         requireNonNull(handlerContext);
 
         final var txBody = handlerContext.getTxn();
@@ -127,7 +132,7 @@ public class TransactionDispatcher {
             case CONSENSUSCREATETOPIC -> handlers.consensusCreateTopicHandler().preHandle(handlerContext);
             case CONSENSUSUPDATETOPIC -> handlers.consensusUpdateTopicHandler().preHandle(handlerContext);
             case CONSENSUSDELETETOPIC -> handlers.consensusDeleteTopicHandler()
-                    .preHandle(handlerContext, storeFactory.getTopicStore());
+                    .preHandle(handlerContext, readableStoreFactory.getTopicStore());
             case CONSENSUSSUBMITMESSAGE -> handlers.consensusSubmitMessageHandler()
                     .preHandle(handlerContext);
 
@@ -141,7 +146,10 @@ public class TransactionDispatcher {
             case CRYPTOUPDATEACCOUNT -> handlers.cryptoUpdateHandler()
                     .preHandle(handlerContext, cryptoSignatureWaivers);
             case CRYPTOTRANSFER -> handlers.cryptoTransferHandler()
-                    .preHandle(handlerContext, storeFactory.getAccountStore(), storeFactory.getTokenStore());
+                    .preHandle(
+                            handlerContext,
+                            readableStoreFactory.getAccountStore(),
+                            readableStoreFactory.getTokenStore());
             case CRYPTODELETE -> handlers.cryptoDeleteHandler().preHandle(handlerContext);
             case CRYPTOAPPROVEALLOWANCE -> handlers.cryptoApproveAllowanceHandler()
                     .preHandle(handlerContext);
@@ -160,31 +168,38 @@ public class TransactionDispatcher {
             case UNCHECKEDSUBMIT -> handlers.networkUncheckedSubmitHandler().preHandle(handlerContext);
 
             case SCHEDULECREATE -> handlers.scheduleCreateHandler()
-                    .preHandle(handlerContext, setupPreHandleDispatcher(storeFactory));
+                    .preHandle(handlerContext, setupPreHandleDispatcher(readableStoreFactory));
             case SCHEDULESIGN -> handlers.scheduleSignHandler()
-                    .preHandle(handlerContext, storeFactory.getScheduleStore(), setupPreHandleDispatcher(storeFactory));
+                    .preHandle(
+                            handlerContext,
+                            readableStoreFactory.getScheduleStore(),
+                            setupPreHandleDispatcher(readableStoreFactory));
             case SCHEDULEDELETE -> handlers.scheduleDeleteHandler()
-                    .preHandle(handlerContext, storeFactory.getScheduleStore());
+                    .preHandle(handlerContext, readableStoreFactory.getScheduleStore());
 
             case TOKENCREATION -> handlers.tokenCreateHandler().preHandle(handlerContext);
-            case TOKENUPDATE -> handlers.tokenUpdateHandler().preHandle(handlerContext, storeFactory.getTokenStore());
-            case TOKENMINT -> handlers.tokenMintHandler().preHandle(handlerContext, storeFactory.getTokenStore());
-            case TOKENBURN -> handlers.tokenBurnHandler().preHandle(handlerContext, storeFactory.getTokenStore());
-            case TOKENDELETION -> handlers.tokenDeleteHandler().preHandle(handlerContext, storeFactory.getTokenStore());
+            case TOKENUPDATE -> handlers.tokenUpdateHandler()
+                    .preHandle(handlerContext, readableStoreFactory.getTokenStore());
+            case TOKENMINT -> handlers.tokenMintHandler()
+                    .preHandle(handlerContext, readableStoreFactory.getTokenStore());
+            case TOKENBURN -> handlers.tokenBurnHandler()
+                    .preHandle(handlerContext, readableStoreFactory.getTokenStore());
+            case TOKENDELETION -> handlers.tokenDeleteHandler()
+                    .preHandle(handlerContext, readableStoreFactory.getTokenStore());
             case TOKENWIPE -> handlers.tokenAccountWipeHandler()
-                    .preHandle(handlerContext, storeFactory.getTokenStore());
+                    .preHandle(handlerContext, readableStoreFactory.getTokenStore());
             case TOKENFREEZE -> handlers.tokenFreezeAccountHandler()
-                    .preHandle(handlerContext, storeFactory.getTokenStore());
+                    .preHandle(handlerContext, readableStoreFactory.getTokenStore());
             case TOKENUNFREEZE -> handlers.tokenUnfreezeAccountHandler()
-                    .preHandle(handlerContext, storeFactory.getTokenStore());
+                    .preHandle(handlerContext, readableStoreFactory.getTokenStore());
             case TOKENGRANTKYC -> handlers.tokenGrantKycToAccountHandler()
-                    .preHandle(handlerContext, storeFactory.getTokenStore());
+                    .preHandle(handlerContext, readableStoreFactory.getTokenStore());
             case TOKENREVOKEKYC -> handlers.tokenRevokeKycFromAccountHandler()
-                    .preHandle(handlerContext, storeFactory.getTokenStore());
+                    .preHandle(handlerContext, readableStoreFactory.getTokenStore());
             case TOKENASSOCIATE -> handlers.tokenAssociateToAccountHandler().preHandle(handlerContext);
             case TOKENDISSOCIATE -> handlers.tokenDissociateFromAccountHandler().preHandle(handlerContext);
             case TOKEN_FEE_SCHEDULE_UPDATE -> handlers.tokenFeeScheduleUpdateHandler()
-                    .preHandle(handlerContext, storeFactory.getTokenStore());
+                    .preHandle(handlerContext, readableStoreFactory.getTokenStore());
             case TOKEN_PAUSE -> handlers.tokenPauseHandler().preHandle(handlerContext);
             case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler().preHandle(handlerContext);
 
@@ -242,7 +257,8 @@ public class TransactionDispatcher {
 
     private void dispatchConsensusCreateTopic(
             @NonNull final ConsensusCreateTopicTransactionBody topicCreation,
-            @NonNull final WritableStoreFactory storeFactory) {
+            @NonNull final WritableStoreFactory storeFactory,
+            UsageLimits usageLimits) {
         final var handler = handlers.consensusCreateTopicHandler();
         final var recordBuilder = handler.newRecordBuilder();
         handler.handle(
@@ -255,6 +271,7 @@ public class TransactionDispatcher {
         txnCtx.setCreated(TopicID.newBuilder()
                 .setTopicNum(recordBuilder.getCreatedTopic())
                 .build());
+        usageLimits.refreshTopics();
     }
 
     private void dispatchConsensusSubmitMessage(final ConsensusSubmitMessageTransactionBody messageSubmission) {

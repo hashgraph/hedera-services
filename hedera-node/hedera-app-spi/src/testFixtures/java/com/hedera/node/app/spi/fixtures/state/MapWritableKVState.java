@@ -89,6 +89,12 @@ public class MapWritableKVState<K extends Comparable<K>, V> extends WritableKVSt
         backingStore.remove(key);
     }
 
+    @NonNull
+    @Override
+    protected long sizeOfDataSource() {
+        return backingStore.size();
+    }
+
     /**
      * Create a new {@link Builder} for building a {@link MapWritableKVState}. The builder has
      * convenience methods for pre-populating the map.

@@ -43,4 +43,10 @@ public class StateKeyAdapter<K1 extends Comparable<K1>, K2 extends Comparable<K2
     protected Iterator<K2> iterateFromDataSource() {
         throw new UnsupportedOperationException("Not implemented");
     }
+
+    @NonNull
+    @Override
+    protected long sizeOfDataSource() {
+        return delegate.size();
+    }
 }

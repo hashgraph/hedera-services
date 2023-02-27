@@ -16,12 +16,8 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static java.util.Objects.requireNonNull;
 
@@ -30,6 +26,7 @@ import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.entity.TopicBuilderImpl;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.CreateTopicRecordBuilder;
+import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
@@ -108,42 +105,35 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         }
 
         /* validate if the current topic can be created */
-        final var currentNumTopics = handleContext.entityCreationLimits().getNumTopics();
-        validateTrue(
-                currentNumTopics + 1L <= consensusServiceConfig.maxTopics(),
-                MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+        if (topicStore.size() >= consensusServiceConfig.maxTopics()) {
+            throw new HandleStatusException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+        }
 
         /* validate the topic memo */
         handleContext.attributeValidator().validateMemo(op.getMemo());
         builder.memo(op.getMemo());
 
-        //        validateTrue(op.hasAutoRenewPeriod(), INVALID_RENEWAL_PERIOD); is this needed?
+        /* validate the auto-renew account */
         final var autoRenewPeriod =
                 op.hasAutoRenewPeriod() ? op.getAutoRenewPeriod().getSeconds() : NA;
-        final var autoRenewAccountId = op.getAutoRenewAccount();
+        final var autoRenewAccountId =
+                op.hasAutoRenewAccount() ? op.getAutoRenewAccount().getAccountNum() : NA;
 
         final var entityExpiryMeta = new ExpiryMeta(
-                NA, // since we can estimate expiry , not sur if this is expected?
-                op.hasAutoRenewPeriod() ? op.getAutoRenewPeriod().getSeconds() : NA,
-                op.hasAutoRenewAccount() ? op.getAutoRenewAccount().getAccountNum() : NA);
+                NA, // expiry not set explicitly
+                autoRenewPeriod,
+                autoRenewAccountId);
 
-        handleContext.expiryValidator().validateCreationAttempt(true, entityExpiryMeta);
-
-        /* validate the auto-renew account */
-        if (op.hasAutoRenewAccount()) {
-            final var account = handleContext.accountAccess().getAccountById(autoRenewAccountId);
-            validateTrue(account.isPresent(), INVALID_AUTORENEW_ACCOUNT);
-
-            validateFalse(account.get().isSmartContract(), INVALID_AUTORENEW_ACCOUNT);
-            validateTrue(op.hasAdminKey(), AUTORENEW_ACCOUNT_NOT_ALLOWED);
-        }
+        final var effectiveExpiryMeta = handleContext.expiryValidator().validateCreationAttempt(true, entityExpiryMeta);
+        builder.autoRenewSecs(effectiveExpiryMeta.autoRenewPeriod());
+        builder.expiry(effectiveExpiryMeta.expiry());
+        builder.autoRenewAccountNumber(effectiveExpiryMeta.autoRenewNum());
 
         /* --- Do business logic --- */
         builder.topicNumber(handleContext.newEntityNumSupplier().getAsLong());
 
         /* --- Persist the topic --- */
         topicStore.put(builder.build());
-        handleContext.entityCreationLimits().refreshTopics();
     }
 
     @Override

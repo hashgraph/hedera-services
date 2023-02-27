@@ -50,14 +50,14 @@ public class PreHandleContext {
     private Object handlerMetadata;
 
     public PreHandleContext(
-            @NonNull final AccountAccess keyLookup,
+            @NonNull final AccountAccess accountAccess,
             @NonNull final TransactionBody txn,
             @NonNull final AccountID payer) {
-        this.keyLookup = requireNonNull(keyLookup);
+        this.keyLookup = requireNonNull(accountAccess);
         this.txn = requireNonNull(txn);
         this.payer = requireNonNull(payer);
 
-        final var lookedUpPayerKey = keyLookup.getKey(payer);
+        final var lookedUpPayerKey = accountAccess.getKey(payer);
         addToKeysOrFail(lookedUpPayerKey, INVALID_PAYER_ACCOUNT_ID, true);
     }
 
