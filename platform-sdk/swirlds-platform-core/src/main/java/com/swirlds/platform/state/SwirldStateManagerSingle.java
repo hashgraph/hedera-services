@@ -297,7 +297,6 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
             final Hash hashEventsCons,
             final EventImpl[] events,
             final Instant consensusTimestamp,
-            final List<MinGenInfo> minGenInfo,
             final SoftwareVersion softwareVersion) {
         // We are not currently supporting this class --
         // if we ever start supporting it again we will need to implement this.

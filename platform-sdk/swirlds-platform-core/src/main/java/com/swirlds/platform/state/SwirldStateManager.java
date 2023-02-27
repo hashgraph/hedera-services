@@ -109,8 +109,6 @@ public interface SwirldStateManager
      * 		events that should be stored in the state
      * @param consensusTimestamp
      * 		the timestamp of this round
-     * @param minGenInfo
-     * 		information about minimum generations in this round
      * @param softwareVersion
      * 		the version of the software currently running
      */
@@ -120,7 +118,6 @@ public interface SwirldStateManager
             final Hash hashEventsCons,
             final EventImpl[] events,
             final Instant consensusTimestamp,
-            final List<MinGenInfo> minGenInfo,
             final SoftwareVersion softwareVersion);
 
     /**

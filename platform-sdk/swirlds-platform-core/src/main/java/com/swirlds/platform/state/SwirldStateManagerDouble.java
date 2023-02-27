@@ -157,7 +157,6 @@ public class SwirldStateManagerDouble implements SwirldStateManager {
             final Hash hashEventsCons,
             final EventImpl[] events,
             final Instant consensusTimestamp,
-            final List<MinGenInfo> minGenInfo,
             final SoftwareVersion softwareVersion) {
 
         stateRef.get()
@@ -168,7 +167,6 @@ public class SwirldStateManagerDouble implements SwirldStateManager {
                 .setHashEventsCons(hashEventsCons)
                 .setEvents(events)
                 .setConsensusTimestamp(consensusTimestamp)
-                .setMinGenInfo(minGenInfo)
                 .setCreationSoftwareVersion(softwareVersion);
     }
 
