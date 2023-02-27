@@ -39,7 +39,7 @@ import com.hedera.node.app.service.mono.Utils;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.AccountID;

@@ -19,7 +19,7 @@ package com.hedera.node.app.service.admin.impl.test.handlers;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
-import com.hedera.node.app.spi.meta.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
