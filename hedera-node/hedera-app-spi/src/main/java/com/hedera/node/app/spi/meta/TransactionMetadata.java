@@ -27,7 +27,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
+import java.util.Map;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle". This happens with
@@ -39,8 +39,6 @@ import java.util.List;
  * @param payer payer for the transaction
  * @param status {@link ResponseCodeEnum} status of the transaction
  * @param payerKey payer key required to sign the transaction. It is null if payer is missing
- * @param requiredNonPayerKeys list of keys that are required to sign the transaction, in addition
- *     to payer key
  * @param payerSignature {@link TransactionSignature} of the payer
  * @param otherSignatures lit {@link TransactionSignature} of other keys that need to sign
  * @param innerMetadata {@link TransactionMetadata} of the inner transaction (where appropriate)
@@ -51,14 +49,12 @@ public record TransactionMetadata(
         @Nullable SignatureMap signatureMap,
         @NonNull ResponseCodeEnum status,
         @Nullable HederaKey payerKey,
-        @NonNull List<HederaKey> requiredNonPayerKeys,
         @Nullable TransactionSignature payerSignature,
-        @NonNull List<TransactionSignature> otherSignatures,
+        @NonNull Map<HederaKey, TransactionSignature> otherSignatures,
         @Nullable TransactionMetadata innerMetadata) {
 
     public TransactionMetadata {
         requireNonNull(status);
-        requireNonNull(requiredNonPayerKeys);
         requireNonNull(otherSignatures);
     }
 
@@ -66,7 +62,7 @@ public record TransactionMetadata(
             @NonNull final PreHandleContext context,
             @NonNull final SignatureMap signatureMap,
             @Nullable final TransactionSignature payerSignature,
-            @NonNull final List<TransactionSignature> otherSignatures,
+            @NonNull final Map<HederaKey, TransactionSignature> otherSignatures,
             @Nullable final TransactionMetadata innerMetadata) {
         this(
                 requireNonNull(context).getTxn(),
@@ -74,14 +70,13 @@ public record TransactionMetadata(
                 requireNonNull(signatureMap),
                 context.getStatus(),
                 context.getPayerKey(),
-                context.getRequiredNonPayerKeys(),
                 payerSignature,
                 otherSignatures,
                 innerMetadata);
     }
 
     public TransactionMetadata(@NonNull final ResponseCodeEnum status) {
-        this(null, null, null, status, null, List.of(), null, List.of(), null);
+        this(null, null, null, status, null, null, Map.of(), null);
     }
 
     /**

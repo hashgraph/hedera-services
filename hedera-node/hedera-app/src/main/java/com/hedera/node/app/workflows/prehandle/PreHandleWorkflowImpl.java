@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.signature.SignaturePreparer;
+import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -40,7 +41,7 @@ import com.swirlds.common.system.events.Event;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
@@ -196,14 +197,14 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     }
 
     @NonNull
-    private List<TransactionSignature> verifyOtherSignatures(
+    private Map<HederaKey, TransactionSignature> verifyOtherSignatures(
             @NonNull final HederaState state,
             @NonNull final PreHandleContext context,
             @NonNull final byte[] txBodyBytes,
             @NonNull final SignatureMap signatureMap) {
         final var otherSignatures = signaturePreparer.prepareSignatures(
                 state, txBodyBytes, signatureMap, context.getRequiredNonPayerKeys());
-        cryptography.verifyAsync(otherSignatures);
+        cryptography.verifyAsync(new ArrayList<>(otherSignatures.values()));
         return otherSignatures;
     }
 
@@ -212,7 +213,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             @NonNull final PreHandleContext context,
             @NonNull final SignatureMap signatureMap,
             @Nullable final TransactionSignature payerSignature,
-            @NonNull final List<TransactionSignature> otherSignatures,
+            @NonNull final Map<HederaKey, TransactionSignature> otherSignatures,
             @Nullable final TransactionMetadata innerMetadata) {
         return new TransactionMetadata(context, signatureMap, payerSignature, otherSignatures, innerMetadata);
     }

@@ -23,6 +23,7 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.Map;
 
 public interface SignaturePreparer {
 
@@ -57,10 +58,10 @@ public interface SignaturePreparer {
      *     com.hederahashgraph.api.proto.java.TransactionBody}
      * @param signatureMap the {@link SignatureMap} that is included in the transaction
      * @param keys the list of {@link HederaKey}s for which the signature data needs to be prepared
-     * @return the {@link TransactionSignature} with all data required to verify the signature
+     * @return a {@link Map} from the provided keys to their respective {@link TransactionSignature}
      */
     @NonNull
-    List<TransactionSignature> prepareSignatures(
+    Map<HederaKey, TransactionSignature> prepareSignatures(
             @NonNull HederaState state,
             @NonNull byte[] txBodyBytes,
             @NonNull SignatureMap signatureMap,
