@@ -38,6 +38,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnF
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.PendingCompletion;
+import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -48,6 +49,20 @@ import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * <p>Encapsulates the logic that finalizes all hollow accounts based on the list of {@code PendingCompletion} returned
+ * by calling {@link SwirldsTxnAccessor#getPendingCompletions} on the current transaction, possibly adding to this list
+ * the wrapped hollow sender of an EthereumTransaction.</p>
+ *
+ * <p>This logic includes:
+ * <ul>
+ *     <li>checking that the number of requested finalizations is not greater than {@link GlobalDynamicProperties#maxPrecedingRecords()}</li>
+ *     <li>updating the state of the accounts with the new key</li>
+ *     <li>exporting the preceding child records</li>
+ *     <li>marking the entity as changed in the {@link SigImpactHistorian}</li>
+ * </ul>
+ * </p>
+ */
 @Singleton
 public class HollowAccountFinalizationLogic {
 
@@ -83,26 +98,49 @@ public class HollowAccountFinalizationLogic {
         this.txnCtx = txnCtx;
     }
 
-    // add javadocs
+    /**
+     * For the current transaction, obtains the list of pending completions returned by {@link SwirldsTxnAccessor#getPendingCompletions},
+     * and finalizes the accounts based on the data in the contained {@code PendingCompletion}s in the list.
+     *
+     * <p>If the current transaction is a valid {@link com.hederahashgraph.api.proto.java.HederaFunctionality#EthereumTransaction},
+     * and the wrapped sender is also a hollow account, then the sender is also added to the list of pending completions.
+     *
+     * <p><strong>*IMPORTANT*</strong>
+     * The logic here does not verify whether the list of pending completions returned by {@link SwirldsTxnAccessor#getPendingCompletions}
+     * is valid --- it assumes they have been verified upstream.
+     *
+     * @return {@link ResponseCodeEnum#MAX_CHILD_RECORDS_EXCEEDED} if the # of pending completions was >
+     * than the max allowed preceding child records; {@link ResponseCodeEnum#OK} otherwise
+     */
     public ResponseCodeEnum perform() {
+        final var pendingCompletions = getFinalPendingCompletions();
+        final int numOfCompletions = pendingCompletions.size();
+
+        if (numOfCompletions > properties.maxPrecedingRecords()) {
+            return MAX_CHILD_RECORDS_EXCEEDED;
+        } else if (numOfCompletions > 0) {
+            finalizeAccounts(pendingCompletions);
+        }
+        return OK;
+    }
+
+    private List<PendingCompletion> getFinalPendingCompletions() {
         var pendingFinalizations = txnCtx.swirldsTxnAccessor().getPendingCompletions();
         if (pendingFinalizations.equals(Collections.emptyList())) {
             pendingFinalizations = new ArrayList<>();
         }
-        addWrappedEthSenderToPendingFinalizationsIfNeeded(pendingFinalizations);
-        final int numFinalizations = pendingFinalizations.size();
-
-        if (numFinalizations == 0) {
-            return OK;
-        } else if (numFinalizations > properties.maxPrecedingRecords()) {
-            return MAX_CHILD_RECORDS_EXCEEDED;
-        }
-
-        finalizeAccounts(pendingFinalizations);
-        return OK;
+        maybeAddWrappedEthSenderToPendingFinalizations(pendingFinalizations);
+        return pendingFinalizations;
     }
 
-    private void addWrappedEthSenderToPendingFinalizationsIfNeeded(final List<PendingCompletion> pendingFinalizations) {
+    /**
+     * Given a mutable list of {@link PendingCompletion}, checks whether the current transaction
+     * is a valid EthereumTransaction and its sender sender is a hollow account. If such is the case,
+     * adds a new {@link PendingCompletion} for the hollow wrapped sender of the EthereumTransaction.
+     *
+     * @param pendingFinalizations a mutable list of {@link PendingCompletion}
+     */
+    private void maybeAddWrappedEthSenderToPendingFinalizations(final List<PendingCompletion> pendingFinalizations) {
         final var accessor = txnCtx.accessor();
         final var ethTxExpansion = spanMapAccessor.getEthTxExpansion(accessor);
         if (ethTxExpansion != null && ethTxExpansion.result().equals(OK)) {
@@ -119,14 +157,18 @@ public class HollowAccountFinalizationLogic {
         }
     }
 
-    /*
-        Finalizes the HederaAccounts in @param pendingFinalizations and exports child records.
-        NOTE that even if the subsequent transaction execution is not successful,
-        the hollow accounts will still be finalized.
-    */
-    private void finalizeAccounts(final List<PendingCompletion> pendingFinalizations) {
+    /***
+     * Finalizes the {@link com.hedera.node.app.service.mono.state.migration.HederaAccount}s
+     * in {@param pendingCompletions} in state, exports child records and updates {@link SigImpactHistorian}.
+     *
+     * <p>NOTE that even if the subsequent transaction execution is not successful,
+     *         the hollow accounts will still be finalized.
+     * @param pendingCompletions the list of {@link PendingCompletion} that specify the hollow account finalizations
+     * to be performed
+     */
+    private void finalizeAccounts(final List<PendingCompletion> pendingCompletions) {
         final var accountStorageAdapter = accountsSupplier.get();
-        for (final var completion : pendingFinalizations) {
+        for (final var completion : pendingCompletions) {
             final var hederaAccount = accountStorageAdapter.getForModify(completion.hollowAccountNum());
             final var key = completion.key();
             hederaAccount.setAccountKey(key);
@@ -147,9 +189,8 @@ public class HollowAccountFinalizationLogic {
         final var inProgress = new InProgressChildRecord(
                 DEFAULT_SOURCE_ID, syntheticUpdate, childRecordBuilder, Collections.emptyList());
         final var childRecord = inProgress.recordBuilder();
-
-        sigImpactHistorian.markEntityChanged(
-                childRecord.getReceiptBuilder().getAccountId().num());
         recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, inProgress.syntheticBody(), childRecord);
+
+        sigImpactHistorian.markEntityChanged(accountID.getAccountNum());
     }
 }
