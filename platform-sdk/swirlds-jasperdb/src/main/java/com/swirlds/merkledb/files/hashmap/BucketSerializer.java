@@ -30,11 +30,17 @@ import java.nio.ByteBuffer;
  */
 public class BucketSerializer<K extends VirtualKey<? super K>> implements DataItemSerializer<Bucket<K>> {
     /**
-     * Temporary bucket buffers. There is an open question if this should be static, the reason it
-     * is not is we need different ThreadLocals for each key type.
+     * Cached thread local buckets for fixed size key serializers.
+     *
+     * An open question is if there should be one static temporary bucket for all
+     * serializers, or one bucket per serializer. For now, let's have just two: one for all
+     * fixed size serializers, and another one for variable size ones.
      */
     @SuppressWarnings("rawtypes")
-    private static final ThreadLocal<Bucket> REUSABLE_BUCKETS = new ThreadLocal<>();
+    private static final ThreadLocal<Bucket> REUSABLE_FIXEDSIZE_BUCKET = new ThreadLocal<>();
+    /** Similar thread local buckets to the above, but for variable size key serializers. */
+    @SuppressWarnings("rawtypes")
+    private static final ThreadLocal<Bucket> REUSABLE_VARSIZE_BUCKET = new ThreadLocal<>();
 
     /**
      * How many of the low-order bytes in the serialization version are devoted to non-key
@@ -73,12 +79,17 @@ public class BucketSerializer<K extends VirtualKey<? super K>> implements DataIt
     /** Get a reusable bucket for current thread, cleared as an empty bucket */
     @SuppressWarnings({"rawtypes", "unchecked"})
     public Bucket<K> getReusableEmptyBucket() {
-        Bucket reusableBucket = REUSABLE_BUCKETS.get();
+        final boolean isVarSizeKeySerializer = keySerializer.isVariableSize();
+        Bucket reusableBucket =
+                isVarSizeKeySerializer ? REUSABLE_VARSIZE_BUCKET.get() : REUSABLE_FIXEDSIZE_BUCKET.get();
         Bucket<K> bucket;
-        if ((reusableBucket == null)
-                || (reusableBucket.getKeySerializer().isVariableSize() != keySerializer.isVariableSize())) {
+        if (reusableBucket == null) {
             bucket = new Bucket<>(keySerializer);
-            REUSABLE_BUCKETS.set(bucket);
+            if (isVarSizeKeySerializer) {
+                REUSABLE_VARSIZE_BUCKET.set(bucket);
+            } else {
+                REUSABLE_FIXEDSIZE_BUCKET.set(bucket);
+            }
         } else {
             bucket = reusableBucket;
             bucket.setKeySerializer(keySerializer);
