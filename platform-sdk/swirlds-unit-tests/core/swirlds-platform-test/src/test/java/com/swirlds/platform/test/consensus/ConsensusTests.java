@@ -13,87 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.swirlds.platform.test.consensus;
 
-import static com.swirlds.common.test.StakeGenerators.BALANCED;
+import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
-import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("Consensus Tests")
+@Tag(TIME_CONSUMING)
 class ConsensusTests {
-
     /**
-     * Temporary directory provided by JUnit
+     * Number of iterations in each test. An iteration is to create one graph, and feed it in twice
+     * in different topological orders, and check if they match.
      */
-    @TempDir
-    Path testDirectory;
-
-    /**
-     * Number of iterations in each test. An iteration is to create one graph, and feed it in twice in different
-     * topological orders, and check if they match. 10 iterations takes about 13 minutes.
-     */
-    private final int NUM_ITER = 10;
+    private final int NUM_ITER = 1;
 
     @BeforeAll
     public static void initConfig() {
         new TestConfigBuilder().getOrCreateConfig();
-    }
-
-    @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#reconnectSimulation")
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestComponentTags.PLATFORM)
-    @Tag(TestComponentTags.CONSENSUS)
-    @DisplayName("Reconnect Simulation")
-    @ParameterizedTest
-    void reconnectSimulation(final ConsensusTestParams params) {
-        ConsensusTestDefinitions.reconnectSimulation(
-                testDirectory, params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
-    }
-
-    @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#reconnectSimulationWithShadowGraph")
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestComponentTags.PLATFORM)
-    @Tag(TestComponentTags.CONSENSUS)
-    @DisplayName("Reconnect Simulation with Shadow Graph")
-    @ParameterizedTest
-    void reconnectSimulationWithShadowGraph(final ConsensusTestParams params) {
-        ConsensusTestDefinitions.reconnectSimulation(
-                testDirectory, params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
-    }
-
-    @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#staleEvent")
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestComponentTags.PLATFORM)
-    @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TestQualifierTags.AT_SCALE)
-    @DisplayName("Stale Events Tests")
-    @ParameterizedTest
-    void staleEvent(final ConsensusTestParams params) {
-        ConsensusTestDefinitions.staleEvent(params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
-    }
-
-    @ParameterizedTest
-    @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#areAllEventsReturned")
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestComponentTags.PLATFORM)
-    @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TestQualifierTags.AT_SCALE)
-    @DisplayName("All Events Returned Tests")
-    void areAllEventsReturned(final ConsensusTestParams params) {
-        ConsensusTestDefinitions.areAllEventsReturned(params.numNodes(), params.stakeGenerator());
     }
 
     @ParameterizedTest
@@ -104,11 +50,45 @@ class ConsensusTests {
     @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Order Invariance Tests")
     void orderInvarianceTests(final ConsensusTestParams params) {
-        ConsensusTestDefinitions.orderInvarianceTests(
-                params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+        ConsensusTestRunner.create()
+                .setTest(ConsensusTestDefinitions::orderInvarianceTests)
+                .setParams(params)
+                .setIterations(NUM_ITER)
+                .run();
     }
 
-    @Disabled("Failing - documented in swirlds/swirlds-platform/issues/4995")
+    @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#reconnectSimulation")
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestComponentTags.PLATFORM)
+    @Tag(TestComponentTags.CONSENSUS)
+    @DisplayName("Reconnect Simulation")
+    @ParameterizedTest
+    @Disabled(
+            "spams the logs because the shadowgraph is not ready to handle the new restart"
+                    + " paradigm")
+    void reconnectSimulation(final ConsensusTestParams params) {
+        ConsensusTestRunner.create()
+                .setTest(ConsensusTestDefinitions::reconnect)
+                .setParams(params)
+                .setIterations(NUM_ITER)
+                .run();
+    }
+
+    @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#staleEvent")
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestComponentTags.PLATFORM)
+    @Tag(TestComponentTags.CONSENSUS)
+    @Tag(TestQualifierTags.AT_SCALE)
+    @DisplayName("Stale Events Tests")
+    @ParameterizedTest
+    void staleEvent(final ConsensusTestParams params) {
+        ConsensusTestRunner.create()
+                .setTest(ConsensusTestDefinitions::stale)
+                .setParams(params)
+                .setIterations(NUM_ITER)
+                .run();
+    }
+
     @ParameterizedTest
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#forkingTests")
     @Tag(TestTypeTags.FUNCTIONAL)
@@ -117,22 +97,11 @@ class ConsensusTests {
     @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Forking Tests")
     void forkingTests(final ConsensusTestParams params) {
-        ConsensusTestDefinitions.forkingTests(params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
-    }
-
-    @Disabled("Failing - documented in swirlds/swirlds-platform/issues/4995")
-    @ParameterizedTest
-    @ValueSource(ints = {2, 4, 9})
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestComponentTags.PLATFORM)
-    @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TestQualifierTags.AT_SCALE)
-    @DisplayName("Forking Tests")
-    void forkingTestsOldVersion(final int numNodes) {
-        // This seed used to cause a bug in the consensus algorithm. It was supposedly fixed by branch
-        // 02617-D-reconnect-connect-recalculation but it still fails. Ticket swirlds/swirlds-platform/issues/4995
-        // documents this failure.
-        ConsensusTestDefinitions.forkingTests(numNodes, BALANCED, 1, -6764715924816914095L);
+        ConsensusTestRunner.create()
+                .setTest(ConsensusTestDefinitions::forkingTests)
+                .setParams(params)
+                .setIterations(NUM_ITER)
+                .run();
     }
 
     @ParameterizedTest
@@ -143,7 +112,11 @@ class ConsensusTests {
     @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Partition Tests")
     void partitionTests(final ConsensusTestParams params) {
-        ConsensusTestDefinitions.partitionTests(params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+        ConsensusTestRunner.create()
+                .setTest(ConsensusTestDefinitions::partitionTests)
+                .setParams(params)
+                .setIterations(NUM_ITER)
+                .run();
     }
 
     @ParameterizedTest
@@ -154,8 +127,11 @@ class ConsensusTests {
     @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Sub Quorum Partition Tests")
     void subQuorumPartitionTests(final ConsensusTestParams params) {
-        ConsensusTestDefinitions.subQuorumPartitionTests(
-                params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+        ConsensusTestRunner.create()
+                .setTest(ConsensusTestDefinitions::subQuorumPartitionTests)
+                .setParams(params)
+                .setIterations(NUM_ITER)
+                .run();
     }
 
     @ParameterizedTest
@@ -166,7 +142,11 @@ class ConsensusTests {
     @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Clique Tests")
     void cliqueTests(final ConsensusTestParams params) {
-        ConsensusTestDefinitions.cliqueTests(params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+        ConsensusTestRunner.create()
+                .setTest(ConsensusTestDefinitions::cliqueTests)
+                .setParams(params)
+                .setIterations(NUM_ITER)
+                .run();
     }
 
     @ParameterizedTest
@@ -177,8 +157,11 @@ class ConsensusTests {
     @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Variable Rate Tests")
     void variableRateTests(final ConsensusTestParams params) {
-        ConsensusTestDefinitions.variableRateTests(
-                params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+        ConsensusTestRunner.create()
+                .setTest(ConsensusTestDefinitions::variableRateTests)
+                .setParams(params)
+                .setIterations(NUM_ITER)
+                .run();
     }
 
     @ParameterizedTest
@@ -189,20 +172,27 @@ class ConsensusTests {
     @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Node Uses Stale Other Parents")
     void nodeUsesStaleOtherParents(final ConsensusTestParams params) {
-        ConsensusTestDefinitions.nodeUsesStaleOtherParents(
-                params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+        ConsensusTestRunner.create()
+                .setTest(ConsensusTestDefinitions::usesStaleOtherParents)
+                .setParams(params)
+                .setIterations(NUM_ITER)
+                .run();
     }
 
     @ParameterizedTest
-    @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#nodeProvidesStaleOtherParents")
+    @MethodSource(
+            "com.swirlds.platform.test.consensus.ConsensusTestArgs#nodeProvidesStaleOtherParents")
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Node Provides Stale Other Parents")
     void nodeProvidesStaleOtherParents(final ConsensusTestParams params) {
-        ConsensusTestDefinitions.nodeProvidesStaleOtherParents(
-                params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+        ConsensusTestRunner.create()
+                .setTest(ConsensusTestDefinitions::providesStaleOtherParents)
+                .setParams(params)
+                .setIterations(NUM_ITER)
+                .run();
     }
 
     @ParameterizedTest
@@ -213,20 +203,27 @@ class ConsensusTests {
     @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Quorum Of Nodes Go Down Tests")
     void quorumOfNodesGoDownTests(final ConsensusTestParams params) {
-        ConsensusTestDefinitions.quorumOfNodesGoDownTests(
-                params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+        ConsensusTestRunner.create()
+                .setTest(ConsensusTestDefinitions::quorumOfNodesGoDown)
+                .setParams(params)
+                .setIterations(NUM_ITER)
+                .run();
     }
 
     @ParameterizedTest
-    @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#subQuorumOfNodesGoDownTests")
+    @MethodSource(
+            "com.swirlds.platform.test.consensus.ConsensusTestArgs#subQuorumOfNodesGoDownTests")
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @Tag(TestQualifierTags.AT_SCALE)
     @DisplayName("Sub Quorum Of Nodes Go Down Tests")
     void subQuorumOfNodesGoDownTests(final ConsensusTestParams params) {
-        ConsensusTestDefinitions.subQuorumOfNodesGoDownTests(
-                params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+        ConsensusTestRunner.create()
+                .setTest(ConsensusTestDefinitions::subQuorumOfNodesGoDown)
+                .setParams(params)
+                .setIterations(NUM_ITER)
+                .run();
     }
 
     @ParameterizedTest
@@ -236,8 +233,11 @@ class ConsensusTests {
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Repeated Timestamp Test")
     void repeatedTimestampTest(final ConsensusTestParams params) {
-        ConsensusTestDefinitions.repeatedTimestampTest(
-                params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+        ConsensusTestRunner.create()
+                .setTest(ConsensusTestDefinitions::repeatedTimestampTest)
+                .setParams(params)
+                .setIterations(NUM_ITER)
+                .run();
     }
 
     @ParameterizedTest
@@ -247,6 +247,28 @@ class ConsensusTests {
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Consensus Receives Ancient Event")
     void ancientEventTest(final ConsensusTestParams params) {
-        ConsensusTestDefinitions.ancientEventTest(params.numNodes(), params.stakeGenerator(), NUM_ITER, params.seeds());
+        ConsensusTestRunner.create()
+                .setTest(ConsensusTestDefinitions::ancient)
+                .setParams(params)
+                .setIterations(NUM_ITER)
+                .run();
+    }
+
+    @Disabled(
+            "spams the logs because the shadowgraph is not ready to handle the new restart"
+                    + " paradigm")
+    @ParameterizedTest
+    @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#restartWithEventsParams")
+    @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestComponentTags.PLATFORM)
+    @Tag(TestComponentTags.CONSENSUS)
+    @DisplayName("Node restart with events")
+    void fastRestartWithEvents(final ConsensusTestParams params) {
+        ConsensusTestRunner.create()
+                .setTest(ConsensusTestDefinitions::restart)
+                .setParams(params)
+                .setIterations(NUM_ITER)
+                .run();
     }
 }

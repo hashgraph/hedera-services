@@ -49,6 +49,8 @@ public abstract class BufferingEventEmitter<T extends BufferingEventEmitter<T>> 
      */
     protected int bufferedEvents;
 
+    protected long numEventsGenerated;
+
     protected BufferingEventEmitter(final GraphGenerator<?> graphGenerator) {
         super(graphGenerator);
 
@@ -63,8 +65,11 @@ public abstract class BufferingEventEmitter<T extends BufferingEventEmitter<T>> 
      * buffered event from the given node ID or until the buffer fills up.
      */
     protected void attemptToGenerateEventFromNode(final int nodeID) {
-        while (events.get(nodeID).isEmpty() && bufferedEvents < MAX_BUFFERED_EVENTS) {
+        while (events.get(nodeID).isEmpty()
+                && bufferedEvents < MAX_BUFFERED_EVENTS
+                && getCheckpoint() > numEventsGenerated) {
             final IndexedEvent nextEvent = getGraphGenerator().generateEvent();
+            numEventsGenerated++;
             events.get((int) nextEvent.getCreatorId()).add(nextEvent);
             bufferedEvents++;
         }
@@ -128,5 +133,6 @@ public abstract class BufferingEventEmitter<T extends BufferingEventEmitter<T>> 
     public void reset() {
         super.reset();
         clearEvents();
+        numEventsGenerated = 0;
     }
 }

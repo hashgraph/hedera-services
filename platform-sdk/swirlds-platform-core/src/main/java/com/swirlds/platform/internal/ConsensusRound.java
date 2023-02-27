@@ -13,73 +13,90 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.swirlds.platform.internal;
 
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.events.ConsensusEvent;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.util.iterator.TypedIterator;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-/**
- * A consensus round with all its events.
- */
+/** A consensus round with events and all other relevant data. */
 public class ConsensusRound implements Round {
-
     /** an unmodifiable list of consensus events in this round, in consensus order */
     private final List<EventImpl> consensusEvents;
-
     /** the consensus generations when this round reached consensus */
     private final GraphGenerations generations;
-
     /** this round's number */
     private final long roundNum;
-
     /** the last event in the round */
-    private EventImpl lastEvent;
-
-    /** true if this round contains a shutdown event */
-    private boolean hasShutdownEvent;
-
+    private final EventImpl lastEvent;
     /** The number of application transactions in this round */
     private int numAppTransactions = 0;
+    /** A snapshot of consensus at this consensus round */
+    private final ConsensusSnapshot snapshot;
 
     /**
-     * Create a new instance with the provided consensus events.
+     * Same as {@link #ConsensusRound(List, GraphGenerations, long, ConsensusSnapshot)} but the
+     * round number is derived from the event and the judge hashes and minGen are empty.
      *
-     * @param consensusEvents
-     * 		the events in the round, in consensus order
-     * @param generations
-     * 		the consensus generations for this round
+     * @deprecated this is currently used only by unit tests, should be removed before merging to
+     *     develop
      */
-    public ConsensusRound(final List<EventImpl> consensusEvents, final GraphGenerations generations) {
+    @Deprecated(forRemoval = true)
+    public ConsensusRound(
+            final List<EventImpl> consensusEvents, final GraphGenerations generations) {
+        this(consensusEvents, generations, consensusEvents.get(0).getRoundReceived(), null);
+    }
+
+    /**
+     * Same as {@link #ConsensusRound(List, GraphGenerations, long, ConsensusSnapshot)} but the
+     * round number is derived from the snapshot
+     */
+    public ConsensusRound(
+            final List<EventImpl> consensusEvents,
+            final GraphGenerations generations,
+            final ConsensusSnapshot snapshot) {
+        this(consensusEvents, generations, snapshot.round(), snapshot);
+    }
+
+    /**
+     * Create a new instance with the provided consensus info.
+     *
+     * @param consensusEvents the events in the round, in consensus order
+     * @param generations the consensus generations for this round
+     * @param roundNum the round number
+     * @param snapshot snapshot of consensus at this round
+     */
+    private ConsensusRound(
+            final List<EventImpl> consensusEvents,
+            final GraphGenerations generations,
+            final long roundNum,
+            final ConsensusSnapshot snapshot) {
         this.consensusEvents = Collections.unmodifiableList(consensusEvents);
         this.generations = generations;
+        this.roundNum = roundNum;
+        this.snapshot = snapshot;
 
         for (final EventImpl e : consensusEvents) {
-            if (e.isLastOneBeforeShutdown()) {
-                hasShutdownEvent = true;
-            }
             numAppTransactions += e.getNumAppTransactions();
         }
 
-        final EventImpl lastInList = consensusEvents.get(consensusEvents.size() - 1);
-        if (lastInList.isLastInRoundReceived()) {
-            lastEvent = lastInList;
-        }
-
-        this.roundNum = consensusEvents.get(0).getRoundReceived();
+        lastEvent =
+                consensusEvents.isEmpty() ? null : consensusEvents.get(consensusEvents.size() - 1);
     }
 
     /**
      * @return true if this round is complete (contains the last event of the round)
+     * @deprecated an incomplete round is a concept introduced by the old recovery workflow. the new
+     *     workflow does not use this class so a round is never incomplete. also, a round might have
+     *     no consensus events and still be a complete round.
      */
+    @Deprecated(forRemoval = true)
     public boolean isComplete() {
         return lastEvent != null;
     }
@@ -110,39 +127,38 @@ public class ConsensusRound implements Round {
     }
 
     /**
+     * @return a snapshot of consensus at this consensus round
+     */
+    public ConsensusSnapshot getSnapshot() {
+        return snapshot;
+    }
+
+    /**
      * @return the number of events in this round
      */
     public int getNumEvents() {
         return consensusEvents.size();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public Iterator<ConsensusEvent> iterator() {
         return new TypedIterator<>(consensusEvents.iterator());
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public long getRoundNum() {
         return roundNum;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public boolean isEmpty() {
         return consensusEvents.isEmpty();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public int getEventCount() {
         return consensusEvents.size();
@@ -150,38 +166,18 @@ public class ConsensusRound implements Round {
 
     /**
      * @return the last event of this round, or null if this round is not complete
+     * @deprecated a round might not have any events, the code should not expect this to be non-null
      */
+    @Deprecated(forRemoval = true)
     public EventImpl getLastEvent() {
         return lastEvent;
     }
 
-    /**
-     * @return true if this round contains a shutdown event
-     */
-    public boolean hasShutdownEvent() {
-        return hasShutdownEvent;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-
-        if (o == null || getClass() != o.getClass()) return false;
-
-        final ConsensusRound round = (ConsensusRound) o;
-
-        return new EqualsBuilder()
-                .append(consensusEvents, round.consensusEvents)
-                .isEquals();
-    }
-
-    @Override
-    public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(consensusEvents).toHashCode();
-    }
-
     @Override
     public String toString() {
-        return "round: " + roundNum + ", consensus events: " + EventUtils.toShortStrings(consensusEvents);
+        return "round: "
+                + roundNum
+                + ", consensus events: "
+                + EventUtils.toShortStrings(consensusEvents);
     }
 }

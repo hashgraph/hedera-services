@@ -113,36 +113,25 @@ public final class SignedStateFileReader {
      * 		if there is any problems with reading from a file
      */
     public static DeserializedSignedState readStateFile(final Path stateFile) throws IOException {
-
-        if (!exists(stateFile)) {
-            throw new IOException("File " + stateFile.toAbsolutePath() + " does not exist!");
-        }
-        if (!Files.isRegularFile(stateFile)) {
-            throw new IOException("File " + stateFile.toAbsolutePath() + " is not a file!");
-        }
+        checkSignedStatePath(stateFile);
 
         final DeserializedSignedState returnState;
 
-        final Triple<State, Hash, SigSet> data = deserializeAndDebugOnFailure(
-                () -> new BufferedInputStream(new FileInputStream(stateFile.toFile())),
-                (final MerkleDataInputStream in) -> {
-                    final byte versionByte = in.readByte();
-                    if (versionByte != VERSIONED_FILE_BYTE) {
-                        throw new IOException(
-                                "File is not versioned -- data corrupted or is an unsupported legacy state");
-                    }
+        final Triple<State, Hash, SigSet> data =
+                deserializeAndDebugOnFailure(
+                        () -> new BufferedInputStream(new FileInputStream(stateFile.toFile())),
+                        (final MerkleDataInputStream in) -> {
+                            readAndCheckVersion(in);
 
-                    in.readInt(); // file version
-                    in.readProtocolVersion();
+                            final Path directory = stateFile.getParent();
 
-                    final Path directory = stateFile.getParent();
+                            final State state =
+                                    in.readMerkleTree(directory, MAX_MERKLE_NODES_IN_STATE);
+                            final Hash hash = in.readSerializable();
+                            final SigSet sigSet = in.readSerializable();
 
-                    final State state = in.readMerkleTree(directory, MAX_MERKLE_NODES_IN_STATE);
-                    final Hash hash = in.readSerializable();
-                    final SigSet sigSet = in.readSerializable();
-
-                    return Triple.of(state, hash, sigSet);
-                });
+                            return Triple.of(state, hash, sigSet);
+                        });
 
         final SignedState newSignedState = new SignedState(data.getLeft());
 
@@ -151,5 +140,56 @@ public final class SignedStateFileReader {
         returnState = new DeserializedSignedState(newSignedState, data.getMiddle());
 
         return returnState;
+    }
+
+    /**
+     * Read only the signed state from a file, do not read the hash and signatures
+     *
+     * @param stateFile the file to read from
+     * @return the signed state read
+     * @throws IOException if any problem occurs while reading
+     */
+    public static SignedState readSignedStateOnly(final Path stateFile) throws IOException {
+        checkSignedStatePath(stateFile);
+
+        return deserializeAndDebugOnFailure(
+                () -> new BufferedInputStream(new FileInputStream(stateFile.toFile())),
+                (final MerkleDataInputStream in) -> {
+                    readAndCheckVersion(in);
+                    return new SignedState(
+                            in.readMerkleTree(stateFile.getParent(), MAX_MERKLE_NODES_IN_STATE));
+                });
+    }
+
+    /**
+     * Check the path of a signed state file
+     *
+     * @param stateFile the path to check
+     * @throws IOException if the path is not valid
+     */
+    private static void checkSignedStatePath(final Path stateFile) throws IOException {
+        if (!exists(stateFile)) {
+            throw new IOException("File " + stateFile.toAbsolutePath() + " does not exist!");
+        }
+        if (!Files.isRegularFile(stateFile)) {
+            throw new IOException("File " + stateFile.toAbsolutePath() + " is not a file!");
+        }
+    }
+
+    /**
+     * Read the version from a signed state file and check it
+     *
+     * @param in the stream to read from
+     * @throws IOException if the version is invalid
+     */
+    private static void readAndCheckVersion(final MerkleDataInputStream in) throws IOException {
+        final byte versionByte = in.readByte();
+        if (versionByte != VERSIONED_FILE_BYTE) {
+            throw new IOException(
+                    "File is not versioned -- data corrupted or is an unsupported legacy state");
+        }
+
+        in.readInt(); // file version
+        in.readProtocolVersion();
     }
 }

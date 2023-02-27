@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.swirlds.platform.test.event;
 
 import com.swirlds.common.constructable.ConstructableIgnored;
@@ -40,11 +39,6 @@ public class SimpleEvent extends EventImpl {
     @Override
     public boolean isLastInRoundReceived() {
         return lastInRoundReceived;
-    }
-
-    @Override
-    public boolean isLastOneBeforeShutdown() {
-        return false;
     }
 
     @Override

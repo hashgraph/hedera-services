@@ -224,7 +224,12 @@ public enum LogMarker {
     /**
      * logs related to port forwarding
      */
-    PORT_FORWARDING(LogMarkerType.INFO);
+    PORT_FORWARDING(LogMarkerType.INFO),
+
+    /**
+     * detailed logs related to consensus voting, very verbose, should be used only for debugging
+     */
+    CONSENSUS_VOTING(LogMarkerType.INFO);
 
     private final LogMarkerType type;
     private final Marker marker;

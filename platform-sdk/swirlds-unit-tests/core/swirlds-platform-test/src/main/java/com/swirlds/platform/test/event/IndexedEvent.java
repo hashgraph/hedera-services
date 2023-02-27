@@ -13,20 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.swirlds.platform.test.event;
 
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
-import com.swirlds.platform.event.InternalEventData;
 import com.swirlds.platform.internal.EventImpl;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**
- * An event with the same behavior as a standard event but with the addition of some debugging metadata.
+ * An event with the same behavior as a standard event but with the addition of some debugging
+ * metadata.
  *
- * All testing and debugging utilities should use IndexedEvent instead of EventImpl directly.
+ * <p>All testing and debugging utilities should use IndexedEvent instead of EventImpl directly.
  */
 public class IndexedEvent extends EventImpl {
 
@@ -38,7 +36,8 @@ public class IndexedEvent extends EventImpl {
     public IndexedEvent() {}
 
     public IndexedEvent(
-            final BaseEventHashedData baseEventHashedData, final BaseEventUnhashedData baseEventUnhashedData) {
+            final BaseEventHashedData baseEventHashedData,
+            final BaseEventUnhashedData baseEventUnhashedData) {
         super(baseEventHashedData, baseEventUnhashedData);
     }
 
@@ -66,24 +65,18 @@ public class IndexedEvent extends EventImpl {
                 event.getOtherParent());
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public long getClassId() {
         return CLASS_ID;
     }
 
-    /**
-     * Get the index of this event with respect to the generator that created it.
-     */
+    /** Get the index of this event with respect to the generator that created it. */
     public long getGeneratorIndex() {
         return generatorIndex;
     }
 
-    /**
-     * Set the generator index of this event.
-     */
+    /** Set the generator index of this event. */
     public void setGeneratorIndex(final long generatorIndex) {
         this.generatorIndex = generatorIndex;
     }
@@ -99,32 +92,5 @@ public class IndexedEvent extends EventImpl {
     @Override
     public String toString() {
         return super.toString();
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (!(o instanceof IndexedEvent)) {
-            return false;
-        }
-        if (this == o) {
-            return true;
-        }
-
-        final InternalEventData data = getInternalEventData();
-        final InternalEventData otherData = ((IndexedEvent) o).getInternalEventData();
-
-        return super.equals(o)
-                && new EqualsBuilder()
-                        .append(data.isCleared(), otherData.isCleared())
-                        .append(data.isFameDecided(), otherData.isFameDecided())
-                        .append(data.isConsensus(), otherData.isConsensus())
-                        .append(data.hasUserTransactions(), otherData.hasUserTransactions())
-                        .append(data.getRecTimes(), otherData.getRecTimes())
-                        .isEquals();
-    }
-
-    @Override
-    public int hashCode() {
-        return super.hashCode();
     }
 }

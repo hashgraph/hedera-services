@@ -52,8 +52,6 @@ public class EventIntake {
     private final EventLinker eventLinker;
     /** A functor that provides access to a {@code Consensus} instance. */
     private final Supplier<Consensus> consensusSupplier;
-
-    private final ConsensusWrapper consensusWrapper;
     /** A reference to the initial address book for this node. */
     private final AddressBook addressBook;
     /** An {@link EventObserverDispatcher} instance */
@@ -86,7 +84,6 @@ public class EventIntake {
         this.selfId = selfId;
         this.eventLinker = eventLinker;
         this.consensusSupplier = consensusSupplier;
-        this.consensusWrapper = new ConsensusWrapper(consensusSupplier);
         this.addressBook = addressBook;
         this.dispatcher = dispatcher;
         this.stats = stats;
@@ -122,7 +119,7 @@ public class EventIntake {
         if (consensus().isExpired(event)) {
             return;
         }
-        stats.startIntakeAddEvent();
+        stats.startIntake();
         if (!StaticValidators.isValidTimeCreated(event)) {
             event.clear();
             return;
@@ -148,7 +145,7 @@ public class EventIntake {
             }
         }
         // record the event in the hashgraph, which results in the events in consEvent reaching consensus
-        final List<ConsensusRound> consRounds = consensusWrapper.addEvent(event, addressBook);
+        final List<ConsensusRound> consRounds = consensus().addEvent(event, addressBook);
         // #5762 after we calculate roundCreated, se set its value in GossipEvent so that it can be shared with other
         // nodes
         event.getBaseEvent().setRoundCreated(event.getRoundCreated());

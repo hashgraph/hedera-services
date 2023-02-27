@@ -18,7 +18,7 @@ package com.swirlds.platform.test.event.intake;
 
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.intake.ChatterEventMapper;
-import com.swirlds.platform.test.event.GossipEventBuilder;
+import com.swirlds.platform.test.event.EventBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,28 +34,22 @@ class ChatterEventMapperTest {
         Assertions.assertNull(mapper.getMostRecentEvent(creator1), "initially it should be empty");
         Assertions.assertNull(mapper.getMostRecentEvent(creator2), "initially it should be empty");
 
-        final GossipEvent cr1gen1 = GossipEventBuilder.builder()
-                .setCreatorId(creator1)
-                .setGeneration(1)
-                .buildEvent();
+        final GossipEvent cr1gen1 =
+                EventBuilder.builder().setCreatorId(creator1).setGeneration(1).buildGossipEvent();
         mapper.mapEvent(cr1gen1);
         Assertions.assertEquals(
                 cr1gen1, mapper.getMostRecentEvent(creator1), "the event just added should be the most recent");
         Assertions.assertNull(mapper.getMostRecentEvent(creator2), "creator1 should not affect creator2");
 
-        final GossipEvent cr1gen10 = GossipEventBuilder.builder()
-                .setCreatorId(creator1)
-                .setGeneration(10)
-                .buildEvent();
+        final GossipEvent cr1gen10 =
+                EventBuilder.builder().setCreatorId(creator1).setGeneration(10).buildGossipEvent();
         mapper.mapEvent(cr1gen10);
         Assertions.assertEquals(
                 cr1gen10, mapper.getMostRecentEvent(creator1), "the event just added should be the most recent");
         Assertions.assertNull(mapper.getMostRecentEvent(creator2), "creator1 should not affect creator2");
 
-        final GossipEvent cr1gen5 = GossipEventBuilder.builder()
-                .setCreatorId(creator1)
-                .setGeneration(5)
-                .buildEvent();
+        final GossipEvent cr1gen5 =
+                EventBuilder.builder().setCreatorId(creator1).setGeneration(5).buildGossipEvent();
         mapper.mapEvent(cr1gen5);
         Assertions.assertEquals(
                 cr1gen10, mapper.getMostRecentEvent(creator1), "the event just added should NOT be the most recent");

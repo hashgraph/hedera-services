@@ -159,7 +159,7 @@ public final class Utilities {
      * 		second array
      * @return 1 if first is bigger, -1 if second, 0 otherwise
      */
-    static int arrayCompare(byte[] sig1, byte[] sig2) {
+    public static int arrayCompare(byte[] sig1, byte[] sig2) {
         if (sig1 == null && sig2 == null) {
             return 0;
         }
@@ -199,7 +199,7 @@ public final class Utilities {
      * 		the array virtually XORed with the other two
      * @return 1 if first is bigger, -1 if second, 0 otherwise
      */
-    static int arrayCompare(byte[] sig1, byte[] sig2, byte[] whitening) {
+    public static int arrayCompare(byte[] sig1, byte[] sig2, byte[] whitening) {
         int maxLen;
         int minLen;
         if (sig1 == null && sig2 == null) {

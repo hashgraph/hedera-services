@@ -125,7 +125,7 @@ public final class StakeGenerators {
      * @return a list of stake values
      */
     public static List<Long> randomNodeStakes(final Long stakeSeed, final int numberOfNodes, final long totalStake) {
-        final Random r = initRandom(stakeSeed);
+        final Random r = initRandom(stakeSeed, false);
         final List<Long> stakes = new ArrayList<>(numberOfNodes);
         final long halfTotalStake = totalStake / 2;
         final long firstNodeStake = r.nextLong(halfTotalStake);

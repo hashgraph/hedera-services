@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.swirlds.platform.test.consensus;
 
 import static org.mockito.Mockito.mock;
@@ -27,6 +26,7 @@ import com.swirlds.common.time.Time;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.components.EventIntake;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
@@ -34,35 +34,26 @@ import com.swirlds.platform.event.linking.ParentFinder;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
-import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
-import com.swirlds.platform.observers.StaleEventObserver;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.sync.ShadowGraph;
 import com.swirlds.platform.sync.ShadowGraphEventObserver;
+import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.platform.test.event.IndexedEvent;
 import java.util.Arrays;
 import java.util.Deque;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-/**
- * Event intake with consensus and shadowgraph, used for testing
- */
-public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, LoadableFromSignedState {
+/** Event intake with consensus and shadowgraph, used for testing */
+public class TestIntake implements LoadableFromSignedState {
     private static final BiConsumer<Long, Long> NOOP_MINGEN = (l1, l2) -> {};
 
-    private final AddressBook ab;
-    private final BiConsumer<Long, Long> minGenConsumer;
-    private Consensus consensus;
+    private final ConsensusImpl consensus;
     private final ShadowGraph shadowGraph;
     private final EventIntake intake;
-    private final Deque<ConsensusRound> consensusRounds;
-    private final Deque<EventImpl> staleEvents;
-    private final Time time;
-    private final ConsensusConfig consensusConfig;
+    private final ConsensusOutput output;
     private int numEventsAdded = 0;
 
     public TestIntake(final AddressBook ab) {
@@ -77,7 +68,8 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
         this(ab, NOOP_MINGEN, time);
     }
 
-    public TestIntake(final AddressBook ab, final BiConsumer<Long, Long> minGenConsumer, final Time time) {
+    public TestIntake(
+            final AddressBook ab, final BiConsumer<Long, Long> minGenConsumer, final Time time) {
         this(ab, minGenConsumer, time, ConfigurationHolder.getConfigData(ConsensusConfig.class));
     }
 
@@ -86,44 +78,42 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
     }
 
     /**
-     * @param ab
-     * 		the address book used by this intake
-     * @param minGenConsumer
-     * 		the consumer of minimum generations per round
+     * @param ab the address book used by this intake
+     * @param minGenConsumer the consumer of minimum generations per round
      */
     public TestIntake(
             final AddressBook ab,
             final BiConsumer<Long, Long> minGenConsumer,
             final Time time,
             final ConsensusConfig consensusConfig) {
-        this.ab = ab;
-        this.minGenConsumer = minGenConsumer;
-        this.time = time;
-        this.consensusConfig = consensusConfig;
-        consensusRounds = new LinkedList<>();
-        staleEvents = new LinkedList<>();
-        consensus = new ConsensusImpl(consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, minGenConsumer, ab);
+        output = new ConsensusOutput(time);
+        consensus =
+                new ConsensusImpl(
+                        consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, minGenConsumer, ab);
         shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
         final EventLinker linker =
-                new InOrderLinker(ConfigurationHolder.getConfigData(ConsensusConfig.class), parentFinder, l -> null);
+                new InOrderLinker(
+                        ConfigurationHolder.getConfigData(ConsensusConfig.class),
+                        parentFinder,
+                        l -> null);
         final EventObserverDispatcher dispatcher =
-                new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph), this);
-        intake = new EventIntake(
-                NodeId.createMain(0), // only used for logging
-                linker,
-                this::getConsensus,
-                ab,
-                dispatcher,
-                ConsensusUtils.NOOP_INTAKE_CYCLE_STATS,
-                shadowGraph);
+                new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph), output);
+        intake =
+                new EventIntake(
+                        NodeId.createMain(0), // only used for logging
+                        linker,
+                        this::getConsensus,
+                        ab,
+                        dispatcher,
+                        ConsensusUtils.NOOP_INTAKE_CYCLE_STATS,
+                        shadowGraph);
     }
 
     /**
      * Link an event to its parents and add it to consensus and shadowgraph
      *
-     * @param event
-     * 		the event to add
+     * @param event the event to add
      */
     public void addEvent(final GossipEvent event) {
         intake.addUnlinkedEvent(event);
@@ -133,26 +123,22 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
     /**
      * Same as {@link #addEvent(GossipEvent)}
      *
-     * Note: this event won't be the one inserted, intake will create a new instance that will wrap the
-     * {@link com.swirlds.common.system.events.BaseEvent}
+     * <p>Note: this event won't be the one inserted, intake will create a new instance that will
+     * wrap the {@link com.swirlds.common.system.events.BaseEvent}
      */
     public void addEvent(final EventImpl event) {
         intake.addUnlinkedEvent(event.getBaseEvent());
         numEventsAdded++;
     }
 
-    /**
-     * Same as {@link #addEvent(GossipEvent)} but for a list of events
-     */
+    /** Same as {@link #addEvent(GossipEvent)} but for a list of events */
     public void addEvents(final List<IndexedEvent> events) {
         for (final IndexedEvent event : events) {
             addEvent(event.getBaseEvent());
         }
     }
 
-    /**
-     * Same as {@link #addEvent(GossipEvent)} but skips the linking and inserts this instance
-     */
+    /** Same as {@link #addEvent(GossipEvent)} but skips the linking and inserts this instance */
     public void addLinkedEvent(final EventImpl event) {
         intake.addEvent(event);
         numEventsAdded++;
@@ -172,51 +158,51 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
         return shadowGraph;
     }
 
-    @Override
-    public void consensusRound(final ConsensusRound consensusRound) {
-        for (final EventImpl event : consensusRound.getConsensusEvents()) {
-            event.setReachedConsTimestamp(time.now());
-        }
-        consensusRounds.add(consensusRound);
-    }
-
-    @Override
-    public void staleEvent(final EventImpl event) {
-        staleEvents.add(event);
-    }
-
     /**
      * @return a queue of all events that have been marked as stale
      */
     public Deque<EventImpl> getStaleEvents() {
-        return staleEvents;
+        return output.getStaleEvents();
     }
 
     /**
      * @return a queue of all rounds that have reached consensus
      */
     public Deque<ConsensusRound> getConsensusRounds() {
-        return consensusRounds;
+        return output.getConsensusRounds();
     }
 
-    /**
-     * prints the number of events in each round that reached consensus
-     */
+    /** prints the number of events in each round that reached consensus */
     public void printRoundSizes() {
-        for (final ConsensusRound round : consensusRounds) {
+        for (final ConsensusRound round : getConsensusRounds()) {
             System.out.printf("%s in round %s%n", round.getNumEvents(), round.getRoundNum());
         }
     }
 
     @Override
     public void loadFromSignedState(final SignedState signedState) {
-        consensus = new ConsensusImpl(
-                consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, minGenConsumer, ab, signedState);
+        consensus.loadFromSignedState(signedState);
         shadowGraph.clear();
-        shadowGraph.initFromEvents(Arrays.asList(signedState.getEvents()), consensus.getMinRoundGeneration());
+        shadowGraph.initFromEvents(
+                Arrays.asList(signedState.getEvents()), consensus.getMinRoundGeneration());
+    }
+
+    public void loadSnapshot(final ConsensusSnapshot snapshot) {
+        consensus.loadSnapshot(snapshot);
     }
 
     public int getNumEventsAdded() {
         return numEventsAdded;
+    }
+
+    public ConsensusOutput getOutput() {
+        return output;
+    }
+
+    public void reset() {
+        consensus.reset();
+        shadowGraph.clear();
+        output.clear();
+        numEventsAdded = 0;
     }
 }

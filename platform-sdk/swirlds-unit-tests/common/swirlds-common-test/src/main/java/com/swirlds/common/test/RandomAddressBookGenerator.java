@@ -159,7 +159,7 @@ public class RandomAddressBookGenerator {
         final SerializablePublicKey encPublicKey = PreGeneratedPublicKeys.getPublicKey(KeyType.EC, id);
         final SerializablePublicKey agreePublicKey = PreGeneratedPublicKeys.getPublicKey(KeyType.EC, id);
 
-        final String nickname = RandomUtils.randomString(random, 10);
+        final String nickname = NameUtils.getName(id);
         final String selfName = RandomUtils.randomString(random, 10);
 
         final boolean ownHost = false;

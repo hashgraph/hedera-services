@@ -22,7 +22,7 @@ import com.swirlds.platform.chatter.protocol.output.SendAction;
 import com.swirlds.platform.chatter.protocol.output.VariableTimeDelay;
 import com.swirlds.platform.chatter.protocol.peer.PeerGossipState;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.test.event.GossipEventBuilder;
+import com.swirlds.platform.test.event.EventBuilder;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,7 +35,7 @@ class VariableTimeDelayTest {
 
     @Test
     void testPeerKnows() {
-        final GossipEvent event = GossipEventBuilder.builder().buildEvent();
+        final GossipEvent event = EventBuilder.builder().buildGossipEvent();
         state.setPeerKnows(event.getDescriptor());
         final VariableTimeDelay<GossipEvent> eventTimeDelay =
                 new VariableTimeDelay<>(() -> Duration.ofMillis(100), state, now::get);
@@ -44,7 +44,7 @@ class VariableTimeDelayTest {
 
     @Test
     void testVariableDelay() {
-        final GossipEvent event = GossipEventBuilder.builder().buildEvent();
+        final GossipEvent event = EventBuilder.builder().buildGossipEvent();
 
         final AtomicInteger numCalls = new AtomicInteger(0);
         final VariableTimeDelay<GossipEvent> eventTimeDelay = new VariableTimeDelay<>(

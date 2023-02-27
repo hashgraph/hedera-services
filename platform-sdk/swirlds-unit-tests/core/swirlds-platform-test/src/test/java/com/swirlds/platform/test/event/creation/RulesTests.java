@@ -30,7 +30,7 @@ import com.swirlds.platform.event.creation.AncientParentsRule;
 import com.swirlds.platform.event.creation.BelowIntCreationRule;
 import com.swirlds.platform.event.creation.ChatteringRule;
 import com.swirlds.platform.event.creation.OtherParentTracker;
-import com.swirlds.platform.test.event.GossipEventBuilder;
+import com.swirlds.platform.test.event.EventBuilder;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import java.util.HashSet;
@@ -87,11 +87,11 @@ class RulesTests {
 
         assertEquals(EventCreationRuleResponse.PASS, tracker.shouldCreateEvent(null, null), "null should always pass");
 
-        final GossipEventBuilder myBuilder = GossipEventBuilder.builder().setCreatorId(1);
-        final GossipEventBuilder otherBuilder = GossipEventBuilder.builder().setCreatorId(2);
+        final EventBuilder myBuilder = EventBuilder.builder().setCreatorId(1);
+        final EventBuilder otherBuilder = EventBuilder.builder().setCreatorId(2);
 
-        final GossipEvent other1 = otherBuilder.buildEvent();
-        final GossipEvent self1 = otherBuilder.buildEvent();
+        final GossipEvent other1 = otherBuilder.buildGossipEvent();
+        final GossipEvent self1 = otherBuilder.buildGossipEvent();
 
         assertEquals(
                 EventCreationRuleResponse.PASS,
@@ -104,7 +104,7 @@ class RulesTests {
                 tracker.shouldCreateEvent(self1, other1),
                 "self1 had no parents, so it should not affect anything");
 
-        final GossipEvent self2 = otherBuilder.setOtherParent(other1).buildEvent();
+        final GossipEvent self2 = otherBuilder.setOtherParent(other1).buildGossipEvent();
         // track self2 which has an other parent of other1
         tracker.track(self2);
 

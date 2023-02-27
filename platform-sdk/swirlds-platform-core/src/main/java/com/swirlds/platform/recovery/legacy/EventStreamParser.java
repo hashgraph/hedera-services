@@ -243,9 +243,6 @@ public class EventStreamParser {
 
         event.setConsensus(true);
 
-        // force timeReceived to a deterministic value
-        event.setTimeReceived(event.getTimeCreated().plusNanos(1));
-
         addToQueue(event);
         eventCounter.getAndIncrement();
         return true;

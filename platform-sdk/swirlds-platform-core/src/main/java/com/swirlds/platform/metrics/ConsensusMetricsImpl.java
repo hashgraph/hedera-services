@@ -178,8 +178,8 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
      * {@inheritDoc}
      */
     @Override
-    public void coinRounds(final long numCoinRounds) {
-        this.numCoinRounds.update(numCoinRounds);
+    public void coinRound() {
+        this.numCoinRounds.update(1);
     }
 
     /**
