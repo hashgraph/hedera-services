@@ -72,9 +72,9 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaState;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -359,7 +359,7 @@ class TransactionDispatcherTest {
     void testDispatchWithIllegalParameters() {
         // given
         final var payer = AccountID.newBuilder().build();
-        final var tracker = new StoreFactory(state);
+        final var tracker = new ReadableStoreFactory(state);
         final var validContext = new PreHandleContext(
                 accountStore,
                 TransactionBody.newBuilder()
@@ -395,7 +395,7 @@ class TransactionDispatcherTest {
         // given
         final var txBody = TransactionBody.newBuilder().build();
         final var payer = AccountID.newBuilder().build();
-        final var tracker = new StoreFactory(state);
+        final var tracker = new ReadableStoreFactory(state);
         final var context = new PreHandleContext(accountStore, txBody, payer);
 
         // then
@@ -410,7 +410,7 @@ class TransactionDispatcherTest {
                 .setNodeStakeUpdate(NodeStakeUpdateTransactionBody.getDefaultInstance())
                 .build();
         final var payer = AccountID.newBuilder().build();
-        final var tracker = new StoreFactory(state);
+        final var tracker = new ReadableStoreFactory(state);
         final var context = new PreHandleContext(accountStore, txBody, payer);
 
         // then
@@ -424,7 +424,7 @@ class TransactionDispatcherTest {
             final TransactionBody txBody, final BiConsumer<TransactionHandlers, PreHandleContext> verification) {
         // given
         final var payer = AccountID.newBuilder().build();
-        final var tracker = new StoreFactory(state);
+        final var tracker = new ReadableStoreFactory(state);
         final var context = new PreHandleContext(accountStore, txBody, payer);
 
         // when

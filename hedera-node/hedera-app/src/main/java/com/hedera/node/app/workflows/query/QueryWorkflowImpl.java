@@ -41,7 +41,7 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
-import com.hedera.node.app.workflows.dispatcher.StoreFactory;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -90,8 +90,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      *
      * @param nodeInfo the {@link NodeInfo} of the current node
      * @param currentPlatformStatus the {@link CurrentPlatformStatus}
-     * @param stateAccessor a {@link Function} that returns the latest immutable or latest signed
-     *     state depending on the {@link ResponseType}
+     * @param stateAccessor a {@link Function} that returns the latest immutable or latest signed state depending on the
+     * {@link ResponseType}
      * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
      * @param checker the {@link QueryChecker} with specific checks of an ingest-workflow
@@ -132,6 +132,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         requireNonNull(requestBuffer);
         requireNonNull(responseBuffer);
 
+        LOGGER.info("Started handling a query request in Query workflow");
         // 1. Parse and check header
         final Query query;
         try {
@@ -201,7 +202,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 4. Check validity
-            final var storeFactory = new StoreFactory(state);
+            final var storeFactory = new ReadableStoreFactory(state);
             final var validity = dispatcher.validate(storeFactory, query);
 
             // 5. Submit payment to platform
@@ -233,6 +234,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         }
 
         responseBuffer.put(response.toByteArray());
+        LOGGER.info("Finished handling a query request in Query workflow");
     }
 
     private long totalFee(final FeeObject costs) {

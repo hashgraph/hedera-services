@@ -71,8 +71,8 @@ public class SubmissionManager {
      *
      * @param txBody the {@link TransactionBody} that should be submitted to the platform
      * @param byteArray the {@link ByteBuffer} of the data that should be submitted
-     * @param parser the {@link Parser} that is used to eventually parse the {@link
-     *     TransactionBody#getUncheckedSubmit()}
+     * @param parser the {@link Parser} that is used to eventually parse the
+     * {@link TransactionBody#getUncheckedSubmit()}
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if the transaction could not be submitted
      */

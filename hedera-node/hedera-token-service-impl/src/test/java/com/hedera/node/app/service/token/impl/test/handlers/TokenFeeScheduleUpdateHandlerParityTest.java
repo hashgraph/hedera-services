@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.token.impl.handlers.TokenFeeScheduleUpdateHandler;
-import com.hedera.node.app.spi.meta.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
