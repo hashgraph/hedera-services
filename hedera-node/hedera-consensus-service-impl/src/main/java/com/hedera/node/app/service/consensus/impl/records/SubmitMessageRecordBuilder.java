@@ -60,23 +60,23 @@ public class SubmitMessageRecordBuilder extends UniversalRecordBuilder<Consensus
     @NonNull
     @Override
     public byte[] getNewTopicRunningHash() {
-        throwIfMissingData();
+        throwIfMissingNewMetadata();
         return Objects.requireNonNull(newRunningHash);
     }
 
     @Override
     public long getNewTopicSequenceNumber() {
-        throwIfMissingData();
+        throwIfMissingNewMetadata();
         return newSequenceNumber;
     }
 
     @Override
     public long getUsedRunningHashVersion() {
-        throwIfMissingData();
+        throwIfMissingNewMetadata();
         return RUNNING_HASH_VERSION;
     }
 
-    private void throwIfMissingData() {
+    private void throwIfMissingNewMetadata() {
         if (newRunningHash == null) {
             throw new IllegalStateException("No new topic metadata was recorded");
         }

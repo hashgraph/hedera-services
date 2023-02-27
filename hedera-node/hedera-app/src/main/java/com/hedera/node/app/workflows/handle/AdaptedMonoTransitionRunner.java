@@ -28,7 +28,6 @@ import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Objects;
 import java.util.Set;
 import javax.inject.Inject;

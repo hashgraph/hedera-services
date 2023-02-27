@@ -245,11 +245,11 @@ class ConsensusCreateTopicHandlerTest {
     @Test
     @DisplayName("Handle method not implemented")
     void handleNotImplemented() {
+        final var op = transactionBody.getConsensusCreateTopic();
         // expect:
         assertThrows(
                 UnsupportedOperationException.class,
-                () -> subject.handle(
-                        handleContext, transactionBody.getConsensusCreateTopic(), consensusConfig, recordBuilder));
+                () -> subject.handle(handleContext, op, consensusConfig, recordBuilder));
     }
 
     @Test

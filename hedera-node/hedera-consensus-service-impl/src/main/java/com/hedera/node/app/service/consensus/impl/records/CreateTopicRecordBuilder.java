@@ -46,11 +46,11 @@ public class CreateTopicRecordBuilder extends UniversalRecordBuilder<ConsensusCr
      */
     @Override
     public long getCreatedTopic() {
-        throwIfMissingData();
+        throwIfMissingTopicNum();
         return createdTopicNum;
     }
 
-    private void throwIfMissingData() {
+    private void throwIfMissingTopicNum() {
         if (createdTopicNum == 0L) {
             throw new IllegalStateException("No new topic number was recorded");
         }
