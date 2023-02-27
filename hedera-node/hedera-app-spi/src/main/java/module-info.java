@@ -1,10 +1,10 @@
 module com.hedera.node.app.spi {
     requires transitive com.hedera.node.hapi;
     requires com.hedera.pbj.runtime;
-    requires static transitive com.github.spotbugs.annotations;
     requires com.swirlds.common;
     requires com.google.protobuf;
     requires com.swirlds.config;
+    requires com.github.spotbugs.annotations;
 
     exports com.hedera.node.app.spi;
     exports com.hedera.node.app.spi.state;
@@ -24,7 +24,4 @@ module com.hedera.node.app.spi {
     exports com.hedera.node.app.spi.validation;
     exports com.hedera.node.app.spi.accounts;
 
-    opens com.hedera.node.app.spi.accounts to
-            com.hedera.node.app.service.mono.testFixtures,
-            com.hedera.node.app.spi.test;
 }

@@ -8,7 +8,7 @@ module com.hedera.node.app.service.schedule.impl.test {
     requires com.hedera.node.app.service.mono.testFixtures;
     requires org.apache.commons.lang3;
     requires org.apache.commons.codec;
-    requires hedera.services.hedera.node.hedera.app.spi.testFixtures;
+    requires com.hedera.node.app.spi.fixtures;
     requires com.swirlds.common;
 
     opens com.hedera.node.app.service.schedule.impl.test to

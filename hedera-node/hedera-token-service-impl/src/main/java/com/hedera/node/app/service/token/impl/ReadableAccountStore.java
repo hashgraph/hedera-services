@@ -46,6 +46,7 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.Bytes;
+import com.hedera.pbj.runtime.io.DataBuffer;
 import com.hedera.pbj.runtime.io.DataOutputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -317,18 +318,8 @@ public class ReadableAccountStore implements AccountAccess {
         return builder.build();
     }
 
-    // For now, go through the pain of converting the PBJ key into a Google key and delegating.
-    // But really we need to get rid of JKey from all the new code.
     @NonNull
     public Optional<HederaKey> asHederaKey(@NonNull final Key key) {
-        try {
-            final var bytes = new ByteArrayOutputStream();
-            final var output = new DataOutputStream(bytes);
-            Key.PROTOBUF.write(key, output);
-            final var googleKey = com.hederahashgraph.api.proto.java.Key.parseFrom(bytes.toByteArray());
-            return Utils.asHederaKey(googleKey);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to produce protobuf bytes for a key!", e);
-        }
+        return Utils.asHederaKey(key);
     }
 }

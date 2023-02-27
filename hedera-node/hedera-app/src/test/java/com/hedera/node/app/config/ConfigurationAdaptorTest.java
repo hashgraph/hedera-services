@@ -82,6 +82,7 @@ import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@SuppressWarnings("removal")
 @ExtendWith(MockitoExtension.class)
 class ConfigurationAdaptorTest {
 
@@ -388,6 +389,5 @@ class ConfigurationAdaptorTest {
         // then
         assertThat(data).isNotNull();
         assertThat(data.workflowsEnabled()).isNotEmpty();
-        assertThat(data.workflowsEnabled().contains(HederaFunctionality.ConsensusGetTopicInfo));
     }
 }

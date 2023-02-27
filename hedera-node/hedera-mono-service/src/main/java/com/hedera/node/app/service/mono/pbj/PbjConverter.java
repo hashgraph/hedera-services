@@ -21,6 +21,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
@@ -49,6 +50,24 @@ public final class PbjConverter {
         try {
             final var bytes = txBody.toByteArray();
             return TransactionBody.PROTOBUF.parse(DataBuffer.wrap(bytes));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Key toPbj(com.hederahashgraph.api.proto.java.Key keyValue) {
+        try {
+            final var bytes = keyValue.toByteArray();
+            return Key.PROTOBUF.parse(DataBuffer.wrap(bytes));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static com.hederahashgraph.api.proto.java.Key fromPbj(Key keyValue) {
+        try {
+            final var bytes = asBytes(Key.PROTOBUF, keyValue);
+            return com.hederahashgraph.api.proto.java.Key.parseFrom(bytes);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

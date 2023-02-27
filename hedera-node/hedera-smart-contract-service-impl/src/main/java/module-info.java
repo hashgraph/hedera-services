@@ -2,7 +2,6 @@ import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 
 module com.hedera.node.app.service.contract.impl {
     requires com.hedera.node.app.service.contract;
-    requires static com.github.spotbugs.annotations;
     requires com.hedera.node.app.service.mono;
     requires com.google.protobuf;
     requires com.hedera.node.app.service.evm;
@@ -10,6 +9,7 @@ module com.hedera.node.app.service.contract.impl {
     requires com.swirlds.jasperdb;
     requires dagger;
     requires javax.inject;
+    requires com.github.spotbugs.annotations;
 
     provides com.hedera.node.app.service.contract.ContractService with
             ContractServiceImpl;

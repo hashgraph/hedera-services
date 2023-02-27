@@ -20,4 +20,5 @@ module com.hedera.node.app.service.mono.testFixtures {
     requires org.apache.commons.lang3;
     requires com.hedera.node.app.spi;
     requires com.google.common;
+    requires com.github.spotbugs.annotations;
 }

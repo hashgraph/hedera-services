@@ -23,6 +23,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
@@ -74,7 +75,7 @@ class ReadableScheduleStoreTest {
     @Test
     void getsScheduleMetaFromFetchedSchedule() {
         given(state.get(1L)).willReturn(schedule);
-        given(schedule.ordinaryViewOfScheduledTxn()).willReturn(TransactionBody.getDefaultInstance());
+        given(schedule.ordinaryViewOfScheduledTxn()).willReturn(PbjConverter.fromPbj(TransactionBody.newBuilder().build()));
         given(schedule.adminKey()).willReturn(Optional.of(adminKey));
         given(schedule.hasExplicitPayer()).willReturn(true);
         given(schedule.payer()).willReturn(EntityId.fromNum(2L));
@@ -90,7 +91,7 @@ class ReadableScheduleStoreTest {
     @Test
     void getsScheduleMetaFromFetchedScheduleNoExplicitPayer() {
         given(state.get(1L)).willReturn(schedule);
-        given(schedule.ordinaryViewOfScheduledTxn()).willReturn(TransactionBody.newBuilder().build());
+        given(schedule.ordinaryViewOfScheduledTxn()).willReturn(PbjConverter.fromPbj(TransactionBody.newBuilder().build()));
         given(schedule.adminKey()).willReturn(Optional.of(adminKey));
         given(schedule.hasExplicitPayer()).willReturn(false);
 

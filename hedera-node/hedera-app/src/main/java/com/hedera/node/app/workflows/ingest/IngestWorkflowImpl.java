@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.workflows.ingest;
 
+import static com.swirlds.common.system.PlatformStatus.ACTIVE;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -38,19 +41,11 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.inject.Inject;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
-import static com.swirlds.common.system.PlatformStatus.ACTIVE;
-import static java.util.Objects.requireNonNull;
 
 /** Implementation of {@link IngestWorkflow} */
 public final class IngestWorkflowImpl implements IngestWorkflow {
@@ -124,24 +119,24 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
         requireNonNull(responseBuffer);
         requireNonNull(storeSupplier);
 
-        ResponseCodeEnum result = OK;
+        ResponseCodeEnum result = ResponseCodeEnum.OK;
         long estimatedFee = 0L;
 
         // 0. Node state pre-checks
         if (nodeInfo.isSelfZeroStake()) {
-            result = INVALID_NODE_ACCOUNT;
+            result = ResponseCodeEnum.INVALID_NODE_ACCOUNT;
         } else if (currentPlatformStatus.get() != ACTIVE) {
-            result = PLATFORM_NOT_ACTIVE;
+            result = ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
         }
 
-        if (result == OK) {
+        if (result == ResponseCodeEnum.OK) {
             // Grab (and reference count) the state, so we have a consistent view of things
             try (final var wrappedState = stateAccessor.get()) {
                 final var state = wrappedState.get();
 
                 // 1. Parse the TransactionBody and check the syntax
                 final var onsetResult = onset.parseAndCheck(ctx, requestBuffer);
-                if (onsetResult.errorCode() != OK) {
+                if (onsetResult.errorCode() != ResponseCodeEnum.OK) {
                     throw new PreCheckException(onsetResult.errorCode());
                 }
 
@@ -156,21 +151,19 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
 
                 // 2. Check throttles
                 if (throttleAccumulator.shouldThrottle(onsetResult.txBody())) {
-                    throw new PreCheckException(BUSY);
+                    throw new PreCheckException(ResponseCodeEnum.BUSY);
                 }
 
                 // 3. Check semantics
                 checker.checkTransactionSemantics(txBody, functionality);
 
                 // 4. Get payer account
-                final var payerID = txBody.transactionID().accountID();
-                // TODO - figure out how to support the rebuilt ALIASES map in States API),
-                // or maybe denormalize with a new ALIASES map in state?
-//                final var tokenStates = state.createReadableStates(TokenService.NAME);
-//                final var accountStore = storeSupplier.apply(tokenStates);
-//                final var payer = accountStore
-//                        .getAccount(payerID)
-//                        .orElseThrow(() -> new PreCheckException(PAYER_ACCOUNT_NOT_FOUND));
+                final AccountID payerID = txBody.transactionID().accountID();
+                final var tokenStates = state.createReadableStates(TokenService.NAME);
+                final var accountStore = storeSupplier.apply(tokenStates);
+                final var payer = accountStore
+                        .getAccount(payerID)
+                        .orElseThrow(() -> new PreCheckException(ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND));
 
                 // 5. Check payer's signature
                 checker.checkPayerSignature(state, onsetResult.transaction(), signatureMap, payerID);

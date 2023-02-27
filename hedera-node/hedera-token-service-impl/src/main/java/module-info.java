@@ -11,6 +11,7 @@ module com.hedera.node.app.service.token.impl {
     requires dagger;
     requires javax.inject;
     requires com.hedera.pbj.runtime;
+    requires com.github.spotbugs.annotations;
 
     provides com.hedera.node.app.service.token.TokenService with
             com.hedera.node.app.service.token.impl.TokenServiceImpl;
@@ -23,9 +24,6 @@ module com.hedera.node.app.service.token.impl {
     exports com.hedera.node.app.service.token.impl.handlers to
             com.hedera.node.app.service.token.impl.test,
             com.hedera.node.app;
-
-    opens com.hedera.node.app.service.token.impl.util to
-            com.hedera.node.app.service.token.impl.test;
 
     exports com.hedera.node.app.service.token.impl.components;
     exports com.hedera.node.app.service.token.impl.serdes;

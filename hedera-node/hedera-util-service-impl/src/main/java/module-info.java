@@ -2,6 +2,7 @@ import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 
 module com.hedera.node.app.service.util.impl {
     requires com.hedera.node.app.service.util;
+    requires com.github.spotbugs.annotations;
     requires javax.inject;
     requires dagger;
 

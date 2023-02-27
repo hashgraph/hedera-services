@@ -4,6 +4,7 @@ module com.hedera.node.app.service.network.impl {
     requires com.swirlds.common;
     requires dagger;
     requires javax.inject;
+    requires com.github.spotbugs.annotations;
 
     provides com.hedera.node.app.service.network.NetworkService with
             com.hedera.node.app.service.network.impl.NetworkServiceImpl;

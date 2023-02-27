@@ -5,5 +5,5 @@ module com.hedera.node.app.service.admin {
 
     requires transitive com.hedera.node.app.spi;
     requires com.hedera.node.hapi;
-    requires static com.github.spotbugs.annotations;
+    requires com.github.spotbugs.annotations;
 }

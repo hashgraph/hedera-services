@@ -241,6 +241,7 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.legacy.exception;
     exports com.hedera.node.app.service.mono.pbj;
 
+    requires com.github.spotbugs.annotations;
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.swirlds.common;
     requires dagger;
@@ -258,7 +259,6 @@ module com.hedera.node.app.service.mono {
     requires tuweni.bytes;
     requires org.hyperledger.besu.datatypes;
     requires org.hyperledger.besu.evm;
-    requires static com.github.spotbugs.annotations;
     requires org.apache.commons.codec;
     requires com.swirlds.fchashmap;
     requires com.swirlds.jasperdb;

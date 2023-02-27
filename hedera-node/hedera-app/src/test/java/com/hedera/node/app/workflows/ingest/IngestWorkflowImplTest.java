@@ -58,7 +58,7 @@ import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.onset.OnsetResult;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.hedera.pbj.runtime.io.DataBuffer;
-import com.hedera.pbj.runtime.io.DataInputBuffer;
+import com.hedera.pbj.runtime.io.RandomAccessDataInput;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.PlatformStatus;
@@ -349,7 +349,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("If the transaction fails WorkflowOnset, a failure response is returned with the right error")
         void onsetFailsWithPreCheckException(ResponseCodeEnum failureReason) throws PreCheckException, IOException {
             // Given a WorkflowOnset that will throw a PreCheckException with the given failure reason
-            when(onset.parseAndCheck(any(), any(DataInputBuffer.class)))
+            when(onset.parseAndCheck(any(), any(RandomAccessDataInput.class)))
                     .thenThrow(new PreCheckException(failureReason));
 
             // When the transaction is submitted
@@ -370,7 +370,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("If some random exception is thrown from WorkflowOnset, the exception is bubbled up")
         void randomException() throws PreCheckException {
             // Given a WorkflowOnset that will throw a RuntimeException
-            when(onset.parseAndCheck(any(), any(DataInputBuffer.class)))
+            when(onset.parseAndCheck(any(), any(RandomAccessDataInput.class)))
                     .thenThrow(new RuntimeException("parseAndCheck exception"));
 
             // When the transaction is submitted, then the exception is bubbled up
