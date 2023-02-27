@@ -45,7 +45,7 @@ import com.google.protobuf.Parser;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
-import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandlerImpl;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
@@ -107,7 +107,7 @@ class QueryWorkflowImplTest {
     private QueryChecker checker;
 
     @Mock(strictness = LENIENT)
-    FileGetInfoHandler handler;
+    FileGetInfoHandlerImpl handler;
 
     @Mock(strictness = LENIENT)
     private QueryDispatcher dispatcher;
@@ -145,8 +145,9 @@ class QueryWorkflowImplTest {
     @BeforeEach
     void setup() throws InvalidProtocolBufferException, PreCheckException {
         when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
-        when(stateAccessor.apply(any())).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
-        requestBuffer = ByteBuffer.wrap(new byte[] {1, 2, 3});
+        when(stateAccessor.apply(any())).thenReturn(new AutoCloseableWrapper<>(state, () -> {
+        }));
+        requestBuffer = ByteBuffer.wrap(new byte[]{1, 2, 3});
         payment = Transaction.newBuilder().build();
         final var queryHeader = QueryHeader.newBuilder().setPayment(payment).build();
         query = Query.newBuilder()
@@ -198,124 +199,124 @@ class QueryWorkflowImplTest {
     @Test
     void testConstructorWithIllegalParameters() {
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        null,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        throttleAccumulator,
-                        submissionManager,
-                        checker,
-                        dispatcher,
-                        opCounters,
-                        feeAccumulator,
-                        queryContext))
+                null,
+                currentPlatformStatus,
+                stateAccessor,
+                throttleAccumulator,
+                submissionManager,
+                checker,
+                dispatcher,
+                opCounters,
+                feeAccumulator,
+                queryContext))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        null,
-                        stateAccessor,
-                        throttleAccumulator,
-                        submissionManager,
-                        checker,
-                        dispatcher,
-                        opCounters,
-                        feeAccumulator,
-                        queryContext))
+                nodeInfo,
+                null,
+                stateAccessor,
+                throttleAccumulator,
+                submissionManager,
+                checker,
+                dispatcher,
+                opCounters,
+                feeAccumulator,
+                queryContext))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        null,
-                        throttleAccumulator,
-                        submissionManager,
-                        checker,
-                        dispatcher,
-                        opCounters,
-                        feeAccumulator,
-                        queryContext))
+                nodeInfo,
+                currentPlatformStatus,
+                null,
+                throttleAccumulator,
+                submissionManager,
+                checker,
+                dispatcher,
+                opCounters,
+                feeAccumulator,
+                queryContext))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        null,
-                        submissionManager,
-                        checker,
-                        dispatcher,
-                        opCounters,
-                        feeAccumulator,
-                        queryContext))
+                nodeInfo,
+                currentPlatformStatus,
+                stateAccessor,
+                null,
+                submissionManager,
+                checker,
+                dispatcher,
+                opCounters,
+                feeAccumulator,
+                queryContext))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        throttleAccumulator,
-                        null,
-                        checker,
-                        dispatcher,
-                        opCounters,
-                        feeAccumulator,
-                        queryContext))
+                nodeInfo,
+                currentPlatformStatus,
+                stateAccessor,
+                throttleAccumulator,
+                null,
+                checker,
+                dispatcher,
+                opCounters,
+                feeAccumulator,
+                queryContext))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        throttleAccumulator,
-                        submissionManager,
-                        null,
-                        dispatcher,
-                        opCounters,
-                        feeAccumulator,
-                        queryContext))
+                nodeInfo,
+                currentPlatformStatus,
+                stateAccessor,
+                throttleAccumulator,
+                submissionManager,
+                null,
+                dispatcher,
+                opCounters,
+                feeAccumulator,
+                queryContext))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        throttleAccumulator,
-                        submissionManager,
-                        checker,
-                        null,
-                        opCounters,
-                        feeAccumulator,
-                        queryContext))
+                nodeInfo,
+                currentPlatformStatus,
+                stateAccessor,
+                throttleAccumulator,
+                submissionManager,
+                checker,
+                null,
+                opCounters,
+                feeAccumulator,
+                queryContext))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        throttleAccumulator,
-                        submissionManager,
-                        checker,
-                        dispatcher,
-                        null,
-                        feeAccumulator,
-                        queryContext))
+                nodeInfo,
+                currentPlatformStatus,
+                stateAccessor,
+                throttleAccumulator,
+                submissionManager,
+                checker,
+                dispatcher,
+                null,
+                feeAccumulator,
+                queryContext))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        throttleAccumulator,
-                        submissionManager,
-                        checker,
-                        dispatcher,
-                        opCounters,
-                        null,
-                        queryContext))
+                nodeInfo,
+                currentPlatformStatus,
+                stateAccessor,
+                throttleAccumulator,
+                submissionManager,
+                checker,
+                dispatcher,
+                opCounters,
+                null,
+                queryContext))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        nodeInfo,
-                        currentPlatformStatus,
-                        stateAccessor,
-                        throttleAccumulator,
-                        submissionManager,
-                        checker,
-                        dispatcher,
-                        opCounters,
-                        feeAccumulator,
-                        null))
+                nodeInfo,
+                currentPlatformStatus,
+                stateAccessor,
+                throttleAccumulator,
+                submissionManager,
+                checker,
+                dispatcher,
+                opCounters,
+                feeAccumulator,
+                null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -323,7 +324,7 @@ class QueryWorkflowImplTest {
     @Test
     void testHandleQueryWithIllegalParameters() {
         // given
-        final var requestBuffer = ByteBuffer.wrap(new byte[] {1, 2, 3});
+        final var requestBuffer = ByteBuffer.wrap(new byte[]{1, 2, 3});
         final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
 
         // then
@@ -378,7 +379,7 @@ class QueryWorkflowImplTest {
     }
 
     @Test
-    void testParsingFails(@Mock Parser<Query> localQueryParser) throws InvalidProtocolBufferException {
+    void testParsingFails(@Mock final Parser<Query> localQueryParser) throws InvalidProtocolBufferException {
         // given
         when(localQueryParser.parseFrom(requestBuffer))
                 .thenThrow(new InvalidProtocolBufferException("Expected failure"));
@@ -394,7 +395,7 @@ class QueryWorkflowImplTest {
     }
 
     @Test
-    void testUnrecognizableQueryTypeFails(@Mock Parser<Query> localQueryParser) throws InvalidProtocolBufferException {
+    void testUnrecognizableQueryTypeFails(@Mock final Parser<Query> localQueryParser) throws InvalidProtocolBufferException {
         // given
         final var query = Query.newBuilder().build();
         when(localQueryParser.parseFrom(requestBuffer)).thenReturn(query);
@@ -411,7 +412,7 @@ class QueryWorkflowImplTest {
 
     @SuppressWarnings("JUnitMalformedDeclaration")
     @Test
-    void testMissingHeaderFails(@Mock QueryHandler localHandler, @Mock QueryDispatcher localDispatcher) {
+    void testMissingHeaderFails(@Mock final QueryHandler localHandler, @Mock final QueryDispatcher localDispatcher) {
         // given
         when(localDispatcher.getHandler(query)).thenReturn(localHandler);
         final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
@@ -436,7 +437,7 @@ class QueryWorkflowImplTest {
     }
 
     @Test
-    void testInactiveNodeFails(@Mock NodeInfo localNodeInfo) throws InvalidProtocolBufferException {
+    void testInactiveNodeFails(@Mock final NodeInfo localNodeInfo) throws InvalidProtocolBufferException {
         // given
         when(localNodeInfo.isSelfZeroStake()).thenReturn(true);
         final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
@@ -467,7 +468,7 @@ class QueryWorkflowImplTest {
     }
 
     @Test
-    void testInactivePlatformFails(@Mock CurrentPlatformStatus localCurrentPlatformStatus)
+    void testInactivePlatformFails(@Mock final CurrentPlatformStatus localCurrentPlatformStatus)
             throws InvalidProtocolBufferException {
         // given
         when(localCurrentPlatformStatus.get()).thenReturn(PlatformStatus.MAINTENANCE);
@@ -501,7 +502,7 @@ class QueryWorkflowImplTest {
     @Test
     void testUnsupportedResponseTypeFails() throws InvalidProtocolBufferException {
         // given
-        final var localRequestBuffer = ByteBuffer.wrap(new byte[] {4, 5, 6});
+        final var localRequestBuffer = ByteBuffer.wrap(new byte[]{4, 5, 6});
         final var queryHeader =
                 QueryHeader.newBuilder().setResponseType(ANSWER_STATE_PROOF).build();
         final var query = Query.newBuilder()
@@ -569,7 +570,7 @@ class QueryWorkflowImplTest {
     }
 
     @Test
-    void testPaidQueryWithInvalidAccountsFails(@Mock QueryChecker localChecker)
+    void testPaidQueryWithInvalidAccountsFails(@Mock final QueryChecker localChecker)
             throws PreCheckException, InvalidProtocolBufferException {
         // given
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
@@ -625,7 +626,7 @@ class QueryWorkflowImplTest {
     @Test
     void testUnpaidQueryWithRestrictedFunctionalityFails() throws InvalidProtocolBufferException {
         // given
-        final var localRequestBuffer = ByteBuffer.wrap(new byte[] {4, 5, 6});
+        final var localRequestBuffer = ByteBuffer.wrap(new byte[]{4, 5, 6});
         final var queryHeader =
                 QueryHeader.newBuilder().setResponseType(COST_ANSWER).build();
         final var query = Query.newBuilder()
@@ -698,7 +699,7 @@ class QueryWorkflowImplTest {
         verify(opCounters, never()).countAnswered(FileGetInfo);
     }
 
-    private static Response parseResponse(ByteBuffer responseBuffer) throws InvalidProtocolBufferException {
+    private static Response parseResponse(final ByteBuffer responseBuffer) throws InvalidProtocolBufferException {
         final byte[] bytes = new byte[responseBuffer.position()];
         responseBuffer.get(0, bytes);
         return Response.parseFrom(bytes);

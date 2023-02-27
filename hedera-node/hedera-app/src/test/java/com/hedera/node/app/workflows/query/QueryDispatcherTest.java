@@ -28,8 +28,8 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractGetBySolidityI
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetBytecodeHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetInfoHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetRecordsHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileGetContentsHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileGetContentsHandlerImpl;
+import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandlerImpl;
 import com.hedera.node.app.service.network.impl.handlers.NetworkGetAccountDetailsHandler;
 import com.hedera.node.app.service.network.impl.handlers.NetworkGetByKeyHandler;
 import com.hedera.node.app.service.network.impl.handlers.NetworkGetExecutionTimeHandler;
@@ -123,10 +123,10 @@ class QueryDispatcherTest {
     private CryptoGetStakersHandler cryptoGetStakersHandler;
 
     @Mock
-    private FileGetContentsHandler fileGetContentsHandler;
+    private FileGetContentsHandlerImpl fileGetContentsHandler;
 
     @Mock
-    private FileGetInfoHandler fileGetInfoHandler;
+    private FileGetInfoHandlerImpl fileGetInfoHandler;
 
     @Mock
     private NetworkGetAccountDetailsHandler networkGetAccountDetailsHandler;

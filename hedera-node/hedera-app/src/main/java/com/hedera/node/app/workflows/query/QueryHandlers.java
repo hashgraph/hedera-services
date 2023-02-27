@@ -22,8 +22,8 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractGetBySolidityI
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetBytecodeHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetInfoHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetRecordsHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileGetContentsHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileGetContentsHandlerImpl;
+import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandlerImpl;
 import com.hedera.node.app.service.network.impl.handlers.NetworkGetAccountDetailsHandler;
 import com.hedera.node.app.service.network.impl.handlers.NetworkGetByKeyHandler;
 import com.hedera.node.app.service.network.impl.handlers.NetworkGetExecutionTimeHandler;
@@ -57,8 +57,8 @@ public record QueryHandlers(
         @NonNull CryptoGetAccountRecordsHandler cryptoGetAccountRecordsHandler,
         @NonNull CryptoGetLiveHashHandler cryptoGetLiveHashHandler,
         @NonNull CryptoGetStakersHandler cryptoGetStakersHandler,
-        @NonNull FileGetContentsHandler fileGetContentsHandler,
-        @NonNull FileGetInfoHandler fileGetInfoHandler,
+        @NonNull FileGetContentsHandlerImpl fileGetContentsHandler,
+        @NonNull FileGetInfoHandlerImpl fileGetInfoHandler,
         @NonNull NetworkGetAccountDetailsHandler networkGetAccountDetailsHandler,
         @NonNull NetworkGetByKeyHandler networkGetByKeyHandler,
         @NonNull NetworkGetExecutionTimeHandler networkGetExecutionTimeHandler,

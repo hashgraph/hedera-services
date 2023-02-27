@@ -35,12 +35,12 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractSystemDeleteHa
 import com.hedera.node.app.service.contract.impl.handlers.ContractSystemUndeleteHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
 import com.hedera.node.app.service.contract.impl.handlers.EtherumTransactionHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileAppendHandlerImpl;
+import com.hedera.node.app.service.file.impl.handlers.FileCreateHandlerImpl;
+import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandlerImpl;
+import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandlerImpl;
+import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandlerImpl;
+import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandlerImpl;
 import com.hedera.node.app.service.network.impl.handlers.NetworkUncheckedSubmitHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
@@ -203,22 +203,22 @@ class TransactionDispatcherTest {
     private CryptoDeleteLiveHashHandler cryptoDeleteLiveHashHandler;
 
     @Mock
-    private FileCreateHandler fileCreateHandler;
+    private FileCreateHandlerImpl fileCreateHandler;
 
     @Mock
-    private FileUpdateHandler fileUpdateHandler;
+    private FileUpdateHandlerImpl fileUpdateHandler;
 
     @Mock
-    private FileDeleteHandler fileDeleteHandler;
+    private FileDeleteHandlerImpl fileDeleteHandler;
 
     @Mock
-    private FileAppendHandler fileAppendHandler;
+    private FileAppendHandlerImpl fileAppendHandler;
 
     @Mock
-    private FileSystemDeleteHandler fileSystemDeleteHandler;
+    private FileSystemDeleteHandlerImpl fileSystemDeleteHandler;
 
     @Mock
-    private FileSystemUndeleteHandler fileSystemUndeleteHandler;
+    private FileSystemUndeleteHandlerImpl fileSystemUndeleteHandler;
 
     @Mock
     private FreezeHandlerImpl freezeHandler;

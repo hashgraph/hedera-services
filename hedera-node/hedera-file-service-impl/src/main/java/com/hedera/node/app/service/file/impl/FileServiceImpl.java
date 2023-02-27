@@ -17,14 +17,14 @@
 package com.hedera.node.app.service.file.impl;
 
 import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileGetContentsHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileAppendHandlerImpl;
+import com.hedera.node.app.service.file.impl.handlers.FileCreateHandlerImpl;
+import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandlerImpl;
+import com.hedera.node.app.service.file.impl.handlers.FileGetContentsHandlerImpl;
+import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandlerImpl;
+import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandlerImpl;
+import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandlerImpl;
+import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandlerImpl;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKeySerializer;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
@@ -48,113 +48,121 @@ public final class FileServiceImpl implements FileService {
             SemanticVersion.newBuilder().setMinor(34).build();
     public static final String BLOBS_KEY = "BLOBS";
 
-    private final FileAppendHandler fileAppendHandler;
+    private final FileAppendHandlerImpl fileAppendHandler;
 
-    private final FileCreateHandler fileCreateHandler;
+    private final FileCreateHandlerImpl fileCreateHandler;
 
-    private final FileDeleteHandler fileDeleteHandler;
+    private final FileDeleteHandlerImpl fileDeleteHandler;
 
-    private final FileUpdateHandler fileUpdateHandler;
+    private final FileUpdateHandlerImpl fileUpdateHandler;
 
-    private final FileGetContentsHandler fileGetContentsHandler;
+    private final FileGetContentsHandlerImpl fileGetContentsHandler;
 
-    private final FileGetInfoHandler fileGetInfoHandler;
+    private final FileGetInfoHandlerImpl fileGetInfoHandler;
 
-    private final FileSystemDeleteHandler fileSystemDeleteHandler;
+    private final FileSystemDeleteHandlerImpl fileSystemDeleteHandler;
 
-    private final FileSystemUndeleteHandler fileSystemUndeleteHandler;
+    private final FileSystemUndeleteHandlerImpl fileSystemUndeleteHandler;
 
     /**
      * Creates a new {@link FileServiceImpl} instance.
      */
     public FileServiceImpl() {
-        this.fileAppendHandler = new FileAppendHandler();
-        this.fileCreateHandler = new FileCreateHandler();
-        this.fileDeleteHandler = new FileDeleteHandler();
-        this.fileUpdateHandler = new FileUpdateHandler();
-        this.fileGetContentsHandler = new FileGetContentsHandler();
-        this.fileGetInfoHandler = new FileGetInfoHandler();
-        this.fileSystemDeleteHandler = new FileSystemDeleteHandler();
-        this.fileSystemUndeleteHandler = new FileSystemUndeleteHandler();
+        this.fileAppendHandler = new FileAppendHandlerImpl();
+        this.fileCreateHandler = new FileCreateHandlerImpl();
+        this.fileDeleteHandler = new FileDeleteHandlerImpl();
+        this.fileUpdateHandler = new FileUpdateHandlerImpl();
+        this.fileGetContentsHandler = new FileGetContentsHandlerImpl();
+        this.fileGetInfoHandler = new FileGetInfoHandlerImpl();
+        this.fileSystemDeleteHandler = new FileSystemDeleteHandlerImpl();
+        this.fileSystemUndeleteHandler = new FileSystemUndeleteHandlerImpl();
     }
 
     /**
-     * Returns the {@link FileAppendHandler} instance.
+     * Returns the {@link FileAppendHandlerImpl} instance.
      *
-     * @return the {@link FileAppendHandler} instance.
+     * @return the {@link FileAppendHandlerImpl} instance.
      */
     @NonNull
-    public FileAppendHandler getFileAppendHandler() {
+    @Override
+    public FileAppendHandlerImpl getFileAppendHandler() {
         return fileAppendHandler;
     }
 
     /**
-     * Returns the {@link FileCreateHandler} instance.
+     * Returns the {@link FileCreateHandlerImpl} instance.
      *
-     * @return the {@link FileCreateHandler} instance.
+     * @return the {@link FileCreateHandlerImpl} instance.
      */
     @NonNull
-    public FileCreateHandler getFileCreateHandler() {
+    @Override
+    public FileCreateHandlerImpl getFileCreateHandler() {
         return fileCreateHandler;
     }
 
     /**
-     * Returns the {@link FileDeleteHandler} instance.
+     * Returns the {@link FileDeleteHandlerImpl} instance.
      *
-     * @return the {@link FileDeleteHandler} instance.
+     * @return the {@link FileDeleteHandlerImpl} instance.
      */
     @NonNull
-    public FileDeleteHandler getFileDeleteHandler() {
+    @Override
+    public FileDeleteHandlerImpl getFileDeleteHandler() {
         return fileDeleteHandler;
     }
 
     /**
-     * Returns the {@link FileUpdateHandler} instance.
+     * Returns the {@link FileUpdateHandlerImpl} instance.
      *
-     * @return the {@link FileUpdateHandler} instance.
+     * @return the {@link FileUpdateHandlerImpl} instance.
      */
     @NonNull
-    public FileUpdateHandler getFileUpdateHandler() {
+    @Override
+    public FileUpdateHandlerImpl getFileUpdateHandler() {
         return fileUpdateHandler;
     }
 
     /**
-     * Returns the {@link FileGetContentsHandler} instance.
+     * Returns the {@link FileGetContentsHandlerImpl} instance.
      *
-     * @return the {@link FileGetContentsHandler} instance.
+     * @return the {@link FileGetContentsHandlerImpl} instance.
      */
     @NonNull
-    public FileGetContentsHandler getFileGetContentsHandler() {
+    @Override
+    public FileGetContentsHandlerImpl getFileGetContentsHandler() {
         return fileGetContentsHandler;
     }
 
     /**
-     * Returns the {@link FileGetInfoHandler} instance.
+     * Returns the {@link FileGetInfoHandlerImpl} instance.
      *
-     * @return the {@link FileGetInfoHandler} instance.
+     * @return the {@link FileGetInfoHandlerImpl} instance.
      */
     @NonNull
-    public FileGetInfoHandler getFileGetInfoHandler() {
+    @Override
+    public FileGetInfoHandlerImpl getFileGetInfoHandler() {
         return fileGetInfoHandler;
     }
 
     /**
-     * Returns the {@link FileSystemDeleteHandler} instance.
+     * Returns the {@link FileSystemDeleteHandlerImpl} instance.
      *
-     * @return the {@link FileSystemDeleteHandler} instance.
+     * @return the {@link FileSystemDeleteHandlerImpl} instance.
      */
     @NonNull
-    public FileSystemDeleteHandler getFileSystemDeleteHandler() {
+    @Override
+    public FileSystemDeleteHandlerImpl getFileSystemDeleteHandler() {
         return fileSystemDeleteHandler;
     }
 
     /**
-     * Returns the {@link FileSystemUndeleteHandler} instance.
+     * Returns the {@link FileSystemUndeleteHandlerImpl} instance.
      *
-     * @return the {@link FileSystemUndeleteHandler} instance.
+     * @return the {@link FileSystemUndeleteHandlerImpl} instance.
      */
     @NonNull
-    public FileSystemUndeleteHandler getFileSystemUndeleteHandler() {
+    @Override
+    public FileSystemUndeleteHandlerImpl getFileSystemUndeleteHandler() {
         return fileSystemUndeleteHandler;
     }
 

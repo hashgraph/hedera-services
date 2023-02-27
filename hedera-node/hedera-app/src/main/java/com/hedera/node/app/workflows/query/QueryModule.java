@@ -21,7 +21,9 @@ import com.hedera.node.app.fees.MonoFeeAccumulator;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandlerImpl;
 import com.hedera.node.app.service.contract.impl.components.ContractComponent;
-import com.hedera.node.app.service.file.impl.components.FileComponent;
+import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.file.impl.handlers.FileGetContentsHandlerImpl;
+import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandlerImpl;
 import com.hedera.node.app.service.network.impl.components.NetworkComponent;
 import com.hedera.node.app.service.schedule.impl.components.ScheduleComponent;
 import com.hedera.node.app.service.token.impl.components.TokenComponent;
@@ -67,13 +69,13 @@ public interface QueryModule {
     @Provides
     static QueryHandlers provideQueryHandlers(
             @NonNull final ConsensusService consensusComponent,
-            @NonNull final FileComponent fileComponent,
+            @NonNull final FileService fileService,
             @NonNull final NetworkComponent networkComponent,
             @NonNull final ContractComponent contractComponent,
             @NonNull final ScheduleComponent scheduleComponent,
             @NonNull final TokenComponent tokenComponent) {
         return new QueryHandlers(
-                (ConsensusGetTopicInfoHandlerImpl) consensusComponent.getConsensusGetTopicInfoHandler(),
+                ConsensusGetTopicInfoHandlerImpl.class.cast(consensusComponent.getConsensusGetTopicInfoHandler()),
                 contractComponent.contractGetBySolidityIDHandler(),
                 contractComponent.contractCallLocalHandler(),
                 contractComponent.contractGetInfoHandler(),
@@ -84,8 +86,8 @@ public interface QueryModule {
                 tokenComponent.cryptoGetAccountRecordsHandler(),
                 tokenComponent.cryptoGetLiveHashHandler(),
                 tokenComponent.cryptoGetStakersHandler(),
-                fileComponent.fileGetContentsHandler(),
-                fileComponent.fileGetInfoHandler(),
+                FileGetContentsHandlerImpl.class.cast(fileService.getFileGetContentsHandler()),
+                FileGetInfoHandlerImpl.class.cast(fileService.getFileGetInfoHandler()),
                 networkComponent.networkGetAccountDetailsHandler(),
                 networkComponent.networkGetByKeyHandler(),
                 networkComponent.networkGetExecutionTimeHandler(),

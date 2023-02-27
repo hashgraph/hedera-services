@@ -20,8 +20,6 @@ import com.hedera.node.app.components.IngestComponent;
 import com.hedera.node.app.components.QueryComponent;
 import com.hedera.node.app.service.contract.impl.components.ContractComponent;
 import com.hedera.node.app.service.contract.impl.components.DaggerContractComponent;
-import com.hedera.node.app.service.file.impl.components.DaggerFileComponent;
-import com.hedera.node.app.service.file.impl.components.FileComponent;
 import com.hedera.node.app.service.network.impl.components.DaggerNetworkComponent;
 import com.hedera.node.app.service.network.impl.components.NetworkComponent;
 import com.hedera.node.app.service.schedule.impl.components.DaggerScheduleComponent;
@@ -34,12 +32,6 @@ import javax.inject.Singleton;
 
 @Module(subcomponents = {QueryComponent.class, IngestComponent.class})
 public interface ServiceModule {
-   
-    @Provides
-    @Singleton
-    static FileComponent provideFileComponent() {
-        return DaggerFileComponent.create();
-    }
 
     @Provides
     @Singleton

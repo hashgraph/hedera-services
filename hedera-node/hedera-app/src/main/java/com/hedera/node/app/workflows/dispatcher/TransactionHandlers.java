@@ -28,12 +28,12 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractSystemDeleteHa
 import com.hedera.node.app.service.contract.impl.handlers.ContractSystemUndeleteHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
 import com.hedera.node.app.service.contract.impl.handlers.EtherumTransactionHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileAppendHandlerImpl;
+import com.hedera.node.app.service.file.impl.handlers.FileCreateHandlerImpl;
+import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandlerImpl;
+import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandlerImpl;
+import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandlerImpl;
+import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandlerImpl;
 import com.hedera.node.app.service.network.impl.handlers.NetworkUncheckedSubmitHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
@@ -88,12 +88,12 @@ public record TransactionHandlers(
         @NonNull CryptoDeleteAllowanceHandler cryptoDeleteAllowanceHandler,
         @NonNull CryptoAddLiveHashHandler cryptoAddLiveHashHandler,
         @NonNull CryptoDeleteLiveHashHandler cryptoDeleteLiveHashHandler,
-        @NonNull FileCreateHandler fileCreateHandler,
-        @NonNull FileUpdateHandler fileUpdateHandler,
-        @NonNull FileDeleteHandler fileDeleteHandler,
-        @NonNull FileAppendHandler fileAppendHandler,
-        @NonNull FileSystemDeleteHandler fileSystemDeleteHandler,
-        @NonNull FileSystemUndeleteHandler fileSystemUndeleteHandler,
+        @NonNull FileCreateHandlerImpl fileCreateHandler,
+        @NonNull FileUpdateHandlerImpl fileUpdateHandler,
+        @NonNull FileDeleteHandlerImpl fileDeleteHandler,
+        @NonNull FileAppendHandlerImpl fileAppendHandler,
+        @NonNull FileSystemDeleteHandlerImpl fileSystemDeleteHandler,
+        @NonNull FileSystemUndeleteHandlerImpl fileSystemUndeleteHandler,
         @NonNull FreezeHandlerImpl freezeHandler,
         @NonNull NetworkUncheckedSubmitHandler networkUncheckedSubmitHandler,
         @NonNull ScheduleCreateHandler scheduleCreateHandler,

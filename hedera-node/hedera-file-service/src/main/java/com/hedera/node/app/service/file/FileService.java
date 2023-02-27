@@ -16,6 +16,14 @@
 
 package com.hedera.node.app.service.file;
 
+import com.hedera.node.app.service.file.handlers.FileAppendHandler;
+import com.hedera.node.app.service.file.handlers.FileCreateHandler;
+import com.hedera.node.app.service.file.handlers.FileDeleteHandler;
+import com.hedera.node.app.service.file.handlers.FileGetContentsHandler;
+import com.hedera.node.app.service.file.handlers.FileGetInfoHandler;
+import com.hedera.node.app.service.file.handlers.FileSystemDeleteHandler;
+import com.hedera.node.app.service.file.handlers.FileSystemUndeleteHandler;
+import com.hedera.node.app.service.file.handlers.FileUpdateHandler;
 import com.hedera.node.app.spi.service.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -32,4 +40,29 @@ public interface FileService extends Service {
     default String getServiceName() {
         return NAME;
     }
+
+    @NonNull
+    FileAppendHandler getFileAppendHandler();
+
+    @NonNull
+    FileCreateHandler getFileCreateHandler();
+
+    @NonNull
+    FileDeleteHandler getFileDeleteHandler();
+
+    @NonNull
+    FileUpdateHandler getFileUpdateHandler();
+
+    @NonNull
+    FileGetContentsHandler getFileGetContentsHandler();
+
+    @NonNull
+    FileGetInfoHandler getFileGetInfoHandler();
+
+    @NonNull
+    FileSystemDeleteHandler getFileSystemDeleteHandler();
+
+    @NonNull
+    FileSystemUndeleteHandler getFileSystemUndeleteHandler();
+
 }
