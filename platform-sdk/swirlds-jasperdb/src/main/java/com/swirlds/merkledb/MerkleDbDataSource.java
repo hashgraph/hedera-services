@@ -74,7 +74,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -222,23 +221,6 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
 
     /** The range of valid leaf paths for data currently stored by this data source. */
     private volatile KeyRange validLeafPathRange = INVALID_KEY_RANGE;
-
-    /**
-     * A semaphore to sync data source snapshots and store compactions.
-     * <p>
-     * <p>One of the goals is to lock the snapshot thread as little as possible. Compaction can be
-     * paused and resumed at any moment. That's why the semaphore is acquired for the whole run of
-     * snapshot(), while during compaction it is acquired and released for very short periods: when
-     * indices are updated and when merged files are removed. If compaction threads are doing
-     * anything else, e.g. iterating through files to merge, it can be run in parallel to
-     * snapshotting, until compaction thread starts updating store index.
-     * <p>
-     * <p>Since compaction thread can be paused at various points, it's possible that snapshot will
-     * capture files that are already merged (no index entries pointing to them). Some index entries
-     * can be updated to use the new file, some can point to old files, but since both old and new
-     * files are in the snapshot, it shouldn't be a problem.
-     */
-    private final Semaphore mergingPaused = new Semaphore(1);
 
     private MerkleDbStatistics statistics;
 
@@ -543,19 +525,31 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      * critical for snapshots (e.g. update an index), it will be stopped until {@link
      * #resumeMerging()}} is called.
      */
-    void pauseMerging() {
-        mergingPaused.acquireUninterruptibly();
+    void pauseMerging() throws IOException {
+        if (hasDiskStoreForInternalHashes) {
+            internalHashStoreDisk.pauseMerging();
+        }
+        pathToHashKeyValue.pauseMerging();
+        if (!isLongKeyMode) {
+            objectKeyToPath.pauseMerging();
+        }
     }
 
     /** Resumes previously stopped data file collection merging. */
-    void resumeMerging() {
-        mergingPaused.release();
+    void resumeMerging() throws IOException {
+        if (hasDiskStoreForInternalHashes) {
+            internalHashStoreDisk.resumeMerging();
+        }
+        pathToHashKeyValue.resumeMerging();
+        if (!isLongKeyMode) {
+            objectKeyToPath.resumeMerging();
+        }
     }
 
     /**
      * Save a batch of data to data store.
      *
-     * <p>If you call this method where not all data is provided to cover the change in
+     * If you call this method where not all data is provided to cover the change in
      * firstLeafPath and lastLeafPath, then any reads after this call may return rubbish or throw
      * obscure exceptions for any internals or leaves that have not been written. For example, if
      * you were to grow the tree by more than 2x, and then called this method in batches, be aware
@@ -822,7 +816,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     /**
      * Wait for any merges to finish and then close all data stores.
      *
-     * <p><b>After closing delete the database directory and all data!</b> For testing purpose only.
+     * <b>After closing delete the database directory and all data!</b> For testing purpose only.
      */
     public void closeAndDelete() throws IOException {
         try {
@@ -874,10 +868,11 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      * Write a snapshot of the current state of the database at this moment in time. This will block
      * till the snapshot is completely created.
      *
-     * <p><b> Only one snapshot can happen at a time, this will throw an IllegalStateException if
+     *
+     * <b> Only one snapshot can happen at a time, this will throw an IllegalStateException if
      * another snapshot is currently happening. </b>
      *
-     * <p><b> IMPORTANT, after this is completed the caller owns the directory. It is responsible
+     * <b> IMPORTANT, after this is completed the caller owns the directory. It is responsible
      * for deleting it when it is no longer needed. </b>
      *
      * @param snapshotDirectory Directory to put snapshot into, it will be created if it doesn't
@@ -959,20 +954,34 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
     /** toString for debugging */
     @Override
     public String toString() {
-        return "MerkleDbDataSource{" + "maxNumberOfKeys="
-                + tableConfig.getMaxNumberOfKeys() + ", preferDiskBasedIndexes="
-                + tableConfig.isPreferDiskBasedIndices() + ", isLongKeyMode="
-                + isLongKeyMode + ", pathToDiskLocationInternalNodes.size="
-                + pathToDiskLocationInternalNodes.size() + ", pathToDiskLocationLeafNodes.size="
-                + pathToDiskLocationLeafNodes.size() + ", internalHashesRamToDiskThreshold="
-                + tableConfig.getInternalHashesRamToDiskThreshold() + ", internalHashStoreRam.size="
-                + (internalHashStoreRam == null ? null : internalHashStoreRam.size()) + ", internalHashStoreDisk="
-                + internalHashStoreDisk + ", hasDiskStoreForInternalHashes="
-                + hasDiskStoreForInternalHashes + ", longKeyToPath.size="
-                + (longKeyToPath == null ? null : longKeyToPath.size()) + ", objectKeyToPath="
-                + objectKeyToPath + ", pathToHashKeyValue="
-                + pathToHashKeyValue + ", snapshotInProgress="
-                + snapshotInProgress.get() + '}';
+        return "MerkleDbDataSource{"
+                + "maxNumberOfKeys="
+                + tableConfig.getMaxNumberOfKeys()
+                + ", preferDiskBasedIndexes="
+                + tableConfig.isPreferDiskBasedIndices()
+                + ", isLongKeyMode="
+                + isLongKeyMode
+                + ", pathToDiskLocationInternalNodes.size="
+                + pathToDiskLocationInternalNodes.size()
+                + ", pathToDiskLocationLeafNodes.size="
+                + pathToDiskLocationLeafNodes.size()
+                + ", internalHashesRamToDiskThreshold"
+                + tableConfig.getInternalHashesRamToDiskThreshold()
+                + ", internalHashStoreRam.size="
+                + (internalHashStoreRam == null ? null : internalHashStoreRam.size())
+                + ", internalHashStoreDisk="
+                + internalHashStoreDisk
+                + ", hasDiskStoreForInternalHashes="
+                + hasDiskStoreForInternalHashes
+                + ", longKeyToPath.size="
+                + (longKeyToPath == null ? null : longKeyToPath.size())
+                + ", objectKeyToPath="
+                + objectKeyToPath
+                + ", pathToHashKeyValue="
+                + pathToHashKeyValue
+                + ", snapshotInProgress="
+                + snapshotInProgress.get()
+                + '}';
     }
 
     /**
@@ -1290,11 +1299,11 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
 
     /**
      * Invalidates the given key in virtual leaf record cache, if the cache is enabled.
-     * <p>
-     * <p>If the key is deleted, it's still updated in the cache. It means no record with the given
+     *
+     * If the key is deleted, it's still updated in the cache. It means no record with the given
      * key exists in the data source, so further lookups for the key are skipped.
-     * <p>
-     * <p>Cache index is calculated as the key's hash code % cache size. The cache is only updated,
+     *
+     * Cache index is calculated as the key's hash code % cache size. The cache is only updated,
      * if the current record at this index has the given key. If the key is different, no update is
      * performed.
      *
@@ -1316,10 +1325,10 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
      * Start a Merge if needed, this is called by default every 30 seconds if a merge is not already
      * running. This implements the logic for how often and with what files we merge.
      *
-     * <p><b> IMPORTANT: This method is called on a thread that can be interrupted, so it needs to
+     * <b> IMPORTANT: This method is called on a thread that can be interrupted, so it needs to
      * gracefully stop when it is interrupted. </b>
      *
-     * <p><b> IMPORTANT: The set of files we merge must always be contiguous in order of time
+     * <b> IMPORTANT: The set of files we merge must always be contiguous in order of time
      * contained data created. As merged files have a later index but old data the index can not be
      * used alone to work out order of files to merge. </b>
      *
@@ -1368,8 +1377,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                 // DataFileReader
                 final UnaryOperator<List<DataFileReader<VirtualInternalRecord>>> internalRecordFileFilter =
                         (UnaryOperator<List<DataFileReader<VirtualInternalRecord>>>) ((Object) filesToMergeFilter);
-                internalHashStoreDisk.merge(
-                        internalRecordFileFilter, mergingPaused, settings.getMinNumberOfFilesInMerge());
+                internalHashStoreDisk.merge(internalRecordFileFilter, settings.getMinNumberOfFilesInMerge());
                 afterInternalHashStoreDiskMerge = Instant.now(clock);
             } else {
                 afterInternalHashStoreDiskMerge = now; // zero elapsed time
@@ -1383,7 +1391,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                 // DataFileReader
                 final UnaryOperator<List<DataFileReader<Bucket<K>>>> bucketFileFilter =
                         (UnaryOperator<List<DataFileReader<Bucket<K>>>>) ((Object) filesToMergeFilter);
-                objectKeyToPath.merge(bucketFileFilter, mergingPaused, settings.getMinNumberOfFilesInMerge());
+                objectKeyToPath.merge(bucketFileFilter, settings.getMinNumberOfFilesInMerge());
                 // set third "now"
                 afterObjectKeyToPathMerge = Instant.now(clock);
             }
@@ -1392,7 +1400,7 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
             // DataFileReader
             final UnaryOperator<List<DataFileReader<VirtualLeafRecord<K, V>>>> leafRecordFileFilter =
                     (UnaryOperator<List<DataFileReader<VirtualLeafRecord<K, V>>>>) ((Object) filesToMergeFilter);
-            pathToHashKeyValue.merge(leafRecordFileFilter, mergingPaused, settings.getMinNumberOfFilesInMerge());
+            pathToHashKeyValue.merge(leafRecordFileFilter, settings.getMinNumberOfFilesInMerge());
             // set fourth "now"
             afterPathToHashKeyValueMerge = Instant.now(clock);
 
@@ -1439,21 +1447,19 @@ public final class MerkleDbDataSource<K extends VirtualKey<? super K>, V extends
                 statistics.setLeafPathToHashKeyValueStoreLargeMergeTime(
                         thirdMergeDuration.toSeconds() + thirdMergeDuration.getNano() * Units.NANOSECONDS_TO_SECONDS);
             }
-            // update file stats (those statistics don't care about small vs medium vs large merge
-            // size)
+            // update file stats (those statistics don't care about small vs medium vs large merge size)
             updateFileStats();
             // update off-heap usage statistic
             updateOffHeapStats();
+            logger.info(MERKLE_DB.getMarker(), "[{}] Finished Small Merge", tableName);
             return true;
         } catch (final InterruptedException | ClosedByInterruptException e) {
             logger.info(MERKLE_DB.getMarker(), "Interrupted while merging, this is allowed.");
             Thread.currentThread().interrupt();
             return false;
-        } catch (final Throwable e) { // NOSONAR: Log and return false if an error occurred since this is on
-            // a thread.
+        } catch (final Throwable e) {
             // It is important that we capture all exceptions here, otherwise a single exception
-            // will stop all
-            // future merges from happening.
+            // will stop all  future merges from happening.
             logger.error(EXCEPTION.getMarker(), "[{}] Merge failed", tableName, e);
             return false;
         }

@@ -28,8 +28,8 @@ public final class MerkleDbFileUtils {
     /**
      * Completely read all data available from a fileChannel until either an EOF is reached or until dstBuffer is full.
      *
-     * <p>FileChannel's position is updated as well as ByteBuffer's position.
-     * See also for additional details: {@link ReadableByteChannel#read(ByteBuffer)}</p>
+     * FileChannel's position is updated as well as ByteBuffer's position.
+     * See also for additional details: {@link ReadableByteChannel#read(ByteBuffer)}
      *
      * @param fileChannel
      * 		the FileChannel to read from.
@@ -56,8 +56,8 @@ public final class MerkleDbFileUtils {
     /**
      * Completely read all data available from a fileChannel until either an EOF is reached or until dstBuffer is full.
      *
-     * <p>FileChannel's position is unchanged. ByteBuffer's position is updated.
-     * See also: {@link FileChannel#read(ByteBuffer, long)}</p>
+     * FileChannel's position is unchanged. ByteBuffer's position is updated.
+     * See also: {@link FileChannel#read(ByteBuffer, long)}
      *
      * @param fileChannel
      * 		the FileChannel to read from.
@@ -86,8 +86,8 @@ public final class MerkleDbFileUtils {
     /**
      * Completely write out all data from the provided ByteBuffer.
      *
-     * <p>FileChannel's position is updated as well as ByteBuffer's position.
-     * See also for additional details: {@link WritableByteChannel#write(ByteBuffer)}</p>
+     * FileChannel's position is updated as well as ByteBuffer's position.
+     * See also for additional details: {@link WritableByteChannel#write(ByteBuffer)}
      *
      * @param fileChannel
      * 		the FileChannel to write to.
@@ -109,8 +109,8 @@ public final class MerkleDbFileUtils {
     /**
      * Completely write out all data from the provided ByteBuffer to the given position.
      *
-     * <p>FileChannel's position is unchanged. ByteBuffer's position is updated.
-     * See also: {@link FileChannel#write(ByteBuffer, long)}</p>
+     * FileChannel's position is unchanged. ByteBuffer's position is updated.
+     * See also: {@link FileChannel#write(ByteBuffer, long)}
      *
      * @param fileChannel
      * 		the FileChannel to write to.
@@ -133,8 +133,8 @@ public final class MerkleDbFileUtils {
     /**
      * Completely transfer all data from srcChannel to dstChannel.
      *
-     * <p>dstChannel's position is unchanged. srcChannel's position is updated if it has a position.
-     * See also: {@link FileChannel#transferFrom(ReadableByteChannel, long, long)}</p>
+     * dstChannel's position is unchanged. srcChannel's position is updated if it has a position.
+     * See also: {@link FileChannel#transferFrom(ReadableByteChannel, long, long)}
      *
      * @param dstChannel
      * 		the destination channel to transfer data to.

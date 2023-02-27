@@ -28,11 +28,10 @@ import static java.util.Collections.singletonList;
 
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.Snapshotable;
-import com.swirlds.merkledb.collections.CASable;
+import com.swirlds.merkledb.collections.CASableLongIndex;
 import com.swirlds.merkledb.collections.ImmutableIndexedObjectList;
 import com.swirlds.merkledb.collections.ImmutableIndexedObjectListUsingArray;
 import com.swirlds.merkledb.collections.LongList;
-import com.swirlds.merkledb.collections.ThreeLongsList;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.merkledb.settings.MerkleDbSettings;
 import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
@@ -49,16 +48,14 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.LongSummaryStatistics;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -72,7 +69,7 @@ import org.apache.logging.log4j.Logger;
  * newest data item for any matching key. It may look like a map, but it is not. You need an
  * external index outside this class to be able to store key-to-data location mappings.
  *
- * <p>The keys are assumed to be a contiguous block of long values. We do not have an explicit way
+ * The keys are assumed to be a contiguous block of long values. We do not have an explicit way
  * of deleting data, we depend on the range of valid keys. Any data items with keys outside the
  * current valid range will be deleted the next time they are merged. This works for our VirtualMap
  * use cases where the key is always a path and there is a valid range of path keys for internal and
@@ -135,23 +132,80 @@ public class DataFileCollection<D> implements Snapshotable {
     private final AtomicInteger nextFileIndex = new AtomicInteger();
     /** The range of valid data item keys for data currently stored by this data file collection. */
     private volatile KeyRange validKeyRange = INVALID_KEY_RANGE;
-    /** The list of current files in this data file collection */
-    private final AtomicReference<ImmutableIndexedObjectList<DataFileReader<D>>> indexedFileList =
-            new AtomicReference<>();
+
     /**
-     * The current open file writer, if we are in the middle of writing a new file or null if not
-     * writing
+     * The list of current files in this data file collection. The files are added to this list
+     * during flushes in {@link #endWriting(long, long)}, after the file is completely written. They
+     * are also added during compaction in {@link #compactFiles(CASableLongIndex, List)}, even
+     * before compaction is complete. In the end of compaction, all the compacted files are removed
+     * from this list.
+     *
+     * The list is used to read data items and to make snapshots. Reading from the file, which is
+     * being written to during compaction, is possible because both readers and writers use Java
+     * file channel APIs. Snapshots are an issue, though. Snapshots must be as fast as possible, so
+     * they are implemented as to make hard links in the target folder to all data files in
+     * collection. If compaction is in progress, the last file in the list isn't fully written yet,
+     * so it can't be hard linked easily. To solve it, before a snapshot is taken, the current
+     * compaction file is flushed to disk, and compaction is put on hold using {@link
+     * #snapshotCompactionLock} and then resumed after snapshot is complete.
+     */
+    private final AtomicReference<ImmutableIndexedObjectList<DataFileReader<D>>> dataFiles = new AtomicReference<>();
+
+    /**
+     * The current open file writer, if we are in the middle of writing a new file during flush, or
+     * null if not writing.
      */
     private final AtomicReference<DataFileWriter<D>> currentDataFileWriter = new AtomicReference<>();
+    /**
+     * Data file reader for the file, which is being written with the writer above, or null if not
+     * writing. The reader is created right after writing to the file is started.
+     */
+    private final AtomicReference<DataFileReader<D>> currentDataFileReader = new AtomicReference<>();
     /** Constructor for creating ImmutableIndexedObjectLists */
     private final Function<List<DataFileReader<D>>, ImmutableIndexedObjectList<DataFileReader<D>>>
             indexedObjectListConstructor;
     /**
      * Set if all indexes of new files currently being written. This is only maintained if logging
-     * is trace level
+     * is trace level.
      */
     private final ConcurrentSkipListSet<Integer> setOfNewFileIndexes =
             logger.isTraceEnabled() ? new ConcurrentSkipListSet<>() : null;
+
+    // Compactions
+
+    /** Start time of the current compaction, or null if compaction isn't running */
+    private final AtomicReference<Instant> currentCompactionStartTime = new AtomicReference<>();
+    /**
+     * Current data file writer during compaction, or null if compaction isn't running. The writer
+     * is created at compaction start. If compaction is interrupted by a snapshot, the writer is
+     * closed before the snapshot, and then a new writer / new file is created after the snapshot is
+     * taken.
+     */
+    private final AtomicReference<DataFileWriter<D>> currentCompactionWriter = new AtomicReference<>();
+    /** Currrent data file reader for the compaction writer above. */
+    private final AtomicReference<DataFileReader<D>> currentCompactionReader = new AtomicReference<>();
+    /**
+     * The list of new files created during compaction. Usually, all files to process are compacted
+     * to a single new file, but if compaction is interrupted by a snapshot, there may be more than
+     * one file created.
+     */
+    private final List<Path> newCompactedFiles = new ArrayList<>();
+    /**
+     * A lock used for synchronization between snapshots and compactions. While a compaction is in
+     * progress, it runs on its own without any synchronization. However, a few critical sections
+     * are protected with this lock: to create a new compaction writer/reader when compaction is
+     * started, to copy data items to the current writer and update the corresponding index item,
+     * and to close the compaction writer. This mechanism allows snapshots to effectively put
+     * compaction on hold, which is critical as snapshots should be as fast as possible, while
+     * compactions are just background processes.
+     */
+    private final Semaphore snapshotCompactionLock = new Semaphore(1);
+    /**
+     * Indicates whether compaction is in progress at the time when {@link #pauseCompaction()}
+     * is called. This flag is then checked in {@link #resumeCompaction()} to start a new
+     * compacted file or not.
+     */
+    private final AtomicBoolean compactionWasInProgress = new AtomicBoolean(false);
 
     /**
      * Construct a new DataFileCollection.
@@ -282,49 +336,35 @@ public class DataFileCollection<D> implements Snapshotable {
 
     /** Get the number of files in this DataFileCollection */
     public int getNumOfFiles() {
-        return indexedFileList.get().size();
+        return dataFiles.get().size();
     }
 
     /**
-     * Get a list of all files in this collection that have been fully finished writing and are read
-     * only
+     * Get a list of all files in this collection that have been fully finished writing, are read
+     * only, ready to be compacted, and don't exceed the specified size in MB.
      *
      * @param maxSizeMb all files returned are smaller than this number of MB
      */
-    public List<DataFileReader<D>> getAllFullyWrittenFiles(final int maxSizeMb) {
-        final ImmutableIndexedObjectList<DataFileReader<D>> activeIndexedFiles = indexedFileList.get();
+    public List<DataFileReader<D>> getAllCompletedFiles(final int maxSizeMb) {
+        final ImmutableIndexedObjectList<DataFileReader<D>> activeIndexedFiles = dataFiles.get();
         if (activeIndexedFiles == null) {
             return Collections.emptyList();
         }
-        if (maxSizeMb == Integer.MAX_VALUE) {
-            return activeIndexedFiles.stream().collect(Collectors.toList());
+        Stream<DataFileReader<D>> filesStream = activeIndexedFiles.stream();
+        filesStream = filesStream.filter(DataFileReader::isFileCompleted);
+        if (maxSizeMb != Integer.MAX_VALUE) {
+            final long maxSizeBytes = maxSizeMb * (long) MEBIBYTES_TO_BYTES;
+            filesStream = filesStream.filter(file -> file.getSize() < maxSizeBytes);
         }
-        final long maxSizeBytes = maxSizeMb * (long) MEBIBYTES_TO_BYTES;
-        return activeIndexedFiles.stream()
-                .filter(file -> file.getSize() < maxSizeBytes)
-                .collect(Collectors.toList());
+        return filesStream.toList();
     }
 
     /**
-     * Get a list of all files in this collection that have been fully finished writing and are read
-     * only
+     * Get a list of all files in this collection that have been fully finished writing, are read
+     * only and ready to be compacted.
      */
-    public List<DataFileReader<D>> getAllFullyWrittenFiles() {
-        return getAllFullyWrittenFiles(Integer.MAX_VALUE);
-    }
-
-    /**
-     * Get a list of all files in this collection that have been fully finished writing and are
-     * available for being included in a new merge.
-     */
-    public List<DataFileReader<D>> getAllFilesAvailableForMerge() {
-        final ImmutableIndexedObjectList<DataFileReader<D>> activeIndexedFiles = indexedFileList.get();
-        if (activeIndexedFiles == null) {
-            return Collections.emptyList();
-        }
-        return activeIndexedFiles.stream()
-                .filter(DataFileReader::getFileAvailableForMerging)
-                .collect(Collectors.toList());
+    public List<DataFileReader<D>> getAllCompletedFiles() {
+        return getAllCompletedFiles(Integer.MAX_VALUE);
     }
 
     /**
@@ -332,193 +372,208 @@ public class DataFileCollection<D> implements Snapshotable {
      *
      * @return statistics for sizes of all fully written files, in bytes
      */
-    public LongSummaryStatistics getAllFullyWrittenFilesSizeStatistics() {
-        final ImmutableIndexedObjectList<DataFileReader<D>> activeIndexedFiles = indexedFileList.get();
+    public LongSummaryStatistics getAllCompletedFilesSizeStatistics() {
+        final ImmutableIndexedObjectList<DataFileReader<D>> activeIndexedFiles = dataFiles.get();
         return activeIndexedFiles == null
                 ? new LongSummaryStatistics()
-                : activeIndexedFiles.stream().mapToLong(DataFileReader::getSize).summaryStatistics();
+                : activeIndexedFiles.stream()
+                        .filter(DataFileReader::isFileCompleted)
+                        .mapToLong(DataFileReader::getSize)
+                        .summaryStatistics();
     }
 
     /**
-     * Merges all files in filesToMerge
+     * Merges all files in filesToMerge.
      *
      * @param index takes a map of moves from old location to new location. Once it is finished and
      *     returns it is assumed all readers will no longer be looking in old location, so old files
      *     can be safely deleted.
      * @param filesToMerge list of files to merge
-     * @param mergingPaused Semaphore to monitor if we should pause merging
      * @return list of files created during the merge
      * @throws IOException If there was a problem merging
      * @throws InterruptedException If the merge thread was interrupted
      */
-    public synchronized List<Path> mergeFiles(
-            final CASable index, final List<DataFileReader<D>> filesToMerge, final Semaphore mergingPaused)
+    public synchronized List<Path> compactFiles(
+            final CASableLongIndex index, final List<DataFileReader<D>> filesToMerge)
             throws IOException, InterruptedException {
-        // Check whether we even need to do anything. Maybe there is only a single file or
-        // *no* files that need to be merged.
         if (filesToMerge.size() < 2) {
             // nothing to do we have merged since the last data update
-            logger.info(MERKLE_DB.getMarker(), "No files were available for merging [{}]", storeName);
+            logger.debug(MERKLE_DB.getMarker(), "No files were available for merging [{}]", storeName);
             return Collections.emptyList();
         }
 
         // create a merge time stamp, this timestamp is the newest time of the set of files we are
         // merging
-        final Instant mergeTime = filesToMerge.stream()
+        final Instant startTime = filesToMerge.stream()
                 .map(file -> file.getMetadata().getCreationDate())
                 .max(Instant::compareTo)
                 .get();
-
-        // Create the map used to track moves. The ThreeLongsList uses the array-of-arrays
-        // pattern for internal data management, so we can grow without triggering an expensive
-        // copy operation.
-        final ThreeLongsList movesMap = new ThreeLongsList(MAX_DATA_FILE_NUM_ITEMS, settings.getMoveListChunkSize());
-        // create list of paths of files created during merge
-        final List<Path> newFilesCreated = new ArrayList<>();
-        // Open a new merge file for writing
-        DataFileWriter<D> newFileWriter = newDataFile(mergeTime, true);
-        newFilesCreated.add(newFileWriter.getPath());
-        final AtomicLong lastLowestKeyWritten = new AtomicLong(-1);
-        // get the most recent min and max key
-        assert indexedFileList.get().size() > 0
-                : "The merge files should still be on disk and still be part "
-                        + "of indexedFileList, so we should always have something here.";
-        final KeyRange keyRange = validKeyRange;
-        // open iterators, first iterator will be on oldest file
-        final List<DataFileIterator> blockIterators = new ArrayList<>(filesToMerge.size());
-        for (final DataFileReader<D> fileReader : filesToMerge) {
-            blockIterators.add(fileReader.createIterator());
-        }
-        // move all iterators to first block
-        ListIterator<DataFileIterator> blockIteratorsIterator = blockIterators.listIterator();
-        while (blockIteratorsIterator.hasNext()) {
-            final DataFileIterator dataFileIterator = blockIteratorsIterator.next();
-            try {
-                if (!dataFileIterator.next()) {
-                    // we have finished reading this file so don't need it iterate it next time
-                    dataFileIterator.close();
-                    blockIteratorsIterator.remove();
-                }
-            } catch (final IOException e) {
-                logger.error(EXCEPTION.getMarker(), "Failed while removing finished data file iterators", e);
-            }
-        }
-        // while we still have data left to read
-        long lastLowestKey = -1;
-        long[] thisRoundsKeys = new long[blockIterators.size()];
-        long[] lastRoundsKeys = new long[blockIterators.size()];
-        while (!blockIterators.isEmpty()) {
-            // find the lowest key any iterator has
-            long lowestKey = Long.MAX_VALUE;
-            for (int i = 0; i < blockIterators.size(); i++) {
-                final DataFileIterator blockIterator = blockIterators.get(i);
-                final long key = blockIterator.getDataItemsKey();
-                if (key < lowestKey) {
-                    lowestKey = key;
-                }
-                thisRoundsKeys[i] = key;
-            }
-            // check keys never decrease, if they do something is very broken like a file has data
-            // in non-ascending
-            // order
-            if (lowestKey <= lastLowestKey) {
-                final long lk = lowestKey;
-                final long llk = lastLowestKey;
-                final long[] trk = thisRoundsKeys;
-                final long[] lrk = lastRoundsKeys;
-                logger.error(
-                        EXCEPTION.getMarker(),
-                        () -> String.format(
-                                """
-								lowestKey=%d lastLowestKey=%d,
-								blockIterator keys =%s
-								last rounds keys =%s""",
-                                lk, llk, Arrays.toString(trk), Arrays.toString(lrk)));
-                for (final DataFileIterator blockIterator : blockIterators) {
-                    logger.error(EXCEPTION.getMarker(), "blockIterator={}", blockIterator);
-                }
-                throw new IllegalStateException(
-                        "This should never happen, lowestKey is less than the last lowestKey. This"
-                                + " could mean the files have keys in non-ascending order.");
-            }
-            lastLowestKey = lowestKey;
-            final long[] tmp = lastRoundsKeys;
-            lastRoundsKeys = thisRoundsKeys;
-            thisRoundsKeys = tmp;
-            final long curDataLocation = index.get(lowestKey);
-            boolean seen = false;
-            // check if that key is in range
-            if (keyRange.withinRange(lowestKey)) {
-                // find which iterator is the newest that has the lowest key
-                DataFileIterator newestIteratorWithLowestKey = null;
-                Instant newestIteratorTime = Instant.EPOCH;
-                int newestIndex = Integer.MIN_VALUE;
-                for (final DataFileIterator blockIterator : blockIterators) {
-                    final long key = blockIterator.getDataItemsKey();
-                    if (key != lowestKey) continue;
-                    seen = seen || blockIterator.getDataItemsDataLocation() == curDataLocation;
-                    final int cmp = blockIterator.getDataFileCreationDate().compareTo(newestIteratorTime);
-                    if (cmp > 0 || (cmp == 0 && blockIterator.getDataFileIndex() > newestIndex)) {
-                        newestIteratorWithLowestKey = blockIterator;
-                        newestIteratorTime = blockIterator.getDataFileCreationDate();
-                        newestIndex = blockIterator.getDataFileIndex();
-                    }
-                }
-                assert newestIteratorWithLowestKey != null;
-                // write that key from newest iterator to new merge file
-                assert newestIteratorWithLowestKey.getDataItemsKey()
-                                > lastLowestKeyWritten.getAndSet(newestIteratorWithLowestKey.getDataItemsKey())
-                        : "Fail, we should always be writing data with keys in ascending order.";
-
-                if (seen) {
-                    final long newDataLocation = newFileWriter.writeCopiedDataItem(
-                            newestIteratorWithLowestKey.getMetadata().getSerializationVersion(),
-                            newestIteratorWithLowestKey.getDataItemData());
-                    // check if newFile is full
-                    if (movesMap.size() > MAX_DATA_FILE_NUM_ITEMS
-                            || newFileWriter.getFileSizeEstimate() >= settings.getMaxDataFileBytes()) {
-                        // finish writing current file, add it for reading then open new file for
-                        // writing
-                        closeCurrentMergeFile(newFileWriter, index, movesMap, mergingPaused);
-                        logger.info(MERKLE_DB.getMarker(), "MovesMap.size() = {}", movesMap.size());
-                        movesMap.clear();
-                        newFileWriter = newDataFile(mergeTime, true);
-                        newFilesCreated.add(newFileWriter.getPath());
-                        lastLowestKeyWritten.set(-1);
-                    }
-                    // add to movesMap
-                    movesMap.add(lowestKey, curDataLocation, newDataLocation);
-                }
-            }
-            // move all iterators on that contained lowestKey
-            blockIteratorsIterator = blockIterators.listIterator();
-            while (blockIteratorsIterator.hasNext()) {
-                final DataFileIterator dataFileIterator = blockIteratorsIterator.next();
-                if (dataFileIterator.getDataItemsKey() == lowestKey) {
-                    try {
-                        if (!dataFileIterator.next()) {
-                            // we have finished reading this file so don't need it iterate it next
-                            // time
-                            dataFileIterator.close();
-                            blockIteratorsIterator.remove();
-                        }
-                    } catch (final IOException e) {
-                        logger.error(EXCEPTION.getMarker(), "Failed to purge iterators containing lowestKey", e);
-                    }
-                }
-            }
-        }
-        // close current file
-        closeCurrentMergeFile(newFileWriter, index, movesMap, mergingPaused);
-        // delete old files
+        snapshotCompactionLock.acquire();
         try {
-            mergingPaused.acquire();
+            currentCompactionStartTime.set(startTime);
+            newCompactedFiles.clear();
+            startNewCompactionFile();
+        } finally {
+            snapshotCompactionLock.release();
+        }
+
+        // We need a map to find readers by file index below. It doesn't have to be synchronized
+        // as it will be accessed in this thread only, so it can be a simple HashMap or alike.
+        // However, standard Java maps can only work with Integer, not int (yet), so auto-boxing
+        // will put significant load on GC. Let's do something different
+        int minFileIndex = Integer.MAX_VALUE;
+        int maxFileIndex = 0;
+        for (final DataFileReader<D> r : filesToMerge) {
+            minFileIndex = Math.min(minFileIndex, r.getIndex());
+            maxFileIndex = Math.max(maxFileIndex, r.getIndex());
+        }
+        final int firstIndexInc = minFileIndex;
+        final int lastIndexExc = maxFileIndex + 1;
+        final DataFileReader<D>[] readers = new DataFileReader[lastIndexExc - firstIndexInc];
+        for (DataFileReader<D> r : filesToMerge) {
+            readers[r.getIndex() - firstIndexInc] = r;
+        }
+
+        final KeyRange keyRange = this.validKeyRange;
+        index.forEach((path, dataLocation) -> {
+            if (!keyRange.withinRange(path)) {
+                return;
+            }
+            final int fileIndex = DataFileCommon.fileIndexFromDataLocation(dataLocation);
+            if ((fileIndex < firstIndexInc) || (fileIndex >= lastIndexExc)) {
+                return;
+            }
+            final DataFileReader<D> reader = readers[fileIndex - firstIndexInc];
+            if (reader == null) {
+                return;
+            }
+            final long fileOffset = DataFileCommon.byteOffsetFromDataLocation(dataLocation);
+            snapshotCompactionLock.acquire();
+            try {
+                // Take the lock. If a snapshot is started in a different thread, this call
+                // will block until the snapshot is done. The current file will be flushed,
+                // and current data file writer and reader will point to a new file
+                final DataFileWriter<D> newFileWriter = currentCompactionWriter.get();
+                final long newLocation = newFileWriter.writeCopiedDataItem(
+                        reader.getMetadata().getSerializationVersion(), reader.readDataItemBytes(fileOffset));
+                // update the index
+                index.putIfEqual(path, dataLocation, newLocation);
+            } catch (final IOException z) {
+                logger.error(EXCEPTION.getMarker(), "Failed to copy data item {} / {}", fileIndex, fileOffset, z);
+                throw z;
+            } finally {
+                snapshotCompactionLock.release();
+            }
+        });
+
+        snapshotCompactionLock.acquire();
+        try {
+            // Finish writing the last file. In rare cases, it may be an empty file
+            finishCurrentCompactionFile();
+            // Clear compaction start time
+            currentCompactionStartTime.set(null);
+            // Close the readers and delete compacted files
             deleteFiles(new HashSet<>(filesToMerge));
         } finally {
-            mergingPaused.release();
+            snapshotCompactionLock.release();
         }
-        // return list of files created
-        return newFilesCreated;
+
+        return newCompactedFiles;
+    }
+
+    /**
+     * Opens a new file for writing during compaction. This method is called, when compaction is
+     * started. If compaction is interrupted and resumed by data source snapshot using {@link
+     * #pauseCompaction()} and {@link #resumeCompaction()}, a new file is created for writing using
+     * this method before compaction is resumed.
+     *
+     * This method must be called under snapshot/compaction lock.
+     *
+     * @throws IOException If an I/O error occurs
+     */
+    private void startNewCompactionFile() throws IOException {
+        final Instant startTime = currentCompactionStartTime.get();
+        assert startTime != null;
+        final DataFileWriter<D> newFileWriter = newDataFile(startTime);
+        currentCompactionWriter.set(newFileWriter);
+        final Path newFileCreated = newFileWriter.getPath();
+        newCompactedFiles.add(newFileCreated);
+        final DataFileMetadata newFileMetadata = newFileWriter.getMetadata();
+        final DataFileReader<D> newFileReader = addNewDataFileReader(newFileCreated, newFileMetadata);
+        currentCompactionReader.set(newFileReader);
+    }
+
+    /**
+     * Closes the current compaction file. This method is called in the end of compaction process,
+     * and also before a snapshot is taken to make sure the current file is fully written and safe
+     * to include to snapshots.
+     *
+     * This method must be called under snapshot/compaction lock.
+     *
+     * @throws IOException If an I/O error occurs
+     */
+    private void finishCurrentCompactionFile() throws IOException {
+        currentCompactionWriter.get().finishWriting();
+        currentCompactionWriter.set(null);
+        // Now include the file in future compactions
+        currentCompactionReader.get().setFileCompleted();
+        currentCompactionReader.set(null);
+    }
+
+    /**
+     * Puts file compaction on hold, if it's currently in progress. If not in progress, it will
+     * prevent compaction from starting until {@link #resumeCompaction()} is called. The most
+     * important thing this method does is it makes data files consistent and read only, so they can
+     * be included to snapshots as easily as to create hard links. In particular, if compaction is
+     * in progress, and a new data file is being written to, this file is flushed to disk, no files
+     * are created and no index entries are updated until compaction is resumed.
+     *
+     * This method should not be called on the compaction thread.
+     *
+     * <b>This method must be always balanced with and called before {@link #resumeCompaction()}. If
+     * there are more / less calls to resume compactions than to pause, or if they are called in a
+     * wrong order, it will result in deadlocks.</b>
+     *
+     * @throws IOException If an I/O error occurs
+     */
+    public void pauseCompaction() throws IOException {
+        snapshotCompactionLock.acquireUninterruptibly();
+        // Check if compaction is currently in progress. If so, flush and close the current file, so
+        // it's included to the snapshot
+        final DataFileWriter<D> compactionWriter = currentCompactionWriter.get();
+        if (compactionWriter != null) {
+            compactionWasInProgress.set(true);
+            finishCurrentCompactionFile();
+            // Don't start a new compaction file here, as it would be included to snapshots, but
+            // it shouldn't, as it isn't fully written yet. Instead, a new file will be started
+            // right after snapshot is taken, in resumeCompaction()
+        }
+        // Don't release the lock here, it will be done later in resumeCompaction(). If there is no
+        // compaction currently running, the lock will prevent starting a new one until snapshot is
+        // done
+    }
+
+    /**
+     * Resumes compaction previously put on hold with {@link #pauseCompaction()}. If there was no
+     * compaction running at that moment, but new compaction was started (and blocked) since {@link
+     * #pauseCompaction()}, this new compaction is resumed.
+     *
+     * <b>This method must be always balanced with and called after {@link #pauseCompaction()}. If
+     * there are more / less calls to resume compactions than to pause, or if they are called in a
+     * wrong order, it will result in deadlocks.</b>
+     *
+     * @throws IOException If an I/O error occurs
+     */
+    public void resumeCompaction() throws IOException {
+        try {
+            if (compactionWasInProgress.getAndSet(false)) {
+                assert currentCompactionWriter.get() == null;
+                assert currentCompactionReader.get() == null;
+                startNewCompactionFile();
+            }
+        } finally {
+            snapshotCompactionLock.release();
+        }
     }
 
     /** Close all the data files */
@@ -531,7 +586,7 @@ public class DataFileCollection<D> implements Snapshotable {
         // calling startSnapshot causes the metadata file to be written
         saveMetadata(storeDir);
         // close all files
-        final ImmutableIndexedObjectList<DataFileReader<D>> fileList = indexedFileList.getAndSet(null);
+        final ImmutableIndexedObjectList<DataFileReader<D>> fileList = dataFiles.getAndSet(null);
         if (fileList != null) {
             for (final DataFileReader<D> file : (Iterable<DataFileReader<D>>) fileList.stream()::iterator) {
                 file.close();
@@ -549,7 +604,11 @@ public class DataFileCollection<D> implements Snapshotable {
         if (activeDataFileWriter != null) {
             throw new IOException("Tried to start writing when we were already writing.");
         }
-        currentDataFileWriter.set(newDataFile(Instant.now(), false));
+        final DataFileWriter<D> writer = newDataFile(Instant.now());
+        currentDataFileWriter.set(writer);
+        final DataFileMetadata metadata = writer.getMetadata();
+        final DataFileReader<D> reader = addNewDataFileReader(writer.getPath(), metadata);
+        currentDataFileReader.set(reader);
     }
 
     /**
@@ -570,7 +629,9 @@ public class DataFileCollection<D> implements Snapshotable {
     }
 
     /**
-     * End writing current data file
+     * End writing current data file and returns the corresponding reader. The reader isn't marked
+     * as completed (fully written, read only, and ready to compact), as the caller may need some
+     * additional processing, e.g. to update indices, before the file can be compacted.
      *
      * @param minimumValidKey The minimum valid data key at this point in time, can be used for
      *     cleaning out old data
@@ -580,14 +641,18 @@ public class DataFileCollection<D> implements Snapshotable {
      */
     public DataFileReader<D> endWriting(final long minimumValidKey, final long maximumValidKey) throws IOException {
         validKeyRange = new KeyRange(minimumValidKey, maximumValidKey);
-        final DataFileWriter<D> activeDataFileWriter = currentDataFileWriter.getAndSet(null);
-        if (activeDataFileWriter == null) {
+        final DataFileWriter<D> dataWriter = currentDataFileWriter.getAndSet(null);
+        if (dataWriter == null) {
             throw new IOException("Tried to end writing when we never started writing.");
         }
         // finish writing the file and write its footer
-        final DataFileMetadata metadata = activeDataFileWriter.finishWriting();
-        // open reader on newly written file and add it to indexedFileList ready to be read.
-        return addNewDataFileReader(activeDataFileWriter.getPath(), metadata);
+        dataWriter.finishWriting();
+        final DataFileReader<D> dataReader = currentDataFileReader.getAndSet(null);
+        if (logger.isTraceEnabled()) {
+            final DataFileMetadata metadata = dataReader.getMetadata();
+            setOfNewFileIndexes.remove(metadata.getIndex());
+        }
+        return dataReader;
     }
 
     /**
@@ -635,8 +700,8 @@ public class DataFileCollection<D> implements Snapshotable {
         // split up location
         final int fileIndex = fileIndexFromDataLocation(dataLocation);
         // check if file for fileIndex exists
-        final DataFileReader<D> file;
-        final ImmutableIndexedObjectList<DataFileReader<D>> currentIndexedFileList = indexedFileList.get();
+        DataFileReader<D> file;
+        final ImmutableIndexedObjectList<DataFileReader<D>> currentIndexedFileList = dataFiles.get();
         if (fileIndex < 0 || currentIndexedFileList == null || (file = currentIndexedFileList.get(fileIndex)) == null) {
             throw new IOException("Got a data location from index for a file that doesn't exist. "
                     + "dataLocation="
@@ -665,7 +730,7 @@ public class DataFileCollection<D> implements Snapshotable {
      * key-&gt;dataLocation, this allows for multiple retries going back to the index each time. The
      * allows us to cover the cracks where threads can slip though.
      *
-     * <p>This depends on the fact that LongList has a nominal value of
+     * This depends on the fact that LongList has a nominal value of
      * LongList.IMPERMISSIBLE_VALUE=0 for non-existent values.
      *
      * @param index key-&gt;dataLocation index
@@ -684,7 +749,7 @@ public class DataFileCollection<D> implements Snapshotable {
      * key-&gt;dataLocation, this allows for multiple retries going back to the index each time. The
      * allows us to cover the cracks where threads can slip though.
      *
-     * <p>This depends on the fact that LongList has a nominal value of
+     * This depends on the fact that LongList has a nominal value of
      * LongList.IMPERMISSIBLE_VALUE=0 for non-existent values.
      *
      * @param index key-&gt;dataLocation index
@@ -734,18 +799,33 @@ public class DataFileCollection<D> implements Snapshotable {
                 logger.warn(
                         EXCEPTION.getMarker(),
                         () -> {
-                            final String currentFiles = indexedFileList.get() == null
+                            final String currentFiles = dataFiles.get() == null
                                     ? "UNKNOWN"
-                                    : indexedFileList.get().prettyPrintedIndices();
+                                    : dataFiles.get().prettyPrintedIndices();
 
-                            return "Store [" + storeName + "] had IOException while trying to read " + "key ["
-                                    + keyIntoIndex + "] at " + "offset ["
-                                    + byteOffsetFromDataLocation(dataLocation) + "] from " + "file ["
-                                    + fileIndexFromDataLocation(dataLocation) + "] " + "on retry ["
-                                    + currentRetry + "]. " + "Current files are ["
-                                    + currentFiles + "]" + ", validKeyRange="
-                                    + validKeyRange + ", storeDir=["
-                                    + storeDir.toAbsolutePath() + "]";
+                            return "Store ["
+                                    + storeName
+                                    + "] had IOException while trying to read "
+                                    + "key ["
+                                    + keyIntoIndex
+                                    + "] at "
+                                    + "offset ["
+                                    + byteOffsetFromDataLocation(dataLocation)
+                                    + "] from "
+                                    + "file ["
+                                    + fileIndexFromDataLocation(dataLocation)
+                                    + "] "
+                                    + "on retry ["
+                                    + currentRetry
+                                    + "]. "
+                                    + "Current files are ["
+                                    + currentFiles
+                                    + "]"
+                                    + ", validKeyRange="
+                                    + validKeyRange
+                                    + ", storeDir=["
+                                    + storeDir.toAbsolutePath()
+                                    + "]";
                         },
                         e);
             }
@@ -757,7 +837,7 @@ public class DataFileCollection<D> implements Snapshotable {
     @Override
     public void snapshot(final Path snapshotDirectory) throws IOException {
         saveMetadata(snapshotDirectory);
-        final List<DataFileReader<D>> snapshotIndexedFiles = getAllFullyWrittenFiles();
+        final List<DataFileReader<D>> snapshotIndexedFiles = getAllCompletedFiles();
         for (final DataFileReader<D> fileReader : snapshotIndexedFiles) {
             final Path existingFile = fileReader.getPath();
             Files.createLink(snapshotDirectory.resolve(existingFile.getFileName()), existingFile);
@@ -793,30 +873,6 @@ public class DataFileCollection<D> implements Snapshotable {
     // =================================================================================================================
     // Private API
 
-    /** Finish a merge file and close it. */
-    private void closeCurrentMergeFile(
-            final DataFileWriter<D> newFileWriter,
-            final CASable index,
-            final ThreeLongsList movesMap,
-            final Semaphore mergingPaused)
-            throws IOException, InterruptedException {
-        // close current file
-        final DataFileMetadata metadata = newFileWriter.finishWriting();
-        // add it for reading
-        final DataFileReader<D> dataFileReader = addNewDataFileReader(newFileWriter.getPath(), metadata);
-        // apply index changes
-        movesMap.forEach((key, oldValue, newValue) -> {
-            try {
-                mergingPaused.acquire();
-                index.putIfEqual(key, oldValue, newValue);
-            } finally {
-                mergingPaused.release();
-            }
-        });
-        // we have updated all indexes now so can now include this file in future merges
-        dataFileReader.setFileAvailableForMerging(true);
-    }
-
     /**
      * Used by tests to get data files for checking
      *
@@ -824,7 +880,7 @@ public class DataFileCollection<D> implements Snapshotable {
      * @return the data file if one exists at that index
      */
     DataFileReader<D> getDataFile(final int index) {
-        final ImmutableIndexedObjectList<DataFileReader<D>> fileList = indexedFileList.get();
+        final ImmutableIndexedObjectList<DataFileReader<D>> fileList = this.dataFiles.get();
         return fileList == null ? null : fileList.get(index);
     }
 
@@ -838,10 +894,7 @@ public class DataFileCollection<D> implements Snapshotable {
     private DataFileReader<D> addNewDataFileReader(final Path filePath, final DataFileMetadata metadata)
             throws IOException {
         final DataFileReader<D> newDataFileReader = new DataFileReader<>(filePath, dataItemSerializer, metadata);
-        if (logger.isTraceEnabled()) {
-            setOfNewFileIndexes.remove(metadata.getIndex());
-        }
-        indexedFileList.getAndUpdate(currentFileList -> {
+        dataFiles.getAndUpdate(currentFileList -> {
             try {
                 return (currentFileList == null)
                         ? indexedObjectListConstructor.apply(singletonList(newDataFileReader))
@@ -862,7 +915,7 @@ public class DataFileCollection<D> implements Snapshotable {
      */
     private void deleteFiles(final Set<DataFileReader<D>> filesToDelete) throws IOException {
         // remove files from index
-        indexedFileList.getAndUpdate(currentFileList ->
+        dataFiles.getAndUpdate(currentFileList ->
                 (currentFileList == null) ? null : currentFileList.withDeletedObjects(filesToDelete));
         // now close and delete all the files
         for (final DataFileReader<D> fileReader : filesToDelete) {
@@ -876,15 +929,14 @@ public class DataFileCollection<D> implements Snapshotable {
      *
      * @param creationTime The creation time for the data in the new file. It could be now or old in
      *     case of merge.
-     * @param isMergeFile if the new file is a merge file or not
      * @return the newly created data file
      */
-    private DataFileWriter<D> newDataFile(final Instant creationTime, final boolean isMergeFile) throws IOException {
+    private DataFileWriter<D> newDataFile(final Instant creationTime) throws IOException {
         final int newFileIndex = nextFileIndex.getAndIncrement();
         if (logger.isTraceEnabled()) {
             setOfNewFileIndexes.add(newFileIndex);
         }
-        return new DataFileWriter<>(storeName, storeDir, newFileIndex, dataItemSerializer, creationTime, isMergeFile);
+        return new DataFileWriter<>(storeName, storeDir, newFileIndex, dataItemSerializer, creationTime);
     }
 
     /**
@@ -986,7 +1038,7 @@ public class DataFileCollection<D> implements Snapshotable {
                     storeDir.toAbsolutePath());
         }
         // create indexed file list
-        indexedFileList.set(indexedObjectListConstructor.apply(List.of(dataFileReaders)));
+        dataFiles.set(indexedObjectListConstructor.apply(List.of(dataFileReaders)));
         // work out what the next index would be, the highest current index plus one
         nextFileIndex.set(getMaxFileReaderIndex(dataFileReaders) + 1);
         // now call indexEntryCallback
@@ -1004,9 +1056,9 @@ public class DataFileCollection<D> implements Snapshotable {
                 }
             }
         }
-        // mark all files we loaded as being available for merging
+        // Mark all files we loaded as being available for compactions
         for (final DataFileReader<D> dataFileReader : dataFileReaders) {
-            dataFileReader.setFileAvailableForMerging(true);
+            dataFileReader.setFileCompleted();
         }
         logger.info(
                 MERKLE_DB.getMarker(), "Finished loading existing data files for DataFileCollection [{}]", storeName);
