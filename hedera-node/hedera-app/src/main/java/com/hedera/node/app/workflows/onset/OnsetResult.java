@@ -28,8 +28,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Results of the workflow onset.
  *
  * <p>This is used in every workflow that deals with transactions, i.e. in all workflows except the
- * query workflow. And even in the query workflow, it is used when dealing with the contained {@link
- * com.hederahashgraph.api.proto.java.CryptoTransfer}.
+ * query workflow. And even in the query workflow, it is used when dealing with the contained
+ * {@link com.hederahashgraph.api.proto.java.CryptoTransfer}.
  *
  * @param txBody the deserialized {@link TransactionBody}
  * @param signatureMap the contained {@link SignatureMap}
@@ -47,8 +47,7 @@ public record OnsetResult(
      *
      * @param txBody the deserialized {@link TransactionBody}
      * @param bodyBytes the raw byte-array that contains the body
-     * @param errorCode the {@link ResponseCodeEnum}, if a validation failed, {@link
-     *     ResponseCodeEnum#OK} otherwise
+     * @param errorCode the {@link ResponseCodeEnum}, if a validation failed, {@link ResponseCodeEnum#OK} otherwise
      * @param signatureMap the contained {@link SignatureMap}
      * @param functionality the {@link HederaFunctionality} of the transaction
      * @throws NullPointerException if one of the arguments is {@code null}
