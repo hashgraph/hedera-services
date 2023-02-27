@@ -28,6 +28,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hedera.node.app.workflows.dispatcher.StoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Optional;
@@ -56,11 +57,14 @@ class AdaptedTransitionRunnerTest {
     @Mock
     private TxnAccessor accessor;
 
+    @Mock
+    private StoreFactory storeFactory;
+
     private AdaptedMonoTransitionRunner subject;
 
     @BeforeEach
     void setUp() {
-        subject = new AdaptedMonoTransitionRunner(ids, txnCtx, dispatcher, lookup);
+        subject = new AdaptedMonoTransitionRunner(ids, txnCtx, dispatcher, lookup, storeFactory);
     }
 
     @Test
@@ -70,7 +74,7 @@ class AdaptedTransitionRunnerTest {
 
         subject.tryTransition(accessor);
 
-        verify(dispatcher).dispatchHandle(ConsensusCreateTopic, mockTxn);
+        verify(dispatcher).dispatchHandle(ConsensusCreateTopic, mockTxn, storeFactory);
     }
 
     @Test

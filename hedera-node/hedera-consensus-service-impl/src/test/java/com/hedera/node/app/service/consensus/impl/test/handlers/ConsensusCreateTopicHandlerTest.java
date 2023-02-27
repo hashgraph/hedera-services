@@ -27,8 +27,8 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.mono.Utils;
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.accounts.AccountLookup;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.meta.PreHandleContext;
@@ -56,7 +56,7 @@ class ConsensusCreateTopicHandlerTest {
     private final ConsensusServiceConfig consensusConfig = new ConsensusServiceConfig(1234L, 5678);
 
     @Mock
-    private AccountKeyLookup keyFinder;
+    private AccountLookup keyFinder;
 
     @Mock
     private HandleContext handleContext;

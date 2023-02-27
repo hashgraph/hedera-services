@@ -20,8 +20,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.accounts.AccountLookup;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -39,7 +39,7 @@ import java.util.List;
  */
 public class PreHandleContext {
 
-    private final AccountKeyLookup keyLookup;
+    private final AccountLookup keyLookup;
 
     private final TransactionBody txn;
     private final AccountID payer;
@@ -50,7 +50,7 @@ public class PreHandleContext {
     private Object handlerMetadata;
 
     public PreHandleContext(
-            @NonNull final AccountKeyLookup keyLookup,
+            @NonNull final AccountLookup keyLookup,
             @NonNull final TransactionBody txn,
             @NonNull final AccountID payer) {
         this.keyLookup = requireNonNull(keyLookup);
@@ -61,7 +61,7 @@ public class PreHandleContext {
         addToKeysOrFail(lookedUpPayerKey, INVALID_PAYER_ACCOUNT_ID, true);
     }
 
-    public PreHandleContext(@NonNull final AccountKeyLookup keyLookup, @NonNull final TransactionBody txn) {
+    public PreHandleContext(@NonNull final AccountLookup keyLookup, @NonNull final TransactionBody txn) {
         this(keyLookup, txn, txn.getTransactionID().getAccountID());
     }
 

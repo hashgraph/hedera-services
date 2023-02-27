@@ -16,9 +16,14 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.node.app.spi.accounts.AccountLookup;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
+import com.hedera.node.app.spi.validation.EntityCreationLimits;
 import com.hedera.node.app.spi.validation.EntityExpiryValidator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.function.LongSupplier;
 import javax.inject.Inject;
@@ -27,10 +32,13 @@ import javax.inject.Singleton;
 @Singleton
 public class MonoHandleContext implements HandleContext {
     private final EntityExpiryValidator expiryValidator;
+    private final AccountLookup accountLookup;
 
     @Inject
-    public MonoHandleContext(final EntityExpiryValidator expiryValidator) {
-        this.expiryValidator = expiryValidator;
+    public MonoHandleContext(@NonNull final EntityExpiryValidator expiryValidator,
+            @NonNull final AccountLookup accountLookup) {
+        this.expiryValidator = requireNonNull(expiryValidator);
+        this.accountLookup = requireNonNull(accountLookup);
     }
 
     @Override
@@ -51,5 +59,15 @@ public class MonoHandleContext implements HandleContext {
     @Override
     public EntityExpiryValidator expiryValidator() {
         return expiryValidator;
+    }
+
+    @Override
+    public EntityCreationLimits entityCreationLimits() {
+        throw new AssertionError("Not implemented");
+    }
+
+    @Override
+    public AccountLookup accountLookup() {
+        return accountLookup;
     }
 }

@@ -30,10 +30,10 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.accounts.Account;
+import com.hedera.node.app.spi.accounts.AccountLookup;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -50,7 +50,7 @@ import java.util.Optional;
  *
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
-public class ReadableAccountStore implements AccountKeyLookup {
+public class ReadableAccountStore implements AccountLookup {
     /** The underlying data storage class that holds the account data. */
     private final ReadableKVState<Long, MerkleAccount> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
@@ -132,7 +132,8 @@ public class ReadableAccountStore implements AccountKeyLookup {
      * @return an {@link Optional} with the {@code Account}, if it was found, an empty {@code
      *     Optional} otherwise
      */
-    public Optional<Account> getAccount(@NonNull final AccountID idOrAlias) {
+    @Override
+    public Optional<Account> getAccountById(@NonNull final AccountID idOrAlias) {
         return getAccountLeaf(idOrAlias).map(accountLeaf -> mapAccount(idOrAlias, accountLeaf));
     }
 

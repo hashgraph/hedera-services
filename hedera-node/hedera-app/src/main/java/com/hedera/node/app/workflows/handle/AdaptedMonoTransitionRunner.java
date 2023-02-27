@@ -26,6 +26,7 @@ import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
 import com.hedera.node.app.service.mono.txns.TransitionRunner;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hedera.node.app.workflows.dispatcher.StoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -39,15 +40,18 @@ public class AdaptedMonoTransitionRunner extends TransitionRunner {
             EnumSet.of(ConsensusCreateTopic, ConsensusUpdateTopic, ConsensusSubmitMessage, ConsensusDeleteTopic);
 
     private final TransactionDispatcher dispatcher;
+    private final StoreFactory storeFactory;
 
     @Inject
     public AdaptedMonoTransitionRunner(
             @NonNull final EntityIdSource ids,
             @NonNull final TransactionContext txnCtx,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final TransitionLogicLookup lookup) {
+            @NonNull final TransitionLogicLookup lookup,
+            @NonNull final StoreFactory storeFactory) {
         super(ids, txnCtx, lookup);
         this.dispatcher = dispatcher;
+        this.storeFactory = storeFactory;
     }
 
     /**
@@ -57,7 +61,7 @@ public class AdaptedMonoTransitionRunner extends TransitionRunner {
     public boolean tryTransition(final @NonNull TxnAccessor accessor) {
         final var function = accessor.getFunction();
         if (FUNCTIONS_TO_DISPATCH.contains(function)) {
-            dispatcher.dispatchHandle(function, accessor.getTxn());
+            dispatcher.dispatchHandle(function, accessor.getTxn(), storeFactory);
             return true;
         } else {
             return super.tryTransition(accessor);

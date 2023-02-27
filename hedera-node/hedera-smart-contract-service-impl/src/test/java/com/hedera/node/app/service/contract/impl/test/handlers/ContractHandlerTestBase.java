@@ -25,8 +25,8 @@ import static org.mockito.Mockito.lenient;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.accounts.AccountLookup;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hederahashgraph.api.proto.java.*;
@@ -56,7 +56,7 @@ public class ContractHandlerTestBase {
     protected MerkleAccount payerAccount;
 
     @Mock
-    protected AccountKeyLookup keyLookup;
+    protected AccountLookup keyLookup;
 
     @BeforeEach
     void commonSetUp() {

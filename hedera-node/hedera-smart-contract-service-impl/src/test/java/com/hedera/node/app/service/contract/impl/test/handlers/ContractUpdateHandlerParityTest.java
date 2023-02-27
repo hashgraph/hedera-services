@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
-import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.accounts.AccountLookup;
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -35,7 +35,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ContractUpdateHandlerParityTest {
-    private AccountKeyLookup keyLookup;
+    private AccountLookup keyLookup;
     private final ContractUpdateHandler subject = new ContractUpdateHandler();
 
     @BeforeEach

@@ -32,14 +32,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
-import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.accounts.AccountLookup;
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class TokenUnfreezeAccountHandlerParityTest {
-    private AccountKeyLookup accountStore;
+    private AccountLookup accountStore;
     private ReadableTokenStore tokenStore;
     private TokenUnfreezeAccountHandler subject;
 

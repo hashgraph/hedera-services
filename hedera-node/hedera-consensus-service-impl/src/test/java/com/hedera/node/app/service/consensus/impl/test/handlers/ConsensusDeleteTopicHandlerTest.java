@@ -34,8 +34,8 @@ import static org.mockito.Mockito.mock;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.mono.Utils;
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.accounts.AccountLookup;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.test.utils.IdUtils;
@@ -63,14 +63,14 @@ class ConsensusDeleteTopicHandlerTest {
     static final TopicID TOPIC_ID_1357 =
             TopicID.newBuilder().setShardNum(0).setRealmNum(0).setTopicNum(1357).build();
     private static final AccountID ACCOUNT_ID_4 = IdUtils.asAccount("0.0.4");
-    private AccountKeyLookup keyLookup;
+    private AccountLookup keyLookup;
     private ReadableTopicStore topicStore;
 
     private ConsensusDeleteTopicHandler subject;
 
     @BeforeEach
     void setUp() {
-        keyLookup = mock(AccountKeyLookup.class);
+        keyLookup = mock(AccountLookup.class);
         topicStore = mock(ReadableTopicStore.class);
         subject = new ConsensusDeleteTopicHandler();
     }

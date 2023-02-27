@@ -62,6 +62,10 @@ public class WritableTopicStore {
         topicState.put(topic.topicNumber(), asMerkleTopic(topic));
     }
 
+    public void getTotalTopics() {
+        topicState.keys();
+    }
+
     private MerkleTopic asMerkleTopic(@NonNull final Topic topic) {
         final var merkle = new MerkleTopic();
         topic.getAdminKey().ifPresent(key -> merkle.setAdminKey((JKey) key));

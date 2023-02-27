@@ -20,7 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.consensus.entity.Topic;
 import com.hedera.node.app.service.consensus.entity.TopicBuilder;
-import com.hedera.node.app.service.token.entity.Account;
+import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.key.HederaKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

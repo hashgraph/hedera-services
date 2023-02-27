@@ -23,8 +23,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.accounts.AccountLookup;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hederahashgraph.api.proto.java.*;
@@ -67,7 +67,7 @@ class PreHandleContextListUpdatesTest {
     private HederaKey otherKey;
 
     @Mock
-    private AccountKeyLookup keyLookup;
+    private AccountLookup keyLookup;
 
     private PreHandleContext subject;
 

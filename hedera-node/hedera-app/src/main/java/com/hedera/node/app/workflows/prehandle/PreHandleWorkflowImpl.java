@@ -130,7 +130,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // 2. Call PreTransactionHandler to do transaction-specific checks, get list of required
             // keys, and prefetch required data
             final var storeFactory = new StoreFactory(state);
-            final var accountStore = storeFactory.getAccountStore();
+            final var accountStore = storeFactory.getReadableAccountStore();
             final var handlerContext = new PreHandleContext(accountStore, txBody);
             dispatcher.dispatchPreHandle(storeFactory, handlerContext);
 
@@ -141,7 +141,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // TODO: Verify signature via the platform once this functionality was implemented
 
             // 5. Return TransactionMetadata
-            return createTransactionMetadata(storeFactory.getUsedStates(), handlerContext);
+            return createTransactionMetadata(storeFactory.getUsedReadableStates(), handlerContext);
 
         } catch (PreCheckException preCheckException) {
             return createInvalidTransactionMetadata(txBody, payerID, preCheckException.responseCode());

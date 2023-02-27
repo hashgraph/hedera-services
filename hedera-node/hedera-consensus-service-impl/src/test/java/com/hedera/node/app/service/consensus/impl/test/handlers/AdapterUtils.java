@@ -23,7 +23,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.accounts.AccountLookup;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -44,14 +44,14 @@ public class AdapterUtils {
     }
 
     /**
-     * Returns the {@link AccountKeyLookup} containing the "well-known" accounts and aliases that
+     * Returns the {@link AccountLookup} containing the "well-known" accounts and aliases that
      * exist in a {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in
      * unit tests of {@link com.hedera.node.app.spi.PreTransactionHandler} implementations that
-     * require an {@link AccountKeyLookup}.
+     * require an {@link AccountLookup}.
      *
      * @return the well-known account store
      */
-    public static AccountKeyLookup wellKnownKeyLookupAt() {
+    public static AccountLookup wellKnownKeyLookupAt() {
         return new TestFixturesKeyLookup(mockStates(Map.of(
                 ALIASES_KEY, wellKnownAliasState(),
                 ACCOUNTS_KEY, wellKnownAccountsState())));

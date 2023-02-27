@@ -24,8 +24,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.accounts.Account;
+import com.hedera.node.app.spi.accounts.AccountLookup;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -33,7 +34,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 
-public class TestFixturesKeyLookup implements AccountKeyLookup {
+public class TestFixturesKeyLookup implements AccountLookup {
     private final ReadableKVState<String, Long> aliases;
     private final ReadableKVState<Long, HederaAccount> accounts;
 
@@ -91,6 +92,16 @@ public class TestFixturesKeyLookup implements AccountKeyLookup {
                 return PRESENT_BUT_NOT_REQUIRED;
             }
         }
+    }
+
+    @NonNull
+    @Override
+    public Optional<Account> getAccountById(@NonNull AccountID accountOrAlias) {
+        final var account =  accounts.get(accountNumOf(accountOrAlias));
+        if (account == null) {
+            return Optional.empty();
+        }
+        return Optional.of(account);
     }
 
     private KeyOrLookupFailureReason validateKey(final JKey key, final boolean isContractKey) {

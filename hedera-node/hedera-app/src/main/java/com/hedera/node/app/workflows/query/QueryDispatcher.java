@@ -113,7 +113,7 @@ public class QueryDispatcher {
 
         return switch (query.getQueryCase()) {
             case CONSENSUSGETTOPICINFO -> handlers.consensusGetTopicInfoHandler()
-                    .validate(query, storeFactory.getTopicStore());
+                    .validate(query, storeFactory.getReadableTopicStore());
 
             case GETBYSOLIDITYID -> handlers.contractGetBySolidityIDHandler().validate(query);
             case CONTRACTCALLLOCAL -> handlers.contractCallLocalHandler().validate(query);
@@ -179,7 +179,7 @@ public class QueryDispatcher {
 
         return switch (query.getQueryCase()) {
             case CONSENSUSGETTOPICINFO -> handlers.consensusGetTopicInfoHandler()
-                    .findResponse(query, header, storeFactory.getTopicStore(), queryContext);
+                    .findResponse(query, header, storeFactory.getReadableTopicStore(), queryContext);
 
             case GETBYSOLIDITYID -> handlers.contractGetBySolidityIDHandler().findResponse(query, header);
             case CONTRACTCALLLOCAL -> handlers.contractCallLocalHandler().findResponse(query, header);
