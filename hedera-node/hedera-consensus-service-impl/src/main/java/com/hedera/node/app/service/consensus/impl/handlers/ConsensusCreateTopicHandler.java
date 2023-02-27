@@ -71,7 +71,9 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
     }
 
     /**
-     * Given the appropriate context needed to execute the logic to create a new topic.
+     * Given the appropriate context, creates a new topic.
+     *
+     * TODO: Provide access to writable topic store.
      *
      * @param handleContext the {@link HandleContext} for the active transaction
      * @param topicCreation the {@link ConsensusCreateTopicTransactionBody} for the active transaction

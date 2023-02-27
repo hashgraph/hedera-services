@@ -26,7 +26,7 @@ package com.hedera.node.app.spi.validation;
  * @param autoRenewPeriod the number of seconds between auto-renewals
  * @param autoRenewNum the number of the account to be charged for auto-renewals
  */
-public record EntityExpiryMetadata(long expiry, long autoRenewPeriod, long autoRenewNum) {
+public record ExpiryMeta(long expiry, long autoRenewPeriod, long autoRenewNum) {
     /**
      * A sentinel value indicating some part of the metadata is not available..
      */

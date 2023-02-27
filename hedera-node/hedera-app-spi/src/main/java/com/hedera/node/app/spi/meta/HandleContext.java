@@ -17,7 +17,7 @@
 package com.hedera.node.app.spi.meta;
 
 import com.hedera.node.app.spi.validation.AttributeValidator;
-import com.hedera.node.app.spi.validation.EntityExpiryValidator;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import java.time.Instant;
 import java.util.function.LongSupplier;
 
@@ -28,5 +28,5 @@ public interface HandleContext {
 
     AttributeValidator attributeValidator();
 
-    EntityExpiryValidator expiryValidator();
+    ExpiryValidator expiryValidator();
 }

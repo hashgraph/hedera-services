@@ -31,7 +31,9 @@ import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -43,6 +45,10 @@ import javax.inject.Singleton;
 /**
  * A {@code TransactionDispatcher} provides functionality to forward pre-check, pre-handle, and
  * handle-transaction requests to the appropriate handler
+ *
+ * <p>For handle, mostly just supports the limited form of the Consensus Service handlers
+ * described in https://github.com/hashgraph/hedera-services/issues/4945, while still trying to
+ * make a bit of progress toward the general implementation.
  */
 @Singleton
 public class TransactionDispatcher {
@@ -56,10 +62,7 @@ public class TransactionDispatcher {
     private final GlobalDynamicProperties dynamicProperties;
 
     /**
-     * Creates a {@code TransactionDispatcher} able to support the limited form of the
-     * Consensus Service handlers described in
-     * https://github.com/hashgraph/hedera-services/issues/4945, while still trying
-     * to make a bit of progress toward a more general solution.
+     * Creates a {@code TransactionDispatcher}.
      *
      * @param handleContext     the context of the handle workflow
      * @param txnCtx            the mono context of the transaction
@@ -97,35 +100,11 @@ public class TransactionDispatcher {
     public void dispatchHandle(@NonNull final HederaFunctionality function, @NonNull final TransactionBody txn) {
         switch (function) {
             case ConsensusCreateTopic -> dispatchConsensusCreateTopic(txn.getConsensusCreateTopic());
+            case ConsensusUpdateTopic -> dispatchConsensusUpdateTopic(txn.getConsensusUpdateTopic());
+            case ConsensusDeleteTopic -> dispatchConsensusDeleteTopic(txn.getConsensusDeleteTopic());
             case ConsensusSubmitMessage -> dispatchConsensusSubmitMessage(txn.getConsensusSubmitMessage());
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
-    }
-
-    private void dispatchConsensusCreateTopic(final ConsensusCreateTopicTransactionBody topicCreation) {
-        final var handler = handlers.consensusCreateTopicHandler();
-        final var recordBuilder = handler.newRecordBuilder();
-        handler.handle(
-                handleContext,
-                topicCreation,
-                new ConsensusServiceConfig(
-                        dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
-                recordBuilder);
-        txnCtx.setCreated(TopicID.newBuilder()
-                .setTopicNum(recordBuilder.getCreatedTopic())
-                .build());
-    }
-
-    private void dispatchConsensusSubmitMessage(final ConsensusSubmitMessageTransactionBody messageSubmission) {
-        final var handler = handlers.consensusSubmitMessageHandler();
-        final var recordBuilder = handler.newRecordBuilder();
-        handler.handle(
-                handleContext,
-                messageSubmission,
-                new ConsensusServiceConfig(
-                        dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
-                recordBuilder);
-        txnCtx.setTopicRunningHash(recordBuilder.getNewTopicRunningHash(), recordBuilder.getNewTopicSequenceNumber());
     }
 
     /**
@@ -234,5 +213,53 @@ public class TransactionDispatcher {
             dispatchPreHandle(storeFactory, handlerContext);
             return new TransactionMetadata(handlerContext, List.of());
         };
+    }
+
+    private void dispatchConsensusDeleteTopic(final ConsensusDeleteTopicTransactionBody topicDeletion) {
+        final var handler = handlers.consensusDeleteTopicHandler();
+        final var recordBuilder = handler.newRecordBuilder();
+        handler.handle(
+                handleContext,
+                topicDeletion,
+                new ConsensusServiceConfig(
+                        dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
+                recordBuilder);
+    }
+
+    private void dispatchConsensusUpdateTopic(final ConsensusUpdateTopicTransactionBody topicUpdate) {
+        final var handler = handlers.consensusUpdateTopicHandler();
+        final var recordBuilder = handler.newRecordBuilder();
+        handler.handle(
+                handleContext,
+                topicUpdate,
+                new ConsensusServiceConfig(
+                        dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
+                recordBuilder);
+    }
+
+    private void dispatchConsensusCreateTopic(final ConsensusCreateTopicTransactionBody topicCreation) {
+        final var handler = handlers.consensusCreateTopicHandler();
+        final var recordBuilder = handler.newRecordBuilder();
+        handler.handle(
+                handleContext,
+                topicCreation,
+                new ConsensusServiceConfig(
+                        dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
+                recordBuilder);
+        txnCtx.setCreated(TopicID.newBuilder()
+                .setTopicNum(recordBuilder.getCreatedTopic())
+                .build());
+    }
+
+    private void dispatchConsensusSubmitMessage(final ConsensusSubmitMessageTransactionBody messageSubmission) {
+        final var handler = handlers.consensusSubmitMessageHandler();
+        final var recordBuilder = handler.newRecordBuilder();
+        handler.handle(
+                handleContext,
+                messageSubmission,
+                new ConsensusServiceConfig(
+                        dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
+                recordBuilder);
+        txnCtx.setTopicRunningHash(recordBuilder.getNewTopicRunningHash(), recordBuilder.getNewTopicSequenceNumber());
     }
 }

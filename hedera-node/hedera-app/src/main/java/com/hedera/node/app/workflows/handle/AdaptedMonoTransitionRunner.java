@@ -32,6 +32,10 @@ import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * A {@link TransitionRunner} that delegates to a {@link TransactionDispatcher} for
+ * {@link HederaFunctionality} present in {@code hedera.workflows.enabled}.
+ */
 @Singleton
 public class AdaptedMonoTransitionRunner extends TransitionRunner {
     private final TransactionDispatcher dispatcher;

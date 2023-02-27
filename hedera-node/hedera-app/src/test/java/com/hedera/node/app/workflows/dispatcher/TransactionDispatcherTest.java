@@ -17,7 +17,9 @@
 package com.hedera.node.app.workflows.dispatcher;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -27,6 +29,7 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
@@ -36,6 +39,8 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicH
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusDeleteTopicRecordBuilder;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.SubmitMessageRecordBuilder;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
@@ -467,6 +472,48 @@ class TransactionDispatcherTest {
         dispatcher.dispatchHandle(ConsensusCreateTopic, transactionBody);
 
         verify(txnCtx).setCreated(TopicID.newBuilder().setTopicNum(666L).build());
+    }
+
+    @Test
+    void dispatchesUpdateTopicAsExpected() {
+        final var updateBuilder = mock(ConsensusUpdateTopicRecordBuilder.class);
+
+        given(consensusUpdateTopicHandler.newRecordBuilder()).willReturn(updateBuilder);
+        given(dynamicProperties.maxNumTopics()).willReturn(123L);
+        given(dynamicProperties.messageMaxBytesAllowed()).willReturn(456);
+        final var expectedConfig = new ConsensusServiceConfig(123L, 456);
+
+        doAnswer(invocation -> {
+                    // Nothing to accumulate in the builder for this handler
+                    return null;
+                })
+                .when(consensusUpdateTopicHandler)
+                .handle(eq(handleContext), eq(transactionBody.getConsensusUpdateTopic()), eq(expectedConfig), any());
+
+        dispatcher.dispatchHandle(ConsensusUpdateTopic, transactionBody);
+
+        verifyNoInteractions(txnCtx);
+    }
+
+    @Test
+    void dispatchesDeleteTopicAsExpected() {
+        final var deleteBuilder = mock(ConsensusDeleteTopicRecordBuilder.class);
+
+        given(consensusDeleteTopicHandler.newRecordBuilder()).willReturn(deleteBuilder);
+        given(dynamicProperties.maxNumTopics()).willReturn(123L);
+        given(dynamicProperties.messageMaxBytesAllowed()).willReturn(456);
+        final var expectedConfig = new ConsensusServiceConfig(123L, 456);
+
+        doAnswer(invocation -> {
+                    // Nothing to accumulate in the builder for this handler
+                    return null;
+                })
+                .when(consensusDeleteTopicHandler)
+                .handle(eq(handleContext), eq(transactionBody.getConsensusDeleteTopic()), eq(expectedConfig), any());
+
+        dispatcher.dispatchHandle(ConsensusDeleteTopic, transactionBody);
+
+        verifyNoInteractions(txnCtx);
     }
 
     @Test

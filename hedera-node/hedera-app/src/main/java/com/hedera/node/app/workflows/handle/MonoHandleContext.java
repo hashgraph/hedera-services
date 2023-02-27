@@ -18,7 +18,7 @@ package com.hedera.node.app.workflows.handle;
 
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
-import com.hedera.node.app.spi.validation.EntityExpiryValidator;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import java.time.Instant;
 import java.util.function.LongSupplier;
 import javax.inject.Inject;
@@ -26,10 +26,10 @@ import javax.inject.Singleton;
 
 @Singleton
 public class MonoHandleContext implements HandleContext {
-    private final EntityExpiryValidator expiryValidator;
+    private final ExpiryValidator expiryValidator;
 
     @Inject
-    public MonoHandleContext(final EntityExpiryValidator expiryValidator) {
+    public MonoHandleContext(final ExpiryValidator expiryValidator) {
         this.expiryValidator = expiryValidator;
     }
 
@@ -49,7 +49,7 @@ public class MonoHandleContext implements HandleContext {
     }
 
     @Override
-    public EntityExpiryValidator expiryValidator() {
+    public ExpiryValidator expiryValidator() {
         return expiryValidator;
     }
 }

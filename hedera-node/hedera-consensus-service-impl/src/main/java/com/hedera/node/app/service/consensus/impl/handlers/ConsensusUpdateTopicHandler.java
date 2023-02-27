@@ -60,17 +60,19 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     }
 
     /**
-     * Given the appropriate context needed to execute the logic to submit a message to a topic.
+     * Given the appropriate context, updates a topic.
+     *
+     * TODO: Provide access to writable topic store.
      *
      * @param handleContext the {@link HandleContext} for the active transaction
-     * @param submitMessage the {@link ConsensusUpdateTopicTransactionBody} of the active transaction
+     * @param topicUpdate the {@link ConsensusUpdateTopicTransactionBody} of the active transaction
      * @param consensusServiceConfig the {@link ConsensusServiceConfig} for the active transaction
      * @param recordBuilder the {@link ConsensusUpdateTopicRecordBuilder} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(
             @NonNull final HandleContext handleContext,
-            @NonNull final ConsensusUpdateTopicTransactionBody submitMessage,
+            @NonNull final ConsensusUpdateTopicTransactionBody topicUpdate,
             @NonNull final ConsensusServiceConfig consensusServiceConfig,
             @NonNull final ConsensusUpdateTopicRecordBuilder recordBuilder) {
         throw new UnsupportedOperationException("Not implemented");

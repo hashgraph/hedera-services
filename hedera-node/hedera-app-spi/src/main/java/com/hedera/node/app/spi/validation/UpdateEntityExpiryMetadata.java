@@ -21,13 +21,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
-public record UpdateEntityExpiryMetadata(ResponseCodeEnum status, @Nullable EntityExpiryMetadata updateMetadata) {
+public record UpdateEntityExpiryMetadata(ResponseCodeEnum status, @Nullable ExpiryMeta updateMetadata) {
 
     public static UpdateEntityExpiryMetadata invalidMetadata(ResponseCodeEnum status) {
         return new UpdateEntityExpiryMetadata(status, null);
     }
 
-    public static UpdateEntityExpiryMetadata validMetadata(EntityExpiryMetadata updateMetadata) {
+    public static UpdateEntityExpiryMetadata validMetadata(ExpiryMeta updateMetadata) {
         return new UpdateEntityExpiryMetadata(OK, updateMetadata);
     }
 }
