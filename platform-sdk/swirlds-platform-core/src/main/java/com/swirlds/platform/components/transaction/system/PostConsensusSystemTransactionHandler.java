@@ -16,17 +16,23 @@
 
 package com.swirlds.platform.components.transaction.system;
 
-import java.util.List;
+import com.swirlds.common.system.transaction.internal.SystemTransaction;
+import com.swirlds.platform.state.State;
 
 /**
- * Should be implemented by objects that wish to handle system transactions
+ * Handles system transactions post-consensus
+ *
+ * @param <T> the system transaction type
  */
-public interface SystemTransactionEndpoint {
+@FunctionalInterface
+public interface PostConsensusSystemTransactionHandler<T extends SystemTransaction> {
+
     /**
-     * Reports which system transactions the implementing class wishes to consume, the methods it wishes to
-     * consume them with, and at what stage the handle methods should be executed
+     * Execute the post-consensus system transaction handler
      *
-     * @return a list of {@link TypedSystemTransactionHandler}s
+     * @param state       a mutable state
+     * @param nodeId      the id of the node which created the transaction
+     * @param transaction the transaction being handled
      */
-    List<TypedSystemTransactionHandler<?>> getHandleMethods();
+    void handle(State state, long nodeId, T transaction);
 }

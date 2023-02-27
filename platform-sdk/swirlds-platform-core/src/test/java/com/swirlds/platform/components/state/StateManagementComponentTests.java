@@ -483,7 +483,7 @@ class StateManagementComponentTests {
     private void allNodesSign(final SignedState signedState, final DefaultStateManagementComponent component) {
         LongStream.range(0, NUM_NODES)
                 .forEach(id -> component.handleStateSignatureTransactionPreConsensus(
-                        signedState.getState(), id, stateSignatureTransaction(id, signedState)));
+                        id, stateSignatureTransaction(id, signedState)));
     }
 
     private static StateSignatureTransaction stateSignatureTransaction(

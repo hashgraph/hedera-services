@@ -19,9 +19,10 @@ package com.swirlds.platform.test.eventflow;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SystemTransactionPing;
 import com.swirlds.common.test.TransactionUtils;
-import com.swirlds.platform.components.transaction.system.SystemTransactionEndpoint;
-import com.swirlds.platform.components.transaction.system.TypedSystemTransactionHandler;
-import com.swirlds.platform.components.transaction.system.TypedSystemTransactionHandler.HandleStage;
+import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionConsumer;
+import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionTypedHandler;
+import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionConsumer;
+import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionTypedHandler;
 import com.swirlds.platform.state.State;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,7 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class SystemTransactionTracker implements SystemTransactionEndpoint, Failable {
+public class SystemTransactionTracker implements
+        PreConsensusSystemTransactionConsumer, PostConsensusSystemTransactionConsumer, Failable {
 
     private final Map<Long, Integer> preConsByCreator = new HashMap<>();
     private final Set<Transaction> preConsensusTransactions = new HashSet<>();
@@ -46,13 +48,11 @@ public class SystemTransactionTracker implements SystemTransactionEndpoint, Fail
      * Logs number of pre consensus system transactions be each creator, as well as duplicate pre-consensus system
      * transactions
      *
-     * @param state       the state (unused, since we don't need to do know anything about the state)
      * @param creatorId   the id of the node which created the transaction
      * @param transaction the transaction to consume. of type {@link SystemTransactionPing}, since
      *                    {@link TransactionUtils#incrementingSystemTransaction()} uses them
      */
-    public void handlePreConsensusSystemTransaction(
-            final State state, final long creatorId, final SystemTransactionPing transaction) {
+    public void handlePreConsensusSystemTransaction(final long creatorId, final SystemTransactionPing transaction) {
         preConsByCreator.putIfAbsent(creatorId, 0);
 
         final int prevVal = preConsByCreator.get(creatorId);
@@ -105,15 +105,18 @@ public class SystemTransactionTracker implements SystemTransactionEndpoint, Fail
     }
 
     @Override
-    public List<TypedSystemTransactionHandler<?>> getHandleMethods() {
+    public List<PreConsensusSystemTransactionTypedHandler<?>> getPreConsensusHandleMethods() {
         return List.of(
-                new TypedSystemTransactionHandler<>(
+                new PreConsensusSystemTransactionTypedHandler<>(
                         SystemTransactionPing.class,
-                        this::handlePreConsensusSystemTransaction,
-                        HandleStage.PRE_CONSENSUS),
-                new TypedSystemTransactionHandler<>(
+                        this::handlePreConsensusSystemTransaction));
+    }
+
+    @Override
+    public List<PostConsensusSystemTransactionTypedHandler<?>> getPostConsensusHandleMethods() {
+        return List.of(
+                new PostConsensusSystemTransactionTypedHandler<>(
                         SystemTransactionPing.class,
-                        this::handlePostConsensusSystemTransaction,
-                        HandleStage.POST_CONSENSUS));
+                        this::handlePostConsensusSystemTransaction));
     }
 }

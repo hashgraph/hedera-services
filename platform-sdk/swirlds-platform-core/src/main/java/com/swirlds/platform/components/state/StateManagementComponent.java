@@ -22,7 +22,8 @@ import com.swirlds.platform.components.common.output.NewSignedStateFromTransacti
 import com.swirlds.platform.components.common.output.RoundAppliedToStateConsumer;
 import com.swirlds.platform.components.common.output.SignedStateToLoadConsumer;
 import com.swirlds.platform.components.state.query.LatestSignedStateProvider;
-import com.swirlds.platform.components.transaction.system.SystemTransactionEndpoint;
+import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionConsumer;
+import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionConsumer;
 import com.swirlds.platform.reconnect.emergency.EmergencyStateFinder;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInfo;
@@ -41,12 +42,13 @@ import java.util.List;
  */
 public interface StateManagementComponent
         extends PlatformComponent,
-                EmergencyStateFinder,
-                RoundAppliedToStateConsumer,
-                SignedStateToLoadConsumer,
-                NewSignedStateFromTransactionsConsumer,
-                LatestSignedStateProvider,
-                SystemTransactionEndpoint {
+        EmergencyStateFinder,
+        RoundAppliedToStateConsumer,
+        SignedStateToLoadConsumer,
+        NewSignedStateFromTransactionsConsumer,
+        LatestSignedStateProvider,
+        PreConsensusSystemTransactionConsumer,
+        PostConsensusSystemTransactionConsumer {
 
     /**
      * Get a wrapper containing the latest immutable signed state. May be unhashed, may or may not have all required

@@ -16,19 +16,19 @@
 
 package com.swirlds.platform.components.transaction.system;
 
-import com.swirlds.platform.components.transaction.system.internal.SystemTransactionManagerImpl;
+import com.swirlds.platform.components.transaction.system.internal.PreConsensusSystemTransactionManagerImpl;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A factory object to produce a {@link SystemTransactionManager}
+ * A factory object to produce a {@link PreConsensusSystemTransactionManager}
  */
-public class SystemTransactionManagerFactory {
+public class PreConsensusSystemTransactionManagerFactory {
 
     /**
      * The handle methods that will be passed into the transaction manager at construction
      */
-    private final List<TypedSystemTransactionHandler<?>> handleMethods = new ArrayList<>();
+    private final List<PreConsensusSystemTransactionTypedHandler<?>> handleMethods = new ArrayList<>();
 
     /**
      * Adds to the handle methods that will be managed by the output object
@@ -36,7 +36,9 @@ public class SystemTransactionManagerFactory {
      * @param handleMethods a list of consumer methods
      * @return this factory object
      */
-    public SystemTransactionManagerFactory addHandlers(final List<TypedSystemTransactionHandler<?>> handleMethods) {
+    public PreConsensusSystemTransactionManagerFactory addHandlers(
+            final List<PreConsensusSystemTransactionTypedHandler<?>> handleMethods) {
+        
         this.handleMethods.addAll(handleMethods);
 
         return this;
@@ -45,9 +47,9 @@ public class SystemTransactionManagerFactory {
     /**
      * Build the output object
      *
-     * @return an implementation of {@link SystemTransactionManager}
+     * @return an implementation of {@link PreConsensusSystemTransactionManager}
      */
-    public SystemTransactionManager build() {
-        return new SystemTransactionManagerImpl(handleMethods);
+    public PreConsensusSystemTransactionManager build() {
+        return new PreConsensusSystemTransactionManagerImpl(handleMethods);
     }
 }

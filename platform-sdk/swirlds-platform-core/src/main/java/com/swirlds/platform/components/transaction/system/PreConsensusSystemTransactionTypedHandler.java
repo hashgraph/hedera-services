@@ -19,27 +19,12 @@ package com.swirlds.platform.components.transaction.system;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 
 /**
- * A record containing information about a system transaction handler
+ * A record containing information about a pre-consensus system transaction handler
  *
  * @param transactionClass the class of system transaction the handler requires
  * @param handleMethod     the method to handle this type of system transaction
- * @param handleStage      the stage of operation when should this handler be called
  * @param <T>              the system transaction type
  */
-public record TypedSystemTransactionHandler<T extends SystemTransaction>(
-        Class<T> transactionClass, SystemTransactionHandler<T> handleMethod, HandleStage handleStage) {
-
-    /**
-     * Enum representing stages where handlers may be called
-     */
-    public enum HandleStage {
-        /**
-         * Transactions will be handled before coming to consensus
-         */
-        PRE_CONSENSUS,
-        /**
-         * Transactions will be handled after coming to consensus
-         */
-        POST_CONSENSUS
-    }
+public record PreConsensusSystemTransactionTypedHandler<T extends SystemTransaction>(
+        Class<T> transactionClass, PreConsensusSystemTransactionHandler<T> handleMethod) {
 }

@@ -40,7 +40,8 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.SettingsProvider;
-import com.swirlds.platform.components.transaction.system.SystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.throttle.TransThrottleSyncAndCreateRuleResponse;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.event.EventUtils;
@@ -170,8 +171,11 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
     /** Removes and returns a single transaction from the queue of transactions to be applied to stateWork. */
     private final Supplier<ConsensusTransaction> pollWork;
 
-    /** Handles system transactions */
-    private final SystemTransactionManager systemTransactionManager;
+    /** Handles system transactions pre-consensus */
+    private final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager;
+
+    /** Handles system transactions post-consensus */
+    private final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager;
 
     /** Executes a runnable in the background */
     private final ExecutorService executor;
@@ -191,7 +195,8 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
         workSizeSupplier = null;
         pollCurr = null;
         pollWork = null;
-        systemTransactionManager = null;
+        preConsensusSystemTransactionManager = null;
+        postConsensusSystemTransactionManager = null;
         executor = null;
     }
 
@@ -202,8 +207,10 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
      * 		responsible for creating and managing threads
      * @param selfId
      * 		this node's id
-     * @param systemTransactionManager
-     * 		the manager to handle system transactions
+     * @param preConsensusSystemTransactionManager
+     * 		the manager to handle system transactions pre-consensus
+     * @param postConsensusSystemTransactionManager
+     * 		the manager to handle system transactions post-consensus
      * @param swirldStateMetrics
      * 		metrics related to SwirldState
      * @param consensusMetrics
@@ -220,7 +227,8 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
     public SwirldStateManagerSingle(
             final ThreadManager threadManager,
             final NodeId selfId,
-            final SystemTransactionManager systemTransactionManager,
+            final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
+            final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
             final SwirldStateMetrics swirldStateMetrics,
             final ConsensusMetrics consensusMetrics,
             final SettingsProvider settings,
@@ -232,7 +240,8 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
         this.consensusMetrics = consensusMetrics;
         this.settings = settings;
         this.consEstimateSupplier = consEstimateSupplier;
-        this.systemTransactionManager = systemTransactionManager;
+        this.preConsensusSystemTransactionManager = preConsensusSystemTransactionManager;
+        this.postConsensusSystemTransactionManager = postConsensusSystemTransactionManager;
 
         executor = Executors.newSingleThreadExecutor(new ThreadConfiguration(threadManager)
                 .setComponent("statemanager")
@@ -320,7 +329,7 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
         }
 
         // This is the only place that handles system transactions pre-consensus.
-        systemTransactionManager.handlePreConsensusEvent(stateCons.getState(), event);
+        preConsensusSystemTransactionManager.handleEvent(event);
     }
 
     /**
@@ -571,7 +580,7 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
         final Future<?> future = beginTransactionPolling(round);
 
         transactionHandler.handleRound(round, stateCons.getState());
-        systemTransactionManager.handlePostConsensusRound(stateCons.getState(), round);
+        postConsensusSystemTransactionManager.handleRound(stateCons.getState(), round);
         updateEpoch();
 
         completeTransactionPolling(future, round.getRoundNum());

@@ -26,7 +26,8 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.platform.SettingsProvider;
-import com.swirlds.platform.components.transaction.system.SystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.throttle.TransThrottleSyncAndCreateRuleResponse;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -70,15 +71,21 @@ public class SwirldStateManagerDouble implements SwirldStateManager {
     private final TransactionHandler transactionHandler;
 
     /**
-     * Handles system transactions
+     * Handles system transactions pre-consensus
      */
-    private final SystemTransactionManager systemTransactionManager;
+    private final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager;
+
+    /**
+     * Handles system transactions post-consensus
+     */
+    private final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager;
 
     // Used for creating mock instances in unit testing
     public SwirldStateManagerDouble() {
         stats = null;
         transactionPool = null;
-        systemTransactionManager = null;
+        preConsensusSystemTransactionManager = null;
+        postConsensusSystemTransactionManager = null;
         transactionHandler = null;
     }
 
@@ -87,8 +94,10 @@ public class SwirldStateManagerDouble implements SwirldStateManager {
      *
      * @param selfId
      * 		this node's id
-     * @param systemTransactionManager
-     * 		the manager for system transactions
+     * @param preConsensusSystemTransactionManager
+     * 		the manager for pre-consensus system transactions
+     * @param postConsensusSystemTransactionManager
+     * 		the manager for post-consensus system transactions
      * @param swirldStateMetrics
      * 		metrics related to SwirldState
      * @param settings
@@ -100,13 +109,15 @@ public class SwirldStateManagerDouble implements SwirldStateManager {
      */
     public SwirldStateManagerDouble(
             final NodeId selfId,
-            final SystemTransactionManager systemTransactionManager,
+            final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
+            final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
             final SwirldStateMetrics swirldStateMetrics,
             final SettingsProvider settings,
             final BooleanSupplier inFreeze,
             final State state) {
 
-        this.systemTransactionManager = systemTransactionManager;
+        this.preConsensusSystemTransactionManager = preConsensusSystemTransactionManager;
+        this.postConsensusSystemTransactionManager = postConsensusSystemTransactionManager;
         this.stats = swirldStateMetrics;
         this.transactionPool = new EventTransactionPool(settings, inFreeze);
         this.transactionHandler = new TransactionHandler(selfId, stats);
@@ -145,12 +156,7 @@ public class SwirldStateManagerDouble implements SwirldStateManager {
     public void handlePreConsensusEvent(final EventImpl event) {
         final long startTime = System.nanoTime();
 
-        State immutableState = latestImmutableState.get();
-        while (!immutableState.tryReserve()) {
-            immutableState = latestImmutableState.get();
-        }
-        systemTransactionManager.handlePreConsensusEvent(immutableState, event);
-        immutableState.release();
+        preConsensusSystemTransactionManager.handleEvent(event);
 
         stats.preConsensusHandleTime(startTime, System.nanoTime());
     }
@@ -186,7 +192,7 @@ public class SwirldStateManagerDouble implements SwirldStateManager {
     @Override
     public void handleConsensusRound(final ConsensusRound round) {
         transactionHandler.handleRound(round, stateRef.get());
-        systemTransactionManager.handlePostConsensusRound(stateRef.get(), round);
+        postConsensusSystemTransactionManager.handleRound(stateRef.get(), round);
         updateEpoch();
     }
 

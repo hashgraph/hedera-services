@@ -37,8 +37,8 @@ import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsum
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
-import com.swirlds.platform.components.transaction.system.TypedSystemTransactionHandler;
-import com.swirlds.platform.components.transaction.system.TypedSystemTransactionHandler.HandleStage;
+import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionTypedHandler;
+import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionTypedHandler;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
@@ -334,7 +334,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param stateSignatureTransaction the pre-consensus state signature transaction
      */
     public void handleStateSignatureTransactionPreConsensus(
-            final State state, final long creatorId, final StateSignatureTransaction stateSignatureTransaction) {
+            final long creatorId, final StateSignatureTransaction stateSignatureTransaction) {
 
         signedStateManager.preConsensusSignatureObserver(
                 stateSignatureTransaction.getRound(), creatorId, stateSignatureTransaction.getStateSignature());
@@ -445,15 +445,21 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * {@inheritDoc}
      */
     @Override
-    public List<TypedSystemTransactionHandler<?>> getHandleMethods() {
+    public List<PreConsensusSystemTransactionTypedHandler<?>> getPreConsensusHandleMethods() {
         return List.of(
-                new TypedSystemTransactionHandler<>(
+                new PreConsensusSystemTransactionTypedHandler<>(
                         StateSignatureTransaction.class,
-                        this::handleStateSignatureTransactionPreConsensus,
-                        HandleStage.PRE_CONSENSUS),
-                new TypedSystemTransactionHandler<>(
+                        this::handleStateSignatureTransactionPreConsensus));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<PostConsensusSystemTransactionTypedHandler<?>> getPostConsensusHandleMethods() {
+        return List.of(
+                new PostConsensusSystemTransactionTypedHandler<>(
                         StateSignatureTransaction.class,
-                        this::handleStateSignatureTransactionPostConsensus,
-                        HandleStage.POST_CONSENSUS));
+                        this::handleStateSignatureTransactionPostConsensus));
     }
 }

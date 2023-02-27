@@ -25,11 +25,10 @@ import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.test.DummySystemTransaction;
-import com.swirlds.platform.components.transaction.system.SystemTransactionHandler;
-import com.swirlds.platform.components.transaction.system.SystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.SystemTransactionManagerFactory;
-import com.swirlds.platform.components.transaction.system.TypedSystemTransactionHandler;
-import com.swirlds.platform.components.transaction.system.TypedSystemTransactionHandler.HandleStage;
+import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionHandler;
+import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManagerFactory;
+import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionTypedHandler;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -44,26 +43,23 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-class SystemTransactionManagerTests {
+class PostConsensusSystemTransactionManagerTests {
     @Test
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("tests that exceptions are handled gracefully")
     void testHandleExceptions() {
-        SystemTransactionHandler<DummySystemTransaction> consumer = (state, dummySystemTransaction, aLong) -> {
+        PostConsensusSystemTransactionHandler<DummySystemTransaction> consumer = (state, dummySystemTransaction, aLong) -> {
             throw new IllegalStateException("this is intentionally thrown");
         };
 
-        final SystemTransactionManager handler = new SystemTransactionManagerFactory()
+        final PostConsensusSystemTransactionManager handler = new PostConsensusSystemTransactionManagerFactory()
                 .addHandlers(List.of(
-                        new TypedSystemTransactionHandler<>(
-                                DummySystemTransaction.class, consumer, HandleStage.PRE_CONSENSUS),
-                        new TypedSystemTransactionHandler<>(
-                                DummySystemTransaction.class, consumer, HandleStage.POST_CONSENSUS)))
+                        new PostConsensusSystemTransactionTypedHandler<>(
+                                DummySystemTransaction.class, consumer)))
                 .build();
 
-        assertDoesNotThrow(() -> handler.handlePreConsensusEvent(mock(State.class), newDummyEvent(1)));
-        assertDoesNotThrow(() -> handler.handlePostConsensusRound(mock(State.class), newDummyRound(List.of(1))));
+        assertDoesNotThrow(() -> handler.handleRound(mock(State.class), newDummyRound(List.of(1))));
     }
 
     @Test
@@ -71,32 +67,21 @@ class SystemTransactionManagerTests {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("tests handling system transactions")
     void testHandle() {
-        final AtomicInteger preHandleCount = new AtomicInteger(0);
-        final AtomicInteger postHandleCount = new AtomicInteger(0);
+        final AtomicInteger handleCount = new AtomicInteger(0);
 
-        SystemTransactionHandler<DummySystemTransaction> preConsumer =
-                (state, dummySystemTransaction, aLong) -> preHandleCount.getAndIncrement();
+        PostConsensusSystemTransactionHandler<DummySystemTransaction> consumer =
+                (state, dummySystemTransaction, aLong) -> handleCount.getAndIncrement();
 
-        SystemTransactionHandler<DummySystemTransaction> postConsumer =
-                (state, dummySystemTransaction, aLong) -> postHandleCount.getAndIncrement();
-
-        final SystemTransactionManager handler = new SystemTransactionManagerFactory()
+        final PostConsensusSystemTransactionManager handler = new PostConsensusSystemTransactionManagerFactory()
                 .addHandlers(List.of(
-                        new TypedSystemTransactionHandler<>(
-                                DummySystemTransaction.class, postConsumer, HandleStage.POST_CONSENSUS),
-                        new TypedSystemTransactionHandler<>(
-                                DummySystemTransaction.class, preConsumer, HandleStage.PRE_CONSENSUS)))
+                        new PostConsensusSystemTransactionTypedHandler<>(DummySystemTransaction.class, consumer)))
                 .build();
 
-        handler.handlePreConsensusEvent(mock(State.class), newDummyEvent(2));
-        handler.handlePostConsensusRound(mock(State.class), newDummyRound(List.of(0)));
-        handler.handlePreConsensusEvent(mock(State.class), newDummyEvent(0));
-        handler.handlePostConsensusRound(mock(State.class), newDummyRound(List.of(2)));
-        handler.handlePreConsensusEvent(mock(State.class), newDummyEvent(1));
-        handler.handlePostConsensusRound(mock(State.class), newDummyRound(List.of(0, 1, 3)));
+        handler.handleRound(mock(State.class), newDummyRound(List.of(0)));
+        handler.handleRound(mock(State.class), newDummyRound(List.of(2)));
+        handler.handleRound(mock(State.class), newDummyRound(List.of(0, 1, 3)));
 
-        assertEquals(3, preHandleCount.get(), "incorrect number of pre-handle calls");
-        assertEquals(6, postHandleCount.get(), "incorrect number of post-handle calls");
+        assertEquals(6, handleCount.get(), "incorrect number of post-handle calls");
     }
 
     @Test
@@ -104,12 +89,10 @@ class SystemTransactionManagerTests {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("tests handling system transactions, where no handle method has been defined")
     void testNoHandleMethod() {
-        final SystemTransactionManager handler = new SystemTransactionManagerFactory().build();
+        final PostConsensusSystemTransactionManager handler = new PostConsensusSystemTransactionManagerFactory().build();
 
         assertDoesNotThrow(
-                () -> handler.handlePreConsensusEvent(mock(State.class), newDummyEvent(1)), "should not throw");
-        assertDoesNotThrow(
-                () -> handler.handlePostConsensusRound(mock(State.class), newDummyRound(List.of(1))),
+                () -> handler.handleRound(mock(State.class), newDummyRound(List.of(1))),
                 "should not throw");
     }
 
