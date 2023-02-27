@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi;
+package com.hedera.node.app.spi.workflows;
 
-import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code PreHandleDispatcher} takes a validated transaction and dispatches it to the correct
- * handler
+ * A {@code PreHandleDispatcher} takes a validated transaction and dispatches it to the correct handler
  */
 @FunctionalInterface
 public interface PreHandleDispatcher {
     /**
-     * Dispatch a request. It is forwarded to the correct handler, which takes care of the specific
-     * functionality
+     * Dispatch a request. It is forwarded to the correct handler, which takes care of the specific functionality
      *
-     * @param transactionBody the {@link TransactionBody} of the request
-     * @param payer payer of the transaction
+     * @param context the {@link PreHandleContext} for the dispatched transaction
      * @throws NullPointerException if {@code transactionBody} is {@code null}
      */
-    TransactionMetadata dispatch(@NonNull TransactionBody transactionBody, @NonNull AccountID payer);
+    void dispatch(@NonNull PreHandleContext context);
 }
