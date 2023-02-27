@@ -17,15 +17,19 @@
 package com.hedera.node.app.workflows.dispatcher;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
@@ -34,6 +38,10 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicH
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusDeleteTopicRecordBuilder;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
+import com.hedera.node.app.service.consensus.impl.records.SubmitMessageRecordBuilder;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
@@ -83,7 +91,6 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
-import com.hedera.node.app.spi.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.state.HederaState;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -132,6 +139,7 @@ import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
@@ -307,7 +315,10 @@ class TransactionDispatcherTest {
     private GlobalDynamicProperties dynamicProperties;
 
     @Mock
-    private StoreFactory storeFactory;
+    private ReadableStoreFactory readableStoreFactory;
+
+    @Mock
+    private WritableStoreFactory writableStoreFactory;
 
     private TransactionBody transactionBody = TransactionBody.getDefaultInstance();
 
@@ -386,7 +397,7 @@ class TransactionDispatcherTest {
     void testDispatchWithIllegalParameters() {
         // given
         final var payer = AccountID.newBuilder().build();
-        final var tracker = new StoreFactory(state);
+        final var tracker = new ReadableStoreFactory(state);
         final var validContext = new PreHandleContext(
                 accountStore,
                 TransactionBody.newBuilder()
@@ -422,7 +433,7 @@ class TransactionDispatcherTest {
         // given
         final var txBody = TransactionBody.newBuilder().build();
         final var payer = AccountID.newBuilder().build();
-        final var tracker = new StoreFactory(state);
+        final var tracker = new ReadableStoreFactory(state);
         final var context = new PreHandleContext(accountStore, txBody, payer);
 
         // then
@@ -437,7 +448,7 @@ class TransactionDispatcherTest {
                 .setNodeStakeUpdate(NodeStakeUpdateTransactionBody.getDefaultInstance())
                 .build();
         final var payer = AccountID.newBuilder().build();
-        final var tracker = new StoreFactory(state);
+        final var tracker = new ReadableStoreFactory(state);
         final var context = new PreHandleContext(accountStore, txBody, payer);
 
         // then
@@ -447,29 +458,105 @@ class TransactionDispatcherTest {
 
     @Test
     void dispatchesCreateTopicAsExpected() {
+        final var createBuilder = mock(ConsensusCreateTopicRecordBuilder.class);
+
+        given(consensusCreateTopicHandler.newRecordBuilder()).willReturn(createBuilder);
         given(dynamicProperties.maxNumTopics()).willReturn(123L);
         given(dynamicProperties.messageMaxBytesAllowed()).willReturn(456);
+        given(createBuilder.getCreatedTopic()).willReturn(666L);
         final var expectedConfig = new ConsensusServiceConfig(123L, 456);
 
         doAnswer(invocation -> {
                     final var builder =
                             (ConsensusCreateTopicRecordBuilder) invocation.getArguments()[3];
-                    builder.setFinalStatus(SUCCESS);
+                    builder.setCreatedTopic(666L);
                     return null;
                 })
                 .when(consensusCreateTopicHandler)
-                .handle(eq(handleContext), eq(transactionBody), eq(expectedConfig), any(), any());
+                .handle(
+                        eq(handleContext),
+                        eq(transactionBody.getConsensusCreateTopic()),
+                        eq(expectedConfig),
+                        any(),
+                        any());
 
-        dispatcher.dispatchHandle(ConsensusCreateTopic, transactionBody, storeFactory);
+        dispatcher.dispatchHandle(ConsensusCreateTopic, transactionBody, writableStoreFactory);
 
-        verify(txnCtx).setStatus(SUCCESS);
+        verify(txnCtx).setCreated(TopicID.newBuilder().setTopicNum(666L).build());
     }
 
     @Test
-    void cannotDispatchNonConsensusOperations() {
+    void dispatchesUpdateTopicAsExpected() {
+        final var updateBuilder = mock(ConsensusUpdateTopicRecordBuilder.class);
+
+        given(consensusUpdateTopicHandler.newRecordBuilder()).willReturn(updateBuilder);
+        given(dynamicProperties.maxNumTopics()).willReturn(123L);
+        given(dynamicProperties.messageMaxBytesAllowed()).willReturn(456);
+        final var expectedConfig = new ConsensusServiceConfig(123L, 456);
+
+        doAnswer(invocation -> {
+                    // Nothing to accumulate in the builder for this handler
+                    return null;
+                })
+                .when(consensusUpdateTopicHandler)
+                .handle(eq(handleContext), eq(transactionBody.getConsensusUpdateTopic()), eq(expectedConfig), any());
+
+        dispatcher.dispatchHandle(ConsensusUpdateTopic, transactionBody, writableStoreFactory);
+
+        verifyNoInteractions(txnCtx);
+    }
+
+    @Test
+    void dispatchesDeleteTopicAsExpected() {
+        final var deleteBuilder = mock(ConsensusDeleteTopicRecordBuilder.class);
+
+        given(consensusDeleteTopicHandler.newRecordBuilder()).willReturn(deleteBuilder);
+        given(dynamicProperties.maxNumTopics()).willReturn(123L);
+        given(dynamicProperties.messageMaxBytesAllowed()).willReturn(456);
+        final var expectedConfig = new ConsensusServiceConfig(123L, 456);
+
+        doAnswer(invocation -> {
+                    // Nothing to accumulate in the builder for this handler
+                    return null;
+                })
+                .when(consensusDeleteTopicHandler)
+                .handle(eq(handleContext), eq(transactionBody.getConsensusDeleteTopic()), eq(expectedConfig), any());
+
+        dispatcher.dispatchHandle(ConsensusDeleteTopic, transactionBody, writableStoreFactory);
+
+        verifyNoInteractions(txnCtx);
+    }
+
+    @Test
+    void dispatchesSubmitMessageAsExpected() {
+        final var newRunningHash = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        final var submitBuilder = mock(SubmitMessageRecordBuilder.class);
+
+        given(consensusSubmitMessageHandler.newRecordBuilder()).willReturn(submitBuilder);
+        given(dynamicProperties.maxNumTopics()).willReturn(123L);
+        given(dynamicProperties.messageMaxBytesAllowed()).willReturn(456);
+        given(submitBuilder.getNewTopicRunningHash()).willReturn(newRunningHash);
+        given(submitBuilder.getNewTopicSequenceNumber()).willReturn(2L);
+        final var expectedConfig = new ConsensusServiceConfig(123L, 456);
+
+        doAnswer(invocation -> {
+                    final var builder = (SubmitMessageRecordBuilder) invocation.getArguments()[3];
+                    builder.setNewTopicMetadata(newRunningHash, 2, 3L);
+                    return null;
+                })
+                .when(consensusSubmitMessageHandler)
+                .handle(eq(handleContext), eq(transactionBody.getConsensusSubmitMessage()), eq(expectedConfig), any());
+
+        dispatcher.dispatchHandle(ConsensusSubmitMessage, transactionBody, writableStoreFactory);
+
+        verify(txnCtx).setTopicRunningHash(newRunningHash, 2);
+    }
+
+    @Test
+    void cannotDispatchUnsupportedOperations() {
         Assertions.assertThrows(
                 IllegalArgumentException.class,
-                () -> dispatcher.dispatchHandle(CryptoTransfer, transactionBody, storeFactory));
+                () -> dispatcher.dispatchHandle(CryptoTransfer, transactionBody, writableStoreFactory));
     }
 
     @ParameterizedTest
@@ -478,7 +565,7 @@ class TransactionDispatcherTest {
             final TransactionBody txBody, final BiConsumer<TransactionHandlers, PreHandleContext> verification) {
         // given
         final var payer = AccountID.newBuilder().build();
-        final var tracker = new StoreFactory(state);
+        final var tracker = new ReadableStoreFactory(state);
         final var context = new PreHandleContext(accountStore, txBody, payer);
 
         // when

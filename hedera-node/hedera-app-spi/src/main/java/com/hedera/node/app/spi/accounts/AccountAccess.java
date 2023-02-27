@@ -26,7 +26,7 @@ import java.util.Optional;
  * An interface used for looking up Keys on the account. NOTE: This class can be modified to return
  * any other fields needed from account object if needed in the future.
  */
-public interface AccountLookup {
+public interface AccountAccess {
 
     /**
      * Fetches the account's key from given accountID. If the key could not be fetched as the given

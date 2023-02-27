@@ -24,7 +24,7 @@ import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.workflows.dispatcher.StoreFactory;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.hederahashgraph.api.proto.java.*;
@@ -129,7 +129,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
             // 2. Call PreTransactionHandler to do transaction-specific checks, get list of required
             // keys, and prefetch required data
-            final var storeFactory = new StoreFactory(state);
+            final var storeFactory = new ReadableStoreFactory(state);
             final var accountStore = storeFactory.getReadableAccountStore();
             final var handlerContext = new PreHandleContext(accountStore, txBody);
             dispatcher.dispatchPreHandle(storeFactory, handlerContext);

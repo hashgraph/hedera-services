@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.records;
+package com.hedera.node.app.service.consensus.impl.records;
 
-import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.node.app.spi.records.ConsensusSubmitMessageRecordBuilder;
+import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.RUNNING_HASH_VERSION;
+
+import com.hedera.node.app.spi.records.UniversalRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -48,22 +49,36 @@ public class SubmitMessageRecordBuilder extends UniversalRecordBuilder<Consensus
             // The mono context will (correctly) assume the latest running hash version,
             // but it probably makes more sense to provide it here in the future
             final long runningHashVersion) {
-        this.newRunningHash = topicRunningHash;
+        this.newRunningHash = Objects.requireNonNull(topicRunningHash);
         this.newSequenceNumber = sequenceNumber;
         return this;
     }
 
     /**
-     * A temporary method to expose the side-effects tracked in this builder to
-     * the mono context.
-     *
-     * @param txnCtx the mono context
+     * {@inheritDoc}
      */
-    @Deprecated
-    public void exposeSideEffectsToMono(@NonNull final TransactionContext txnCtx) {
-        super.exposeSideEffectsToMono(txnCtx);
-        if (newRunningHash != null) {
-            Objects.requireNonNull(txnCtx).setTopicRunningHash(newRunningHash, newSequenceNumber);
+    @NonNull
+    @Override
+    public byte[] getNewTopicRunningHash() {
+        throwIfMissingNewMetadata();
+        return Objects.requireNonNull(newRunningHash);
+    }
+
+    @Override
+    public long getNewTopicSequenceNumber() {
+        throwIfMissingNewMetadata();
+        return newSequenceNumber;
+    }
+
+    @Override
+    public long getUsedRunningHashVersion() {
+        throwIfMissingNewMetadata();
+        return RUNNING_HASH_VERSION;
+    }
+
+    private void throwIfMissingNewMetadata() {
+        if (newRunningHash == null) {
+            throw new IllegalStateException("No new topic metadata was recorded");
         }
     }
 }

@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.records;
+package com.hedera.node.app.spi.records;
 
-import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.node.app.spi.records.RecordBuilder;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
 /**
- * Base implementation of a {@code RecordBuilder} that will eventually track all the
+ * Base implementation of a {@code RecordBuilder} that will (eventually) track all the
  * "universal" transaction metadata and side-effects.
+ *
+ * <p>Serves as implementation support for all transaction-specific record builders.
  */
 public abstract class UniversalRecordBuilder<T extends RecordBuilder<T>> implements RecordBuilder<T> {
     private ResponseCodeEnum status = null;
@@ -36,20 +36,23 @@ public abstract class UniversalRecordBuilder<T extends RecordBuilder<T>> impleme
      */
     @Override
     public T setFinalStatus(@NonNull final ResponseCodeEnum status) {
-        this.status = status;
+        this.status = Objects.requireNonNull(status);
         return self();
     }
 
     /**
-     * A temporary method to expose the side-effects tracked in this builder to
-     * the mono context.
-     *
-     * @param txnCtx the mono context
+     * {@inheritDoc}
      */
-    @Deprecated
-    protected void exposeSideEffectsToMono(@NonNull final TransactionContext txnCtx) {
-        if (status != null) {
-            Objects.requireNonNull(txnCtx).setStatus(status);
+    @Override
+    @NonNull
+    public ResponseCodeEnum getFinalStatus() {
+        throwIfMissingData();
+        return Objects.requireNonNull(status);
+    }
+
+    private void throwIfMissingData() {
+        if (status == null) {
+            throw new IllegalStateException("No final status was recorded");
         }
     }
 }

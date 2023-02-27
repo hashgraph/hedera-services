@@ -25,7 +25,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.accounts.AccountLookup;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -68,7 +68,7 @@ public class CryptoTransferHandler implements TransactionHandler {
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
      *     passed to {@link #handle(TransactionMetadata)}
-     * @param accountStore the {@link AccountLookup} to use to resolve keys
+     * @param accountStore the {@link AccountAccess} to use to resolve keys
      * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
      * @throws NullPointerException if one of the arguments is {@code null}
      */
@@ -174,7 +174,7 @@ public class CryptoTransferHandler implements TransactionHandler {
     }
 
     private void handleHbarTransfers(
-            final CryptoTransferTransactionBody op, final PreHandleContext meta, final AccountLookup keyLookup) {
+            final CryptoTransferTransactionBody op, final PreHandleContext meta, final AccountAccess keyLookup) {
         for (AccountAmount accountAmount : op.getTransfers().getAccountAmountsList()) {
             final var keyOrFailure = keyLookup.getKey(accountAmount.getAccountID());
 

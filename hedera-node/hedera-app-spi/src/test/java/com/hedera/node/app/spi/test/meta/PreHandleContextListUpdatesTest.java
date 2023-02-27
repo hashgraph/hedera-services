@@ -24,7 +24,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.accounts.AccountLookup;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hederahashgraph.api.proto.java.*;
@@ -67,7 +67,7 @@ class PreHandleContextListUpdatesTest {
     private HederaKey otherKey;
 
     @Mock
-    private AccountLookup keyLookup;
+    private AccountAccess keyLookup;
 
     private PreHandleContext subject;
 

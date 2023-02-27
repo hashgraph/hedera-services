@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.spi.PreHandleDispatcher;
-import com.hedera.node.app.spi.accounts.AccountLookup;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
@@ -50,7 +50,7 @@ class ScheduleHandlerTestBase {
     protected TransactionMetadata scheduledMeta;
 
     @Mock
-    protected AccountLookup keyLookup;
+    protected AccountAccess keyLookup;
 
     @Mock
     protected HederaKey schedulerKey;

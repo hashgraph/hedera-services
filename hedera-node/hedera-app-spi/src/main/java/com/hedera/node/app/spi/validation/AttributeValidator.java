@@ -16,16 +16,28 @@
 
 package com.hedera.node.app.spi.validation;
 
+import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 /**
  * A type that any {@link TransactionHandler} can use to validate entity
  * attributes like memos or keys.
  */
 public interface AttributeValidator {
-    ResponseCodeEnum validateKey(Key key);
+    /**
+     * Validates the given key.
+     *
+     * @param key the key to validate
+     * @throws HandleStatusException if the key is invalid
+     */
+    void validateKey(Key key);
 
-    ResponseCodeEnum validateMemo(byte[] memo);
+    /**
+     * Validates the given memo.
+     *
+     * @param memo the memo to validate
+     * @throws HandleStatusException if the key is invalid
+     */
+    void validateMemo(String memo);
 }

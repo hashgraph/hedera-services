@@ -31,7 +31,7 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualVa
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
-import com.hedera.node.app.spi.accounts.AccountLookup;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
 import com.hedera.node.app.spi.meta.PreHandleContext;
@@ -54,7 +54,7 @@ import org.junit.jupiter.api.Test;
 class ScheduleDeleteHandlerParityTest {
     static final KeyTree ADMIN_KEY = KeyTree.withRoot(ed25519());
 
-    private AccountLookup keyLookup;
+    private AccountAccess keyLookup;
     private final ScheduleDeleteHandler subject = new ScheduleDeleteHandler();
     private ReadableScheduleStore scheduleStore;
 
@@ -125,14 +125,14 @@ class AdapterUtils {
     }
 
     /**
-     * Returns the {@link AccountLookup} containing the "well-known" accounts that exist in a
+     * Returns the {@link AccountAccess} containing the "well-known" accounts that exist in a
      * {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in unit tests
      * of {@link com.hedera.node.app.spi.Tr} implementations that require an {@link
-     * AccountLookup}.
+     * AccountAccess}.
      *
      * @return the well-known account store
      */
-    public static AccountLookup wellKnownKeyLookupAt() {
+    public static AccountAccess wellKnownKeyLookupAt() {
         return new TestFixturesKeyLookup(mockStates(java.util.Map.of(ACCOUNTS_KEY, wellKnownAccountsState())));
     }
 

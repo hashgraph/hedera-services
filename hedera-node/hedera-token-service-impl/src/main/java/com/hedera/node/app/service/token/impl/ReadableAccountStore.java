@@ -33,7 +33,7 @@ import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.Account;
-import com.hedera.node.app.spi.accounts.AccountLookup;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -50,7 +50,7 @@ import java.util.Optional;
  *
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
-public class ReadableAccountStore implements AccountLookup {
+public class ReadableAccountStore implements AccountAccess {
     /** The underlying data storage class that holds the account data. */
     private final ReadableKVState<Long, MerkleAccount> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */

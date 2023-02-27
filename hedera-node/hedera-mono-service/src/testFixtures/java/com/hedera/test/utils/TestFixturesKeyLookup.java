@@ -26,7 +26,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.Account;
-import com.hedera.node.app.spi.accounts.AccountLookup;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -35,7 +35,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import org.apache.commons.lang3.NotImplementedException;
 
-public class TestFixturesKeyLookup implements AccountLookup {
+public class TestFixturesKeyLookup implements AccountAccess {
     private final ReadableKVState<String, Long> aliases;
     private final ReadableKVState<Long, HederaAccount> accounts;
 

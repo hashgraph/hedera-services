@@ -14,20 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.validation;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+package com.hedera.node.app.spi.exceptions;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import edu.umd.cs.findbugs.annotations.Nullable;
 
-public record UpdateEntityExpiryMetadata(ResponseCodeEnum status, @Nullable EntityExpiryMetadata updateMetadata) {
+/**
+ * A runtime exception that wraps a {@link ResponseCodeEnum} status.
+ */
+public class HandleStatusException extends RuntimeException {
+    private final ResponseCodeEnum status;
 
-    public static UpdateEntityExpiryMetadata invalidMetadata(ResponseCodeEnum status) {
-        return new UpdateEntityExpiryMetadata(status, null);
+    public HandleStatusException(final ResponseCodeEnum status) {
+        this.status = status;
     }
 
-    public static UpdateEntityExpiryMetadata validMetadata(EntityExpiryMetadata updateMetadata) {
-        return new UpdateEntityExpiryMetadata(OK, updateMetadata);
+    public ResponseCodeEnum getStatus() {
+        return status;
     }
 }

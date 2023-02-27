@@ -29,7 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StoreFactoryTest {
-    private StoreFactory subject;
+    private ReadableStoreFactory subject;
 
     @Mock
     private HederaState state;
@@ -39,7 +39,7 @@ class StoreFactoryTest {
 
     @BeforeEach
     void setUp() {
-        subject = new StoreFactory(state);
+        subject = new ReadableStoreFactory(state);
     }
 
     @Test

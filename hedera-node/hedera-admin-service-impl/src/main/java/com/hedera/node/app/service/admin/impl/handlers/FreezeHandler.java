@@ -33,7 +33,9 @@ import javax.inject.Singleton;
 @Singleton
 public class FreezeHandler implements TransactionHandler {
     @Inject
-    public FreezeHandler() {}
+    public FreezeHandler() {
+        // Dagger2
+    }
 
     /**
      * This method is called during the pre-handle workflow.
@@ -46,25 +48,11 @@ public class FreezeHandler implements TransactionHandler {
      * change.
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(TransactionMetadata)}
+     *     passed to {@code handle()}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    /**
-     * This method is called during the handle workflow. It executes the actual transaction.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param metadata the {@link TransactionMetadata} that was generated during pre-handle.
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void handle(@NonNull final TransactionMetadata metadata) {
-        requireNonNull(metadata);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

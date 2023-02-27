@@ -21,7 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.spi.meta.QueryContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
-import com.hedera.node.app.workflows.dispatcher.StoreFactory;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -101,12 +101,12 @@ public class QueryDispatcher {
     /**
      * Validates the query by dispatching the query to its specific handlers.
      *
-     * @param storeFactory the {@link StoreFactory} that keeps all stores which are eventually
+     * @param storeFactory the {@link ReadableStoreFactory} that keeps all stores which are eventually
      *                     needed
      * @param query        the {@link Query} of the request
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public ResponseCodeEnum validate(@NonNull final StoreFactory storeFactory, @NonNull final Query query)
+    public ResponseCodeEnum validate(@NonNull final ReadableStoreFactory storeFactory, @NonNull final Query query)
             throws PreCheckException {
         requireNonNull(storeFactory);
         requireNonNull(query);
@@ -159,7 +159,7 @@ public class QueryDispatcher {
     /**
      * Gets the response for a given query by dispatching its respective handlers.
      *
-     * @param storeFactory the {@link StoreFactory} that keeps all stores which are eventually
+     * @param storeFactory the {@link ReadableStoreFactory} that keeps all stores which are eventually
      *                     needed
      * @param query        the actual {@link Query}
      * @param header       the {@link ResponseHeader} that should be used in the response, if it is
@@ -168,7 +168,7 @@ public class QueryDispatcher {
      * @return the {@link Response} with the requested answer
      */
     public Response getResponse(
-            @NonNull final StoreFactory storeFactory,
+            @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Query query,
             @NonNull final ResponseHeader header,
             @NonNull final QueryContext queryContext) {

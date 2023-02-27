@@ -23,4 +23,5 @@ module com.hedera.node.app.service.consensus.impl {
     exports com.hedera.node.app.service.consensus.impl.serdes;
     exports com.hedera.node.app.service.consensus.impl.config;
     exports com.hedera.node.app.service.consensus.impl.entity;
+    exports com.hedera.node.app.service.consensus.impl.records;
 }

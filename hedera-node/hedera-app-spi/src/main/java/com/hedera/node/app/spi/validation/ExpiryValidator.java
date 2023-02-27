@@ -16,31 +16,33 @@
 
 package com.hedera.node.app.spi.validation;
 
+import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 /**
  * A type that any {@link TransactionHandler} can use to validate the expiry
  * metadata for an attempt to create or update an entity. (The policies
  * governing the validity of such metadata are universally applicable.)
  */
-public interface EntityExpiryValidator {
+public interface ExpiryValidator {
     /**
      * Validates the expiry metadata for an attempt to create an entity.
      *
      * @param entityCanSelfFundRenewal whether the entity can self-fund its own auto-renewal
      * @param creationMetadata the expiry metadata for the attempted creation
-     * @return the result of the validation
+     * @throws HandleStatusException if the metadata is invalid
      */
-    ResponseCodeEnum validateCreationAttempt(boolean entityCanSelfFundRenewal, EntityExpiryMetadata creationMetadata);
+    void validateCreationAttempt(boolean entityCanSelfFundRenewal, ExpiryMeta creationMetadata);
 
     /**
-     * Validates the expiry metadata for an attempt to update an entity.
+     * Validates the expiry metadata for an attempt to update an entity, and returns the
+     * expiry metadata that will result from the update if it is valid. Otherwise throws
+     * a {@link HandleStatusException}.
      *
      * @param currentMetadata the current expiry metadata for the entity
      * @param updateMetadata the expiry metadata for the attempted update
-     * @return the result of the validation
+     * @return the expiry metadata that will result from the update
+     * @throws HandleStatusException if the metadata is invalid
      */
-    UpdateEntityExpiryMetadata resolveAndValidateUpdateAttempt(
-            EntityExpiryMetadata currentMetadata, EntityExpiryMetadata updateMetadata);
+    ExpiryMeta resolveUpdateAttempt(ExpiryMeta currentMetadata, ExpiryMeta updateMetadata);
 }

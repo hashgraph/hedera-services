@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import com.hedera.node.app.meta.MonoHandleContext;
 import com.hedera.node.app.service.admin.impl.components.AdminComponent;
 import com.hedera.node.app.service.consensus.impl.components.ConsensusComponent;
 import com.hedera.node.app.service.contract.impl.components.ContractComponent;
@@ -26,9 +27,9 @@ import com.hedera.node.app.service.schedule.impl.components.ScheduleComponent;
 import com.hedera.node.app.service.token.impl.components.TokenComponent;
 import com.hedera.node.app.service.util.impl.components.UtilComponent;
 import com.hedera.node.app.spi.meta.HandleContext;
-import com.hedera.node.app.spi.validation.EntityExpiryValidator;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
-import com.hedera.node.app.workflows.handle.validation.MonoEntityExpiryValidator;
+import com.hedera.node.app.workflows.handle.validation.MonoExpiryValidator;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -47,7 +48,7 @@ public interface HandleWorkflowModule {
 
     @Binds
     @Singleton
-    EntityExpiryValidator bindEntityExpiryValidator(MonoEntityExpiryValidator monoEntityExpiryValidator);
+    ExpiryValidator bindEntityExpiryValidator(MonoExpiryValidator monoEntityExpiryValidator);
 
     @Provides
     @Singleton

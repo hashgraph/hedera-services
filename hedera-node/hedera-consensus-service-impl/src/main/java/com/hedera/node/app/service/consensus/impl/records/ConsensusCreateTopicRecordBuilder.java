@@ -14,25 +14,31 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.records;
+package com.hedera.node.app.service.consensus.impl.records;
 
+import com.hedera.node.app.spi.records.RecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A {@code RecordBuilder} specialization for tracking the side-effects of a
- * {@code ConsensusSubmitMessage} transaction.
+ * {@code ConsensusCreateTopic} transaction.
  */
-public interface ConsensusSubmitMessageRecordBuilder extends RecordBuilder<ConsensusSubmitMessageRecordBuilder> {
+public interface ConsensusCreateTopicRecordBuilder extends RecordBuilder<ConsensusCreateTopicRecordBuilder> {
     /**
-     * Tracks the new topic metadata for the topic receiving the submitted message
-     * in the associated transaction.
+     * Tracks creation of a new topic by number. Even if someday we support creating
+     * multiple topics within a smart contract call, we will still only need to track
+     * one created topic per child record.
      *
-     * @param topicRunningHash the new running hash of the topic
-     * @param sequenceNumber the new sequence number of the topic
-     * @param runningHashVersion the running hash version used to compute the new running hash
+     * @param num the number of the new topic
      * @return this builder
      */
     @NonNull
-    ConsensusSubmitMessageRecordBuilder setNewTopicMetadata(
-            @NonNull byte[] topicRunningHash, long sequenceNumber, long runningHashVersion);
+    ConsensusCreateTopicRecordBuilder setCreatedTopic(long num);
+
+    /**
+     * Returns the number of the created topic.
+     *
+     * @return the number of the created topic
+     */
+    long getCreatedTopic();
 }

@@ -20,14 +20,12 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
-import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
@@ -38,19 +36,18 @@ import javax.inject.Inject;
  * Factory for all stores. Besides providing helpers to create stores, this class also tracks, which
  * {@link ReadableStates} have been used.
  */
-public class StoreFactory {
+public class ReadableStoreFactory {
     private final HederaState hederaState;
     private final Map<String, ReadableStates> usedReadableStates = new HashMap<>();
-    private final Map<String, WritableStates> usedWritableStates = new HashMap<>();
 
     /**
-     * Constructor of {@link StoreFactory}
+     * Constructor of {@link ReadableStoreFactory}
      *
      * @param hederaState the {@link HederaState} that all stores are based upon
      * @throws NullPointerException if one of the parameters is {@code null}
      */
     @Inject
-    public StoreFactory(@NonNull final HederaState hederaState) {
+    public ReadableStoreFactory(@NonNull final HederaState hederaState) {
         this.hederaState = requireNonNull(hederaState);
     }
 
@@ -66,17 +63,6 @@ public class StoreFactory {
     }
 
     /**
-     * Get a {@link Map} of all {@link WritableStates} that have been used to construct stores. The
-     * key of the {@code Map} is the key of the particular {@code ReadableStates}.
-     *
-     * @return a {@link Map} that contains all {@link WritableStates} that have been used
-     */
-    @NonNull
-    public Map<String, WritableStates> getUsedWritableStates() {
-        return usedWritableStates;
-    }
-
-    /**
      * Get a specific {@link ReadableStates}. If the {@code ReadableStates} does not exist yet, a
      * new one is created.
      *
@@ -88,20 +74,6 @@ public class StoreFactory {
     public ReadableStates getReadableStates(@NonNull final String key) {
         requireNonNull(key);
         return usedReadableStates.computeIfAbsent(key, hederaState::createReadableStates);
-    }
-
-    /**
-     * Get a specific {@link WritableStates}. If the {@code WritableStates} does not exist yet, a
-     * new one is created.
-     *
-     * @param key the {@code key} of the {@link WritableStates}
-     * @return the {@link WritableStates}, either one that was created earlier or a new one
-     * @throws NullPointerException if one of the parameters is {@code null}
-     */
-    @NonNull
-    public WritableStates getWritableStates(@NonNull final String key) {
-        requireNonNull(key);
-        return usedWritableStates.computeIfAbsent(key, hederaState::createWritableStates);
     }
 
     /**
@@ -124,17 +96,6 @@ public class StoreFactory {
     public ReadableTopicStore getReadableTopicStore() {
         final var topicStates = getReadableStates(ConsensusService.NAME);
         return new ReadableTopicStore(topicStates);
-    }
-
-    /**
-     * Get a {@link WritableTopicStore}
-     *
-     * @return a new {@link WritableTopicStore}
-     */
-    @NonNull
-    public WritableTopicStore getWritableTopicStore() {
-        final var topicStates = getWritableStates(ConsensusService.NAME);
-        return new WritableTopicStore(topicStates);
     }
 
     /**

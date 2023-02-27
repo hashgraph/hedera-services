@@ -14,43 +14,25 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.records;
+package com.hedera.node.app.service.consensus.impl.test.records;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hederahashgraph.api.proto.java.TopicID;
+import com.hedera.node.app.service.consensus.impl.records.UpdateTopicRecordBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class CreateTopicRecordBuilderTest {
-    @Mock
-    private TransactionContext txnCtx;
-
-    private CreateTopicRecordBuilder subject = new CreateTopicRecordBuilder();
-
-    @Test
-    void recordsNothingInMonoContextIfNothingTracked() {
-        subject.exposeSideEffectsToMono(txnCtx);
-
-        verifyNoInteractions(txnCtx);
-    }
+class UpdateTopicRecordBuilderTest {
+    private UpdateTopicRecordBuilder subject = new UpdateTopicRecordBuilder();
 
     @Test
     void recordsTrackedSideEffectsInMonoContext() {
-        final var returnedSubject = subject.setFinalStatus(SUCCESS).setCreatedTopic(123L);
+        final var returnedSubject = subject.setFinalStatus(SUCCESS);
         assertSame(subject, returnedSubject);
-        assertSame(subject, subject.self());
-
-        subject.exposeSideEffectsToMono(txnCtx);
-
-        verify(txnCtx).setCreated(TopicID.newBuilder().setTopicNum(123L).build());
-        verify(txnCtx).setStatus(SUCCESS);
+        assertEquals(SUCCESS, subject.getFinalStatus());
     }
 }

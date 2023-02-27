@@ -46,5 +46,19 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
  * e.g., the transaction id is already in the transaction, but is repeated in the record.
  */
 public interface RecordBuilder<T extends RecordBuilder<T>> {
+    /**
+     * Sets the final transaction status of this in-progress record.
+     *
+     * @param status the final status of the transaction
+     * @return this builder
+     */
     T setFinalStatus(ResponseCodeEnum status);
+
+    /**
+     * Returns the final transaction status of this in-progress record.
+     *
+     * @return the final status of the transaction
+     * @throws IllegalStateException if the final status has already been set
+     */
+    ResponseCodeEnum getFinalStatus();
 }

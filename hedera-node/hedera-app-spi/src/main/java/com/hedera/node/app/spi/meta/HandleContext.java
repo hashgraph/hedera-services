@@ -16,23 +16,52 @@
 
 package com.hedera.node.app.spi.meta;
 
-import com.hedera.node.app.spi.accounts.AccountLookup;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.EntityCreationLimits;
-import com.hedera.node.app.spi.validation.EntityExpiryValidator;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
 import java.time.Instant;
 import java.util.function.LongSupplier;
 
+/**
+ * Bundles up the in-handle application context required by {@link TransactionHandler}
+ * implementations.
+ *
+ * <p>At present, only supplies the context needed for Consensus Service handlers in the
+ * limited form described by https://github.com/hashgraph/hedera-services/issues/4945.
+ */
 public interface HandleContext {
+    /**
+     * Returns the current consensus time.
+     *
+     * @return the current consensus time
+     */
     Instant consensusNow();
 
+    /**
+     * Returns a supplier of the next entity number, for use by handlers that create entities.
+     *
+     * @return a supplier of the next entity number
+     */
     LongSupplier newEntityNumSupplier();
 
+    /**
+     * Returns the validator for attributes of entities created or updated by handlers.
+     *
+     * @return the validator for attributes
+     */
     AttributeValidator attributeValidator();
 
-    EntityExpiryValidator expiryValidator();
+    /**
+     * Returns the validator for expiry metadata (both explicit expiration times and
+     * auto-renew configuration) of entities created or updated by handlers.
+     *
+     * @return the validator for expiry metadata
+     */
+    ExpiryValidator expiryValidator();
 
     EntityCreationLimits entityCreationLimits();
 
-    AccountLookup accountLookup();
+    AccountAccess accountAccess();
 }
