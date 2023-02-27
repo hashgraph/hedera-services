@@ -23,6 +23,8 @@ import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_TLS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_TLS_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ACCOUNTS_EXPORT_PATH;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_EXPORT_ACCOUNTS_ON_STARTUP;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PREFETCH_CODE_CACHE_TTL_SECS;
@@ -102,6 +104,8 @@ class NodeLocalPropertiesTest {
         assertEquals(30, subject.prefetchCodeCacheTtlSecs());
         assertEquals(List.of("80"), subject.consThrottlesToSample());
         assertEquals(List.of("81"), subject.hapiThrottlesToSample());
+        assertEquals(32, subject.workflowsPort());
+        assertEquals(33, subject.workflowsTlsPort());
     }
 
     @Test
@@ -155,6 +159,8 @@ class NodeLocalPropertiesTest {
         assertEquals(30, subject.prefetchThreadPoolSize());
         assertEquals(31, subject.prefetchCodeCacheTtlSecs());
         assertEquals(logDir(32), subject.sidecarDir());
+        assertEquals(33, subject.workflowsPort());
+        assertEquals(34, subject.workflowsTlsPort());
     }
 
     @Test
@@ -236,6 +242,8 @@ class NodeLocalPropertiesTest {
         given(properties.getLongProperty(STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS))
                 .willReturn(i + 82L);
         given(properties.getStringProperty(HEDERA_RECORD_STREAM_SIDE_CAR_DIR)).willReturn(logDir(i + 30));
+        given(properties.getIntProperty(GRPC_WORKFLOWS_PORT)).willReturn(i + 31);
+        given(properties.getIntProperty(GRPC_WORKFLOWS_TLS_PORT)).willReturn(i + 32);
     }
 
     static String logDir(final int num) {

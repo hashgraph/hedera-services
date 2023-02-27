@@ -52,6 +52,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -99,7 +100,7 @@ class MerkleTopicUpdateTransitionLogicTest {
     private SigImpactHistorian sigImpactHistorian;
     private OptionValidator validator;
     private MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
-    private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
+    private MerkleMapLike<EntityNum, MerkleTopic> topics = MerkleMapLike.from(new MerkleMap<>());
     private TopicUpdateTransitionLogic subject;
     private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 
@@ -128,7 +129,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 
         ledger = mock(HederaLedger.class);
         subject = new TopicUpdateTransitionLogic(
-                () -> AccountStorageAdapter.fromInMemory(accounts),
+                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
                 () -> topics,
                 validator,
                 transactionContext,

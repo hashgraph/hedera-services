@@ -46,6 +46,7 @@ import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.queries.answering.AnswerFunctions;
 import com.hedera.node.app.service.mono.records.RecordCache;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
@@ -104,7 +105,7 @@ class GetTxnRecordAnswerTest {
         accounts = mock(MerkleMap.class);
         nodeProps = mock(NodeLocalProperties.class);
         final MutableStateChildren children = new MutableStateChildren();
-        children.setAccounts(AccountStorageAdapter.fromInMemory(accounts));
+        children.setAccounts(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
         view = new StateView(null, children, null);
         optionValidator = mock(OptionValidator.class);
         answerFunctions = mock(AnswerFunctions.class);

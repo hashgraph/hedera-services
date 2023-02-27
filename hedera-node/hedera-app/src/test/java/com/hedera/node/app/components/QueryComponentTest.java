@@ -17,6 +17,7 @@
 package com.hedera.node.app.components;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.DaggerHederaApp;
 import com.hedera.node.app.HederaApp;
@@ -57,6 +58,8 @@ class QueryComponentTest {
 
     @Test
     void objectGraphRootsAreAvailable() {
+        given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
+
         final QueryComponent subject = app.queryComponentFactory().get().create();
 
         assertNotNull(subject.queryWorkflow());

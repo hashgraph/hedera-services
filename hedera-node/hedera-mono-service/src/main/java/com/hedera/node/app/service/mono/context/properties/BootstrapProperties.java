@@ -110,6 +110,8 @@ import static com.hedera.node.app.spi.config.PropertyNames.FILES_SOFTWARE_UPDATE
 import static com.hedera.node.app.spi.config.PropertyNames.FILES_THROTTLE_DEFINITIONS;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_TLS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_TLS_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ACCOUNTS_EXPORT_PATH;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ALLOWANCES_IS_ENABLED;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT;
@@ -259,13 +261,19 @@ public final class BootstrapProperties implements PropertySource {
         }
         return in;
     };
-    private static final ThrowingStreamProvider fileStreamProvider = loc -> Files.newInputStream(Paths.get(loc));
+    private static ThrowingStreamProvider fileStreamProvider = loc -> Files.newInputStream(Paths.get(loc));
+
+    private final boolean logEnabled;
 
     private final Properties rawProperties = new Properties();
 
     @Inject
     public BootstrapProperties() {
-        /* No-op */
+        this(true);
+    }
+
+    public BootstrapProperties(final boolean logEnabled) {
+        this.logEnabled = logEnabled;
     }
 
     String bootstrapPropsResource = "bootstrap.properties";
@@ -308,12 +316,14 @@ public final class BootstrapProperties implements PropertySource {
         BOOTSTRAP_PROP_NAMES.forEach(
                 prop -> bootstrapProps.put(prop, transformFor(prop).apply(resourceProps.getProperty(prop))));
 
-        final var msg = "Resolved bootstrap properties:\n  "
-                + BOOTSTRAP_PROP_NAMES.stream()
-                        .sorted()
-                        .map(name -> String.format("%s=%s", name, bootstrapProps.get(name)))
-                        .collect(Collectors.joining("\n  "));
-        log.info(msg);
+        if (logEnabled) {
+            final var msg = "Resolved bootstrap properties:\n  "
+                    + BOOTSTRAP_PROP_NAMES.stream()
+                            .sorted()
+                            .map(name -> String.format("%s=%s", name, bootstrapProps.get(name)))
+                            .collect(Collectors.joining("\n  "));
+            log.info(msg);
+        }
     }
 
     private void load(final String resource, final Properties intoProps) throws IllegalStateException {
@@ -534,6 +544,8 @@ public final class BootstrapProperties implements PropertySource {
             DEV_DEFAULT_LISTENING_NODE_ACCOUNT,
             GRPC_PORT,
             GRPC_TLS_PORT,
+            GRPC_WORKFLOWS_PORT,
+            GRPC_WORKFLOWS_TLS_PORT,
             HEDERA_ACCOUNTS_EXPORT_PATH,
             HEDERA_EXPORT_ACCOUNTS_ON_STARTUP,
             HEDERA_PREFETCH_QUEUE_CAPACITY,
@@ -615,6 +627,8 @@ public final class BootstrapProperties implements PropertySource {
             entry(FILES_THROTTLE_DEFINITIONS, AS_LONG),
             entry(GRPC_PORT, AS_INT),
             entry(GRPC_TLS_PORT, AS_INT),
+            entry(GRPC_WORKFLOWS_PORT, AS_INT),
+            entry(GRPC_WORKFLOWS_TLS_PORT, AS_INT),
             entry(HEDERA_EXPORT_ACCOUNTS_ON_STARTUP, AS_BOOLEAN),
             entry(HEDERA_FIRST_USER_ENTITY, AS_LONG),
             entry(HEDERA_PREFETCH_QUEUE_CAPACITY, AS_INT),
@@ -765,6 +779,6 @@ public final class BootstrapProperties implements PropertySource {
             entry(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS, AS_BOOLEAN),
             entry(UTIL_PRNG_IS_ENABLED, AS_BOOLEAN),
             entry(TOKENS_AUTO_CREATIONS_ENABLED, AS_BOOLEAN),
-            entry(WORKFLOWS_ENABLED, AS_BOOLEAN),
+            entry(WORKFLOWS_ENABLED, AS_FUNCTIONS),
             entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, AS_BOOLEAN));
 }

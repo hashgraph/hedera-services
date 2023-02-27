@@ -26,6 +26,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
@@ -78,8 +79,8 @@ class PendingRewardsManagementTest {
     @BeforeEach
     void setUp() {
         subject = new EndOfStakingPeriodCalculator(
-                () -> AccountStorageAdapter.fromInMemory(accounts),
-                () -> stakingInfos,
+                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
+                () -> MerkleMapLike.from(stakingInfos),
                 () -> networkCtx,
                 syntheticTxnFactory,
                 recordsHistorian,

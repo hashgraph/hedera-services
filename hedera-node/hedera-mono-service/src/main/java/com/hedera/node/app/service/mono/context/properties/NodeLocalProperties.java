@@ -20,6 +20,8 @@ import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.GRPC_TLS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_WORKFLOWS_TLS_PORT;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ACCOUNTS_EXPORT_PATH;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_EXPORT_ACCOUNTS_ON_STARTUP;
 import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PREFETCH_CODE_CACHE_TTL_SECS;
@@ -68,6 +70,8 @@ public class NodeLocalProperties {
 
     private int port;
     private int tlsPort;
+    private int workflowsPort;
+    private int workflowsTlsPort;
     private long hapiOpStatsUpdateIntervalMs;
     private long entityUtilStatsUpdateIntervalMs;
     private long throttleUtilStatsUpdateIntervalMs;
@@ -115,6 +119,8 @@ public class NodeLocalProperties {
     public void reload() {
         port = properties.getIntProperty(GRPC_PORT);
         tlsPort = properties.getIntProperty(GRPC_TLS_PORT);
+        workflowsPort = properties.getIntProperty(GRPC_WORKFLOWS_PORT);
+        workflowsTlsPort = properties.getIntProperty(GRPC_WORKFLOWS_TLS_PORT);
         activeProfile = properties.getProfileProperty(HEDERA_PROFILES_ACTIVE);
         hapiOpStatsUpdateIntervalMs = properties.getLongProperty(STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS);
         statsSpeedometerHalfLifeSecs = properties.getDoubleProperty(STATS_SPEEDOMETER_HALF_LIFE_SECS);
@@ -159,6 +165,14 @@ public class NodeLocalProperties {
 
     public int tlsPort() {
         return tlsPort;
+    }
+
+    public int workflowsPort() {
+        return workflowsPort;
+    }
+
+    public int workflowsTlsPort() {
+        return workflowsTlsPort;
     }
 
     public Profile activeProfile() {
