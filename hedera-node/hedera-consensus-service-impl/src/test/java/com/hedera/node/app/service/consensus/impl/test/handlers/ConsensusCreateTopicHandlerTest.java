@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.mono.Utils;
@@ -66,6 +67,9 @@ class ConsensusCreateTopicHandlerTest {
 
     @Mock
     private ConsensusCreateTopicRecordBuilder recordBuilder;
+
+    @Mock
+    private WritableTopicStore topicStore;
 
     private ConsensusCreateTopicHandler subject;
 
@@ -247,7 +251,7 @@ class ConsensusCreateTopicHandlerTest {
         // expect:
         assertThrows(
                 UnsupportedOperationException.class,
-                () -> subject.handle(handleContext, transactionBody, consensusConfig, recordBuilder));
+                () -> subject.handle(handleContext, transactionBody, consensusConfig, recordBuilder, topicStore));
     }
 
     // Note: there are more tests in ConsensusCreateTopicHandlerParityTest.java

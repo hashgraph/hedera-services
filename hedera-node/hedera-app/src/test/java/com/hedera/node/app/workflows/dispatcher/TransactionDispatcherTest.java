@@ -306,6 +306,9 @@ class TransactionDispatcherTest {
     @Mock
     private GlobalDynamicProperties dynamicProperties;
 
+    @Mock
+    private StoreFactory storeFactory;
+
     private TransactionBody transactionBody = TransactionBody.getDefaultInstance();
 
     private TransactionHandlers handlers;
@@ -455,9 +458,9 @@ class TransactionDispatcherTest {
                     return null;
                 })
                 .when(consensusCreateTopicHandler)
-                .handle(eq(handleContext), eq(transactionBody), eq(expectedConfig), any());
+                .handle(eq(handleContext), eq(transactionBody), eq(expectedConfig), any(), any());
 
-        dispatcher.dispatchHandle(ConsensusCreateTopic, transactionBody);
+        dispatcher.dispatchHandle(ConsensusCreateTopic, transactionBody, storeFactory);
 
         verify(txnCtx).setStatus(SUCCESS);
     }
@@ -465,7 +468,8 @@ class TransactionDispatcherTest {
     @Test
     void cannotDispatchNonConsensusOperations() {
         Assertions.assertThrows(
-                IllegalArgumentException.class, () -> dispatcher.dispatchHandle(CryptoTransfer, transactionBody));
+                IllegalArgumentException.class,
+                () -> dispatcher.dispatchHandle(CryptoTransfer, transactionBody, storeFactory));
     }
 
     @ParameterizedTest

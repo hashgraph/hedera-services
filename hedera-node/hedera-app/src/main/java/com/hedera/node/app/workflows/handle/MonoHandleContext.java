@@ -35,8 +35,8 @@ public class MonoHandleContext implements HandleContext {
     private final AccountLookup accountLookup;
 
     @Inject
-    public MonoHandleContext(@NonNull final EntityExpiryValidator expiryValidator,
-            @NonNull final AccountLookup accountLookup) {
+    public MonoHandleContext(
+            @NonNull final EntityExpiryValidator expiryValidator, @NonNull final AccountLookup accountLookup) {
         this.expiryValidator = requireNonNull(expiryValidator);
         this.accountLookup = requireNonNull(accountLookup);
     }

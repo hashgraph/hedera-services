@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.entity;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.spi.Account.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.spi.accounts.Account.HBARS_TO_TINYBARS;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
