@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.test.gui;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -44,14 +45,11 @@ class TestGuiSource {
     final HashgraphGuiSource guiSource;
 
     public TestGuiSource(final long seed, final int numNodes) {
-        graphGenerator =
-                new StandardGraphGenerator(seed, HashgraphGuiTest.generateSources(numNodes));
+        graphGenerator = new StandardGraphGenerator(seed, HashgraphGuiTest.generateSources(numNodes));
 
         intake = new TestIntake(graphGenerator.getAddressBook());
 
-        guiSource =
-                new FinalShadowgraphGuiSource(
-                        intake.getShadowGraph(), graphGenerator.getAddressBook());
+        guiSource = new FinalShadowgraphGuiSource(intake.getShadowGraph(), graphGenerator.getAddressBook());
     }
 
     public void runGui() {
@@ -66,71 +64,57 @@ class TestGuiSource {
 
         // Fame decided below
         final JLabel fameDecidedBelow = new JLabel("N/A");
-        final Runnable updateFameDecidedBelow =
-                () ->
-                        fameDecidedBelow.setText(
-                                "fame decided below: "
-                                        + intake.getConsensus().getFameDecidedBelow());
+        final Runnable updateFameDecidedBelow = () -> fameDecidedBelow.setText(
+                "fame decided below: " + intake.getConsensus().getFameDecidedBelow());
         updateFameDecidedBelow.run();
         // Next events
         final JButton nextEvent = new JButton("Next events");
         final int defaultNumEvents = 10;
         final int numEventsMinimum = 1;
         final int numEventsStep = 1;
-        final JSpinner numEvents =
-                new JSpinner(
-                        new SpinnerNumberModel(
-                                Integer.valueOf(defaultNumEvents),
-                                Integer.valueOf(numEventsMinimum),
-                                Integer.valueOf(Integer.MAX_VALUE),
-                                Integer.valueOf(numEventsStep)));
-        nextEvent.addActionListener(
-                e -> {
-                    intake.addEvents(
-                            graphGenerator.generateEvents(
-                                    numEvents.getValue() instanceof Integer value
-                                            ? value
-                                            : defaultNumEvents));
-                    updateFameDecidedBelow.run();
-                });
+        final JSpinner numEvents = new JSpinner(new SpinnerNumberModel(
+                Integer.valueOf(defaultNumEvents),
+                Integer.valueOf(numEventsMinimum),
+                Integer.valueOf(Integer.MAX_VALUE),
+                Integer.valueOf(numEventsStep)));
+        nextEvent.addActionListener(e -> {
+            intake.addEvents(graphGenerator.generateEvents(
+                    numEvents.getValue() instanceof Integer value ? value : defaultNumEvents));
+            updateFameDecidedBelow.run();
+        });
         // Reset
         final JButton reset = new JButton("Reset");
-        reset.addActionListener(
-                e -> {
-                    graphGenerator.reset();
-                    intake.reset();
-                    updateFameDecidedBelow.run();
-                });
+        reset.addActionListener(e -> {
+            graphGenerator.reset();
+            intake.reset();
+            updateFameDecidedBelow.run();
+        });
         // snapshot
         final JButton snapshot = new JButton("Print last snapshot");
-        snapshot.addActionListener(
-                e -> {
-                    final ConsensusRound round = intake.getConsensusRounds().peekLast();
-                    if (round == null) {
-                        System.out.println("No consensus rounds");
-                    } else {
-                        System.out.println(round.getSnapshot().toString());
-                    }
-                });
+        snapshot.addActionListener(e -> {
+            final ConsensusRound round = intake.getConsensusRounds().peekLast();
+            if (round == null) {
+                System.out.println("No consensus rounds");
+            } else {
+                System.out.println(round.getSnapshot().toString());
+            }
+        });
 
         // load signed state
         final JButton loadSS = new JButton("Load version 5 state");
-        loadSS.addActionListener(
-                e -> {
-                    try {
-                        intake.reset();
-                        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-                        final Path ssPath = ResourceLoader.getFile("version-5-state.swh.bin");
-                        final SignedState state = SignedStateFileReader.readSignedStateOnly(ssPath);
-                        EventUtils.convertEvents(state);
-                        intake.loadFromSignedState(state);
-                        ConsensusUtils.loadEventsIntoGenerator(state, graphGenerator, new Random());
-                    } catch (final IOException
-                            | ConstructableRegistryException
-                            | URISyntaxException ex) {
-                        throw new RuntimeException(ex);
-                    }
-                });
+        loadSS.addActionListener(e -> {
+            try {
+                intake.reset();
+                ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+                final Path ssPath = ResourceLoader.getFile("version-5-state.swh.bin");
+                final SignedState state = SignedStateFileReader.readSignedStateOnly(ssPath);
+                EventUtils.convertEvents(state);
+                intake.loadFromSignedState(state);
+                ConsensusUtils.loadEventsIntoGenerator(state, graphGenerator, new Random());
+            } catch (final IOException | ConstructableRegistryException | URISyntaxException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
 
         // create JPanel
         final JPanel controls = new JPanel(new FlowLayout());

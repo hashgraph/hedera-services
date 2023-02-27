@@ -13,7 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.internal;
+
+import static com.swirlds.platform.consensus.ConsensusConstants.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.Hash;
@@ -40,7 +43,6 @@ import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.StreamEventParser;
-import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.EventMetadata;
 import com.swirlds.platform.event.GossipEvent;
@@ -56,8 +58,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-
-import static com.swirlds.platform.consensus.ConsensusConstants.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 
 /**
  * An internal platform event. It holds all the event data relevant to the platform. It implements the Event interface
@@ -191,11 +191,8 @@ public class EventImpl extends EventMetadata
     @SuppressWarnings("unused")
     @Deprecated(forRemoval = true)
     public synchronized void estimateTime(
-            final NodeId selfId,
-            final double avgSelfCreatedTimestamp,
-            final double avgOtherReceivedTimestamp) {
-        setEstimatedTime(
-                selfId.equalsMain(getCreatorId()) ? getTimeCreated() : baseEvent.getTimeReceived());
+            final NodeId selfId, final double avgSelfCreatedTimestamp, final double avgOtherReceivedTimestamp) {
+        setEstimatedTime(selfId.equalsMain(getCreatorId()) ? getTimeCreated() : baseEvent.getTimeReceived());
     }
 
     /**

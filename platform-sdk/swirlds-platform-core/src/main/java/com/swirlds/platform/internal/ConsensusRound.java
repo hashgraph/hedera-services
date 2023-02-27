@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.internal;
 
 import com.swirlds.common.system.Round;
@@ -48,8 +49,7 @@ public class ConsensusRound implements Round {
      *     develop
      */
     @Deprecated(forRemoval = true)
-    public ConsensusRound(
-            final List<EventImpl> consensusEvents, final GraphGenerations generations) {
+    public ConsensusRound(final List<EventImpl> consensusEvents, final GraphGenerations generations) {
         this(consensusEvents, generations, consensusEvents.get(0).getRoundReceived(), null);
     }
 
@@ -86,8 +86,7 @@ public class ConsensusRound implements Round {
             numAppTransactions += e.getNumAppTransactions();
         }
 
-        lastEvent =
-                consensusEvents.isEmpty() ? null : consensusEvents.get(consensusEvents.size() - 1);
+        lastEvent = consensusEvents.isEmpty() ? null : consensusEvents.get(consensusEvents.size() - 1);
     }
 
     /**
@@ -175,9 +174,6 @@ public class ConsensusRound implements Round {
 
     @Override
     public String toString() {
-        return "round: "
-                + roundNum
-                + ", consensus events: "
-                + EventUtils.toShortStrings(consensusEvents);
+        return "round: " + roundNum + ", consensus events: " + EventUtils.toShortStrings(consensusEvents);
     }
 }

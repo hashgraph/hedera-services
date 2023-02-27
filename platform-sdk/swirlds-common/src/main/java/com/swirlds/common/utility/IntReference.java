@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.common.utility;
 
 /** An object wrapper for an int that allows it to mutate, unlike {@link Integer}. */

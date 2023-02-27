@@ -13,17 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.test.event;
 
 import static java.lang.Integer.max;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.merkle.util.MerkleSerializeUtils;
-import com.swirlds.common.test.state.DummySwirldState2;
-import com.swirlds.platform.eventhandling.SignedStateEventsAndGenerations;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
@@ -51,8 +48,7 @@ public abstract class EventUtils {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructables("com.swirlds.platform.state");
         registry.registerConstructables("com.swirlds.common.*");
-        final State stateCopy =
-                MerkleSerializeUtils.serializeDeserialize(dir, signedState.getState());
+        final State stateCopy = MerkleSerializeUtils.serializeDeserialize(dir, signedState.getState());
         final SignedState signedStateCopy = new SignedState(stateCopy);
         signedStateCopy.setSigSet(signedState.getSigSet());
         return signedStateCopy;
@@ -64,15 +60,13 @@ public abstract class EventUtils {
      * @param signedState the state where events are stored
      */
     public static void convertEvents(final SignedState signedState) {
-        final IndexedEvent[] indexedEvents =
-                Arrays.stream(
-                                signedState
-                                        .getState()
-                                        .getPlatformState()
-                                        .getPlatformData()
-                                        .getEvents())
-                        .map(IndexedEvent::new)
-                        .toArray(IndexedEvent[]::new);
+        final IndexedEvent[] indexedEvents = Arrays.stream(signedState
+                        .getState()
+                        .getPlatformState()
+                        .getPlatformData()
+                        .getEvents())
+                .map(IndexedEvent::new)
+                .toArray(IndexedEvent[]::new);
         State.linkParents(indexedEvents);
         signedState.getState().getPlatformState().getPlatformData().setEvents(indexedEvents);
     }
@@ -112,8 +106,7 @@ public abstract class EventUtils {
     }
 
     /** Check to see if all events have increasing generation numbers for each node. */
-    public static boolean areGenerationNumbersValid(
-            final Iterable<IndexedEvent> events, final int numberOfNodes) {
+    public static boolean areGenerationNumbersValid(final Iterable<IndexedEvent> events, final int numberOfNodes) {
         final Map<Long, Long> previousGenNumber = new HashMap<>();
         for (long nodeID = 0; nodeID < numberOfNodes; nodeID++) {
             previousGenNumber.put(nodeID, -1L);
@@ -172,8 +165,7 @@ public abstract class EventUtils {
     }
 
     /** Check if two event lists contain the same values (but in a possibly different order). */
-    public static boolean areEventListsEquivalent(
-            List<IndexedEvent> events1, List<IndexedEvent> events2) {
+    public static boolean areEventListsEquivalent(List<IndexedEvent> events1, List<IndexedEvent> events2) {
         events1 = sortEventList(events1);
         events2 = sortEventList(events2);
         return events1.equals(events2);
@@ -208,8 +200,7 @@ public abstract class EventUtils {
      * Same as integerPowerDistribution above, except if the value is below a minimum the minimum is
      * used.
      */
-    public static DynamicValue<Integer> integerPowerDistribution(
-            final double alpha, final int minimum) {
+    public static DynamicValue<Integer> integerPowerDistribution(final double alpha, final int minimum) {
         return (Random random, long eventIndex, Integer previousValue) -> {
             int ret = 0;
             while (random.nextDouble() > alpha) {
@@ -226,8 +217,7 @@ public abstract class EventUtils {
      * @param eventIndex the index of the event to be considered. The age of the event's other
      *     parent is returned.
      */
-    private static int calculateOtherParentAge(
-            final List<IndexedEvent> events, final int eventIndex) {
+    private static int calculateOtherParentAge(final List<IndexedEvent> events, final int eventIndex) {
 
         final IndexedEvent event = events.get(eventIndex);
         final IndexedEvent otherParent = (IndexedEvent) event.getOtherParent();
@@ -291,8 +281,7 @@ public abstract class EventUtils {
      * @return pair of counts where the left value is the number of consensus events and the right
      *     value is the number of stale events
      */
-    public static Pair<Integer, Integer> countConsensusAndStaleEvents(
-            final Iterable<EventImpl> events) {
+    public static Pair<Integer, Integer> countConsensusAndStaleEvents(final Iterable<EventImpl> events) {
         int numCons = 0;
         int numStale = 0;
         for (final EventImpl event : events) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.consensus;
 
 import com.swirlds.platform.Utilities;
@@ -51,17 +52,10 @@ public class ConsensusSorter implements Comparator<EventImpl> {
         final ArrayList<Instant> recTimes1 = e1.getRecTimes();
         final ArrayList<Instant> recTimes2 = e2.getRecTimes();
 
-        final int m1 =
-                recTimes1.size()
-                        / 2; // middle position of e1 (the later of the two middles, if even length)
-        final int m2 =
-                recTimes2.size()
-                        / 2; // middle position of e2 (the later of the two middles, if even length)
+        final int m1 = recTimes1.size() / 2; // middle position of e1 (the later of the two middles, if even length)
+        final int m2 = recTimes2.size() / 2; // middle position of e2 (the later of the two middles, if even length)
         int d = -1; // offset from median position to look at
-        while (m1 + d >= 0
-                && m2 + d >= 0
-                && m1 + d < recTimes1.size()
-                && m2 + d < recTimes2.size()) {
+        while (m1 + d >= 0 && m2 + d >= 0 && m1 + d < recTimes1.size() && m2 + d < recTimes2.size()) {
             c = recTimes1.get(m1 + d).compareTo(recTimes2.get(m2 + d));
             if (c != 0) {
                 return c;

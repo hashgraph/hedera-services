@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.test.gui;
 
 import com.swirlds.platform.gui.hashgraph.HashgraphGui;
@@ -38,8 +39,7 @@ public final class HashgraphGuiRunner {
      * @param guiSource the source for the GUI
      * @param additionalControls additional controls that will be added to the bottom of the screen
      */
-    public static void runHashgraphGui(
-            final HashgraphGuiSource guiSource, final JComponent additionalControls) {
+    public static void runHashgraphGui(final HashgraphGuiSource guiSource, final JComponent additionalControls) {
         final JFrame frame = new JFrame();
         final CloseDetector closeDetector = new CloseDetector();
         frame.addWindowListener(closeDetector);

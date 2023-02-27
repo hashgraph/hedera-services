@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.common.test;
 
 /** Utility for creating human-readable names deterministically */
@@ -32,7 +33,6 @@ public final class NameUtils {
      * @return a human-readable name
      */
     public static String getName(final long value) {
-        return NAMES[((int) value) % NAMES.length]
-                + (value >= NAMES.length ? ("-" + String.format("%x", value)) : "");
+        return NAMES[((int) value) % NAMES.length] + (value >= NAMES.length ? ("-" + String.format("%x", value)) : "");
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform;
 
 import static com.swirlds.logging.LogMarker.CONSENSUS_VOTING;
@@ -135,8 +136,7 @@ import org.apache.logging.log4j.Logger;
  * adds up to more than 2/3 of the total stake", and "witnesses created by members whose stake is
  * more than 2/3 of the total".
  */
-public class ConsensusImpl extends ThreadSafeConsensusInfo
-        implements Consensus, LoadableFromSignedState {
+public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus, LoadableFromSignedState {
 
     private static final Logger logger = LogManager.getLogger(ConsensusImpl.class);
     /** consensus configuration */
@@ -190,10 +190,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo
             final ConsensusMetrics consensusMetrics,
             final BiConsumer<Long, Long> minGenConsumer,
             final AddressBook addressBook) {
-        super(
-                config,
-                new SequentialRingBuffer<>(
-                        ConsensusConstants.ROUND_FIRST, config.roundsExpired() * 2));
+        super(config, new SequentialRingBuffer<>(ConsensusConstants.ROUND_FIRST, config.roundsExpired() * 2));
         this.config = config;
         this.consensusMetrics = consensusMetrics;
         this.minGenConsumer = minGenConsumer;
@@ -246,9 +243,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo
         }
 
         // The minTimestamp is just above the last transaction that has been handled
-        minTimestamp =
-                ConsensusUtils.calcMinTimestampForNextEvent(
-                        signedState.getLastTransactionTimestamp());
+        minTimestamp = ConsensusUtils.calcMinTimestampForNextEvent(signedState.getLastTransactionTimestamp());
 
         logger.debug(
                 STARTUP.getMarker(),
@@ -458,11 +453,10 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo
             // consensus, so we don't calculate consensus for it again in the future.
             final List<EventImpl> ancestors =
                     search.commonAncestorsOf(initJudges.getJudges(), this::nonConsensusNonAncient);
-            ancestors.forEach(
-                    e -> {
-                        e.setConsensus(true);
-                        e.setRecTimes(null);
-                    });
+            ancestors.forEach(e -> {
+                e.setConsensus(true);
+                e.setRecTimes(null);
+            });
             initJudges = null;
         }
     }
@@ -504,8 +498,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo
             return;
         }
         if (diff == 1) {
-            for (final Iterator<CandidateWitness> it = electionRound.undecidedWitnesses();
-                    it.hasNext(); ) {
+            for (final Iterator<CandidateWitness> it = electionRound.undecidedWitnesses(); it.hasNext(); ) {
                 final CandidateWitness candidateWitness = it.next();
                 final boolean firstVote = firstVote(votingWitness, candidateWitness.getWitness());
                 votingWitness.setVote(candidateWitness, firstVote);
@@ -519,8 +512,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo
         // witnesses strongly seen.
         final List<EventImpl> stronglySeen = getStronglySeenInPreviousRound(votingWitness);
 
-        for (final Iterator<CandidateWitness> it = electionRound.undecidedWitnesses();
-                it.hasNext(); ) {
+        for (final Iterator<CandidateWitness> it = electionRound.undecidedWitnesses(); it.hasNext(); ) {
             final CandidateWitness candidateWitness = it.next();
 
             final CountingVote countingVote = getCountingVote(candidateWitness, stronglySeen);
@@ -568,8 +560,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo
      * @param stronglySeen the witnesses VR-1 that the voting witness can strongly see
      * @return the outcome of the vote
      */
-    private CountingVote getCountingVote(
-            final CandidateWitness candidateWitness, final List<EventImpl> stronglySeen) {
+    private CountingVote getCountingVote(final CandidateWitness candidateWitness, final List<EventImpl> stronglySeen) {
         // count votes from witnesses you strongly see
         long yesStake = 0; // total stake of all members voting yes
         long noStake = 0; // total stake of all members voting yes
@@ -583,8 +574,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo
         }
         final long totalStake = addressBook.getTotalStake();
         final boolean superMajority =
-                Utilities.isSuperMajority(yesStake, totalStake)
-                        || Utilities.isSuperMajority(noStake, totalStake);
+                Utilities.isSuperMajority(yesStake, totalStake) || Utilities.isSuperMajority(noStake, totalStake);
         final boolean countingVote = yesStake >= noStake;
 
         return CountingVote.get(countingVote, superMajority);
@@ -614,28 +604,19 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo
      * @param countingVote the counting vote
      */
     private void coinVote(
-            final EventImpl votingWitness,
-            final CandidateWitness candidateWitness,
-            final CountingVote countingVote) {
+            final EventImpl votingWitness, final CandidateWitness candidateWitness, final CountingVote countingVote) {
         // a coin round. Vote randomly unless you strongly see a supermajority. Don't decide.
         consensusMetrics.coinRound();
         final boolean vote =
-                countingVote.isSupermajority()
-                        ? countingVote.getVote()
-                        : ConsensusUtils.coin(votingWitness);
+                countingVote.isSupermajority() ? countingVote.getVote() : ConsensusUtils.coin(votingWitness);
 
         votingWitness.setVote(candidateWitness, vote);
-        logVote(
-                votingWitness,
-                candidateWitness,
-                "coin-" + (countingVote.isSupermajority() ? "counting" : "sig"));
+        logVote(votingWitness, candidateWitness, "coin-" + (countingVote.isSupermajority() ? "counting" : "sig"));
     }
 
     /** Logs the outcome of voting */
     private void logVote(
-            final EventImpl votingWitness,
-            final CandidateWitness candidateWitness,
-            final String votingType) {
+            final EventImpl votingWitness, final CandidateWitness candidateWitness, final String votingType) {
         logger.info(
                 CONSENSUS_VOTING.getMarker(),
                 "Witness {} voted on {}. vote:{} type:{} diff:{}",
@@ -650,9 +631,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo
         // first round of an election. Vote TRUE for self-ancestors of those you firstSee. Don't
         // decide.
         EventImpl w = firstSee(voting, votedOn.getCreatorId());
-        while (w != null
-                && w.getRoundCreated() > voting.getRoundCreated() - 1
-                && selfParent(w) != null) {
+        while (w != null && w.getRoundCreated() > voting.getRoundCreated() - 1 && selfParent(w) != null) {
             w = firstSelfWitnessS(selfParent(w));
         }
         return votedOn == w;
@@ -706,8 +685,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo
 
         // all events that reach consensus during this method call, in consensus order
         final List<EventImpl> consensusEvents =
-                findConsensusEvents(
-                        judges, decidedRoundNumber, ConsensusUtils.generateWhitening(judges));
+                findConsensusEvents(judges, decidedRoundNumber, ConsensusUtils.generateWhitening(judges));
         // all rounds before this round are now decided, and appropriate events marked consensus
         consensusMetrics.consensusReachedOnRound();
 
@@ -736,8 +714,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo
     private List<EventImpl> findConsensusEvents(
             final List<EventImpl> judges, final long decidedRound, final byte[] whitening) {
         // the newly-consensus events where round received is "round"
-        final List<EventImpl> consensus =
-                search.commonAncestorsOf(judges, this::nonConsensusNonAncient);
+        final List<EventImpl> consensus = search.commonAncestorsOf(judges, this::nonConsensusNonAncient);
         // event has reached consensus, so set consensus timestamp, and set isConsensus to true
         consensus.forEach(e -> setIsConsensusTrue(e, decidedRound));
 
@@ -768,8 +745,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo
         event.setRoundReceived(receivedRound);
         event.setConsensus(true);
 
-        final ArrayList<Instant> times =
-                event.getRecTimes(); // list of when e1 first became ancestor of each ufw
+        final ArrayList<Instant> times = event.getRecTimes(); // list of when e1 first became ancestor of each ufw
         // sort ascending the received times. Used to find the median now, and the extended median
         // later.
         Collections.sort(times);
@@ -919,8 +895,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo
                 final EventImpl lssp = lastSee(sp, mm);
                 final long lsopGen = lsop == null ? 0 : lsop.getGeneration();
                 final long lsspGen = lssp == null ? 0 : lssp.getGeneration();
-                if ((round(lsop) > round(lssp))
-                        || ((lsopGen > lsspGen) && (firstSee(op, mm) == firstSee(sp, mm)))) {
+                if ((round(lsop) > round(lssp)) || ((lsopGen > lsspGen) && (firstSee(op, mm) == firstSee(sp, mm)))) {
                     x.setLastSee(mm, lsop);
                 } else {
                     x.setLastSee(mm, lssp);
@@ -994,19 +969,16 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo
             } else {
                 // the canonical witness by mm that is seen by x thru someone else
                 final EventImpl st = seeThru(x, mm, mm);
-                if (round(st)
-                        != prx) { // ignore if the canonical is in the wrong round, or doesn't exist
+                if (round(st) != prx) { // ignore if the canonical is in the wrong round, or doesn't exist
                     x.setStronglySeeP(mm, null);
                 } else {
                     long stake = 0;
                     for (long m3 = 0; m3 < numMembers; m3++) {
-                        if (seeThru(x, mm, m3)
-                                == st) { // only count intermediates that see the canonical witness
+                        if (seeThru(x, mm, m3) == st) { // only count intermediates that see the canonical witness
                             stake += addressBook.getAddress(m3).getStake();
                         }
                     }
-                    if (Utilities.isSuperMajority(
-                            stake, totalStake)) { // strongly see supermajority of
+                    if (Utilities.isSuperMajority(stake, totalStake)) { // strongly see supermajority of
                         // intermediates
                         x.setStronglySeeP(mm, st);
                     } else {

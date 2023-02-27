@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.test.consensus.framework;
 
 import com.swirlds.common.test.StakeGenerator;
 
-public record TestInput(
-        int numberOfNodes, StakeGenerator stakeGenerator, long seed, int eventsToGenerate) {}
+public record TestInput(int numberOfNodes, StakeGenerator stakeGenerator, long seed, int eventsToGenerate) {}

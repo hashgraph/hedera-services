@@ -20,7 +20,6 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.test.event.DynamicValue;
 import com.swirlds.platform.test.event.IndexedEvent;
 import com.swirlds.platform.test.event.source.EventSource;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;

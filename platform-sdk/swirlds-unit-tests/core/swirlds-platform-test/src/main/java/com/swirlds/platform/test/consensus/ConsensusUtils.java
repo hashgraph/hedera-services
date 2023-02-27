@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.test.consensus;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -96,18 +97,11 @@ public abstract class ConsensusUtils {
 
         if (!skipMinRound) { // after a restart, min round will not be equal
             assertEquals(
-                    gg1.getMinRoundGeneration(),
-                    gg2.getMinRoundGeneration(),
-                    "minRoundGeneration should be equal");
+                    gg1.getMinRoundGeneration(), gg2.getMinRoundGeneration(), "minRoundGeneration should be equal");
         }
         assertEquals(
-                gg1.getMinGenerationNonAncient(),
-                gg2.getMinGenerationNonAncient(),
-                "minGenNonAncient should be equal");
-        assertEquals(
-                gg1.getMaxRoundGeneration(),
-                gg2.getMaxRoundGeneration(),
-                "maxRoundGeneration should be equal");
+                gg1.getMinGenerationNonAncient(), gg2.getMinGenerationNonAncient(), "minGenNonAncient should be equal");
+        assertEquals(gg1.getMaxRoundGeneration(), gg2.getMaxRoundGeneration(), "maxRoundGeneration should be equal");
     }
 
     /**
@@ -122,17 +116,15 @@ public abstract class ConsensusUtils {
         Instant lastTimestamp = Instant.MIN;
         for (final Address address : generator.getAddressBook()) {
             final EventSource<?> source = generator.getSource((int) address.getId());
-            final List<IndexedEvent> eventsByCreator =
-                    Arrays.stream(signedState.getEvents())
-                            .map(IndexedEvent.class::cast)
-                            .filter(e -> e.getCreatorId() == address.getId())
-                            .toList();
+            final List<IndexedEvent> eventsByCreator = Arrays.stream(signedState.getEvents())
+                    .map(IndexedEvent.class::cast)
+                    .filter(e -> e.getCreatorId() == address.getId())
+                    .toList();
             eventsByCreator.forEach(e -> source.setLatestEvent(random, e));
-            final Instant creatorMax =
-                    eventsByCreator.stream()
-                            .max(Comparator.naturalOrder())
-                            .map(IndexedEvent::getTimeCreated)
-                            .orElse(Instant.MIN);
+            final Instant creatorMax = eventsByCreator.stream()
+                    .max(Comparator.naturalOrder())
+                    .map(IndexedEvent::getTimeCreated)
+                    .orElse(Instant.MIN);
             lastTimestamp = Collections.max(Arrays.asList(lastTimestamp, creatorMax));
         }
         generator.setPreviousTimestamp(lastTimestamp);

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.test.consensus;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -64,8 +65,7 @@ class AncestorSearchTest {
     @Test
     void commonAncestors() {
         final List<EventImpl> ancestors =
-                search.commonAncestorsOf(
-                        List.of(events.get(5), events.get(6), events.get(7)), e -> true);
+                search.commonAncestorsOf(List.of(events.get(5), events.get(6), events.get(7)), e -> true);
         assertEquals(1, ancestors.size());
         assertSame(events.get(1), ancestors.get(0));
         final HashSet<Instant> recTimes = new HashSet<>(events.get(1).getRecTimes());
@@ -74,18 +74,16 @@ class AncestorSearchTest {
         assertTrue(recTimes.contains(events.get(6).getTimeCreated()));
         assertTrue(recTimes.contains(events.get(7).getTimeCreated()));
 
-        IntStream.of(0, 2, 3, 4, 5, 6, 7, 8).forEach(i -> assertNull(events.get(i).getRecTimes()));
+        IntStream.of(0, 2, 3, 4, 5, 6, 7, 8)
+                .forEach(i -> assertNull(events.get(i).getRecTimes()));
         events.get(1).setRecTimes(null);
     }
 
     private void searchAndAssert() {
         // look for non-consensus ancestors of 8
-        final Map<Hash, EventImpl> ancestors =
-                StreamSupport.stream(
-                                Spliterators.spliteratorUnknownSize(
-                                        search.search(root, e -> !e.isConsensus()), 0),
-                                false)
-                        .collect(Collectors.toMap(EventImpl::getBaseHash, e -> e));
+        final Map<Hash, EventImpl> ancestors = StreamSupport.stream(
+                        Spliterators.spliteratorUnknownSize(search.search(root, e -> !e.isConsensus()), 0), false)
+                .collect(Collectors.toMap(EventImpl::getBaseHash, e -> e));
         assertEquals(6, ancestors.size());
         IntStream.of(2, 3, 4, 6, 7, 8)
                 .forEach(i -> assertTrue(ancestors.containsKey(events.get(i).getBaseHash())));

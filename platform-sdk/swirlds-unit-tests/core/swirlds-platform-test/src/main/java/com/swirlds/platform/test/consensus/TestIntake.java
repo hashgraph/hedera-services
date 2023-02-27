@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.test.consensus;
 
 import static org.mockito.Mockito.mock;
@@ -68,8 +69,7 @@ public class TestIntake implements LoadableFromSignedState {
         this(ab, NOOP_MINGEN, time);
     }
 
-    public TestIntake(
-            final AddressBook ab, final BiConsumer<Long, Long> minGenConsumer, final Time time) {
+    public TestIntake(final AddressBook ab, final BiConsumer<Long, Long> minGenConsumer, final Time time) {
         this(ab, minGenConsumer, time, ConfigurationHolder.getConfigData(ConsensusConfig.class));
     }
 
@@ -87,27 +87,21 @@ public class TestIntake implements LoadableFromSignedState {
             final Time time,
             final ConsensusConfig consensusConfig) {
         output = new ConsensusOutput(time);
-        consensus =
-                new ConsensusImpl(
-                        consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, minGenConsumer, ab);
+        consensus = new ConsensusImpl(consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, minGenConsumer, ab);
         shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
         final EventLinker linker =
-                new InOrderLinker(
-                        ConfigurationHolder.getConfigData(ConsensusConfig.class),
-                        parentFinder,
-                        l -> null);
+                new InOrderLinker(ConfigurationHolder.getConfigData(ConsensusConfig.class), parentFinder, l -> null);
         final EventObserverDispatcher dispatcher =
                 new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph), output);
-        intake =
-                new EventIntake(
-                        NodeId.createMain(0), // only used for logging
-                        linker,
-                        this::getConsensus,
-                        ab,
-                        dispatcher,
-                        ConsensusUtils.NOOP_INTAKE_CYCLE_STATS,
-                        shadowGraph);
+        intake = new EventIntake(
+                NodeId.createMain(0), // only used for logging
+                linker,
+                this::getConsensus,
+                ab,
+                dispatcher,
+                ConsensusUtils.NOOP_INTAKE_CYCLE_STATS,
+                shadowGraph);
     }
 
     /**
@@ -183,8 +177,7 @@ public class TestIntake implements LoadableFromSignedState {
     public void loadFromSignedState(final SignedState signedState) {
         consensus.loadFromSignedState(signedState);
         shadowGraph.clear();
-        shadowGraph.initFromEvents(
-                Arrays.asList(signedState.getEvents()), consensus.getMinRoundGeneration());
+        shadowGraph.initFromEvents(Arrays.asList(signedState.getEvents()), consensus.getMinRoundGeneration());
     }
 
     public void loadSnapshot(final ConsensusSnapshot snapshot) {

@@ -160,8 +160,7 @@ public class AddedEventMetrics implements EventAddedObserver {
             }
         } else {
             avgCreatedReceivedTime.update(
-                    event.getTimeCreated()
-                                    .until(event.getBaseEvent().getTimeReceived(), ChronoUnit.NANOS)
+                    event.getTimeCreated().until(event.getBaseEvent().getTimeReceived(), ChronoUnit.NANOS)
                             * NANOSECONDS_TO_SECONDS);
         }
 

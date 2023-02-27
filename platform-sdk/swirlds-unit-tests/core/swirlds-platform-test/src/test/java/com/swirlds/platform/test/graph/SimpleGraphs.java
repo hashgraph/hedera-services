@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.test.graph;
 
 import com.swirlds.platform.EventStrings;
@@ -39,26 +40,23 @@ public class SimpleGraphs {
                 EventBuilder.builder().setRandom(r).setCreatorId(1).buildGossipEvent();
         final GossipEvent e1 =
                 EventBuilder.builder().setRandom(r).setCreatorId(2).buildGossipEvent();
-        final GossipEvent e2 =
-                EventBuilder.builder()
-                        .setRandom(r)
-                        .setCreatorId(1)
-                        .setSelfParent(e0)
-                        .setOtherParent(e1)
-                        .buildGossipEvent();
-        final GossipEvent e3 =
-                EventBuilder.builder()
-                        .setRandom(r)
-                        .setCreatorId(1)
-                        .setSelfParent(e2)
-                        .buildGossipEvent();
-        final GossipEvent e4 =
-                EventBuilder.builder()
-                        .setRandom(r)
-                        .setCreatorId(2)
-                        .setSelfParent(e1)
-                        .setOtherParent(e2)
-                        .buildGossipEvent();
+        final GossipEvent e2 = EventBuilder.builder()
+                .setRandom(r)
+                .setCreatorId(1)
+                .setSelfParent(e0)
+                .setOtherParent(e1)
+                .buildGossipEvent();
+        final GossipEvent e3 = EventBuilder.builder()
+                .setRandom(r)
+                .setCreatorId(1)
+                .setSelfParent(e2)
+                .buildGossipEvent();
+        final GossipEvent e4 = EventBuilder.builder()
+                .setRandom(r)
+                .setCreatorId(2)
+                .setSelfParent(e1)
+                .setOtherParent(e2)
+                .buildGossipEvent();
         System.out.println("e0 " + EventStrings.toShortString(e0));
         System.out.println("e1 " + EventStrings.toShortString(e1));
         System.out.println("e2 " + EventStrings.toShortString(e2));
@@ -96,62 +94,54 @@ public class SimpleGraphs {
      */
     public static List<EventImpl> graph9e3n(final Random r) {
         // generation 0
-        final EventImpl e0 =
-                EventBuilder.builder()
-                        .setRandom(r)
-                        .setCreatorId(1)
-                        .setConsensus(true)
-                        .buildEventImpl();
-        final EventImpl e1 =
-                EventBuilder.builder()
-                        .setRandom(r)
-                        .setCreatorId(2)
-                        .setConsensus(true)
-                        .buildEventImpl();
+        final EventImpl e0 = EventBuilder.builder()
+                .setRandom(r)
+                .setCreatorId(1)
+                .setConsensus(true)
+                .buildEventImpl();
+        final EventImpl e1 = EventBuilder.builder()
+                .setRandom(r)
+                .setCreatorId(2)
+                .setConsensus(true)
+                .buildEventImpl();
         final EventImpl e2 = EventBuilder.builder().setRandom(r).setCreatorId(3).buildEventImpl();
         // generation 1
-        final EventImpl e3 =
-                EventBuilder.builder()
-                        .setRandom(r)
-                        .setCreatorId(1)
-                        .setSelfParent(e0)
-                        .setOtherParent(e1)
-                        .buildEventImpl();
-        final EventImpl e4 =
-                EventBuilder.builder()
-                        .setRandom(r)
-                        .setCreatorId(3)
-                        .setSelfParent(e2)
-                        .buildEventImpl();
+        final EventImpl e3 = EventBuilder.builder()
+                .setRandom(r)
+                .setCreatorId(1)
+                .setSelfParent(e0)
+                .setOtherParent(e1)
+                .buildEventImpl();
+        final EventImpl e4 = EventBuilder.builder()
+                .setRandom(r)
+                .setCreatorId(3)
+                .setSelfParent(e2)
+                .buildEventImpl();
         // generation 2
-        final EventImpl e5 =
-                EventBuilder.builder()
-                        .setRandom(r)
-                        .setCreatorId(1)
-                        .setSelfParent(e3)
-                        .buildEventImpl();
-        final EventImpl e6 =
-                EventBuilder.builder()
-                        .setRandom(r)
-                        .setCreatorId(2)
-                        .setSelfParent(e1)
-                        .setOtherParent(e3)
-                        .buildEventImpl();
-        final EventImpl e7 =
-                EventBuilder.builder()
-                        .setRandom(r)
-                        .setCreatorId(3)
-                        .setSelfParent(e4)
-                        .setOtherParent(e1)
-                        .buildEventImpl();
+        final EventImpl e5 = EventBuilder.builder()
+                .setRandom(r)
+                .setCreatorId(1)
+                .setSelfParent(e3)
+                .buildEventImpl();
+        final EventImpl e6 = EventBuilder.builder()
+                .setRandom(r)
+                .setCreatorId(2)
+                .setSelfParent(e1)
+                .setOtherParent(e3)
+                .buildEventImpl();
+        final EventImpl e7 = EventBuilder.builder()
+                .setRandom(r)
+                .setCreatorId(3)
+                .setSelfParent(e4)
+                .setOtherParent(e1)
+                .buildEventImpl();
         // generation 3
-        final EventImpl e8 =
-                EventBuilder.builder()
-                        .setRandom(r)
-                        .setCreatorId(3)
-                        .setSelfParent(e7)
-                        .setOtherParent(e6)
-                        .buildEventImpl();
+        final EventImpl e8 = EventBuilder.builder()
+                .setRandom(r)
+                .setCreatorId(3)
+                .setSelfParent(e7)
+                .setOtherParent(e6)
+                .buildEventImpl();
         return List.of(e0, e1, e2, e3, e4, e5, e6, e7, e8);
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.test.consensus.framework;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -56,8 +57,9 @@ public class ConsensusTestNode {
     public void restart() {
         // clear all generators
         eventEmitter.reset();
-        final ConsensusSnapshot snapshot =
-                Objects.requireNonNull(getOutput().getConsensusRounds().peekLast()).getSnapshot();
+        final ConsensusSnapshot snapshot = Objects.requireNonNull(
+                        getOutput().getConsensusRounds().peekLast())
+                .getSnapshot();
         intake.reset();
         intake.loadSnapshot(snapshot);
     }
@@ -72,24 +74,20 @@ public class ConsensusTestNode {
         // create a new context
         final EventEmitter<?> newEmitter = eventEmitter.cleanCopy();
         newEmitter.reset();
-        final ConsensusTestNode consensusTestNode =
-                new ConsensusTestNode(
-                        newEmitter,
-                        new TestIntake(newEmitter.getGraphGenerator().getAddressBook()));
+        final ConsensusTestNode consensusTestNode = new ConsensusTestNode(
+                newEmitter, new TestIntake(newEmitter.getGraphGenerator().getAddressBook()));
         consensusTestNode.intake.loadSnapshot(
-                Objects.requireNonNull(getOutput().getConsensusRounds().peekLast()).getSnapshot());
+                Objects.requireNonNull(getOutput().getConsensusRounds().peekLast())
+                        .getSnapshot());
 
-        assertTrue(
-                consensusTestNode.intake.getConsensusRounds().isEmpty(),
-                "we should not have reached consensus yet");
+        assertTrue(consensusTestNode.intake.getConsensusRounds().isEmpty(), "we should not have reached consensus yet");
 
         return consensusTestNode;
     }
 
     @SuppressWarnings("unused") // this will be used when adding a migration test
     private void loadSignedState(final SignedState signedState) {
-        ConsensusUtils.loadEventsIntoGenerator(
-                signedState, eventEmitter.getGraphGenerator(), random);
+        ConsensusUtils.loadEventsIntoGenerator(signedState, eventEmitter.getGraphGenerator(), random);
         intake.loadFromSignedState(signedState);
     }
 

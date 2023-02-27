@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.consensus;
 
 import static com.swirlds.logging.LogMarker.CONSENSUS_VOTING;
@@ -37,8 +38,7 @@ public final class CandidateWitness {
      *     witness still don't have their fame decided
      * @param electionIndex the index of the witness in the current election
      */
-    public CandidateWitness(
-            final EventImpl witness, final IntReference numUnknownFame, final int electionIndex) {
+    public CandidateWitness(final EventImpl witness, final IntReference numUnknownFame, final int electionIndex) {
         this.witness = witness;
         this.numUnknownFame = numUnknownFame;
         this.electionIndex = electionIndex;
@@ -103,10 +103,7 @@ public final class CandidateWitness {
                 numUnknownFame::get);
 
         if (numUnknownFame.equalsInt(0)) {
-            LOG.info(
-                    CONSENSUS_VOTING.getMarker(),
-                    "Fame decided for round {}",
-                    witness.getRoundCreated());
+            LOG.info(CONSENSUS_VOTING.getMarker(), "Fame decided for round {}", witness.getRoundCreated());
         }
     }
 }

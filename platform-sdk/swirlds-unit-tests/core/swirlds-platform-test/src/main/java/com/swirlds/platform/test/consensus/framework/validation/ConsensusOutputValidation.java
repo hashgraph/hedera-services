@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.test.consensus.framework.validation;
 
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;

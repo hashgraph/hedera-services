@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.consensus;
 
 import static com.swirlds.platform.consensus.ConsensusConstants.MIN_TRANS_TIMESTAMP_INCR_NANOS;
@@ -55,12 +56,9 @@ public final class ConsensusUtils {
         // adds minTransTimestampIncrNanos
         Instant t = lastTransTimestamp.plusNanos(MIN_TRANS_TIMESTAMP_INCR_NANOS);
         // rounds up to the nearest multiple of minTransTimestampIncrNanos
-        t =
-                t.plusNanos(
-                        MIN_TRANS_TIMESTAMP_INCR_NANOS
-                                - 1
-                                - ((MIN_TRANS_TIMESTAMP_INCR_NANOS + t.getNano() - 1)
-                                        % MIN_TRANS_TIMESTAMP_INCR_NANOS));
+        t = t.plusNanos(MIN_TRANS_TIMESTAMP_INCR_NANOS
+                - 1
+                - ((MIN_TRANS_TIMESTAMP_INCR_NANOS + t.getNano() - 1) % MIN_TRANS_TIMESTAMP_INCR_NANOS));
         return t;
     }
 

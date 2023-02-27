@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.consensus;
 
 import com.swirlds.common.config.ConsensusConfig;
@@ -42,8 +43,7 @@ public class ConsensusRounds {
     private final ElectionRound electionRound = new ElectionRound();
 
     /** Constructs an empty object */
-    public ConsensusRounds(
-            final ConsensusConfig config, final SequentialRingBuffer<MinGenInfo> minGenStorage) {
+    public ConsensusRounds(final ConsensusConfig config, final SequentialRingBuffer<MinGenInfo> minGenStorage) {
         this.config = config;
         this.minGenStorage = minGenStorage;
         reset();
@@ -109,8 +109,7 @@ public class ConsensusRounds {
      */
     public boolean isOlderThanDecidedRoundGeneration(final EventImpl event) {
         return isAnyRoundDecided() // if no round has been decided, it can't be older
-                && minGenStorage.get(getLastRoundDecided()).minimumGeneration()
-                        > event.getGeneration();
+                && minGenStorage.get(getLastRoundDecided()).minimumGeneration() > event.getGeneration();
     }
 
     /**
@@ -190,8 +189,7 @@ public class ConsensusRounds {
      */
     public List<MinGenInfo> getMinGenInfo() {
         final long oldestNonAncientRound =
-                RoundCalculationUtils.getOldestNonAncientRound(
-                        config.roundsNonAncient(), getFameDecidedBelow());
+                RoundCalculationUtils.getOldestNonAncientRound(config.roundsNonAncient(), getFameDecidedBelow());
         return LongStream.range(oldestNonAncientRound, getFameDecidedBelow())
                 .mapToObj(this::getMinGen)
                 .filter(Objects::nonNull)
@@ -206,8 +204,7 @@ public class ConsensusRounds {
                     "Missing round {}. Fame decided below {}, oldest non-ancient round {}",
                     round,
                     getFameDecidedBelow(),
-                    RoundCalculationUtils.getOldestNonAncientRound(
-                            config.roundsNonAncient(), getFameDecidedBelow()));
+                    RoundCalculationUtils.getOldestNonAncientRound(config.roundsNonAncient(), getFameDecidedBelow()));
             return null;
         }
         return minGenInfo;

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.test.event;
 
 import com.swirlds.common.system.events.BaseEventHashedData;
@@ -36,8 +37,7 @@ public class IndexedEvent extends EventImpl {
     public IndexedEvent() {}
 
     public IndexedEvent(
-            final BaseEventHashedData baseEventHashedData,
-            final BaseEventUnhashedData baseEventUnhashedData) {
+            final BaseEventHashedData baseEventHashedData, final BaseEventUnhashedData baseEventUnhashedData) {
         super(baseEventHashedData, baseEventUnhashedData);
     }
 

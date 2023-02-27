@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.test.consensus.framework.validation;
 
 import static com.swirlds.platform.test.event.EventUtils.countConsensusAndStaleEvents;
@@ -120,13 +121,9 @@ public class EventRatioValidation implements ConsensusOutputValidation {
 
         assertTrue(
                 staleRatio >= minimumStaleRatio,
-                String.format(
-                        "Stale ratio %s is less than the expected minimum %s",
-                        staleRatio, minimumStaleRatio));
+                String.format("Stale ratio %s is less than the expected minimum %s", staleRatio, minimumStaleRatio));
         assertTrue(
                 staleRatio <= maximumStaleRatio,
-                String.format(
-                        "Stale ratio %s is more than the expected maximum %s",
-                        staleRatio, maximumStaleRatio));
+                String.format("Stale ratio %s is more than the expected maximum %s", staleRatio, maximumStaleRatio));
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.test.consensus.framework.validation;
 
 import java.util.ArrayList;
@@ -20,12 +21,10 @@ import java.util.List;
 
 public class Validations {
     private EventRatioValidation ratioValidation = EventRatioValidation.standard();
-    private final List<ConsensusOutputValidation> all =
-            new ArrayList<>(
-                    List.of(
-                            InputEventsValidation::validateInputsAreTheSame,
-                            ConsensusRoundValidation::validateConsensusRounds,
-                            TimestampChecker::validateConsensusTimestamps));
+    private final List<ConsensusOutputValidation> all = new ArrayList<>(List.of(
+            InputEventsValidation::validateInputsAreTheSame,
+            ConsensusRoundValidation::validateConsensusRounds,
+            TimestampChecker::validateConsensusTimestamps));
 
     public static Validations standard() {
         return new Validations();

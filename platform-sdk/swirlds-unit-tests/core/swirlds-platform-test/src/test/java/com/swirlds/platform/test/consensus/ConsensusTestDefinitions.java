@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.test.consensus;
 
 import static com.swirlds.platform.test.event.EventUtils.integerPowerDistribution;
@@ -58,12 +59,9 @@ public final class ConsensusTestDefinitions {
                 .setTestInput(input)
                 .build()
                 .generateAllEvents()
-                .validateAndClear(
-                        Validations.standard()
-                                .ratios(
-                                        EventRatioValidation.standard()
-                                                .setMinimumConsensusRatio(
-                                                        0.9 - (0.05 * input.numberOfNodes()))));
+                .validateAndClear(Validations.standard()
+                        .ratios(EventRatioValidation.standard()
+                                .setMinimumConsensusRatio(0.9 - (0.05 * input.numberOfNodes()))));
     }
 
     /** Send an ancient event to consensus and check if it is marked stale. */
@@ -73,15 +71,12 @@ public final class ConsensusTestDefinitions {
         // ancient
         final List<Integer> nodePriorities =
                 IntStream.range(0, input.numberOfNodes()).boxed().toList();
-        final ConsensusTestOrchestrator orchestrator =
-                OrchestratorBuilder.builder()
-                        .setTestInput(input)
-                        .setNode1EventEmitterGenerator(
-                                (graphGenerator, seed) ->
-                                        new PriorityEventEmitter(graphGenerator, nodePriorities))
-                        .setNode2EventEmitterGenerator(
-                                (graphGenerator, seed) -> new StandardEventEmitter(graphGenerator))
-                        .build();
+        final ConsensusTestOrchestrator orchestrator = OrchestratorBuilder.builder()
+                .setTestInput(input)
+                .setNode1EventEmitterGenerator(
+                        (graphGenerator, seed) -> new PriorityEventEmitter(graphGenerator, nodePriorities))
+                .setNode2EventEmitterGenerator((graphGenerator, seed) -> new StandardEventEmitter(graphGenerator))
+                .build();
         final int dyingNode = input.numberOfNodes() - 1;
 
         // Phase 1: all nodes are working normally
@@ -101,53 +96,49 @@ public final class ConsensusTestDefinitions {
         orchestrator.generateEvents(0.70);
 
         orchestrator.validateAndClear(
-                Validations.standard()
-                        .ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
+                Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
     }
 
     /** Test consensus in the presence of forks. */
     public static void forkingTests(final TestInput input) {
         // Use a custom event source generator that creates forking event sources
-        final Function<List<Long>, List<EventSource<?>>> eventSourceBuilder =
-                nodeStakes -> {
-                    final double forkProbability = 0.1;
-                    final int numberOfForkedBranches = 10;
-                    final long totalStake = nodeStakes.stream().reduce(0L, Long::sum);
+        final Function<List<Long>, List<EventSource<?>>> eventSourceBuilder = nodeStakes -> {
+            final double forkProbability = 0.1;
+            final int numberOfForkedBranches = 10;
+            final long totalStake = nodeStakes.stream().reduce(0L, Long::sum);
 
-                    // Determine a single forking event source that has less than a strong minority
-                    // of stake
-                    int forkingNodeId = -1;
-                    for (int i = 0; i < nodeStakes.size(); i++) {
-                        final long stake = nodeStakes.get(i);
-                        if (!Utilities.isStrongMinority(stake, totalStake)) {
-                            forkingNodeId = i;
-                            break;
-                        }
-                    }
+            // Determine a single forking event source that has less than a strong minority
+            // of stake
+            int forkingNodeId = -1;
+            for (int i = 0; i < nodeStakes.size(); i++) {
+                final long stake = nodeStakes.get(i);
+                if (!Utilities.isStrongMinority(stake, totalStake)) {
+                    forkingNodeId = i;
+                    break;
+                }
+            }
 
-                    final List<EventSource<?>> eventSources = new ArrayList<>(nodeStakes.size());
-                    for (int i = 0; i < nodeStakes.size(); i++) {
-                        final long stake = nodeStakes.get(i);
-                        if (i == forkingNodeId) {
-                            eventSources.add(
-                                    new ForkingEventSource(stake)
-                                            .setForkProbability(forkProbability)
-                                            .setMaximumBranchCount(numberOfForkedBranches));
-                        } else {
-                            eventSources.add(new StandardEventSource(stake));
-                        }
-                    }
-                    return eventSources;
-                };
+            final List<EventSource<?>> eventSources = new ArrayList<>(nodeStakes.size());
+            for (int i = 0; i < nodeStakes.size(); i++) {
+                final long stake = nodeStakes.get(i);
+                if (i == forkingNodeId) {
+                    eventSources.add(new ForkingEventSource(stake)
+                            .setForkProbability(forkProbability)
+                            .setMaximumBranchCount(numberOfForkedBranches));
+                } else {
+                    eventSources.add(new StandardEventSource(stake));
+                }
+            }
+            return eventSources;
+        };
 
         OrchestratorBuilder.builder()
                 .setTestInput(input)
                 .setEventSourceBuilder(eventSourceBuilder)
                 .build()
                 .generateEvents(1.0)
-                .validateAndClear(
-                        Validations.standard()
-                                .ratios(EventRatioValidation.standard().setMaximumStaleRatio(0.1)));
+                .validateAndClear(Validations.standard()
+                        .ratios(EventRatioValidation.standard().setMaximumStaleRatio(0.1)));
     }
 
     /**
@@ -163,12 +154,9 @@ public final class ConsensusTestDefinitions {
         // Test setup
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
-        final List<List<Double>> fullyConnected =
-                createBalancedOtherParentMatrix(input.numberOfNodes());
-        final List<List<Double>> partitioned =
-                createPartitionedOtherParentAffinityMatrix(
-                        input.numberOfNodes(),
-                        Util.getStrongMinorityNodes(orchestrator.getStakes()));
+        final List<List<Double>> fullyConnected = createBalancedOtherParentMatrix(input.numberOfNodes());
+        final List<List<Double>> partitioned = createPartitionedOtherParentAffinityMatrix(
+                input.numberOfNodes(), Util.getStrongMinorityNodes(orchestrator.getStakes()));
 
         //
         // Phase 1
@@ -190,12 +178,10 @@ public final class ConsensusTestDefinitions {
         // validation: almost no events will reach consensus
         //   (it's possible a few tail events may reach consensus right at the beginning of the
         // phase)
-        orchestrator.validateAndClear(
-                Validations.standard()
-                        .ratios(
-                                EventRatioValidation.standard()
-                                        .setMinimumConsensusRatio(0.0)
-                                        .setMaximumConsensusRatio(0.5)));
+        orchestrator.validateAndClear(Validations.standard()
+                .ratios(EventRatioValidation.standard()
+                        .setMinimumConsensusRatio(0.0)
+                        .setMaximumConsensusRatio(0.5)));
 
         //
         // Phase 3
@@ -205,12 +191,10 @@ public final class ConsensusTestDefinitions {
         // execution: generate a third of the total events
         orchestrator.generateEvents(0.34);
         // validation: we expect for phase 2 and phase 3 events to reach consensus
-        orchestrator.validateAndClear(
-                Validations.standard()
-                        .ratios(
-                                EventRatioValidation.standard()
-                                        .setMinimumConsensusRatio(0.8)
-                                        .setMaximumConsensusRatio(1.5)));
+        orchestrator.validateAndClear(Validations.standard()
+                .ratios(EventRatioValidation.standard()
+                        .setMinimumConsensusRatio(0.8)
+                        .setMaximumConsensusRatio(1.5)));
     }
 
     /**
@@ -227,10 +211,8 @@ public final class ConsensusTestDefinitions {
         // again.
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
-        final List<List<Double>> fullyConnected =
-                createBalancedOtherParentMatrix(input.numberOfNodes());
-        final Set<Integer> partitionedNodes =
-                Util.getSubStrongMinorityNodes(orchestrator.getStakes());
+        final List<List<Double>> fullyConnected = createBalancedOtherParentMatrix(input.numberOfNodes());
+        final Set<Integer> partitionedNodes = Util.getSubStrongMinorityNodes(orchestrator.getStakes());
         final int numPartitionedNodes = partitionedNodes.size();
         // Less than a strong minority of nodes' stake are partitioned from the network
         final List<List<Double>> partitioned =
@@ -249,22 +231,20 @@ public final class ConsensusTestDefinitions {
         // the min and max consensus ratio relative to the number of nodes in the quorum partition.
         orchestrator.setOtherParentAffinity(partitioned);
         orchestrator.generateEvents(0.33);
-        orchestrator.validateAndClear(
-                Validations.standard()
-                        .ratios(
-                                EventRatioValidation.standard()
-                                        .setMinimumConsensusRatio(consNodeRatio * 0.8)
-                                        // Some seeds cause the nodes in the quorum partition to
-                                        // create more than it's fair
-                                        // share of events, so we allow a little more than the exact
-                                        // ratio of nodes in that
-                                        // partition
-                                        .setMaximumConsensusRatio(consNodeRatio * 1.1)
-                                        // Many events in the sub-quorum partition will become
-                                        // stale. 0.15 is somewhat
-                                        // arbitrary.
-                                        .setMinimumStaleRatio(nonConsNodeRatio * 0.15)
-                                        .setMaximumStaleRatio(nonConsNodeRatio)));
+        orchestrator.validateAndClear(Validations.standard()
+                .ratios(EventRatioValidation.standard()
+                        .setMinimumConsensusRatio(consNodeRatio * 0.8)
+                        // Some seeds cause the nodes in the quorum partition to
+                        // create more than it's fair
+                        // share of events, so we allow a little more than the exact
+                        // ratio of nodes in that
+                        // partition
+                        .setMaximumConsensusRatio(consNodeRatio * 1.1)
+                        // Many events in the sub-quorum partition will become
+                        // stale. 0.15 is somewhat
+                        // arbitrary.
+                        .setMinimumStaleRatio(nonConsNodeRatio * 0.15)
+                        .setMaximumStaleRatio(nonConsNodeRatio)));
 
         // In phase 3 consensus should return to normal.
         orchestrator.setOtherParentAffinity(fullyConnected);
@@ -297,41 +277,37 @@ public final class ConsensusTestDefinitions {
         orchestrator.setOtherParentAffinity(affinity);
 
         orchestrator.generateAllEvents();
-        orchestrator.validateAndClear(
-                Validations.standard()
-                        .ratios(
-                                EventRatioValidation.standard()
-                                        // We expect for events to eventually reach consensus, but
-                                        // there may be a long lag
-                                        // between event creation and consensus. This means that the
-                                        // minimum consensus ratio
-                                        // needs to be lower than usual.
-                                        .setMinimumConsensusRatio(0.7)
-                                        .setMaximumStaleRatio(0.05)));
+        orchestrator.validateAndClear(Validations.standard()
+                .ratios(EventRatioValidation.standard()
+                        // We expect for events to eventually reach consensus, but
+                        // there may be a long lag
+                        // between event creation and consensus. This means that the
+                        // minimum consensus ratio
+                        // needs to be lower than usual.
+                        .setMinimumConsensusRatio(0.7)
+                        .setMaximumStaleRatio(0.05)));
     }
 
     public static void variableRateTests(final TestInput input) {
         // Set the event source generator to create variable rate event sources
-        final Consumer<EventSource<?>> configureVariable =
-                es -> {
-                    final DynamicValue<Double> variableEventWeight =
-                            (Random r, long eventIndex, Double previousValue) -> {
-                                if (previousValue == null) {
-                                    return 1.0;
-                                } else {
-                                    double value = previousValue;
-                                    final double nextDouble = r.nextDouble();
-                                    if (nextDouble < 0.1) {
-                                        // 10% chance that this node will speed up or slow down
-                                        // Nodes will never have a weight less than 0.1 though
-                                        final double nextGaussian = r.nextGaussian();
-                                        value = Math.max(0.1, previousValue + nextGaussian * 0.1);
-                                    }
-                                    return value;
-                                }
-                            };
-                    es.setNewEventWeight(variableEventWeight);
-                };
+        final Consumer<EventSource<?>> configureVariable = es -> {
+            final DynamicValue<Double> variableEventWeight = (Random r, long eventIndex, Double previousValue) -> {
+                if (previousValue == null) {
+                    return 1.0;
+                } else {
+                    double value = previousValue;
+                    final double nextDouble = r.nextDouble();
+                    if (nextDouble < 0.1) {
+                        // 10% chance that this node will speed up or slow down
+                        // Nodes will never have a weight less than 0.1 though
+                        final double nextGaussian = r.nextGaussian();
+                        value = Math.max(0.1, previousValue + nextGaussian * 0.1);
+                    }
+                    return value;
+                }
+            };
+            es.setNewEventWeight(variableEventWeight);
+        };
 
         OrchestratorBuilder.builder()
                 .setTestInput(input)
@@ -347,19 +323,14 @@ public final class ConsensusTestDefinitions {
         final int staleNodeProvider = input.numberOfNodes() - 1;
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
-        orchestrator.configGenerators(
-                g ->
-                        g.getSource(staleNodeProvider)
-                                .setRecentEventRetentionSize(5000)
-                                .setRequestedOtherParentAgeDistribution(
-                                        integerPowerDistribution(0.002, 300)));
+        orchestrator.configGenerators(g -> g.getSource(staleNodeProvider)
+                .setRecentEventRetentionSize(5000)
+                .setRequestedOtherParentAgeDistribution(integerPowerDistribution(0.002, 300)));
         orchestrator.generateAllEvents();
-        orchestrator.validateAndClear(
-                Validations.standard()
-                        .ratios(
-                                EventRatioValidation.standard()
-                                        .setMinimumConsensusRatio(0.3)
-                                        .setMaximumStaleRatio(0.2)));
+        orchestrator.validateAndClear(Validations.standard()
+                .ratios(EventRatioValidation.standard()
+                        .setMinimumConsensusRatio(0.3)
+                        .setMaximumStaleRatio(0.2)));
     }
 
     /** One node has a tendency to provide stale other parents (when they are requested). */
@@ -368,20 +339,16 @@ public final class ConsensusTestDefinitions {
         final int staleNodeProvider = input.numberOfNodes() - 1;
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
-        orchestrator.configGenerators(
-                g ->
-                        g.getSource(staleNodeProvider)
-                                .setRecentEventRetentionSize(5000)
-                                .setProvidedOtherParentAgeDistribution(
-                                        integerPowerDistribution(0.002, 300)));
+        orchestrator.configGenerators(g -> g.getSource(staleNodeProvider)
+                .setRecentEventRetentionSize(5000)
+                .setProvidedOtherParentAgeDistribution(integerPowerDistribution(0.002, 300)));
         orchestrator.generateAllEvents();
         /* If the node providing old events as other parents has a strong minority of stake, rounds become very
         large because many more events are required to strongly see witnesses. Larger rounds means fewer stale
         events. Possibly no stale events at all if there are not enough events to create enough rounds so that
         generations are considered ancient. */
         orchestrator.validateAndClear(
-                Validations.standard()
-                        .ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.2)));
+                Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.2)));
     }
 
     /**
@@ -414,12 +381,10 @@ public final class ConsensusTestDefinitions {
         // validation: no events should reach consensus and should have a created round no higher
         // than the max of its
         // parents' created rounds
-        orchestrator.validateAndClear(
-                Validations.standard()
-                        .ratios(
-                                EventRatioValidation.standard()
-                                        .setMinimumConsensusRatio(0.0)
-                                        .setMaximumConsensusRatio(0.0)));
+        orchestrator.validateAndClear(Validations.standard()
+                .ratios(EventRatioValidation.standard()
+                        .setMinimumConsensusRatio(0.0)
+                        .setMaximumConsensusRatio(0.0)));
 
         //
         // Phase 3
@@ -439,8 +404,7 @@ public final class ConsensusTestDefinitions {
         // Test setup
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
-        final Set<Integer> subQuorumNodesIds =
-                Util.getSubStrongMinorityNodes(orchestrator.getStakes());
+        final Set<Integer> subQuorumNodesIds = Util.getSubStrongMinorityNodes(orchestrator.getStakes());
 
         //
         // Phase 1
@@ -483,14 +447,10 @@ public final class ConsensusTestDefinitions {
         OrchestratorBuilder.builder()
                 .setTestInput(input)
                 .build()
-                .configGenerators(
-                        g -> ((StandardGraphGenerator) g).setSimultaneousEventFraction(0.5))
+                .configGenerators(g -> ((StandardGraphGenerator) g).setSimultaneousEventFraction(0.5))
                 .generateAllEvents()
-                .validateAndClear(
-                        Validations.standard()
-                                .ratios(
-                                        EventRatioValidation.standard()
-                                                .setMinimumConsensusRatio(0.3)));
+                .validateAndClear(Validations.standard()
+                        .ratios(EventRatioValidation.standard().setMinimumConsensusRatio(0.3)));
     }
 
     public static void stale(final TestInput input) {
@@ -502,21 +462,18 @@ public final class ConsensusTestDefinitions {
         orchestrator.generateEvents(0.1);
 
         // Phase 2: node 0 is never used as an other-parent
-        orchestrator.setOtherParentAffinity(
-                createShunnedNodeOtherParentAffinityMatrix(input.numberOfNodes(), 0));
+        orchestrator.setOtherParentAffinity(createShunnedNodeOtherParentAffinityMatrix(input.numberOfNodes(), 0));
         orchestrator.generateEvents(0.8);
 
         // Phase 3: all nodes are used as other-parents, again
         orchestrator.setOtherParentAffinity(createBalancedOtherParentMatrix(input.numberOfNodes()));
         orchestrator.generateEvents(0.1);
-        orchestrator.validateAndClear(
-                Validations.standard()
-                        .ratios(
-                                EventRatioValidation.blank()
-                                        // if the shunned node has a lot of stake, not many events
-                                        // will reach consensus
-                                        .setMinimumConsensusRatio(0.1)
-                                        .setMinimumStaleRatio(0.1)));
+        orchestrator.validateAndClear(Validations.standard()
+                .ratios(EventRatioValidation.blank()
+                        // if the shunned node has a lot of stake, not many events
+                        // will reach consensus
+                        .setMinimumConsensusRatio(0.1)
+                        .setMinimumStaleRatio(0.1)));
     }
 
     /**
@@ -530,14 +487,12 @@ public final class ConsensusTestDefinitions {
 
         orchestrator.generateEvents(0.5);
         orchestrator.validate(
-                Validations.standard()
-                        .ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
+                Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
         orchestrator.restartAllNodes();
         orchestrator.clearOutput();
         orchestrator.generateEvents(0.5);
         orchestrator.validateAndClear(
-                Validations.standard()
-                        .ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
+                Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
     }
 
     /** Simulates a reconnect */
@@ -547,8 +502,7 @@ public final class ConsensusTestDefinitions {
 
         orchestrator.generateEvents(0.5);
         orchestrator.validate(
-                Validations.standard()
-                        .ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
+                Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
         orchestrator.addReconnectNode();
         // now both consensus objects should be in the same state
         // ConsensusUtils.checkGenerations(original.getConsensus(), reconnect.getConsensus(), true);
@@ -556,7 +510,6 @@ public final class ConsensusTestDefinitions {
         orchestrator.clearOutput();
         orchestrator.generateEvents(0.5);
         orchestrator.validateAndClear(
-                Validations.standard()
-                        .ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
+                Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
     }
 }

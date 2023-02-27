@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.consensus;
 
 import com.swirlds.common.config.ConsensusConfig;
@@ -68,8 +69,7 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
      * @param config consensus configuration
      * @param storage round storage
      */
-    public ThreadSafeConsensusInfo(
-            final ConsensusConfig config, final SequentialRingBuffer<MinGenInfo> storage) {
+    public ThreadSafeConsensusInfo(final ConsensusConfig config, final SequentialRingBuffer<MinGenInfo> storage) {
         this.config = config;
         this.storage = storage;
     }
@@ -133,8 +133,7 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
      */
     private void updateMinGenNonAncient() {
         final long nonAncientRound =
-                RoundCalculationUtils.getOldestNonAncientRound(
-                        config.roundsNonAncient(), fameDecidedBelow);
+                RoundCalculationUtils.getOldestNonAncientRound(config.roundsNonAncient(), fameDecidedBelow);
         final MinGenInfo info = storage.get(nonAncientRound);
         if (info == null) {
             // should never happen

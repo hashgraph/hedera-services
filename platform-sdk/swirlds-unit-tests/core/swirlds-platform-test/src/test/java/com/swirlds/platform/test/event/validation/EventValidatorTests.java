@@ -104,8 +104,7 @@ class EventValidatorTests {
     void eventDeduplication() {
         final AtomicBoolean isDuplicate = new AtomicBoolean(true);
         final EventIntakeMetrics metrics = mock(EventIntakeMetrics.class);
-        final EventDeduplication deduplication =
-                new EventDeduplication(e -> isDuplicate.get(), metrics);
+        final EventDeduplication deduplication = new EventDeduplication(e -> isDuplicate.get(), metrics);
         final GossipEvent event = EventBuilder.builder().buildGossipEvent();
 
         assertFalse(deduplication.isEventValid(event), "it should be a duplicate, so not valid");
@@ -127,8 +126,7 @@ class EventValidatorTests {
     @ValueSource(ints = {100, 1999, 2000, 2001, 10_000})
     void accumulatedTransactionSize(final int transAmount) {
         final int maxTransactionBytesPerEvent = 2000;
-        final GossipEventValidator validator =
-                new TransactionSizeValidator(maxTransactionBytesPerEvent);
+        final GossipEventValidator validator = new TransactionSizeValidator(maxTransactionBytesPerEvent);
         final GossipEvent event =
                 EventBuilder.builder().setNumberOfTransactions(transAmount).buildGossipEvent();
 
@@ -187,23 +185,16 @@ class EventValidatorTests {
                 EventBuilder.builder().setTimestamp(time).buildGossipEvent();
         final EventImpl event = new EventImpl(gossipEvent, null, null);
 
-        event.setSelfParent(
-                new EventImpl(
-                        EventBuilder.builder().setTimestamp(time.plusNanos(100)).buildGossipEvent(),
-                        null,
-                        null));
+        event.setSelfParent(new EventImpl(
+                EventBuilder.builder().setTimestamp(time.plusNanos(100)).buildGossipEvent(), null, null));
+        assertFalse(StaticValidators.isValidTimeCreated(event), "should be invalid");
+
+        event.setSelfParent(new EventImpl(
+                EventBuilder.builder().setTimestamp(time.plusNanos(1)).buildGossipEvent(), null, null));
         assertFalse(StaticValidators.isValidTimeCreated(event), "should be invalid");
 
         event.setSelfParent(
-                new EventImpl(
-                        EventBuilder.builder().setTimestamp(time.plusNanos(1)).buildGossipEvent(),
-                        null,
-                        null));
-        assertFalse(StaticValidators.isValidTimeCreated(event), "should be invalid");
-
-        event.setSelfParent(
-                new EventImpl(
-                        EventBuilder.builder().setTimestamp(time).buildGossipEvent(), null, null));
+                new EventImpl(EventBuilder.builder().setTimestamp(time).buildGossipEvent(), null, null));
         assertFalse(StaticValidators.isValidTimeCreated(event), "should be invalid");
     }
 }

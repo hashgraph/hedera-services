@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.consensus;
 
 import com.swirlds.platform.internal.EventImpl;
@@ -54,8 +55,7 @@ public class AncestorSearch {
      * @param valid checks if the event should be part of the search
      * @return a list of all common ancestors
      */
-    public List<EventImpl> commonAncestorsOf(
-            final List<EventImpl> events, final Predicate<EventImpl> valid) {
+    public List<EventImpl> commonAncestorsOf(final List<EventImpl> events, final Predicate<EventImpl> valid) {
         // each event visited by iterator from at least one of the provided events
         final ArrayList<EventImpl> visited = new ArrayList<>();
         // Do a non-recursive search of the hashgraph, without using the Java stack, and being
@@ -74,15 +74,14 @@ public class AncestorSearch {
         }
 
         final ArrayList<EventImpl> commonAncestors = new ArrayList<>();
-        visited.forEach(
-                e -> {
-                    if (e.getRecTimes().size() == events.size()) {
-                        commonAncestors.add(e);
-                    } else {
-                        // reclaim the memory for the list of received times
-                        e.setRecTimes(null);
-                    }
-                });
+        visited.forEach(e -> {
+            if (e.getRecTimes().size() == events.size()) {
+                commonAncestors.add(e);
+            } else {
+                // reclaim the memory for the list of received times
+                e.setRecTimes(null);
+            }
+        });
         return commonAncestors;
     }
 }

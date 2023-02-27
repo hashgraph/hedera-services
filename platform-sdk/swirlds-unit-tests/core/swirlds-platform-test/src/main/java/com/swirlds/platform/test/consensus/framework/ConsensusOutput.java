@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.test.consensus.framework;
 
 import com.swirlds.common.time.Time;
@@ -31,8 +32,7 @@ import java.util.List;
  * Stores all output of consensus used in testing. This output can be used to validate consensus
  * results.
  */
-public class ConsensusOutput
-        implements EventAddedObserver, ConsensusRoundObserver, StaleEventObserver, Clearable {
+public class ConsensusOutput implements EventAddedObserver, ConsensusRoundObserver, StaleEventObserver, Clearable {
     private final Time time;
     private final LinkedList<ConsensusRound> consensusRounds;
     private final LinkedList<EventImpl> addedEvents;
@@ -84,10 +84,9 @@ public class ConsensusOutput
 
     public List<EventImpl> sortedAddedEvents() {
         final List<EventImpl> sortedEvents = new ArrayList<>(addedEvents);
-        sortedEvents.sort(
-                Comparator.comparingLong(EventImpl::getGeneration)
-                        .thenComparingLong(EventImpl::getCreatorId)
-                        .thenComparing(EventImpl::getBaseHash));
+        sortedEvents.sort(Comparator.comparingLong(EventImpl::getGeneration)
+                .thenComparingLong(EventImpl::getCreatorId)
+                .thenComparing(EventImpl::getBaseHash));
         return sortedEvents;
     }
 

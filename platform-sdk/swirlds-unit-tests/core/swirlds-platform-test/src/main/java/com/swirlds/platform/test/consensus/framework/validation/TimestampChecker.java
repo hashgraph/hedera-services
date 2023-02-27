@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.test.consensus.framework.validation;
 
 import com.swirlds.platform.internal.ConsensusRound;
@@ -21,8 +22,7 @@ import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import org.junit.jupiter.api.Assertions;
 
 public class TimestampChecker {
-    public static void validateConsensusTimestamps(
-            final ConsensusOutput output1, final ConsensusOutput ignored) {
+    public static void validateConsensusTimestamps(final ConsensusOutput output1, final ConsensusOutput ignored) {
         EventImpl previousConsensusEvent = null;
 
         for (final ConsensusRound round : output1.getConsensusRounds()) {
@@ -32,8 +32,7 @@ public class TimestampChecker {
                     continue;
                 }
                 Assertions.assertTrue(
-                        e.getConsensusTimestamp()
-                                .isAfter(previousConsensusEvent.getConsensusTimestamp()),
+                        e.getConsensusTimestamp().isAfter(previousConsensusEvent.getConsensusTimestamp()),
                         String.format(
                                 "Consensus time does not increase!%n"
                                         + "Event %s consOrder:%s consTime:%s%n"

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.test.consensus.framework.validation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,15 +28,15 @@ import java.util.List;
 import java.util.Objects;
 
 public class ConsensusRoundValidation {
-    public static void validateConsensusRounds(
-            final ConsensusOutput output1, final ConsensusOutput output2) {
+    public static void validateConsensusRounds(final ConsensusOutput output1, final ConsensusOutput output2) {
         assertEquals(
                 output1.getConsensusRounds().size(),
                 output2.getConsensusRounds().size(),
                 String.format(
                         "The number of consensus rounds is not the same."
                                 + "output1 has %d rounds, output2 has %d rounds",
-                        output1.getConsensusRounds().size(), output2.getConsensusRounds().size()));
+                        output1.getConsensusRounds().size(),
+                        output2.getConsensusRounds().size()));
         final Iterator<ConsensusRound> rndIt1 = output1.getConsensusRounds().iterator();
         final Iterator<ConsensusRound> rndIt2 = output2.getConsensusRounds().iterator();
         int roundIndex = 0;
@@ -69,18 +70,13 @@ public class ConsensusRoundValidation {
                 assertTrue(
                         e1.isConsensus(),
                         String.format(
-                                "output:1, roundIndex:%d, eventIndex%d is not consensus",
-                                roundIndex, eventIndex));
+                                "output:1, roundIndex:%d, eventIndex%d is not consensus", roundIndex, eventIndex));
                 assertTrue(
                         e2.isConsensus(),
                         String.format(
-                                "output:1, roundIndex:%d, eventIndex%d is not consensus",
-                                roundIndex, eventIndex));
+                                "output:1, roundIndex:%d, eventIndex%d is not consensus", roundIndex, eventIndex));
 
-                assertConsensusEvents(
-                        String.format("Round index:%d, event index %d", roundIndex, eventIndex),
-                        e1,
-                        e2);
+                assertConsensusEvents(String.format("Round index:%d, event index %d", roundIndex, eventIndex), e1, e2);
                 eventIndex++;
             }
 
@@ -96,12 +92,10 @@ public class ConsensusRoundValidation {
      * @param e1 the first event
      * @param e2 the second event
      */
-    private static void assertConsensusEvents(
-            final String description, final EventImpl e1, final EventImpl e2) {
-        final boolean equal =
-                Objects.equals(e1.getHashedData(), e2.getHashedData())
-                        && Objects.equals(e1.getConsensusData(), e2.getConsensusData())
-                        && e1.isWitness() == e2.isWitness();
+    private static void assertConsensusEvents(final String description, final EventImpl e1, final EventImpl e2) {
+        final boolean equal = Objects.equals(e1.getHashedData(), e2.getHashedData())
+                && Objects.equals(e1.getConsensusData(), e2.getConsensusData())
+                && e1.isWitness() == e2.isWitness();
         if (!equal) {
             final StringBuilder sb = new StringBuilder();
             sb.append(description).append("\n");
@@ -143,12 +137,11 @@ public class ConsensusRoundValidation {
             final IndexedEvent event2 = events2.get(index);
 
             if (!Objects.equals(event1, event2)) {
-                final StringBuilder sb =
-                        new StringBuilder()
-                                .append("----------\n")
-                                .append("Events with index ")
-                                .append(event1.getGeneratorIndex())
-                                .append(" do not match\n");
+                final StringBuilder sb = new StringBuilder()
+                        .append("----------\n")
+                        .append("Events with index ")
+                        .append(event1.getGeneratorIndex())
+                        .append(" do not match\n");
                 getEventDifference(sb, event1, event2);
                 System.out.println(sb);
             }
@@ -156,8 +149,7 @@ public class ConsensusRoundValidation {
     }
 
     /** Add a description to a string builder as to why two events are different. */
-    private static void getEventDifference(
-            final StringBuilder sb, final EventImpl event1, final EventImpl event2) {
+    private static void getEventDifference(final StringBuilder sb, final EventImpl event1, final EventImpl event2) {
 
         checkGeneration(event1, event2, sb);
         checkWitnessStatus(event1, event2, sb);
@@ -169,8 +161,7 @@ public class ConsensusRoundValidation {
         checkFame(event1, event2, sb);
     }
 
-    private static void checkFame(
-            final EventImpl event1, final EventImpl event2, final StringBuilder sb) {
+    private static void checkFame(final EventImpl event1, final EventImpl event2, final StringBuilder sb) {
         if (event1.isFameDecided() != event2.isFameDecided()) {
             sb.append("   fame decided mismatch: ")
                     .append(event1.isFameDecided())
@@ -188,8 +179,7 @@ public class ConsensusRoundValidation {
         }
     }
 
-    private static void checkConsensusOrder(
-            final EventImpl event1, final EventImpl event2, final StringBuilder sb) {
+    private static void checkConsensusOrder(final EventImpl event1, final EventImpl event2, final StringBuilder sb) {
         if (event1.getConsensusOrder() != event2.getConsensusOrder()) {
             sb.append("   consensus order mismatch: ")
                     .append(event1.getConsensusOrder())
@@ -199,8 +189,7 @@ public class ConsensusRoundValidation {
         }
     }
 
-    private static void checkRoundReceived(
-            final EventImpl event1, final EventImpl event2, final StringBuilder sb) {
+    private static void checkRoundReceived(final EventImpl event1, final EventImpl event2, final StringBuilder sb) {
         if (event1.getRoundReceived() != event2.getRoundReceived()) {
             sb.append("   round received mismatch: ")
                     .append(event1.getRoundReceived())
@@ -221,8 +210,7 @@ public class ConsensusRoundValidation {
         }
     }
 
-    private static void checkIsStale(
-            final EventImpl event1, final EventImpl event2, final StringBuilder sb) {
+    private static void checkIsStale(final EventImpl event1, final EventImpl event2, final StringBuilder sb) {
         if (event1.isStale() != event2.isStale()) {
             sb.append("   stale mismatch: ")
                     .append(event1.isStale())
@@ -232,8 +220,7 @@ public class ConsensusRoundValidation {
         }
     }
 
-    private static void checkRoundCreated(
-            final EventImpl event1, final EventImpl event2, final StringBuilder sb) {
+    private static void checkRoundCreated(final EventImpl event1, final EventImpl event2, final StringBuilder sb) {
         if (event1.getRoundCreated() != event2.getRoundCreated()) {
             sb.append("   round created mismatch: ")
                     .append(event1.getRoundCreated())
@@ -243,8 +230,7 @@ public class ConsensusRoundValidation {
         }
     }
 
-    private static void checkWitnessStatus(
-            final EventImpl event1, final EventImpl event2, final StringBuilder sb) {
+    private static void checkWitnessStatus(final EventImpl event1, final EventImpl event2, final StringBuilder sb) {
         if (event1.isWitness() != event2.isWitness()) {
             sb.append("   witness mismatch: ")
                     .append(event1.isWitness())
@@ -254,8 +240,7 @@ public class ConsensusRoundValidation {
         }
     }
 
-    private static void checkGeneration(
-            final EventImpl event1, final EventImpl event2, final StringBuilder sb) {
+    private static void checkGeneration(final EventImpl event1, final EventImpl event2, final StringBuilder sb) {
         if (event1.getGeneration() != event2.getGeneration()) {
             sb.append("   generation mismatch: ")
                     .append(event1.getGeneration())

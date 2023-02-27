@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.consensus;
 
 import static com.swirlds.logging.LogMarker.CONSENSUS_VOTING;
@@ -72,10 +73,7 @@ public class ElectionRound {
      * @param witness the witness being added
      */
     public void addWitness(final EventImpl witness) {
-        LOG.info(
-                CONSENSUS_VOTING.getMarker(),
-                "Adding witness for election {}",
-                witness::toShortString);
+        LOG.info(CONSENSUS_VOTING.getMarker(), "Adding witness for election {}", witness::toShortString);
         numUnknownFame.increment();
         elections.add(new CandidateWitness(witness, numUnknownFame, elections.size()));
     }
@@ -106,8 +104,7 @@ public class ElectionRound {
      */
     public long getMinGeneration() {
         if (minGeneration == EventConstants.GENERATION_UNDEFINED) {
-            throw new IllegalStateException(
-                    "Cannot provide the minimum generation until all judges are found");
+            throw new IllegalStateException("Cannot provide the minimum generation until all judges are found");
         }
         return minGeneration;
     }
@@ -127,8 +124,7 @@ public class ElectionRound {
      */
     public List<EventImpl> findAllJudges() {
         if (!isDecided()) {
-            throw new IllegalStateException(
-                    "Cannot find all judges if the round has not been decided yet");
+            throw new IllegalStateException("Cannot find all judges if the round has not been decided yet");
         }
         final Map<Long, EventImpl> uniqueFamous = new HashMap<>();
         for (final CandidateWitness election : elections) {
@@ -136,17 +132,14 @@ public class ElectionRound {
                 continue;
             }
             uniqueFamous.merge(
-                    election.getWitness().getCreatorId(),
-                    election.getWitness(),
-                    ElectionRound::uniqueFamous);
+                    election.getWitness().getCreatorId(), election.getWitness(), ElectionRound::uniqueFamous);
         }
         final List<EventImpl> allJudges = new ArrayList<>(uniqueFamous.values());
         allJudges.sort(Comparator.comparingLong(EventImpl::getCreatorId));
-        minGeneration =
-                allJudges.stream()
-                        .mapToLong(EventImpl::getGeneration)
-                        .min()
-                        .orElse(EventConstants.GENERATION_UNDEFINED);
+        minGeneration = allJudges.stream()
+                .mapToLong(EventImpl::getGeneration)
+                .min()
+                .orElse(EventConstants.GENERATION_UNDEFINED);
         allJudges.forEach(EventMetadata::setJudgeTrue);
 
         return allJudges;

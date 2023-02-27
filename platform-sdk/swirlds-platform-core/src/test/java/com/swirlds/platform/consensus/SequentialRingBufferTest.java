@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.consensus;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -54,8 +55,7 @@ class SequentialRingBufferTest {
         data.add(103, 103L);
         assertNotNull(
                 data.get(103),
-                "if we try to add an element that already exists, it should replace the existing"
-                        + " one");
+                "if we try to add an element that already exists, it should replace the existing" + " one");
         assertIndexes(data, 90, 100, 105, 110, true);
     }
 
@@ -93,8 +93,7 @@ class SequentialRingBufferTest {
         assertDoesNotThrow(() -> data.get(Long.MAX_VALUE / 2));
     }
 
-    private void assertEmpty(
-            final SequentialRingBuffer<Long> rounds, final long startCheck, final long endCheck) {
+    private void assertEmpty(final SequentialRingBuffer<Long> rounds, final long startCheck, final long endCheck) {
         assertIndexes(rounds, startCheck, 0, -1, endCheck);
     }
 
@@ -116,69 +115,46 @@ class SequentialRingBufferTest {
             final boolean allowNull) {
         LongStream.range(startCheck, endCheck)
                 .filter(l -> l < startExists || l > endExists)
-                .forEach(
-                        i -> {
-                            final String shouldExist =
-                                    startExists <= endExists
-                                            ? String.format(
-                                                    "index %d should not exist, only indexes %d-%d"
-                                                            + " should exist",
-                                                    i, startExists, endExists)
-                                            : String.format(
-                                                    "index %d should not exist, no data should"
-                                                            + " exist",
-                                                    i);
-                            assertFalse(data.exists(i), shouldExist);
+                .forEach(i -> {
+                    final String shouldExist = startExists <= endExists
+                            ? String.format(
+                                    "index %d should not exist, only indexes %d-%d" + " should exist",
+                                    i, startExists, endExists)
+                            : String.format("index %d should not exist, no data should" + " exist", i);
+                    assertFalse(data.exists(i), shouldExist);
 
-                            assertNull(
-                                    data.get(i),
-                                    String.format(
-                                            "index %d should be null because it doesn't exist, "
-                                                    + "only indexes %d-%d should exist",
-                                            i, startExists, endExists));
-                        });
-        LongStream.range(startExists, endExists + 1)
-                .forEach(
-                        i -> {
-                            assertTrue(
-                                    data.exists(i),
-                                    String.format(
-                                            "indexes %d-%d should exist, but %d doesn't",
-                                            startExists, endExists, i));
-                            if (!allowNull) {
-                                assertNotNull(
-                                        data.get(i),
-                                        String.format(
-                                                "indexes %d-%d should not be null, but %d is null",
-                                                startExists, endExists, i));
-                                assertEquals(
-                                        i,
-                                        data.get(i),
-                                        String.format(
-                                                "the object returned for index %d has a value of"
-                                                        + " %d",
-                                                i, data.get(i)));
-                            }
-                        });
+                    assertNull(
+                            data.get(i),
+                            String.format(
+                                    "index %d should be null because it doesn't exist, "
+                                            + "only indexes %d-%d should exist",
+                                    i, startExists, endExists));
+                });
+        LongStream.range(startExists, endExists + 1).forEach(i -> {
+            assertTrue(
+                    data.exists(i),
+                    String.format("indexes %d-%d should exist, but %d doesn't", startExists, endExists, i));
+            if (!allowNull) {
+                assertNotNull(
+                        data.get(i),
+                        String.format("indexes %d-%d should not be null, but %d is null", startExists, endExists, i));
+                assertEquals(
+                        i,
+                        data.get(i),
+                        String.format("the object returned for index %d has a value of" + " %d", i, data.get(i)));
+            }
+        });
         if (startExists <= endExists) {
             assertNotNull(
-                    data.getLatest(),
-                    String.format(
-                            "the latest index should not be null, it should be %d", endExists));
+                    data.getLatest(), String.format("the latest index should not be null, it should be %d", endExists));
             assertEquals(
                     endExists,
                     data.getLatest(),
-                    String.format(
-                            "the latest index should not be %d, it should be %d",
-                            data.getLatest(), endExists));
+                    String.format("the latest index should not be %d, it should be %d", data.getLatest(), endExists));
             assertEquals(
-                    endExists + 1,
-                    data.nextIndex(),
-                    "the next index should be the one right after the latest one");
+                    endExists + 1, data.nextIndex(), "the next index should be the one right after the latest one");
         } else {
-            assertNull(
-                    data.getLatest(),
-                    "the latest index should be null, because there should be no data");
+            assertNull(data.getLatest(), "the latest index should be null, because there should be no data");
         }
     }
 }

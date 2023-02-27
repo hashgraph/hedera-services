@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.consensus;
 
 import static com.swirlds.platform.consensus.AncestorIterator.IteratorState.BOTTOM;
@@ -164,8 +165,7 @@ public class AncestorIterator implements Iterator<EventImpl> {
                         curr = p;
                         state = TRAVERSING_SELF_PARENT;
                         if (selfAncestor) {
-                            timeReachedRoot =
-                                    curr.getTimeCreated(); // ancestors of curr reached creator then
+                            timeReachedRoot = curr.getTimeCreated(); // ancestors of curr reached creator then
                         }
                     } // there is no selfParent, or it was already visited, or it was not valid
                 }
@@ -189,8 +189,7 @@ public class AncestorIterator implements Iterator<EventImpl> {
                         hasNext = false; // then there are no more
                         return curr; // return this root
                     }
-                    final EventImpl toReturn =
-                            curr; // else we are done with all the descendents, so backtrack
+                    final EventImpl toReturn = curr; // else we are done with all the descendents, so backtrack
                     curr = stackRef.pop();
                     state = stackState.pop();
                     selfAncestor = stackSelfAncestor.pop();

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.test.consensus;
 
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
@@ -63,9 +64,7 @@ class ConsensusTests {
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Reconnect Simulation")
     @ParameterizedTest
-    @Disabled(
-            "spams the logs because the shadowgraph is not ready to handle the new restart"
-                    + " paradigm")
+    @Disabled("spams the logs because the shadowgraph is not ready to handle the new restart" + " paradigm")
     void reconnectSimulation(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::reconnect)
@@ -180,8 +179,7 @@ class ConsensusTests {
     }
 
     @ParameterizedTest
-    @MethodSource(
-            "com.swirlds.platform.test.consensus.ConsensusTestArgs#nodeProvidesStaleOtherParents")
+    @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#nodeProvidesStaleOtherParents")
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
@@ -211,8 +209,7 @@ class ConsensusTests {
     }
 
     @ParameterizedTest
-    @MethodSource(
-            "com.swirlds.platform.test.consensus.ConsensusTestArgs#subQuorumOfNodesGoDownTests")
+    @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#subQuorumOfNodesGoDownTests")
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
@@ -254,9 +251,7 @@ class ConsensusTests {
                 .run();
     }
 
-    @Disabled(
-            "spams the logs because the shadowgraph is not ready to handle the new restart"
-                    + " paradigm")
+    @Disabled("spams the logs because the shadowgraph is not ready to handle the new restart" + " paradigm")
     @ParameterizedTest
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#restartWithEventsParams")
     @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)

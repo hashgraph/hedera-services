@@ -102,8 +102,7 @@ final class RecoveryTestUtils {
         consensusData.setConsensusOrder(random.nextLong());
         consensusData.setLastInRoundReceived(lastInRound);
 
-        final EventImpl event =
-                new EventImpl(baseEventHashedData, baseEventUnhashedData, consensusData);
+        final EventImpl event = new EventImpl(baseEventHashedData, baseEventUnhashedData, consensusData);
         event.setRoundCreated(random.nextLong());
         event.setStale(random.nextBoolean());
         return event;

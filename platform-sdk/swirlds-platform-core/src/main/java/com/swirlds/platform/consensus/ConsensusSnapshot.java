@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.consensus;
 
 import com.swirlds.common.crypto.Hash;
@@ -49,13 +50,11 @@ public record ConsensusSnapshot(
             sb.append("   ").append(hash.toString()).append('\n');
         }
         sb.append("minGens: ").append('\n');
-        minGens.forEach(
-                mg ->
-                        sb.append("   ")
-                                .append(mg.round())
-                                .append("->")
-                                .append(mg.minimumGeneration())
-                                .append('\n'));
+        minGens.forEach(mg -> sb.append("   ")
+                .append(mg.round())
+                .append("->")
+                .append(mg.minimumGeneration())
+                .append('\n'));
         sb.append("nextConsensusNumber: ").append(nextConsensusNumber).append('\n');
         sb.append("minConsensusTimestamp: ").append(minConsensusTimestamp).append('\n');
         return sb.toString();

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.test.consensus.framework.validation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,8 +27,7 @@ public class MiscValidation {
      * Verifies that the created round of new events does not advance when a quorum of nodes is
      * down.
      */
-    private static void createdRoundDoesNotAdvance(
-            final ConsensusOutput output1, final ConsensusOutput ignored) {
+    private static void createdRoundDoesNotAdvance(final ConsensusOutput output1, final ConsensusOutput ignored) {
         final List<EventImpl> allEvents = output1.getAddedEvents();
         final long firstRoundInSequence = allEvents.get(0).getRoundCreated();
         final long secondRoundInSequence = firstRoundInSequence + 1;
@@ -63,8 +63,8 @@ public class MiscValidation {
                     roundCreated,
                     String.format(
                             "Created round of event %s should not advance when a quorum of nodes"
-                                + " are down.\n"
-                                + "created round: %s, sp created round: %s, op created round: %s",
+                                    + " are down.\n"
+                                    + "created round: %s, sp created round: %s, op created round: %s",
                             e, roundCreated, spRound, opRound));
         }
     }

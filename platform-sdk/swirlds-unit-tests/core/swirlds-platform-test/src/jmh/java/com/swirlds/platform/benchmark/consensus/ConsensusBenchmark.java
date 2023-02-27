@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.benchmark.consensus;
 
 import com.swirlds.common.config.ConfigUtils;
@@ -70,8 +71,7 @@ public class ConsensusBenchmark {
     @Setup
     public void setup() {
         final List<EventSource<?>> eventSources =
-                EventSourceFactory.newStandardEventSources(
-                        StakeGenerators.balancedNodeStakes(numNodes));
+                EventSourceFactory.newStandardEventSources(StakeGenerators.balancedNodeStakes(numNodes));
         final StandardGraphGenerator generator = new StandardGraphGenerator(seed, eventSources);
         final StandardEventEmitter emitter = new StandardEventEmitter(generator);
         events = emitter.emitEvents(numEvents);
@@ -79,12 +79,11 @@ public class ConsensusBenchmark {
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
         ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, "com.swirlds");
 
-        consensus =
-                new ConsensusImpl(
-                        configurationBuilder.build().getConfigData(ConsensusConfig.class),
-                        new NoOpConsensusMetrics(),
-                        (r, g) -> {},
-                        emitter.getGraphGenerator().getAddressBook());
+        consensus = new ConsensusImpl(
+                configurationBuilder.build().getConfigData(ConsensusConfig.class),
+                new NoOpConsensusMetrics(),
+                (r, g) -> {},
+                emitter.getGraphGenerator().getAddressBook());
     }
 
     @Benchmark

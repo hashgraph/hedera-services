@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.test.event;
 
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -144,14 +145,12 @@ public class EventBuilder {
     }
 
     private Instant getParentTime() {
-        final Instant sp =
-                getSelfParentGossip() == null
-                        ? DEFAULT_TIMESTAMP
-                        : getSelfParentGossip().getHashedData().getTimeCreated();
-        final Instant op =
-                getOtherParentGossip() == null
-                        ? DEFAULT_TIMESTAMP
-                        : getOtherParentGossip().getHashedData().getTimeCreated();
+        final Instant sp = getSelfParentGossip() == null
+                ? DEFAULT_TIMESTAMP
+                : getSelfParentGossip().getHashedData().getTimeCreated();
+        final Instant op = getOtherParentGossip() == null
+                ? DEFAULT_TIMESTAMP
+                : getOtherParentGossip().getHashedData().getTimeCreated();
         return sp.isAfter(op) ? sp : op;
     }
 
@@ -161,31 +160,26 @@ public class EventBuilder {
             final byte[] bytes = new byte[] {(byte) i, (byte) i, (byte) i, (byte) i};
             tr[i] = new SwirldTransaction(bytes);
         }
-        final long selfParentGen =
-                fakeGeneration >= GraphGenerations.FIRST_GENERATION
-                        ? fakeGeneration - 1
-                        : getSelfParentGossip() != null
-                                ? getSelfParentGossip().getGeneration()
-                                : EventConstants.GENERATION_UNDEFINED;
-        final long otherParentGen =
-                fakeGeneration >= GraphGenerations.FIRST_GENERATION
-                        ? fakeGeneration - 1
-                        : getOtherParentGossip() != null
-                                ? getOtherParentGossip().getGeneration()
-                                : -1;
-        final BaseEventHashedData hashedData =
-                new BaseEventHashedData(
-                        creatorId,
-                        selfParentGen,
-                        otherParentGen,
-                        getSelfParentGossip() != null
-                                ? getSelfParentGossip().getHashedData().getHash()
-                                : null,
-                        getOtherParentGossip() != null
-                                ? getOtherParentGossip().getHashedData().getHash()
-                                : null,
-                        timestamp == null ? getParentTime().plusMillis(1 + creatorId) : timestamp,
-                        tr);
+        final long selfParentGen = fakeGeneration >= GraphGenerations.FIRST_GENERATION
+                ? fakeGeneration - 1
+                : getSelfParentGossip() != null
+                        ? getSelfParentGossip().getGeneration()
+                        : EventConstants.GENERATION_UNDEFINED;
+        final long otherParentGen = fakeGeneration >= GraphGenerations.FIRST_GENERATION
+                ? fakeGeneration - 1
+                : getOtherParentGossip() != null ? getOtherParentGossip().getGeneration() : -1;
+        final BaseEventHashedData hashedData = new BaseEventHashedData(
+                creatorId,
+                selfParentGen,
+                otherParentGen,
+                getSelfParentGossip() != null
+                        ? getSelfParentGossip().getHashedData().getHash()
+                        : null,
+                getOtherParentGossip() != null
+                        ? getOtherParentGossip().getHashedData().getHash()
+                        : null,
+                timestamp == null ? getParentTime().plusMillis(1 + creatorId) : timestamp,
+                tr);
 
         if (fakeHash) {
             hashedData.setHash(RandomUtils.randomHash(random));
@@ -196,20 +190,18 @@ public class EventBuilder {
         final byte[] sig = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(sig);
 
-        final BaseEventUnhashedData unhashedData =
-                new BaseEventUnhashedData(
-                        getOtherParentGossip() != null
-                                ? getOtherParentGossip().getHashedData().getCreatorId()
-                                : -1,
-                        sig);
+        final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(
+                getOtherParentGossip() != null
+                        ? getOtherParentGossip().getHashedData().getCreatorId()
+                        : -1,
+                sig);
         final GossipEvent gossipEvent = new GossipEvent(hashedData, unhashedData);
         gossipEvent.buildDescriptor();
         return gossipEvent;
     }
 
     public EventImpl buildEventImpl() {
-        final EventImpl event =
-                new EventImpl(buildGossipEvent(), getSelfParentImpl(), getOtherParentImpl());
+        final EventImpl event = new EventImpl(buildGossipEvent(), getSelfParentImpl(), getOtherParentImpl());
         event.setConsensus(consensus);
         return event;
     }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.test.consensus.framework;
 
 import static com.swirlds.common.test.StakeGenerators.BALANCED;
@@ -37,8 +38,7 @@ public class OrchestratorBuilder {
     private StakeGenerator stakeGenerator = BALANCED;
     private long seed = 0;
     private int totalEventNum = 10_000;
-    private Function<List<Long>, List<EventSource<?>>> eventSourceBuilder =
-            EventSourceFactory::newStandardEventSources;
+    private Function<List<Long>, List<EventSource<?>>> eventSourceBuilder = EventSourceFactory::newStandardEventSources;
     private Consumer<EventSource<?>> eventSourceConfigurator = es -> {};
     /**
      * A function that creates an event emitter based on a graph generator and a seed. They should
@@ -71,20 +71,17 @@ public class OrchestratorBuilder {
         return this;
     }
 
-    public OrchestratorBuilder setEventSourceConfigurator(
-            final Consumer<EventSource<?>> eventSourceConfigurator) {
+    public OrchestratorBuilder setEventSourceConfigurator(final Consumer<EventSource<?>> eventSourceConfigurator) {
         this.eventSourceConfigurator = eventSourceConfigurator;
         return this;
     }
 
-    public OrchestratorBuilder setNode1EventEmitterGenerator(
-            final EventEmitterGenerator node1EventEmitterGenerator) {
+    public OrchestratorBuilder setNode1EventEmitterGenerator(final EventEmitterGenerator node1EventEmitterGenerator) {
         this.node1EventEmitterGenerator = node1EventEmitterGenerator;
         return this;
     }
 
-    public OrchestratorBuilder setNode2EventEmitterGenerator(
-            final EventEmitterGenerator node2EventEmitterGenerator) {
+    public OrchestratorBuilder setNode2EventEmitterGenerator(final EventEmitterGenerator node2EventEmitterGenerator) {
         this.node2EventEmitterGenerator = node2EventEmitterGenerator;
         return this;
     }
@@ -101,17 +98,14 @@ public class OrchestratorBuilder {
         for (final EventSource<?> eventSource : eventSources) {
             eventSourceConfigurator.accept(eventSource);
         }
-        final StandardGraphGenerator graphGenerator =
-                new StandardGraphGenerator(graphSeed, eventSources);
+        final StandardGraphGenerator graphGenerator = new StandardGraphGenerator(graphSeed, eventSources);
 
         // Make the graph generators create a fresh set of events.
         // Use the same seed so that they create identical graphs.
         final EventEmitter<?> node1Emitter =
-                node1EventEmitterGenerator.getEventEmitter(
-                        graphGenerator.cleanCopy(), shuffler1Seed);
+                node1EventEmitterGenerator.getEventEmitter(graphGenerator.cleanCopy(), shuffler1Seed);
         final EventEmitter<?> node2Emitter =
-                node2EventEmitterGenerator.getEventEmitter(
-                        graphGenerator.cleanCopy(), shuffler2Seed);
+                node2EventEmitterGenerator.getEventEmitter(graphGenerator.cleanCopy(), shuffler2Seed);
 
         final List<ConsensusTestNode> nodes = new ArrayList<>();
         // Create two instances to run consensus on. Each instance reseeds the emitter so that they

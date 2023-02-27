@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.swirlds.platform.event;
 
 import com.swirlds.common.utility.Clearable;
@@ -88,8 +89,7 @@ public class EventMetadata implements Clearable {
     private boolean[] votes;
 
     public EventMetadata() {
-        this.estimatedTime =
-                Instant.now(); // until a better estimate is found, just guess the time it is now
+        this.estimatedTime = Instant.now(); // until a better estimate is found, just guess the time it is now
         // ConsensusImpl.currMark starts at 1 and counts up, so all events initially count as
         // unmarked
         this.mark = ConsensusConstants.EVENT_UNMARKED;
@@ -412,9 +412,7 @@ public class EventMetadata implements Clearable {
      * @return true if it's a YES vote, false if it's a NO vote
      */
     public boolean getVote(final CandidateWitness witness) {
-        return votes != null
-                && votes.length > witness.getElectionIndex()
-                && votes[witness.getElectionIndex()];
+        return votes != null && votes.length > witness.getElectionIndex() && votes[witness.getElectionIndex()];
     }
 
     /**

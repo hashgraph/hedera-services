@@ -117,21 +117,19 @@ public final class SignedStateFileReader {
 
         final DeserializedSignedState returnState;
 
-        final Triple<State, Hash, SigSet> data =
-                deserializeAndDebugOnFailure(
-                        () -> new BufferedInputStream(new FileInputStream(stateFile.toFile())),
-                        (final MerkleDataInputStream in) -> {
-                            readAndCheckVersion(in);
+        final Triple<State, Hash, SigSet> data = deserializeAndDebugOnFailure(
+                () -> new BufferedInputStream(new FileInputStream(stateFile.toFile())),
+                (final MerkleDataInputStream in) -> {
+                    readAndCheckVersion(in);
 
-                            final Path directory = stateFile.getParent();
+                    final Path directory = stateFile.getParent();
 
-                            final State state =
-                                    in.readMerkleTree(directory, MAX_MERKLE_NODES_IN_STATE);
-                            final Hash hash = in.readSerializable();
-                            final SigSet sigSet = in.readSerializable();
+                    final State state = in.readMerkleTree(directory, MAX_MERKLE_NODES_IN_STATE);
+                    final Hash hash = in.readSerializable();
+                    final SigSet sigSet = in.readSerializable();
 
-                            return Triple.of(state, hash, sigSet);
-                        });
+                    return Triple.of(state, hash, sigSet);
+                });
 
         final SignedState newSignedState = new SignedState(data.getLeft());
 
@@ -156,8 +154,7 @@ public final class SignedStateFileReader {
                 () -> new BufferedInputStream(new FileInputStream(stateFile.toFile())),
                 (final MerkleDataInputStream in) -> {
                     readAndCheckVersion(in);
-                    return new SignedState(
-                            in.readMerkleTree(stateFile.getParent(), MAX_MERKLE_NODES_IN_STATE));
+                    return new SignedState(in.readMerkleTree(stateFile.getParent(), MAX_MERKLE_NODES_IN_STATE));
                 });
     }
 
@@ -185,8 +182,7 @@ public final class SignedStateFileReader {
     private static void readAndCheckVersion(final MerkleDataInputStream in) throws IOException {
         final byte versionByte = in.readByte();
         if (versionByte != VERSIONED_FILE_BYTE) {
-            throw new IOException(
-                    "File is not versioned -- data corrupted or is an unsupported legacy state");
+            throw new IOException("File is not versioned -- data corrupted or is an unsupported legacy state");
         }
 
         in.readInt(); // file version
