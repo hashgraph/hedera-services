@@ -18,7 +18,7 @@ package com.hedera.node.app;
 
 import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
 import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
-import static com.hedera.node.app.spi.config.PropertyNames.STATES_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.WORKFLOWS_ENABLED;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.hedera.node.app.service.mono.ServicesApp;
@@ -56,7 +56,7 @@ public class ServicesMain implements SwirldMain {
 
     /**
      * Stores information related to the running of the Hedera application in the modular app. This
-     * is unused when the "hedera.workflows.enabled" flag is false.
+     * is unused when the "hedera.workflows.enabled" is empty.
      */
     private final Hedera hedera = new Hedera();
 
@@ -89,8 +89,8 @@ public class ServicesMain implements SwirldMain {
     public SwirldState2 newState() {
         // TODO - replace this flag with a check whether the set of workflow-enabled
         // operations is non-empty (https://github.com/hashgraph/hedera-services/issues/4945)
-        final var workflowsEnabled = new BootstrapProperties(false).getBooleanProperty(STATES_ENABLED);
-        return stateWithWorkflowsEnabled(workflowsEnabled);
+        final var workflowsEnabled = new BootstrapProperties(false).getFunctionsProperty(WORKFLOWS_ENABLED);
+        return stateWithWorkflowsEnabled(!workflowsEnabled.isEmpty());
     }
 
     @Override
@@ -151,11 +151,14 @@ public class ServicesMain implements SwirldMain {
     }
 
     private void startNettyIfAppropriate() {
-        // The "hedera.workflows.enabled" feature flag indicates whether we enable the new gRPC
-        // server and workflows, or use the existing gRPC handlers in mono-service.
+        // The "hedera.workflows.enabled" is a list of HAPI operations indicates whether we enable the new gRPC
+        // server and workflows, or use the existing gRPC handlers in mono-service, for that specific HAPI operations.
         final var props = app.globalStaticProperties();
-        if (props.workflowsEnabled()) {
-            hedera.start((HederaApp) app, app.nodeLocalProperties().port());
+        if (!props.workflowsEnabled().isEmpty()) {
+            // If there are any operations that use new workflows, start both the new gRPC server and the old gRPC
+            // server on different ports.
+            hedera.start((HederaApp) app, app.nodeLocalProperties().workflowsPort());
+            app.grpcStarter().startIfAppropriate();
         } else {
             app.grpcStarter().startIfAppropriate();
         }

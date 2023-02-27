@@ -27,10 +27,9 @@ import com.hedera.node.app.service.network.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
-import com.hedera.node.app.spi.service.Service;
+import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
-import com.hedera.node.app.workflows.ingest.IngestWorkflowImpl;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.metrics.Metrics;
@@ -53,16 +52,14 @@ public final class Hedera {
 
     public Hedera() {}
 
-    public void start(@NonNull final HederaApp app, final int port) {
+    public void start(@NonNull final HederaApp app, int port) {
         final var metrics = createMetrics(app.nodeId());
 
         // Create the Ingest workflow. While we are in transition, some required facilities come
         // from `hedera-app`, and some from `mono-service`. Eventually we'll transition all
         // facilities to be from the app module.
-        // TODO Real values will be added to make this usable with #4825
-        final var ingestWorkflow =
-                new IngestWorkflowImpl(app.nodeInfo(), app.platformStatus(), null, null, null, null, null, null);
-
+        // Create Ingest workflow
+        final var ingestWorkflow = app.ingestComponentFactory().get().create().ingestWorkflow();
         // Create the query workflow
         final var queryWorkflow = app.queryComponentFactory().get().create().queryWorkflow();
 
@@ -87,13 +84,16 @@ public final class Hedera {
         grpcServer.start();
 
         // Block this main thread until the server terminates.
-        try {
-            shutdownLatch.await();
-        } catch (final InterruptedException ignored) {
-            // An interrupt on this thread means we want to shut down the server.
-            shutdown();
-            Thread.currentThread().interrupt();
-        }
+        // TODO: Uncomment this code once we enable all operations to work with workflows.
+        // Currently we are enabling each operation step-by-step to work with new Grpc binding.
+
+        //        try {
+        //            shutdownLatch.await();
+        //        } catch (InterruptedException ignored) {
+        //            // An interrupt on this thread means we want to shut down the server.
+        //            shutdown();
+        //            Thread.currentThread().interrupt();
+        //        }
     }
 
     public void shutdown() {
@@ -129,7 +129,7 @@ public final class Hedera {
                 serviceRegistry.registry().migrate(state, state.deserializedVersion(), currentVersion));
     }
 
-    private static Metrics createMetrics(final NodeId nodeId) {
+    private static Metrics createMetrics(NodeId nodeId) {
         // This is a stub implementation, to be replaced by a real implementation in #4293
         final var metricService = Executors.newSingleThreadScheduledExecutor(
                 getStaticThreadManager().createThreadFactory("metrics", "MetricsWriter"));

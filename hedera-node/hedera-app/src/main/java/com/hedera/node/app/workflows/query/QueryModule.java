@@ -37,6 +37,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Function;
 import javax.inject.Singleton;
 
+/**
+ * Module for Query processing.
+ */
 @Module
 public interface QueryModule {
     @Binds

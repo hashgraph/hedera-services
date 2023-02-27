@@ -19,6 +19,9 @@ package com.hedera.node.app.components;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import dagger.Subcomponent;
 
+/**
+ * A Dagger subcomponent that provides the query workflow.
+ */
 @Subcomponent
 public interface QueryComponent {
     QueryWorkflow queryWorkflow();
