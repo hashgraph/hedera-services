@@ -9,6 +9,7 @@ module com.hedera.node.app.service.consensus.impl {
     requires javax.inject;
     requires com.google.protobuf;
     requires com.hedera.node.app.service.token;
+    requires com.swirlds.config;
 
     provides com.hedera.node.app.service.consensus.ConsensusService with
             ConsensusServiceImpl;
@@ -20,4 +21,6 @@ module com.hedera.node.app.service.consensus.impl {
     exports com.hedera.node.app.service.consensus.impl.components;
     exports com.hedera.node.app.service.consensus.impl.serdes;
     exports com.hedera.node.app.service.consensus.impl.entity;
+    exports com.hedera.node.app.service.consensus.impl.config;
+    exports com.hedera.node.app.service.consensus.impl.records;
 }
