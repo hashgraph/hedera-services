@@ -329,13 +329,8 @@ class ContractCallTransitionLogicTest {
 
         // when:
         assertFailsWith(
-                () ->
-                        subject.doStateTransitionOperation(
-                                accessor.getTxn(),
-                                senderAccount.getId(),
-                                relayerAccount.getId(),
-                                maxGas,
-                                biOfferedGasPrice),
+                () -> subject.doStateTransitionOperation(
+                        accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice),
                 INVALID_CONTRACT_ID);
     }
 
