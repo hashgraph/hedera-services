@@ -217,19 +217,10 @@ public final class DataFileWriter<D> {
         final long byteOffset = mmapPositionInFile + currentWritingMmapPos;
         // capture the current read position in the data item data buffer
         final int currentDataItemPos = dataItemData.position();
-        try {
-            // copy the item into the file
-            dataItemSerializer.copyItem(serializedVersion, dataItemData.remaining(), dataItemData, writingMmap);
-        } catch (final BufferOverflowException e) {
-            // Buffer overflow means there is not enough room in the writing buffer to copy the
-            // item.
-            // The buffer needs to be remapped to a new position. This position is calculated as
-            // the current mmap offset + current position in the mapped buffer. After the buffer is
-            // remapped, retry copying data item bytes into the new buffer
-            moveMmapBuffer(currentWritingMmapPos);
-            dataItemData.position(currentDataItemPos);
-            dataItemSerializer.copyItem(serializedVersion, dataItemData.remaining(), dataItemData, writingMmap);
-        }
+        writeWithRetry(
+                () -> dataItemSerializer.copyItem(
+                        serializedVersion, dataItemData.remaining(), dataItemData, writingMmap),
+                () -> dataItemData.position(currentDataItemPos));
         dataItemCount++;
         // return the offset where we wrote the data
         return DataFileCommon.dataLocation(index, byteOffset);
@@ -248,14 +239,7 @@ public final class DataFileWriter<D> {
         final int currentWritingMmapPos = writingMmap.position();
         final long byteOffset = mmapPositionInFile + currentWritingMmapPos;
         // write serialized data
-        try {
-            dataItemSerializer.serialize(dataItem, writingMmap);
-        } catch (final BufferOverflowException e) {
-            // Buffer overflow indicates we need to remap the current writing buffer and
-            // retry to serialize the data item
-            moveMmapBuffer(currentWritingMmapPos);
-            dataItemSerializer.serialize(dataItem, writingMmap);
-        }
+        writeWithRetry(() -> dataItemSerializer.serialize(dataItem, writingMmap), null);
         // increment data item counter
         dataItemCount++;
         // return the offset where we wrote the data
@@ -263,17 +247,44 @@ public final class DataFileWriter<D> {
     }
 
     /** A helper method to write a byte buffer to the file. */
-    private void write(final ByteBuffer data) throws IOException {
+    private void writeBytes(final ByteBuffer data) throws IOException {
         final int pos = data.position();
         final int limit = data.limit();
-        final int currentWritingMmapPos = writingMmap.position();
-        try {
-            writingMmap.put(data);
-        } catch (final BufferOverflowException e) {
-            moveMmapBuffer(currentWritingMmapPos);
+        writeWithRetry(() -> writingMmap.put(data), () -> {
             data.position(pos);
             data.limit(limit);
-            writingMmap.put(data);
+        });
+    }
+
+    /**
+     * Runs a specified action, which supposed to write some data to the mapped byte buffer. If writing
+     * fails with an overflow exception, the byte buffer is remapped to the current writing position in
+     * the file channel, and the action is retried. If an additional action to reset the state is
+     * provided, it's run after the buffer is remapped, but before the writing action is executed.
+     *
+     * @param writeAction Action to run
+     * @param resetAction Action to reset the state before retry. May be null
+     * @throws IOException If an I/O error occurred
+     */
+    private void writeWithRetry(final RunnableWithIOException writeAction, final RunnableWithIOException resetAction)
+            throws IOException {
+        final int currentWritingMmapPos = writingMmap.position();
+        try {
+            writeAction.run();
+        } catch (final BufferOverflowException e) {
+            // Buffer overflow indicates we need to remap the current writing buffer and try again
+            moveMmapBuffer(currentWritingMmapPos);
+            if (resetAction != null) {
+                resetAction.run();
+            }
+            try {
+                writeAction.run();
+            } catch (final BufferOverflowException t) {
+                throw new IOException(
+                        "Data item is too large to write to a data file. Increase data file"
+                                + "mapped byte buffer size",
+                        e);
+            }
         }
     }
 
@@ -288,12 +299,12 @@ public final class DataFileWriter<D> {
         int paddingBytesNeeded = computePaddingLength();
         final ByteBuffer paddingBuf = ByteBuffer.allocate(paddingBytesNeeded);
         Arrays.fill(paddingBuf.array(), (byte) 0);
-        write(paddingBuf);
+        writeBytes(paddingBuf);
         // update data item count in the metadata
         metadata.setDataItemCount(dataItemCount);
         // write any metadata to end of file.
         final ByteBuffer footerData = metadata.getFooterForWriting();
-        write(footerData);
+        writeBytes(footerData);
         // truncate to the right size
         final long totalFileSize = mmapPositionInFile + writingMmap.position();
         writingChannel.truncate(totalFileSize);
@@ -315,5 +326,9 @@ public final class DataFileWriter<D> {
     private int computePaddingLength() {
         final long writePosition = mmapPositionInFile + writingMmap.position();
         return (int) (PAGE_SIZE - (writePosition % PAGE_SIZE)) % PAGE_SIZE;
+    }
+
+    private interface RunnableWithIOException {
+        public void run() throws IOException;
     }
 }

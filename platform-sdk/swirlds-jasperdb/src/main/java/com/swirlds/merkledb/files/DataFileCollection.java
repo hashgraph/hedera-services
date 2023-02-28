@@ -434,7 +434,7 @@ public class DataFileCollection<D> implements Snapshotable {
             readers[r.getIndex() - firstIndexInc] = r;
         }
 
-        final KeyRange keyRange = this.validKeyRange;
+        final KeyRange keyRange = validKeyRange;
         index.forEach((path, dataLocation) -> {
             if (!keyRange.withinRange(path)) {
                 return;
@@ -880,7 +880,7 @@ public class DataFileCollection<D> implements Snapshotable {
      * @return the data file if one exists at that index
      */
     DataFileReader<D> getDataFile(final int index) {
-        final ImmutableIndexedObjectList<DataFileReader<D>> fileList = this.dataFiles.get();
+        final ImmutableIndexedObjectList<DataFileReader<D>> fileList = dataFiles.get();
         return fileList == null ? null : fileList.get(index);
     }
 

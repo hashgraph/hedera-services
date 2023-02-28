@@ -40,18 +40,18 @@ import org.apache.logging.log4j.Logger;
  * Each bucket has a header containing:
  *
  * <ul>
- *   <li><b>int</b> - Bucket index in map hash index
- *   <li><b>int</b> - Bucket size, total number of bytes taken by bucket including header
- *   <li><b>int</b> - Number of entries in this bucket
- *   <li><b>Entry[]</b> - array of entries
+ *   <li><b>int</b> - Bucket index in map hash index</li>
+ *   <li><b>int</b> - Bucket size, total number of bytes taken by bucket including header</li>
+ *   <li><b>int</b> - Number of entries in this bucket</li>
+ *   <li><b>Entry[]</b> - array of entries</li>
  * </ul>
  *
  * Each Entry contains:
  *
  * <ul>
- *   <li><b>KEY_HASHCODE_SIZE(int/long)</b> - key hash code
- *   <li><b>value</b> - the value of the key/value pair. It is here because it is fixed size
- *   <li><b>key data</b> - can be fixed size of entryKeySize or variable size
+ *   <li><b>KEY_HASHCODE_SIZE(int/long)</b> - key hash code</li>
+ *   <li><b>value</b> - the value of the key/value pair. It is here because it is fixed size</li>
+ *   <li><b>key data</b> - can be fixed size of entryKeySize or variable size</li>
  * </ul>
  */
 @SuppressWarnings("unused")
