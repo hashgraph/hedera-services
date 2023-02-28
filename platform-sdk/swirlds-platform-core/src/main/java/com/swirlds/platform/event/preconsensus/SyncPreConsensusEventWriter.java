@@ -162,7 +162,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
             writeEvent(event);
             lastWrittenEvent = event.getStreamSequenceNumber();
 
-            flush(false);
+            flushIfNeeded(false);
         } else {
             event.setStreamSequenceNumber(EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER);
         }
@@ -261,12 +261,10 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     }
 
     /**
-     * Flush events if necessary.
-     *
-     * @param force
-     * 		if true then force the flush, if false then only flush if we haven't flushed recently
+     * {@inheritDoc}
      */
-    public void flush(final boolean force) {
+    @Override
+    public void flushIfNeeded(final boolean force) {
         if (lastFlushedEvent == lastWrittenEvent || currentMutableFile == null) {
             // There is nothing to be flushed.
             flushLimiter.force();
@@ -286,6 +284,14 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void requestUrgentFlushFor(EventImpl event) {
+        // TODO
     }
 
     /**

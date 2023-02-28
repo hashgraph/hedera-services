@@ -162,8 +162,16 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
-    public void flush(boolean force) {
-        writer.flush(force);
+    public void flushIfNeeded(boolean force) {
+        writer.flushIfNeeded(force);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void requestUrgentFlushFor(EventImpl event) {
+        writer.requestUrgentFlushFor(event);
     }
 
     /**
@@ -193,6 +201,6 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
      * have flushed recently.
      */
     private void waitForNextEvent() throws InterruptedException {
-        MinimumTime.runWithMinimumTime(time, () -> flush(true), idleWaitPeriod);
+        MinimumTime.runWithMinimumTime(time, () -> flushIfNeeded(true), idleWaitPeriod);
     }
 }
