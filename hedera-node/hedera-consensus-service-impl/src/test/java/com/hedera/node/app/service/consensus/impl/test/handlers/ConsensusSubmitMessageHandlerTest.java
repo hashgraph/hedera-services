@@ -19,6 +19,7 @@ package com.hedera.node.app.service.consensus.impl.test.handlers;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.ACCOUNT_ID_4;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.A_NONNULL_KEY;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertDefaultPayer;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertOkResponse;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.txnFrom;
 import static com.hedera.test.factories.scenarios.ConsensusSubmitMessageScenarios.CONSENSUS_SUBMIT_MESSAGE_MISSING_TOPIC_SCENARIO;
@@ -142,7 +143,7 @@ class ConsensusSubmitMessageHandlerTest {
     }
 
     @Test
-    @DisplayName("Topic without submit key returns error")
+    @DisplayName("Topic without submit key does not error")
     void noTopicSubmitKey() {
         // given:
         mockPayerLookup();
@@ -153,8 +154,7 @@ class ConsensusSubmitMessageHandlerTest {
         subject.preHandle(context, topicStore);
 
         // then:
-        assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.UNAUTHORIZED);
-        assertThat(context.failed()).isTrue();
+        assertOkResponse(context);
     }
 
     @Nested
@@ -178,8 +178,9 @@ class ConsensusSubmitMessageHandlerTest {
             subject.preHandle(context, topicStore);
 
             // then:
-            Assertions.assertThat(context.failed()).isTrue();
-            Assertions.assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.UNAUTHORIZED);
+            assertOkResponse(context);
+            assertDefaultPayer(context);
+            assertThat(context.getRequiredNonPayerKeys()).isEmpty();
         }
 
         @Test

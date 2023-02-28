@@ -62,11 +62,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         }
 
         final var submitKey = topicMeta.metadata().submitKey();
-        if (submitKey.isEmpty()) {
-            context.status(ResponseCodeEnum.UNAUTHORIZED);
-            return;
-        }
-        context.addToReqNonPayerKeys(submitKey.get());
+        submitKey.ifPresent(context::addToReqNonPayerKeys);
     }
 
     /**
