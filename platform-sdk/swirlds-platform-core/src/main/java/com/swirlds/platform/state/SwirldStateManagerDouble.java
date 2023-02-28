@@ -28,6 +28,7 @@ import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.SystemTransactionHandler;
 import com.swirlds.platform.components.TransThrottleSyncAndCreateRuleResponse;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -155,9 +156,8 @@ public class SwirldStateManagerDouble implements SwirldStateManager {
             final long round,
             final long numEventsCons,
             final Hash hashEventsCons,
-            final EventImpl[] events,
+            final ConsensusSnapshot snapshot,
             final Instant consensusTimestamp,
-            final List<MinGenInfo> minGenInfo,
             final SoftwareVersion softwareVersion) {
 
         stateRef.get()
@@ -166,9 +166,8 @@ public class SwirldStateManagerDouble implements SwirldStateManager {
                 .setRound(round)
                 .setNumEventsCons(numEventsCons)
                 .setHashEventsCons(hashEventsCons)
-                .setEvents(events)
+                //TODO set snapshot
                 .setConsensusTimestamp(consensusTimestamp)
-                .setMinGenInfo(minGenInfo)
                 .setCreationSoftwareVersion(softwareVersion);
     }
 

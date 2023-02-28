@@ -27,6 +27,7 @@ import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.FreezePeriodChecker;
 import com.swirlds.platform.components.TransThrottleSyncAndCreateRule;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -105,12 +106,9 @@ public interface SwirldStateManager
      * 		the number of events since genesis that have been handled at the end of this round
      * @param hashEventsCons
      * 		a running hash of all events
-     * @param events
-     * 		events that should be stored in the state
+     * @param snapshot a snapshot 	
      * @param consensusTimestamp
      * 		the timestamp of this round
-     * @param minGenInfo
-     * 		information about minimum generations in this round
      * @param softwareVersion
      * 		the version of the software currently running
      */
@@ -118,9 +116,8 @@ public interface SwirldStateManager
             final long round,
             final long numEventsCons,
             final Hash hashEventsCons,
-            final EventImpl[] events,
+            final ConsensusSnapshot snapshot,
             final Instant consensusTimestamp,
-            final List<MinGenInfo> minGenInfo,
             final SoftwareVersion softwareVersion);
 
     /**

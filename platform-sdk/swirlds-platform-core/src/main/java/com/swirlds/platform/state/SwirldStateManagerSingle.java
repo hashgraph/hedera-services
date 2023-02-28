@@ -43,6 +43,7 @@ import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.SystemTransactionHandler;
 import com.swirlds.platform.components.TransThrottleSyncAndCreateRuleResponse;
 import com.swirlds.platform.config.ThreadConfig;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.eventhandling.SwirldStateSingleTransactionPool;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -295,9 +296,8 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
             final long round,
             final long numEventsCons,
             final Hash hashEventsCons,
-            final EventImpl[] events,
+            final ConsensusSnapshot snapshot,
             final Instant consensusTimestamp,
-            final List<MinGenInfo> minGenInfo,
             final SoftwareVersion softwareVersion) {
         // We are not currently supporting this class --
         // if we ever start supporting it again we will need to implement this.

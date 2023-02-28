@@ -16,11 +16,6 @@
 
 package com.swirlds.platform.eventhandling;
 
-import static com.swirlds.logging.LogMarker.RECONNECT;
-import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
-
-import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -42,17 +37,20 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
-import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.stats.CycleTimingStat;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.Arrays;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 /**
  * Created by a Platform to manage the flow of consensus events to SwirldState (1 instance or 3 depending on the
@@ -383,9 +381,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                 round.getRoundNum(),
                 numEventsCons.get(),
                 runningHash,
-                null,
+                round.getSnapshot(),
                 round.getLastEvent().getLastTransTime(),
-                null,
                 softwareVersion);
     }
 
