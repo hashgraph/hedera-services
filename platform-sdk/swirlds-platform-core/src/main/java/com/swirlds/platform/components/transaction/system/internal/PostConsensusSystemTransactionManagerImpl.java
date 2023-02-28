@@ -45,7 +45,8 @@ public class PostConsensusSystemTransactionManagerImpl implements PostConsensusS
     /**
      * The post-consensus handle methods that have been registered
      */
-    private final Map<Class<? extends SystemTransaction>, List<PostConsensusSystemTransactionHandler<SystemTransaction>>>
+    private final Map<
+                    Class<? extends SystemTransaction>, List<PostConsensusSystemTransactionHandler<SystemTransaction>>>
             handlers = new HashMap<>();
 
     /**
@@ -55,8 +56,7 @@ public class PostConsensusSystemTransactionManagerImpl implements PostConsensusS
      */
     @SuppressWarnings("unchecked")
     private void addHandler(final PostConsensusSystemTransactionTypedHandler<?> handler) {
-        handlers
-                .computeIfAbsent(handler.transactionClass(), k -> new ArrayList<>())
+        handlers.computeIfAbsent(handler.transactionClass(), k -> new ArrayList<>())
                 .add((PostConsensusSystemTransactionHandler<SystemTransaction>) handler.handleMethod());
     }
 
@@ -78,10 +78,7 @@ public class PostConsensusSystemTransactionManagerImpl implements PostConsensusS
      * @param creatorId   the id of the creator of the transaction
      * @param transaction the transaction being handled
      */
-    private void handleTransaction(
-            final State state,
-            final long creatorId,
-            final SystemTransaction transaction) {
+    private void handleTransaction(final State state, final long creatorId, final SystemTransaction transaction) {
 
         final List<PostConsensusSystemTransactionHandler<SystemTransaction>> relevantHandlers =
                 handlers.get(transaction.getClass());
@@ -117,8 +114,8 @@ public class PostConsensusSystemTransactionManagerImpl implements PostConsensusS
         }
 
         for (final EventImpl event : round.getConsensusEvents()) {
-            event.systemTransactionIterator().forEachRemaining(
-                    transaction -> handleTransaction(state, event.getCreatorId(), transaction));
+            event.systemTransactionIterator()
+                    .forEachRemaining(transaction -> handleTransaction(state, event.getCreatorId(), transaction));
         }
     }
 }

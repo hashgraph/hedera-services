@@ -598,13 +598,15 @@ class EventFlowTests {
         systemTransactionTracker = new SystemTransactionTracker();
         signedStateTracker = new ArrayBlockingQueue<>(100);
 
-        final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager = new PreConsensusSystemTransactionManagerFactory()
-                .addHandlers(systemTransactionTracker.getPreConsensusHandleMethods())
-                .build();
+        final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager =
+                new PreConsensusSystemTransactionManagerFactory()
+                        .addHandlers(systemTransactionTracker.getPreConsensusHandleMethods())
+                        .build();
 
-        final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager = new PostConsensusSystemTransactionManagerFactory()
-                .addHandlers(systemTransactionTracker.getPostConsensusHandleMethods())
-                .build();
+        final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager =
+                new PostConsensusSystemTransactionManagerFactory()
+                        .addHandlers(systemTransactionTracker.getPostConsensusHandleMethods())
+                        .build();
 
         if (swirldState instanceof SwirldState2) {
             swirldStateManager = new SwirldStateManagerDouble(

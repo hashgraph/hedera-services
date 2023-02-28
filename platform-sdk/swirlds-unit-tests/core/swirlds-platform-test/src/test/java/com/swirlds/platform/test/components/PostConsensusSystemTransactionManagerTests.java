@@ -41,14 +41,14 @@ class PostConsensusSystemTransactionManagerTests {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("tests that exceptions are handled gracefully")
     void testHandleExceptions() {
-        PostConsensusSystemTransactionHandler<DummySystemTransaction> consumer = (state, dummySystemTransaction, aLong) -> {
-            throw new IllegalStateException("this is intentionally thrown");
-        };
+        PostConsensusSystemTransactionHandler<DummySystemTransaction> consumer =
+                (state, dummySystemTransaction, aLong) -> {
+                    throw new IllegalStateException("this is intentionally thrown");
+                };
 
         final PostConsensusSystemTransactionManager handler = new PostConsensusSystemTransactionManagerFactory()
                 .addHandlers(List.of(
-                        new PostConsensusSystemTransactionTypedHandler<>(
-                                DummySystemTransaction.class, consumer)))
+                        new PostConsensusSystemTransactionTypedHandler<>(DummySystemTransaction.class, consumer)))
                 .build();
 
         assertDoesNotThrow(() -> handler.handleRound(mock(State.class), newDummyRound(List.of(1))));
@@ -81,10 +81,9 @@ class PostConsensusSystemTransactionManagerTests {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("tests handling system transactions, where no handle method has been defined")
     void testNoHandleMethod() {
-        final PostConsensusSystemTransactionManager handler = new PostConsensusSystemTransactionManagerFactory().build();
+        final PostConsensusSystemTransactionManager handler =
+                new PostConsensusSystemTransactionManagerFactory().build();
 
-        assertDoesNotThrow(
-                () -> handler.handleRound(mock(State.class), newDummyRound(List.of(1))),
-                "should not throw");
+        assertDoesNotThrow(() -> handler.handleRound(mock(State.class), newDummyRound(List.of(1))), "should not throw");
     }
 }

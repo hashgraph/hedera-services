@@ -42,13 +42,13 @@ import java.util.List;
  */
 public interface StateManagementComponent
         extends PlatformComponent,
-        EmergencyStateFinder,
-        RoundAppliedToStateConsumer,
-        SignedStateToLoadConsumer,
-        NewSignedStateFromTransactionsConsumer,
-        LatestSignedStateProvider,
-        PreConsensusSystemTransactionConsumer,
-        PostConsensusSystemTransactionConsumer {
+                EmergencyStateFinder,
+                RoundAppliedToStateConsumer,
+                SignedStateToLoadConsumer,
+                NewSignedStateFromTransactionsConsumer,
+                LatestSignedStateProvider,
+                PreConsensusSystemTransactionConsumer,
+                PostConsensusSystemTransactionConsumer {
 
     /**
      * Get a wrapper containing the latest immutable signed state. May be unhashed, may or may not have all required

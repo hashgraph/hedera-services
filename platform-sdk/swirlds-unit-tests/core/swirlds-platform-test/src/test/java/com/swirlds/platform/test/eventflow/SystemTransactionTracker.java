@@ -30,8 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class SystemTransactionTracker implements
-        PreConsensusSystemTransactionConsumer, PostConsensusSystemTransactionConsumer, Failable {
+public class SystemTransactionTracker
+        implements PreConsensusSystemTransactionConsumer, PostConsensusSystemTransactionConsumer, Failable {
 
     private final Map<Long, Integer> preConsByCreator = new HashMap<>();
     private final Set<Transaction> preConsensusTransactions = new HashSet<>();
@@ -106,17 +106,13 @@ public class SystemTransactionTracker implements
 
     @Override
     public List<PreConsensusSystemTransactionTypedHandler<?>> getPreConsensusHandleMethods() {
-        return List.of(
-                new PreConsensusSystemTransactionTypedHandler<>(
-                        SystemTransactionPing.class,
-                        this::handlePreConsensusSystemTransaction));
+        return List.of(new PreConsensusSystemTransactionTypedHandler<>(
+                SystemTransactionPing.class, this::handlePreConsensusSystemTransaction));
     }
 
     @Override
     public List<PostConsensusSystemTransactionTypedHandler<?>> getPostConsensusHandleMethods() {
-        return List.of(
-                new PostConsensusSystemTransactionTypedHandler<>(
-                        SystemTransactionPing.class,
-                        this::handlePostConsensusSystemTransaction));
+        return List.of(new PostConsensusSystemTransactionTypedHandler<>(
+                SystemTransactionPing.class, this::handlePostConsensusSystemTransaction));
     }
 }

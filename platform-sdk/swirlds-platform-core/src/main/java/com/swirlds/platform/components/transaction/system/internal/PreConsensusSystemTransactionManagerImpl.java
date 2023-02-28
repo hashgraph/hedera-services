@@ -53,8 +53,7 @@ public class PreConsensusSystemTransactionManagerImpl implements PreConsensusSys
      */
     @SuppressWarnings("unchecked")
     private void addHandler(final PreConsensusSystemTransactionTypedHandler<?> handler) {
-        handlers
-                .computeIfAbsent(handler.transactionClass(), k -> new ArrayList<>())
+        handlers.computeIfAbsent(handler.transactionClass(), k -> new ArrayList<>())
                 .add((PreConsensusSystemTransactionHandler<SystemTransaction>) handler.handleMethod());
     }
 

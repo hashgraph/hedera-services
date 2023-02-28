@@ -446,10 +446,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      */
     @Override
     public List<PreConsensusSystemTransactionTypedHandler<?>> getPreConsensusHandleMethods() {
-        return List.of(
-                new PreConsensusSystemTransactionTypedHandler<>(
-                        StateSignatureTransaction.class,
-                        this::handleStateSignatureTransactionPreConsensus));
+        return List.of(new PreConsensusSystemTransactionTypedHandler<>(
+                StateSignatureTransaction.class, this::handleStateSignatureTransactionPreConsensus));
     }
 
     /**
@@ -457,9 +455,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      */
     @Override
     public List<PostConsensusSystemTransactionTypedHandler<?>> getPostConsensusHandleMethods() {
-        return List.of(
-                new PostConsensusSystemTransactionTypedHandler<>(
-                        StateSignatureTransaction.class,
-                        this::handleStateSignatureTransactionPostConsensus));
+        return List.of(new PostConsensusSystemTransactionTypedHandler<>(
+                StateSignatureTransaction.class, this::handleStateSignatureTransactionPostConsensus));
     }
 }

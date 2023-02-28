@@ -20,19 +20,13 @@ import static com.swirlds.platform.test.components.TransactionHandlingTestUtils.
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.system.events.BaseEventHashedData;
-import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.test.DummySystemTransaction;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionHandler;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManagerFactory;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionTypedHandler;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
-import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;
@@ -69,8 +63,7 @@ class PreConsensusSystemTransactionManagerTests {
 
         final PreConsensusSystemTransactionManager handler = new PreConsensusSystemTransactionManagerFactory()
                 .addHandlers(List.of(
-                        new PreConsensusSystemTransactionTypedHandler<>(
-                                DummySystemTransaction.class, consumer)))
+                        new PreConsensusSystemTransactionTypedHandler<>(DummySystemTransaction.class, consumer)))
                 .build();
 
         handler.handleEvent(newDummyEvent(0));
@@ -87,7 +80,6 @@ class PreConsensusSystemTransactionManagerTests {
     void testNoHandleMethod() {
         final PreConsensusSystemTransactionManager handler = new PreConsensusSystemTransactionManagerFactory().build();
 
-        assertDoesNotThrow(
-                () -> handler.handleEvent(newDummyEvent(1)), "should not throw");
+        assertDoesNotThrow(() -> handler.handleEvent(newDummyEvent(1)), "should not throw");
     }
 }

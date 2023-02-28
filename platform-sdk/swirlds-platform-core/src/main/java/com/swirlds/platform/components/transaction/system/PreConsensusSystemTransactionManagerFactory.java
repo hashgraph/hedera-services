@@ -38,7 +38,7 @@ public class PreConsensusSystemTransactionManagerFactory {
      */
     public PreConsensusSystemTransactionManagerFactory addHandlers(
             final List<PreConsensusSystemTransactionTypedHandler<?>> handleMethods) {
-        
+
         this.handleMethods.addAll(handleMethods);
 
         return this;

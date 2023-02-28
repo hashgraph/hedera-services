@@ -26,6 +26,4 @@ import com.swirlds.common.system.transaction.internal.SystemTransaction;
  * @param <T>              the system transaction type
  */
 public record PostConsensusSystemTransactionTypedHandler<T extends SystemTransaction>(
-        Class<T> transactionClass, PostConsensusSystemTransactionHandler<T> handleMethod) {
-
-}
+        Class<T> transactionClass, PostConsensusSystemTransactionHandler<T> handleMethod) {}
