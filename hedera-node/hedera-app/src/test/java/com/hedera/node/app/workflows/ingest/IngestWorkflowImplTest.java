@@ -355,7 +355,7 @@ class IngestWorkflowImplTest {
     @Test
     void testThrottleFails() throws PreCheckException, InvalidProtocolBufferException {
         // given
-        when(throttleAccumulator.shouldThrottle(ConsensusCreateTopic)).thenReturn(true);
+        when(throttleAccumulator.shouldThrottle(TRANSACTION_BODY)).thenReturn(true);
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
@@ -423,7 +423,7 @@ class IngestWorkflowImplTest {
         // given
         doThrow(new InsufficientBalanceException(INSUFFICIENT_ACCOUNT_BALANCE, 42L))
                 .when(checker)
-                .checkSolvency(eq(TRANSACTION_BODY), eq(ConsensusCreateTopic), any());
+                .checkSolvency(requestBuffer);
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when

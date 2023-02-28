@@ -16,14 +16,25 @@
 
 package com.hedera.node.app.signature;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
+import com.hedera.node.app.service.mono.legacy.exception.InvalidAccountIDException;
+import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
+import com.hedera.node.app.service.mono.sigs.verification.PrecheckVerifier;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.state.HederaState;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -32,17 +43,34 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class MonoSignaturePreparer implements SignaturePreparer {
+    private final PrecheckVerifier precheckVerifier;
 
     @Inject
-    public MonoSignaturePreparer() {}
+    public MonoSignaturePreparer(final @NonNull PrecheckVerifier precheckVerifier) {
+        this.precheckVerifier = Objects.requireNonNull(precheckVerifier);
+    }
+
+    @Override
+    public ResponseCodeEnum syncGetPayerSigStatus(final @NonNull byte[] transactionBytes) {
+        try {
+            final var accessor = SignedTxnAccessor.from(transactionBytes);
+            return precheckVerifier.hasNecessarySignatures(accessor) ? OK : INVALID_SIGNATURE;
+        } catch (final KeyPrefixMismatchException ignore) {
+            return KEY_PREFIX_MISMATCH;
+        } catch (final InvalidAccountIDException ignore) {
+            return INVALID_ACCOUNT_ID;
+        } catch (final Exception ignore) {
+            return INVALID_SIGNATURE;
+        }
+    }
 
     @NonNull
     @Override
     public TransactionSignature prepareSignature(
-            @NonNull HederaState state,
-            @NonNull byte[] txBodyBytes,
-            @NonNull SignatureMap signatureMap,
-            @NonNull AccountID accountID) {
+            final @NonNull HederaState state,
+            final @NonNull byte[] txBodyBytes,
+            final @NonNull SignatureMap signatureMap,
+            final @NonNull AccountID accountID) {
         throw new UnsupportedOperationException("Not implemented");
     }
 

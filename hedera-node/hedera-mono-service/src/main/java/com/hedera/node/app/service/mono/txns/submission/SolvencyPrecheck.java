@@ -91,7 +91,7 @@ public class SolvencyPrecheck {
     }
 
     private TxnValidityAndFeeReq assess(SignedTxnAccessor accessor, boolean includeSvcFee) {
-        final var payerStatus = queryableAccountStatus(EntityNum.fromAccountId(accessor.getPayer()), accounts.get());
+        final var payerStatus = payerAccountStatus(EntityNum.fromAccountId(accessor.getPayer()));
         if (payerStatus != OK) {
             return new TxnValidityAndFeeReq(PAYER_ACCOUNT_NOT_FOUND);
         }
@@ -101,14 +101,52 @@ public class SolvencyPrecheck {
             return new TxnValidityAndFeeReq(sigsStatus);
         }
 
-        if (feeExemptions.hasExemptPayer(accessor)) {
+        if (hasExemptPayer(accessor)) {
             return VERIFIED_EXEMPT;
         }
 
         return solvencyOfVerifiedPayer(accessor, includeSvcFee);
     }
 
-    private TxnValidityAndFeeReq solvencyOfVerifiedPayer(SignedTxnAccessor accessor, boolean includeSvcFee) {
+    /**
+     * Checks if the payer account is exempt from paying fees. Public for now to
+     * support a thin adapter to use in {@code IngestChecker}.
+     *
+     * @param accessor the accessor for the transaction
+     * @return whether the payer account is exempt from paying fees
+     */
+    public boolean hasExemptPayer(final SignedTxnAccessor accessor) {
+        return feeExemptions.hasExemptPayer(accessor);
+    }
+
+    /**
+     * Checks if the payer account is valid. Public for now to support a thin
+     * adapter to use in {@code IngestChecker}.
+     *
+     * @param payerNum the payer account number
+     * @return the status of the payer account
+     */
+    public ResponseCodeEnum payerAccountStatus(final EntityNum payerNum) {
+        return queryableAccountStatus(payerNum, accounts.get());
+    }
+
+    /**
+     * Returns an object summarizing the result of testing if the verified payer
+     * account of the given transaction can afford to cover its fees (with the
+     * option to include or exclude the service component). Public for now to
+     * support a thin adapter to use in {@code IngestChecker}.
+     *
+     * <p>If the payer account <i>can</i> afford the fees, the returned object
+     * will have a status of {@code OK} and a fee requirement of zero. If the
+     * payer account <i>cannot</i> afford the fees, the returned object will
+     * have a status of {@code INSUFFICIENT_TX_FEE} and the fee amount that
+     * would have satisfied the check.
+     *
+     * @param accessor the accessor for the transaction
+     * @param includeSvcFee whether to include the service fee in the check
+     * @return the summary of the solvency test
+     */
+    public TxnValidityAndFeeReq solvencyOfVerifiedPayer(SignedTxnAccessor accessor, boolean includeSvcFee) {
         final var payerId = EntityNum.fromAccountId(accessor.getPayer());
         final var payerAccount = accounts.get().get(payerId);
 

@@ -44,6 +44,7 @@ import com.hedera.node.app.service.mono.txns.TransactionsModule;
 import com.hedera.node.app.service.mono.txns.submission.SubmissionModule;
 import com.hedera.node.app.services.ServiceModule;
 import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
+import com.hedera.node.app.workflows.ingest.IngestModule;
 import com.hedera.node.app.workflows.query.QueryWorkflowModule;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
@@ -85,7 +86,8 @@ import javax.inject.Singleton;
             ExpiryModule.class,
             ServiceModule.class,
             QueryWorkflowModule.class,
-            HandleWorkflowModule.class
+            HandleWorkflowModule.class,
+            IngestModule.class
         })
 public interface HederaApp extends ServicesApp {
     /* Needed by ServicesState */

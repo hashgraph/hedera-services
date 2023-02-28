@@ -136,7 +136,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 opCounters.countReceived(functionality);
 
                 // 2. Check throttles
-                if (throttleAccumulator.shouldThrottle(functionality)) {
+                if (throttleAccumulator.shouldThrottle(onsetResult.txBody())) {
                     throw new PreCheckException(BUSY);
                 }
 
@@ -155,17 +155,17 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 checker.checkPayerSignature(state, requestBuffer, signatureMap, payerID);
 
                 // 6. Check account balance
-                checker.checkSolvency(txBody, functionality, payer);
+                checker.checkSolvency(requestBuffer);
 
                 // 7. Submit to platform
                 final var byteArray = checker.extractByteArray(requestBuffer);
                 submissionManager.submit(txBody, byteArray, ctx.txBodyParser());
 
                 opCounters.countSubmitted(functionality);
-            } catch (InsufficientBalanceException e) {
+            } catch (final InsufficientBalanceException e) {
                 estimatedFee = e.getEstimatedFee();
                 result = e.responseCode();
-            } catch (PreCheckException e) {
+            } catch (final PreCheckException e) {
                 result = e.responseCode();
             }
         }

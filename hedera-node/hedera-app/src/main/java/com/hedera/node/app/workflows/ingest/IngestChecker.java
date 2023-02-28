@@ -18,11 +18,15 @@ package com.hedera.node.app.workflows.ingest;
 
 import static com.hedera.node.app.service.mono.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.token.entity.Account;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.node.app.service.mono.txns.submission.SolvencyPrecheck;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -37,32 +41,38 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** The {@code IngestChecker} contains checks that are specific to the ingest workflow */
+@Singleton
 public class IngestChecker {
 
     private static final Logger LOG = LoggerFactory.getLogger(IngestChecker.class);
 
     private final AccountID nodeAccountID;
+    private final SolvencyPrecheck solvencyPrecheck;
     private final SignaturePreparer signaturePreparer;
     private final Cryptography cryptography;
 
     /**
      * Constructor of the {@code IngestChecker}
      *
-     * @param nodeAccountID the {@link AccountID} of the <em>node</em>
+     * @param nodeAccountID     the {@link AccountID} of the <em>node</em>
+     * @param solvencyPrecheck
      * @param signaturePreparer the {@link SignaturePreparer} that prepares signature data
-     * @param cryptography the {@link Cryptography} used to verify signatures
+     * @param cryptography      the {@link Cryptography} used to verify signatures
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
     public IngestChecker(
             @NonNull final AccountID nodeAccountID,
+            @NonNull final SolvencyPrecheck solvencyPrecheck,
             @NonNull final SignaturePreparer signaturePreparer,
             @NonNull final Cryptography cryptography) {
         this.nodeAccountID = requireNonNull(nodeAccountID);
+        this.solvencyPrecheck = solvencyPrecheck;
         this.signaturePreparer = requireNonNull(signaturePreparer);
         this.cryptography = requireNonNull(cryptography);
     }
@@ -110,28 +120,39 @@ public class IngestChecker {
             @NonNull final AccountID payerID)
             throws PreCheckException {
         final var transactionBytes = extractByteArray(requestBuffer);
-        final var signature = signaturePreparer.prepareSignature(state, transactionBytes, signatureMap, payerID);
-        if (!cryptography.verifySync(signature)) {
-            throw new PreCheckException(INVALID_SIGNATURE);
+
+        // TODO - replace with a refactored version of the keys and signatures API
+        final var payerSigStatus = signaturePreparer.syncGetPayerSigStatus(transactionBytes);
+
+        if (payerSigStatus != OK) {
+            throw new PreCheckException(payerSigStatus);
         }
     }
 
     /**
      * Checks the solvency of the payer
      *
-     * @param txBody the {@link TransactionBody}
-     * @param functionality the {@link HederaFunctionality} of the transaction
-     * @param payer the {@code Account} of the payer
-     * @throws NullPointerException if one of the arguments is {@code null}
-     * @throws InsufficientBalanceException if the balance is sufficient
+     * TODO - replace with a refactored version of the mono solvency check
+     *
+     * @param requestBuffer the {@link ByteBuffer} containing the {@link Transaction}
+     * @throws NullPointerException if any argument is {@code null}
+     * @throws InsufficientBalanceException if the payer balance is not sufficient
      */
-    public void checkSolvency(
-            @NonNull final TransactionBody txBody,
-            @NonNull final HederaFunctionality functionality,
-            @NonNull final Account payer)
-            throws InsufficientBalanceException {
-        LOG.warn("IngestChecker.checkSolvency() has not been implemented yet");
-        // TODO: Implement once fee calculation is implemented
+    public void checkSolvency(@NonNull final ByteBuffer requestBuffer) throws PreCheckException {
+        try {
+            final var accessor = SignedTxnAccessor.from(extractByteArray(requestBuffer));
+            final var payerNum = EntityNum.fromAccountId(accessor.getPayer());
+            final var payerStatus = solvencyPrecheck.payerAccountStatus(payerNum);
+            if (payerStatus != OK) {
+                throw new PreCheckException(payerStatus);
+            }
+            final var solvencySummary = solvencyPrecheck.solvencyOfVerifiedPayer(accessor, false);
+            if (solvencySummary.getValidity() != OK) {
+                throw new InsufficientBalanceException(solvencySummary.getValidity(), solvencySummary.getRequiredFee());
+            }
+        } catch (final InvalidProtocolBufferException e) {
+            throw new PreCheckException(INVALID_TRANSACTION);
+        }
     }
 
     /**

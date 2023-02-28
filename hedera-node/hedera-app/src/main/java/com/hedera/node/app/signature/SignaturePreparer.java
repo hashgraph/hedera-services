@@ -19,6 +19,7 @@ package com.hedera.node.app.signature;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.state.HederaState;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface SignaturePreparer {
+    ResponseCodeEnum syncGetPayerSigStatus(@NonNull byte[] transactionBytes);
 
     /**
      * Prepares the signature data for a single key (usually the payer's key).
@@ -33,11 +35,11 @@ public interface SignaturePreparer {
      * <p>Please note: The parameter list is preliminary and very likely to change once we implement
      * the real {@link SignaturePreparer}.
      *
-     * @param state the {@link HederaState} that should be used to read the state
-     * @param txBodyBytes the {@code byte[]} of the {@link
-     *     com.hederahashgraph.api.proto.java.TransactionBody}
+     * @param state        the {@link HederaState} that should be used to read the state
+     * @param txBodyBytes  the {@code byte[]} of the {@link
+     *                     com.hederahashgraph.api.proto.java.TransactionBody}
      * @param signatureMap the {@link SignatureMap} that is included in the transaction
-     * @param accountID the {@link AccountID} for which the signature data needs to be prepared
+     * @param accountID    the {@link AccountID} for which the signature data needs to be prepared
      * @return the {@link TransactionSignature} with all data required to verify the signature
      */
     @NonNull
@@ -53,11 +55,11 @@ public interface SignaturePreparer {
      * <p>Please note: The parameter list is preliminary and very likely to change once we implement
      * the real {@link SignaturePreparer}.
      *
-     * @param state the {@link HederaState} that should be used to read the state
-     * @param txBodyBytes the {@code byte[]} of the {@link
-     *     com.hederahashgraph.api.proto.java.TransactionBody}
+     * @param state        the {@link HederaState} that should be used to read the state
+     * @param txBodyBytes  the {@code byte[]} of the {@link
+     *                     com.hederahashgraph.api.proto.java.TransactionBody}
      * @param signatureMap the {@link SignatureMap} that is included in the transaction
-     * @param keys the list of {@link HederaKey}s for which the signature data needs to be prepared
+     * @param keys         the list of {@link HederaKey}s for which the signature data needs to be prepared
      * @return a {@link Map} from the provided keys to their respective {@link TransactionSignature}
      */
     @NonNull
