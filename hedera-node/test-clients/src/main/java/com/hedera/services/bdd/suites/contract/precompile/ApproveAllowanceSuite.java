@@ -71,7 +71,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     private static final String HTS_APPROVE_ALLOWANCE_CONTRACT = "HtsApproveAllowance";
     private static final String SPENDER = "spender";
     private static final String ALLOWANCE_TX = "allowanceTxn";
-    private static final String APPROVE_SIGNATURE = "Approval(address,address,uint256)";
+    public static final String APPROVE_SIGNATURE = "Approval(address,address,uint256)";
     private static final String APPROVE_FOR_ALL_SIGNATURE = "ApprovalForAll(address,address,bool)";
 
     public static void main(String... args) {
@@ -254,6 +254,10 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                         BigInteger.valueOf(2L))
                                 .payingWith(OWNER)
                                 .gas(4_000_000L)
+                                /* Don't run with Ethereum calls, since txn payer
+                                 * keys are revoked in Ethereum transactions and sender is the wrapped
+                                 * ethereum txn sender . Analogous test with appropriate setup is present in EthereumSuite  */
+                                .refusingEthConversion()
                                 .via(approveTxn))))
                 .then(
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender(),

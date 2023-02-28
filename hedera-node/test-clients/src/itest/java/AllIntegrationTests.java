@@ -60,8 +60,7 @@ class AllIntegrationTests extends IntegrationTestBase {
     @TestFactory
     List<DynamicTest> concurrentSpecs() {
         return List.of(
-                concurrentSpecsFrom(ConcurrentSuites.all()),
-                concurrentEthSpecsFrom(ConcurrentSuites.ethereumSuites()));
+                concurrentSpecsFrom(ConcurrentSuites.all()), concurrentEthSpecsFrom(ConcurrentSuites.ethereumSuites()));
     }
 
     @Tag("integration")
