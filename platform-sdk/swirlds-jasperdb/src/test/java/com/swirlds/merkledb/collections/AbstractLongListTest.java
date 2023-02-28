@@ -20,7 +20,7 @@ import static com.swirlds.common.utility.Units.BYTES_TO_MEBIBYTES;
 import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
 import static com.swirlds.merkledb.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
 import static com.swirlds.merkledb.MerkleDbTestUtils.getDirectMemoryUsedBytes;
-import static com.swirlds.merkledb.collections.LongList.FILE_HEADER_SIZE;
+import static com.swirlds.merkledb.collections.LongList.FILE_HEADER_SIZE_V2;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -126,18 +126,18 @@ abstract class AbstractLongListTest<T extends LongList> {
         // check file exists and contains some data
         assertTrue(Files.exists(file), "file does not exist");
         assertEquals(
-                (FILE_HEADER_SIZE + (Long.BYTES * (long) sampleSize)),
+                (FILE_HEADER_SIZE_V2 + (Long.BYTES * (long) sampleSize)),
                 Files.size(file),
                 "Expected file to contain all the data so its size [" + Files.size(file)
                         + "] should have been header plus longs data size ["
-                        + (FILE_HEADER_SIZE + (Long.BYTES * (sampleSize)))
+                        + (FILE_HEADER_SIZE_V2 + (Long.BYTES * (sampleSize)))
                         + "]");
         // check all data, to make sure it did not get messed up
         for (int i = 0; i < sampleSize; i++) {
             final long readValue = longList.get(i, 0);
             assertEquals(i, readValue, "Longs don't match for " + i + " got [" + readValue + "] should be [" + i + "]");
         }
-        // now try and construct a new HashList reading from the file
+        // now try and construct a new LongList reading from the file
         try (final LongList longList2 = createLongListFromFile(file)) {
             // now check data and other attributes
             assertEquals(longList.capacity(), longList2.capacity(), "Unexpected value for longList2.capacity()");

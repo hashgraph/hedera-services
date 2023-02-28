@@ -39,7 +39,7 @@ import java.util.stream.StreamSupport;
  * put()} call.
  *
  * <p>Implementations should support both concurrent reads and writes. Writing to an index beyond
- * the current capacity of the the list (but less than the max capacity) should <b>not</b> fail, but
+ * the current capacity of the list (but less than the max capacity) should <b>not</b> fail, but
  * instead trigger an automatic expansion of the list's capacity. Thus a {@link LongList} behaves
  * more like a long-to-long map than a traditional list.
  */
@@ -50,10 +50,34 @@ public abstract class LongList implements CASableLongIndex, Closeable {
     protected static final int MAX_NUM_LONGS_PER_CHUNK = Math.toIntExact(16_000L * (MEBIBYTES_TO_BYTES / Long.BYTES));
     /** A suitable default for the number of longs to store per chunk. */
     protected static final int DEFAULT_NUM_LONGS_PER_CHUNK = Math.toIntExact(8L * (MEBIBYTES_TO_BYTES / Long.BYTES));
+    /** Initial file format*/
+    private static final int INITIAL_VERSION = 1;
+    /** File format that supports min valid index */
+    private static final int MIN_VALID_INDEX_SUPPORT_VERSION = 2;
     /** The version number for format of current data files */
-    private static final int FILE_FORMAT_VERSION = 1;
-    /** The number of bytes to read for header */
-    protected static final int FILE_HEADER_SIZE = Integer.BYTES + Integer.BYTES + Long.BYTES + Long.BYTES;
+    private static final int CURRENT_FILE_FORMAT_VERSION = MIN_VALID_INDEX_SUPPORT_VERSION;
+    /** The number of bytes required to store file version */
+    protected static final int VERSION_METADATA_SIZE = Integer.BYTES;
+    /** The number of bytes to read for format metadata, v1: <br>
+     * - number of longs per chunk<br>
+     * - max index that can be stored<br>
+     * - max number of longs supported by the list<br>
+     */
+    protected static final int FORMAT_METADATA_SIZE_V1 = Integer.BYTES + Long.BYTES + Long.BYTES;
+    /** The number of bytes to read for format metadata, v2:
+     * - number of longs per chunk<br>
+     * - max index that can be stored<br>
+     * - max number of longs supported by the list<br>
+     * - min valid index<br>
+     */
+    protected static final int FORMAT_METADATA_SIZE_V2 = Integer.BYTES + Long.BYTES + Long.BYTES + Long.BYTES;
+    /** The number for bytes to read for file header, v1 */
+    protected static final int FILE_HEADER_SIZE_V1 = VERSION_METADATA_SIZE + FORMAT_METADATA_SIZE_V1;
+    /** The number for bytes to read for file header, v2 */
+    protected static final int FILE_HEADER_SIZE_V2 = VERSION_METADATA_SIZE + FORMAT_METADATA_SIZE_V2;
+    /** File header size for the latest format */
+    protected final int currentFileHeaderSize;
+
     /**
      * A LongList may not contain the non-existent data location, which is used as a sentinel for a
      * never-set index.
@@ -86,6 +110,9 @@ public abstract class LongList implements CASableLongIndex, Closeable {
     /** The file channel for this LongList's data if it was loaded from a file. */
     protected FileChannel fileChannel;
 
+    /** Min valid index of the list. All the indices to the left of this index have {@code IMPERMISSIBLE_VALUE}-s */
+    protected final AtomicLong minValidIndex = new AtomicLong(0);
+
     /**
      * Construct a new LongList with the specified number of longs per chunk and maximum number of
      * longs.
@@ -105,6 +132,7 @@ public abstract class LongList implements CASableLongIndex, Closeable {
         // multiplyExact throws exception if we overflow and int
         memoryChunkSize = Math.multiplyExact(numLongsPerChunk, Long.BYTES);
         this.maxLongs = maxLongs;
+        currentFileHeaderSize = FILE_HEADER_SIZE_V2;
     }
 
     /**
@@ -121,29 +149,51 @@ public abstract class LongList implements CASableLongIndex, Closeable {
         this.fileChannel = fileChannel;
         if (fileChannel.size() > 0) {
             // read header from existing file
-            final ByteBuffer headerBuffer = ByteBuffer.allocate(FILE_HEADER_SIZE);
-            MerkleDbFileUtils.completelyRead(fileChannel, headerBuffer);
-            headerBuffer.rewind();
-            final int formatVersion = headerBuffer.getInt();
-            if (formatVersion != FILE_FORMAT_VERSION) {
-                throw new IOException("Tried to read a file with incompatible file format version ["
+            final ByteBuffer versionBuffer = readFromFileChanel(fileChannel, VERSION_METADATA_SIZE);
+            final int formatVersion = versionBuffer.getInt();
+            final int formatMetadataSize;
+            if (formatVersion == INITIAL_VERSION) {
+                formatMetadataSize = FORMAT_METADATA_SIZE_V1;
+                currentFileHeaderSize = FILE_HEADER_SIZE_V1;
+            } else if (formatVersion == MIN_VALID_INDEX_SUPPORT_VERSION) {
+                formatMetadataSize = FORMAT_METADATA_SIZE_V2;
+                currentFileHeaderSize = FILE_HEADER_SIZE_V2;
+            } else {
+                throw new IOException("File format version is not supported. File format version ["
                         + formatVersion
-                        + "], expected ["
-                        + FILE_FORMAT_VERSION
+                        + "], the latest supported version is ["
+                        + CURRENT_FILE_FORMAT_VERSION
                         + "].");
             }
+
+            final ByteBuffer headerBuffer = readFromFileChanel(fileChannel, formatMetadataSize);
             numLongsPerChunk = headerBuffer.getInt();
             memoryChunkSize = numLongsPerChunk * Long.BYTES;
             maxIndexThatCanBeStored.set(headerBuffer.getLong());
             maxLongs = headerBuffer.getLong();
-            size.set((fileChannel.size() - FILE_HEADER_SIZE) / Long.BYTES);
+            if (formatVersion > INITIAL_VERSION) {
+                minValidIndex.set(headerBuffer.getLong());
+                // "inflating" the size by number of indices that are to the left of the min valid index
+                size.set(minValidIndex.get() + (fileChannel.size() - currentFileHeaderSize) / Long.BYTES);
+            } else {
+                size.set((fileChannel.size() - FILE_HEADER_SIZE_V1) / Long.BYTES);
+            }
         } else {
             // opening a new file
             numLongsPerChunk = DEFAULT_NUM_LONGS_PER_CHUNK;
             memoryChunkSize = numLongsPerChunk * Long.BYTES;
             maxLongs = DEFAULT_MAX_LONGS_TO_STORE;
+            currentFileHeaderSize = FILE_HEADER_SIZE_V2;
             writeHeader(fileChannel);
         }
+    }
+
+    private static ByteBuffer readFromFileChanel(final FileChannel fileChannel, final int bytesToRead)
+            throws IOException {
+        final ByteBuffer headerBuffer = ByteBuffer.allocate(bytesToRead);
+        MerkleDbFileUtils.completelyRead(fileChannel, headerBuffer);
+        headerBuffer.rewind();
+        return headerBuffer;
     }
 
     /**
@@ -267,16 +317,17 @@ public abstract class LongList implements CASableLongIndex, Closeable {
      * @throws IOException If there was a problem writing header
      */
     protected final void writeHeader(final FileChannel fc) throws IOException {
-        final ByteBuffer headerBuffer = ByteBuffer.allocate(FILE_HEADER_SIZE);
+        final ByteBuffer headerBuffer = ByteBuffer.allocate(currentFileHeaderSize);
         headerBuffer.rewind();
-        headerBuffer.putInt(FILE_FORMAT_VERSION);
+        headerBuffer.putInt(CURRENT_FILE_FORMAT_VERSION);
         headerBuffer.putInt(getNumLongsPerChunk());
         headerBuffer.putLong(maxIndexThatCanBeStored.get());
         headerBuffer.putLong(maxLongs);
+        headerBuffer.putLong(minValidIndex.get());
         headerBuffer.flip();
         // always write at start of file
         MerkleDbFileUtils.completelyWrite(fc, headerBuffer, 0);
-        fc.position(FILE_HEADER_SIZE);
+        fc.position(currentFileHeaderSize);
     }
 
     /**
@@ -297,12 +348,23 @@ public abstract class LongList implements CASableLongIndex, Closeable {
     protected abstract long lookupInChunk(final long chunkIndex, final long subIndex);
 
     /**
-     * Current implementation is no-op.
+     * Calls implementation specific {@link LongList#onUpdateMinValidIndex(long)}
+     * and then updates {@code minValidIndex} parameter
      *
      * @param newMinValidIndex minimal valid index of the list
      */
-    public void updateMinValidIndex(final long newMinValidIndex) {
-        // no-op
+    public final void updateMinValidIndex(final long newMinValidIndex) {
+        onUpdateMinValidIndex(newMinValidIndex);
+        minValidIndex.set(newMinValidIndex);
+    }
+
+    /**
+     * An action that has to be taken before update of the min valid index
+     *
+     * @param newMinValidIndex min valid index
+     */
+    protected void onUpdateMinValidIndex(final long newMinValidIndex) {
+        // no op
     }
 
     /**

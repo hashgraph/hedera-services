@@ -58,7 +58,7 @@ public class LongListDisk extends LongList {
         checkValueAndIndex(value, index);
         try {
             final ByteBuffer buf = TEMP_LONG_BUFFER_THREAD_LOCAL.get();
-            final long offset = FILE_HEADER_SIZE + (index * Long.BYTES);
+            final long offset = currentFileHeaderSize + (index * Long.BYTES);
             // write new value to file
             buf.putLong(0, value);
             buf.position(0);
@@ -87,7 +87,7 @@ public class LongListDisk extends LongList {
         checkValueAndIndex(newValue, index);
         try {
             final ByteBuffer buf = TEMP_LONG_BUFFER_THREAD_LOCAL.get();
-            final long offset = FILE_HEADER_SIZE + (index * Long.BYTES);
+            final long offset = currentFileHeaderSize + (index * Long.BYTES);
             // first read old value
             buf.clear();
             MerkleDbFileUtils.completelyRead(fileChannel, buf, offset);
@@ -130,15 +130,25 @@ public class LongListDisk extends LongList {
         if (!file.equals(newFile)) {
             try (final FileChannel fc =
                     FileChannel.open(newFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
-                fileChannel.position(0);
-                MerkleDbFileUtils.completelyTransferFrom(fc, fileChannel, 0, fileChannel.size());
+                // write header
+                writeHeader(fc);
+                // write data
+                writeLongsData(fc);
+                fc.force(true);
             }
         }
     }
 
-    /** No-op as we override writeToFile directly */
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected void writeLongsData(final FileChannel fc) {}
+    protected void writeLongsData(final FileChannel fc) throws IOException {
+        final long minValidIndexOffset = minValidIndex.get() * Long.BYTES;
+        fileChannel.position(currentFileHeaderSize + minValidIndexOffset);
+        MerkleDbFileUtils.completelyTransferFrom(
+                fc, fileChannel, currentFileHeaderSize, fileChannel.size() - minValidIndexOffset);
+    }
 
     /**
      * Lookup a long in data
@@ -151,7 +161,11 @@ public class LongListDisk extends LongList {
     protected long lookupInChunk(final long chunkIndex, final long subIndex) {
         try {
             final ByteBuffer buf = TEMP_LONG_BUFFER_THREAD_LOCAL.get();
-            final long offset = FILE_HEADER_SIZE + (((chunkIndex * numLongsPerChunk) + subIndex) * Long.BYTES);
+            final long listIndex = (chunkIndex * numLongsPerChunk) + subIndex;
+            if (listIndex < minValidIndex.get()) {
+                return IMPERMISSIBLE_VALUE;
+            }
+            final long offset = currentFileHeaderSize + (listIndex * Long.BYTES);
             buf.clear();
             MerkleDbFileUtils.completelyRead(fileChannel, buf, offset);
             return buf.getLong(0);

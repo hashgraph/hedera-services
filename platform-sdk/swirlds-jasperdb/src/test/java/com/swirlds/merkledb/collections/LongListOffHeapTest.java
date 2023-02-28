@@ -19,12 +19,13 @@ package com.swirlds.merkledb.collections;
 import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
 import static com.swirlds.merkledb.collections.LongList.DEFAULT_MAX_LONGS_TO_STORE;
 import static com.swirlds.merkledb.collections.LongList.DEFAULT_NUM_LONGS_PER_CHUNK;
-import static com.swirlds.merkledb.collections.LongListOffHeap.DEFAULT_RESERVED_BUFFER_LENGTH;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.swirlds.test.framework.ResourceLoader;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -48,12 +49,12 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
     @Override
     protected LongListOffHeap createLongListWithChunkSizeInMb(final int chunkSizeInMb) {
         final int impliedLongsPerChunk = Math.toIntExact((((long) chunkSizeInMb * MEBIBYTES_TO_BYTES) / Long.BYTES));
-        return new LongListOffHeap(impliedLongsPerChunk, DEFAULT_MAX_LONGS_TO_STORE, DEFAULT_RESERVED_BUFFER_LENGTH);
+        return new LongListOffHeap(impliedLongsPerChunk, DEFAULT_MAX_LONGS_TO_STORE, 0);
     }
 
     @Override
     protected LongListOffHeap createFullyParameterizedLongListWith(final int numLongsPerChunk, final long maxLongs) {
-        return new LongListOffHeap(numLongsPerChunk, maxLongs, DEFAULT_RESERVED_BUFFER_LENGTH);
+        return new LongListOffHeap(numLongsPerChunk, maxLongs, 0);
     }
 
     @Override
@@ -104,7 +105,7 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
     public void testPersistListWithNonZeroMinValidIndex(@TempDir final Path tempDir) throws IOException {
         try (final LongListOffHeap list = createFullyParameterizedLongListWith(
                 getSampleSize() / 100, // 100 chunks
-                getSampleSize() + DEFAULT_NUM_LONGS_PER_CHUNK)) {
+                getSampleSize())) {
             for (int i = 1; i < getSampleSize(); i++) {
                 list.put(i, i);
             }
@@ -145,5 +146,31 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
             assertEquals(sampleSize - minIndex, count.get(), "Wrong number of valid index entries");
             assertEquals(sampleSize - minIndex, keysInForEach.size(), "Wrong number of valid index entries");
         }
+    }
+
+    @Test
+    public void testFileFormatBackwardCompatibility_halfEmpty() throws URISyntaxException, IOException {
+        final Path pathToList = ResourceLoader.getFile("test_data/LongListOffHeapHalfEmpty_10k_10pc_v1.ll");
+        try (final LongListOffHeap longListFromFile = createLongListFromFile(pathToList)) {
+            // half-empty
+            for (int i = 0; i < 5_000; i++) {
+                assertEquals(0, longListFromFile.get(i));
+            }
+            // half-full
+            for (int i = 5_000; i < 10_000; i++) {
+                assertEquals(i, longListFromFile.get(i));
+            }
+        }
+    }
+
+    @Test
+    public void testUnsupportedVersion() throws URISyntaxException {
+        final Path pathToList = ResourceLoader.getFile("test_data/LongListOffHeap_unsupported_version.ll");
+        assertThrows(IOException.class, () -> {
+            //noinspection EmptyTryBlock
+            try (final LongListOffHeap ignored = new LongListOffHeap(pathToList)) {
+                // no op
+            }
+        });
     }
 }

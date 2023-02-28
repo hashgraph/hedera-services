@@ -16,11 +16,14 @@
 
 package com.swirlds.merkledb.collections;
 
+import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.test.framework.ResourceLoader;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -28,8 +31,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 @SuppressWarnings("FieldCanBeLocal")
 class LongListDiskTest {
-    private final int SAMPLE_SIZE = 10_000;
-    private final int SMALL_SAMPLE_SIZE = 120;
+    private static final int SAMPLE_SIZE = 10_000;
+    private static final int SMALL_SAMPLE_SIZE = 120;
 
     /**
      * Temporary directory provided by JUnit
@@ -40,15 +43,15 @@ class LongListDiskTest {
 
     @Test
     void createOffHeapReadBack() throws IOException {
-        LongListOffHeap longListOffHeap = new LongListOffHeap();
+        final LongListOffHeap longListOffHeap = new LongListOffHeap();
         for (int i = 0; i < SAMPLE_SIZE; i++) {
             longListOffHeap.put(i, i + 100);
         }
         checkData(longListOffHeap, SAMPLE_SIZE);
-        Path tempFile = testDirectory.resolve("LongListDiskTest.ll");
+        final Path tempFile = testDirectory.resolve("LongListDiskTest.ll");
         longListOffHeap.writeToFile(tempFile);
         // now open file with
-        try (LongListDisk longListDisk = new LongListDisk(tempFile)) {
+        try (final LongListDisk longListDisk = new LongListDisk(tempFile)) {
             assertEquals(longListOffHeap.size(), longListDisk.size(), "Unexpected value for longListDisk.size()");
             checkData(longListDisk, SAMPLE_SIZE);
         }
@@ -58,15 +61,15 @@ class LongListDiskTest {
 
     @Test
     void createHeapReadBack() throws IOException {
-        LongListHeap longListHeap = new LongListHeap();
+        final LongListHeap longListHeap = new LongListHeap();
         for (int i = 0; i < SAMPLE_SIZE; i++) {
             longListHeap.put(i, i + 100);
         }
         checkData(longListHeap, SAMPLE_SIZE);
-        Path tempFile = testDirectory.resolve("LongListDiskTest.ll");
+        final Path tempFile = testDirectory.resolve("LongListDiskTest.ll");
         longListHeap.writeToFile(tempFile);
         // now open file with
-        try (LongListDisk longListDisk = new LongListDisk(tempFile)) {
+        try (final LongListDisk longListDisk = new LongListDisk(tempFile)) {
             assertEquals(longListHeap.size(), longListDisk.size(), "Unexpected value for longListDisk.size()");
             checkData(longListDisk, SAMPLE_SIZE);
         }
@@ -76,11 +79,9 @@ class LongListDiskTest {
 
     @Test
     void createDiskReadBack() throws IOException {
-        Path tempFile = testDirectory.resolve("LongListDiskTest.ll");
-        LongListDisk longListDisk1 = new LongListDisk(tempFile);
-        for (int i = 0; i < SMALL_SAMPLE_SIZE; i++) {
-            longListDisk1.put(i, i + 100);
-        }
+        final Path tempFile = testDirectory.resolve("LongListDiskTest.ll");
+        final LongListDisk longListDisk1 = new LongListDisk(tempFile);
+        populateList(longListDisk1);
         checkData(longListDisk1, SMALL_SAMPLE_SIZE);
         // test changing data with putIf
         assertTrue(longListDisk1.putIfEqual(10, 110, 123), "Unexpected value from putIfEqual()");
@@ -90,8 +91,8 @@ class LongListDiskTest {
         // close
         longListDisk1.close();
         // now open file with
-        Path tempFile2 = testDirectory.resolve("LongListDiskTest2.ll");
-        try (LongListDisk longListDisk = new LongListDisk(tempFile)) {
+        final Path tempFile2 = testDirectory.resolve("LongListDiskTest2.ll");
+        try (final LongListDisk longListDisk = new LongListDisk(tempFile)) {
             assertEquals(longListDisk1.size(), longListDisk.size(), "Unexpected value from longListDisk.size()");
             checkData(longListDisk, SMALL_SAMPLE_SIZE);
             // copy to a new file
@@ -100,13 +101,70 @@ class LongListDiskTest {
             assertEquals(Files.size(tempFile), Files.size(tempFile2), "Unexpected value from Files.size(tempFile2)");
         }
         // open new file and check
-        try (LongListDisk longListDisk = new LongListDisk(tempFile2)) {
+        try (final LongListDisk longListDisk = new LongListDisk(tempFile2)) {
             assertEquals(longListDisk1.size(), longListDisk.size(), "Unexpected value from longListDisk.size()");
             checkData(longListDisk, SMALL_SAMPLE_SIZE);
         }
     }
 
-    private void checkData(LongList longList, int sampleSize) {
+    private static void populateList(LongListDisk longListDisk1) {
+        for (int i = 0; i < SMALL_SAMPLE_SIZE; i++) {
+            longListDisk1.put(i, i + 100);
+        }
+    }
+
+    @Test
+    public void testBackwardCompatibility_halfEmpty() throws URISyntaxException, IOException {
+        final Path pathToList = ResourceLoader.getFile("test_data/LongListOffHeapHalfEmpty_10k_10pc_v1.ll");
+        try (final LongListDisk longListDisk = new LongListDisk(pathToList)) {
+            // half-empty
+            for (int i = 0; i < 5_000; i++) {
+                assertEquals(0, longListDisk.get(i), "Unexpected value for index " + i);
+            }
+            // half-full
+            for (int i = 5_000; i < 10_000; i++) {
+                assertEquals(i, longListDisk.get(i));
+            }
+        }
+    }
+
+    @Test
+    public void testShrinkList() throws IOException {
+        final Path listFile = testDirectory.resolve("LongListDiskTest.ll");
+        final LongListDisk list = new LongListDisk(listFile);
+        populateList(list);
+        final long originalFileSize = Files.size(listFile);
+
+        list.updateMinValidIndex(SMALL_SAMPLE_SIZE / 2);
+
+        // half-empty
+        for (int i = 0; i < SMALL_SAMPLE_SIZE / 2; i++) {
+            assertEquals(LongList.IMPERMISSIBLE_VALUE, list.get(i));
+        }
+        // half-full
+        for (int i = SMALL_SAMPLE_SIZE / 2; i < SMALL_SAMPLE_SIZE; i++) {
+            assertEquals(i + 100, list.get(i));
+        }
+
+        // if we write to the same file, it doesn't shrink after the min valid index update
+        list.writeToFile(listFile);
+        assertEquals(originalFileSize, Files.size(listFile));
+
+        // if we create a copy, it's going to shrink
+        Path shrinkedListFile = testDirectory.resolve(randomAlphanumeric(6));
+        list.writeToFile(shrinkedListFile);
+
+        final long shrinkedFileSize = Files.size(shrinkedListFile);
+        assertEquals(SMALL_SAMPLE_SIZE / 2 * Long.BYTES, originalFileSize - shrinkedFileSize);
+
+        try (final LongListDisk loadedList = new LongListDisk(shrinkedListFile)) {
+            for (int i = 0; i < SMALL_SAMPLE_SIZE; i++) {
+                assertEquals(list.get(0), loadedList.get(0), "Unexpected value in a loaded list");
+            }
+        }
+    }
+
+    private void checkData(final LongList longList, final int sampleSize) {
         for (int i = 0; i < sampleSize; i++) {
             assertEquals(i + 100, longList.get(i, -1), "Unexpected value from longList.get(" + i + ")");
         }
