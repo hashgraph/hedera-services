@@ -40,7 +40,7 @@ import com.swirlds.platform.event.preconsensus.PreConsensusEventFile;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventMultiFileIterator;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.SyncPreConsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventMetrics;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
@@ -136,7 +136,7 @@ class PreConsensusEventWriterTests {
     }
 
     /**
-     * Perform verification on a stream written by a {@link PreConsensusEventWriter}.
+     * Perform verification on a stream written by a {@link SyncPreConsensusEventWriter}.
      *
      * @param events
      * 		the events that were written to the stream
@@ -258,8 +258,8 @@ class PreConsensusEventWriterTests {
         final PreConsensusEventFileManager fileManager =
                 new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
 
-        final PreConsensusEventWriter writer =
-                new PreConsensusEventWriter(config, getStaticThreadManager(), OSTime.getInstance(), fileManager);
+        final SyncPreConsensusEventWriter writer =
+                new SyncPreConsensusEventWriter(config, getStaticThreadManager(), OSTime.getInstance(), fileManager);
 
         writer.start();
 
@@ -354,8 +354,8 @@ class PreConsensusEventWriterTests {
         final PreConsensusEventFileManager fileManager =
                 new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
 
-        final PreConsensusEventWriter writer =
-                new PreConsensusEventWriter(config, getStaticThreadManager(), OSTime.getInstance(), fileManager);
+        final SyncPreConsensusEventWriter writer =
+                new SyncPreConsensusEventWriter(config, getStaticThreadManager(), OSTime.getInstance(), fileManager);
 
         writer.start();
 
@@ -475,8 +475,8 @@ class PreConsensusEventWriterTests {
         final PreConsensusEventFileManager fileManager =
                 new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
 
-        final PreConsensusEventWriter writer1 =
-                new PreConsensusEventWriter(config, getStaticThreadManager(), OSTime.getInstance(), fileManager);
+        final SyncPreConsensusEventWriter writer1 =
+                new SyncPreConsensusEventWriter(config, getStaticThreadManager(), OSTime.getInstance(), fileManager);
 
         writer1.start();
 
@@ -516,8 +516,8 @@ class PreConsensusEventWriterTests {
             events1.remove(events1.size() - 1);
         }
 
-        final PreConsensusEventWriter writer2 =
-                new PreConsensusEventWriter(config, getStaticThreadManager(), OSTime.getInstance(), fileManager);
+        final SyncPreConsensusEventWriter writer2 =
+                new SyncPreConsensusEventWriter(config, getStaticThreadManager(), OSTime.getInstance(), fileManager);
         writer2.start();
 
         final Set<EventImpl> rejectedEvents2 = new HashSet<>();
