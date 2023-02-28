@@ -43,6 +43,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An implementation of {@link SchemaRegistry}.
@@ -60,6 +62,8 @@ import java.util.*;
  * version.
  */
 public class MerkleSchemaRegistry implements SchemaRegistry {
+    private static final Logger log = LogManager.getLogger(MerkleSchemaRegistry.class);
+
     /** The name of the service using this registry. */
     private final String serviceName;
     /** The location on disk where we should store on-disk state */
@@ -95,6 +99,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     public SchemaRegistry register(@NonNull Schema schema) {
         schemas.remove(schema);
         schemas.add(Objects.requireNonNull(schema));
+        // TODO - add toString() to Schema
+        log.info("Registering schema for {} ", serviceName);
 
         // Any states being created, need to be registered for deserialization
         schema.statesToCreate().forEach(def -> {
@@ -140,8 +146,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 }
             }
 
-            for (var md : metadata.values()) {
-                hederaState.putServiceStateIfAbsent(md);
+            for (final var md : metadata.values()) {
+                hederaState.putServiceStateIfAbsent((StateMetadata) md);
             }
 
             return;
@@ -162,13 +168,15 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             // expand the set of states that the migration code will see
             final var statesToCreate = schema.statesToCreate();
             statesToCreate.forEach(def -> {
+                final var stateKey = def.stateKey();
+                log.info("Creating state {} for {}", stateKey, serviceName);
                 final var md = new StateMetadata<>(serviceName, schema, def);
                 if (def.singleton()) {
                     final var singleton = new SingletonNode<>(md, null);
                     hederaState.putServiceStateIfAbsent(md, singleton);
                 } else if (!def.onDisk()) {
                     final var map = new MerkleMap<>();
-                    map.setLabel(StateUtils.computeLabel(serviceName, def.stateKey()));
+                    map.setLabel(StateUtils.computeLabel(serviceName, stateKey));
                     hederaState.putServiceStateIfAbsent(md, map);
                 } else {
                     final var ks = new OnDiskKeySerializer(md);
@@ -184,13 +192,13 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                     (short) 1,
                                     DataFileCommon.VARIABLE_DATA_SIZE,
                                     new OnDiskValueSerializer(md),
-                                    true));
+                                    false));
 
                     if (storageDir != null) {
                         ds.storageDir(storageDir);
                     }
 
-                    final var label = StateUtils.computeLabel(serviceName, def.stateKey());
+                    final var label = StateUtils.computeLabel(serviceName, stateKey);
                     hederaState.putServiceStateIfAbsent(md, new VirtualMap<>(label, ds));
                 }
             });

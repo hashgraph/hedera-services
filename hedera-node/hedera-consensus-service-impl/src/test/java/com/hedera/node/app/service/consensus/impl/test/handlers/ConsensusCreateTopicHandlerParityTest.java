@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.consensus.impl.handlers.test;
+package com.hedera.node.app.service.consensus.impl.test.handlers;
 
-import static com.hedera.node.app.service.consensus.impl.handlers.test.ConsensusCreateTopicHandlerTest.assertOkResponse;
+import static com.hedera.node.app.service.consensus.impl.handlers.test.AdapterUtils.*;
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertCustomPayer;
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertDefaultPayer;
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertOkResponse;
+import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.txnFrom;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO;
@@ -30,15 +34,11 @@ import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.SIMPLE_
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.meta.PreHandleContext;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hederahashgraph.api.proto.java.Key;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,7 +49,7 @@ class ConsensusCreateTopicHandlerParityTest {
 
     @BeforeEach
     void setUp() {
-        keyLookup = AdapterUtils.wellKnownKeyLookupAt();
+        keyLookup = wellKnownKeyLookupAt();
     }
 
     @Test
@@ -239,25 +239,5 @@ class ConsensusCreateTopicHandlerParityTest {
         // then:
         Assertions.assertThat(context.failed()).isTrue();
         Assertions.assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
-    }
-
-    private TransactionBody txnFrom(final TxnHandlingScenario scenario) {
-        try {
-            return scenario.platformTxn().getTxn();
-        } catch (final Throwable e) {
-            return fail(e);
-        }
-    }
-
-    private void assertDefaultPayer(PreHandleContext context) {
-        assertPayer(DEFAULT_PAYER_KT.asKey(), context);
-    }
-
-    private void assertCustomPayer(PreHandleContext context) {
-        assertPayer(CUSTOM_PAYER_ACCOUNT_KT.asKey(), context);
-    }
-
-    private void assertPayer(Key expected, PreHandleContext context) {
-        Assertions.assertThat(sanityRestored(context.getPayerKey())).isEqualTo(expected);
     }
 }

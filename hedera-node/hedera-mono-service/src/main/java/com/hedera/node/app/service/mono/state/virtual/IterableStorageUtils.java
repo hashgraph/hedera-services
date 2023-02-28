@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.hedera.node.app.service.mono.utils.MapValueListUtils.removeFromMapValueList;
 
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.swirlds.common.utility.CommonUtils;
@@ -105,7 +106,7 @@ public class IterableStorageUtils {
             @NonNull final IterableContractValue value,
             @Nullable final ContractKey rootKey,
             @Nullable final IterableContractValue rootValue,
-            @NonNull final VirtualMap<ContractKey, IterableContractValue> storage) {
+            @NonNull final VirtualMapLike<ContractKey, IterableContractValue> storage) {
         return internalUpsertMapping(key, value, rootKey, rootValue, storage, true);
     }
 
@@ -133,7 +134,7 @@ public class IterableStorageUtils {
             @NonNull final IterableContractValue value,
             @Nullable final ContractKey rootKey,
             @Nullable final IterableContractValue rootValue,
-            @NonNull final VirtualMap<ContractKey, IterableContractValue> storage) {
+            @NonNull final VirtualMapLike<ContractKey, IterableContractValue> storage) {
         return internalUpsertMapping(key, value, rootKey, rootValue, storage, false);
     }
 
@@ -150,7 +151,7 @@ public class IterableStorageUtils {
     public static @Nullable ContractKey removeMapping(
             @NonNull final ContractKey key,
             @NonNull final ContractKey root,
-            @NonNull final VirtualMap<ContractKey, IterableContractValue> storage) {
+            @NonNull final VirtualMapLike<ContractKey, IterableContractValue> storage) {
         return removeFromMapValueList(key, root, new ContractStorageListMutation(key.getContractId(), storage));
     }
 
@@ -159,7 +160,7 @@ public class IterableStorageUtils {
             @NonNull final IterableContractValue value,
             @Nullable final ContractKey rootKey,
             @Nullable final IterableContractValue rootValue,
-            @NonNull final VirtualMap<ContractKey, IterableContractValue> storage,
+            @NonNull final VirtualMapLike<ContractKey, IterableContractValue> storage,
             final boolean useGetForModify) {
         final IterableContractValue oldValue;
         if (useGetForModify) {

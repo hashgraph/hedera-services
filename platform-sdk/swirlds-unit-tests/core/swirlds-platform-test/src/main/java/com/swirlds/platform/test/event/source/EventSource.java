@@ -1,0 +1,215 @@
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.swirlds.platform.test.event.source;
+
+import static com.swirlds.platform.test.event.EventUtils.staticDynamicValue;
+
+import com.swirlds.common.test.TransactionGenerator;
+import com.swirlds.platform.test.event.DynamicValue;
+import com.swirlds.platform.test.event.IndexedEvent;
+import java.time.Instant;
+import java.util.Random;
+
+public interface EventSource<T extends EventSource<T>> {
+
+    /**
+     * Get an exact copy of this event source as it was in its original state. Child classes should invoke
+     * the copy constructor {@link AbstractEventSource#AbstractEventSource(AbstractEventSource)}
+     * when creating the copy.
+     */
+    T copy();
+
+    /**
+     * Reset this event source to its original state. Does not undo manual settings changes.
+     *
+     * Child classes that override this method MUST call super.reset().
+     */
+    void reset();
+
+    /**
+     * Get the node ID of this event source.
+     */
+    int getNodeId();
+
+    /**
+     * Set the node ID of this source. MUST be called before any events are generated.
+     * Automatically called by the StandardEventGenerator.
+     *
+     * @param nodeId
+     * 		A unique integer that represents the ID of this node.
+     * @return this
+     */
+    T setNodeId(int nodeId);
+
+    /**
+     * Get the stake held by this event source.
+     */
+    long getStake();
+
+    /**
+     * Get the probabilistic weight that this node will create the next new event. A node with a weight of 1 will
+     * create new events half as often as a node with a weight of 2.0. A node with a weight of 0 will
+     * never create new events.
+     */
+    double getNewEventWeight(Random random, long eventIndex);
+
+    /**
+     * Set the probabilistic weight that this node will create the next new event. A node with a weight of 1.0 will
+     * create new events half as often as a node with a weight of 2.0. A node with a weight of 0.0 will
+     * never create new events.
+     *
+     * @param newEventWeight
+     * 		a constant weight
+     * @return this
+     */
+    @SuppressWarnings("unchecked")
+    default T setNewEventWeight(final double newEventWeight) {
+        setNewEventWeight(staticDynamicValue(newEventWeight));
+        return (T) this;
+    }
+
+    /**
+     * Set the probabilistic weight that this node will create the next new event. A node with a weight of 1.0 will
+     * create new events half as often as a node with a weight of 2.0. A node with a weight of 0.0 will
+     * never create new events.
+     *
+     * @param dynamicWeight
+     * 		a weight that may change over time
+     * @return this
+     */
+    T setNewEventWeight(DynamicValue<Double> dynamicWeight);
+
+    /**
+     * Set the transaction generator function used to generate transactions for events created by this source.
+     *
+     * @return this
+     */
+    T setTransactionGenerator(final TransactionGenerator transactionGenerator);
+
+    /**
+     * Generates a new event. Is responsible for populating IndexedEvent metadata fields.
+     *
+     * @param random
+     * 		a source of randomness
+     * @param eventIndex
+     * 		the unique index of the event that will be generated
+     * @param otherParent
+     * 		he node that is contributing the "other parent" event
+     * @param timestamp
+     * 		the creation timesetamp that the event should have
+     * @return The random event that was generated.
+     */
+    IndexedEvent generateEvent(
+            final Random random, final long eventIndex, final EventSource<?> otherParent, final Instant timestamp);
+
+    /**
+     * Get an event recently created by this node.
+     *
+     * @param index
+     * 		0 refers to the latest event, 1 to the second latest, and so on
+     * @return the event, if it exists. Null if there are no events, and the oldest possible if the event at the
+     * 		requested index is no longer stored.
+     */
+    IndexedEvent getRecentEvent(Random random, int index);
+
+    /**
+     * Return the latest event that was generated.
+     * Dishonest nodes may exhibit arbitrary behavior.
+     *
+     * @param random
+     * 		a source of randomness
+     */
+    default IndexedEvent getLatestEvent(final Random random) {
+        return getRecentEvent(random, 0);
+    }
+
+    /**
+     * Sets the latest event.
+     *
+     * @param random
+     * 		a source of randomness
+     * @param event
+     * 		an event that was just created by this source
+     */
+    void setLatestEvent(Random random, IndexedEvent event);
+
+    /**
+     * Get the event index (i.e. the age of the event) that this node would like to use for its other parent.
+     */
+    int getRequestedOtherParentAge(Random random, long eventIndex);
+
+    /**
+     * Used when this node is creating an event and wants to decide the age of the other parent, i.e.
+     * when this node is requesting an other parent from another node.
+     *
+     * Dynamic value returns an index.
+     *
+     * An index of 0 means to take the most recent event from this node, an index of 1 means to take the second most
+     * recent event, and so on. If the index requests an event that is no longer in memory or that does not exist,
+     * the oldest event from the node is instead returned.
+     *
+     * By default, event source uses a random integer from a power law distribution that has a 95% chance of
+     * requesting the most recent event.
+     *
+     * Every time an other parent is requested, the requesting node and the providing node each propose an index
+     * (using the values from setOtherParentRequestIndex and setOtherParentProviderIndex). The largest
+     * (i.e. the oldest) index is used.
+     *
+     * @return this
+     */
+    T setRequestedOtherParentAgeDistribution(DynamicValue<Integer> otherParentIndex);
+
+    /**
+     * Get the event index (i.e. the age of the event) that this node would like to use for when it provides other
+     * parents.
+     */
+    int getProvidedOtherParentAge(Random random, long eventIndex);
+
+    /**
+     * Used when this node is asked to provide an event (to be an other parent) to determine the age of the
+     * provided event.
+     *
+     * Returns an index.
+     *
+     * An index of 0 means to take the most recent event from this node, an index of 1 means to take the second most
+     * recent event, and so on. If the index requests an event that is no longer in memory or that does not exist,
+     * the oldest event from the node is instead returned.
+     *
+     * By default, event source uses 0.
+     *
+     * Every time an other parent is requested, the requesting node and the providing node each propose an index
+     * (using the values from setOtherParentRequestIndex and setOtherParentProviderIndex). The largest
+     * (i.e. the oldest) index is used.
+     *
+     * @return this
+     */
+    T setProvidedOtherParentAgeDistribution(DynamicValue<Integer> otherParentIndex);
+
+    /**
+     * Returns the number of recent events that are saved by this node. These recent events are used as the
+     * other parents of new events.
+     */
+    int getRecentEventRetentionSize();
+
+    /**
+     * Configure the number of recent events that are saved by this node. These recent events are used as the
+     * other parents of new events. By default 100 events are retained.
+     *
+     * @return this
+     */
+    T setRecentEventRetentionSize(int recentEventRetentionSize);
+}

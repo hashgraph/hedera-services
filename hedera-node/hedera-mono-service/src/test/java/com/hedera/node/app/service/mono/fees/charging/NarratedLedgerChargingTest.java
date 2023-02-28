@@ -30,6 +30,7 @@ import com.hedera.node.app.service.mono.fees.FeeExemptions;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
@@ -82,7 +83,10 @@ class NarratedLedgerChargingTest {
     @BeforeEach
     void setUp() {
         subject = new NarratedLedgerCharging(
-                nodeInfo, feeDistribution, feeExemptions, () -> AccountStorageAdapter.fromInMemory(accounts));
+                nodeInfo,
+                feeDistribution,
+                feeExemptions,
+                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
         subject.setLedger(ledger);
     }
 

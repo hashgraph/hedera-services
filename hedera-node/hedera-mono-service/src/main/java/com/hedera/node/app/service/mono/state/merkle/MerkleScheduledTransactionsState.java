@@ -26,7 +26,7 @@ import java.io.IOException;
 
 public class MerkleScheduledTransactionsState extends PartialMerkleLeaf implements MerkleLeaf {
     public static final int RELEASE_0270_VERSION = 1;
-    static final int CURRENT_VERSION = RELEASE_0270_VERSION;
+    public static final int CURRENT_VERSION = RELEASE_0270_VERSION;
 
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x174cca55254e7f12L;
 

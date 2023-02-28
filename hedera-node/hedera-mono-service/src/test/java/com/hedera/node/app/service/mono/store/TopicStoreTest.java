@@ -22,6 +22,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.records.TransactionRecordService;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.store.models.Id;
@@ -46,7 +47,7 @@ class TopicStoreTest {
 
     @BeforeEach
     void setup() {
-        subject = new TopicStore(() -> topics, transactionRecordService);
+        subject = new TopicStore(() -> MerkleMapLike.from(topics), transactionRecordService);
     }
 
     @Test

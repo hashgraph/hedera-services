@@ -55,7 +55,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_PENDI
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
-import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
+import com.hedera.node.app.service.mono.state.logic.ScheduledTransactions;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKey;
@@ -90,7 +90,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
     static final ScheduleID NO_PENDING_ID = ScheduleID.getDefaultInstance();
 
     private final GlobalDynamicProperties properties;
-    private final Supplier<MerkleScheduledTransactions> schedules;
+    private final Supplier<ScheduledTransactions> schedules;
 
     ScheduleID pendingId = NO_PENDING_ID;
     ScheduleVirtualValue pendingCreation;
@@ -99,7 +99,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
     public HederaScheduleStore(
             final GlobalDynamicProperties properties,
             final EntityIdSource ids,
-            final Supplier<MerkleScheduledTransactions> schedules) {
+            final Supplier<ScheduledTransactions> schedules) {
         super(ids);
         this.schedules = schedules;
         this.properties = properties;

@@ -37,6 +37,7 @@ import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -99,7 +100,7 @@ class OpUsageCtxHelperTest {
 
     @BeforeEach
     void setUp() {
-        subject = new OpUsageCtxHelper(workingView, fileNumbers, () -> tokens, aliasManager);
+        subject = new OpUsageCtxHelper(workingView, fileNumbers, () -> MerkleMapLike.from(tokens), aliasManager);
     }
 
     @Test
@@ -165,7 +166,7 @@ class OpUsageCtxHelperTest {
     void returnsExpectedCtxForAccount() {
         final var accounts = mock(MerkleMap.class);
         final var merkleAccount = mock(MerkleAccount.class);
-        given(workingView.accounts()).willReturn(AccountStorageAdapter.fromInMemory(accounts));
+        given(workingView.accounts()).willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
         given(accounts.get(any())).willReturn(merkleAccount);
         given(merkleAccount.getCryptoAllowances()).willReturn(Collections.emptyMap());
         given(merkleAccount.getApproveForAllNfts()).willReturn(Collections.emptySet());
@@ -187,7 +188,7 @@ class OpUsageCtxHelperTest {
     void returnsExpectedCtxForCryptoApproveAccount() {
         final var accounts = mock(MerkleMap.class);
         final var merkleAccount = mock(MerkleAccount.class);
-        given(workingView.accounts()).willReturn(AccountStorageAdapter.fromInMemory(accounts));
+        given(workingView.accounts()).willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
         given(accounts.get(any())).willReturn(merkleAccount);
         given(merkleAccount.getAccountKey()).willReturn(asUsableFcKey(key).get());
         given(merkleAccount.getMemo()).willReturn(memo);
@@ -213,7 +214,7 @@ class OpUsageCtxHelperTest {
     @Test
     void returnsMissingCtxWhenAccountNotFound() {
         final var accounts = mock(MerkleMap.class);
-        given(workingView.accounts()).willReturn(AccountStorageAdapter.fromInMemory(accounts));
+        given(workingView.accounts()).willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
         given(accounts.get(any())).willReturn(null);
 
         final var ctx = subject.ctxForCryptoUpdate(TransactionBody.getDefaultInstance());
@@ -224,7 +225,8 @@ class OpUsageCtxHelperTest {
 
     @Test
     void returnsMissingCtxWhenApproveAccountNotFound() {
-        given(workingView.accounts()).willReturn(AccountStorageAdapter.fromInMemory(new MerkleMap<>()));
+        given(workingView.accounts())
+                .willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(new MerkleMap<>())));
         given(accessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
         given(accessor.getPayer()).willReturn(AccountID.getDefaultInstance());
 

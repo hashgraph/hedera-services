@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
@@ -71,7 +72,8 @@ class ReleaseThirtyMigrationTest {
         accountsMap.put(cKey, c);
         final var instant = Instant.ofEpochSecond(123456789L);
 
-        given(initializingState.accounts()).willReturn(AccountStorageAdapter.fromInMemory(accountsMap));
+        given(initializingState.accounts())
+                .willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accountsMap)));
 
         ReleaseThirtyMigration.grantFreeAutoRenew(initializingState, instant);
 
@@ -129,7 +131,7 @@ class ReleaseThirtyMigrationTest {
         uniqueTokens.merkleMap().put(nftId5, nft5);
         uniqueTokens.merkleMap().put(nftId6, nft6);
 
-        rebuildNftOwners(AccountStorageAdapter.fromInMemory(accounts), uniqueTokens);
+        rebuildNftOwners(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)), uniqueTokens);
         // keySet() returns values in the order 2,5,4,1,3
         assertEquals(nftId3.getHiOrderAsLong(), accounts.get(accountNum1).getHeadNftTokenNum());
         assertEquals(nftId3.getLowOrderAsLong(), accounts.get(accountNum1).getHeadNftSerialNum());

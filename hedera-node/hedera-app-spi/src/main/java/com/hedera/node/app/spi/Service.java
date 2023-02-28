@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi;
 
+import com.hedera.node.app.spi.state.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -31,4 +32,7 @@ public interface Service {
      */
     @NonNull
     String getServiceName();
+
+    /** Registers the schemas for the service with the given {@link SchemaRegistry}. */
+    void registerSchemas(@NonNull SchemaRegistry registry);
 }

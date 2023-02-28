@@ -180,10 +180,10 @@ message ScheduleDeleteTransactionBody {
 ```  
 
 When a `ScheduleDelete` resolves to `SUCCESS`, its target schedule is marked as 
-as deleted. Any future attempts to trigger this schedule will result in `SCHEDULE_WAS_DELETED`.
+as deleted. Any future attempts to trigger this schedule will result in `INVALID_SCHEDULE_ID`.
 However, the schedule will remain in network state until it expires. (Note that if we try 
 to delete a schedule that already executed, our `ScheduleDelete` will resolve
-to `SCHEDULE_WAS_EXECUTED` and have no effect.)
+to `INVALID_SCHEDULE_ID` and have no effect.)
   
 ## The `ScheduleGetInfo` query
   
