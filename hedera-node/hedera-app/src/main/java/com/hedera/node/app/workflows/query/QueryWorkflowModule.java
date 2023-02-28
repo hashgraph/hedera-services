@@ -41,7 +41,7 @@ import javax.inject.Singleton;
  * Module for Query processing.
  */
 @Module
-public interface QueryModule {
+public interface QueryWorkflowModule {
     @Binds
     @Singleton
     QueryWorkflow bindQueryWorkflow(QueryWorkflowImpl queryWorkflow);

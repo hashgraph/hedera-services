@@ -34,7 +34,7 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.meta.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

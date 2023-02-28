@@ -8,4 +8,7 @@ module com.hedera.node.app.service.util.impl.test {
     opens com.hedera.node.app.service.util.impl.test to
             org.junit.platform.commons,
             org.mockito;
+    opens com.hedera.node.app.service.util.impl.test.handlers to
+            org.junit.platform.commons,
+            org.mockito;
 }

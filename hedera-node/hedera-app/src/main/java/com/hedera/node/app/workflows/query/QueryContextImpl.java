@@ -22,8 +22,8 @@ import com.hedera.node.app.spi.meta.QueryContext;
 import javax.inject.Inject;
 
 /**
- * Provides context for query processing.Currently, it only has {@link NetworkInfo} but it might be
- * extended to provide more context for other queries in the future.
+ * Provides context for query processing.Currently, it only has {@link NetworkInfo} but it might be extended to provide
+ * more context for other queries in the future.
  */
 public class QueryContextImpl implements QueryContext {
     private final NetworkInfo networkInfo;
