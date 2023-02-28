@@ -106,7 +106,7 @@ public class IngestChecker {
      * Checks the signature of the payer. <em>Currently not implemented.</em>
      *
      * @param state         the {@link HederaState} that should be used to read state
-     * @param requestBuffer the {@link ByteBuffer} containing the {@link Transaction}
+     * @param transaction   the relevant {@link Transaction}
      * @param signatureMap  the {@link SignatureMap} contained in the transaction
      * @param payerID       the {@link AccountID} of the payer
      * @throws NullPointerException if one of the arguments is {@code null}
