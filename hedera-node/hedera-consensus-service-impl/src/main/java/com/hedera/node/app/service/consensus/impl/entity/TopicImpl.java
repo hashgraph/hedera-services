@@ -36,19 +36,6 @@ public record TopicImpl(
         boolean deleted,
         long sequenceNumber)
         implements Topic {
-
-    @Override
-    public long shardNumber() {
-        // FUTURE: Need to get this from config
-        return 0;
-    }
-
-    @Override
-    public long realmNumber() {
-        // FUTURE: Need to get this from config
-        return 0;
-    }
-
     @Override
     public Optional<HederaKey> getAdminKey() {
         return Optional.ofNullable(adminKey);

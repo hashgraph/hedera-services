@@ -27,9 +27,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
-import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
-import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -57,12 +55,6 @@ class MonoHandleContextTest {
 
     @Mock
     private TransactionContext txnCtx;
-
-    @Mock
-    private UsageLimits usageLimits;
-
-    @Mock
-    private AccountAccess accountAccess;
 
     private MonoHandleContext subject;
 

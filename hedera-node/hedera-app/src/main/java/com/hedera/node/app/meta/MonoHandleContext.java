@@ -36,6 +36,8 @@ import javax.inject.Singleton;
 
 /**
  * A {@link HandleContext} implementation that primarily uses adapters of {@code mono-service}
+ * utilities. These adapters will either be replaced with new implementations; or refactored
+ * and ported from {@code mono-service} into {@code hedera-app} at a later time.
  * utilities.
  */
 @Singleton

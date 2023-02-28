@@ -32,18 +32,38 @@ public record ExpiryMeta(long expiry, long autoRenewPeriod, long autoRenewNum) {
      */
     public static long NA = Long.MIN_VALUE;
 
+    /**
+     * Returns true if the expiry is explicitly set.
+     *
+     * @return whether this metadata has explicit expiry
+     */
     public boolean hasExplicitExpiry() {
         return expiry != NA;
     }
 
+    /**
+     * Returns true if the auto-renew period is explicitly set.
+     *
+     * @return whether this metadata has explicit auto-renew period
+     */
     public boolean hasAutoRenewPeriod() {
         return autoRenewPeriod != NA;
     }
 
+    /**
+     * Returns true if the auto-renew account is explicitly set.
+     *
+     * @return whether this metadata has explicit auto-renew account
+     */
     public boolean hasAutoRenewNum() {
         return autoRenewNum != NA;
     }
 
+    /**
+     * Returns true if the auto-renew period and account are both explicitly set.
+     *
+     * @return whether this metadata has explicit auto-renew period and account
+     */
     public boolean hasFullAutoRenewSpec() {
         return hasAutoRenewNum() && hasAutoRenewPeriod();
     }

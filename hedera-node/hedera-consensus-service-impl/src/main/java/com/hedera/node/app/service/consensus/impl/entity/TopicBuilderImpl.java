@@ -20,7 +20,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.consensus.entity.Topic;
 import com.hedera.node.app.service.consensus.entity.TopicBuilder;
-import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.key.HederaKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -41,7 +40,7 @@ public class TopicBuilderImpl implements TopicBuilder {
     private boolean deleted;
     private long sequenceNumber;
     /**
-     * Create a builder for creating {@link Account}s, using the given copy as the basis for all
+     * Create a builder for creating {@link Topic}s, using the given copy as the basis for all
      * settings that are not overridden.
      *
      * @param copyOf The instance to copy

@@ -53,18 +53,6 @@ public record AccountImpl(
         implements Account {
 
     @Override
-    public long shardNumber() {
-        // FUTURE: Need to get this from config
-        return 0;
-    }
-
-    @Override
-    public long realmNumber() {
-        // FUTURE: Need to get this from config
-        return 0;
-    }
-
-    @Override
     public boolean isHollow() {
         return key == null;
     }

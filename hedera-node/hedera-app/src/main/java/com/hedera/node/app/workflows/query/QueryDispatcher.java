@@ -31,8 +31,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * A {@code QueryDispatcher} provides functionality to forward validate, and reply-query requests to
- * the appropriate handler
+ * A {@code QueryDispatcher} provides functionality to forward validate, and reply-query requests to the appropriate
+ * handler
  */
 @Singleton
 public class QueryDispatcher {
@@ -101,9 +101,8 @@ public class QueryDispatcher {
     /**
      * Validates the query by dispatching the query to its specific handlers.
      *
-     * @param storeFactory the {@link ReadableStoreFactory} that keeps all stores which are eventually
-     *                     needed
-     * @param query        the {@link Query} of the request
+     * @param storeFactory the {@link ReadableStoreFactory} that keeps all stores which are eventually needed
+     * @param query the {@link Query} of the request
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public ResponseCodeEnum validate(@NonNull final ReadableStoreFactory storeFactory, @NonNull final Query query)
@@ -113,7 +112,7 @@ public class QueryDispatcher {
 
         return switch (query.getQueryCase()) {
             case CONSENSUSGETTOPICINFO -> handlers.consensusGetTopicInfoHandler()
-                    .validate(query, storeFactory.getTopicStore());
+                    .validate(query, storeFactory.createTopicStore());
 
             case GETBYSOLIDITYID -> handlers.contractGetBySolidityIDHandler().validate(query);
             case CONTRACTCALLLOCAL -> handlers.contractCallLocalHandler().validate(query);
@@ -159,11 +158,9 @@ public class QueryDispatcher {
     /**
      * Gets the response for a given query by dispatching its respective handlers.
      *
-     * @param storeFactory the {@link ReadableStoreFactory} that keeps all stores which are eventually
-     *                     needed
-     * @param query        the actual {@link Query}
-     * @param header       the {@link ResponseHeader} that should be used in the response, if it is
-     *                     successful
+     * @param storeFactory the {@link ReadableStoreFactory} that keeps all stores which are eventually needed
+     * @param query the actual {@link Query}
+     * @param header the {@link ResponseHeader} that should be used in the response, if it is successful
      * @param queryContext
      * @return the {@link Response} with the requested answer
      */
@@ -179,7 +176,7 @@ public class QueryDispatcher {
 
         return switch (query.getQueryCase()) {
             case CONSENSUSGETTOPICINFO -> handlers.consensusGetTopicInfoHandler()
-                    .findResponse(query, header, storeFactory.getTopicStore(), queryContext);
+                    .findResponse(query, header, storeFactory.createTopicStore(), queryContext);
 
             case GETBYSOLIDITYID -> handlers.contractGetBySolidityIDHandler().findResponse(query, header);
             case CONTRACTCALLLOCAL -> handlers.contractCallLocalHandler().findResponse(query, header);

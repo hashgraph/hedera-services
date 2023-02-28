@@ -19,7 +19,13 @@ package com.hedera.node.app.spi.exceptions;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 /**
- * A runtime exception that wraps a {@link ResponseCodeEnum} status.
+ * A runtime exception that wraps a {@link ResponseCodeEnum} status. Thrown by
+ * components in the {@code handle} workflow to signal a transaction has reached
+ * an unsuccessful outcome.
+ *
+ * <p>In general, this exception is <i>not</i> appropriate to throw when code
+ * detects an internal error. Instead, use {@link IllegalStateException} or
+ * {@link IllegalArgumentException} as appropriate.
  */
 public class HandleStatusException extends RuntimeException {
     private final ResponseCodeEnum status;

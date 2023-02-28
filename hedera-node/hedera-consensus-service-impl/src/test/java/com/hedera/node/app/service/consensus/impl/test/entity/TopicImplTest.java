@@ -52,22 +52,20 @@ public class TopicImplTest extends ConsensusHandlerTestBase {
 
     @Test
     void hashCodeWorks() {
-        assertEquals(286_162_065, subject.hashCode());
+        assertEquals(-1_089_033_167, subject.hashCode());
     }
 
     @Test
     void toStringWorks() {
         final var actual = subject.toString();
         final var expected =
-                "TopicImpl{topicNumber=1, adminKey=<JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JEd25519Key: ed25519 hex=6363636363636363636363636363636363636363636363636363636363636363>]>>]>>, submitKey=<JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JThresholdKey: thd=2, keys=<JKeyList: keys=[<JEd25519Key: ed25519 hex=6161616161616161616161616161616161616161616161616161616161616161>, <JEd25519Key: ed25519 hex=6262626262626262626262626262626262626262626262626262626262626262>, <JEd25519Key: ed25519 hex=6363636363636363636363636363636363636363636363636363636363636363>]>>]>>, memo='test memo', autoRenewAccountNumber=4, autoRenewSecs=100, expiry=1234567, deleted=true, sequenceNumber=1}";
+                "TopicImpl{topicNumber=1, adminKey=<JEd25519Key: ed25519 hex=3031323334353637383930313233343536373839303132333435363738393031>, submitKey=<JEd25519Key: ed25519 hex=3031323334353637383930313233343536373839303132333435363738393031>, memo='test memo', autoRenewAccountNumber=4, autoRenewSecs=100, expiry=1234567, deleted=true, sequenceNumber=1}";
         assertEquals(expected, actual);
     }
 
     @Test
     void gettersWork() {
         assertEquals(topicId.getTopicNum(), subject.topicNumber());
-        assertEquals(topicId.getRealmNum(), subject.realmNumber());
-        assertEquals(topicId.getShardNum(), subject.shardNumber());
         assertSame(hederaKey, subject.getAdminKey().get());
         assertSame(hederaKey, subject.getSubmitKey().get());
         assertEquals(memo, subject.memo());

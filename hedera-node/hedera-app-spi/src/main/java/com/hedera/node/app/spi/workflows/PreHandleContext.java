@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.meta;
+package com.hedera.node.app.spi.workflows;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -33,36 +33,53 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Context of a single {@code preHandle()}-call. Contains all information that needs to be exchanged
- * between the pre-handle workflow and the {@code preHandle()}-method of a {@link
- * com.hedera.node.app.spi.workflows.TransactionHandler}.
+ * Context of a single {@code preHandle()}-call. Contains all information that needs to be exchanged between the
+ * pre-handle workflow and the {@code preHandle()}-method of a
+ * {@link com.hedera.node.app.spi.workflows.TransactionHandler}.
  */
+@SuppressWarnings("UnusedReturnValue")
 public class PreHandleContext {
 
-    private final AccountAccess keyLookup;
+    private final AccountAccess accountAccess;
 
     private final TransactionBody txn;
     private final AccountID payer;
     private final List<HederaKey> requiredNonPayerKeys = new ArrayList<>();
 
-    private ResponseCodeEnum status = OK;
+    private ResponseCodeEnum status;
     private HederaKey payerKey;
-    private Object handlerMetadata;
+    private PreHandleContext innerContext;
+
+    public PreHandleContext(@NonNull final AccountAccess accountAccess, @NonNull final TransactionBody txn) {
+        this(accountAccess, txn, txn.getTransactionID().getAccountID(), OK);
+    }
 
     public PreHandleContext(
             @NonNull final AccountAccess accountAccess,
             @NonNull final TransactionBody txn,
             @NonNull final AccountID payer) {
-        this.keyLookup = requireNonNull(accountAccess);
+        this(accountAccess, txn, payer, OK);
+    }
+
+    public PreHandleContext(
+            @NonNull final AccountAccess accountAccess,
+            @NonNull final TransactionBody txn,
+            @NonNull final ResponseCodeEnum status) {
+        this(accountAccess, txn, txn.getTransactionID().getAccountID(), status);
+    }
+
+    public PreHandleContext(
+            @NonNull final AccountAccess accountAccess,
+            @NonNull final TransactionBody txn,
+            @NonNull final AccountID payer,
+            @NonNull final ResponseCodeEnum status) {
+        this.accountAccess = requireNonNull(accountAccess);
         this.txn = requireNonNull(txn);
         this.payer = requireNonNull(payer);
+        this.status = requireNonNull(status);
 
         final var lookedUpPayerKey = accountAccess.getKey(payer);
         addToKeysOrFail(lookedUpPayerKey, INVALID_PAYER_ACCOUNT_ID, true);
-    }
-
-    public PreHandleContext(@NonNull final AccountAccess keyLookup, @NonNull final TransactionBody txn) {
-        this(keyLookup, txn, txn.getTransactionID().getAccountID());
     }
 
     /**
@@ -113,10 +130,9 @@ public class PreHandleContext {
     }
 
     /**
-     * Sets status on {@link PreHandleContext}. It will be {@link ResponseCodeEnum#OK} if there is
-     * no failure.
+     * Sets status on {@link PreHandleContext}. It will be {@link ResponseCodeEnum#OK} if there is no failure.
      *
-     * @param status status to be set on {@link TransactionMetadata}
+     * @param status status of the pre-handle workflow
      * @return {@code this} object
      */
     @NonNull
@@ -136,27 +152,6 @@ public class PreHandleContext {
     }
 
     /**
-     * Getter for the metadata set by the handler
-     *
-     * @return the metadata set by the handler
-     */
-    public Object getHandlerMetadata() {
-        return handlerMetadata;
-    }
-
-    /**
-     * Sets the handler specific metadata
-     *
-     * @param handlerMetadata an arbitrary object that gets passed to the handler method
-     * @return builder object
-     */
-    @NonNull
-    public PreHandleContext handlerMetadata(@NonNull final Object handlerMetadata) {
-        this.handlerMetadata = handlerMetadata;
-        return this;
-    }
-
-    /**
      * Add a keys to required keys list
      *
      * @param keys list of keys to add
@@ -169,10 +164,10 @@ public class PreHandleContext {
     }
 
     /**
-     * Adds given key to required non-payer keys in {@link PreHandleContext}. If the status is
-     * already failed, or if the payer's key is not added, given keys will not be added to
-     * requiredNonPayerKeys list. This method is used when the payer's key is already fetched, and
-     * we want to add other keys from {@link TransactionBody} to required keys to sign.
+     * Adds given key to required non-payer keys in {@link PreHandleContext}. If the status is already failed, or if the
+     * payer's key is not added, given keys will not be added to requiredNonPayerKeys list. This method is used when the
+     * payer's key is already fetched, and we want to add other keys from {@link TransactionBody} to required keys to
+     * sign.
      *
      * @param key key to be added
      * @return {@code this} object
@@ -186,9 +181,9 @@ public class PreHandleContext {
     }
 
     /**
-     * Checks if the accountId is same as payer or the status of the metadata is already failed. If
-     * either of the above is true, doesn't look up the keys for given account. Else, looks up the
-     * keys for account. If the lookup fails, sets the default failureReason given in the result.
+     * Checks if the accountId is same as payer or the status of the metadata is already failed. If either of the above
+     * is true, doesn't look up the keys for given account. Else, looks up the keys for account. If the lookup fails,
+     * sets the default failureReason given in the result.
      *
      * @param id given accountId
      * @return {@code this} object
@@ -199,10 +194,10 @@ public class PreHandleContext {
     }
 
     /**
-     * Checks if the accountId is same as payer or the status of the metadata is already failed. If
-     * either of the above is true, doesn't look up the keys for given account. Else, looks up the
-     * keys for account. If the lookup fails, sets the given failure reason on the metadata. If the
-     * failureReason is null, sets the default failureReason given in the result.
+     * Checks if the accountId is same as payer or the status of the metadata is already failed. If either of the above
+     * is true, doesn't look up the keys for given account. Else, looks up the keys for account. If the lookup fails,
+     * sets the given failure reason on the metadata. If the failureReason is null, sets the default failureReason given
+     * in the result.
      *
      * @param id given accountId
      * @param failureStatusToUse failure status to be set if there is failure
@@ -214,7 +209,7 @@ public class PreHandleContext {
         if (isNotNeeded(requireNonNull(id))) {
             return this;
         }
-        final var result = keyLookup.getKey(id);
+        final var result = accountAccess.getKey(id);
         addToKeysOrFail(result, failureStatusToUse, false);
         return this;
     }
@@ -224,17 +219,16 @@ public class PreHandleContext {
         if (isNotNeeded(requireNonNull(id))) {
             return this;
         }
-        final var result = keyLookup.getKey(id);
+        final var result = accountAccess.getKey(id);
         addToKeysOrFail(result, null, false);
         return this;
     }
 
     /**
-     * Checks if the accountId is same as payer or the status of the metadata is already failed. If
-     * either of the above is true, doesn't look up the keys for given account. Else, looks up the
-     * keys for account if receiverSigRequired is true on the account. If the lookup fails, sets the
-     * given failure reason on the metadata. If the failureReason is null, sets the default
-     * failureReason given in the result.
+     * Checks if the accountId is same as payer or the status of the metadata is already failed. If either of the above
+     * is true, doesn't look up the keys for given account. Else, looks up the keys for account if receiverSigRequired
+     * is true on the account. If the lookup fails, sets the given failure reason on the metadata. If the failureReason
+     * is null, sets the default failureReason given in the result.
      *
      * @param id given accountId
      * @param failureStatusToUse failure status to be set if there is failure
@@ -245,7 +239,7 @@ public class PreHandleContext {
         if (isNotNeeded(requireNonNull(id))) {
             return this;
         }
-        final var result = keyLookup.getKeyIfReceiverSigRequired(id);
+        final var result = accountAccess.getKeyIfReceiverSigRequired(id);
         addToKeysOrFail(result, failureStatusToUse, false);
         return this;
     }
@@ -255,35 +249,36 @@ public class PreHandleContext {
         if (isNotNeeded(requireNonNull(id))) {
             return this;
         }
-        final var result = keyLookup.getKeyIfReceiverSigRequired(id);
+        final var result = accountAccess.getKeyIfReceiverSigRequired(id);
         addToKeysOrFail(result, null, false);
         return this;
     }
 
+    public PreHandleContext getInnerContext() {
+        return innerContext;
+    }
+
+    public void setInnerContext(PreHandleContext innerContext) {
+        this.innerContext = innerContext;
+    }
+
     @Override
     public String toString() {
-        return "PreHandleContext{"
-                + "txn="
-                + txn
-                + ", payer="
-                + payer
-                + ", requiredNonPayerKeys="
-                + requiredNonPayerKeys
-                + ", status="
-                + status
-                + ", payerKey="
-                + payerKey
-                + ", handlerMetadata="
-                + handlerMetadata
-                + '}';
+        return "PreHandleContext{" + "accountAccess="
+                + accountAccess + ", txn="
+                + txn + ", payer="
+                + payer + ", requiredNonPayerKeys="
+                + requiredNonPayerKeys + ", status="
+                + status + ", payerKey="
+                + payerKey + ", innerContext="
+                + innerContext + '}';
     }
 
     /* ---------- Helper methods ---------- */
 
     /**
-     * Checks if the account given is same as payer or if the metadata is already failed. In either
-     * case, no need to look up that account's key. If the payer key has not been set we don't add
-     * other keys.
+     * Checks if the account given is same as payer or if the metadata is already failed. In either case, no need to
+     * look up that account's key. If the payer key has not been set we don't add other keys.
      *
      * @param id given account
      * @return true if the lookup is not needed, false otherwise
@@ -297,8 +292,8 @@ public class PreHandleContext {
     }
 
     /**
-     * Checks if the metadata is already failed. In this case no need to look up that contract's key
-     * If the payer key has not been set we don't add other keys.
+     * Checks if the metadata is already failed. In this case no need to look up that contract's key If the payer key
+     * has not been set we don't add other keys.
      *
      * @param id given contract
      * @return true if the lookup is not needed, false otherwise
@@ -337,9 +332,9 @@ public class PreHandleContext {
     }
 
     /**
-     * Given a successful key lookup, adds its key to the required signers. Given a failed key
-     * lookup, sets this {@link PreHandleContext}'s status to either the failure reason of the
-     * lookup; or (if it is non-null), the requested failureStatus parameter.
+     * Given a successful key lookup, adds its key to the required signers. Given a failed key lookup, sets this
+     * {@link PreHandleContext}'s status to either the failure reason of the lookup; or (if it is non-null), the
+     * requested failureStatus parameter.
      *
      * @param result key lookup result
      * @param failureStatus failure reason for the lookup
@@ -357,5 +352,11 @@ public class PreHandleContext {
                 this.requiredNonPayerKeys.add(result.key());
             }
         }
+    }
+
+    @NonNull
+    public PreHandleContext createNestedContext(
+            @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested) {
+        return new PreHandleContext(accountAccess, nestedTxn, payerForNested);
     }
 }

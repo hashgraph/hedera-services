@@ -98,12 +98,12 @@ class IngestWorkflowImplTest {
     private WorkflowOnset onset;
 
     @Mock(strictness = LENIENT)
-    ReadableAccountStore accountStore;
+    private ReadableAccountStore accountStore;
 
     @Mock
-    Account account;
+    private Account account;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private IngestChecker checker;
 
     @Mock
@@ -140,6 +140,7 @@ class IngestWorkflowImplTest {
         requestBuffer = ByteBuffer.wrap(new byte[] {1, 2, 3});
         ctx = new SessionContext(queryParser, txParser, signedParser, txBodyParser);
         when(onset.parseAndCheck(ctx, requestBuffer)).thenReturn(ONSET_RESULT);
+        when(checker.extractByteArray(any())).thenReturn(new byte[0]);
 
         workflow = new IngestWorkflowImpl(
                 nodeInfo,
@@ -250,7 +251,7 @@ class IngestWorkflowImplTest {
         assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(OK);
         assertThat(response.getCost()).isZero();
         verify(opCounters).countReceived(ConsensusCreateTopic);
-        verify(submissionManager).submit(TRANSACTION_BODY, requestBuffer.array(), txBodyParser);
+        verify(submissionManager).submit(eq(TRANSACTION_BODY), any(), eq(txBodyParser));
         verify(opCounters).countSubmitted(ConsensusCreateTopic);
     }
 
@@ -402,7 +403,7 @@ class IngestWorkflowImplTest {
         // given
         doThrow(new PreCheckException(INVALID_PAYER_SIGNATURE))
                 .when(checker)
-                .checkPayerSignature(eq(TRANSACTION_BODY), eq(SIGNATURE_MAP), any());
+                .checkPayerSignature(any(), eq(requestBuffer), eq(SIGNATURE_MAP), any());
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
@@ -442,7 +443,7 @@ class IngestWorkflowImplTest {
         // given
         doThrow(new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED))
                 .when(submissionManager)
-                .submit(eq(TRANSACTION_BODY), eq(requestBuffer.array()), any());
+                .submit(eq(TRANSACTION_BODY), any(), any());
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
