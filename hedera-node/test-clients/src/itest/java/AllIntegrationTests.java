@@ -81,7 +81,6 @@ class AllIntegrationTests extends IntegrationTestBase {
                 new BalanceReconciliationValidator(),
                 new BlockNoValidator(),
                 new ExpiryRecordsValidator(),
-                new TokenReconciliationValidator()
-        ));
+                new TokenReconciliationValidator()));
     }
 }
