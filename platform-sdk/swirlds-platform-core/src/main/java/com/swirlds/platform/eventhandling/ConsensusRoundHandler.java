@@ -413,7 +413,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         // create a new signed state, sign it, and send out a new transaction with the signature
         // the signed state keeps a copy that never changes.
         final State immutableStateCons = swirldStateManager.getStateForSigning();
-        immutableStateCons.getPlatformState()
+        immutableStateCons
+                .getPlatformState()
                 .getPlatformData()
                 .setMinGenInfo(eventsAndGenerations.getMinGenForSignedState());
 

@@ -32,7 +32,6 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import java.time.Instant;
-import java.util.List;
 
 /**
  * The methods used to interact with instances of {@link SwirldState}.
