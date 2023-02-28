@@ -91,7 +91,7 @@ public class MapWritableKVState<K extends Comparable<K>, V> extends WritableKVSt
 
     @NonNull
     @Override
-    protected long sizeOfDataSource() {
+    public long size() {
         return backingStore.size();
     }
 

@@ -97,11 +97,11 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         /* validate admin and submit keys and set them */
         if (op.hasAdminKey()) {
             handleContext.attributeValidator().validateKey(op.getAdminKey());
-            builder.adminKey(asHederaKey(op.getAdminKey()).get());
+            asHederaKey(op.getAdminKey()).ifPresent(builder::adminKey);
         }
         if (op.hasSubmitKey()) {
             handleContext.attributeValidator().validateKey(op.getSubmitKey());
-            builder.submitKey(asHederaKey(op.getSubmitKey()).get());
+            asHederaKey(op.getAdminKey()).ifPresent(builder::submitKey);
         }
 
         /* validate if the current topic can be created */

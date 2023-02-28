@@ -67,7 +67,7 @@ public final class OnDiskReadableKVState<K extends Comparable<K>, V> extends Rea
 
     @NonNull
     @Override
-    protected long sizeOfDataSource() {
+    public long size() {
         return virtualMap.size();
     }
 }

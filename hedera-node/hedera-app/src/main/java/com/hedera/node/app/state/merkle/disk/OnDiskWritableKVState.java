@@ -94,7 +94,7 @@ public final class OnDiskWritableKVState<K extends Comparable<K>, V> extends Wri
 
     @NonNull
     @Override
-    protected long sizeOfDataSource() {
+    public long size() {
         return virtualMap.size();
     }
 }

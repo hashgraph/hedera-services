@@ -90,7 +90,7 @@ public final class InMemoryWritableKVState<K extends Comparable<K>, V> extends W
     /** {@inheritDoc} */
     @NonNull
     @Override
-    protected long sizeOfDataSource() {
+    public long size() {
         return merkle.size();
     }
 }

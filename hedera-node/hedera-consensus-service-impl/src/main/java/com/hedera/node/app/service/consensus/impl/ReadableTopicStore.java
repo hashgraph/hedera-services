@@ -57,6 +57,7 @@ public class ReadableTopicStore extends TopicStore {
      * @param id topic id being looked up
      * @return topic's metadata
      */
+    // TODO : Change to return Topic instead of TopicMetadata
     public TopicMetaOrLookupFailureReason getTopicMetadata(@NonNull final TopicID id) {
         requireNonNull(id);
 

@@ -75,11 +75,9 @@ public class WritableTopicStore extends TopicStore {
         final var topic = topicState.get(topicNum);
 
         if (topic == null) {
-
             return Optional.empty();
         }
         return Optional.of(topicFrom(topic));
-        // TODO : change to use Topic instead of TopicMetadata
     }
 
     /**

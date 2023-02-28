@@ -56,7 +56,7 @@ public class WrappedReadableKVState<K extends Comparable<K>, V> extends Readable
 
     @NonNull
     @Override
-    protected long sizeOfDataSource() {
+    public long size() {
         return delegate.size();
     }
 }
