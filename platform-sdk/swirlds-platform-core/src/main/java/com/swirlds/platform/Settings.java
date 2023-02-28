@@ -874,10 +874,6 @@ public class Settings {
         return useTLS;
     }
 
-    public void setUseTLS(final boolean useTLS) {
-        this.useTLS = useTLS;
-    }
-
     public boolean isDoUpnp() {
         return doUpnp;
     }
@@ -936,10 +932,6 @@ public class Settings {
 
     public int getTransactionMaxBytes() {
         return transactionMaxBytes;
-    }
-
-    public void setTransactionMaxBytes(final int transactionMaxBytes) {
-        this.transactionMaxBytes = transactionMaxBytes;
     }
 
     public int getMaxAddressSizeAllowed() {

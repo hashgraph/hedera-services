@@ -3,11 +3,10 @@
 ###############################################################################################
 swirld, 123
 
- app,		HashgraphDemo.jar,	   1,0,0,0,0,0,0,0,0,0, all
+app,		HashgraphDemo.jar,	   1,0,0,0,0,0,0,0,0,0, all
 # app,		HelloSwirldDemo.jar
 # app,		CryptocurrencyDemo.jar
 # app,		StatsDemo.jar,		   1, 3000, 0, 100, -1, 200
-
 
 # ** BEGIN REMOVE FROM SDK RELEASES **
 # app,		StatsSigningTestingTool.jar,  1, 3000, 0, 100, -1, 1000, 5000
@@ -18,13 +17,13 @@ swirld, 123
 # app,		PlatformTestingTool.jar, FCMFCQ-Basic-1k-10m.json
 # app,		MigrationTestingTool.jar, 4685095852903873060, 5000,	4
 # app,		GameTest.jar,		   9000, 9000
-# app,      ISSTestingTool.jar, 10000, 60:0-1+2+3, 120:0-1-2+3
+# app,    ISSTestingTool.jar, 10000, 60:0-1+2+3, 120:0-1-2+3
 # ** END REMOVE FROM SDK RELEASES **
 
- address,  A, Alice,    1, 127.0.0.1, 15301, 127.0.0.1, 15301
- address,  B, Bob,      1, 127.0.0.1, 15302, 127.0.0.1, 15302
- address,  C, Carol,    1, 127.0.0.1, 15303, 127.0.0.1, 15303
- address,  D, Dave,     1, 127.0.0.1, 15304, 127.0.0.1, 15304
+address,  A, Alice,    1, 127.0.0.1, 15301, 127.0.0.1, 15301
+address,  B, Bob,      1, 127.0.0.1, 15302, 127.0.0.1, 15302
+address,  C, Carol,    1, 127.0.0.1, 15303, 127.0.0.1, 15303
+address,  D, Dave,     1, 127.0.0.1, 15304, 127.0.0.1, 15304
 # address,  E, Eric,     1, 127.0.0.1, 15305, 127.0.0.1, 15305
 # address,  F, Fred,     1, 127.0.0.1, 15306, 127.0.0.1, 15306
 # address,  G, Gina,     1, 127.0.0.1, 15307, 127.0.0.1, 15307
@@ -61,34 +60,16 @@ swirld, 123
 # address,  ], node],     1, 127.0.0.1, 15338, 127.0.0.1, 15338
 # address,  <, node<,     1, 127.0.0.1, 15339, 127.0.0.1, 15339
 
-
-
 # The above addresses assume all are running on the same computer.
 # If multiple computers are being used, then the listed IP addresses should be changed.
 
-# TLS, off
-# maxSyncs, 1
-# transactionMaxBytes, 1024
-# ipTos, 123
-# genesisFreezeTime, -1
 
 ###############################################################################################
-# The first line can be “swirld, “ and then a name for this swirld (shared world / ledger),
+# The first line can be "swirld, " and then a name for this swirld (shared world / ledger),
 # where the name is any string without commas, line breaks, or leading/trailing whitespace.
 #
-# The optional "TLS" line can be set to on or off to choose whether to use TLS encryption.
-#
-# The optional "maxSyncs" line controls the maximum number of gossip syncs at the same time
-# initiated by a member.
-#
-# The optional "transactionMaxBytes" line sets a limit on transactions size. Any transaction
-# will be rejected if it's too big.
-#
-# The optional "ipTos" parameter sets the Type of Service (IP_ToS) byte in each of the
-# TCP/IP packets (0 to 255). The internet usually ignores this byte.
-#
 # Uncomment exactly one of the app name lines, above.
-# That line should have the the word "app", then the  jar filename,
+# That line should have the word "app", then the  jar filename,
 # then any parameters, separated by commas.
 #
 #	HelloSwirldDemo.jar parameters: none
@@ -100,7 +81,7 @@ swirld, 123
 #	HashGraphDemo.jar takes parameters that give the initial checkbox settings,
 #		in the same order they appear are on the screen, with 1 to check it
 #		and 0 to not check it, followed by the number of events to display
-#		(or “all”). The first parameter  controls whether it runs
+#		(or "all"). The first parameter  controls whether it runs
 #		slowly (1) or runs at full speed (0).
 #
 #	GameDemo.jar parameters:
@@ -143,7 +124,7 @@ swirld, 123
 #
 #
 # Each member should be listed only once, on a single line. If all the members are on the same
-# computer, then they can each be given that computers's IP address, or they can each be given
+# computer, then they can each be given that computer's IP address, or they can each be given
 # 127.0.0.1, or some can be given the computer's IP address and some 127.0.0.1.
 #
 # If the members are running on 2 or more machines, then they must all be given the
@@ -154,16 +135,16 @@ swirld, 123
 # No two members should have the same full name or the same nickname, even when ignoring
 # case (so alice and ALICE and aLiCe count as the same, and nicknames a and A are the same).
 #
-# The “internal” (or local or private) address is how the member computer is reached by
+# The "internal" (or local or private) address is how the member computer is reached by
 # other computers on the same local network, with no Network Address Translation (NAT) in
 # between.
 #
-# The “external” (or public) address is how it is reached by outside computers. It will
+# The "external" (or public) address is how it is reached by outside computers. It will
 # often be the address of the router that does the NAT.
 #
-# If you don’t know an external address for a computer, then just assume that the external
+# If you don't know an external address for a computer, then just assume that the external
 # address is the same as the internal address. This will work if there is no router, or if
-# there is a router that isn’t doing NAT, or if it is doing NAT but all the computers are
+# there is a router that isn't doing NAT, or if it is doing NAT but all the computers are
 # on the same local network.
 #
 # The ports can be chosen to be any number in the given range, as long as members on the
@@ -175,5 +156,5 @@ swirld, 123
 # None of the strings, such as nicknames and names, can contain any commas or # symbols
 # or quotation marks.
 # Boolean parameters can be any of on/1/true/yes/t/y for true,
-# and any of off/0/false/no/f/n for false, where capitalization doesn’t matter.
+# and any of off/0/false/no/f/n for false, where capitalization doesn't matter.
 ###############################################################################################

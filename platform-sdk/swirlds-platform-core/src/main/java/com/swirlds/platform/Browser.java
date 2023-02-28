@@ -213,19 +213,6 @@ public class Browser {
             // Provide swirlds.common the settings it needs via the SettingsCommon class
             Settings.populateSettingsCommon();
 
-            // Update Settings based on config.txt
-            configurationProperties.tls().ifPresent(tls -> Settings.getInstance()
-                    .setUseTLS(tls));
-            configurationProperties.maxSyncs().ifPresent(value -> Settings.getInstance()
-                    .setMaxOutgoingSyncs(value));
-            configurationProperties.transactionMaxBytes().ifPresent(value -> Settings.getInstance()
-                    .setTransactionMaxBytes(value));
-            configurationProperties.ipTos().ifPresent(ipTos -> Settings.getInstance()
-                    .setSocketIpTos(ipTos));
-            configurationProperties
-                    .saveStatePeriod()
-                    .ifPresent(value -> Settings.getInstance().getState().saveStatePeriod = value);
-
             // Write the settingsUsed.txt file
             writeSettingsUsed(configuration);
 
@@ -237,7 +224,6 @@ public class Browser {
             // simulation to run.
 
             try {
-
                 if (Files.exists(Settings.getInstance().getConfigPath())) {
                     CommonUtils.tellUserConsole("Reading the configuration from the file:   "
                             + Settings.getInstance().getConfigPath());
@@ -246,6 +232,7 @@ public class Browser {
                             + Settings.getInstance().getConfigPath());
                     return;
                 }
+
                 // instantiate all Platform objects, which each instantiates a Statistics object
                 logger.debug(STARTUP.getMarker(), "About to run startPlatforms()");
                 startPlatforms(configuration, configurationProperties, localNodesToStart);

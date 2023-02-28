@@ -1,3 +1,4 @@
+useTLS,                                        true
 checkSignedStateFromDisk,                      1
 csvFileName,                                   MainNetStats
 doUpnp,                                        false

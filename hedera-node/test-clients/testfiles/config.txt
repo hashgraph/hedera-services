@@ -30,13 +30,13 @@ address,  C, carol,    1, 127.0.0.1, 50206, 127.0.0.1, 50206
 # address,  K, Kent,     1, 10.0.0.10, 50210, 10.0.0.10, 50210
 # address,  L, Lucy,     1, 10.0.1.37, 50211, 10.0.1.37, 50211
 
-TLS, on #on to enable TLS, off to disable. 
 
-#######################################################################################
-# The first line can be â€œswirld, â€œ and then a name for this swirld (shared world / ledger)
+###############################################################################################
+# The first line can be "swirld, " and then a name for this swirld (shared world / ledger),
+# where the name is any string without commas, line breaks, or leading/trailing whitespace.
 #
-# Uncomment exactly one of the app name lines, above.  
-# That line should have the the word "app", then the  jar filename, 
+# Uncomment exactly one of the app name lines, above.
+# That line should have the word "app", then the  jar filename,
 # then any parameters, separated by commas.
 #
 #	HelloSwirldDemo.jar parameters: none
@@ -46,52 +46,54 @@ TLS, on #on to enable TLS, off to disable.
 #	FilesystemDemo.jar parameters: none
 #
 #	HashGraphDemo.jar takes parameters that give the initial checkbox settings,
-#		in the same order they appear are on the screen, with 1 to check it 
-#		and 0 to not check it, followed by the number of events to display 
-#		(or â€œallâ€�). The first parameter  controls whether it runs
+#		in the same order they appear are on the screen, with 1 to check it
+#		and 0 to not check it, followed by the number of events to display
+#		(or "all"). The first parameter  controls whether it runs
 #		slowly (1) or runs at full speed (0).
 #
-#	GameDemo.jar parameters: 
-#		height:         height of the board (in cells). Player moves 1 cell at a time.
-#		width:          width of the board (in cells). Player moves 1 cell at a time.
+#	GameDemo.jar parameters:
+#		height:           height of the board (in cells). Player moves 1 cell at a time.
+#		width:            width of the board (in cells). Player moves 1 cell at a time.
 #
-#	StatsDemo.jar parameters: 
-#		headless:       0 to see a window with the results.
-#				1 to run in a headless mode with no windows. 
-#		writePeriod:    how often to write stats to the file, in milliseconds.
-#		syncDelay:      how long to pause after initiating a sync, in milliseconds.
-#		bytesPerTrans:  how many bytes make up each transaction.
-#		transPerEvent:  how many transactions are put into each Event. If a given
-#                               computer is getting Out of Memory errors when running the
-#                               StatsDemo, then reduce this number, to save memory. 
-#                               
-# After the app name line comes all the address book lines, 
+#	StatsDemo.jar parameters:
+#		headless:         1 to run in a headless mode with no windows.
+#				  0 to see a window with the results.
+#		writePeriod:      how often to write stats to the file, in milliseconds.
+#		syncDelay:        how long to pause after initiating a sync, in milliseconds.
+#		bytesPerTrans:    how many bytes make up each transaction.
+#               transPerEventMax: max number of transactions to put in each event
+#                                 or -1 for infinite (no limit).
+#		transPerSec:      desired transaction per second (total created by all members)
+#                                 or -1 for infinite (no limit).
+#                                 This and transPerEventMax must not both be -1.
+#
+# After the app name line comes all the address book lines,
 # which give the addresses of all members, which is used by the simulation.
 # If the sim is run from a .jar file, put this file in the same directory as the jar.
 # If the sim is run in eclipse, put this file in the  sdk/  directory.
 #
-# Then list one member per line. For each member, list these, separated by commas 
+# Then list one member per line. For each member, list these, separated by commas
 # (after the word "address" at the start):
-#         nickname            - a single-letter abbreviation for the member's name
+#         nickname            - a short version of the member's name
 #         full name           - the member's name
 #         1                   - currently ignored
 #         internal IP address - four numbers, each in the range 0-255, separated by dots
-#                               (Only use 128.0.0.1 if ALL the members are on the same machine)
+#                               (Only use 127.0.0.1 if ALL the members are on the same machine)
 #         internal port       - in range 50000-65535
 #         external IP address - four numbers, each in the range 0-255, separated by dots
-#                               (Only use 128.0.0.1 if ALL the members are on the same machine)
+#                               (Only use 127.0.0.1 if ALL the members are on the same machine)
 #         external port       - in range 50000-65535
 #
-# The â€œinternalâ€� (or local or private) address is how the member computer is reached by 
+# The "internal" (or local or private) address is how the member computer is reached by
 # other computers on the same local network, with no Network Address Translation (NAT) in
 # between.
 #
-# The â€œexternalâ€� (or public) address is how it is reached by outside computers. It will  
+# The "external" (or public) address is how it is reached by outside computers. It will
 # often be the address of the router that does the NAT.
 #
-# If you donâ€™t know an external address for a computer, then just assume that the external 
-# address is the same as the internal address. This will work if there is no router, or if 
-# there is a router that isnâ€™t doing NAT, or if it is doing NAT but all the computers are 
+# If you don't know an external address for a computer, then just assume that the external
+# address is the same as the internal address. This will work if there is no router, or if
+# there is a router that isn't doing NAT, or if it is doing NAT but all the computers are
 # on the same local network.
 #
 # The ports can be chosen to be any number in the given range, as long as members on the
@@ -100,9 +102,8 @@ TLS, on #on to enable TLS, off to disable.
 # Lines starting with # are comments.
 # Blank lines are ignored.
 # Whitespace is ignored (except line breaks).
-# None of the strings, such as nicknames and names, can contain any commas or # symbols 
+# None of the strings, such as nicknames and names, can contain any commas or # symbols
 # or quotation marks.
-# Boolean parameters (e.g., for â€œTLS, onâ€�) can be any of on/1/true/yes/t/y for true, 
-# and any of off/0/false/no/f/n for false, where capitalization doesnâ€™t matter.
-#######################################################################################
-
+# Boolean parameters can be any of on/1/true/yes/t/y for true,
+# and any of off/0/false/no/f/n for false, where capitalization doesn't matter.
+###############################################################################################
