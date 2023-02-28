@@ -34,7 +34,7 @@ import java.util.Set;
 public final class ConsensusServiceImpl implements ConsensusService {
     private static final SemanticVersion CURRENT_VERSION =
             SemanticVersion.newBuilder().setMinor(34).build();
-
+    public static final long RUNNING_HASH_VERSION = 3L;
     public static final String TOPICS_KEY = "TOPICS";
 
     @Override

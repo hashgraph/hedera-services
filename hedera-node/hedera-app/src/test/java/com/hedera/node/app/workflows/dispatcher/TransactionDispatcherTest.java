@@ -16,18 +16,32 @@
 
 package com.hedera.node.app.workflows.dispatcher;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
+import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusDeleteTopicRecordBuilder;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
+import com.hedera.node.app.service.consensus.impl.records.SubmitMessageRecordBuilder;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
@@ -41,6 +55,8 @@ import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.network.impl.handlers.NetworkUncheckedSubmitHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
@@ -72,6 +88,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -122,11 +139,13 @@ import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -286,6 +305,17 @@ class TransactionDispatcherTest {
     @Mock
     private HederaAccountNumbers accountNumbers;
 
+    @Mock
+    private HandleContext handleContext;
+
+    @Mock
+    private TransactionContext txnCtx;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    private TransactionBody transactionBody = TransactionBody.getDefaultInstance();
+
     private TransactionHandlers handlers;
     private TransactionDispatcher dispatcher;
 
@@ -343,15 +373,17 @@ class TransactionDispatcherTest {
                 tokenUnpauseHandler,
                 utilPrngHandler);
 
-        dispatcher = new TransactionDispatcher(handlers, accountNumbers);
+        dispatcher = new TransactionDispatcher(handleContext, txnCtx, handlers, accountNumbers, dynamicProperties);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new TransactionDispatcher(null, accountNumbers))
+        assertThatThrownBy(
+                        () -> new TransactionDispatcher(handleContext, txnCtx, null, accountNumbers, dynamicProperties))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new TransactionDispatcher(handlers, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new TransactionDispatcher(handleContext, txnCtx, handlers, null, dynamicProperties))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -416,6 +448,103 @@ class TransactionDispatcherTest {
         // then
         assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, context))
                 .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void dispatchesCreateTopicAsExpected() {
+        final var createBuilder = mock(ConsensusCreateTopicRecordBuilder.class);
+
+        given(consensusCreateTopicHandler.newRecordBuilder()).willReturn(createBuilder);
+        given(dynamicProperties.maxNumTopics()).willReturn(123L);
+        given(dynamicProperties.messageMaxBytesAllowed()).willReturn(456);
+        given(createBuilder.getCreatedTopic()).willReturn(666L);
+        final var expectedConfig = new ConsensusServiceConfig(123L, 456);
+
+        doAnswer(invocation -> {
+                    final var builder =
+                            (ConsensusCreateTopicRecordBuilder) invocation.getArguments()[3];
+                    builder.setCreatedTopic(666L);
+                    return null;
+                })
+                .when(consensusCreateTopicHandler)
+                .handle(eq(handleContext), eq(transactionBody.getConsensusCreateTopic()), eq(expectedConfig), any());
+
+        dispatcher.dispatchHandle(ConsensusCreateTopic, transactionBody);
+
+        verify(txnCtx).setCreated(TopicID.newBuilder().setTopicNum(666L).build());
+    }
+
+    @Test
+    void dispatchesUpdateTopicAsExpected() {
+        final var updateBuilder = mock(ConsensusUpdateTopicRecordBuilder.class);
+
+        given(consensusUpdateTopicHandler.newRecordBuilder()).willReturn(updateBuilder);
+        given(dynamicProperties.maxNumTopics()).willReturn(123L);
+        given(dynamicProperties.messageMaxBytesAllowed()).willReturn(456);
+        final var expectedConfig = new ConsensusServiceConfig(123L, 456);
+
+        doAnswer(invocation -> {
+                    // Nothing to accumulate in the builder for this handler
+                    return null;
+                })
+                .when(consensusUpdateTopicHandler)
+                .handle(eq(handleContext), eq(transactionBody.getConsensusUpdateTopic()), eq(expectedConfig), any());
+
+        dispatcher.dispatchHandle(ConsensusUpdateTopic, transactionBody);
+
+        verifyNoInteractions(txnCtx);
+    }
+
+    @Test
+    void dispatchesDeleteTopicAsExpected() {
+        final var deleteBuilder = mock(ConsensusDeleteTopicRecordBuilder.class);
+
+        given(consensusDeleteTopicHandler.newRecordBuilder()).willReturn(deleteBuilder);
+        given(dynamicProperties.maxNumTopics()).willReturn(123L);
+        given(dynamicProperties.messageMaxBytesAllowed()).willReturn(456);
+        final var expectedConfig = new ConsensusServiceConfig(123L, 456);
+
+        doAnswer(invocation -> {
+                    // Nothing to accumulate in the builder for this handler
+                    return null;
+                })
+                .when(consensusDeleteTopicHandler)
+                .handle(eq(handleContext), eq(transactionBody.getConsensusDeleteTopic()), eq(expectedConfig), any());
+
+        dispatcher.dispatchHandle(ConsensusDeleteTopic, transactionBody);
+
+        verifyNoInteractions(txnCtx);
+    }
+
+    @Test
+    void dispatchesSubmitMessageAsExpected() {
+        final var newRunningHash = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        final var submitBuilder = mock(SubmitMessageRecordBuilder.class);
+
+        given(consensusSubmitMessageHandler.newRecordBuilder()).willReturn(submitBuilder);
+        given(dynamicProperties.maxNumTopics()).willReturn(123L);
+        given(dynamicProperties.messageMaxBytesAllowed()).willReturn(456);
+        given(submitBuilder.getNewTopicRunningHash()).willReturn(newRunningHash);
+        given(submitBuilder.getNewTopicSequenceNumber()).willReturn(2L);
+        final var expectedConfig = new ConsensusServiceConfig(123L, 456);
+
+        doAnswer(invocation -> {
+                    final var builder = (SubmitMessageRecordBuilder) invocation.getArguments()[3];
+                    builder.setNewTopicMetadata(newRunningHash, 2, 3L);
+                    return null;
+                })
+                .when(consensusSubmitMessageHandler)
+                .handle(eq(handleContext), eq(transactionBody.getConsensusSubmitMessage()), eq(expectedConfig), any());
+
+        dispatcher.dispatchHandle(ConsensusSubmitMessage, transactionBody);
+
+        verify(txnCtx).setTopicRunningHash(newRunningHash, 2);
+    }
+
+    @Test
+    void cannotDispatchUnsupportedOperations() {
+        Assertions.assertThrows(
+                IllegalArgumentException.class, () -> dispatcher.dispatchHandle(CryptoTransfer, transactionBody));
     }
 
     @ParameterizedTest

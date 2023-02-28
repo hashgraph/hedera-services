@@ -116,7 +116,7 @@ public class RedirectPrecompileSuite extends HapiSuite {
                                                 .setTokenNum(spec.registry()
                                                                 .getContractId(CONTRACT)
                                                                 .getContractNum()
-                                                        + 5)
+                                                        + 5_555_555)
                                                 .build())),
                                         asHeadlongAddress(
                                                 asAddress(spec.registry().getAccountID(TOKEN_TREASURY))))

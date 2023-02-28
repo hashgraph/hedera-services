@@ -20,17 +20,19 @@ import static com.hedera.node.app.service.consensus.impl.test.handlers.Consensus
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_B;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertOkResponse;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 
+import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.mono.Utils;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.KeyUtils;
@@ -52,8 +54,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ConsensusCreateTopicHandlerTest {
     private static final AccountID ACCOUNT_ID_3 = IdUtils.asAccount("0.0.3");
 
+    private final ConsensusServiceConfig consensusConfig = new ConsensusServiceConfig(1234L, 5678);
+
     @Mock
     private AccountKeyLookup keyFinder;
+
+    @Mock
+    private HandleContext handleContext;
+
+    @Mock
+    private TransactionBody transactionBody;
+
+    @Mock
+    private ConsensusCreateTopicRecordBuilder recordBuilder;
 
     private ConsensusCreateTopicHandler subject;
 
@@ -232,8 +245,16 @@ class ConsensusCreateTopicHandlerTest {
     @Test
     @DisplayName("Handle method not implemented")
     void handleNotImplemented() {
+        final var op = transactionBody.getConsensusCreateTopic();
         // expect:
-        assertThrows(UnsupportedOperationException.class, () -> subject.handle(mock(TransactionMetadata.class)));
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> subject.handle(handleContext, op, consensusConfig, recordBuilder));
+    }
+
+    @Test
+    void returnsExpectedRecordBuilderType() {
+        assertInstanceOf(ConsensusCreateTopicRecordBuilder.class, subject.newRecordBuilder());
     }
 
     // Note: there are more tests in ConsensusCreateTopicHandlerParityTest.java
