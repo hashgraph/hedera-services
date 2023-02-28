@@ -24,18 +24,6 @@ import java.util.Optional;
 public interface Account {
     long HBARS_TO_TINYBARS = 100_000_000L;
     /**
-     * Account's shard number
-     *
-     * @return shard number
-     */
-    long shardNumber();
-    /**
-     * Account's realm number
-     *
-     * @return realm number
-     */
-    long realmNumber();
-    /**
      * Account's account number
      *
      * @return account number
