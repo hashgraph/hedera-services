@@ -20,12 +20,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Message;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.Arrays;
@@ -42,12 +42,14 @@ public class MessageDigestTests {
 
     @BeforeAll
     public static void startup() throws NoSuchAlgorithmException {
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+        final Configuration configuration = platformContext.getConfiguration();
         cryptoConfig = configuration.getConfigData(CryptoConfig.class);
 
         assertTrue(cryptoConfig.computeCpuDigestThreadCount() >= 1);
 
-        cryptoProvider = CryptographyHolder.get();
+        cryptoProvider = platformContext.getCryptography();
         digestPool = new MessageDigestPool(cryptoConfig.computeCpuDigestThreadCount() * 16, 100);
     }
 
@@ -156,7 +158,7 @@ public class MessageDigestTests {
         checkMessages(messages);
     }
 
-    private void checkMessages(Message... messages) throws ExecutionException, InterruptedException {
+    private void checkMessages(final Message... messages) throws ExecutionException, InterruptedException {
         int numInvalid = 0;
 
         for (final Message m : messages) {

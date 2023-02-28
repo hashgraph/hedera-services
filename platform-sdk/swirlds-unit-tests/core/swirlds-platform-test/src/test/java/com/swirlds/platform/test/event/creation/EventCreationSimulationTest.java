@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.event.creation;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
@@ -25,6 +26,7 @@ import com.swirlds.platform.test.consensus.TestIntake;
 import com.swirlds.platform.test.simulated.Latency;
 import com.swirlds.platform.test.simulated.SimpleSimulatedGossip;
 import com.swirlds.platform.test.simulated.SimulatedEventCreationNode;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -80,15 +82,17 @@ public class EventCreationSimulationTest {
 
     /**
      * Simulate event creation by a number of nodes. This test creates instances of nodes that create events and
-     * simulates gossip between them. It works by incrementing the fake clock in steps, then executing any work
-     * needed to be done, such as event creation and gossip. It is single threaded.
+     * simulates gossip between them. It works by incrementing the fake clock in steps, then executing any work needed
+     * to be done, such as event creation and gossip. It is single threaded.
      *
-     * @param params
-     * 		the test parameters to use
+     * @param params the test parameters to use
      */
     @ParameterizedTest
     @MethodSource("parameters")
     void simulateEventCreation(final EventCreationSimulationParams params) {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         final Random random = new Random(params.seed());
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
@@ -104,6 +108,7 @@ public class EventCreationSimulationTest {
         final List<SimulatedEventCreationNode> nodes = new ArrayList<>();
         for (int i = 0; i < params.numNodes(); i++) {
             final SimulatedEventCreationNode node = new SimulatedEventCreationNode(
+                    platformContext,
                     random,
                     time,
                     addressBook,

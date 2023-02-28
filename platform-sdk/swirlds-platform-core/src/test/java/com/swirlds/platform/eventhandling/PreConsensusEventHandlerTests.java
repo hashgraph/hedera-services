@@ -26,11 +26,13 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.utility.ThrowingRunnable;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.test.framework.TestQualifierTags;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -50,9 +52,12 @@ class PreConsensusEventHandlerTests extends AbstractEventHandlerTests {
     private PreConsensusEventHandler preConsensusEventHandler;
     private SwirldStateManager swirldStateManager;
 
+    private PlatformContext platformContext;
+
     @Override
     @BeforeEach
     public void setup() {
+        platformContext = TestPlatformContextBuilder.create().build();
         super.setup();
     }
 
@@ -90,8 +95,8 @@ class PreConsensusEventHandlerTests extends AbstractEventHandlerTests {
         // Set up a separate thread to invoke clear
         final Callable<Void> clear = (ThrowingRunnable) () -> preConsensusEventHandler.clear();
 
-        preConsensusEventHandler =
-                new PreConsensusEventHandler(getStaticThreadManager(), selfId, swirldStateManager, consensusMetrics);
+        preConsensusEventHandler = new PreConsensusEventHandler(
+                getStaticThreadManager(), selfId, platformContext, swirldStateManager, consensusMetrics);
 
         final int numEvents = 1000;
         final EventImpl event = mock(EventImpl.class);
@@ -129,8 +134,8 @@ class PreConsensusEventHandlerTests extends AbstractEventHandlerTests {
     void testEmptyEventsDiscarded() {
         final SwirldStateManager swirldStateManager = mock(SwirldStateManager.class);
 
-        preConsensusEventHandler =
-                new PreConsensusEventHandler(getStaticThreadManager(), selfId, swirldStateManager, consensusMetrics);
+        preConsensusEventHandler = new PreConsensusEventHandler(
+                getStaticThreadManager(), selfId, platformContext, swirldStateManager, consensusMetrics);
 
         assertDoesNotThrow(
                 () -> preConsensusEventHandler.preConsensusEvent(null),
@@ -151,8 +156,8 @@ class PreConsensusEventHandlerTests extends AbstractEventHandlerTests {
         final SwirldStateManager swirldStateManager = mock(SwirldStateManager.class);
         when(swirldStateManager.discardPreConsensusEvent(any(EventImpl.class))).thenReturn(true);
 
-        preConsensusEventHandler =
-                new PreConsensusEventHandler(getStaticThreadManager(), selfId, swirldStateManager, consensusMetrics);
+        preConsensusEventHandler = new PreConsensusEventHandler(
+                getStaticThreadManager(), selfId, platformContext, swirldStateManager, consensusMetrics);
         preConsensusEventHandler.start();
 
         final List<EventImpl> events = createEvents(10, 10, false);

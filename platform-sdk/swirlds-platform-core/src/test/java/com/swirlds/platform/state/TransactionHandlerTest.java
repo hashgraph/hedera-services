@@ -27,7 +27,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
@@ -41,9 +42,12 @@ import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.test.TransactionUtils;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
 import java.util.Random;
@@ -69,8 +73,11 @@ class TransactionHandlerTest {
 
     private TransactionHandler handler;
 
+    private PlatformContext platformContext;
+
     @BeforeEach
     void setup() {
+        platformContext = TestPlatformContextBuilder.create().build();
         when(state.getSwirldState()).thenReturn(swirldState1);
         when(state.getSwirldDualState()).thenReturn(dualState);
 
@@ -81,7 +88,8 @@ class TransactionHandlerTest {
     @DisplayName("preHandle() invokes SwirldState1.preHandle() with the correct arguments")
     void testSwirldState1PreHandle() {
         final Random r = RandomUtils.getRandomPrintSeed();
-        final EventImpl event = newEvent(TransactionUtils.incrementingMixedTransactions(r));
+        final EventImpl event =
+                newEvent(TransactionUtils.incrementingMixedTransactions(r), platformContext.getCryptography());
         final Transaction[] transactions = event.getTransactions();
 
         handler.preHandle(event, swirldState1);
@@ -109,7 +117,8 @@ class TransactionHandlerTest {
     @DisplayName("preHandle() invokes SwirldState2.preHandle() with the correct arguments")
     void testSwirldState2PreHandle() {
         final Random r = RandomUtils.getRandomPrintSeed();
-        final EventImpl event = newEvent(TransactionUtils.incrementingMixedTransactions(r));
+        final EventImpl event =
+                newEvent(TransactionUtils.incrementingMixedTransactions(r), platformContext.getCryptography());
 
         handler.preHandle(event, swirldState2);
 
@@ -121,7 +130,8 @@ class TransactionHandlerTest {
     @DisplayName("handlePreConsensusEvent() invokes SwirldState.handlePreConsensusEvent() with the correct arguments")
     void testHandlePreConsensusEvent() {
         final Random r = RandomUtils.getRandomPrintSeed();
-        final EventImpl event = newEvent(TransactionUtils.incrementingMixedTransactions(r));
+        final EventImpl event =
+                newEvent(TransactionUtils.incrementingMixedTransactions(r), platformContext.getCryptography());
         final Transaction[] transactions = event.getTransactions();
 
         event.estimateTime(new NodeId(false, 0L), 0.0, 0.0);
@@ -203,7 +213,8 @@ class TransactionHandlerTest {
     @DisplayName("preHandle() handles exceptions gracefully")
     void testPreHandleThrows() {
         final Random r = RandomUtils.getRandomPrintSeed();
-        final EventImpl event = newEvent(TransactionUtils.incrementingMixedTransactions(r));
+        final EventImpl event =
+                newEvent(TransactionUtils.incrementingMixedTransactions(r), platformContext.getCryptography());
         for (final Supplier<Exception> ex : EXCEPTIONS) {
             doThrow(ex.get()).when(swirldState1).preHandle(any(Transaction.class));
             assertDoesNotThrow(() -> handler.preHandle(event, swirldState1));
@@ -247,7 +258,8 @@ class TransactionHandlerTest {
     @DisplayName("handlePreConsensusEvent() handles exceptions gracefully")
     void testHandlePreConsensusEventThrows() {
         final Random r = RandomUtils.getRandomPrintSeed();
-        final EventImpl event = newEvent(TransactionUtils.incrementingMixedTransactions(r));
+        final EventImpl event =
+                newEvent(TransactionUtils.incrementingMixedTransactions(r), platformContext.getCryptography());
         for (final Supplier<Exception> ex : EXCEPTIONS) {
             doThrow(ex.get())
                     .when(swirldState1)
@@ -270,14 +282,16 @@ class TransactionHandlerTest {
         }
     }
 
-    private static EventImpl newEvent(final ConsensusTransactionImpl[] transactions) {
+    private static EventImpl newEvent(
+            final ConsensusTransactionImpl[] transactions, @NonNull final Cryptography cryptography) {
+        CommonUtils.throwArgNull(cryptography, "cryptography");
         return new EventImpl(
                 new BaseEventHashedData(
                         0L,
                         0L,
                         0L,
-                        CryptographyHolder.get().getNullHash(),
-                        CryptographyHolder.get().getNullHash(),
+                        cryptography.getNullHash(),
+                        cryptography.getNullHash(),
                         Instant.now(),
                         transactions),
                 new BaseEventUnhashedData(0L, new byte[0]));

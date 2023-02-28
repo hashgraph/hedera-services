@@ -38,6 +38,8 @@ dependencies {
   implementation(libs.bundles.picocli)
   implementation(libs.bundles.jackson)
 
+  compileOnly(libs.spotbugs.annotations)
+
   // Test Dependencies
 
   // These should not be implementation() based deps, but this requires refactoring to eliminate.
@@ -47,6 +49,8 @@ dependencies {
   testImplementation(testLibs.bundles.junit)
   testImplementation(testLibs.bundles.mocking)
   testImplementation(testLibs.bundles.utils)
+  testImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
   testImplementation(project(":swirlds-config-impl"))
   testImplementation(testFixtures(project(":swirlds-common")))
+  testCompileOnly(libs.spotbugs.annotations)
 }

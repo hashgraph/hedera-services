@@ -18,12 +18,13 @@ package com.swirlds.platform.network.connectivity;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.TestSettings;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.test.framework.TestQualifierTags;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -50,10 +51,8 @@ class SocketFactoryTest {
     /**
      * Calls {@link #testSockets(SocketFactory, SocketFactory)} twice, to test both factories as server and as client
      *
-     * @param socketFactory1
-     * 		a factory for both server and client sockets
-     * @param socketFactory2
-     * 		a factory for both server and client sockets
+     * @param socketFactory1 a factory for both server and client sockets
+     * @param socketFactory2 a factory for both server and client sockets
      */
     private static void testSocketsBoth(final SocketFactory socketFactory1, final SocketFactory socketFactory2)
             throws Throwable {
@@ -62,15 +61,11 @@ class SocketFactoryTest {
     }
 
     /**
-     * - establishes a connection using the provided factories
-     * - transfers some data
-     * - verifies the transferred data is correct
-     * - closes the sockets
+     * - establishes a connection using the provided factories - transfers some data - verifies the transferred data is
+     * correct - closes the sockets
      *
-     * @param serverFactory
-     * 		factory to create the server socket
-     * @param clientFactory
-     * 		factory to create the client socket
+     * @param serverFactory factory to create the server socket
+     * @param clientFactory factory to create the client socket
      */
     private static void testSockets(final SocketFactory serverFactory, final SocketFactory clientFactory)
             throws Throwable {
@@ -112,12 +107,9 @@ class SocketFactoryTest {
     /**
      * Tests the functionality {@link KeysAndCerts} are currently used for, signing and establishing TLS connections.
      *
-     * @param addressBook
-     * 		address book of the network
-     * @param keysAndCerts
-     * 		keys and certificates to use for testing
-     * @throws Throwable
-     * 		if anything goes wrong
+     * @param addressBook  address book of the network
+     * @param keysAndCerts keys and certificates to use for testing
+     * @throws Throwable if anything goes wrong
      */
     @ParameterizedTest
     @MethodSource({"com.swirlds.platform.CryptoArgsProvider#basicTestArgs"})
@@ -128,8 +120,8 @@ class SocketFactoryTest {
         final int node1 = random.nextInt(addressBook.getSize());
         final int node2 = random.nextInt(addressBook.getSize());
 
-        final CryptoConfig cryptoConfig =
-                ConfigurationHolder.getInstance().get().getConfigData(CryptoConfig.class);
+        final Configuration config = new TestConfigBuilder().getOrCreateConfig();
+        final CryptoConfig cryptoConfig = config.getConfigData(CryptoConfig.class);
 
         testSocketsBoth(
                 new TlsFactory(keysAndCerts[node1], NO_IP_TOS, cryptoConfig),

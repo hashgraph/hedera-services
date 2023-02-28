@@ -18,6 +18,7 @@ package com.swirlds.platform.test.simulated;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.SerializableHashable;
@@ -40,6 +41,7 @@ import com.swirlds.platform.event.creation.ParentBasedCreationRule;
 import com.swirlds.platform.event.creation.StaticCreationRules;
 import com.swirlds.platform.event.intake.ChatterEventMapper;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -63,22 +65,16 @@ public class SimulatedEventCreationNode {
     private boolean genesisCreated = false;
 
     /**
-     * @param random
-     * 		source of randomness
-     * @param time
-     * 		current time
-     * @param addressBook
-     * 		address book of the network
-     * @param consumers
-     * 		consumers of created events
-     * @param nodeId
-     * 		this node's ID
-     * @param eventByHash
-     * 		retrive an {@link EventImpl} by its hash
-     * @param shouldCreateEvents
-     * 		should this node create events
+     * @param random             source of randomness
+     * @param time               current time
+     * @param addressBook        address book of the network
+     * @param consumers          consumers of created events
+     * @param nodeId             this node's ID
+     * @param eventByHash        retrive an {@link EventImpl} by its hash
+     * @param shouldCreateEvents should this node create events
      */
     public SimulatedEventCreationNode(
+            @NonNull final PlatformContext platformContext,
             final Random random,
             final Time time,
             final AddressBook addressBook,
@@ -123,6 +119,7 @@ public class SimulatedEventCreationNode {
         creatorThread = new EventCreatorThread(
                 getStaticThreadManager(),
                 nodeId,
+                platformContext,
                 1, // not used since the thread does not run
                 addressBook,
                 chatterEventCreator::createEvent,
@@ -147,8 +144,7 @@ public class SimulatedEventCreationNode {
     /**
      * Add an event created by another nodes
      *
-     * @param event
-     * 		the event to add
+     * @param event the event to add
      */
     public void addEvent(final GossipEvent event) {
         notifyCriticalQuorum(event);

@@ -27,13 +27,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -119,6 +120,8 @@ class AddressBookTests {
     @Test
     @DisplayName("Copy Mutable Test")
     void copyMutableTest() {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
         final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(getRandomPrintSeed()).setSize(100);
         final AddressBook original = generator.build();
 
@@ -132,8 +135,8 @@ class AddressBookTests {
         assertTrue(original.isMutable(), "original should be mutable");
         assertTrue(copy.isMutable(), "copy should be mutable");
 
-        CryptographyHolder.get().digestSync(original);
-        CryptographyHolder.get().digestSync(copy);
+        platformContext.getCryptography().digestSync(original);
+        platformContext.getCryptography().digestSync(copy);
         final Hash originalHash = original.getHash();
         final Hash copyHash = copy.getHash();
 
@@ -149,8 +152,8 @@ class AddressBookTests {
         original.invalidateHash();
         copy.invalidateHash();
 
-        CryptographyHolder.get().digestSync(original);
-        CryptographyHolder.get().digestSync(copy);
+        platformContext.getCryptography().digestSync(original);
+        platformContext.getCryptography().digestSync(copy);
 
         assertEquals(originalHash, original.getHash(), "original should be unchanged");
         assertNotEquals(copyHash, copy.getHash(), "copy should be changed");

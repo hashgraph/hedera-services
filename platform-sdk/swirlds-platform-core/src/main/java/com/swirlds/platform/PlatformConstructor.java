@@ -21,7 +21,6 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
@@ -55,6 +54,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.PlatformConstructionException;
 import com.swirlds.platform.system.SystemExitReason;
 import com.swirlds.platform.system.SystemUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.KeyManagementException;
@@ -89,8 +89,7 @@ final class PlatformConstructor {
     /**
      * Create a parallel executor.
      *
-     * @param threadManager
-     * 		responsible for managing thread lifecycles
+     * @param threadManager responsible for managing thread lifecycles
      */
     static ParallelExecutor parallelExecutor(final ThreadManager threadManager) {
         return new CachedPoolParallelExecutor(threadManager, "node-sync");
@@ -128,12 +127,9 @@ final class PlatformConstructor {
      * Creates the {@link QueueThread} that stores and handles signed states that need to be hashed and have signatures
      * collected.
      *
-     * @param threadManager
-     * 		responsible for managing thread lifecycles
-     * @param selfId
-     * 		this node's id
-     * @param signedStateConsumer
-     * 		consumer of signed states that hashes the state and collects signatures
+     * @param threadManager       responsible for managing thread lifecycles
+     * @param selfId              this node's id
+     * @param signedStateConsumer consumer of signed states that hashes the state and collects signatures
      */
     static QueueThread<SignedState> stateHashSignQueue(
             final ThreadManager threadManager,
@@ -152,27 +148,20 @@ final class PlatformConstructor {
     /**
      * Creates a new instance of {@link SwirldStateManager}.
      *
-     * @param threadManager
-     * 		responsible for creating and managing threads
-     * @param selfId
-     * 		this node's id
-     * @param systemTransactionHandler
-     * 		the handler of system transactions
-     * @param metrics
-     * 		reference to the metrics-system
-     * @param settings
-     * 		static settings provider
-     * @param consEstimateSupplier
-     * 		supplier of an estimated consensus time for transactions
-     * @param initialState
-     * 		the initial state
+     * @param threadManager            responsible for creating and managing threads
+     * @param selfId                   this node's id
+     * @param systemTransactionHandler the handler of system transactions
+     * @param metrics                  reference to the metrics-system
+     * @param settings                 static settings provider
+     * @param consEstimateSupplier     supplier of an estimated consensus time for transactions
+     * @param initialState             the initial state
      * @return the newly constructed instance of {@link SwirldStateManager}
      */
     static SwirldStateManager swirldStateManager(
             final ThreadManager threadManager,
             final NodeId selfId,
             final SystemTransactionHandler systemTransactionHandler,
-            final Metrics metrics,
+            final PlatformContext platformContext,
             final SettingsProvider settings,
             final Supplier<Instant> consEstimateSupplier,
             final BooleanSupplier inFreezeChecker,
@@ -182,7 +171,7 @@ final class PlatformConstructor {
             return new SwirldStateManagerDouble(
                     selfId,
                     systemTransactionHandler,
-                    new SwirldStateMetrics(metrics),
+                    new SwirldStateMetrics(platformContext.getMetrics()),
                     settings,
                     inFreezeChecker,
                     initialState);
@@ -191,8 +180,9 @@ final class PlatformConstructor {
                     threadManager,
                     selfId,
                     systemTransactionHandler,
-                    new SwirldStateMetrics(metrics),
-                    new ConsensusMetricsImpl(selfId, metrics),
+                    platformContext,
+                    new SwirldStateMetrics(platformContext.getMetrics()),
+                    new ConsensusMetricsImpl(selfId, platformContext.getMetrics()),
                     settings,
                     consEstimateSupplier,
                     inFreezeChecker,
@@ -207,48 +197,36 @@ final class PlatformConstructor {
     /**
      * Constructs a new {@link PreConsensusEventHandler}.
      *
-     * @param threadManager
-     * 		responsible for creating and managing threads
-     * @param selfId
-     * 		this node's id
-     * @param swirldStateManager
-     * 		the instance of {@link SwirldStateManager}
-     * @param consensusMetrics
-     * 		the class that records stats relating to {@link SwirldStateManager}
+     * @param threadManager      responsible for creating and managing threads
+     * @param selfId             this node's id
+     * @param swirldStateManager the instance of {@link SwirldStateManager}
+     * @param consensusMetrics   the class that records stats relating to {@link SwirldStateManager}
      * @return the newly constructed instance of {@link PreConsensusEventHandler}
      */
     static PreConsensusEventHandler preConsensusEventHandler(
             final ThreadManager threadManager,
             final NodeId selfId,
+            @NonNull final PlatformContext platformContext,
             final SwirldStateManager swirldStateManager,
             final ConsensusMetrics consensusMetrics) {
 
-        return new PreConsensusEventHandler(threadManager, selfId, swirldStateManager, consensusMetrics);
+        return new PreConsensusEventHandler(
+                threadManager, selfId, platformContext, swirldStateManager, consensusMetrics);
     }
 
     /**
      * Constructs a new {@link ConsensusRoundHandler}.
      *
-     * @param threadManager
-     * 		responsible for creating and managing threads
-     * @param selfId
-     * 		this node's id
-     * @param settingsProvider
-     * 		a static settings provider
-     * @param swirldStateManager
-     * 		the instance of {@link SwirldStateManager}
-     * @param consensusHandlingMetrics
-     * 		the class that records stats relating to {@link SwirldStateManager}
-     * @param eventStreamManager
-     * 		the instance that streams consensus events to disk
-     * @param stateHashSignQueue
-     * 		the queue for signed states that need signatures collected
-     * @param enterFreezePeriod
-     * 		a runnable executed when a freeze is entered
-     * @param roundAppliedToStateConsumer
-     * 		the consumer to invoke when a round has just been applied to the state
-     * @param softwareVersion
-     * 		the software version of the application
+     * @param threadManager               responsible for creating and managing threads
+     * @param selfId                      this node's id
+     * @param settingsProvider            a static settings provider
+     * @param swirldStateManager          the instance of {@link SwirldStateManager}
+     * @param consensusHandlingMetrics    the class that records stats relating to {@link SwirldStateManager}
+     * @param eventStreamManager          the instance that streams consensus events to disk
+     * @param stateHashSignQueue          the queue for signed states that need signatures collected
+     * @param enterFreezePeriod           a runnable executed when a freeze is entered
+     * @param roundAppliedToStateConsumer the consumer to invoke when a round has just been applied to the state
+     * @param softwareVersion             the software version of the application
      * @return the newly constructed instance of {@link ConsensusRoundHandler}
      */
     static ConsensusRoundHandler consensusHandler(

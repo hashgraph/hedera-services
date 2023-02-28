@@ -21,9 +21,7 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
@@ -34,6 +32,7 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.Startable;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.common.output.RoundAppliedToStateConsumer;
@@ -47,6 +46,7 @@ import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.stats.CycleTimingStat;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -111,32 +111,26 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
     private final RoundAppliedToStateConsumer roundAppliedToStateConsumer;
 
+    private final PlatformContext platformContext;
+
     /**
-     * Instantiate, but don't start any threads yet. The Platform should first instantiate the
-     * {@link ConsensusRoundHandler}. Then the Platform should call start to start the queue thread.
+     * Instantiate, but don't start any threads yet. The Platform should first instantiate the {@link
+     * ConsensusRoundHandler}. Then the Platform should call start to start the queue thread.
      *
-     * @param platformContext contains various platform utilities
-     * @param threadManager
-     * 		responsible for creating and managing threads
-     * @param selfId
-     * 		the id of this node
-     * @param settings
-     * 		a provider of static settings
-     * @param swirldStateManager
-     * 		the swirld state manager to send events to
-     * @param consensusHandlingMetrics
-     * 		statistics updated by {@link ConsensusRoundHandler}
-     * @param eventStreamManager
-     * 		the event stream manager to send consensus events to
-     * @param stateHashSignQueue
-     * 		the queue thread that handles hashing and collecting signatures of new self-signed states
-     * @param enterFreezePeriod
-     * 		puts the system in a freeze state when executed
-     * @param softwareVersion
-     * 		the current version of the software
+     * @param platformContext          contains various platform utilities
+     * @param threadManager            responsible for creating and managing threads
+     * @param selfId                   the id of this node
+     * @param settings                 a provider of static settings
+     * @param swirldStateManager       the swirld state manager to send events to
+     * @param consensusHandlingMetrics statistics updated by {@link ConsensusRoundHandler}
+     * @param eventStreamManager       the event stream manager to send consensus events to
+     * @param stateHashSignQueue       the queue thread that handles hashing and collecting signatures of new
+     *                                 self-signed states
+     * @param enterFreezePeriod        puts the system in a freeze state when executed
+     * @param softwareVersion          the current version of the software
      */
     public ConsensusRoundHandler(
-            final PlatformContext platformContext,
+            @NonNull final PlatformContext platformContext,
             final ThreadManager threadManager,
             final long selfId,
             final SettingsProvider settings,
@@ -147,7 +141,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
             final Runnable enterFreezePeriod,
             final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
             final SoftwareVersion softwareVersion) {
-
+        this.platformContext = CommonUtils.throwArgNull(platformContext, "platformContext");
         this.roundAppliedToStateConsumer = roundAppliedToStateConsumer;
 
         this.settings = settings;
@@ -169,8 +163,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                 // DO NOT turn the line below into a lambda reference because it will execute the getter, not the
                 // runnable returned by the getter.
                 .setWaitForItemRunnable(swirldStateManager.getConsensusWaitForWorkRunnable())
-                .setLogAfterPauseDuration(ConfigurationHolder.getInstance()
-                        .get()
+                .setLogAfterPauseDuration(platformContext
+                        .getConfiguration()
                         .getConfigData(ThreadConfig.class)
                         .logStackTracePauseDuration())
                 .setQueue(queue)
@@ -334,7 +328,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
         for (final EventImpl event : round.getConsensusEvents()) {
             if (event.getHash() == null) {
-                CryptographyHolder.get().digestSync(event);
+                platformContext.getCryptography().digestSync(event);
             }
         }
 

@@ -20,12 +20,13 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.Startable;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.event.EventUtils;
@@ -33,6 +34,7 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.observers.PreConsensusEventObserver;
 import com.swirlds.platform.state.SwirldStateManager;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import org.apache.logging.log4j.LogManager;
@@ -63,23 +65,21 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
     private final SwirldStateManager swirldStateManager;
 
     /**
-     * @param threadManager
-     * 		responsible for managing thread lifecycles
-     * @param selfId
-     * 		the ID of this node
-     * @param swirldStateManager
-     * 		manages states
-     * @param metrics
-     * 		metrics relating to consensus
+     * @param threadManager      responsible for managing thread lifecycles
+     * @param selfId             the ID of this node
+     * @param swirldStateManager manages states
+     * @param metrics            metrics relating to consensus
      */
     public PreConsensusEventHandler(
             final ThreadManager threadManager,
             final NodeId selfId,
+            @NonNull final PlatformContext platformContext,
             final SwirldStateManager swirldStateManager,
             final ConsensusMetrics metrics) {
         this.selfId = selfId;
         this.swirldStateManager = swirldStateManager;
         this.metrics = metrics;
+        CommonUtils.throwArgNull(platformContext, "platformContext");
         final BlockingQueue<EventImpl> queue = new PriorityBlockingQueue<>(
                 INITIAL_PRE_CONS_EVENT_QUEUE_CAPACITY, EventUtils::consensusPriorityComparator);
         queueThread = new QueueThreadConfiguration<EventImpl>(threadManager)
@@ -92,8 +92,8 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
                 // runnable returned by the getter.
                 .setWaitForItemRunnable(swirldStateManager.getPreConsensusWaitForWorkRunnable())
                 .setHandler(swirldStateManager::handlePreConsensusEvent)
-                .setLogAfterPauseDuration(ConfigurationHolder.getInstance()
-                        .get()
+                .setLogAfterPauseDuration(platformContext
+                        .getConfiguration()
                         .getConfigData(ThreadConfig.class)
                         .logStackTracePauseDuration())
                 .build();

@@ -68,17 +68,20 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
 
     private ConsensusRoundHandler consensusRoundHandler;
 
+    private PlatformContext platformContext;
+
     @Override
     @BeforeEach
     public void setup() {
         super.setup();
+        platformContext = TestPlatformContextBuilder.create().build();
         eventStreamManager = mock(EventStreamManager.class);
         stateHashSignQueue = mock(QueueThread.class);
     }
 
     /**
-     * Verify that the consensus handler thread does not make reconnect wait for it to drain the queue of
-     * consensus rounds.
+     * Verify that the consensus handler thread does not make reconnect wait for it to drain the queue of consensus
+     * rounds.
      */
     @RepeatedTest(10)
     @Tag(TestQualifierTags.TIME_CONSUMING)
@@ -158,8 +161,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
     /**
      * Tests that consensus events are passed to {@link EventStreamManager#addEvents(List)} exactly once.
      *
-     * @param swirldState
-     * 		the instance of {@link SwirldState} to initialize {@link ConsensusRoundHandler} with
+     * @param swirldState the instance of {@link SwirldState} to initialize {@link ConsensusRoundHandler} with
      */
     @ParameterizedTest
     @MethodSource("swirldStates")
@@ -171,10 +173,8 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
     /**
      * Verifies that {@link EventStreamManager#addEvents(List)} is called the desired number of times.
      *
-     * @param eventStreamManager
-     * 		the instance of {@link EventStreamManager} used by {@link ConsensusRoundHandler}
-     * @param roundConsumer
-     * 		the round consumer to test
+     * @param eventStreamManager the instance of {@link EventStreamManager} used by {@link ConsensusRoundHandler}
+     * @param roundConsumer      the round consumer to test
      */
     private void testEventStream(
             final EventStreamManager<EventImpl> eventStreamManager, final Consumer<ConsensusRound> roundConsumer) {
@@ -205,6 +205,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                     getStaticThreadManager(),
                     selfId,
                     systemTransactionHandler,
+                    platformContext,
                     mock(SwirldStateMetrics.class),
                     mock(ConsensusMetrics.class),
                     settingsProvider,

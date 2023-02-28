@@ -24,7 +24,7 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
@@ -147,8 +147,8 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
     private final Shuffler shuffler;
 
     /**
-     * Keeps the state returned to the user app to ensure that it doesn't get deleted.
-     * Must only be accessed in synchronized blocks.
+     * Keeps the state returned to the user app to ensure that it doesn't get deleted. Must only be accessed in
+     * synchronized blocks.
      */
     private State stateCurrReturned = null;
 
@@ -198,29 +198,21 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
     /**
      * Creates a new instance with the provided state and starts the work thread.
      *
-     * @param threadManager
-     * 		responsible for creating and managing threads
-     * @param selfId
-     * 		this node's id
-     * @param systemTransactionHandler
-     * 		the handler for system transactions
-     * @param swirldStateMetrics
-     * 		metrics related to SwirldState
-     * @param consensusMetrics
-     * 		metrics related to consensus
-     * @param settings
-     * 		a static settings provider
-     * @param consEstimateSupplier
-     * 		an estimator of consensus time for self transactions
-     * @param inFreeze
-     * 		indicates if the system is currently in a freeze
-     * @param initialState
-     * 		the initial state of this application
+     * @param threadManager            responsible for creating and managing threads
+     * @param selfId                   this node's id
+     * @param systemTransactionHandler the handler for system transactions
+     * @param swirldStateMetrics       metrics related to SwirldState
+     * @param consensusMetrics         metrics related to consensus
+     * @param settings                 a static settings provider
+     * @param consEstimateSupplier     an estimator of consensus time for self transactions
+     * @param inFreeze                 indicates if the system is currently in a freeze
+     * @param initialState             the initial state of this application
      */
     public SwirldStateManagerSingle(
             final ThreadManager threadManager,
             final NodeId selfId,
             final SystemTransactionHandler systemTransactionHandler,
+            final PlatformContext platformContext,
             final SwirldStateMetrics swirldStateMetrics,
             final ConsensusMetrics consensusMetrics,
             final SettingsProvider settings,
@@ -270,8 +262,8 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
                 .setQueue(newQueue())
                 .setHandler(this::doWork)
                 .setWaitForItemRunnable(this::forWorkWaitForItem)
-                .setLogAfterPauseDuration(ConfigurationHolder.getInstance()
-                        .get()
+                .setLogAfterPauseDuration(platformContext
+                        .getConfiguration()
                         .getConfigData(ThreadConfig.class)
                         .logStackTracePauseDuration())
                 .build();
@@ -283,6 +275,7 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
     /**
      * {@inheritDoc}
      */
+    @Override
     public SwirldStateSingleTransactionPool getTransactionPool() {
         return transactionPool;
     }
@@ -325,7 +318,7 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
 
     /**
      * {@inheritDoc}
-     *
+     * <p>
      * Self events should not be passed here.
      */
     @Override
@@ -366,10 +359,8 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
     /**
      * Update the estimated consensus time of the event if it has not already reached consensus.
      *
-     * @param isConsensus
-     * 		true if the {@code event} has reached consensus
-     * @param event
-     * 		the event
+     * @param isConsensus true if the {@code event} has reached consensus
+     * @param event       the event
      */
     private void updateEstimatedTime(final boolean isConsensus, final EventImpl event) {
         if (isConsensus) {
@@ -410,8 +401,7 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
      * Prevent self events from being added to the pre-consensus queue because self transactions are processed through
      * the {@link SwirldStateSingleTransactionPool} {@code transCurr} queue.
      *
-     * @param event
-     * 		the event to evaluate for adding to the pre-consensus queue
+     * @param event the event to evaluate for adding to the pre-consensus queue
      * @return true if the event should be added
      */
     @Override
@@ -468,8 +458,7 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
     /**
      * Performs a shuffle if it is time to do so.
      *
-     * @param stateInfo
-     * 		the state modified by the calling thread
+     * @param stateInfo the state modified by the calling thread
      */
     private boolean shuffleIfTimeToShuffle(final StateInfo stateInfo) {
         // block until something is available, or until it's time for a new shuffle
@@ -496,18 +485,17 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
      * event to stateWork.</p>
      *
      * <p>Unlike the methods to handle events in the pre-consensus and consensus queues, this method does not check to
-     * see if it is time to shuffle. This is because threadQueue removes events from the queue in bulk, then holds
-     * them in a buffer, passing them to this method one by one. If threadWork enters a shuffle here, any events in the
+     * see if it is time to shuffle. This is because threadQueue removes events from the queue in bulk, then holds them
+     * in a buffer, passing them to this method one by one. If threadWork enters a shuffle here, any events in the
      * buffer would not be applied to stateWork prior to the shuffle.</p>
      *
-     * <p>Because the first thing the shuffle does it drain the work transactions and threadWork queue, it is ok to only
-     * check if it is time to shuffle when the threadWork queue is empty. When threadCurr is waiting at the shuffle
+     * <p>Because the first thing the shuffle does it drain the work transactions and threadWork queue, it is ok to
+     * only check if it is time to shuffle when the threadWork queue is empty. When threadCurr is waiting at the shuffle
      * barrier, threadWork will continue draining its queue. When it is empty (and threadCurr has stopped putting events
      * in because it is waiting), threadWork will execute the {@link #forWorkWaitForItem} runnable and see that it is
      * time to shuffle.</p>
      *
-     * @param event
-     * 		the event to apply to stateWork
+     * @param event the event to apply to stateWork
      */
     private void doWork(final EventImpl event) {
         handleWorkTransactions();
@@ -518,8 +506,7 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
     /**
      * Applies the event to the work state then adds the event to the forNext queue.
      *
-     * @param event
-     * 		the event to apply
+     * @param event the event to apply
      */
     private void forWorkEvent(final EventImpl event) {
 
@@ -582,8 +569,7 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
      * round. Removing these transactions from transCons prevents them from being sent to the new stateWork to handle
      * after the next shuffle.
      *
-     * @param round
-     * 		the round being handled
+     * @param round the round being handled
      * @return the future of the background task
      */
     private Future<?> beginTransactionPolling(final ConsensusRound round) {
@@ -627,10 +613,8 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
      * Check if this event has a consensus time before or equal to the latest consensus event already applied to the
      * state.
      *
-     * @param event
-     * 		the event to check
-     * @param stateInfo
-     * 		the state to check
+     * @param event     the event to check
+     * @param stateInfo the state to check
      * @return true if the event should be discarded and not applied to the state
      */
     private static boolean shouldDiscardEvent(
@@ -781,6 +765,7 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
     /**
      * {@inheritDoc}
      */
+    @Override
     public SwirldState getCurrentSwirldState() {
         try {
             getStateSemaphore.acquire();
@@ -863,9 +848,9 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
     private class Shuffler {
 
         /**
-         * do a shuffle, where stateCurr is discarded and replaced with stateWork, and stateWork is replaced
-         * with a copy of stateCons, and transactionPool shuffles accordingly. This is called by the shuffleBarrier
-         * while all 3 threads are waiting: thread-curr, thread-work, thread-cons
+         * do a shuffle, where stateCurr is discarded and replaced with stateWork, and stateWork is replaced with a copy
+         * of stateCons, and transactionPool shuffles accordingly. This is called by the shuffleBarrier while all 3
+         * threads are waiting: thread-curr, thread-work, thread-cons
          */
         public void shuffle() {
             final long startShuffle = System.nanoTime();

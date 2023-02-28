@@ -24,13 +24,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.stream.HashCalculatorForStream;
 import com.swirlds.common.stream.QueueThreadObjectStream;
 import com.swirlds.common.stream.internal.LinkedObjectStream;
 import com.swirlds.common.test.RandomUtils;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import org.junit.jupiter.api.Test;
 
 class HashCalculatorTest {
@@ -39,9 +40,9 @@ class HashCalculatorTest {
 
     @Test
     void nextStreamTest() throws InterruptedException {
-        LinkedObjectStream<ObjectForTestStream> queueThread = mock(QueueThreadObjectStream.class);
-        HashCalculatorForStream<ObjectForTestStream> hashCalculator = new HashCalculatorForStream<>(queueThread);
-        Hash hash = RandomUtils.randomHash();
+        final LinkedObjectStream<ObjectForTestStream> queueThread = mock(QueueThreadObjectStream.class);
+        final HashCalculatorForStream<ObjectForTestStream> hashCalculator = new HashCalculatorForStream<>(queueThread);
+        final Hash hash = RandomUtils.randomHash();
         hashCalculator.setRunningHash(hash);
         verify(queueThread).setRunningHash(hash);
 
@@ -57,10 +58,12 @@ class HashCalculatorTest {
 
     @Test
     void calculateHashTest() throws InterruptedException {
-        HashCalculatorForStream<ObjectForTestStream> hashCalculator = new HashCalculatorForStream<>();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+        final HashCalculatorForStream<ObjectForTestStream> hashCalculator = new HashCalculatorForStream<>();
         assertNull(object.getHash(), "the object's Hash should be null after initialization");
         // calculate expected Hash
-        Hash expected = CryptographyHolder.get().digestSync((SelfSerializable) object);
+        final Hash expected = platformContext.getCryptography().digestSync((SelfSerializable) object);
         assertNotNull(expected, "the object's expected Hash should not be null");
         assertNull(object.getHash(), "the object's Hash should be null after calculated expected Hash");
         // hashCalculator calculates and set Hash for this object
@@ -73,8 +76,8 @@ class HashCalculatorTest {
 
     @Test
     void addNullObjectTest() throws InterruptedException {
-        LinkedObjectStream<ObjectForTestStream> queueThread = mock(QueueThreadObjectStream.class);
-        HashCalculatorForStream<ObjectForTestStream> hashCalculator = new HashCalculatorForStream<>(queueThread);
+        final LinkedObjectStream<ObjectForTestStream> queueThread = mock(QueueThreadObjectStream.class);
+        final HashCalculatorForStream<ObjectForTestStream> hashCalculator = new HashCalculatorForStream<>(queueThread);
         assertThrows(
                 NullPointerException.class,
                 () -> hashCalculator.addObject(null),

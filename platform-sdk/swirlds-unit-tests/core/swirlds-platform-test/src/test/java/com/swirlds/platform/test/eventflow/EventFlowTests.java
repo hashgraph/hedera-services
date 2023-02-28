@@ -210,8 +210,8 @@ class EventFlowTests {
     }
 
     /**
-     * Verifies that all transactions from consensus events created are sent to
-     * {@link SwirldState#handleConsensusRound(Round, SwirldDualState)} in a round exactly once.
+     * Verifies that all transactions from consensus events created are sent to {@link
+     * SwirldState#handleConsensusRound(Round, SwirldDualState)} in a round exactly once.
      *
      * @param seed            random seed this test uses for address book generation
      * @param numNodes        the number of nodes in the network
@@ -224,8 +224,8 @@ class EventFlowTests {
     }
 
     /**
-     * Verifies that all transactions from consensus events created are sent to
-     * {@link SwirldState#handleConsensusRound(Round, SwirldDualState)} in a round exactly once.
+     * Verifies that all transactions from consensus events created are sent to {@link
+     * SwirldState#handleConsensusRound(Round, SwirldDualState)} in a round exactly once.
      *
      * @param seed      random seed this test uses for address book generation
      * @param numEvents the number of events to submit
@@ -271,8 +271,8 @@ class EventFlowTests {
     }
 
     /**
-     * Verifies that signed states are created for the appropriate rounds given the
-     * {@link SettingsProvider#getSignedStateFreq()}.
+     * Verifies that signed states are created for the appropriate rounds given the {@link
+     * SettingsProvider#getSignedStateFreq()}.
      * <p>
      * Some developers have seen this test hang when running locally. There is a known memory leak with SS1
      * (https://github.com/swirlds/swirlds-platform/issues/4776) that causes the hang-up when running with multiple SS1
@@ -607,6 +607,7 @@ class EventFlowTests {
                     getStaticThreadManager(),
                     selfNodeId,
                     systemTransactionTracker,
+                    platform.getContext(),
                     mock(SwirldStateMetrics.class),
                     consensusMetrics,
                     settingsProvider,
@@ -619,7 +620,7 @@ class EventFlowTests {
                 TestPlatformContextBuilder.create().build();
 
         preConsensusEventHandler = new PreConsensusEventHandler(
-                getStaticThreadManager(), selfNodeId, swirldStateManager, consensusMetrics);
+                getStaticThreadManager(), selfNodeId, platformContext, swirldStateManager, consensusMetrics);
         consensusEventHandler = new ConsensusRoundHandler(
                 platformContext,
                 getStaticThreadManager(),

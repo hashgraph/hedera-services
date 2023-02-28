@@ -23,7 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -35,8 +36,10 @@ import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -50,16 +53,16 @@ class MerkleRehashTests {
     /**
      * If the root of the tree is an internal node, add some self hashing nodes that "explode" if rehashed.
      */
-    private void addSelfHashingNodes(final MerkleNode root) {
+    private void addSelfHashingNodes(final MerkleNode root, final Cryptography cryptography) {
         if (!root.isLeaf()) {
             final MerkleInternal internal = root.asInternal();
             final int childCount = internal.getNumberOfChildren();
 
-            internal.setChild(childCount, new DummySelfHashingLeaf());
+            internal.setChild(childCount, new DummySelfHashingLeaf(cryptography));
 
-            final MerkleInternal subtree = new DummySelfHashingInternal();
-            subtree.setChild(0, new DummySelfHashingLeaf());
-            subtree.setChild(1, new DummySelfHashingLeaf());
+            final MerkleInternal subtree = new DummySelfHashingInternal(cryptography);
+            subtree.setChild(0, new DummySelfHashingLeaf(cryptography));
+            subtree.setChild(1, new DummySelfHashingLeaf(cryptography));
 
             internal.setChild(childCount + 1, subtree);
         }
@@ -71,17 +74,22 @@ class MerkleRehashTests {
     @DisplayName("Invalidate Behavior")
     void invalidateBehavior() {
 
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         for (final MerkleNode root : MerkleTestUtils.buildTreeList()) {
             if (root == null) {
                 continue;
             }
 
-            addSelfHashingNodes(root);
+            addSelfHashingNodes(root, platformContext.getCryptography());
 
             root.forEachNode((final MerkleNode node) -> {
                 if (node.isSelfHashing()) {
                     assertEquals(
-                            CryptographyHolder.get().getNullHash(), node.getHash(), "dummy node should have null hash");
+                            platformContext.getCryptography().getNullHash(),
+                            node.getHash(),
+                            "dummy node should have null hash");
                 } else {
                     assertNull(node.getHash(), "node should have a null hash");
                 }
@@ -98,7 +106,9 @@ class MerkleRehashTests {
             root.forEachNode((final MerkleNode node) -> {
                 if (node.isSelfHashing()) {
                     assertEquals(
-                            CryptographyHolder.get().getNullHash(), node.getHash(), "dummy node should have null hash");
+                            platformContext.getCryptography().getNullHash(),
+                            node.getHash(),
+                            "dummy node should have null hash");
                 } else {
                     assertNull(node.getHash(), "node should have a null hash");
                 }
@@ -111,18 +121,22 @@ class MerkleRehashTests {
     @Tag(TestComponentTags.MERKLE)
     @DisplayName("Rehash Behavior")
     void rehashBehavior() {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
 
         for (final MerkleNode root : MerkleTestUtils.buildTreeList()) {
             if (root == null) {
                 continue;
             }
 
-            addSelfHashingNodes(root);
+            addSelfHashingNodes(root, platformContext.getCryptography());
 
             root.forEachNode((final MerkleNode node) -> {
                 if (node.isSelfHashing()) {
                     assertEquals(
-                            CryptographyHolder.get().getNullHash(), node.getHash(), "dummy node should have null hash");
+                            platformContext.getCryptography().getNullHash(),
+                            node.getHash(),
+                            "dummy node should have null hash");
                 } else {
                     assertNull(node.getHash(), "node should have a null hash");
                 }
@@ -150,6 +164,12 @@ class MerkleRehashTests {
     }
 
     private static class DummySelfHashingLeaf extends PartialMerkleLeaf implements MerkleLeaf {
+
+        private final Cryptography cryptography;
+
+        private DummySelfHashingLeaf(final Cryptography cryptography) {
+            this.cryptography = CommonUtils.throwArgNull(cryptography, "cryptography");
+        }
 
         @Override
         public long getClassId() {
@@ -180,7 +200,7 @@ class MerkleRehashTests {
 
         @Override
         public Hash getHash() {
-            return CryptographyHolder.get().getNullHash();
+            return cryptography.getNullHash();
         }
 
         @Override
@@ -195,6 +215,12 @@ class MerkleRehashTests {
     }
 
     private static class DummySelfHashingInternal extends PartialNaryMerkleInternal implements MerkleInternal {
+
+        private final Cryptography cryptography;
+
+        private DummySelfHashingInternal(final Cryptography cryptography) {
+            this.cryptography = CommonUtils.throwArgNull(cryptography, "cryptography");
+        }
 
         @Override
         public long getClassId() {
@@ -219,7 +245,7 @@ class MerkleRehashTests {
 
         @Override
         public Hash getHash() {
-            return CryptographyHolder.get().getNullHash();
+            return cryptography.getNullHash();
         }
 
         @Override

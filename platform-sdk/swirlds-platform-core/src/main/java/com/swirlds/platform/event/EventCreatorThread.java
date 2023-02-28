@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.StoppableThread;
@@ -24,7 +24,9 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.BooleanFunction;
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.config.ThreadConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -42,24 +44,21 @@ public class EventCreatorThread implements Clearable {
     private final BooleanFunction<Long> eventCreator;
 
     /**
-     * @param threadManager
-     * 		responsible for managing thread lifecycles
-     * @param selfId
-     * 		the ID of this node
-     * @param attemptedChatterEventPerSecond
-     * 		the desired number of events created per second
-     * @param addressBook
-     * 		the node's address book
-     * @param eventCreator
-     * 		this method attempts to create an event with a neighbor
+     * @param threadManager                  responsible for managing thread lifecycles
+     * @param selfId                         the ID of this node
+     * @param attemptedChatterEventPerSecond the desired number of events created per second
+     * @param addressBook                    the node's address book
+     * @param eventCreator                   this method attempts to create an event with a neighbor
      */
     public EventCreatorThread(
             final ThreadManager threadManager,
             final NodeId selfId,
+            @NonNull final PlatformContext platformContext,
             final int attemptedChatterEventPerSecond,
             final AddressBook addressBook,
             final BooleanFunction<Long> eventCreator,
             final Random random) {
+        CommonUtils.throwArgNull(platformContext, "platformContext");
         this.selfId = selfId;
         this.eventCreator = eventCreator;
         this.random = random;
@@ -75,8 +74,8 @@ public class EventCreatorThread implements Clearable {
                 .setMaximumRate(attemptedChatterEventPerSecond)
                 .setComponent("Chatter")
                 .setThreadName("EventGenerator")
-                .setLogAfterPauseDuration(ConfigurationHolder.getInstance()
-                        .get()
+                .setLogAfterPauseDuration(platformContext
+                        .getConfiguration()
                         .getConfigData(ThreadConfig.class)
                         .logStackTracePauseDuration())
                 .setWork(this::createEvent)

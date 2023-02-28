@@ -20,14 +20,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.threading.futures.FuturePool;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.Arrays;
@@ -52,12 +52,14 @@ public class TransactionSignatureTests {
 
     @BeforeAll
     public static void startup() throws NoSuchAlgorithmException, NoSuchProviderException {
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+        final Configuration configuration = platformContext.getConfiguration();
         cryptoConfig = configuration.getConfigData(CryptoConfig.class);
 
         assertTrue(cryptoConfig.computeCpuDigestThreadCount() >= 1);
 
-        cryptoProvider = CryptographyHolder.get();
+        cryptoProvider = platformContext.getCryptography();
         executorService = Executors.newFixedThreadPool(PARALLELISM);
         signaturePool = new SignaturePool(cryptoConfig.computeCpuVerifierThreadCount() * PARALLELISM, 4096, true);
     }
@@ -81,7 +83,7 @@ public class TransactionSignatureTests {
 
         cryptoProvider.verifySync(singleSignature);
 
-        Future<Void> future = singleSignature.waitForFuture();
+        final Future<Void> future = singleSignature.waitForFuture();
         assertNotNull(future);
         future.get();
 
@@ -319,11 +321,12 @@ public class TransactionSignatureTests {
         checkSignatures(signatures);
     }
 
-    private void checkSignatures(TransactionSignature... signatures) throws ExecutionException, InterruptedException {
+    private void checkSignatures(final TransactionSignature... signatures)
+            throws ExecutionException, InterruptedException {
         int numInvalid = 0;
 
         for (final TransactionSignature sig : signatures) {
-            Future<Void> future = sig.waitForFuture();
+            final Future<Void> future = sig.waitForFuture();
             assertNotNull(future);
             future.get();
 
@@ -369,7 +372,7 @@ public class TransactionSignatureTests {
             final int fOffset = offset;
             final int fSliceLength = sliceLength;
 
-            Future<Void> future = executorService.submit(new Callable<Void>() {
+            final Future<Void> future = executorService.submit(new Callable<Void>() {
                 @Override
                 public Void call() throws Exception {
                     executor.accept(signatures, fOffset, fOffset + fSliceLength);

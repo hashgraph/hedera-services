@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.system.events.BaseEventHashedData;
@@ -29,6 +29,7 @@ import com.swirlds.common.system.events.ConsensusData;
 import com.swirlds.common.system.events.DetailedConsensusEvent;
 import com.swirlds.common.test.io.InputOutputStream;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
@@ -48,7 +49,7 @@ public class DetailedConsensusEventTest {
 
     @Test
     public void serializeAndDeserializeConsensusEvent() throws IOException {
-        DetailedConsensusEvent consensusEvent = generateConsensusEvent();
+        final DetailedConsensusEvent consensusEvent = generateConsensusEvent();
         try (final InputOutputStream io = new InputOutputStream()) {
             io.getOutput().writeSerializable(consensusEvent, true);
             io.startReading();
@@ -60,22 +61,24 @@ public class DetailedConsensusEventTest {
 
     @Test
     public void EventImplGetHashTest() {
-        DetailedConsensusEvent consensusEvent = generateConsensusEvent();
-        EventImpl event = new EventImpl(
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+        final DetailedConsensusEvent consensusEvent = generateConsensusEvent();
+        final EventImpl event = new EventImpl(
                 consensusEvent.getBaseEventHashedData(),
                 consensusEvent.getBaseEventUnhashedData(),
                 consensusEvent.getConsensusData());
-        CryptographyHolder.get().digestSync(consensusEvent);
-        Hash expectedHash = consensusEvent.getHash();
-        CryptographyHolder.get().digestSync(event);
+        platformContext.getCryptography().digestSync(consensusEvent);
+        final Hash expectedHash = consensusEvent.getHash();
+        platformContext.getCryptography().digestSync(event);
         assertEquals(expectedHash, event.getHash());
     }
 
     private DetailedConsensusEvent generateConsensusEvent() {
-        Random random = new Random(68651684861L);
-        BaseEventHashedData hashedData = DetGenerateUtils.generateBaseEventHashedData(random);
-        BaseEventUnhashedData unhashedData = DetGenerateUtils.generateBaseEventUnhashedData(random);
-        ConsensusData consensusData = DetGenerateUtils.generateConsensusEventData(random);
+        final Random random = new Random(68651684861L);
+        final BaseEventHashedData hashedData = DetGenerateUtils.generateBaseEventHashedData(random);
+        final BaseEventUnhashedData unhashedData = DetGenerateUtils.generateBaseEventUnhashedData(random);
+        final ConsensusData consensusData = DetGenerateUtils.generateConsensusEventData(random);
         return new DetailedConsensusEvent(hashedData, unhashedData, consensusData);
     }
 }

@@ -18,17 +18,19 @@ package com.swirlds.platform.components;
 
 import static com.swirlds.logging.LogMarker.CREATE_EVENT;
 
-import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.SelfEventStorage;
 import com.swirlds.platform.event.creation.AncientParentsRule;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -74,35 +76,28 @@ public class EventCreator {
     /** This object is used for checking whether this node should create an event or not */
     private final EventCreationRules eventCreationRules;
 
+    private final PlatformContext platformContext;
+
     /**
      * Construct a new EventCreator.
      *
-     * @param selfId
-     * 		the ID of this node
-     * @param signer
-     * 		responsible for signing new events
-     * @param graphGenerationsSupplier
-     * 		supplies the key generation number from the hashgraph
-     * @param transactionSupplier
-     * 		this method supplies transactions that should be inserted into newly created events
-     * @param newEventHandler
-     * 		this method is passed all newly created events
-     * @param selfEventStorage
-     * 		stores the most recent event created by me
-     * @param eventMapper
-     * 		the object that tracks the most recent events from each node
-     * @param transactionTracker
-     * 		the object that tracks user transactions in the hashgraph
-     * @param transactionPool
-     * 		the TransactionPool
-     * @param inFreeze
-     * 		indicates if the system is currently in a freeze
-     * @param eventCreationRules
-     * 		the object used for checking if we should create an event or not
+     * @param selfId                   the ID of this node
+     * @param signer                   responsible for signing new events
+     * @param graphGenerationsSupplier supplies the key generation number from the hashgraph
+     * @param transactionSupplier      this method supplies transactions that should be inserted into newly created
+     *                                 events
+     * @param newEventHandler          this method is passed all newly created events
+     * @param selfEventStorage         stores the most recent event created by me
+     * @param eventMapper              the object that tracks the most recent events from each node
+     * @param transactionTracker       the object that tracks user transactions in the hashgraph
+     * @param transactionPool          the TransactionPool
+     * @param inFreeze                 indicates if the system is currently in a freeze
+     * @param eventCreationRules       the object used for checking if we should create an event or not
      */
     public EventCreator(
             final NodeId selfId,
             final Signer signer,
+            @NonNull final PlatformContext platformContext,
             final Supplier<GraphGenerations> graphGenerationsSupplier,
             final TransactionSupplier transactionSupplier,
             final EventHandler newEventHandler,
@@ -112,6 +107,7 @@ public class EventCreator {
             final TransactionPool transactionPool,
             final BooleanSupplier inFreeze,
             final EventCreationRules eventCreationRules) {
+        this.platformContext = CommonUtils.throwArgNull(platformContext, "platformContext");
         this.selfId = selfId;
         this.signer = signer;
         this.ancientParentsCheck = new AncientParentsRule(graphGenerationsSupplier);
@@ -128,8 +124,7 @@ public class EventCreator {
     /**
      * Create a new event and push it into the gossip/consensus pipeline.
      *
-     * @param otherId
-     * 		the node ID that will supply the other parent for this event
+     * @param otherId the node ID that will supply the other parent for this event
      */
     public boolean createEvent(final long otherId) {
         if (eventCreationRules.shouldCreateEvent() == EventCreationRuleResponse.DONT_CREATE) {
@@ -188,7 +183,7 @@ public class EventCreator {
                 EventUtils.getEventHash(otherParent),
                 EventUtils.getChildTimeCreated(Instant.now(), selfParent),
                 transactionSupplier.getTransactions());
-        CryptographyHolder.get().digestSync(hashedData);
+        platformContext.getCryptography().digestSync(hashedData);
 
         final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(
                 EventUtils.getCreatorId(otherParent),
@@ -198,11 +193,10 @@ public class EventCreator {
     }
 
     /**
-     * Check if the most recent event from the given node has been used as an other parent by an
-     * event created by the current node.
+     * Check if the most recent event from the given node has been used as an other parent by an event created by the
+     * current node.
      *
-     * @param otherId
-     * 		the ID of the node supplying the other parent
+     * @param otherId the ID of the node supplying the other parent
      */
     protected boolean hasOtherParentAlreadyBeenUsed(final long otherId) {
         return !selfId.equalsMain(otherId) && eventMapper.hasMostRecentEventBeenUsedAsOtherParent(otherId);
@@ -217,10 +211,10 @@ public class EventCreator {
 
     /**
      * Checks if there are no user transactions ready to be included in an event.
-     *
+     * <p>
      * If there are no user transactions waiting to be included in an event, there is no reason to create an event for
      * the purposes of user transactions.
-     *
+     * <p>
      * If there are user transactions waiting to be included in an event but there are user transactions in the
      * hashgraph that have not yet reached consensus, we should not create an event in order to slow event creation. We
      * must receive more events from peers to help the existing user transactions in the hashgraph to reach consensus.
@@ -235,8 +229,7 @@ public class EventCreator {
     /**
      * Write to the log (if configured) every time an event is created.
      *
-     * @param event
-     * 		the created event to be logged
+     * @param event the created event to be logged
      */
     protected void logEventCreation(final EventImpl event) {
         logger.debug(CREATE_EVENT.getMarker(), "Creating {}", event::toMediumString);

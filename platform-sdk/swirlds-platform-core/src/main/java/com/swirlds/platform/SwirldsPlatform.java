@@ -29,9 +29,7 @@ import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.OSHealthCheckConfig;
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.config.CryptoConfig;
@@ -447,7 +445,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         this.basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
 
         dispatchBuilder =
-                new DispatchBuilder(ConfigurationHolder.getInstance().get().getConfigData(DispatchConfiguration.class));
+                new DispatchBuilder(platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
         components = new PlatformComponents(dispatchBuilder);
 
         // FUTURE WORK: use a real thread manager here
@@ -508,7 +506,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             chatterCore = new ChatterCore<>(
                     time,
                     GossipEvent.class,
-                    new PrepareChatterEvent(CryptographyHolder.get()),
+                    new PrepareChatterEvent(platformContext.getCryptography()),
                     settings.getChatter(),
                     networkMetrics::recordPingTime,
                     metrics);
@@ -601,6 +599,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      *
      * @return this platform's instance number
      */
+    @Override
     public int getInstanceNumber() {
         return instanceNumber;
     }
@@ -919,9 +918,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
     }
 
     /**
-     * First part of initialization. This was split up so that appMain.init() could be called before
-     * {@link StateLoadedFromDiskNotification} would be dispatched. Eventually, this should be split into more discrete
-     * parts.
+     * First part of initialization. This was split up so that appMain.init() could be called before {@link
+     * StateLoadedFromDiskNotification} would be dispatched. Eventually, this should be split into more discrete parts.
      */
     private void init(final LoadedState loadedState, final Supplier<SwirldState> genesisStateBuilder) {
 
@@ -1083,7 +1081,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         final GossipEventValidators eventValidators = new GossipEventValidators(validators);
 
         /* validates events received from gossip */
-        final EventValidator eventValidator = new EventValidator(eventValidators, eventIntake::addUnlinkedEvent);
+        final EventValidator eventValidator =
+                new EventValidator(platformContext, eventValidators, eventIntake::addUnlinkedEvent);
 
         final EventTaskDispatcher taskDispatcher = new EventTaskDispatcher(
                 time,
@@ -1107,8 +1106,8 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 .setThreadName("event-intake")
                 .setHandler(intakeHandler)
                 .setCapacity(settings.getEventIntakeQueueSize())
-                .setLogAfterPauseDuration(ConfigurationHolder.getInstance()
-                        .get()
+                .setLogAfterPauseDuration(platformContext
+                        .getConfiguration()
                         .getConfigData(ThreadConfig.class)
                         .logStackTracePauseDuration())
                 .enableMaxSizeMetric(metrics)
@@ -1151,7 +1150,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                 threadManager,
                 selfId,
                 systemTransactionHandler,
-                metrics,
+                platformContext,
                 PlatformConstructor.settingsProvider(),
                 this::estimateTime,
                 freezeManager::isFreezeStarted,
@@ -1161,7 +1160,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         // The original state will be saved in the SignedStateMgr and will be deleted when it becomes old
 
         preConsensusEventHandler = components.add(PlatformConstructor.preConsensusEventHandler(
-                threadManager, selfId, swirldStateManager, consensusMetrics));
+                threadManager, selfId, platformContext, swirldStateManager, consensusMetrics));
         consensusRoundHandler = components.add(PlatformConstructor.consensusHandler(
                 platformContext,
                 threadManager,
@@ -1463,7 +1462,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
                         eventTaskCreator::createdEvent, otherParentTracker::track, chatterEventMapper::mapEvent),
                 chatterEventMapper::getMostRecentEvent,
                 eventCreationRules,
-                CryptographyHolder.get(),
+                platformContext.getCryptography(),
                 OSTime.getInstance());
 
         if (isStartedFromGenesis()) {
@@ -1474,6 +1473,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
         final EventCreatorThread eventCreatorThread = new EventCreatorThread(
                 threadManager,
                 selfId,
+                platformContext,
                 settings.getChatter().getAttemptedChatterEventPerSecond(),
                 initialAddressBook,
                 chatterEventCreator::createEvent,
@@ -1864,6 +1864,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
      *
      * @return AddressBook
      */
+    @Override
     public AddressBook getAddressBook() {
         return initialAddressBook;
     }

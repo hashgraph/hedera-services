@@ -33,6 +33,7 @@ dependencies {
   implementation(testLibs.bundles.mocking)
   implementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
   implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+  compileOnly(libs.spotbugs.annotations)
 
   testImplementation(project(":swirlds-merkle"))
   testImplementation(libs.commons.collections4)

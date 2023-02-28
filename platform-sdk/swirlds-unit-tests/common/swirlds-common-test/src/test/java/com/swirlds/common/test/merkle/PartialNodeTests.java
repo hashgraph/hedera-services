@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.constructable.ConstructableIgnored;
-import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -44,6 +44,7 @@ import com.swirlds.common.merkle.impl.destroyable.DestroyableNaryMerkleInternal;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Supplier;
@@ -63,6 +64,7 @@ class PartialNodeTests {
      * Describes how to build an implementation of {@link MerkleNode}.
      */
     private record NodeImpl<T extends MerkleNode>(String name, Supplier<T> constructor) {
+        @Override
         public String toString() {
             return name;
         }
@@ -350,15 +352,17 @@ class PartialNodeTests {
     @MethodSource("merkleNodes")
     @DisplayName("Hash Test")
     void hashTest(final NodeImpl<MerkleNode> nodeImpl) {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
         final MerkleNode node = nodeImpl.constructor.get();
 
         assertNull(node.getHash(), "node should start with null hash");
-        final Hash hash1 = CryptographyHolder.get().getNullHash();
+        final Hash hash1 = platformContext.getCryptography().getNullHash();
         node.setHash(hash1);
         assertSame(hash1, node.getHash(), "unexpected hash");
 
         final byte[] bytes = new byte[100];
-        final Hash hash2 = CryptographyHolder.get().digestSync(bytes);
+        final Hash hash2 = platformContext.getCryptography().digestSync(bytes);
         node.setHash(hash2);
         assertSame(hash2, node.getHash(), "unexpected hash");
 

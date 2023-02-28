@@ -18,9 +18,11 @@ package com.swirlds.platform.event.validation;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.event.GossipEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,18 +40,21 @@ public class EventValidator {
 
     private final Cryptography cryptography;
 
-    public EventValidator(final GossipEventValidator gossipEventValidator, final Consumer<GossipEvent> eventIntake) {
+    public EventValidator(
+            @NonNull final PlatformContext platformContext,
+            final GossipEventValidator gossipEventValidator,
+            final Consumer<GossipEvent> eventIntake) {
         this.gossipEventValidator = gossipEventValidator;
         this.eventIntake = eventIntake;
-        this.cryptography = CryptographyHolder.get();
+        this.cryptography =
+                CommonUtils.throwArgNull(platformContext, "platformContext").getCryptography();
     }
 
     /**
      * Hashes the event if it hasn't been hashed already, then checks the event's validity. If the event is invalid, it
      * is discarded. If it's valid, it is passed on.
      *
-     * @param gossipEvent
-     * 		event received from gossip
+     * @param gossipEvent event received from gossip
      */
     public void validateEvent(final GossipEvent gossipEvent) {
         try {

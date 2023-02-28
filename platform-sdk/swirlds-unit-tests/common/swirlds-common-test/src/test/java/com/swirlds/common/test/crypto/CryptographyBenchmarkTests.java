@@ -18,13 +18,13 @@ package com.swirlds.common.test.crypto;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Message;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -35,11 +35,11 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 class CryptographyBenchmarkTests {
-    private static Cryptography cryptoProvider;
+    private static PlatformContext platformContext;
 
     @BeforeAll
     static void startup() {
-        cryptoProvider = CryptographyHolder.get();
+        platformContext = TestPlatformContextBuilder.create().build();
     }
 
     private record TransactionComponents(byte[] message, byte[] publicKey, byte[] signature) {}
@@ -97,11 +97,13 @@ class CryptographyBenchmarkTests {
             final TransactionComponents transactionComponents = extractComponents(signatures[i]);
 
             final long startTime = System.nanoTime();
-            cryptoProvider.verifySync(
-                    transactionComponents.message,
-                    transactionComponents.publicKey,
-                    transactionComponents.signature,
-                    SignatureType.ED25519);
+            platformContext
+                    .getCryptography()
+                    .verifySync(
+                            transactionComponents.message,
+                            transactionComponents.publicKey,
+                            transactionComponents.signature,
+                            SignatureType.ED25519);
             final long endTime = System.nanoTime();
 
             // discard first values, since they take a long time and aren't indicative of actual performance
@@ -139,11 +141,13 @@ class CryptographyBenchmarkTests {
             final TransactionComponents transactionComponents = extractComponents(signatures[i]);
 
             final long startTime = System.nanoTime();
-            cryptoProvider.verifySync(
-                    transactionComponents.message,
-                    transactionComponents.publicKey,
-                    transactionComponents.signature,
-                    SignatureType.ECDSA_SECP256K1);
+            platformContext
+                    .getCryptography()
+                    .verifySync(
+                            transactionComponents.message,
+                            transactionComponents.publicKey,
+                            transactionComponents.signature,
+                            SignatureType.ECDSA_SECP256K1);
             final long endTime = System.nanoTime();
 
             // discard first values, since they take a long time and aren't indicative of actual performance
@@ -182,7 +186,7 @@ class CryptographyBenchmarkTests {
             final byte[] payload = messages[i].getPayloadDirect();
 
             final long startTime = System.nanoTime();
-            cryptoProvider.digestSync(payload, DigestType.SHA_384);
+            platformContext.getCryptography().digestSync(payload, DigestType.SHA_384);
             final long endTime = System.nanoTime();
 
             // discard first values, since they take a long time and aren't indicative of actual performance
