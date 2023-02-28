@@ -19,6 +19,11 @@ package com.hedera.node.app.service.mono.txns;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * A temporary interface to let us toggle between {@link TransitionRunner} and
+ * {@code AdaptedMonoTransitionRunner} implementations at the end of the
+ * {@code mono-service} handle workflow.
+ */
 public interface TransactionLastStep {
     boolean tryTransition(@NonNull TxnAccessor accessor);
 }

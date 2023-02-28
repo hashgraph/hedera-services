@@ -112,6 +112,8 @@ public class SolvencyPrecheck {
      * Checks if the payer account is exempt from paying fees. Public for now to
      * support a thin adapter to use in {@code IngestChecker}.
      *
+     * TODO - replace all uses of this method with refactored ingest APIs
+     *
      * @param accessor the accessor for the transaction
      * @return whether the payer account is exempt from paying fees
      */
@@ -122,6 +124,8 @@ public class SolvencyPrecheck {
     /**
      * Checks if the payer account is valid. Public for now to support a thin
      * adapter to use in {@code IngestChecker}.
+     *
+     * TODO - replace all uses of this method with refactored ingest APIs
      *
      * @param payerNum the payer account number
      * @return the status of the payer account
