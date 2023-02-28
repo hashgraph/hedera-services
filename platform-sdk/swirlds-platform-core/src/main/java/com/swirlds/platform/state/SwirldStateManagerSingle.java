@@ -53,6 +53,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
@@ -296,6 +297,7 @@ public class SwirldStateManagerSingle implements SwirldStateManager {
             final Hash hashEventsCons,
             final EventImpl[] events,
             final Instant consensusTimestamp,
+            final List<MinGenInfo> minGenInfo,
             final SoftwareVersion softwareVersion) {
         // We are not currently supporting this class --
         // if we ever start supporting it again we will need to implement this.
