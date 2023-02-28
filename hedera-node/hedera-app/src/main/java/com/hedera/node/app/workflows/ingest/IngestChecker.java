@@ -57,7 +57,6 @@ public class IngestChecker {
      * @param nodeAccountID     the {@link AccountID} of the <em>node</em>
      * @param solvencyPrecheck
      * @param signaturePreparer the {@link SignaturePreparer} that prepares signature data
-     * @param cryptography      the {@link Cryptography} used to verify signatures
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
