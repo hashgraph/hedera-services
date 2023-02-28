@@ -393,11 +393,20 @@ class TransactionDispatcherTest {
         assertThatThrownBy(() -> new TransactionDispatcher(
                         handleContext, txnCtx, handlers, null, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () -> new TransactionDispatcher(handleContext, txnCtx, handlers, null, dynamicProperties, null))
-                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new TransactionDispatcher(
                         handleContext, txnCtx, handlers, accountNumbers, dynamicProperties, null))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() ->
+                        new TransactionDispatcher(handleContext, txnCtx, handlers, accountNumbers, null, usageLimits))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new TransactionDispatcher(
+                        null, txnCtx, handlers, accountNumbers, dynamicProperties, usageLimits))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new TransactionDispatcher(
+                        handleContext, null, handlers, accountNumbers, dynamicProperties, usageLimits))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new TransactionDispatcher(
+                        handleContext, txnCtx, null, accountNumbers, dynamicProperties, usageLimits))
                 .isInstanceOf(NullPointerException.class);
     }
 

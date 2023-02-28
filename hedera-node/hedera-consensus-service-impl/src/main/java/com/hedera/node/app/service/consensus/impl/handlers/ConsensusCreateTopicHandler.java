@@ -94,26 +94,26 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
             @NonNull final WritableTopicStore topicStore) {
         final var builder = new TopicBuilderImpl();
 
-        /* validate admin and submit keys and set them */
+        /* Validate admin and submit keys and set them */
         if (op.hasAdminKey()) {
             handleContext.attributeValidator().validateKey(op.getAdminKey());
             asHederaKey(op.getAdminKey()).ifPresent(builder::adminKey);
         }
         if (op.hasSubmitKey()) {
             handleContext.attributeValidator().validateKey(op.getSubmitKey());
-            asHederaKey(op.getAdminKey()).ifPresent(builder::submitKey);
+            asHederaKey(op.getSubmitKey()).ifPresent(builder::submitKey);
         }
 
-        /* validate if the current topic can be created */
+        /* Validate if the current topic can be created */
         if (topicStore.sizeOfState() >= consensusServiceConfig.maxTopics()) {
             throw new HandleStatusException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }
 
-        /* validate the topic memo */
+        /* Validate the topic memo */
         handleContext.attributeValidator().validateMemo(op.getMemo());
         builder.memo(op.getMemo());
 
-        /* validate the auto-renew account */
+        /* Validate the auto-renewal account */
         final var autoRenewPeriod =
                 op.hasAutoRenewPeriod() ? op.getAutoRenewPeriod().getSeconds() : NA;
         final var autoRenewAccountId =
@@ -124,19 +124,21 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
                 autoRenewPeriod,
                 autoRenewAccountId);
 
-        final var effectiveExpiryMeta = handleContext.expiryValidator().validateCreationAttempt(true, entityExpiryMeta);
+        final var effectiveExpiryMeta =
+                handleContext.expiryValidator().validateCreationAttempt(false, entityExpiryMeta);
         builder.autoRenewSecs(effectiveExpiryMeta.autoRenewPeriod());
         builder.expiry(effectiveExpiryMeta.expiry());
         builder.autoRenewAccountNumber(effectiveExpiryMeta.autoRenewNum());
 
-        /* --- Do business logic --- */
+        /* --- Add topic number to topic builder --- */
         builder.topicNumber(handleContext.newEntityNumSupplier().getAsLong());
 
-        /* --- Persist the topic --- */
+        /* --- Put the final topic. It will be in underlying state's modifications map.
+        It will not be committed to state until commit is called on the state.--- */
         final var topic = builder.build();
         topicStore.put(topic);
 
-        /* --- Build the record --- */
+        /* --- Build the record with newly created topic --- */
         recordBuilder.setCreatedTopic(topic.topicNumber());
     }
 
