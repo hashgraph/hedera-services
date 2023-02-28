@@ -12,7 +12,7 @@ swirld, 123
 app,		HederaNode.jar
 
 # ** BEGIN REMOVE FROM SDK RELEASES **
-# app,    HelloFileSystemDemo.jar, 2, 128, 512, 5, 20, 5000, 2250, 0
+# app,		HelloFileSystemDemo.jar, 2, 128, 512, 5, 20, 5000, 2250, 0
 # app,		FCStressTestDemo.jar,  1, 3000, 0, 100, 2048, 3
 # app,		StatsSigningDemo.jar,  1, 3000, 0, 100, -1, 15000, 5000
 # app,		StatsRandomDemo.jar,  0, 3000, 0, 100, -1, 250000, 5000, 1, 100, 1024
