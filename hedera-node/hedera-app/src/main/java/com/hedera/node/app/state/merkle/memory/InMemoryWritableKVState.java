@@ -87,6 +87,7 @@ public final class InMemoryWritableKVState<K extends Comparable<K>, V> extends W
         merkle.remove(k);
     }
 
+    /** {@inheritDoc} */
     @NonNull
     @Override
     protected long sizeOfDataSource() {

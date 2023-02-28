@@ -106,7 +106,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
         final var store = new ReadableTopicStore(readableStates);
 
         final var query = createGetTopicInfoQuery(topicNum.intValue());
-        final var response = subject.validate(query, readableStore);
+        final var response = subject.validate(query, store);
         assertEquals(INVALID_TOPIC_ID, response);
     }
 

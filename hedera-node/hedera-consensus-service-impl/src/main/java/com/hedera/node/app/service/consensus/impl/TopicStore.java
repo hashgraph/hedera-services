@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.consensus.impl;
 
+import com.hedera.node.app.service.consensus.entity.Topic;
+import com.hedera.node.app.service.consensus.impl.entity.TopicImpl;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -43,6 +45,25 @@ public class TopicStore {
                 topic.isDeleted());
     }
 
+    /**
+     * Create a {@link Topic} from a {@link MerkleTopic}
+     * @param topic the {@link MerkleTopic}
+     * @return the {@link Topic}
+     */
+    protected Topic topicFrom(final MerkleTopic topic) {
+        return new TopicImpl(
+                topic.getKey().longValue(),
+                topic.getAdminKey(),
+                topic.getSubmitKey(),
+                topic.getMemo(),
+                topic.getAutoRenewAccountId().num(),
+                topic.getAutoRenewDurationSeconds(),
+                topic.getExpirationTimestamp().getSeconds(),
+                topic.isDeleted(),
+                topic.getSequenceNumber());
+    }
+
+    // TODO : Remove use of TopicMetadata and change to use Topic instead
     /**
      * Topic metadata
      * @param memo topic's memo

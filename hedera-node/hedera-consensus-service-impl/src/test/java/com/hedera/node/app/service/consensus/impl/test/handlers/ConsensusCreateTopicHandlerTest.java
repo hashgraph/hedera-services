@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.consensus.impl.test.handlers.Consensus
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,12 +39,12 @@ import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.CreateTopicRecordBuilder;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.HandleContext;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -69,8 +70,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     private static final AccountID ACCOUNT_ID_3 = IdUtils.asAccount("0.0.3");
     private static final AccountID AUTO_RENEW_ACCOUNT = IdUtils.asAccount("0.0.4");
-
-    private final ConsensusServiceConfig consensusConfig = new ConsensusServiceConfig(1L, 5678);
 
     @Mock
     private AccountAccess keyFinder;
@@ -294,16 +293,14 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
 
         final var actualTopic = createdTopic.get();
         assertEquals(0L, actualTopic.sequenceNumber());
-        assertEquals("memo", actualTopic.memo().get());
-        assertEquals(asHederaKey(adminKey), actualTopic.adminKey());
-        assertEquals(asHederaKey(submitKey), actualTopic.submitKey());
-        assertEquals(1244567, actualTopic.expirationTimestamp().getSeconds());
-        assertEquals(10000, actualTopic.autoRenewDurationSeconds());
-        assertEquals(
-                AUTO_RENEW_ACCOUNT.getAccountNum(),
-                actualTopic.autoRenewAccountId().get().longValue());
+        assertEquals("memo", actualTopic.memo());
+        assertEquals(asHederaKey(adminKey), actualTopic.getAdminKey());
+        assertEquals(asHederaKey(submitKey), actualTopic.getSubmitKey());
+        assertEquals(1244567, actualTopic.expiry());
+        assertEquals(10000, actualTopic.autoRenewSecs());
+        assertEquals(AUTO_RENEW_ACCOUNT.getAccountNum(), actualTopic.autoRenewAccountNumber());
         assertEquals(1_234L, recordBuilder.getCreatedTopic());
-        assertTrue(topicStore.getTopicState().modifiedKeys().contains(1234L));
+        assertTrue(topicStore.get(1234L).isPresent());
     }
 
     @Test
@@ -320,7 +317,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         assertThrows(
                 HandleStatusException.class,
                 () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
-        assertEquals(0, topicStore.getTopicState().modifiedKeys().size());
+        assertTrue(topicStore.get(1234L).isEmpty());
     }
 
     @Test
@@ -336,7 +333,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         assertThrows(
                 HandleStatusException.class,
                 () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
-        assertEquals(0, topicStore.getTopicState().modifiedKeys().size());
+        assertTrue(topicStore.get(1234L).isEmpty());
     }
 
     @Test
@@ -345,17 +342,44 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var adminKey = SIMPLE_KEY_A;
         final var submitKey = SIMPLE_KEY_B;
         final var op = newCreateTxn(adminKey, submitKey, true).getConsensusCreateTopic();
-        topicStore.getTopicState().put(1L, topic);
-        ((WritableKVStateBase) topicStore.getTopicState()).commit();
-        assertEquals(1, topicStore.getTopicState().modifiedKeys().size());
+        final var writableState = writableTopicStateWithOneKey();
+
+        given(writableStates.<Long, MerkleTopic>get(TOPICS)).willReturn(writableState);
+        final var topicStore = new WritableTopicStore(writableStates);
+        assertEquals(1, topicStore.sizeOfState());
 
         given(handleContext.attributeValidator()).willReturn(validator);
         config = new ConsensusServiceConfig(1, 1);
 
-        assertThrows(
+        final var msg = assertThrows(
                 HandleStatusException.class,
                 () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
-        assertEquals(1, topicStore.getTopicState().modifiedKeys().size());
+        assertEquals(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, msg.getStatus());
+        assertEquals(0, topicStore.modifiedTopics().size());
+    }
+
+    @Test
+    @DisplayName("Validates AutoRenewAccount")
+    void validatedAutoRenewAccount() {
+        final var adminKey = SIMPLE_KEY_A;
+        final var submitKey = SIMPLE_KEY_B;
+        final var op = newCreateTxn(adminKey, submitKey, true).getConsensusCreateTopic();
+        final var writableState = writableTopicStateWithOneKey();
+
+        given(writableStates.<Long, MerkleTopic>get(TOPICS)).willReturn(writableState);
+        final var topicStore = new WritableTopicStore(writableStates);
+        assertEquals(1, topicStore.sizeOfState());
+
+        given(handleContext.attributeValidator()).willReturn(validator);
+        config = new ConsensusServiceConfig(10, 100);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        doThrow(HandleStatusException.class).when(expiryValidator).validateCreationAttempt(anyBoolean(), any());
+
+        final var msg = assertThrows(
+                HandleStatusException.class,
+                () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
+        assertEquals(HandleStatusException.class, msg.getClass());
+        assertEquals(0, topicStore.modifiedTopics().size());
     }
 
     @Test

@@ -61,6 +61,7 @@ public final class InMemoryReadableKVState<K extends Comparable<K>, V> extends R
         return merkle.keySet().stream().map(InMemoryKey::key).iterator();
     }
 
+    /** {@inheritDoc} */
     @NonNull
     @Override
     protected long sizeOfDataSource() {

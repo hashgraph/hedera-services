@@ -105,7 +105,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         }
 
         /* validate if the current topic can be created */
-        if (topicStore.getTopicState().size() >= consensusServiceConfig.maxTopics()) {
+        if (topicStore.sizeOfState() >= consensusServiceConfig.maxTopics()) {
             throw new HandleStatusException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }
 

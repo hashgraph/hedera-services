@@ -95,7 +95,7 @@ public class ConsensusHandlerTestBase {
     @BeforeEach
     void commonSetUp() {
         readableTopicState = readableTopicState();
-        writableTopicState = writableTopicState();
+        writableTopicState = emptyWritableTopicState();
         given(readableStates.<Long, MerkleTopic>get(TOPICS)).willReturn(readableTopicState);
         given(writableStates.<Long, MerkleTopic>get(TOPICS)).willReturn(writableTopicState);
         readableStore = new ReadableTopicStore(readableStates);
@@ -103,8 +103,15 @@ public class ConsensusHandlerTestBase {
     }
 
     @NonNull
-    protected MapWritableKVState<Long, MerkleTopic> writableTopicState() {
+    protected MapWritableKVState<Long, MerkleTopic> emptyWritableTopicState() {
         return MapWritableKVState.<Long, MerkleTopic>builder("TOPICS").build();
+    }
+
+    @NonNull
+    protected MapWritableKVState<Long, MerkleTopic> writableTopicStateWithOneKey() {
+        return MapWritableKVState.<Long, MerkleTopic>builder("TOPICS")
+                .value(topicNum, topic)
+                .build();
     }
 
     @NonNull

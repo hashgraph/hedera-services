@@ -23,11 +23,13 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Provides write methods for modifying underlying data storage mechanisms for
@@ -67,7 +69,7 @@ public class WritableTopicStore extends TopicStore {
      * Returns the {@link Topic} with the given number. If no such topic exists, returns {@code Optional.empty()}
      * @param topicNum - the number of the topic to be retrieved.
      */
-    public Optional<TopicMetadata> get(@NonNull final long topicNum) {
+    public Optional<Topic> get(@NonNull final long topicNum) {
         requireNonNull(topicState);
         requireNonNull(topicNum);
         final var topic = topicState.get(topicNum);
@@ -76,15 +78,24 @@ public class WritableTopicStore extends TopicStore {
 
             return Optional.empty();
         }
-        return Optional.of(topicMetaFrom(topic));
+        return Optional.of(topicFrom(topic));
+        // TODO : change to use Topic instead of TopicMetadata
     }
 
     /**
-     * Returns the number of topics modified in the state.
-     * @return the number of topics modified in the state.
+     * Returns the number of topics in the state.
+     * @return the number of topics in the state.
      */
-    public WritableKVState<Long, MerkleTopic> getTopicState() {
-        return requireNonNull(topicState);
+    public long sizeOfState() {
+        return topicState.size();
+    }
+
+    /**
+     * Returns the set of topics modified in existing state.
+     * @return the set of topics modified in existing state
+     */
+    public Set<Long> modifiedTopics() {
+        return topicState.modifiedKeys();
     }
 
     /**
@@ -94,6 +105,7 @@ public class WritableTopicStore extends TopicStore {
      */
     private MerkleTopic asMerkleTopic(@NonNull final Topic topic) {
         final var merkle = new MerkleTopic();
+        merkle.setKey(EntityNum.fromLong(topic.topicNumber()));
         topic.getAdminKey().ifPresent(key -> merkle.setAdminKey((JKey) key));
         topic.getSubmitKey().ifPresent(key -> merkle.setSubmitKey((JKey) key));
         merkle.setMemo(topic.memo());

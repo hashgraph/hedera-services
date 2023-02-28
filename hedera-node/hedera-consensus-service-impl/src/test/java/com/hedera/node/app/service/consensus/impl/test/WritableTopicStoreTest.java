@@ -24,7 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.consensus.entity.Topic;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
+import com.hedera.node.app.service.consensus.impl.entity.TopicImpl;
 import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusHandlerTestBase;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -68,11 +70,22 @@ class WritableTopicStoreTest extends ConsensusHandlerTestBase {
 
         assertTrue(writableTopicState.modifiedKeys().contains(topicNum));
 
-        assertEquals(writableStore.get(topicNum), topic);
+        final var expectedTopic = new TopicImpl(
+                topicNum,
+                topic.getAdminKey().get(),
+                topic.getSubmitKey().get(),
+                topic.memo(),
+                topic.autoRenewAccountNumber(),
+                topic.autoRenewSecs(),
+                topic.expiry(),
+                topic.deleted(),
+                topic.sequenceNumber());
+
+        assertEquals(Optional.of(expectedTopic), writableStore.get(topicNum));
     }
 
     @Test
-    void getReturnsMetadata() {
+    void getReturnsTopic() {
         topic = createTopic();
         writableStore.put(topic);
 
@@ -80,11 +93,11 @@ class WritableTopicStoreTest extends ConsensusHandlerTestBase {
 
         assertTrue(topicFromStore.isPresent());
         final var actualTopic = topicFromStore.get();
-        assertEquals(actualTopic.memo().get(), topic.memo());
-        assertEquals(actualTopic.autoRenewDurationSeconds(), topic.autoRenewSecs());
-        assertEquals(actualTopic.autoRenewAccountId().get().longValue(), topic.autoRenewAccountNumber());
-        assertEquals(actualTopic.adminKey().get(), topic.getAdminKey().get());
-        assertEquals(actualTopic.submitKey().get(), topic.getSubmitKey().get());
+        assertEquals(actualTopic.memo(), topic.memo());
+        assertEquals(actualTopic.autoRenewSecs(), topic.autoRenewSecs());
+        assertEquals(actualTopic.autoRenewAccountNumber(), topic.autoRenewAccountNumber());
+        assertEquals(actualTopic.getAdminKey().get(), topic.getAdminKey().get());
+        assertEquals(actualTopic.getSubmitKey().get(), topic.getSubmitKey().get());
         assertEquals(actualTopic.sequenceNumber(), topic.sequenceNumber());
     }
 }

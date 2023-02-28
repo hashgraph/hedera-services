@@ -70,7 +70,6 @@ class PreHandleContextListUpdatesTest {
             Timestamp.newBuilder().setSeconds(1_234_567L).build();
     private Key key = A_COMPLEX_KEY;
     private AccountID payer = AccountID.newBuilder().setAccountNum(3L).build();
-    private Long payerNum = 3L;
 
     @Mock
     private HederaKey payerKey;
@@ -84,7 +83,7 @@ class PreHandleContextListUpdatesTest {
     private HederaKey otherKey;
 
     @Mock
-    private AccountAccess keyLookup;
+    private AccountAccess accountAccess;
 
     private PreHandleContext subject;
 
@@ -94,9 +93,9 @@ class PreHandleContextListUpdatesTest {
     @Test
     void gettersWorkAsExpectedWhenOnlyPayerKeyExist() {
         final var txn = createAccountTransaction();
-        given(keyLookup.getKey(payer)).willReturn(withKey(payerKey));
+        given(accountAccess.getKey(payer)).willReturn(withKey(payerKey));
 
-        subject = new PreHandleContext(keyLookup, createAccountTransaction(), payer);
+        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer);
 
         assertFalse(subject.failed());
         assertEquals(txn, subject.getTxn());
@@ -107,13 +106,13 @@ class PreHandleContextListUpdatesTest {
     @SuppressWarnings("ConstantConditions")
     @Test
     void nullInputToBuilderArgumentsThrows() {
-        given(keyLookup.getKey(payer)).willReturn(withKey(payerKey));
-        final var subject = new PreHandleContext(keyLookup, createAccountTransaction(), payer);
+        given(accountAccess.getKey(payer)).willReturn(withKey(payerKey));
+        final var subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer);
         assertThrows(NullPointerException.class, () -> new PreHandleContext(null, createAccountTransaction(), payer));
-        assertThrows(NullPointerException.class, () -> new PreHandleContext(keyLookup, null, payer));
+        assertThrows(NullPointerException.class, () -> new PreHandleContext(accountAccess, null, payer));
         assertThrows(
                 NullPointerException.class,
-                () -> new PreHandleContext(keyLookup, createAccountTransaction(), (AccountID) null));
+                () -> new PreHandleContext(accountAccess, createAccountTransaction(), (AccountID) null));
         assertThrows(NullPointerException.class, () -> subject.status(null));
         assertThrows(NullPointerException.class, () -> subject.addNonPayerKey((AccountID) null));
         assertThrows(NullPointerException.class, () -> subject.addNonPayerKeyIfReceiverSigRequired(null, null));
@@ -124,8 +123,8 @@ class PreHandleContextListUpdatesTest {
     @Test
     void gettersWorkAsExpectedWhenPayerIsSet() {
         final var txn = createAccountTransaction();
-        given(keyLookup.getKey(payer)).willReturn(withKey(payerKey));
-        subject = new PreHandleContext(keyLookup, createAccountTransaction(), payer)
+        given(accountAccess.getKey(payer)).willReturn(withKey(payerKey));
+        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer)
                 .addAllReqKeys(List.of(payerKey, otherKey));
 
         assertFalse(subject.failed());
@@ -138,9 +137,9 @@ class PreHandleContextListUpdatesTest {
     @Test
     void gettersWorkAsExpectedWhenOtherSigsExist() {
         final var txn = createAccountTransaction();
-        given(keyLookup.getKey(payer)).willReturn(withKey(payerKey));
+        given(accountAccess.getKey(payer)).willReturn(withKey(payerKey));
 
-        subject = new PreHandleContext(keyLookup, createAccountTransaction(), payer).addToReqNonPayerKeys(payerKey);
+        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer).addToReqNonPayerKeys(payerKey);
 
         assertFalse(subject.failed());
         assertEquals(txn, subject.getTxn());
@@ -151,9 +150,9 @@ class PreHandleContextListUpdatesTest {
     @Test
     void failsWhenPayerKeyDoesntExist() {
         final var txn = createAccountTransaction();
-        given(keyLookup.getKey(payer)).willReturn(withFailureReason(INVALID_PAYER_ACCOUNT_ID));
+        given(accountAccess.getKey(payer)).willReturn(withFailureReason(INVALID_PAYER_ACCOUNT_ID));
 
-        subject = new PreHandleContext(keyLookup, txn, payer).addToReqNonPayerKeys(payerKey);
+        subject = new PreHandleContext(accountAccess, txn, payer).addToReqNonPayerKeys(payerKey);
 
         assertTrue(subject.failed());
         assertNull(subject.getPayerKey());
@@ -166,9 +165,9 @@ class PreHandleContextListUpdatesTest {
 
     @Test
     void doesntAddToReqKeysIfStatus() {
-        given(keyLookup.getKey(payer)).willReturn(withFailureReason(INVALID_PAYER_ACCOUNT_ID));
+        given(accountAccess.getKey(payer)).willReturn(withFailureReason(INVALID_PAYER_ACCOUNT_ID));
 
-        subject = new PreHandleContext(keyLookup, createAccountTransaction(), payer);
+        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer);
         subject.addToReqNonPayerKeys(payerKey);
 
         assertEquals(0, subject.getRequiredNonPayerKeys().size());
@@ -178,9 +177,9 @@ class PreHandleContextListUpdatesTest {
 
     @Test
     void addsToReqKeysCorrectly() {
-        given(keyLookup.getKey(payer)).willReturn(withKey(payerKey));
+        given(accountAccess.getKey(payer)).willReturn(withKey(payerKey));
 
-        subject = new PreHandleContext(keyLookup, createAccountTransaction(), payer);
+        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer);
 
         assertEquals(0, subject.getRequiredNonPayerKeys().size());
         assertEquals(payerKey, subject.getPayerKey());
@@ -193,17 +192,17 @@ class PreHandleContextListUpdatesTest {
 
     @Test
     void settersWorkCorrectly() {
-        given(keyLookup.getKey(payer)).willReturn(withKey(payerKey));
+        given(accountAccess.getKey(payer)).willReturn(withKey(payerKey));
 
-        subject = new PreHandleContext(keyLookup, createAccountTransaction(), payer).status(INVALID_ACCOUNT_ID);
+        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer).status(INVALID_ACCOUNT_ID);
         assertEquals(INVALID_ACCOUNT_ID, subject.getStatus());
     }
 
     @Test
     void returnsIfGivenKeyIsPayer() {
-        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
+        given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
-        subject = new PreHandleContext(keyLookup, createAccountTransaction(), payer);
+        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer);
         assertEquals(payerKey, subject.getPayerKey());
         assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
 
@@ -218,9 +217,9 @@ class PreHandleContextListUpdatesTest {
 
     @Test
     void returnsIfGivenKeyIsInvalidAccountId() {
-        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
+        given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
-        subject = new PreHandleContext(keyLookup, createAccountTransaction(), payer);
+        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer);
 
         assertEquals(payerKey, subject.getPayerKey());
         assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
@@ -246,12 +245,12 @@ class PreHandleContextListUpdatesTest {
 
     @Test
     void addsContractIdKey() {
-        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
-        given(keyLookup.getKey(otherContractId)).willReturn(new KeyOrLookupFailureReason(otherKey, null));
-        given(keyLookup.getKeyIfReceiverSigRequired(otherContractId))
+        given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
+        given(accountAccess.getKey(otherContractId)).willReturn(new KeyOrLookupFailureReason(otherKey, null));
+        given(accountAccess.getKeyIfReceiverSigRequired(otherContractId))
                 .willReturn(new KeyOrLookupFailureReason(otherKey, null));
 
-        subject = new PreHandleContext(keyLookup, createAccountTransaction(), payer);
+        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer);
 
         assertEquals(payerKey, subject.getPayerKey());
         assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
@@ -268,9 +267,9 @@ class PreHandleContextListUpdatesTest {
 
     @Test
     void doesntLookupIfMetaIsFailedAlready() {
-        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
+        given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
-        subject = new PreHandleContext(keyLookup, createAccountTransaction(), payer);
+        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer);
 
         assertEquals(payerKey, subject.getPayerKey());
         assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
@@ -295,20 +294,20 @@ class PreHandleContextListUpdatesTest {
 
     @Test
     void looksUpOtherKeysIfMetaIsNotFailedAlready() {
-        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
+        given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
-        subject = new PreHandleContext(keyLookup, createAccountTransaction(), payer);
+        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer);
         assertEquals(payerKey, subject.getPayerKey());
         assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
         assertEquals(OK, subject.getStatus());
 
-        given(keyLookup.getKey(otherAccountId)).willReturn(new KeyOrLookupFailureReason(otherKey, null));
+        given(accountAccess.getKey(otherAccountId)).willReturn(new KeyOrLookupFailureReason(otherKey, null));
 
         subject.addNonPayerKey(otherAccountId);
         assertIterableEquals(List.of(otherKey), subject.getRequiredNonPayerKeys());
         assertEquals(OK, subject.getStatus());
 
-        given(keyLookup.getKeyIfReceiverSigRequired(otherAccountId))
+        given(accountAccess.getKeyIfReceiverSigRequired(otherAccountId))
                 .willReturn(new KeyOrLookupFailureReason(otherKey, null));
         subject.addNonPayerKeyIfReceiverSigRequired(otherAccountId, INVALID_ALLOWANCE_OWNER_ID);
         assertEquals(payerKey, subject.getPayerKey());
@@ -318,9 +317,9 @@ class PreHandleContextListUpdatesTest {
 
     @Test
     void doesntFailForInvalidAccount() {
-        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
+        given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
-        subject = new PreHandleContext(keyLookup, createAccountTransaction(), payer)
+        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer)
                 .addNonPayerKey(AccountID.newBuilder().setAccountNum(0L).build());
 
         assertEquals(payerKey, subject.getPayerKey());
@@ -330,9 +329,9 @@ class PreHandleContextListUpdatesTest {
 
     @Test
     void doesntFailForInvalidContract() {
-        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
+        given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
-        subject = new PreHandleContext(keyLookup, createAccountTransaction(), payer);
+        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer);
 
         assertEquals(payerKey, subject.getPayerKey());
         assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
@@ -343,10 +342,10 @@ class PreHandleContextListUpdatesTest {
     void doesntFailForAliasedAccount() {
         final var alias =
                 AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("test")).build();
-        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
-        given(keyLookup.getKey(alias)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
+        given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
+        given(accountAccess.getKey(alias)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
-        subject = new PreHandleContext(keyLookup, createAccountTransaction(), payer).addNonPayerKey(alias);
+        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer).addNonPayerKey(alias);
 
         assertEquals(payerKey, subject.getPayerKey());
         assertIterableEquals(List.of(payerKey), subject.getRequiredNonPayerKeys());
@@ -358,10 +357,10 @@ class PreHandleContextListUpdatesTest {
         final var alias = ContractID.newBuilder()
                 .setEvmAddress(ByteString.copyFromUtf8("test"))
                 .build();
-        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
-        given(keyLookup.getKey(alias)).willReturn(new KeyOrLookupFailureReason(otherKey, null));
+        given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
+        given(accountAccess.getKey(alias)).willReturn(new KeyOrLookupFailureReason(otherKey, null));
 
-        subject = new PreHandleContext(keyLookup, createAccountTransaction(), payer).addNonPayerKey(alias);
+        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer).addNonPayerKey(alias);
 
         assertEquals(payerKey, subject.getPayerKey());
         assertIterableEquals(List.of(otherKey), subject.getRequiredNonPayerKeys());
@@ -372,10 +371,10 @@ class PreHandleContextListUpdatesTest {
     void failsForInvalidAlias() {
         final var alias =
                 AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("test")).build();
-        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
-        given(keyLookup.getKey(alias)).willReturn(new KeyOrLookupFailureReason(null, INVALID_ACCOUNT_ID));
+        given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
+        given(accountAccess.getKey(alias)).willReturn(new KeyOrLookupFailureReason(null, INVALID_ACCOUNT_ID));
 
-        subject = new PreHandleContext(keyLookup, createAccountTransaction(), payer).addNonPayerKey(alias);
+        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer).addNonPayerKey(alias);
 
         assertEquals(payerKey, subject.getPayerKey());
         assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
@@ -384,21 +383,21 @@ class PreHandleContextListUpdatesTest {
 
     @Test
     void setsDefaultFailureStatusIfFailedStatusIsNull() {
-        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
+        given(accountAccess.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
-        subject = new PreHandleContext(keyLookup, createAccountTransaction(), payer);
+        subject = new PreHandleContext(accountAccess, createAccountTransaction(), payer);
         assertEquals(payerKey, subject.getPayerKey());
         assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
         assertEquals(OK, subject.getStatus());
 
-        given(keyLookup.getKey(otherAccountId)).willReturn(new KeyOrLookupFailureReason(null, INVALID_ACCOUNT_ID));
+        given(accountAccess.getKey(otherAccountId)).willReturn(new KeyOrLookupFailureReason(null, INVALID_ACCOUNT_ID));
         subject.addNonPayerKey(otherAccountId);
         assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
         assertEquals(INVALID_ACCOUNT_ID, subject.getStatus());
 
         // only for testing , resetting the status to OK
         subject.status(OK);
-        given(keyLookup.getKeyIfReceiverSigRequired(otherAccountId))
+        given(accountAccess.getKeyIfReceiverSigRequired(otherAccountId))
                 .willReturn(new KeyOrLookupFailureReason(null, INVALID_ACCOUNT_ID));
         subject.addNonPayerKey(otherAccountId, INVALID_ALLOWANCE_OWNER_ID);
         assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
