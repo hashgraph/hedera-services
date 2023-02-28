@@ -66,10 +66,19 @@ class EntityUtilGaugesTest {
         given(usageLimits.percentStorageSlotsUsed()).willReturn(8.0);
         given(usageLimits.percentTokenRelsUsed()).willReturn(9.0);
         given(usageLimits.percentSchedulesUsed()).willReturn(10.0);
+        given(usageLimits.getNumAccounts()).willReturn(11L);
+        given(usageLimits.getNumContracts()).willReturn(12L);
+        given(usageLimits.getNumFiles()).willReturn(13L);
+        given(usageLimits.getNumNfts()).willReturn(14L);
+        given(usageLimits.getNumTokens()).willReturn(15L);
+        given(usageLimits.getNumTopics()).willReturn(16L);
+        given(usageLimits.getNumStorageSlots()).willReturn(17L);
+        given(usageLimits.getNumTokenRels()).willReturn(18L);
+        given(usageLimits.getNumSchedules()).willReturn(19L);
 
         subject.registerWith(platform);
         subject.updateAll();
 
-        verify(metrics, times(9)).getOrCreate(any(DoubleGauge.Config.class));
+        verify(metrics, times(18)).getOrCreate(any(DoubleGauge.Config.class));
     }
 }

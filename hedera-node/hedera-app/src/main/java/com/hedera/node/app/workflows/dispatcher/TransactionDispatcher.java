@@ -18,40 +18,95 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
+import com.hedera.node.app.spi.exceptions.HandleStatusException;
+import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
+import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
- * A {@code TransactionDispatcher} provides functionality to forward pre-check, pre-handle, and handle-transaction
- * requests to the appropriate handler
+ * A {@code TransactionDispatcher} provides functionality to forward pre-check, pre-handle, and
+ * handle-transaction requests to the appropriate handler
+ *
+ * <p>For handle, mostly just supports the limited form of the Consensus Service handlers
+ * described in https://github.com/hashgraph/hedera-services/issues/4945, while still trying to
+ * make a bit of progress toward the general implementation.
  */
+@Singleton
 public class TransactionDispatcher {
 
     public static final String TYPE_NOT_SUPPORTED = "This transaction type is not supported";
 
+    private final HandleContext handleContext;
+    private final TransactionContext txnCtx;
     private final TransactionHandlers handlers;
-
     private final CryptoSignatureWaivers cryptoSignatureWaivers;
+    private final GlobalDynamicProperties dynamicProperties;
 
     /**
-     * Constructor of {@code TransactionDispatcher}
+     * Creates a {@code TransactionDispatcher}.
      *
-     * @param handlers a {@link TransactionHandlers} record with all available handlers
-     * @throws NullPointerException if one of the parameters is {@code null}
+     * @param handleContext     the context of the handle workflow
+     * @param txnCtx            the mono context of the transaction
+     * @param handlers          the handlers for all transaction types
+     * @param accountNumbers    the account numbers of the system
+     * @param dynamicProperties the dynamic properties of the system
      */
+    @Inject
     public TransactionDispatcher(
-            @NonNull final TransactionHandlers handlers, @NonNull final HederaAccountNumbers accountNumbers) {
+            @NonNull final HandleContext handleContext,
+            @NonNull final TransactionContext txnCtx,
+            @NonNull final TransactionHandlers handlers,
+            @NonNull final HederaAccountNumbers accountNumbers,
+            @NonNull final GlobalDynamicProperties dynamicProperties) {
+        this.txnCtx = txnCtx;
         this.handlers = requireNonNull(handlers);
+        this.handleContext = handleContext;
+        this.dynamicProperties = dynamicProperties;
         this.cryptoSignatureWaivers = new CryptoSignatureWaiversImpl(requireNonNull(accountNumbers));
     }
 
     /**
-     * Dispatch a pre-handle request. It is forwarded to the correct handler, which takes care of the specific
-     * functionality
+     * Dispatches a transaction of the given type to the appropriate handler.
+     *
+     * <p>This will not be final signature of the dispatch method, since as per
+     * https://github.com/hashgraph/hedera-services/issues/4945, we are currently
+     * just adapting the last step of mono-service "workflow"; and only for
+     * Consensus Service transactions.
+     *
+     * @param function the type of the consensus service transaction
+     * @param txn the consensus transaction to be handled
+     * @throws HandleStatusException if the handler fails
+     * @throws IllegalArgumentException if there is no handler for the given function type
+     */
+    public void dispatchHandle(@NonNull final HederaFunctionality function, @NonNull final TransactionBody txn) {
+        switch (function) {
+            case ConsensusCreateTopic -> dispatchConsensusCreateTopic(txn.getConsensusCreateTopic());
+            case ConsensusUpdateTopic -> dispatchConsensusUpdateTopic(txn.getConsensusUpdateTopic());
+            case ConsensusDeleteTopic -> dispatchConsensusDeleteTopic(txn.getConsensusDeleteTopic());
+            case ConsensusSubmitMessage -> dispatchConsensusSubmitMessage(txn.getConsensusSubmitMessage());
+            default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
+        }
+    }
+
+    /**
+     * Dispatch a pre-handle request. It is forwarded to the correct handler, which takes care of
+     * the specific functionality
      *
      * @param storeFactory the {@link ReadableStoreFactory} to get required stores
      * @param context the context of the pre-handle workflow
@@ -150,5 +205,53 @@ public class TransactionDispatcher {
 
     private PreHandleDispatcher setupPreHandleDispatcher(@NonNull final ReadableStoreFactory storeFactory) {
         return context -> dispatchPreHandle(storeFactory, context);
+    }
+
+    private void dispatchConsensusDeleteTopic(final ConsensusDeleteTopicTransactionBody topicDeletion) {
+        final var handler = handlers.consensusDeleteTopicHandler();
+        final var recordBuilder = handler.newRecordBuilder();
+        handler.handle(
+                handleContext,
+                topicDeletion,
+                new ConsensusServiceConfig(
+                        dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
+                recordBuilder);
+    }
+
+    private void dispatchConsensusUpdateTopic(final ConsensusUpdateTopicTransactionBody topicUpdate) {
+        final var handler = handlers.consensusUpdateTopicHandler();
+        final var recordBuilder = handler.newRecordBuilder();
+        handler.handle(
+                handleContext,
+                topicUpdate,
+                new ConsensusServiceConfig(
+                        dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
+                recordBuilder);
+    }
+
+    private void dispatchConsensusCreateTopic(final ConsensusCreateTopicTransactionBody topicCreation) {
+        final var handler = handlers.consensusCreateTopicHandler();
+        final var recordBuilder = handler.newRecordBuilder();
+        handler.handle(
+                handleContext,
+                topicCreation,
+                new ConsensusServiceConfig(
+                        dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
+                recordBuilder);
+        txnCtx.setCreated(TopicID.newBuilder()
+                .setTopicNum(recordBuilder.getCreatedTopic())
+                .build());
+    }
+
+    private void dispatchConsensusSubmitMessage(final ConsensusSubmitMessageTransactionBody messageSubmission) {
+        final var handler = handlers.consensusSubmitMessageHandler();
+        final var recordBuilder = handler.newRecordBuilder();
+        handler.handle(
+                handleContext,
+                messageSubmission,
+                new ConsensusServiceConfig(
+                        dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
+                recordBuilder);
+        txnCtx.setTopicRunningHash(recordBuilder.getNewTopicRunningHash(), recordBuilder.getNewTopicSequenceNumber());
     }
 }
