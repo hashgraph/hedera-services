@@ -64,7 +64,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ConsensusSubmitMessageHandlerTest {
     private static final ConsensusServiceConfig consensusConfig = new ConsensusServiceConfig(1234L, 5678);
 
+    @Mock
     private AccountKeyLookup keyLookup;
+
+    @Mock
     private ReadableTopicStore topicStore;
 
     @Mock
