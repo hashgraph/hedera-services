@@ -40,8 +40,6 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The {@code IngestChecker} contains checks that are specific to the ingest workflow
@@ -49,12 +47,9 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class IngestChecker {
 
-    private static final Logger LOG = LoggerFactory.getLogger(IngestChecker.class);
-
     private final AccountID nodeAccountID;
     private final SolvencyPrecheck solvencyPrecheck;
     private final SignaturePreparer signaturePreparer;
-    private final Cryptography cryptography;
 
     /**
      * Constructor of the {@code IngestChecker}
@@ -69,12 +64,10 @@ public class IngestChecker {
     public IngestChecker(
             @NonNull final AccountID nodeAccountID,
             @NonNull final SolvencyPrecheck solvencyPrecheck,
-            @NonNull final SignaturePreparer signaturePreparer,
-            @NonNull final Cryptography cryptography) {
+            @NonNull final SignaturePreparer signaturePreparer) {
         this.nodeAccountID = requireNonNull(nodeAccountID);
         this.solvencyPrecheck = solvencyPrecheck;
         this.signaturePreparer = requireNonNull(signaturePreparer);
-        this.cryptography = requireNonNull(cryptography);
     }
 
     /**

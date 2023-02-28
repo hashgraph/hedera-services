@@ -43,7 +43,6 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.crypto.Cryptography;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -76,16 +75,13 @@ class IngestCheckerTest {
     private SignaturePreparer signaturePreparer;
 
     @Mock
-    private Cryptography cryptography;
-
-    @Mock
     private SolvencyPrecheck solvencyPrecheck;
 
     private IngestChecker subject;
 
     @BeforeEach
     void setUp() {
-        subject = new IngestChecker(MOCK_NODE_ACCOUNT_ID, solvencyPrecheck, signaturePreparer, cryptography);
+        subject = new IngestChecker(MOCK_NODE_ACCOUNT_ID, solvencyPrecheck, signaturePreparer);
     }
 
     @Test
