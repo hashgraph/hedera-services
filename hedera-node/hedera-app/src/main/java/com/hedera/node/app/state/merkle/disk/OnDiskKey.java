@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.spi.state.Serdes;
+import com.hedera.node.app.spi.state.serdes.ByteBufferDataInput;
+import com.hedera.node.app.spi.state.serdes.ByteBufferDataOutput;
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.node.app.state.merkle.data.ByteBufferDataInput;
-import com.hedera.node.app.state.merkle.data.ByteBufferDataOutput;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -43,7 +44,7 @@ import java.util.Objects;
  *
  * @param <K> The type of key
  */
-public final class OnDiskKey<K extends Comparable<K>> implements VirtualKey<OnDiskKey<K>> {
+public final class OnDiskKey<K extends Comparable<? super K>> implements VirtualKey<OnDiskKey<K>> {
     @Deprecated(forRemoval = true)
     private static final long CLASS_ID = 0x2929238293892373L;
     /** The metadata */
@@ -88,8 +89,7 @@ public final class OnDiskKey<K extends Comparable<K>> implements VirtualKey<OnDi
 
     /** Writes the "real" key to the given stream. {@inheritDoc} */
     @Override
-    public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream)
-            throws IOException {
+    public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream) throws IOException {
         serdes.write(key, serializableDataOutputStream);
     }
 
@@ -104,8 +104,7 @@ public final class OnDiskKey<K extends Comparable<K>> implements VirtualKey<OnDi
     }
 
     @Override
-    public void deserialize(
-            @NonNull final SerializableDataInputStream serializableDataInputStream, int ignored)
+    public void deserialize(@NonNull final SerializableDataInputStream serializableDataInputStream, int ignored)
             throws IOException {
         key = serdes.parse(new DataInputStream(serializableDataInputStream));
     }

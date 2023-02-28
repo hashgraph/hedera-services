@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,13 +40,11 @@ class UniqueTokenKeyTest {
     }
 
     @Test
-    void serializing_withDifferentTokenNums_yieldSmallerBufferPositionForLeadingZeros()
-            throws IOException {
+    void serializing_withDifferentTokenNums_yieldSmallerBufferPositionForLeadingZeros() throws IOException {
         final UniqueTokenKey key1 = new UniqueTokenKey(0, 0); // 1 byte
         final UniqueTokenKey key2 = new UniqueTokenKey(0, 0xFF); // 2 bytes
         final UniqueTokenKey key3 = new UniqueTokenKey(0xFFFF, 0); // 3 bytes
-        final UniqueTokenKey key4 =
-                new UniqueTokenKey(0xFFFF_FFFF_FFFF_FFFFL, 0xFFFF_FFFF_FFFF_FFFFL); // 17 bytes
+        final UniqueTokenKey key4 = new UniqueTokenKey(0xFFFF_FFFF_FFFF_FFFFL, 0xFFFF_FFFF_FFFF_FFFFL); // 17 bytes
 
         final ByteBuffer buffer1 = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
         final ByteBuffer buffer2 = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
@@ -62,15 +61,14 @@ class UniqueTokenKeyTest {
         assertThat(buffer3.position()).isLessThan(buffer4.position());
     }
 
-    private static ByteBuffer serializeToByteBuffer(final long num, final long serial)
-            throws IOException {
+    private static ByteBuffer serializeToByteBuffer(final long num, final long serial) throws IOException {
         final ByteBuffer buffer = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
         new UniqueTokenKey(num, serial).serialize(buffer);
         return buffer.rewind();
     }
 
-    private static UniqueTokenKey checkSerializeAndDeserializeByteBuffer(
-            final long num, final long serial) throws IOException {
+    private static UniqueTokenKey checkSerializeAndDeserializeByteBuffer(final long num, final long serial)
+            throws IOException {
         final UniqueTokenKey key = new UniqueTokenKey();
         key.deserialize(serializeToByteBuffer(num, serial), UniqueTokenKey.CURRENT_VERSION);
         assertThat(key.getNum()).isEqualTo(num);
@@ -79,19 +77,17 @@ class UniqueTokenKeyTest {
     }
 
     @Test
-    void deserializingByteBuffer_whenCurrentVersion_restoresValueAndRegeneratesHash()
-            throws IOException {
-        final List<Long> valuesToTest =
-                List.of(
-                        0L,
-                        0xFFL,
-                        0xFFFFL,
-                        0xFF_FFFFL,
-                        0xFFFF_FFFFL,
-                        0xFF_FFFF_FFFFL,
-                        0xFFFF_FFFF_FFFFL,
-                        0xFF_FFFF_FFFF_FFFFL,
-                        0xFFFF_FFFF_FFFF_FFFFL);
+    void deserializingByteBuffer_whenCurrentVersion_restoresValueAndRegeneratesHash() throws IOException {
+        final List<Long> valuesToTest = List.of(
+                0L,
+                0xFFL,
+                0xFFFFL,
+                0xFF_FFFFL,
+                0xFFFF_FFFFL,
+                0xFF_FFFF_FFFFL,
+                0xFFFF_FFFF_FFFFL,
+                0xFF_FFFF_FFFF_FFFFL,
+                0xFFFF_FFFF_FFFF_FFFFL);
         final List<Integer> hashCodes = new ArrayList<>();
         for (final long num : valuesToTest) {
             for (final long serial : valuesToTest) {
@@ -102,25 +98,20 @@ class UniqueTokenKeyTest {
 
         // Also confirm that the hash codes are mostly unique.
 
-        assertThat(new HashSet<>(hashCodes).size())
-                .isGreaterThanOrEqualTo((int) (0.7 * hashCodes.size()));
+        assertThat(new HashSet<>(hashCodes).size()).isGreaterThanOrEqualTo((int) (0.7 * hashCodes.size()));
     }
 
-    private static SerializableDataInputStream serializeToStream(final long num, final long serial)
-            throws IOException {
-        final ByteArrayOutputStream byteOutputStream =
-                new ByteArrayOutputStream(UniqueTokenKey.ESTIMATED_SIZE_BYTES);
-        final SerializableDataOutputStream outputStream =
-                new SerializableDataOutputStream(byteOutputStream);
+    private static SerializableDataInputStream serializeToStream(final long num, final long serial) throws IOException {
+        final ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream(UniqueTokenKey.ESTIMATED_SIZE_BYTES);
+        final SerializableDataOutputStream outputStream = new SerializableDataOutputStream(byteOutputStream);
         new UniqueTokenKey(num, serial).serialize(outputStream);
 
-        final ByteArrayInputStream inputStream =
-                new ByteArrayInputStream(byteOutputStream.toByteArray());
+        final ByteArrayInputStream inputStream = new ByteArrayInputStream(byteOutputStream.toByteArray());
         return new SerializableDataInputStream(inputStream);
     }
 
-    private static UniqueTokenKey checkSerializeAndDeserializeStream(
-            final long num, final long serial) throws IOException {
+    private static UniqueTokenKey checkSerializeAndDeserializeStream(final long num, final long serial)
+            throws IOException {
         final UniqueTokenKey key = new UniqueTokenKey();
         key.deserialize(serializeToStream(num, serial), UniqueTokenKey.CURRENT_VERSION);
         assertThat(key.getNum()).isEqualTo(num);
@@ -129,19 +120,17 @@ class UniqueTokenKeyTest {
     }
 
     @Test
-    void deserializingStream_whenCurrentVersion_restoresValueAndRegeneratesHash()
-            throws IOException {
-        final List<Long> valuesToTest =
-                List.of(
-                        0L,
-                        0xFFL,
-                        0xFFFFL,
-                        0xFF_FFFFL,
-                        0xFFFF_FFFFL,
-                        0xFF_FFFF_FFFFL,
-                        0xFFFF_FFFF_FFFFL,
-                        0xFF_FFFF_FFFF_FFFFL,
-                        0xFFFF_FFFF_FFFF_FFFFL);
+    void deserializingStream_whenCurrentVersion_restoresValueAndRegeneratesHash() throws IOException {
+        final List<Long> valuesToTest = List.of(
+                0L,
+                0xFFL,
+                0xFFFFL,
+                0xFF_FFFFL,
+                0xFFFF_FFFFL,
+                0xFF_FFFF_FFFFL,
+                0xFFFF_FFFF_FFFFL,
+                0xFF_FFFF_FFFF_FFFFL,
+                0xFFFF_FFFF_FFFF_FFFFL);
         final List<Integer> hashCodes = new ArrayList<>();
         for (final long num : valuesToTest) {
             for (final long serial : valuesToTest) {
@@ -151,8 +140,7 @@ class UniqueTokenKeyTest {
         }
 
         // Also confirm that the hash codes are mostly unique.
-        assertThat(new HashSet<>(hashCodes).size())
-                .isGreaterThanOrEqualTo((int) (0.7 * hashCodes.size()));
+        assertThat(new HashSet<>(hashCodes).size()).isGreaterThanOrEqualTo((int) (0.7 * hashCodes.size()));
     }
 
     @Test

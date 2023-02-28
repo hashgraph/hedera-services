@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.contract;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
@@ -76,17 +77,16 @@ public final class ContractLogicModule {
             final Supplier<AccountStorageAdapter> accounts,
             final GlobalDynamicProperties properties,
             final NodeInfo nodeInfo) {
-        final var contractUpdateTransitionLogic =
-                new ContractUpdateTransitionLogic(
-                        ledger,
-                        aliasManager,
-                        validator,
-                        sigImpactHistorian,
-                        txnCtx,
-                        new UpdateCustomizerFactory(),
-                        accounts,
-                        properties,
-                        nodeInfo);
+        final var contractUpdateTransitionLogic = new ContractUpdateTransitionLogic(
+                ledger,
+                aliasManager,
+                validator,
+                sigImpactHistorian,
+                txnCtx,
+                new UpdateCustomizerFactory(),
+                accounts,
+                properties,
+                nodeInfo);
         return List.of(contractUpdateTransitionLogic);
     }
 

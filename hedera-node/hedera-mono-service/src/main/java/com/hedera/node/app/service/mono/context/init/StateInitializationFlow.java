@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.init;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_LAST_THROTTLE_EXEMPT;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_LAST_THROTTLE_EXEMPT;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
+import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder;
 import com.hedera.node.app.service.mono.files.FileUpdateInterceptor;
@@ -34,6 +35,7 @@ import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class StateInitializationFlow {
+
     private static final Logger log = LogManager.getLogger(StateInitializationFlow.class);
 
     private final HederaFs hfs;
@@ -56,10 +58,8 @@ public class StateInitializationFlow {
         this.fileUpdateInterceptors = fileUpdateInterceptors;
     }
 
-    public void runWith(
-            final ServicesState activeState, final BootstrapProperties bootstrapProperties) {
-        final var lastThrottleExempt =
-                bootstrapProperties.getLongProperty(ACCOUNTS_LAST_THROTTLE_EXEMPT);
+    public void runWith(final StateChildrenProvider activeState, final BootstrapProperties bootstrapProperties) {
+        final var lastThrottleExempt = bootstrapProperties.getLongProperty(ACCOUNTS_LAST_THROTTLE_EXEMPT);
         // The last throttle-exempt account is configurable to make it easy to start dev networks
         // without throttling
         numberConfigurer.configureNumbers(hederaNums, lastThrottleExempt);
@@ -78,6 +78,7 @@ public class StateInitializationFlow {
     }
 
     interface NumberConfigurer {
+
         void configureNumbers(HederaNumbers numbers, long lastThrottleExempt);
     }
 

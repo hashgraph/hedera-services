@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts;
 
 import static com.hedera.node.app.service.evm.store.models.HederaEvmAccount.ECDSA_KEY_ALIAS_PREFIX;
@@ -98,8 +99,7 @@ public class WorldLedgers {
     private final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
     private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
     private final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
-    private final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-            tokenRelsLedger;
+    private final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRelsLedger;
 
     public static WorldLedgers staticLedgersWith(
             final ContractAliases aliases, final StaticEntityAccess staticEntityAccess) {
@@ -108,8 +108,7 @@ public class WorldLedgers {
 
     public WorldLedgers(
             final ContractAliases aliases,
-            final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-                    tokenRelsLedger,
+            final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRelsLedger,
             final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger,
             final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger,
             final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger) {
@@ -122,8 +121,7 @@ public class WorldLedgers {
         staticEntityAccess = null;
     }
 
-    private WorldLedgers(
-            final ContractAliases aliases, final StaticEntityAccess staticEntityAccess) {
+    private WorldLedgers(final ContractAliases aliases, final StaticEntityAccess staticEntityAccess) {
         tokenRelsLedger = null;
         accountsLedger = null;
         tokensLedger = null;
@@ -146,12 +144,10 @@ public class WorldLedgers {
     }
 
     public boolean defaultKycStatus(final TokenID tokenId) {
-        return propertyOf(
-                tokenId, ACC_KYC_GRANTED_BY_DEFAULT, StaticEntityAccess::defaultKycStatus);
+        return propertyOf(tokenId, ACC_KYC_GRANTED_BY_DEFAULT, StaticEntityAccess::defaultKycStatus);
     }
 
-    public Optional<EvmTokenInfo> evmInfoForToken(
-            final TokenID tokenId, final ByteString ledgerId) {
+    public Optional<EvmTokenInfo> evmInfoForToken(final TokenID tokenId, final ByteString ledgerId) {
         if (staticEntityAccess != null) {
             return staticEntityAccess.evmInfoForToken(tokenId);
         } else {
@@ -167,14 +163,13 @@ public class WorldLedgers {
         Optional<TokenNftInfo> infoForNft = infoForNft(target, ledgerId);
         if (infoForNft.isPresent()) {
             TokenNftInfo info = infoForNft.get();
-            return Optional.of(
-                    new EvmNftInfo(
-                            info.getNftID().getSerialNumber(),
-                            EntityIdUtils.asTypedEvmAddress(info.getAccountID()),
-                            info.getCreationTime().getSeconds(),
-                            info.getMetadata().toByteArray(),
-                            EntityIdUtils.asTypedEvmAddress(info.getSpenderId()),
-                            ledgerId.toByteArray()));
+            return Optional.of(new EvmNftInfo(
+                    info.getNftID().getSerialNumber(),
+                    EntityIdUtils.asTypedEvmAddress(info.getAccountID()),
+                    info.getCreationTime().getSeconds(),
+                    info.getMetadata().toByteArray(),
+                    EntityIdUtils.asTypedEvmAddress(info.getSpenderId()),
+                    ledgerId.toByteArray()));
         }
 
         return Optional.empty();
@@ -185,8 +180,7 @@ public class WorldLedgers {
             return staticEntityAccess.infoForNft(target);
         } else {
             final var tokenId = EntityNum.fromTokenId(target.getTokenID());
-            final var targetKey =
-                    NftId.withDefaultShardRealm(tokenId.longValue(), target.getSerialNumber());
+            final var targetKey = NftId.withDefaultShardRealm(tokenId.longValue(), target.getSerialNumber());
             if (!nftsLedger.contains(targetKey)) {
                 return Optional.empty();
             }
@@ -203,15 +197,14 @@ public class WorldLedgers {
 
             final var spenderId = targetNft.getSpender().toGrpcAccountId();
 
-            final var info =
-                    TokenNftInfo.newBuilder()
-                            .setLedgerId(ledgerId)
-                            .setNftID(target)
-                            .setAccountID(accountId)
-                            .setCreationTime(targetNft.getCreationTime().toGrpc())
-                            .setMetadata(ByteString.copyFrom(targetNft.getMetadata()))
-                            .setSpenderId(spenderId)
-                            .build();
+            final var info = TokenNftInfo.newBuilder()
+                    .setLedgerId(ledgerId)
+                    .setNftID(target)
+                    .setAccountID(accountId)
+                    .setCreationTime(targetNft.getCreationTime().toGrpc())
+                    .setMetadata(ByteString.copyFrom(targetNft.getMetadata()))
+                    .setSpenderId(spenderId)
+                    .build();
             return Optional.of(info);
         }
     }
@@ -227,10 +220,7 @@ public class WorldLedgers {
                 }
                 return Optional.of(evmCustomFees(token.grpcFeeSchedule()));
             } catch (Exception unexpected) {
-                log.warn(
-                        "Unexpected failure getting custom fees for token {}!",
-                        readableId(tokenId),
-                        unexpected);
+                log.warn("Unexpected failure getting custom fees for token {}!", readableId(tokenId), unexpected);
                 return Optional.empty();
             }
         }
@@ -263,9 +253,7 @@ public class WorldLedgers {
             validateTrue(tokensLedger.exists(tokenId), INVALID_TOKEN_ID);
             validateTrue(accountsLedger.exists(accountId), INVALID_ACCOUNT_ID);
             final var balanceKey = Pair.of(accountId, tokenId);
-            return tokenRelsLedger.exists(balanceKey)
-                    ? (long) tokenRelsLedger.get(balanceKey, TOKEN_BALANCE)
-                    : 0;
+            return tokenRelsLedger.exists(balanceKey) ? (long) tokenRelsLedger.get(balanceKey, TOKEN_BALANCE) : 0;
         }
     }
 
@@ -276,8 +264,7 @@ public class WorldLedgers {
             validateTrue(tokensLedger.exists(tokenId), INVALID_TOKEN_ID);
             validateTrue(accountsLedger.exists(accountId), INVALID_ACCOUNT_ID);
             final var isKycKey = Pair.of(accountId, tokenId);
-            return tokenRelsLedger.exists(isKycKey)
-                    && (boolean) tokenRelsLedger.get(isKycKey, IS_KYC_GRANTED);
+            return tokenRelsLedger.exists(isKycKey) && (boolean) tokenRelsLedger.get(isKycKey, IS_KYC_GRANTED);
         }
     }
 
@@ -288,16 +275,13 @@ public class WorldLedgers {
             validateTrue(tokensLedger.exists(tokenId), INVALID_TOKEN_ID);
             validateTrue(accountsLedger.exists(accountId), INVALID_ACCOUNT_ID);
             final var isFrozenKey = Pair.of(accountId, tokenId);
-            return tokenRelsLedger.exists(isFrozenKey)
-                    && (boolean) tokenRelsLedger.get(isFrozenKey, IS_FROZEN);
+            return tokenRelsLedger.exists(isFrozenKey) && (boolean) tokenRelsLedger.get(isFrozenKey, IS_FROZEN);
         }
     }
 
-    public long staticAllowanceOf(
-            final AccountID ownerId, final AccountID spenderId, final TokenID tokenId) {
+    public long staticAllowanceOf(final AccountID ownerId, final AccountID spenderId, final TokenID tokenId) {
         if (staticEntityAccess == null) {
-            throw new IllegalStateException(
-                    "staticAllowanceOf should only be used with StaticEntityAccess");
+            throw new IllegalStateException("staticAllowanceOf should only be used with StaticEntityAccess");
         } else {
             return staticEntityAccess.allowanceOf(ownerId, spenderId, tokenId);
         }
@@ -305,18 +289,15 @@ public class WorldLedgers {
 
     public Address staticApprovedSpenderOf(final NftId nftId) {
         if (staticEntityAccess == null) {
-            throw new IllegalStateException(
-                    "staticApprovedOf should only be used with StaticEntityAccess");
+            throw new IllegalStateException("staticApprovedOf should only be used with StaticEntityAccess");
         } else {
             return staticEntityAccess.approvedSpenderOf(nftId);
         }
     }
 
-    public boolean staticIsOperator(
-            final AccountID ownerId, final AccountID operatorId, final TokenID tokenId) {
+    public boolean staticIsOperator(final AccountID ownerId, final AccountID operatorId, final TokenID tokenId) {
         if (staticEntityAccess == null) {
-            throw new IllegalStateException(
-                    "staticApprovedOf should only be used with StaticEntityAccess");
+            throw new IllegalStateException("staticApprovedOf should only be used with StaticEntityAccess");
         } else {
             return staticEntityAccess.isOperator(ownerId, operatorId, tokenId);
         }
@@ -325,8 +306,7 @@ public class WorldLedgers {
     @Nullable
     public EntityId ownerIfPresent(final NftId nftId) {
         if (!areMutable()) {
-            throw new IllegalStateException(
-                    "Static ledgers cannot be used to get owner if present");
+            throw new IllegalStateException("Static ledgers cannot be used to get owner if present");
         }
         return nftsLedger.contains(nftId) ? explicitOwnerOfExtant(nftId) : null;
     }
@@ -339,15 +319,12 @@ public class WorldLedgers {
     }
 
     @SuppressWarnings("unchecked")
-    public boolean hasApprovedForAll(
-            final AccountID ownerId, final AccountID operatorId, final TokenID tokenId) {
+    public boolean hasApprovedForAll(final AccountID ownerId, final AccountID operatorId, final TokenID tokenId) {
         if (!areMutable()) {
-            throw new IllegalStateException(
-                    "Static ledgers cannot be used to check approvedForAll");
+            throw new IllegalStateException("Static ledgers cannot be used to check approvedForAll");
         }
         final Set<FcTokenAllowanceId> approvedForAll =
-                (Set<FcTokenAllowanceId>)
-                        accountsLedger.get(ownerId, APPROVE_FOR_ALL_NFTS_ALLOWANCES);
+                (Set<FcTokenAllowanceId>) accountsLedger.get(ownerId, APPROVE_FOR_ALL_NFTS_ALLOWANCES);
         return approvedForAll.contains(FcTokenAllowanceId.from(tokenId, operatorId));
     }
 
@@ -384,8 +361,7 @@ public class WorldLedgers {
             }
             alias = (ByteString) accountsLedger.get(sourceId, ALIAS);
         } else {
-            Objects.requireNonNull(
-                    staticEntityAccess, "Null ledgers must imply non-null static access");
+            Objects.requireNonNull(staticEntityAccess, "Null ledgers must imply non-null static access");
             if (!staticEntityAccess.isExtant(address)) {
                 return address;
             }
@@ -394,8 +370,7 @@ public class WorldLedgers {
         if (!alias.isEmpty()) {
             if (alias.size() == EVM_ADDRESS_SIZE) {
                 return Address.wrap(Bytes.wrap(alias.toByteArray()));
-            } else if (alias.size() == ECDSA_SECP256K1_ALIAS_SIZE
-                    && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
+            } else if (alias.size() == ECDSA_SECP256K1_ALIAS_SIZE && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
                 final byte[] value = recoverAddressFromPubKey(alias.substring(2).toByteArray());
                 if (value.length > 0) {
                     return Address.wrap(Bytes.wrap(value));
@@ -445,10 +420,7 @@ public class WorldLedgers {
     }
 
     public boolean areMutable() {
-        return nftsLedger != null
-                && tokensLedger != null
-                && accountsLedger != null
-                && tokenRelsLedger != null;
+        return nftsLedger != null && tokensLedger != null && accountsLedger != null && tokenRelsLedger != null;
     }
 
     public WorldLedgers wrapped() {
@@ -492,8 +464,7 @@ public class WorldLedgers {
         return aliases;
     }
 
-    public TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-            tokenRels() {
+    public TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRels() {
         return tokenRelsLedger;
     }
 

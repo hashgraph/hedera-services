@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.service.mono.context.properties.BootstrapProperties.BOOTSTRAP_PROP_NAMES;
@@ -44,9 +45,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StandardizedPropertySourcesTest {
-    @Mock private PropertySource bootstrapProps;
-    @Mock private ScreenedSysFileProps dynamicGlobalProps;
-    @Mock private ScreenedNodeFileProps nodeProps;
+    @Mock
+    private PropertySource bootstrapProps;
+
+    @Mock
+    private ScreenedSysFileProps dynamicGlobalProps;
+
+    @Mock
+    private ScreenedNodeFileProps nodeProps;
 
     private StandardizedPropertySources subject;
 
@@ -59,8 +65,7 @@ class StandardizedPropertySourcesTest {
     @SuppressWarnings("unchecked")
     void getsExpectedRatios() {
         final var prop = "0:3,1:-1,2:,3:1.1,4:NONSENSE,5:4,12345";
-        final Map<Long, Long> ratios =
-                (Map<Long, Long>) PropertySource.AS_NODE_STAKE_RATIOS.apply(prop);
+        final Map<Long, Long> ratios = (Map<Long, Long>) PropertySource.AS_NODE_STAKE_RATIOS.apply(prop);
         final var expected = Map.of(0L, 3L, 5L, 4L);
         assertEquals(expected, ratios);
 
@@ -79,22 +84,16 @@ class StandardizedPropertySourcesTest {
         final var prop = "1058134by[1062784]";
         final LegacyContractIdActivations activations =
                 (LegacyContractIdActivations) PropertySource.AS_LEGACY_ACTIVATIONS.apply(prop);
-        final var expected =
-                new LegacyContractIdActivations(
-                        Map.of(
-                                EntityIdUtils.asTypedEvmAddress(new EntityId(0, 0, 1058134)),
-                                Set.of(
-                                        EntityIdUtils.asTypedEvmAddress(
-                                                new EntityId(0, 0, 1062784)))));
+        final var expected = new LegacyContractIdActivations(Map.of(
+                EntityIdUtils.asTypedEvmAddress(new EntityId(0, 0, 1058134)),
+                Set.of(EntityIdUtils.asTypedEvmAddress(new EntityId(0, 0, 1062784)))));
         assertEquals(expected, activations);
 
         final var name = "activations";
         final var mockSubject = Mockito.mock(PropertySource.class);
         doCallRealMethod().when(mockSubject).getLegacyActivationsProperty(name);
         given(mockSubject.getProperty(name)).willReturn(expected);
-        doCallRealMethod()
-                .when(mockSubject)
-                .getTypedProperty(LegacyContractIdActivations.class, name);
+        doCallRealMethod().when(mockSubject).getTypedProperty(LegacyContractIdActivations.class, name);
         assertEquals(expected, mockSubject.getLegacyActivationsProperty(name));
 
         final var noActivations = new LegacyContractIdActivations(Collections.emptyMap());
@@ -106,10 +105,8 @@ class StandardizedPropertySourcesTest {
     void getsExpectedRecomputeTypes() {
         final var prop = "NODE_STAKES,PENDING_REWARDS";
         final Set<StakeStartupHelper.RecomputeType> recomputes =
-                (Set<StakeStartupHelper.RecomputeType>)
-                        PropertySource.AS_RECOMPUTE_TYPES.apply(prop);
-        final Set<StakeStartupHelper.RecomputeType> expected =
-                EnumSet.allOf(StakeStartupHelper.RecomputeType.class);
+                (Set<StakeStartupHelper.RecomputeType>) PropertySource.AS_RECOMPUTE_TYPES.apply(prop);
+        final Set<StakeStartupHelper.RecomputeType> expected = EnumSet.allOf(StakeStartupHelper.RecomputeType.class);
         assertEquals(expected, recomputes);
 
         final var name = "recomputeTypes";
@@ -124,10 +121,8 @@ class StandardizedPropertySourcesTest {
     @SuppressWarnings("unchecked")
     void getsExpectedAccessList() {
         final var prop = "ACCOUNTS_GET,STORAGE_PUT";
-        final List<MapAccessType> accesses =
-                (List<MapAccessType>) PropertySource.AS_ACCESS_LIST.apply(prop);
-        final List<MapAccessType> expected =
-                List.of(MapAccessType.ACCOUNTS_GET, MapAccessType.STORAGE_PUT);
+        final List<MapAccessType> accesses = (List<MapAccessType>) PropertySource.AS_ACCESS_LIST.apply(prop);
+        final List<MapAccessType> expected = List.of(MapAccessType.ACCOUNTS_GET, MapAccessType.STORAGE_PUT);
         assertEquals(expected, accesses);
 
         final var name = "accessList";
@@ -141,8 +136,7 @@ class StandardizedPropertySourcesTest {
     @Test
     void getsExpectedEntityScaleFactors() {
         final var prop = "DEFAULT(90,10:1,95,25:1,99,100:1)";
-        final EntityScaleFactors scaleFactors =
-                (EntityScaleFactors) PropertySource.AS_ENTITY_SCALE_FACTORS.apply(prop);
+        final EntityScaleFactors scaleFactors = (EntityScaleFactors) PropertySource.AS_ENTITY_SCALE_FACTORS.apply(prop);
         final EntityScaleFactors expected = EntityScaleFactors.from(prop);
         assertEquals(expected, scaleFactors);
 

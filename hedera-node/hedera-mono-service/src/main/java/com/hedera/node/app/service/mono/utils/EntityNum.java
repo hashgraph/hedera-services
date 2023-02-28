@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
@@ -157,10 +158,7 @@ public class EntityNum implements Comparable<EntityNum> {
     }
 
     public byte[] toRawEvmAddress() {
-        return asEvmAddress(
-                (int) STATIC_PROPERTIES.getShard(),
-                STATIC_PROPERTIES.getRealm(),
-                numFromCode(value));
+        return asEvmAddress((int) STATIC_PROPERTIES.getShard(), STATIC_PROPERTIES.getRealm(), numFromCode(value));
     }
 
     @Override

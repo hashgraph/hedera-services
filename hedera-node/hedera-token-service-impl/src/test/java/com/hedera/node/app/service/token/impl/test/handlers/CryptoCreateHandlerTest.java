@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -33,26 +34,27 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void preHandleCryptoCreateVanilla() {
         final var txn = createAccountTransaction(true);
 
-        final var meta = subject.preHandle(txn, payer, store);
+        final var context = new PreHandleContext(store, txn, payer);
+        subject.preHandle(context);
 
-        assertEquals(txn, meta.txnBody());
-        basicMetaAssertions(meta, 1, false, OK);
-        assertEquals(payerKey, meta.payerKey());
+        assertEquals(txn, context.getTxn());
+        basicMetaAssertions(context, 1, false, OK);
+        assertEquals(payerKey, context.getPayerKey());
     }
 
     @Test
     void noReceiverSigRequiredPreHandleCryptoCreate() {
         final var txn = createAccountTransaction(false);
-        final var expectedMeta =
-                new SigTransactionMetadataBuilder(store).payerKeyFor(payer).txnBody(txn).build();
+        final var expected = new PreHandleContext(store, txn, payer);
 
-        final var meta = subject.preHandle(txn, payer, store);
+        final var context = new PreHandleContext(store, txn, payer);
+        subject.preHandle(context);
 
-        assertEquals(expectedMeta.txnBody(), meta.txnBody());
-        assertFalse(meta.requiredNonPayerKeys().contains(payerKey));
-        basicMetaAssertions(meta, 0, expectedMeta.failed(), OK);
-        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
-        assertEquals(payerKey, meta.payerKey());
+        assertEquals(expected.getTxn(), context.getTxn());
+        assertFalse(context.getRequiredNonPayerKeys().contains(payerKey));
+        basicMetaAssertions(context, 0, expected.failed(), OK);
+        assertIterableEquals(List.of(), context.getRequiredNonPayerKeys());
+        assertEquals(payerKey, context.getPayerKey());
     }
 
     @Test
@@ -62,15 +64,12 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     private TransactionBody createAccountTransaction(final boolean receiverSigReq) {
         final var transactionID =
-                TransactionID.newBuilder()
-                        .setAccountID(payer)
-                        .setTransactionValidStart(consensusTimestamp);
-        final var createTxnBody =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setKey(key)
-                        .setReceiverSigRequired(receiverSigReq)
-                        .setMemo("Create Account")
-                        .build();
+                TransactionID.newBuilder().setAccountID(payer).setTransactionValidStart(consensusTimestamp);
+        final var createTxnBody = CryptoCreateTransactionBody.newBuilder()
+                .setKey(key)
+                .setReceiverSigRequired(receiverSigReq)
+                .setMemo("Create Account")
+                .build();
 
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)

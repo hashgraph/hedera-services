@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.operation;
 
 import static com.hedera.node.app.service.mono.contracts.operation.HederaOperationUtil.cacheExistingValue;
@@ -34,8 +35,7 @@ import org.hyperledger.besu.evm.operation.AbstractOperation;
  * support traceability (if enabled).
  */
 public class HederaSStoreOperation extends AbstractOperation {
-    static final OperationResult ILLEGAL_STATE_CHANGE_RESULT =
-            new OperationResult(0, ILLEGAL_STATE_CHANGE);
+    static final OperationResult ILLEGAL_STATE_CHANGE_RESULT = new OperationResult(0, ILLEGAL_STATE_CHANGE);
 
     private final long minimumGasRemaining;
     private final GlobalDynamicProperties dynamicProperties;
@@ -49,8 +49,7 @@ public class HederaSStoreOperation extends AbstractOperation {
         super(0x55, "SSTORE", 2, 0, 1, gasCalculator);
         this.dynamicProperties = dynamicProperties;
         this.minimumGasRemaining = minimumGasRemaining;
-        insufficientMinimumGasRemainingResult =
-                new OperationResult(this.minimumGasRemaining, INSUFFICIENT_GAS);
+        insufficientMinimumGasRemainingResult = new OperationResult(this.minimumGasRemaining, INSUFFICIENT_GAS);
     }
 
     @Override
@@ -65,9 +64,8 @@ public class HederaSStoreOperation extends AbstractOperation {
         final var address = account.getAddress();
         final var slotIsWarm = frame.warmUpStorage(address, key);
         final var calculator = gasCalculator();
-        final var calcGasCost =
-                calculator.calculateStorageCost(account, key, value)
-                        + (slotIsWarm ? 0L : calculator.getColdSloadCost());
+        final var calcGasCost = calculator.calculateStorageCost(account, key, value)
+                + (slotIsWarm ? 0L : calculator.getColdSloadCost());
 
         final var remainingGas = frame.getRemainingGas();
         if (frame.isStatic()) {

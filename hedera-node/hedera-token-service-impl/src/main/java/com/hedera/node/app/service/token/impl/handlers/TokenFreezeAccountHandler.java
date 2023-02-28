@@ -13,39 +13,50 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
  * com.hederahashgraph.api.proto.java.HederaFunctionality#TokenFreezeAccount}.
  */
+@Singleton
 public class TokenFreezeAccountHandler implements TransactionHandler {
+    @Inject
+    public TokenFreezeAccountHandler() {}
 
     /**
-     * This method is called during the pre-handle workflow.
+     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#TokenFreezeAccount}
+     * transaction, returning the metadata required to, at minimum, validate the signatures of all
+     * required signing keys.
      *
-     * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
-     * the handle stage.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param txBody the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
+     * @param context the {@link PreHandleContext} which collects all information that will be
+     *     passed to {@link #handle(TransactionMetadata)}
+     * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody, @NonNull final AccountID payer) {
-        throw new UnsupportedOperationException("Not implemented");
+    public void preHandle(@NonNull final PreHandleContext context, @NonNull final ReadableTokenStore tokenStore) {
+        requireNonNull(context);
+        final var op = context.getTxn().getTokenFreeze();
+
+        final var tokenMeta = tokenStore.getTokenMeta(op.getToken());
+
+        if (tokenMeta.failed()) {
+            context.status(tokenMeta.failureReason());
+            return;
+        }
+
+        tokenMeta.metadata().freezeKey().ifPresent(context::addToReqNonPayerKeys);
     }
 
     /**
@@ -58,6 +69,7 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
+        requireNonNull(metadata);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

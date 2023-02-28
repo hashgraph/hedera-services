@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.equalUpToDecodability;
@@ -72,7 +73,7 @@ public final class MerkleTopic extends PartialMerkleLeaf implements Keyed<Entity
 
     static final int RELEASE_0180_VERSION = 2;
 
-    static final int CURRENT_VERSION = RELEASE_0180_VERSION;
+    public static final int CURRENT_VERSION = RELEASE_0180_VERSION;
 
     static final long RUNTIME_CONSTRUCTABLE_ID = 0xcfc535576b57baf0L;
 
@@ -97,11 +98,7 @@ public final class MerkleTopic extends PartialMerkleLeaf implements Keyed<Entity
         return MoreObjects.toStringHelper(this)
                 .add("number", number + " <-> " + asIdLiteral(number))
                 .add("memo", memo)
-                .add(
-                        "expiry",
-                        String.format(
-                                "%d.%d",
-                                expirationTimestamp.getSeconds(), expirationTimestamp.getNanos()))
+                .add("expiry", String.format("%d.%d", expirationTimestamp.getSeconds(), expirationTimestamp.getNanos()))
                 .add("deleted", deleted)
                 .add("adminKey", MiscUtils.describe(adminKey))
                 .add("submitKey", MiscUtils.describe(submitKey))
@@ -147,16 +144,13 @@ public final class MerkleTopic extends PartialMerkleLeaf implements Keyed<Entity
         this.submitKey = other.hasSubmitKey() ? other.getSubmitKey() : null;
         this.autoRenewDurationSeconds = other.autoRenewDurationSeconds;
         this.autoRenewAccountId = other.hasAutoRenewAccountId() ? other.autoRenewAccountId : null;
-        this.expirationTimestamp =
-                other.hasExpirationTimestamp() ? other.expirationTimestamp : null;
+        this.expirationTimestamp = other.hasExpirationTimestamp() ? other.expirationTimestamp : null;
         this.deleted = other.deleted;
         this.number = other.number;
 
         this.sequenceNumber = other.sequenceNumber;
         this.runningHash =
-                (null != other.runningHash)
-                        ? Arrays.copyOf(other.runningHash, other.runningHash.length)
-                        : null;
+                (null != other.runningHash) ? Arrays.copyOf(other.runningHash, other.runningHash.length) : null;
     }
 
     /* --- MerkleLeaf --- */
@@ -176,8 +170,7 @@ public final class MerkleTopic extends PartialMerkleLeaf implements Keyed<Entity
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         topicSerde.deserialize(in, this);
         // Added in 0.18
         number = in.readInt();
@@ -256,8 +249,7 @@ public final class MerkleTopic extends PartialMerkleLeaf implements Keyed<Entity
             @Nullable TopicID topicId,
             @Nullable Instant consensusTimestamp)
             throws IOException {
-        throwIfImmutable(
-                "Cannot change this topic's running hash or sequence number if it's immutable.");
+        throwIfImmutable("Cannot change this topic's running hash or sequence number if it's immutable.");
         if (null == message) {
             message = new byte[0];
         }
@@ -358,8 +350,7 @@ public final class MerkleTopic extends PartialMerkleLeaf implements Keyed<Entity
     }
 
     public void setAutoRenewDurationSeconds(final long autoRenewDurationSeconds) {
-        throwIfImmutable(
-                "Cannot change this topic's auto renewal duration seconds if it's immutable.");
+        throwIfImmutable("Cannot change this topic's auto renewal duration seconds if it's immutable.");
         this.autoRenewDurationSeconds = autoRenewDurationSeconds;
     }
 
@@ -379,9 +370,7 @@ public final class MerkleTopic extends PartialMerkleLeaf implements Keyed<Entity
     public void setAutoRenewAccountId(final @Nullable EntityId autoRenewAccountId) {
         throwIfImmutable("Cannot change this topic's auto renewal account if it's immutable.");
         this.autoRenewAccountId =
-                ((null != autoRenewAccountId) && (0 != autoRenewAccountId.num()))
-                        ? autoRenewAccountId
-                        : null;
+                ((null != autoRenewAccountId) && (0 != autoRenewAccountId.num())) ? autoRenewAccountId : null;
     }
 
     public boolean hasExpirationTimestamp() {
@@ -439,7 +428,6 @@ public final class MerkleTopic extends PartialMerkleLeaf implements Keyed<Entity
 
     public void setRunningHash(final @Nullable byte[] runningHash) {
         throwIfImmutable("Cannot change this topic's running hash if it's immutable.");
-        this.runningHash =
-                ((null != runningHash) && (0 != runningHash.length)) ? runningHash : null;
+        this.runningHash = ((null != runningHash) && (0 != runningHash.length)) ? runningHash : null;
     }
 }

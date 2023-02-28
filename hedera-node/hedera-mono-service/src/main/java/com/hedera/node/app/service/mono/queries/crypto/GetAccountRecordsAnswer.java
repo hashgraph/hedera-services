@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.crypto;
 
 import static com.hedera.node.app.service.mono.queries.meta.GetTxnRecordAnswer.PAYER_RECORDS_CTX_KEY;
@@ -46,8 +47,7 @@ public class GetAccountRecordsAnswer implements AnswerService {
     private final AnswerFunctions answerFunctions;
 
     @Inject
-    public GetAccountRecordsAnswer(
-            final AnswerFunctions answerFunctions, final OptionValidator optionValidator) {
+    public GetAccountRecordsAnswer(final AnswerFunctions answerFunctions, final OptionValidator optionValidator) {
         this.answerFunctions = answerFunctions;
         this.optionValidator = optionValidator;
     }
@@ -65,10 +65,7 @@ public class GetAccountRecordsAnswer implements AnswerService {
 
     @Override
     public Response responseGiven(
-            final Query query,
-            final @Nullable StateView view,
-            final ResponseCodeEnum validity,
-            final long cost) {
+            final Query query, final @Nullable StateView view, final ResponseCodeEnum validity, final long cost) {
         return responseFor(query, view, validity, cost, null);
     }
 

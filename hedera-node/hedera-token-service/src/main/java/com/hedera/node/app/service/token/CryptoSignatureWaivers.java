@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token;
 
 import com.hedera.node.app.spi.SigWaivers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-/** Signature waivers needed for transactions in {@link CryptoService} */
+/** Signature waivers needed for transactions in {@link TokenService} */
 public interface CryptoSignatureWaivers extends SigWaivers {
     /**
      * Advises if the target account's key must sign a given crypto update. Since accounts 0.0.2 and

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 ########################################################################################################################
-# Copyright 2016-2021 Swirlds, Inc.                                                                                    #
+# Copyright 2016-2022 Hedera Hashgraph, LLC                                                                            #
 #                                                                                                                      #
 # Licensed under the Apache License, Version 2.0 (the "License");                                                      #
 # you may not use this file except in compliance with the License.                                                     #
@@ -43,7 +43,7 @@
 # xr_insecure_stage_upgrade: Handles any required preparation and environment staging prior to the freeze window.
 #
 #   * This method MAY NOT take any actions that would potentially interfere with the running containers, files needed
-#       by the running containers, modify the backing data stores (PostgreSQL, etc), or perform any host system
+#       by the running containers, modify the backing data stores, or perform any host system
 #       modifications that alter the running/active environment.
 #
 #   * This method MAY take backups of the current files used by the running containers so long as those backups do not

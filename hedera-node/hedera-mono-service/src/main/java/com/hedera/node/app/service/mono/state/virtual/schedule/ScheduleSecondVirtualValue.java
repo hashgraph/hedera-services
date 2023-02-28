@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.schedule;
 
 import com.google.common.base.MoreObjects;
@@ -64,16 +65,14 @@ public class ScheduleSecondVirtualValue extends PartialMerkleLeaf
         this(ids, null);
     }
 
-    public ScheduleSecondVirtualValue(
-            Map<RichInstant, ? extends LongList> ids, SecondSinceEpocVirtualKey key) {
+    public ScheduleSecondVirtualValue(Map<RichInstant, ? extends LongList> ids, SecondSinceEpocVirtualKey key) {
         this();
         this.number = key == null ? -1 : key.getKeyAsLong();
         ids.forEach((k, v) -> this.ids.put(k, v.toImmutable()));
     }
 
     private ScheduleSecondVirtualValue(
-            Supplier<NavigableMap<RichInstant, ImmutableLongList>> ids,
-            SecondSinceEpocVirtualKey key) {
+            Supplier<NavigableMap<RichInstant, ImmutableLongList>> ids, SecondSinceEpocVirtualKey key) {
         this.ids = ids.get();
         this.number = key == null ? -1 : key.getKeyAsLong();
     }
@@ -98,10 +97,9 @@ public class ScheduleSecondVirtualValue extends PartialMerkleLeaf
 
     @Override
     public String toString() {
-        var helper =
-                MoreObjects.toStringHelper(ScheduleSecondVirtualValue.class)
-                        .add("ids", ids)
-                        .add("number", number);
+        var helper = MoreObjects.toStringHelper(ScheduleSecondVirtualValue.class)
+                .add("ids", ids)
+                .add("number", number);
         return helper.toString();
     }
 
@@ -208,12 +206,11 @@ public class ScheduleSecondVirtualValue extends PartialMerkleLeaf
 
         if (curList != null) {
             final var newList = new LongArrayList(curList.size());
-            curList.forEach(
-                    l -> {
-                        if (l != id) {
-                            newList.add(l);
-                        }
-                    });
+            curList.forEach(l -> {
+                if (l != id) {
+                    newList.add(l);
+                }
+            });
             if (newList.size() > 0) {
                 ids.put(instant, newList.toImmutable());
             } else {

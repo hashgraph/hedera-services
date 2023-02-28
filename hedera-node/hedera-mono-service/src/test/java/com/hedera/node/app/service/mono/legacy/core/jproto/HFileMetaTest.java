@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,7 +26,8 @@ import org.junit.jupiter.api.Test;
 
 class HFileMetaTest {
     private long expiry = 1_234_567L;
-    private JKey wacl = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked().getKeyList();
+    private JKey wacl =
+            TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked().getKeyList();
     private String memo = "Remember me?";
     private boolean deleted = true;
 
@@ -39,20 +41,19 @@ class HFileMetaTest {
     @Test
     void toStringWorks() {
         // given:
-        var expected =
-                "HFileMeta{"
-                        + "memo="
-                        + memo
-                        + ", "
-                        + "wacl="
-                        + MiscUtils.describe(wacl)
-                        + ", "
-                        + "expiry="
-                        + expiry
-                        + ", "
-                        + "deleted="
-                        + deleted
-                        + "}";
+        var expected = "HFileMeta{"
+                + "memo="
+                + memo
+                + ", "
+                + "wacl="
+                + MiscUtils.describe(wacl)
+                + ", "
+                + "expiry="
+                + expiry
+                + ", "
+                + "deleted="
+                + deleted
+                + "}";
 
         // when:
         var actual = subject.toString();

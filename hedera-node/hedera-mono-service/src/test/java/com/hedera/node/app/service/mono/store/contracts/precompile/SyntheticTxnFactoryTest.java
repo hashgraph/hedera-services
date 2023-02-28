@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
@@ -117,8 +118,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SyntheticTxnFactoryTest {
-    @Mock private EthTxData ethTxData;
-    @Mock private ContractCustomizer customizer;
+    @Mock
+    private EthTxData ethTxData;
+
+    @Mock
+    private ContractCustomizer customizer;
+
     private GlobalDynamicProperties dynamicProperties;
     private BootstrapProperties propertySource;
 
@@ -128,8 +133,7 @@ class SyntheticTxnFactoryTest {
     void setUp() {
         propertySource = new BootstrapProperties();
         propertySource.ensureProps();
-        dynamicProperties =
-                new GlobalDynamicProperties(new HederaNumbers(propertySource), propertySource);
+        dynamicProperties = new GlobalDynamicProperties(new HederaNumbers(propertySource), propertySource);
 
         subject = new SyntheticTxnFactory(dynamicProperties);
     }
@@ -138,33 +142,24 @@ class SyntheticTxnFactoryTest {
     void synthesizesExpectedTreasuryReturns() {
         final var ftId = EntityId.fromIdentityCode(666);
         final var nftId = EntityId.fromIdentityCode(777);
-        final var nftAdjusts =
-                new NftAdjustments(
-                        new long[] {1},
-                        List.of(EntityId.fromIdentityCode(2)),
-                        List.of(EntityId.fromIdentityCode(98)));
-        final var fungibleAdjusts =
-                new CurrencyAdjustments(new long[] {-123, 123}, new long[] {2, 98});
-        final var fungibleReturns =
-                new FungibleTreasuryReturns(List.of(ftId), List.of(fungibleAdjusts), true);
-        final var nonFungibleReturns =
-                new NonFungibleTreasuryReturns(List.of(nftId), List.of(nftAdjusts), true);
+        final var nftAdjusts = new NftAdjustments(
+                new long[] {1}, List.of(EntityId.fromIdentityCode(2)), List.of(EntityId.fromIdentityCode(98)));
+        final var fungibleAdjusts = new CurrencyAdjustments(new long[] {-123, 123}, new long[] {2, 98});
+        final var fungibleReturns = new FungibleTreasuryReturns(List.of(ftId), List.of(fungibleAdjusts), true);
+        final var nonFungibleReturns = new NonFungibleTreasuryReturns(List.of(nftId), List.of(nftAdjusts), true);
         final var returns = new CryptoGcOutcome(fungibleReturns, nonFungibleReturns, false);
 
-        final var expected =
-                CryptoTransferTransactionBody.newBuilder()
-                        .addTokenTransfers(
-                                TokenTransferList.newBuilder()
-                                        .setToken(ftId.asId().asGrpcToken())
-                                        .addTransfers(aaWith(2, -123))
-                                        .addTransfers(aaWith(98, +123))
-                                        .build())
-                        .addTokenTransfers(
-                                TokenTransferList.newBuilder()
-                                        .setToken(nftId.asId().asGrpcToken())
-                                        .addNftTransfers(nftFromTo(1, 2, 98))
-                                        .build())
-                        .build();
+        final var expected = CryptoTransferTransactionBody.newBuilder()
+                .addTokenTransfers(TokenTransferList.newBuilder()
+                        .setToken(ftId.asId().asGrpcToken())
+                        .addTransfers(aaWith(2, -123))
+                        .addTransfers(aaWith(98, +123))
+                        .build())
+                .addTokenTransfers(TokenTransferList.newBuilder()
+                        .setToken(nftId.asId().asGrpcToken())
+                        .addNftTransfers(nftFromTo(1, 2, 98))
+                        .build())
+                .build();
 
         final var txn = subject.synthTokenTransfer(returns).build();
         final var op = txn.getCryptoTransfer();
@@ -176,31 +171,23 @@ class SyntheticTxnFactoryTest {
     void synthesizesExpectedBurn() {
         final var ftId = EntityId.fromIdentityCode(666);
         final var nftId = EntityId.fromIdentityCode(777);
-        final var nftAdjusts =
-                new NftAdjustments(
-                        new long[] {1},
-                        List.of(EntityId.fromIdentityCode(2)),
-                        List.of(EntityId.fromIdentityCode(98)));
+        final var nftAdjusts = new NftAdjustments(
+                new long[] {1}, List.of(EntityId.fromIdentityCode(2)), List.of(EntityId.fromIdentityCode(98)));
         final var fungibleAdjusts = new CurrencyAdjustments(new long[] {-123}, new long[] {2});
-        final var fungibleReturns =
-                new FungibleTreasuryReturns(List.of(ftId), List.of(fungibleAdjusts), true);
-        final var nonFungibleReturns =
-                new NonFungibleTreasuryReturns(List.of(nftId), List.of(nftAdjusts), true);
+        final var fungibleReturns = new FungibleTreasuryReturns(List.of(ftId), List.of(fungibleAdjusts), true);
+        final var nonFungibleReturns = new NonFungibleTreasuryReturns(List.of(nftId), List.of(nftAdjusts), true);
         final var returns = new CryptoGcOutcome(fungibleReturns, nonFungibleReturns, false);
 
-        final var expected =
-                CryptoTransferTransactionBody.newBuilder()
-                        .addTokenTransfers(
-                                TokenTransferList.newBuilder()
-                                        .setToken(ftId.asId().asGrpcToken())
-                                        .addTransfers(aaWith(2, -123))
-                                        .build())
-                        .addTokenTransfers(
-                                TokenTransferList.newBuilder()
-                                        .setToken(nftId.asId().asGrpcToken())
-                                        .addNftTransfers(nftFromTo(1, 2, 98))
-                                        .build())
-                        .build();
+        final var expected = CryptoTransferTransactionBody.newBuilder()
+                .addTokenTransfers(TokenTransferList.newBuilder()
+                        .setToken(ftId.asId().asGrpcToken())
+                        .addTransfers(aaWith(2, -123))
+                        .build())
+                .addTokenTransfers(TokenTransferList.newBuilder()
+                        .setToken(nftId.asId().asGrpcToken())
+                        .addNftTransfers(nftFromTo(1, 2, 98))
+                        .build())
+                .build();
 
         final var txn = subject.synthTokenTransfer(returns).build();
         final var op = txn.getCryptoTransfer();
@@ -211,14 +198,12 @@ class SyntheticTxnFactoryTest {
     @Test
     void synthesizesExpectedCryptoTransfer() {
         final var adjustments = new CurrencyAdjustments(new long[] {-123, 123}, new long[] {2, 98});
-        final var expected =
-                CryptoTransferTransactionBody.newBuilder()
-                        .setTransfers(
-                                TransferList.newBuilder()
-                                        .addAccountAmounts(aaWith(2, -123))
-                                        .addAccountAmounts(aaWith(98, +123))
-                                        .build())
-                        .build();
+        final var expected = CryptoTransferTransactionBody.newBuilder()
+                .setTransfers(TransferList.newBuilder()
+                        .addAccountAmounts(aaWith(2, -123))
+                        .addAccountAmounts(aaWith(98, +123))
+                        .build())
+                .build();
 
         final var txn = subject.synthHbarTransfer(adjustments).build();
         final var op = txn.getCryptoTransfer();
@@ -234,8 +219,9 @@ class SyntheticTxnFactoryTest {
         given(ethTxData.gasLimit()).willReturn(gasLimit);
         given(ethTxData.value()).willReturn(value);
         given(ethTxData.to()).willReturn(addressTo);
-        final var expectedId =
-                ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(ethTxData.to())).build();
+        final var expectedId = ContractID.newBuilder()
+                .setEvmAddress(ByteString.copyFrom(ethTxData.to()))
+                .build();
 
         final var synthBody = subject.synthPrecheckContractOpFromEth(ethTxData);
 
@@ -255,8 +241,9 @@ class SyntheticTxnFactoryTest {
         given(ethTxData.gasLimit()).willReturn(gasLimit);
         given(ethTxData.value()).willReturn(value);
         given(ethTxData.to()).willReturn(addressTo);
-        final var expectedId =
-                ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(ethTxData.to())).build();
+        final var expectedId = ContractID.newBuilder()
+                .setEvmAddress(ByteString.copyFrom(ethTxData.to()))
+                .build();
 
         final var optSynthBody = subject.synthContractOpFromEth(ethTxData);
         assertTrue(optSynthBody.isPresent());
@@ -276,8 +263,9 @@ class SyntheticTxnFactoryTest {
         given(ethTxData.gasLimit()).willReturn(gasLimit);
         given(ethTxData.value()).willReturn(value);
         given(ethTxData.to()).willReturn(addressTo);
-        final var expectedId =
-                ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(ethTxData.to())).build();
+        final var expectedId = ContractID.newBuilder()
+                .setEvmAddress(ByteString.copyFrom(ethTxData.to()))
+                .build();
 
         final var optSynthBody = subject.synthContractOpFromEth(ethTxData);
         assertTrue(optSynthBody.isPresent());
@@ -456,7 +444,7 @@ class SyntheticTxnFactoryTest {
         final var balance = 10L;
         final var key = KeyFactory.getDefaultInstance().newEd25519();
         final var alias = key.toByteString();
-        final var result = subject.createAccount(alias, key, null, balance, 0);
+        final var result = subject.createAccount(alias, key, balance, 0);
         final var txnBody = result.build();
 
         assertTrue(txnBody.hasCryptoCreateAccount());
@@ -466,7 +454,8 @@ class SyntheticTxnFactoryTest {
                 txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
         assertEquals(10L, txnBody.getCryptoCreateAccount().getInitialBalance());
         assertEquals(0L, txnBody.getCryptoCreateAccount().getMaxAutomaticTokenAssociations());
-        assertEquals(key.toByteString(), txnBody.getCryptoCreateAccount().getKey().toByteString());
+        assertEquals(
+                key.toByteString(), txnBody.getCryptoCreateAccount().getKey().toByteString());
         assertEquals(alias, txnBody.getCryptoCreateAccount().getAlias());
     }
 
@@ -475,11 +464,9 @@ class SyntheticTxnFactoryTest {
         final var balance = 10L;
         final var key = KeyFactory.getDefaultInstance().newEcdsaSecp256k1();
         final var alias = key.toByteString();
-        final var evmAddress =
-                ByteString.copyFrom(
-                        EthSigsUtils.recoverAddressFromPubKey(
-                                JKey.mapKey(key).getECDSASecp256k1Key()));
-        final var result = subject.createAccount(alias, key, evmAddress, balance, 0);
+        final var evmAddress = ByteString.copyFrom(
+                EthSigsUtils.recoverAddressFromPubKey(JKey.mapKey(key).getECDSASecp256k1Key()));
+        final var result = subject.createAccount(alias, key, balance, 0);
         final var txnBody = result.build();
 
         assertTrue(txnBody.hasCryptoCreateAccount());
@@ -489,29 +476,24 @@ class SyntheticTxnFactoryTest {
                 txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
         assertEquals(10L, txnBody.getCryptoCreateAccount().getInitialBalance());
         assertEquals(0L, txnBody.getCryptoCreateAccount().getMaxAutomaticTokenAssociations());
-        assertEquals(key.toByteString(), txnBody.getCryptoCreateAccount().getKey().toByteString());
-        assertEquals(alias, txnBody.getCryptoCreateAccount().getAlias());
-        assertEquals(evmAddress, txnBody.getCryptoCreateAccount().getEvmAddress());
         assertEquals(
-                EntityIdUtils.EVM_ADDRESS_SIZE,
-                txnBody.getCryptoCreateAccount().getEvmAddress().size());
+                key.toByteString(), txnBody.getCryptoCreateAccount().getKey().toByteString());
+        assertEquals(alias, txnBody.getCryptoCreateAccount().getAlias());
     }
 
     @Test
     void createsExpectedHollowAccountCreate() {
         final var balance = 10L;
-        final var evmAddressAlias =
-                ByteString.copyFrom(Hex.decode("a94f5374fce5edbc8e2a8697c15331677e6ebf0b"));
+        final var evmAddressAlias = ByteString.copyFrom(Hex.decode("a94f5374fce5edbc8e2a8697c15331677e6ebf0b"));
         final var result = subject.createHollowAccount(evmAddressAlias, balance);
         final var txnBody = result.build();
 
         assertTrue(txnBody.hasCryptoCreateAccount());
         assertEquals(asKeyUnchecked(EMPTY_KEY), txnBody.getCryptoCreateAccount().getKey());
-        assertEquals(ByteString.EMPTY, txnBody.getCryptoCreateAccount().getAlias());
-        assertEquals(evmAddressAlias, txnBody.getCryptoCreateAccount().getEvmAddress());
+        assertEquals(evmAddressAlias, txnBody.getCryptoCreateAccount().getAlias());
         assertEquals(
                 EntityIdUtils.EVM_ADDRESS_SIZE,
-                txnBody.getCryptoCreateAccount().getEvmAddress().size());
+                txnBody.getCryptoCreateAccount().getAlias().size());
         assertEquals(LAZY_MEMO, txnBody.getCryptoCreateAccount().getMemo());
         assertEquals(
                 THREE_MONTHS_IN_SECONDS,
@@ -522,12 +504,8 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedHollowAccountUpdate() {
-        final var edcsaSecp256K1Bytes =
-                ByteString.copyFrom(new byte[] {0x02})
-                        .concat(
-                                TxnUtils.randomUtf8ByteString(
-                                        JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH
-                                                - 1));
+        final var edcsaSecp256K1Bytes = ByteString.copyFrom(new byte[] {0x02})
+                .concat(TxnUtils.randomUtf8ByteString(JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH - 1));
         final var aKey = Key.newBuilder().setECDSASecp256K1(edcsaSecp256K1Bytes).build();
 
         final var result = subject.updateHollowAccount(accountNum, aKey);
@@ -536,8 +514,7 @@ class SyntheticTxnFactoryTest {
         assertTrue(txnBody.hasCryptoUpdateAccount());
         assertEquals(aKey, txnBody.getCryptoUpdateAccount().getKey());
         assertEquals(
-                accountNum.toGrpcAccountId(),
-                txnBody.getCryptoUpdateAccount().getAccountIDToUpdate());
+                accountNum.toGrpcAccountId(), txnBody.getCryptoUpdateAccount().getAccountIDToUpdate());
     }
 
     @Test
@@ -545,7 +522,7 @@ class SyntheticTxnFactoryTest {
         final var balance = 10L;
         final var key = KeyFactory.getDefaultInstance().newEd25519();
         final var alias = key.toByteString();
-        final var result = subject.createAccount(alias, key, null, balance, 1);
+        final var result = subject.createAccount(alias, key, balance, 1);
         final var txnBody = result.build();
 
         assertTrue(txnBody.hasCryptoCreateAccount());
@@ -555,7 +532,8 @@ class SyntheticTxnFactoryTest {
                 txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
         assertEquals(10L, txnBody.getCryptoCreateAccount().getInitialBalance());
         assertEquals(1, txnBody.getCryptoCreateAccount().getMaxAutomaticTokenAssociations());
-        assertEquals(key.toByteString(), txnBody.getCryptoCreateAccount().getKey().toByteString());
+        assertEquals(
+                key.toByteString(), txnBody.getCryptoCreateAccount().getKey().toByteString());
         assertEquals(alias, txnBody.getCryptoCreateAccount().getAlias());
     }
 
@@ -564,17 +542,16 @@ class SyntheticTxnFactoryTest {
         final var balance = 10L;
         final var key = KeyFactory.getDefaultInstance().newEd25519();
         final var alias = key.toByteString();
-        final var xfer =
-                NftTransfer.newBuilder()
-                        .setSenderAccountID(asAliasAccount(ByteString.copyFromUtf8("somebody")))
-                        .setReceiverAccountID(a)
-                        .setSerialNumber(serialNo)
-                        .setIsApproval(true)
-                        .build();
+        final var xfer = NftTransfer.newBuilder()
+                .setSenderAccountID(asAliasAccount(ByteString.copyFromUtf8("somebody")))
+                .setReceiverAccountID(a)
+                .setSerialNumber(serialNo)
+                .setIsApproval(true)
+                .build();
 
         final var nftChange = changingNftOwnership(Id.fromGrpcToken(token), token, xfer, payer);
 
-        final var result = subject.createAccount(alias, key, null, balance, 1);
+        final var result = subject.createAccount(alias, key, balance, 1);
 
         final var txnBody = result.build();
 
@@ -585,31 +562,29 @@ class SyntheticTxnFactoryTest {
                 txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
         assertEquals(10L, txnBody.getCryptoCreateAccount().getInitialBalance());
         assertEquals(1L, txnBody.getCryptoCreateAccount().getMaxAutomaticTokenAssociations());
-        assertEquals(key.toByteString(), txnBody.getCryptoCreateAccount().getKey().toByteString());
+        assertEquals(
+                key.toByteString(), txnBody.getCryptoCreateAccount().getKey().toByteString());
         assertEquals(alias, txnBody.getCryptoCreateAccount().getAlias());
     }
 
     @Test
     void createsExpectedNodeStakeUpdate() {
         final var now = Instant.now();
-        final var timestamp =
-                Timestamp.newBuilder()
-                        .setSeconds(now.getEpochSecond())
-                        .setNanos(now.getNano())
-                        .build();
-        final var nodeStakes =
-                List.of(
-                        NodeStake.newBuilder()
-                                .setStake(123_456_789L)
-                                .setStakeRewarded(1_234_567L)
-                                .build(),
-                        NodeStake.newBuilder()
-                                .setStake(987_654_321L)
-                                .setStakeRewarded(54_321L)
-                                .build());
+        final var timestamp = Timestamp.newBuilder()
+                .setSeconds(now.getEpochSecond())
+                .setNanos(now.getNano())
+                .build();
+        final var nodeStakes = List.of(
+                NodeStake.newBuilder()
+                        .setStake(123_456_789L)
+                        .setStakeRewarded(1_234_567L)
+                        .build(),
+                NodeStake.newBuilder()
+                        .setStake(987_654_321L)
+                        .setStakeRewarded(54_321L)
+                        .build());
         propertySource.ensureProps();
-        dynamicProperties =
-                new GlobalDynamicProperties(new HederaNumbers(propertySource), propertySource);
+        dynamicProperties = new GlobalDynamicProperties(new HederaNumbers(propertySource), propertySource);
         subject = new SyntheticTxnFactory(dynamicProperties);
 
         final var txnBody = subject.nodeStakeUpdate(timestamp, nodeStakes, propertySource);
@@ -630,8 +605,7 @@ class SyntheticTxnFactoryTest {
                 100L, txnBody.getNodeStakeUpdate().getStakingRewardFeeFraction().getNumerator());
         assertEquals(
                 100L, txnBody.getNodeStakeUpdate().getStakingRewardFeeFraction().getDenominator());
-        assertEquals(
-                25_000_000_000_000_000L, txnBody.getNodeStakeUpdate().getStakingStartThreshold());
+        assertEquals(25_000_000_000_000_000L, txnBody.getNodeStakeUpdate().getStakingStartThreshold());
         assertEquals(0L, txnBody.getNodeStakeUpdate().getStakingRewardRate());
     }
 
@@ -704,15 +678,16 @@ class SyntheticTxnFactoryTest {
         assertEquals(
                 amount.longValue(),
                 txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getAmount());
-        assertEquals(token, txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getTokenId());
         assertEquals(
-                receiver, txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getSpender());
+                token, txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getTokenId());
+        assertEquals(
+                receiver,
+                txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getSpender());
     }
 
     @Test
     void createsExpectedNonfungibleApproveAllowanceWithOwnerAsOperator() {
-        final var allowances =
-                new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
+        final var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
         final var ownerId = new EntityId(0, 0, 666);
 
         final var result = subject.createNonfungibleApproval(allowances, ownerId, ownerId);
@@ -728,8 +703,7 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedNonfungibleApproveAllowanceWithNonOwnerOperator() {
-        final var allowances =
-                new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
+        final var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
         final var ownerId = new EntityId(0, 0, 666);
         final var operatorId = new EntityId(0, 0, 777);
 
@@ -746,8 +720,7 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedNonfungibleApproveAllowanceWithoutOwner() {
-        final var allowances =
-                new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
+        final var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
         final var operatorId = new EntityId(0, 0, 666);
 
         final var result = subject.createNonfungibleApproval(allowances, null, operatorId);
@@ -768,9 +741,11 @@ class SyntheticTxnFactoryTest {
         final var txnBody = result.build();
 
         assertEquals(
-                receiver, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSpender());
+                receiver,
+                txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSpender());
         assertEquals(
-                nonFungible, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getTokenId());
+                nonFungible,
+                txnBody.getCryptoApproveAllowance().getNftAllowances(0).getTokenId());
         assertEquals(
                 BoolValue.of(true),
                 txnBody.getCryptoApproveAllowance().getNftAllowances(0).getApprovedForAll());
@@ -778,15 +753,14 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsDeleteAllowance() {
-        final var allowances =
-                new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
+        final var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
 
         final var result = subject.createDeleteAllowance(allowances, HTSTestsUtil.senderId);
         final var txnBody = result.build();
 
-        assertEquals(token, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getTokenId());
         assertEquals(
-                1L, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getSerialNumbers(0));
+                token, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getTokenId());
+        assertEquals(1L, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getSerialNumbers(0));
         assertEquals(
                 HTSTestsUtil.sender,
                 txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getOwner());
@@ -825,25 +799,12 @@ class SyntheticTxnFactoryTest {
     @Test
     void createsExpectedFungibleTokenCreate() {
         // given
-        final var adminKey =
-                new KeyValueWrapper(
-                        false,
-                        null,
-                        new byte[] {},
-                        new byte[] {},
-                        contractIdFromEvmAddress(contractAddress));
-        final var multiKey =
-                new KeyValueWrapper(
-                        false,
-                        contractIdFromEvmAddress(contractAddress),
-                        new byte[] {},
-                        new byte[] {},
-                        null);
-        final var wrapper =
-                createTokenCreateWrapperWithKeys(
-                        List.of(
-                                new TokenKeyWrapper(254, multiKey),
-                                new TokenKeyWrapper(1, adminKey)));
+        final var adminKey = new KeyValueWrapper(
+                false, null, new byte[] {}, new byte[] {}, contractIdFromEvmAddress(contractAddress));
+        final var multiKey = new KeyValueWrapper(
+                false, contractIdFromEvmAddress(contractAddress), new byte[] {}, new byte[] {}, null);
+        final var wrapper = createTokenCreateWrapperWithKeys(
+                List.of(new TokenKeyWrapper(254, multiKey), new TokenKeyWrapper(1, adminKey)));
         wrapper.setFixedFees(List.of(fixedFee));
         wrapper.setFractionalFees(List.of(fractionalFee));
 
@@ -887,16 +848,10 @@ class SyntheticTxnFactoryTest {
     @Test
     void createsExpectedNonFungibleTokenCreate() {
         // given
-        final var multiKey =
-                new KeyValueWrapper(
-                        false,
-                        contractIdFromEvmAddress(contractAddress),
-                        new byte[] {},
-                        new byte[] {},
-                        null);
+        final var multiKey = new KeyValueWrapper(
+                false, contractIdFromEvmAddress(contractAddress), new byte[] {}, new byte[] {}, null);
         final var wrapper =
-                HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(
-                        List.of(new TokenKeyWrapper(112, multiKey)));
+                HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(112, multiKey)));
         wrapper.setFixedFees(List.of(fixedFee));
         wrapper.setRoyaltyFees(List.of(royaltyFee));
 
@@ -937,14 +892,10 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedCryptoTransfer() {
-        final var fungibleTransfer =
-                new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, false, fungible, b, a);
+        final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, false, fungible, b, a);
 
-        final var result =
-                subject.createCryptoTransfer(
-                        List.of(
-                                new TokenTransferWrapper(
-                                        Collections.emptyList(), List.of(fungibleTransfer))));
+        final var result = subject.createCryptoTransfer(
+                List.of(new TokenTransferWrapper(Collections.emptyList(), List.of(fungibleTransfer))));
         final var txnBody = result.build();
 
         final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
@@ -958,25 +909,12 @@ class SyntheticTxnFactoryTest {
     @Test
     void createsExpectedTokenUpdateCallForFungible() {
         // given
-        final var adminKey =
-                new KeyValueWrapper(
-                        false,
-                        null,
-                        new byte[] {},
-                        new byte[] {},
-                        contractIdFromEvmAddress(contractAddress));
-        final var multiKey =
-                new KeyValueWrapper(
-                        false,
-                        contractIdFromEvmAddress(contractAddress),
-                        new byte[] {},
-                        new byte[] {},
-                        null);
-        final var tokenUpdateWrapper =
-                createFungibleTokenUpdateWrapperWithKeys(
-                        List.of(
-                                new TokenKeyWrapper(112, multiKey),
-                                new TokenKeyWrapper(1, adminKey)));
+        final var adminKey = new KeyValueWrapper(
+                false, null, new byte[] {}, new byte[] {}, contractIdFromEvmAddress(contractAddress));
+        final var multiKey = new KeyValueWrapper(
+                false, contractIdFromEvmAddress(contractAddress), new byte[] {}, new byte[] {}, null);
+        final var tokenUpdateWrapper = createFungibleTokenUpdateWrapperWithKeys(
+                List.of(new TokenKeyWrapper(112, multiKey), new TokenKeyWrapper(1, adminKey)));
         final var result = subject.createTokenUpdate(tokenUpdateWrapper);
         final var txnBody = result.build().getTokenUpdate();
 
@@ -1002,27 +940,15 @@ class SyntheticTxnFactoryTest {
     @Test
     void createsExpectedTokenUpdateCallForNonFungible() {
         // given
-        final var ComplexKey =
-                new KeyValueWrapper(
-                        false,
-                        null,
-                        new byte[] {},
-                        new byte[] {},
-                        contractIdFromEvmAddress(contractAddress));
-        final var multiKey =
-                new KeyValueWrapper(
-                        false,
-                        contractIdFromEvmAddress(contractAddress),
-                        new byte[] {},
-                        new byte[] {},
-                        null);
-        final var wrapper =
-                createNonFungibleTokenUpdateWrapperWithKeys(
-                        List.of(
-                                new TokenKeyWrapper(112, multiKey),
-                                new TokenKeyWrapper(2, ComplexKey),
-                                new TokenKeyWrapper(4, ComplexKey),
-                                new TokenKeyWrapper(8, ComplexKey)));
+        final var ComplexKey = new KeyValueWrapper(
+                false, null, new byte[] {}, new byte[] {}, contractIdFromEvmAddress(contractAddress));
+        final var multiKey = new KeyValueWrapper(
+                false, contractIdFromEvmAddress(contractAddress), new byte[] {}, new byte[] {}, null);
+        final var wrapper = createNonFungibleTokenUpdateWrapperWithKeys(List.of(
+                new TokenKeyWrapper(112, multiKey),
+                new TokenKeyWrapper(2, ComplexKey),
+                new TokenKeyWrapper(4, ComplexKey),
+                new TokenKeyWrapper(8, ComplexKey)));
 
         // when
         final var result = subject.createTokenUpdate(wrapper);
@@ -1046,26 +972,12 @@ class SyntheticTxnFactoryTest {
     @Test
     void createsExpectedTokenUpdateKeysCallForFungible() {
         // given
-        final var adminKey =
-                new KeyValueWrapper(
-                        false,
-                        null,
-                        new byte[] {},
-                        new byte[] {},
-                        contractIdFromEvmAddress(contractAddress));
-        final var multiKey =
-                new KeyValueWrapper(
-                        false,
-                        contractIdFromEvmAddress(contractAddress),
-                        new byte[] {},
-                        new byte[] {},
-                        null);
-        final var tokenUpdateKeysWrapper =
-                new TokenUpdateKeysWrapper(
-                        fungible,
-                        List.of(
-                                new TokenKeyWrapper(112, multiKey),
-                                new TokenKeyWrapper(1, adminKey)));
+        final var adminKey = new KeyValueWrapper(
+                false, null, new byte[] {}, new byte[] {}, contractIdFromEvmAddress(contractAddress));
+        final var multiKey = new KeyValueWrapper(
+                false, contractIdFromEvmAddress(contractAddress), new byte[] {}, new byte[] {}, null);
+        final var tokenUpdateKeysWrapper = new TokenUpdateKeysWrapper(
+                fungible, List.of(new TokenKeyWrapper(112, multiKey), new TokenKeyWrapper(1, adminKey)));
         final var result = subject.createTokenUpdateKeys(tokenUpdateKeysWrapper);
         final var txnBody = result.build().getTokenUpdate();
 
@@ -1090,27 +1002,20 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void canCreateApprovedNftExchanges() {
-        final var approvedExchange =
-                SyntheticTxnFactory.NftExchange.fromApproval(1L, nonFungible, a, b);
+        final var approvedExchange = SyntheticTxnFactory.NftExchange.fromApproval(1L, nonFungible, a, b);
         assertTrue(approvedExchange.isApproval());
     }
 
     @Test
     void mergesRepeatedTokenIds() {
-        final var fungibleTransfer =
-                new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, false, fungible, b, a);
+        final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, false, fungible, b, a);
         final var nonFungibleTransfer = new SyntheticTxnFactory.NftExchange(1L, nonFungible, a, b);
         assertFalse(nonFungibleTransfer.isApproval());
 
-        final var result =
-                subject.createCryptoTransfer(
-                        List.of(
-                                new TokenTransferWrapper(
-                                        Collections.emptyList(), List.of(fungibleTransfer)),
-                                new TokenTransferWrapper(
-                                        Collections.emptyList(), List.of(fungibleTransfer)),
-                                new TokenTransferWrapper(
-                                        List.of(nonFungibleTransfer), Collections.emptyList())));
+        final var result = subject.createCryptoTransfer(List.of(
+                new TokenTransferWrapper(Collections.emptyList(), List.of(fungibleTransfer)),
+                new TokenTransferWrapper(Collections.emptyList(), List.of(fungibleTransfer)),
+                new TokenTransferWrapper(List.of(nonFungibleTransfer), Collections.emptyList())));
 
         final var txnBody = result.build();
 
@@ -1119,19 +1024,15 @@ class SyntheticTxnFactoryTest {
         final var mergedFungible = finalTransfers.get(0);
         assertEquals(fungible, mergedFungible.getToken());
         assertEquals(
-                List.of(aaWith(b, -2 * secondAmount), aaWith(a, +2 * secondAmount)),
-                mergedFungible.getTransfersList());
+                List.of(aaWith(b, -2 * secondAmount), aaWith(a, +2 * secondAmount)), mergedFungible.getTransfersList());
     }
 
     @Test
     void createsExpectedCryptoTransferForNFTTransfer() {
         final var nftExchange = new SyntheticTxnFactory.NftExchange(serialNo, nonFungible, a, c);
 
-        final var result =
-                subject.createCryptoTransfer(
-                        Collections.singletonList(
-                                new TokenTransferWrapper(
-                                        List.of(nftExchange), Collections.emptyList())));
+        final var result = subject.createCryptoTransfer(
+                Collections.singletonList(new TokenTransferWrapper(List.of(nftExchange), Collections.emptyList())));
         final var txnBody = result.build();
 
         final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
@@ -1143,14 +1044,10 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedCryptoTransferForFungibleTransfer() {
-        final var fungibleTransfer =
-                new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, false, fungible, b, a);
+        final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, false, fungible, b, a);
 
-        final var result =
-                subject.createCryptoTransfer(
-                        Collections.singletonList(
-                                new TokenTransferWrapper(
-                                        Collections.emptyList(), List.of(fungibleTransfer))));
+        final var result = subject.createCryptoTransfer(Collections.singletonList(
+                new TokenTransferWrapper(Collections.emptyList(), List.of(fungibleTransfer))));
         final var txnBody = result.build();
 
         final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
@@ -1165,16 +1062,11 @@ class SyntheticTxnFactoryTest {
     @Test
     void createsExpectedCryptoTransfersForMultipleTransferWrappers() {
         final var nftExchange = new SyntheticTxnFactory.NftExchange(serialNo, nonFungible, a, c);
-        final var fungibleTransfer =
-                new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, false, fungible, b, a);
+        final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, false, fungible, b, a);
 
-        final var result =
-                subject.createCryptoTransfer(
-                        List.of(
-                                new TokenTransferWrapper(
-                                        Collections.emptyList(), List.of(fungibleTransfer)),
-                                new TokenTransferWrapper(
-                                        List.of(nftExchange), Collections.emptyList())));
+        final var result = subject.createCryptoTransfer(List.of(
+                new TokenTransferWrapper(Collections.emptyList(), List.of(fungibleTransfer)),
+                new TokenTransferWrapper(List.of(nftExchange), Collections.emptyList())));
         final var txnBody = result.build();
 
         final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
@@ -1192,20 +1084,14 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void mergesFungibleTransfersAsExpected() {
-        final var source =
-                new TokenTransferWrapper(
-                                Collections.emptyList(),
-                                List.of(
-                                        new SyntheticTxnFactory.FungibleTokenTransfer(
-                                                1, false, fungible, a, b)))
-                        .asGrpcBuilder();
-        final var target =
-                new TokenTransferWrapper(
-                                Collections.emptyList(),
-                                List.of(
-                                        new SyntheticTxnFactory.FungibleTokenTransfer(
-                                                2, false, fungible, b, c)))
-                        .asGrpcBuilder();
+        final var source = new TokenTransferWrapper(
+                        Collections.emptyList(),
+                        List.of(new SyntheticTxnFactory.FungibleTokenTransfer(1, false, fungible, a, b)))
+                .asGrpcBuilder();
+        final var target = new TokenTransferWrapper(
+                        Collections.emptyList(),
+                        List.of(new SyntheticTxnFactory.FungibleTokenTransfer(2, false, fungible, b, c)))
+                .asGrpcBuilder();
 
         SyntheticTxnFactory.mergeTokenTransfers(target, source);
 
@@ -1216,18 +1102,13 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedCryptoTransferForFungibleAndHbarTransfer() {
-        final var fungibleTransfer =
-                new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, false, fungible, b, a);
+        final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, false, fungible, b, a);
 
         final var hbarTransfer = new SyntheticTxnFactory.HbarTransfer(secondAmount, false, a, b);
 
-        final var result =
-                subject.createCryptoTransfer(
-                        Collections.singletonList(
-                                new TokenTransferWrapper(
-                                        Collections.emptyList(), List.of(fungibleTransfer))));
-        final var resultHBar =
-                subject.createCryptoTransferForHbar(new TransferWrapper(List.of(hbarTransfer)));
+        final var result = subject.createCryptoTransfer(Collections.singletonList(
+                new TokenTransferWrapper(Collections.emptyList(), List.of(fungibleTransfer))));
+        final var resultHBar = subject.createCryptoTransferForHbar(new TransferWrapper(List.of(hbarTransfer)));
 
         result.mergeFrom(resultHBar);
 
@@ -1254,14 +1135,10 @@ class SyntheticTxnFactoryTest {
         final var nftExchange = new SyntheticTxnFactory.NftExchange(serialNo, nonFungible, a, c);
         final var hbarTransfer = new SyntheticTxnFactory.HbarTransfer(secondAmount, false, a, b);
 
-        final var result =
-                subject.createCryptoTransfer(
-                        Collections.singletonList(
-                                new TokenTransferWrapper(
-                                        List.of(nftExchange), Collections.emptyList())));
+        final var result = subject.createCryptoTransfer(
+                Collections.singletonList(new TokenTransferWrapper(List.of(nftExchange), Collections.emptyList())));
 
-        final var resultHBar =
-                subject.createCryptoTransferForHbar(new TransferWrapper(List.of(hbarTransfer)));
+        final var resultHBar = subject.createCryptoTransferForHbar(new TransferWrapper(List.of(hbarTransfer)));
 
         result.mergeFrom(resultHBar);
         final var txnBody = result.build();
@@ -1285,8 +1162,7 @@ class SyntheticTxnFactoryTest {
         final var hbarTransfer = new SyntheticTxnFactory.HbarTransfer(secondAmount, false, a, b);
 
         final var result = subject.createCryptoTransfer(Collections.emptyList());
-        final var resultHBar =
-                subject.createCryptoTransferForHbar(new TransferWrapper(List.of(hbarTransfer)));
+        final var resultHBar = subject.createCryptoTransferForHbar(new TransferWrapper(List.of(hbarTransfer)));
 
         result.mergeFrom(resultHBar);
 
@@ -1306,18 +1182,12 @@ class SyntheticTxnFactoryTest {
     @Test
     void createsExpectedCryptoTransferTokensOnlyTransfer() {
         final var nftExchange = new SyntheticTxnFactory.NftExchange(serialNo, nonFungible, a, c);
-        final var fungibleTransfer =
-                new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, false, fungible, b, a);
+        final var fungibleTransfer = new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, false, fungible, b, a);
 
-        final var result =
-                subject.createCryptoTransfer(
-                        List.of(
-                                new TokenTransferWrapper(
-                                        Collections.emptyList(), List.of(fungibleTransfer)),
-                                new TokenTransferWrapper(
-                                        List.of(nftExchange), Collections.emptyList())));
-        final var resultHBar =
-                subject.createCryptoTransferForHbar(new TransferWrapper(Collections.emptyList()));
+        final var result = subject.createCryptoTransfer(List.of(
+                new TokenTransferWrapper(Collections.emptyList(), List.of(fungibleTransfer)),
+                new TokenTransferWrapper(List.of(nftExchange), Collections.emptyList())));
+        final var resultHBar = subject.createCryptoTransferForHbar(new TransferWrapper(Collections.emptyList()));
 
         result.mergeFrom(resultHBar);
         final var txnBody = result.build();
@@ -1343,13 +1213,9 @@ class SyntheticTxnFactoryTest {
     void mergesNftExchangesAsExpected() {
         final var repeatedExchange = new SyntheticTxnFactory.NftExchange(1L, nonFungible, a, b);
         final var newExchange = new SyntheticTxnFactory.NftExchange(2L, nonFungible, a, b);
-        final var source =
-                new TokenTransferWrapper(
-                                List.of(repeatedExchange, newExchange), Collections.emptyList())
-                        .asGrpcBuilder();
-        final var target =
-                new TokenTransferWrapper(List.of(repeatedExchange), Collections.emptyList())
-                        .asGrpcBuilder();
+        final var source = new TokenTransferWrapper(List.of(repeatedExchange, newExchange), Collections.emptyList())
+                .asGrpcBuilder();
+        final var target = new TokenTransferWrapper(List.of(repeatedExchange), Collections.emptyList()).asGrpcBuilder();
 
         SyntheticTxnFactory.mergeTokenTransfers(target, source);
 
@@ -1360,21 +1226,15 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void distinguishesDifferentExchangeBuilders() {
-        final var subject =
-                new SyntheticTxnFactory.NftExchange(1L, nonFungible, a, b).asGrpc().toBuilder();
+        final var subject = new SyntheticTxnFactory.NftExchange(1L, nonFungible, a, b).asGrpc().toBuilder();
 
         final var differentSerialNo = new SyntheticTxnFactory.NftExchange(2L, nonFungible, a, b);
         final var differentSender = new SyntheticTxnFactory.NftExchange(1L, nonFungible, c, b);
         final var differentReceiver = new SyntheticTxnFactory.NftExchange(1L, nonFungible, a, c);
 
-        assertFalse(
-                SyntheticTxnFactory.areSameBuilder(
-                        subject, differentSerialNo.asGrpc().toBuilder()));
-        assertFalse(
-                SyntheticTxnFactory.areSameBuilder(
-                        subject, differentReceiver.asGrpc().toBuilder()));
-        assertFalse(
-                SyntheticTxnFactory.areSameBuilder(subject, differentSender.asGrpc().toBuilder()));
+        assertFalse(SyntheticTxnFactory.areSameBuilder(subject, differentSerialNo.asGrpc().toBuilder()));
+        assertFalse(SyntheticTxnFactory.areSameBuilder(subject, differentReceiver.asGrpc().toBuilder()));
+        assertFalse(SyntheticTxnFactory.areSameBuilder(subject, differentSender.asGrpc().toBuilder()));
     }
 
     @Test
@@ -1466,7 +1326,8 @@ class SyntheticTxnFactoryTest {
         return NftTransfer.newBuilder()
                 .setSerialNumber(num)
                 .setSenderAccountID(AccountID.newBuilder().setAccountNum(sender).build())
-                .setReceiverAccountID(AccountID.newBuilder().setAccountNum(receiver).build())
+                .setReceiverAccountID(
+                        AccountID.newBuilder().setAccountNum(receiver).build())
                 .build();
     }
 
@@ -1479,8 +1340,7 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedUpdateTokenExpiryInfo() {
-        final var updateExpiryInfo =
-                new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, payer, 555L));
+        final var updateExpiryInfo = new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, payer, 555L));
 
         final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
         final var txnBody = result.build();
@@ -1493,8 +1353,7 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedUpdateTokenExpiryInfoWithZeroExpiry() {
-        final var updateExpiryInfo =
-                new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(0L, payer, 555L));
+        final var updateExpiryInfo = new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(0L, payer, 555L));
 
         final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
         final var txnBody = result.build();
@@ -1507,8 +1366,7 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedUpdateTokenExpiryInfoWithZeroAutoRenewPeriod() {
-        final var updateExpiryInfo =
-                new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, payer, 0L));
+        final var updateExpiryInfo = new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, payer, 0L));
 
         final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
         final var txnBody = result.build();
@@ -1521,8 +1379,7 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedUpdateTokenExpiryInfoWithNoAutoRenewAccount() {
-        final var updateExpiryInfo =
-                new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, null, 555L));
+        final var updateExpiryInfo = new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, null, 555L));
 
         final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
         final var txnBody = result.build();
@@ -1534,7 +1391,10 @@ class SyntheticTxnFactoryTest {
     }
 
     private AccountAmount aaWith(final AccountID account, final long amount) {
-        return AccountAmount.newBuilder().setAccountID(account).setAmount(amount).build();
+        return AccountAmount.newBuilder()
+                .setAccountID(account)
+                .setAmount(amount)
+                .build();
     }
 
     private static final long serialNo = 100;
@@ -1549,13 +1409,9 @@ class SyntheticTxnFactoryTest {
     private static final TokenID nonFungible = IdUtils.asToken("0.0.666");
     private static final List<Long> targetSerialNos = List.of(1L, 2L, 3L);
     private static final List<ByteString> newMetadata =
-            List.of(
-                    ByteString.copyFromUtf8("AAA"),
-                    ByteString.copyFromUtf8("BBB"),
-                    ByteString.copyFromUtf8("CCC"));
+            List.of(ByteString.copyFromUtf8("AAA"), ByteString.copyFromUtf8("BBB"), ByteString.copyFromUtf8("CCC"));
     private static final long valueInTinyBars = 123;
-    private static final BigInteger value =
-            WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(valueInTinyBars));
+    private static final BigInteger value = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(valueInTinyBars));
     private static final long gasLimit = 123;
     private static final byte[] callData = "Between the idea and the reality".getBytes();
     private static final byte[] addressTo = unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");

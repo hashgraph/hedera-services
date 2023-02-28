@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.entity;
 
 import com.hedera.node.app.spi.key.HederaKey;
@@ -22,18 +23,6 @@ import java.util.Optional;
 /** An Account entity represents a Hedera Account. */
 public interface Account {
     long HBARS_TO_TINYBARS = 100_000_000L;
-    /**
-     * Account's shard number
-     *
-     * @return shard number
-     */
-    long shardNumber();
-    /**
-     * Account's realm number
-     *
-     * @return realm number
-     */
-    long realmNumber();
     /**
      * Account's account number
      *

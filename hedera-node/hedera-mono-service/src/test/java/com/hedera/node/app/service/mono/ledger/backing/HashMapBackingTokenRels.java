@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.backing;
 
 import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
@@ -23,8 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 
-public class HashMapBackingTokenRels
-        implements BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> {
+public class HashMapBackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> {
     private Map<Pair<AccountID, TokenID>, HederaTokenRel> rels = new HashMap<>();
 
     @Override

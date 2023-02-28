@@ -13,65 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.virtualmap.VirtualKey;
-import com.swirlds.virtualmap.VirtualValue;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class VirtualMapFactoryTest {
-    private final ThrowingJdbFactoryBuilder jdbFactory = new ThrowingJdbFactoryBuilder();
-
-    private VirtualMapFactory subject;
-
-    @BeforeEach
-    void setUp() {
-        subject = new VirtualMapFactory(jdbFactory);
-    }
-
-    @Test
-    void propagatesUncheckedFromBuilder() {
-        assertThrows(UncheckedIOException.class, () -> subject.newVirtualizedBlobs());
-        assertThrows(UncheckedIOException.class, () -> subject.newVirtualizedIterableStorage());
-        assertThrows(UncheckedIOException.class, () -> subject.newScheduleListStorage());
-        assertThrows(UncheckedIOException.class, () -> subject.newScheduleTemporalStorage());
-        assertThrows(UncheckedIOException.class, () -> subject.newScheduleEqualityStorage());
-        assertThrows(UncheckedIOException.class, () -> subject.newOnDiskAccountStorage());
-    }
 
     @Test
     void virtualizedUniqueTokenStorage_whenEmpty_canProperlyInsertAndFetchValues() {
-        final VirtualMapFactory subject = new VirtualMapFactory(JasperDbBuilder::new);
+        final VirtualMapFactory subject = new VirtualMapFactory();
 
         final var map = subject.newVirtualizedUniqueTokenStorage();
         assertThat(map.isEmpty()).isTrue();
 
         map.put(
                 new UniqueTokenKey(123L, 456L),
-                new UniqueTokenValue(
-                        789L, 123L, "hello world".getBytes(), RichInstant.MISSING_INSTANT));
+                new UniqueTokenValue(789L, 123L, "hello world".getBytes(), RichInstant.MISSING_INSTANT));
 
         assertThat(map.get(new UniqueTokenKey(123L, 111L))).isNull();
         final var value = map.get(new UniqueTokenKey(123L, 456L));
         assertThat(value).isNotNull();
         assertThat(value.getOwnerAccountNum()).isEqualTo(789L);
         assertThat(value.getMetadata()).isEqualTo("hello world".getBytes());
-    }
-
-    private static class ThrowingJdbFactoryBuilder
-            implements VirtualMapFactory.JasperDbBuilderFactory {
-        @Override
-        public <K extends VirtualKey<? super K>, V extends VirtualValue>
-                JasperDbBuilder<K, V> newJdbBuilder() {
-            throw new UncheckedIOException(new IOException("Oops!"));
-        }
     }
 }

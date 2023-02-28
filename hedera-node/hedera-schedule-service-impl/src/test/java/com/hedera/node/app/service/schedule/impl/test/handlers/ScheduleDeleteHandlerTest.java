@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.schedule.impl.test.handlers;
 
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asOrdinary;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -25,10 +27,14 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualVa
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.meta.InvalidTransactionMetadata;
-import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
-import com.hederahashgraph.api.proto.java.*;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.codec.DecoderException;
@@ -37,12 +43,21 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
-    private final ScheduleID scheduleID = ScheduleID.newBuilder().setScheduleNum(100L).build();
-    @Mock private ScheduleVirtualValue schedule;
-    @Mock private ReadableKVStateBase<Long, ScheduleVirtualValue> schedulesById;
+    private final ScheduleID scheduleID =
+            ScheduleID.newBuilder().setScheduleNum(100L).build();
+
+    @Mock
+    private ScheduleVirtualValue schedule;
+
+    @Mock
+    private ReadableKVStateBase<Long, ScheduleVirtualValue> schedulesById;
+
     private ReadableScheduleStore scheduleStore;
 
-    private final AccountID scheduleDeleter = AccountID.newBuilder().setAccountNum(3001L).build();
+    private final AccountID scheduleDeleter =
+            AccountID.newBuilder().setAccountNum(3001L).build();
+
+    protected TransactionBody scheduledTxn;
 
     @BeforeEach
     void setUp() {
@@ -57,15 +72,14 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
         final var txn = scheduleDeleteTransaction();
         givenSetupForScheduleDelete(txn);
         given(schedule.adminKey()).willReturn(Optional.of(JKey.mapKey(key)));
-        given(keyLookup.getKey(scheduleDeleter))
-                .willReturn(KeyOrLookupFailureReason.withKey(adminKey));
+        given(keyLookup.getKey(scheduleDeleter)).willReturn(KeyOrLookupFailureReason.withKey(adminKey));
         given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
 
-        final var scheduleDeleteMeta =
-                subject.preHandle(txn, scheduleDeleter, keyLookup, scheduleStore);
-        assertEquals(scheduleDeleter, scheduleDeleteMeta.payer());
-        assertEquals(List.of(adminKey), scheduleDeleteMeta.requiredNonPayerKeys());
-        assertEquals(OK, scheduleDeleteMeta.status());
+        final var context = new PreHandleContext(keyLookup, txn, scheduleDeleter);
+        subject.preHandle(context, scheduleStore);
+        assertEquals(scheduleDeleter, context.getPayer());
+        assertEquals(List.of(adminKey), context.getRequiredNonPayerKeys());
+        assertEquals(OK, context.getStatus());
     }
 
     @Test
@@ -74,13 +88,11 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
         final var txn = scheduleDeleteTransaction();
         givenSetupForScheduleDelete(txn);
 
-        given(keyLookup.getKey(scheduleDeleter))
-                .willReturn(KeyOrLookupFailureReason.withKey(adminKey));
-        final var scheduleDeleteMeta =
-                subject.preHandle(txn, scheduleDeleter, keyLookup, scheduleStore);
-        assertEquals(scheduleDeleter, scheduleDeleteMeta.payer());
-        assertEquals(INVALID_SCHEDULE_ID, scheduleDeleteMeta.status());
-        assertTrue(scheduleDeleteMeta instanceof InvalidTransactionMetadata);
+        given(keyLookup.getKey(scheduleDeleter)).willReturn(KeyOrLookupFailureReason.withKey(adminKey));
+        final var context = new PreHandleContext(keyLookup, txn, scheduleDeleter);
+        subject.preHandle(context, scheduleStore);
+        assertEquals(scheduleDeleter, context.getPayer());
+        assertEquals(INVALID_SCHEDULE_ID, context.getStatus());
     }
 
     @Test
@@ -88,45 +100,27 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     void scheduleDeleteScheduleIsImmutable() {
         final var txn = scheduleDeleteTransaction();
         givenSetupForScheduleDelete(txn);
-        given(keyLookup.getKey(scheduleDeleter))
-                .willReturn(KeyOrLookupFailureReason.withKey(adminKey));
+        given(keyLookup.getKey(scheduleDeleter)).willReturn(KeyOrLookupFailureReason.withKey(adminKey));
         given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
 
-        final var scheduleDeleteMeta =
-                subject.preHandle(txn, scheduleDeleter, keyLookup, scheduleStore);
-        assertEquals(scheduleDeleter, scheduleDeleteMeta.payer());
-        assertEquals(SCHEDULE_IS_IMMUTABLE, scheduleDeleteMeta.status());
-        assertTrue(scheduleDeleteMeta instanceof InvalidTransactionMetadata);
-    }
-
-    @Test
-    void handleNotImplemented() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
+        final var context = new PreHandleContext(keyLookup, txn, scheduleDeleter);
+        subject.preHandle(context, scheduleStore);
+        assertEquals(scheduleDeleter, context.getPayer());
+        assertEquals(SCHEDULE_IS_IMMUTABLE, context.getStatus());
     }
 
     private void givenSetupForScheduleDelete(TransactionBody txn) {
-        scheduledTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(
-                                TransactionID.newBuilder().setAccountID(scheduler).build())
-                        .setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
-                        .build();
-        scheduledMeta =
-                new SigTransactionMetadata(
-                        asOrdinary(
-                                txn.getScheduleCreate().getScheduledTransactionBody(),
-                                txn.getTransactionID()),
-                        scheduler,
-                        OK,
-                        schedulerKey,
-                        List.of());
+        scheduledTxn = TransactionBody.newBuilder()
+                .setTransactionID(
+                        TransactionID.newBuilder().setAccountID(scheduler).build())
+                .setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
+                .build();
     }
 
     private TransactionBody scheduleDeleteTransaction() {
         return TransactionBody.newBuilder()
                 .setTransactionID(TransactionID.newBuilder().setAccountID(scheduleDeleter))
-                .setScheduleDelete(
-                        ScheduleDeleteTransactionBody.newBuilder().setScheduleID(scheduleID))
+                .setScheduleDelete(ScheduleDeleteTransactionBody.newBuilder().setScheduleID(scheduleID))
                 .build();
     }
 }

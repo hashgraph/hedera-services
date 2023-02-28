@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.utils;
 
 import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
@@ -168,6 +169,7 @@ import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -188,7 +190,6 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.fcqueue.FCQueue;
-import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -221,42 +222,40 @@ public final class MiscUtils {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    public static final Set<HederaFunctionality> QUERY_FUNCTIONS =
-            EnumSet.of(
-                    ConsensusGetTopicInfo,
-                    GetBySolidityID,
-                    ContractCallLocal,
-                    ContractGetInfo,
-                    ContractGetBytecode,
-                    ContractGetRecords,
-                    CryptoGetAccountBalance,
-                    CryptoGetAccountRecords,
-                    CryptoGetInfo,
-                    CryptoGetLiveHash,
-                    FileGetContents,
-                    FileGetInfo,
-                    TransactionGetReceipt,
-                    TransactionGetRecord,
-                    GetVersionInfo,
-                    TokenGetInfo,
-                    ScheduleGetInfo,
-                    TokenGetNftInfo,
-                    TokenGetNftInfos,
-                    TokenGetAccountNftInfos,
-                    NetworkGetExecutionTime,
-                    GetAccountDetails);
+    public static final Set<HederaFunctionality> QUERY_FUNCTIONS = EnumSet.of(
+            ConsensusGetTopicInfo,
+            GetBySolidityID,
+            ContractCallLocal,
+            ContractGetInfo,
+            ContractGetBytecode,
+            ContractGetRecords,
+            CryptoGetAccountBalance,
+            CryptoGetAccountRecords,
+            CryptoGetInfo,
+            CryptoGetLiveHash,
+            FileGetContents,
+            FileGetInfo,
+            TransactionGetReceipt,
+            TransactionGetRecord,
+            GetVersionInfo,
+            TokenGetInfo,
+            ScheduleGetInfo,
+            TokenGetNftInfo,
+            TokenGetNftInfos,
+            TokenGetAccountNftInfos,
+            NetworkGetExecutionTime,
+            GetAccountDetails);
 
     private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS =
             EnumSet.of(ContractCallLocal, ContractCall, ContractCreate, EthereumTransaction);
 
-    public static final Function<TransactionBody, HederaFunctionality> FUNCTION_EXTRACTOR =
-            trans -> {
-                try {
-                    return functionOf(trans);
-                } catch (UnknownHederaFunctionality ignore) {
-                    return NONE;
-                }
-            };
+    public static final Function<TransactionBody, HederaFunctionality> FUNCTION_EXTRACTOR = trans -> {
+        try {
+            return functionOf(trans);
+        } catch (UnknownHederaFunctionality ignore) {
+            return NONE;
+        }
+    };
 
     static final String TOKEN_MINT_METRIC = "mintToken";
     static final String TOKEN_BURN_METRIC = "burnToken";
@@ -313,8 +312,7 @@ public final class MiscUtils {
         queryFunctions.put(ACCOUNTDETAILS, GetAccountDetails);
     }
 
-    private static final Map<HederaFunctionality, String> BASE_STAT_NAMES =
-            new EnumMap<>(HederaFunctionality.class);
+    private static final Map<HederaFunctionality, String> BASE_STAT_NAMES = new EnumMap<>(HederaFunctionality.class);
 
     static {
         /* Transactions */
@@ -391,8 +389,7 @@ public final class MiscUtils {
         return BASE_STAT_NAMES.getOrDefault(function, function.toString());
     }
 
-    public static List<AccountAmount> canonicalDiffRepr(
-            final List<AccountAmount> a, final List<AccountAmount> b) {
+    public static List<AccountAmount> canonicalDiffRepr(final List<AccountAmount> a, final List<AccountAmount> b) {
         return canonicalRepr(
                 Stream.concat(a.stream(), b.stream().map(MiscUtils::negationOf)).toList());
     }
@@ -403,48 +400,37 @@ public final class MiscUtils {
 
     public static List<AccountAmount> canonicalRepr(final List<AccountAmount> transfers) {
         return transfers.stream()
-                .collect(
-                        toMap(
-                                AccountAmount::getAccountID,
-                                AccountAmount::getAmount,
-                                Math::addExact))
+                .collect(toMap(AccountAmount::getAccountID, AccountAmount::getAmount, Math::addExact))
                 .entrySet()
                 .stream()
                 .filter(e -> e.getValue() != 0)
                 .sorted(Map.Entry.comparingByKey(HederaLedger.ACCOUNT_ID_COMPARATOR))
-                .map(
-                        e ->
-                                AccountAmount.newBuilder()
-                                        .setAccountID(e.getKey())
-                                        .setAmount(e.getValue())
-                                        .build())
+                .map(e -> AccountAmount.newBuilder()
+                        .setAccountID(e.getKey())
+                        .setAmount(e.getValue())
+                        .build())
                 .toList();
     }
 
     public static String readableTransferList(final TransferList accountAmounts) {
         return accountAmounts.getAccountAmountsList().stream()
-                .map(
-                        aa ->
-                                String.format(
-                                        "%s %s %s%s",
-                                        EntityIdUtils.readableId(aa.getAccountID()),
-                                        aa.getAmount() < 0 ? "->" : "<-",
-                                        aa.getAmount() < 0 ? "-" : "+",
-                                        BigInteger.valueOf(aa.getAmount()).abs().toString()))
+                .map(aa -> String.format(
+                        "%s %s %s%s",
+                        EntityIdUtils.readableId(aa.getAccountID()),
+                        aa.getAmount() < 0 ? "->" : "<-",
+                        aa.getAmount() < 0 ? "-" : "+",
+                        BigInteger.valueOf(aa.getAmount()).abs().toString()))
                 .toList()
                 .toString();
     }
 
     public static String readableNftTransferList(final TokenTransferList tokenTransferList) {
         return tokenTransferList.getNftTransfersList().stream()
-                .map(
-                        nftTransfer ->
-                                String.format(
-                                        "%s %s %s",
-                                        nftTransfer.getSerialNumber(),
-                                        EntityIdUtils.readableId(nftTransfer.getSenderAccountID()),
-                                        EntityIdUtils.readableId(
-                                                nftTransfer.getReceiverAccountID())))
+                .map(nftTransfer -> String.format(
+                        "%s %s %s",
+                        nftTransfer.getSerialNumber(),
+                        EntityIdUtils.readableId(nftTransfer.getSenderAccountID()),
+                        EntityIdUtils.readableId(nftTransfer.getReceiverAccountID())))
                 .toList()
                 .toString();
     }
@@ -462,8 +448,7 @@ public final class MiscUtils {
         try {
             return JKey.mapKey(key);
         } catch (final DecoderException impermissible) {
-            throw new IllegalArgumentException(
-                    "Key " + key + " should have been decode-able!", impermissible);
+            throw new IllegalArgumentException("Key " + key + " should have been decode-able!", impermissible);
         }
     }
 
@@ -591,8 +576,7 @@ public final class MiscUtils {
         }
     }
 
-    public static HederaFunctionality functionOf(final TransactionBody txn)
-            throws UnknownHederaFunctionality {
+    public static HederaFunctionality functionOf(final TransactionBody txn) throws UnknownHederaFunctionality {
         if (txn.hasSystemDelete()) {
             return SystemDelete;
         }
@@ -751,16 +735,14 @@ public final class MiscUtils {
     }
 
     public static TransactionBody asOrdinary(
-            final SchedulableTransactionBody scheduledTxn,
-            final TransactionID scheduledTxnTransactionId) {
+            final SchedulableTransactionBody scheduledTxn, final TransactionID scheduledTxnTransactionId) {
         final var ordinary = TransactionBody.newBuilder();
         ordinary.setTransactionFee(scheduledTxn.getTransactionFee())
                 .setMemo(scheduledTxn.getMemo())
-                .setTransactionID(
-                        TransactionID.newBuilder()
-                                .mergeFrom(scheduledTxnTransactionId)
-                                .setScheduled(true)
-                                .build());
+                .setTransactionID(TransactionID.newBuilder()
+                        .mergeFrom(scheduledTxnTransactionId)
+                        .setScheduled(true)
+                        .build());
         if (scheduledTxn.hasContractCall()) {
             ordinary.setContractCall(scheduledTxn.getContractCall());
         } else if (scheduledTxn.hasContractCreateInstance()) {
@@ -877,8 +859,7 @@ public final class MiscUtils {
         return x;
     }
 
-    public static void withLoggedDuration(
-            final Runnable blockingTask, final Logger logger, final String desc) {
+    public static void withLoggedDuration(final Runnable blockingTask, final Logger logger, final String desc) {
         logger.info("Starting {}", desc);
         final var watch = StopWatch.createStarted();
         blockingTask.run();
@@ -886,18 +867,11 @@ public final class MiscUtils {
     }
 
     public static <K, V extends MerkleNode & Keyed<K>> void forEach(
-            final MerkleMap<K, V> map, final BiConsumer<? super K, ? super V> action) {
-        map.forEachNode(
-                (final MerkleNode node) -> {
-                    if (node instanceof Keyed) {
-                        final V leaf = node.cast();
-                        action.accept(leaf.getKey(), leaf);
-                    }
-                });
+            final MerkleMapLike<K, V> map, final BiConsumer<? super K, ? super V> action) {
+        map.forEachNode(action);
     }
 
-    public static void putIfNotNull(
-            @Nullable final Map<String, Object> map, final String key, final Object value) {
+    public static void putIfNotNull(@Nullable final Map<String, Object> map, final String key, final Object value) {
         if (null != map) {
             map.put(key, value);
         }
@@ -923,8 +897,9 @@ public final class MiscUtils {
             case ContractCall -> txn.getContractCall().getGas();
             case EthereumTransaction -> getEthData != null
                     ? getEthData.get().gasLimit()
-                    : EthTxData.populateEthTxData(
-                                    txn.getEthereumTransaction().getEthereumData().toByteArray())
+                    : EthTxData.populateEthTxData(txn.getEthereumTransaction()
+                                    .getEthereumData()
+                                    .toByteArray())
                             .gasLimit();
             default -> 0L;
         };
@@ -953,9 +928,12 @@ public final class MiscUtils {
     }
 
     public static Transaction synthFromBody(final TransactionBody txnBody) {
-        final var signedTxn =
-                SignedTransaction.newBuilder().setBodyBytes(txnBody.toByteString()).build();
-        return Transaction.newBuilder().setSignedTransactionBytes(signedTxn.toByteString()).build();
+        final var signedTxn = SignedTransaction.newBuilder()
+                .setBodyBytes(txnBody.toByteString())
+                .build();
+        return Transaction.newBuilder()
+                .setSignedTransactionBytes(signedTxn.toByteString())
+                .build();
     }
 
     public static void safeResetThrottles(
@@ -983,15 +961,13 @@ public final class MiscUtils {
         }
     }
 
-    public static <T extends Enum<T>> List<T> csvList(
-            final String propertyValue, final Function<String, T> parser) {
+    public static <T extends Enum<T>> List<T> csvList(final String propertyValue, final Function<String, T> parser) {
         return csvStream(propertyValue, parser).toList();
     }
 
     public static <T extends Enum<T>> Set<T> csvSet(
             final String propertyValue, final Function<String, T> parser, final Class<T> type) {
-        return csvStream(propertyValue, parser)
-                .collect(Collectors.toCollection(() -> EnumSet.noneOf(type)));
+        return csvStream(propertyValue, parser).collect(Collectors.toCollection(() -> EnumSet.noneOf(type)));
     }
 
     private static <T extends Enum<T>> Stream<T> csvStream(
@@ -1012,10 +988,9 @@ public final class MiscUtils {
 
     public static Transaction synthWithRecordTxnId(
             final TransactionBody.Builder txnBody, final ExpirableTxnRecord.Builder inProgress) {
-        final var synthTxn =
-                synthFromBody(txnBody.setTransactionID(inProgress.getTxnId().toGrpc()).build());
-        final var synthHash =
-                noThrowSha384HashOf(unwrapUnsafelyIfPossible(synthTxn.getSignedTransactionBytes()));
+        final var synthTxn = synthFromBody(
+                txnBody.setTransactionID(inProgress.getTxnId().toGrpc()).build());
+        final var synthHash = noThrowSha384HashOf(unwrapUnsafelyIfPossible(synthTxn.getSignedTransactionBytes()));
         inProgress.setTxnHash(synthHash);
         return synthTxn;
     }

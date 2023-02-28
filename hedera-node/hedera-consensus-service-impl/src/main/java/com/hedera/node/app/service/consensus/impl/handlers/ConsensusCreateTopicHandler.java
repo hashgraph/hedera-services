@@ -13,24 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.consensus.impl.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
+import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
+import com.hedera.node.app.service.consensus.impl.records.CreateTopicRecordBuilder;
+import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
  * com.hederahashgraph.api.proto.java.HederaFunctionality#ConsensusCreateTopic}.
  */
+@Singleton
 public class ConsensusCreateTopicHandler implements TransactionHandler {
+    @Inject
+    public ConsensusCreateTopicHandler() {}
 
     /**
      * This method is called during the pre-handle workflow.
@@ -39,45 +49,48 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
      * the handle stage.
      *
-     * @param txBody the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @param keyLookup the {@link AccountKeyLookup} to use for key lookups
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody,
-            @NonNull final AccountID payer,
-            @NonNull final AccountKeyLookup keyLookup) {
-        final var metaBuilder =
-                new SigTransactionMetadataBuilder(keyLookup).txnBody(txBody).payerKeyFor(payer);
-
-        final var op = txBody.getConsensusCreateTopic();
-        final var adminKey = asHederaKey(op.getAdminKey());
-        adminKey.ifPresent(metaBuilder::addToReqNonPayerKeys);
-        final var submitKey = asHederaKey(op.getSubmitKey());
-        submitKey.ifPresent(metaBuilder::addToReqNonPayerKeys);
-
-        if (op.hasAutoRenewAccount()) {
-            final var autoRenewAccount = op.getAutoRenewAccount();
-            metaBuilder.addNonPayerKey(
-                    autoRenewAccount, ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
-        }
-
-        return metaBuilder.build();
-    }
-
-    /**
-     * This method is called during the handle workflow. It executes the actual transaction.
-     *
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param metadata the {@link TransactionMetadata} that was generated during pre-handle.
+     * @param context the {@link PreHandleContext} which collects all information that will be
+     *     passed to {@code handle()}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TransactionMetadata metadata) {
+    public void preHandle(@NonNull final PreHandleContext context) {
+        requireNonNull(context);
+        final var op = context.getTxn().getConsensusCreateTopic();
+        final var adminKey = asHederaKey(op.getAdminKey());
+        adminKey.ifPresent(context::addToReqNonPayerKeys);
+        final var submitKey = asHederaKey(op.getSubmitKey());
+        submitKey.ifPresent(context::addToReqNonPayerKeys);
+
+        if (op.hasAutoRenewAccount()) {
+            final var autoRenewAccount = op.getAutoRenewAccount();
+            context.addNonPayerKey(autoRenewAccount, ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+        }
+    }
+
+    /**
+     * Given the appropriate context, creates a new topic.
+     *
+     * TODO: Provide access to writable topic store.
+     *
+     * @param handleContext the {@link HandleContext} for the active transaction
+     * @param topicCreation the {@link ConsensusCreateTopicTransactionBody} for the active transaction
+     * @param consensusServiceConfig the {@link ConsensusServiceConfig} for the active transaction
+     * @param recordBuilder the {@link ConsensusCreateTopicRecordBuilder} for the active transaction
+     * @throws NullPointerException if one of the arguments is {@code null}
+     */
+    public void handle(
+            @NonNull final HandleContext handleContext,
+            @NonNull final ConsensusCreateTopicTransactionBody topicCreation,
+            @NonNull final ConsensusServiceConfig consensusServiceConfig,
+            @NonNull final ConsensusCreateTopicRecordBuilder recordBuilder) {
         throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public ConsensusCreateTopicRecordBuilder newRecordBuilder() {
+        return new CreateTopicRecordBuilder();
     }
 }

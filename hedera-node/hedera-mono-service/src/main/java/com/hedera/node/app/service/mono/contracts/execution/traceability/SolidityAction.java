@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.execution.traceability;
 
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
@@ -157,8 +158,7 @@ public class SolidityAction {
 
     public ContractAction toGrpc() {
         final var grpc = ContractAction.newBuilder();
-        grpc.setCallType(
-                com.hedera.services.stream.proto.ContractActionType.forNumber(callType.ordinal()));
+        grpc.setCallType(com.hedera.services.stream.proto.ContractActionType.forNumber(callType.ordinal()));
         if (callingAccount != null) {
             grpc.setCallingAccount(callingAccount.toGrpcAccountId());
         } else if (callingContract != null) {
@@ -184,8 +184,7 @@ public class SolidityAction {
         }
         grpc.setCallDepth(callDepth);
         grpc.setCallOperationType(
-                com.hedera.services.stream.proto.CallOperationType.forNumber(
-                        callOperationType.ordinal()));
+                com.hedera.services.stream.proto.CallOperationType.forNumber(callOperationType.ordinal()));
         return grpc.build();
     }
 }

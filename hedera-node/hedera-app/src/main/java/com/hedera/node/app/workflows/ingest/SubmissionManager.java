@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.ingest;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
@@ -21,18 +22,21 @@ import static java.util.Objects.requireNonNull;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.node.app.service.mono.context.properties.Profile;
 import com.hedera.node.app.service.mono.records.RecordCache;
 import com.hedera.node.app.service.mono.stats.MiscSpeedometers;
+import com.hedera.node.app.spi.config.Profile;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.system.Platform;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** The {@code SubmissionManager} provides functionality to submit transactions to the platform. */
+@Singleton
 public class SubmissionManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(SubmissionManager.class);
@@ -50,6 +54,7 @@ public class SubmissionManager {
      * @param nodeLocalProperties the {@link NodeLocalProperties} that keep local properties
      * @param speedometers metrics related to submissions
      */
+    @Inject
     public SubmissionManager(
             @NonNull final Platform platform,
             @NonNull final RecordCache recordCache,
@@ -65,43 +70,37 @@ public class SubmissionManager {
      * Submit a transaction to the {@link Platform}
      *
      * @param txBody the {@link TransactionBody} that should be submitted to the platform
-     * @param byteBuffer the {@link ByteBuffer} of the data that should be submitted
-     * @param parser the {@link Parser} that is used to eventually parse the {@link
-     *     TransactionBody#getUncheckedSubmit()}
+     * @param byteArray the {@link ByteBuffer} of the data that should be submitted
+     * @param parser the {@link Parser} that is used to eventually parse the
+     * {@link TransactionBody#getUncheckedSubmit()}
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if the transaction could not be submitted
      */
     public void submit(
             @NonNull final TransactionBody txBody,
-            @NonNull final ByteBuffer byteBuffer,
+            @NonNull final byte[] byteArray,
             @NonNull final Parser<TransactionBody> parser)
             throws PreCheckException {
         requireNonNull(txBody);
-        requireNonNull(byteBuffer);
+        requireNonNull(byteArray);
         requireNonNull(parser);
 
-        final byte[] payload;
+        byte[] payload = byteArray;
+
         // Unchecked submits are a mechanism to inject transaction to the system, that bypass all
-        // pre-checks.
-        // This is used in tests to check the reaction to illegal input.
+        // pre-checks.This is used in tests to check the reaction to illegal input.
         if (txBody.hasUncheckedSubmit()) {
             if (nodeLocalProperties.activeProfile() == Profile.PROD) {
                 // we do not allow unchecked submits in PROD
                 throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);
             }
             try {
-                payload =
-                        parser.parseFrom(txBody.getUncheckedSubmit().getTransactionBytes())
-                                .toByteArray();
-            } catch (InvalidProtocolBufferException e) {
+                payload = parser.parseFrom(txBody.getUncheckedSubmit().getTransactionBytes())
+                        .toByteArray();
+            } catch (final InvalidProtocolBufferException e) {
                 LOG.warn("Transaction bytes from UncheckedSubmit not a valid gRPC transaction!", e);
                 throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);
             }
-        } else if (byteBuffer.hasArray()) {
-            payload = byteBuffer.array();
-        } else {
-            payload = new byte[byteBuffer.limit()];
-            byteBuffer.get(payload);
         }
 
         final var success = platform.createTransaction(payload);

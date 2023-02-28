@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.google.common.base.MoreObjects;
@@ -31,7 +32,7 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
     private static final long CLASS_ID = 0x17f77b311f6L;
 
     /** Current version of the encoding scheme. */
-    /* package */ static final int CURRENT_VERSION = 1;
+    /* package */ public static final int CURRENT_VERSION = 1;
 
     /**
      * Expected maximum number of bytes this class will serialize to. Serialization format will be:
@@ -129,8 +130,8 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
         return packed & 0x0F;
     }
 
-    private static void writePartial(
-            final long value, final int numBytes, final ByteConsumer output) throws IOException {
+    private static void writePartial(final long value, final int numBytes, final ByteConsumer output)
+            throws IOException {
         for (int b = numBytes - 1; b >= 0; b--) {
             output.accept((byte) (value >> (b * 8)));
         }
@@ -188,8 +189,7 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
         byte get() throws IOException;
     }
 
-    private static long decodeVariableField(final ByteSupplier input, final int numBytes)
-            throws IOException {
+    private static long decodeVariableField(final ByteSupplier input, final int numBytes) throws IOException {
         long value = 0;
         for (int n = Math.min(8, numBytes), shift = 8 * (n - 1); n > 0; n--, shift -= 8) {
             value |= ((long) input.get() & 0xFF) << shift;
@@ -212,8 +212,7 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream inputStream, final int dataVersion)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream inputStream, final int dataVersion) throws IOException {
         deserializeFrom(inputStream::readByte);
     }
 

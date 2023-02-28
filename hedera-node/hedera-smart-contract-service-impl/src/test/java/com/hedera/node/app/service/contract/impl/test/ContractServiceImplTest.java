@@ -13,14 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.contract.impl.test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
+import com.hedera.node.app.spi.state.Schema;
+import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.spi.state.StateDefinition;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class ContractServiceImplTest {
+    @Mock
+    private SchemaRegistry registry;
 
     @Test
     void testSpi() {
@@ -32,7 +46,24 @@ class ContractServiceImplTest {
         Assertions.assertEquals(
                 ContractServiceImpl.class,
                 service.getClass(),
-                "We must always receive an instance of type "
-                        + ContractServiceImpl.class.getName());
+                "We must always receive an instance of type " + ContractServiceImpl.class.getName());
+    }
+
+    @Test
+    void registersExpectedSchema() {
+        ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
+
+        final var subject = ContractService.getInstance();
+
+        subject.registerSchemas(registry);
+        verify(registry).register(schemaCaptor.capture());
+
+        final var schema = schemaCaptor.getValue();
+
+        final var statesToCreate = schema.statesToCreate();
+        assertEquals(1, statesToCreate.size());
+        final var iter =
+                statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
+        assertEquals(ContractServiceImpl.STORAGE_KEY, iter.next());
     }
 }

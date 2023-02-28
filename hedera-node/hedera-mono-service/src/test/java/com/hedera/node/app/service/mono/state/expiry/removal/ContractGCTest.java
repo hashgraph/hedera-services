@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.expiry.removal;
 
 import static com.hedera.node.app.service.mono.state.expiry.removal.ContractGC.*;
@@ -25,6 +26,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -45,17 +47,30 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ContractGCTest {
-    @Mock private ExpiryThrottle expiryThrottle;
-    @Mock private AccountStorageAdapter contracts;
-    @Mock private VirtualMap<ContractKey, IterableContractValue> storage;
-    @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
-    @Mock private ContractGC.RemovalFacilitation removalFacilitation;
+    @Mock
+    private ExpiryThrottle expiryThrottle;
+
+    @Mock
+    private AccountStorageAdapter contracts;
+
+    @Mock
+    private VirtualMap<ContractKey, IterableContractValue> storage;
+
+    @Mock
+    private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
+
+    @Mock
+    private ContractGC.RemovalFacilitation removalFacilitation;
 
     private ContractGC subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ContractGC(expiryThrottle, () -> contracts, () -> storage, () -> bytecode);
+        subject = new ContractGC(
+                expiryThrottle,
+                () -> contracts,
+                () -> VirtualMapLike.from(storage),
+                () -> VirtualMapLike.from(bytecode));
         subject.setRemovalFacilitation(removalFacilitation);
     }
 
@@ -81,17 +96,11 @@ class ContractGCTest {
         given(expiryThrottle.allow(BYTECODE_REMOVAL_WORK)).willReturn(false);
         given(expiryThrottle.allow(NEXT_SLOT_REMOVAL_WORK)).willReturn(true);
         given(expiryThrottle.allow(ONLY_SLOT_REMOVAL_WORK)).willReturn(true);
-        given(
-                        removalFacilitation.removeNext(
-                                eq(rootKey), eq(rootKey), any(ContractStorageListMutation.class)))
+        given(removalFacilitation.removeNext(eq(rootKey), eq(rootKey), any(ContractStorageListMutation.class)))
                 .willReturn(interKey);
-        given(
-                        removalFacilitation.removeNext(
-                                eq(interKey), eq(interKey), any(ContractStorageListMutation.class)))
+        given(removalFacilitation.removeNext(eq(interKey), eq(interKey), any(ContractStorageListMutation.class)))
                 .willReturn(tailKey);
-        given(
-                        removalFacilitation.removeNext(
-                                eq(tailKey), eq(tailKey), any(ContractStorageListMutation.class)))
+        given(removalFacilitation.removeNext(eq(tailKey), eq(tailKey), any(ContractStorageListMutation.class)))
                 .willReturn(null);
 
         final var done = subject.expireBestEffort(contractNum, contractSomeKvPairs);
@@ -107,13 +116,9 @@ class ContractGCTest {
         given(expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)).willReturn(true);
         given(expiryThrottle.allow(BYTECODE_REMOVAL_WORK)).willReturn(false);
         given(expiryThrottle.allow(NEXT_SLOT_REMOVAL_WORK)).willReturn(true);
-        given(
-                        removalFacilitation.removeNext(
-                                eq(rootKey), eq(rootKey), any(ContractStorageListMutation.class)))
+        given(removalFacilitation.removeNext(eq(rootKey), eq(rootKey), any(ContractStorageListMutation.class)))
                 .willReturn(interKey);
-        given(
-                        removalFacilitation.removeNext(
-                                eq(interKey), eq(interKey), any(ContractStorageListMutation.class)))
+        given(removalFacilitation.removeNext(eq(interKey), eq(interKey), any(ContractStorageListMutation.class)))
                 .willThrow(NullPointerException.class);
 
         final var done = subject.expireBestEffort(contractNum, contractSomeKvPairs);
@@ -130,17 +135,11 @@ class ContractGCTest {
         given(expiryThrottle.allow(BYTECODE_REMOVAL_WORK)).willReturn(true);
         given(expiryThrottle.allow(NEXT_SLOT_REMOVAL_WORK)).willReturn(true);
         given(expiryThrottle.allow(ONLY_SLOT_REMOVAL_WORK)).willReturn(true);
-        given(
-                        removalFacilitation.removeNext(
-                                eq(rootKey), eq(rootKey), any(ContractStorageListMutation.class)))
+        given(removalFacilitation.removeNext(eq(rootKey), eq(rootKey), any(ContractStorageListMutation.class)))
                 .willReturn(interKey);
-        given(
-                        removalFacilitation.removeNext(
-                                eq(interKey), eq(interKey), any(ContractStorageListMutation.class)))
+        given(removalFacilitation.removeNext(eq(interKey), eq(interKey), any(ContractStorageListMutation.class)))
                 .willReturn(tailKey);
-        given(
-                        removalFacilitation.removeNext(
-                                eq(tailKey), eq(tailKey), any(ContractStorageListMutation.class)))
+        given(removalFacilitation.removeNext(eq(tailKey), eq(tailKey), any(ContractStorageListMutation.class)))
                 .willReturn(null);
 
         final var done = subject.expireBestEffort(contractNum, contractSomeKvPairs);
@@ -155,13 +154,9 @@ class ContractGCTest {
         given(expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)).willReturn(true);
         given(expiryThrottle.allow(NEXT_SLOT_REMOVAL_WORK)).willReturn(true);
         given(expiryThrottle.allow(ONLY_SLOT_REMOVAL_WORK)).willReturn(false);
-        given(
-                        removalFacilitation.removeNext(
-                                eq(rootKey), eq(rootKey), any(ContractStorageListMutation.class)))
+        given(removalFacilitation.removeNext(eq(rootKey), eq(rootKey), any(ContractStorageListMutation.class)))
                 .willReturn(interKey);
-        given(
-                        removalFacilitation.removeNext(
-                                eq(interKey), eq(interKey), any(ContractStorageListMutation.class)))
+        given(removalFacilitation.removeNext(eq(interKey), eq(interKey), any(ContractStorageListMutation.class)))
                 .willReturn(tailKey);
 
         final var done = subject.expireBestEffort(contractNum, contractSomeKvPairs);
@@ -186,21 +181,19 @@ class ContractGCTest {
     }
 
     private static final EntityNum contractNum = EntityNum.fromLong(666);
-    private static final VirtualBlobKey bytecodeKey =
-            new VirtualBlobKey(CONTRACT_BYTECODE, contractNum.intValue());
+    private static final VirtualBlobKey bytecodeKey = new VirtualBlobKey(CONTRACT_BYTECODE, contractNum.intValue());
     private static final int[] rootUint256Key = new int[] {1, 2, 3, 4, 5, 6, 7, 8};
     private static final int[] interUint256Key = new int[] {2, 3, 4, 5, 6, 7, 8, 9};
     private static final int[] tailUint256Key = new int[] {3, 4, 5, 6, 7, 8, 9, 10};
     private static final ContractKey rootKey = asKey(rootUint256Key);
     private static final ContractKey interKey = asKey(interUint256Key);
     private static final ContractKey tailKey = asKey(tailUint256Key);
-    private final MerkleAccount contractSomeKvPairs =
-            MerkleAccountFactory.newContract()
-                    .balance(0)
-                    .number(contractNum)
-                    .numKvPairs(3)
-                    .firstContractKey(rootUint256Key)
-                    .get();
+    private final MerkleAccount contractSomeKvPairs = MerkleAccountFactory.newContract()
+            .balance(0)
+            .number(contractNum)
+            .numKvPairs(3)
+            .firstContractKey(rootUint256Key)
+            .get();
     private final MerkleAccount contractNoKvPairs =
             MerkleAccountFactory.newContract().number(contractNum).balance(0).get();
 }

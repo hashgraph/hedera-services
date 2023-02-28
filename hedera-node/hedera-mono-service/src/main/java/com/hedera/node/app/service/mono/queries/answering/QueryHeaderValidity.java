@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.answering;
 
 import static com.hedera.node.app.service.mono.utils.MiscUtils.activeHeaderFrom;
@@ -31,8 +32,7 @@ import javax.inject.Singleton;
 
 @Singleton
 public class QueryHeaderValidity {
-    private EnumSet<ResponseType> unsupportedResponseTypes =
-            EnumSet.of(ANSWER_STATE_PROOF, COST_ANSWER_STATE_PROOF);
+    private EnumSet<ResponseType> unsupportedResponseTypes = EnumSet.of(ANSWER_STATE_PROOF, COST_ANSWER_STATE_PROOF);
 
     @Inject
     public QueryHeaderValidity() {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,9 +31,7 @@ class JDelegatableContractIDKeyTest {
     @Test
     void constructorsWork() {
         final var subject1 = new JDelegatableContractIDKey(id);
-        final var subject2 =
-                new JDelegatableContractIDKey(
-                        id.getShardNum(), id.getRealmNum(), id.getContractNum());
+        final var subject2 = new JDelegatableContractIDKey(id.getShardNum(), id.getRealmNum(), id.getContractNum());
 
         assertEquals(id, subject1.getContractID());
         assertEquals(id, subject2.getContractID());

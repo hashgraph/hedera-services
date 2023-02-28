@@ -13,14 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.node.app.service.mono.state.logic.BlockManager;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -32,7 +36,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.stream.StreamAligned;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -66,10 +69,18 @@ class RecordStreamObjectTest {
     }
 
     @Test
-    void defaultAlignmentIsNewAlignment() {
+    void onlyClosesIfSetExplicitly() {
+        final var subject = new RecordStreamObject();
+        assertFalse(subject.closesCurrentFile());
+        subject.setWriteNewFile();
+        assertTrue(subject.closesCurrentFile());
+    }
+
+    @Test
+    void defaultAlignmentIsUnknownBlockNumber() {
         final var subject = new RecordStreamObject();
 
-        assertEquals(StreamAligned.NO_ALIGNMENT, subject.getStreamAlignment());
+        assertEquals(BlockManager.UNKNOWN_BLOCK_NO, subject.getStreamAlignment());
     }
 
     @Test
@@ -96,17 +107,15 @@ class RecordStreamObjectTest {
 
     @Test
     void toStringTest() {
-        final var expectedString =
-                "RecordStreamObject[TransactionRecord=mock record,Transaction=mock"
-                    + " transaction,ConsensusTimestamp=mock consensusTimestamp,Sidecars=<null>]";
+        final var expectedString = "RecordStreamObject[TransactionRecord=mock record,Transaction=mock"
+                + " transaction,ConsensusTimestamp=mock consensusTimestamp,Sidecars=<null>]";
         assertEquals(expectedString, recordStreamObject.toString());
     }
 
     @Test
     void toShortStringTest() {
-        final String expectedString =
-                "RecordStreamObject[TransactionRecord=[TransactionID=mock transactionID],"
-                        + "ConsensusTimestamp=mock consensusTimestamp]";
+        final String expectedString = "RecordStreamObject[TransactionRecord=[TransactionID=mock transactionID],"
+                + "ConsensusTimestamp=mock consensusTimestamp]";
         assertEquals(expectedString, recordStreamObject.toShortString());
     }
 
@@ -122,21 +131,15 @@ class RecordStreamObjectTest {
         assertNotEquals(recordStreamObject, new Object());
         assertEquals(recordStreamObject, sameButDifferent);
 
-        assertEquals(
-                recordStreamObject,
-                new RecordStreamObject(record, transaction, consensusTimestamp));
+        assertEquals(recordStreamObject, new RecordStreamObject(record, transaction, consensusTimestamp));
 
         assertNotEquals(recordStreamObject, realObject);
+        assertNotEquals(recordStreamObject, new RecordStreamObject(record, transaction, realObject.getTimestamp()));
+        assertNotEquals(
+                recordStreamObject, new RecordStreamObject(record, realObject.getTransaction(), consensusTimestamp));
         assertNotEquals(
                 recordStreamObject,
-                new RecordStreamObject(record, transaction, realObject.getTimestamp()));
-        assertNotEquals(
-                recordStreamObject,
-                new RecordStreamObject(record, realObject.getTransaction(), consensusTimestamp));
-        assertNotEquals(
-                recordStreamObject,
-                new RecordStreamObject(
-                        realObject.getTransactionRecord(), transaction, consensusTimestamp));
+                new RecordStreamObject(realObject.getTransactionRecord(), transaction, consensusTimestamp));
     }
 
     @Test
@@ -161,17 +164,15 @@ class RecordStreamObjectTest {
         final var accountID = AccountID.newBuilder().setAccountNum(3);
         final var transactionID = TransactionID.newBuilder().setAccountID(accountID);
         final var transactionBody = TransactionBody.newBuilder().setTransactionID(transactionID);
-        final var signedTransaction =
-                SignedTransaction.newBuilder().setBodyBytes(transactionBody.build().toByteString());
-        final var transaction =
-                Transaction.newBuilder()
-                        .setSignedTransactionBytes(signedTransaction.getBodyBytes())
-                        .build();
-        final var record =
-                TransactionRecord.newBuilder()
-                        .setConsensusTimestamp(MiscUtils.asTimestamp(consensusTimestamp))
-                        .setTransactionID(transactionID)
-                        .build();
+        final var signedTransaction = SignedTransaction.newBuilder()
+                .setBodyBytes(transactionBody.build().toByteString());
+        final var transaction = Transaction.newBuilder()
+                .setSignedTransactionBytes(signedTransaction.getBodyBytes())
+                .build();
+        final var record = TransactionRecord.newBuilder()
+                .setConsensusTimestamp(MiscUtils.asTimestamp(consensusTimestamp))
+                .setTransactionID(transactionID)
+                .build();
         return new RecordStreamObject(record, transaction, consensusTimestamp);
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
 import static com.hedera.node.app.service.mono.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
@@ -24,7 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.service.mono.context.properties.PropertyNames;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -35,12 +37,12 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
+import com.hedera.node.app.spi.config.PropertyNames;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.ResponsibleVMapUser;
-import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,40 +52,40 @@ import org.mockito.Mockito;
 
 @ExtendWith(LogCaptureExtension.class)
 class UniqueTokensLinkManagerTest extends ResponsibleVMapUser {
+
     private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
     private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
-    private final UniqueTokenMapAdapter uniqueTokens =
-            UniqueTokenMapAdapter.wrap(new MerkleMap<>());
-    private final UniqueTokenMapAdapter virtualUniqueTokens =
-            UniqueTokenMapAdapter.wrap(
-                    trackedMap(
-                            new VirtualMapFactory(JasperDbBuilder::new)
-                                    .newVirtualizedUniqueTokenStorage()));
+    private final UniqueTokenMapAdapter uniqueTokens = UniqueTokenMapAdapter.wrap(new MerkleMap<>());
+    private final UniqueTokenMapAdapter virtualUniqueTokens = UniqueTokenMapAdapter.wrap(
+            VirtualMapLike.from(trackedMap(new VirtualMapFactory().newVirtualizedUniqueTokenStorage())));
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private UniqueTokensLinkManager subject;
-    @LoggingSubject private UniqueTokensLinkManager subjectForVm;
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private UniqueTokensLinkManager subject;
+
+    @LoggingSubject
+    private UniqueTokensLinkManager subjectForVm;
 
     @BeforeEach
     void setUp() {
         final BootstrapProperties bootstrapProperties = Mockito.mock(BootstrapProperties.class);
         when(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .thenReturn(false);
-        subject =
-                new UniqueTokensLinkManager(
-                        () -> AccountStorageAdapter.fromInMemory(accounts),
-                        () -> tokens,
-                        () -> uniqueTokens,
-                        bootstrapProperties);
+        subject = new UniqueTokensLinkManager(
+                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
+                () -> MerkleMapLike.from(tokens),
+                () -> uniqueTokens,
+                bootstrapProperties);
 
         when(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .thenReturn(true);
-        subjectForVm =
-                new UniqueTokensLinkManager(
-                        () -> AccountStorageAdapter.fromInMemory(accounts),
-                        () -> tokens,
-                        () -> virtualUniqueTokens,
-                        bootstrapProperties);
+        subjectForVm = new UniqueTokensLinkManager(
+                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
+                () -> MerkleMapLike.from(tokens),
+                () -> virtualUniqueTokens,
+                bootstrapProperties);
     }
 
     @Test

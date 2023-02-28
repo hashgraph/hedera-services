@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.crypto;
 
 import static com.hedera.node.app.service.mono.context.primitives.StateView.REMOVED_TOKEN;
@@ -47,6 +48,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
@@ -87,17 +89,39 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class GetAccountInfoAnswerTest {
     private StateView view;
-    @Mock private ScheduleStore scheduleStore;
-    @Mock private AccountStorageAdapter accounts;
-    @Mock private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
-    @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
-    @Mock private OptionValidator optionValidator;
-    @Mock private MerkleToken token;
-    @Mock private MerkleToken deletedToken;
-    @Mock private NetworkInfo networkInfo;
-    @Mock private AliasManager aliasManager;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private RewardCalculator rewardCalculator;
+
+    @Mock
+    private ScheduleStore scheduleStore;
+
+    @Mock
+    private AccountStorageAdapter accounts;
+
+    @Mock
+    private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
+
+    @Mock
+    private MerkleMap<EntityNum, MerkleToken> tokens;
+
+    @Mock
+    private OptionValidator optionValidator;
+
+    @Mock
+    private MerkleToken token;
+
+    @Mock
+    private MerkleToken deletedToken;
+
+    @Mock
+    private NetworkInfo networkInfo;
+
+    @Mock
+    private AliasManager aliasManager;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private RewardCalculator rewardCalculator;
 
     private TokenRelStorageAdapter tokenRels;
     private final MutableStateChildren children = new MutableStateChildren();
@@ -115,11 +139,7 @@ class GetAccountInfoAnswerTest {
             thirdToken = tokenWith(777),
             fourthToken = tokenWith(888),
             missingToken = tokenWith(999);
-    long firstBalance = 123,
-            secondBalance = 234,
-            thirdBalance = 345,
-            fourthBalance = 456,
-            missingBalance = 567;
+    long firstBalance = 123, secondBalance = 234, thirdBalance = 345, fourthBalance = 456, missingBalance = 567;
 
     private final long fee = 1_234L;
     private final EntityNumPair firstRelKey = fromAccountTokenRel(payerId, firstToken);
@@ -161,8 +181,7 @@ class GetAccountInfoAnswerTest {
         tokenRels.put(fourthRelKey, fourthRel);
         tokenRels.put(missingRelKey, missingRel);
 
-        final var tokenAllowanceKey =
-                FcTokenAllowanceId.from(EntityNum.fromLong(1000L), EntityNum.fromLong(2000L));
+        final var tokenAllowanceKey = FcTokenAllowanceId.from(EntityNum.fromLong(1000L), EntityNum.fromLong(2000L));
         final TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap();
         final TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap();
         final TreeSet<FcTokenAllowanceId> nftAllowances = new TreeSet<>();
@@ -171,33 +190,30 @@ class GetAccountInfoAnswerTest {
         fungibleTokenAllowances.put(tokenAllowanceKey, 20L);
         nftAllowances.add(tokenAllowanceKey);
 
-        payerAccount =
-                MerkleAccountFactory.newAccount()
-                        .accountKeys(COMPLEX_KEY_ACCOUNT_KT)
-                        .memo(memo)
-                        .proxy(asAccount("1.2.3"))
-                        .receiverSigRequired(true)
-                        .balance(555L)
-                        .autoRenewPeriod(1_000_000L)
-                        .expirationTime(9_999_999L)
-                        .cryptoAllowances(cryptoAllowances)
-                        .fungibleTokenAllowances(fungibleTokenAllowances)
-                        .explicitNftAllowances(nftAllowances)
-                        .stakedId(-1L)
-                        .stakePeriodStart(12345678L)
-                        .declineReward(false)
-                        .get();
+        payerAccount = MerkleAccountFactory.newAccount()
+                .accountKeys(COMPLEX_KEY_ACCOUNT_KT)
+                .memo(memo)
+                .proxy(asAccount("1.2.3"))
+                .receiverSigRequired(true)
+                .balance(555L)
+                .autoRenewPeriod(1_000_000L)
+                .expirationTime(9_999_999L)
+                .cryptoAllowances(cryptoAllowances)
+                .fungibleTokenAllowances(fungibleTokenAllowances)
+                .explicitNftAllowances(nftAllowances)
+                .stakedId(-1L)
+                .stakePeriodStart(12345678L)
+                .declineReward(false)
+                .get();
 
         children.setAccounts(accounts);
         children.setTokenAssociations(tokenRels);
-        children.setTokens(tokens);
-        children.setStakingInfo(stakingInfo);
+        children.setTokens(MerkleMapLike.from(tokens));
+        children.setStakingInfo(MerkleMapLike.from(stakingInfo));
 
         view = new StateView(scheduleStore, children, networkInfo);
 
-        subject =
-                new GetAccountInfoAnswer(
-                        optionValidator, aliasManager, dynamicProperties, rewardCalculator);
+        subject = new GetAccountInfoAnswer(optionValidator, aliasManager, dynamicProperties, rewardCalculator);
     }
 
     @Test
@@ -225,9 +241,7 @@ class GetAccountInfoAnswerTest {
 
         // then:
         assertTrue(response.hasCryptoGetInfo());
-        assertEquals(
-                ACCOUNT_DELETED,
-                response.getCryptoGetInfo().getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(ACCOUNT_DELETED, response.getCryptoGetInfo().getHeader().getNodeTransactionPrecheckCode());
         assertEquals(COST_ANSWER, response.getCryptoGetInfo().getHeader().getResponseType());
         assertEquals(fee, response.getCryptoGetInfo().getHeader().getCost());
     }
@@ -246,9 +260,7 @@ class GetAccountInfoAnswerTest {
 
         // then:
         assertTrue(response.hasCryptoGetInfo());
-        assertEquals(
-                FAIL_INVALID,
-                response.getCryptoGetInfo().getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(FAIL_INVALID, response.getCryptoGetInfo().getHeader().getNodeTransactionPrecheckCode());
         assertEquals(ANSWER_ONLY, response.getCryptoGetInfo().getHeader().getResponseType());
     }
 
@@ -257,7 +269,7 @@ class GetAccountInfoAnswerTest {
     void getsTheAccountInfo() throws Throwable {
         given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
         final MerkleMap<EntityNum, MerkleToken> tokens = mock(MerkleMap.class);
-        children.setTokens(tokens);
+        children.setTokens(MerkleMapLike.from(tokens));
 
         given(token.hasKycKey()).willReturn(true);
         given(token.hasFreezeKey()).willReturn(true);
@@ -301,7 +313,8 @@ class GetAccountInfoAnswerTest {
         assertEquals(ANSWER_ONLY, response.getCryptoGetInfo().getHeader().getResponseType());
         assertEquals(0, response.getCryptoGetInfo().getHeader().getCost());
         // and:
-        final CryptoGetInfoResponse.AccountInfo info = response.getCryptoGetInfo().getAccountInfo();
+        final CryptoGetInfoResponse.AccountInfo info =
+                response.getCryptoGetInfo().getAccountInfo();
         assertEquals(asAccount(payer), info.getAccountID());
         final String address = CommonUtils.hex(asEvmAddress(0, 0L, 12_345L));
         assertEquals(address, info.getContractAccountID());
@@ -322,50 +335,15 @@ class GetAccountInfoAnswerTest {
         // and:
         assertEquals(
                 List.of(
-                        new RawTokenRelationship(
-                                        firstBalance,
-                                        0,
-                                        0,
-                                        firstToken.getTokenNum(),
-                                        true,
-                                        true,
-                                        true)
+                        new RawTokenRelationship(firstBalance, 0, 0, firstToken.getTokenNum(), true, true, true)
                                 .asGrpcFor(token),
-                        new RawTokenRelationship(
-                                        secondBalance,
-                                        0,
-                                        0,
-                                        secondToken.getTokenNum(),
-                                        false,
-                                        false,
-                                        true)
+                        new RawTokenRelationship(secondBalance, 0, 0, secondToken.getTokenNum(), false, false, true)
                                 .asGrpcFor(token),
-                        new RawTokenRelationship(
-                                        thirdBalance,
-                                        0,
-                                        0,
-                                        thirdToken.getTokenNum(),
-                                        true,
-                                        true,
-                                        false)
+                        new RawTokenRelationship(thirdBalance, 0, 0, thirdToken.getTokenNum(), true, true, false)
                                 .asGrpcFor(token),
-                        new RawTokenRelationship(
-                                        fourthBalance,
-                                        0,
-                                        0,
-                                        fourthToken.getTokenNum(),
-                                        false,
-                                        false,
-                                        true)
+                        new RawTokenRelationship(fourthBalance, 0, 0, fourthToken.getTokenNum(), false, false, true)
                                 .asGrpcFor(deletedToken),
-                        new RawTokenRelationship(
-                                        missingBalance,
-                                        0,
-                                        0,
-                                        missingToken.getTokenNum(),
-                                        false,
-                                        false,
-                                        false)
+                        new RawTokenRelationship(missingBalance, 0, 0, missingToken.getTokenNum(), false, false, false)
                                 .asGrpcFor(REMOVED_TOKEN)),
                 info.getTokenRelationshipsList());
     }
@@ -392,8 +370,7 @@ class GetAccountInfoAnswerTest {
 
         given(aliasManager.lookupIdBy(any())).willReturn(entityNum);
 
-        given(optionValidator.queryableAccountStatus(entityNum, accounts))
-                .willReturn(INVALID_ACCOUNT_ID);
+        given(optionValidator.queryableAccountStatus(entityNum, accounts)).willReturn(INVALID_ACCOUNT_ID);
 
         final ResponseCodeEnum validity = subject.checkValidity(query, view);
         assertEquals(INVALID_ACCOUNT_ID, validity);
@@ -425,14 +402,10 @@ class GetAccountInfoAnswerTest {
     @Test
     void getsValidity() {
         // given:
-        final Response response =
-                Response.newBuilder()
-                        .setCryptoGetInfo(
-                                CryptoGetInfoResponse.newBuilder()
-                                        .setHeader(
-                                                subject.answerOnlyHeader(
-                                                        RESULT_SIZE_LIMIT_EXCEEDED)))
-                        .build();
+        final Response response = Response.newBuilder()
+                .setCryptoGetInfo(CryptoGetInfoResponse.newBuilder()
+                        .setHeader(subject.answerOnlyHeader(RESULT_SIZE_LIMIT_EXCEEDED)))
+                .build();
 
         // expect:
         assertEquals(RESULT_SIZE_LIMIT_EXCEEDED, subject.extractValidityFrom(response));
@@ -444,8 +417,7 @@ class GetAccountInfoAnswerTest {
         assertEquals(CryptoGetInfo, subject.canonicalFunction());
     }
 
-    private Query validQuery(final ResponseType type, final long payment, final String idLit)
-            throws Throwable {
+    private Query validQuery(final ResponseType type, final long payment, final String idLit) throws Throwable {
         this.paymentTxn = payerSponsoredTransfer(payer, COMPLEX_KEY_ACCOUNT_KT, node, payment);
         final QueryHeader.Builder header =
                 QueryHeader.newBuilder().setPayment(this.paymentTxn).setResponseType(type);
@@ -454,15 +426,13 @@ class GetAccountInfoAnswerTest {
         return Query.newBuilder().setCryptoGetInfo(op).build();
     }
 
-    private Query validQueryWithAlias(
-            final ResponseType type, final long payment, final String alias) throws Throwable {
+    private Query validQueryWithAlias(final ResponseType type, final long payment, final String alias)
+            throws Throwable {
         this.paymentTxn = payerSponsoredTransfer(payer, COMPLEX_KEY_ACCOUNT_KT, node, payment);
         final QueryHeader.Builder header =
                 QueryHeader.newBuilder().setPayment(this.paymentTxn).setResponseType(type);
         final CryptoGetInfoQuery.Builder op =
-                CryptoGetInfoQuery.newBuilder()
-                        .setHeader(header)
-                        .setAccountID(asAccountWithAlias(alias));
+                CryptoGetInfoQuery.newBuilder().setHeader(header).setAccountID(asAccountWithAlias(alias));
         return Query.newBuilder().setCryptoGetInfo(op).build();
     }
 }

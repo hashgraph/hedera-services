@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.schedule.impl.handlers;
 
 import static com.hedera.node.app.service.mono.utils.MiscUtils.functionOf;
@@ -21,9 +22,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRAN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 
 import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
-import com.hedera.node.app.spi.PreHandleDispatcher;
-import com.hedera.node.app.spi.meta.InvalidTransactionMetadata;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -33,28 +33,29 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
  * ScheduleSignHandler}.
  */
 abstract class AbstractScheduleHandler {
-    protected TransactionMetadata preHandleScheduledTxn(
+    protected void preHandleScheduledTxn(
+            final PreHandleContext context,
             final TransactionBody scheduledTxn,
             final AccountID payerForNested,
             final PreHandleDispatcher dispatcher) {
+        final var innerContext = context.createNestedContext(scheduledTxn, payerForNested);
+        context.setInnerContext(innerContext);
         final HederaFunctionality scheduledFunction;
         try {
             scheduledFunction = functionOf(scheduledTxn);
         } catch (UnknownHederaFunctionality ex) {
-            return new InvalidTransactionMetadata(
-                    scheduledTxn, payerForNested, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+            innerContext.status(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+            return;
         }
 
         if (!isSchedulable(scheduledFunction)) {
-            return new InvalidTransactionMetadata(
-                    scheduledTxn, payerForNested, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+            innerContext.status(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+            return;
         }
 
-        final var meta = dispatcher.dispatch(scheduledTxn, payerForNested);
-        if (meta.failed()) {
-            return new InvalidTransactionMetadata(
-                    scheduledTxn, payerForNested, UNRESOLVABLE_REQUIRED_SIGNERS);
+        dispatcher.dispatch(innerContext);
+        if (innerContext.failed()) {
+            innerContext.status(UNRESOLVABLE_REQUIRED_SIGNERS);
         }
-        return meta;
     }
 }

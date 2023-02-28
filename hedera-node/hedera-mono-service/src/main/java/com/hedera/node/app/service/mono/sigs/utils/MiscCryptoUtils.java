@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.utils;
 
 import org.bouncycastle.jcajce.provider.digest.Keccak;
@@ -25,8 +26,7 @@ public class MiscCryptoUtils {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    private static final ECNamedCurveParameterSpec secp256k1 =
-            ECNamedCurveTable.getParameterSpec("secp256k1");
+    private static final ECNamedCurveParameterSpec secp256k1 = ECNamedCurveTable.getParameterSpec("secp256k1");
     private static final ECCurve curveSecp256k1 = secp256k1.getCurve();
 
     public static byte[] keccak256DigestOf(final byte[] msg) {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files;
 
 import static org.mockito.Mockito.inOrder;
@@ -28,9 +29,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SysFileCallbacksTest {
-    @Mock ConfigCallbacks configCallbacks;
-    @Mock ThrottlesCallback throttlesCallback;
-    @Mock CurrencyCallbacks currencyCallbacks;
+    @Mock
+    ConfigCallbacks configCallbacks;
+
+    @Mock
+    ThrottlesCallback throttlesCallback;
+
+    @Mock
+    CurrencyCallbacks currencyCallbacks;
 
     SysFileCallbacks subject;
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.pricing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -57,21 +58,16 @@ public class AssetsLoader {
         if (cachedConstWeights != null) {
             return cachedConstWeights;
         }
-        try (final var fin =
-                AssetsLoader.class
-                        .getClassLoader()
-                        .getResourceAsStream(CONSTANT_WEIGHTS_RESOURCE)) {
+        try (final var fin = AssetsLoader.class.getClassLoader().getResourceAsStream(CONSTANT_WEIGHTS_RESOURCE)) {
             final var om = new ObjectMapper();
             final var constWeights = om.readValue(fin, Map.class);
 
-            final Map<HederaFunctionality, BigDecimal> typedConstWeights =
-                    new EnumMap<>(HederaFunctionality.class);
-            constWeights.forEach(
-                    (funcName, weight) -> {
-                        final var function = HederaFunctionality.valueOf((String) funcName);
-                        final var bdWeight = BigDecimal.valueOf((Double) weight);
-                        typedConstWeights.put(function, bdWeight);
-                    });
+            final Map<HederaFunctionality, BigDecimal> typedConstWeights = new EnumMap<>(HederaFunctionality.class);
+            constWeights.forEach((funcName, weight) -> {
+                final var function = HederaFunctionality.valueOf((String) funcName);
+                final var bdWeight = BigDecimal.valueOf((Double) weight);
+                typedConstWeights.put(function, bdWeight);
+            });
 
             cachedConstWeights = typedConstWeights;
             return typedConstWeights;
@@ -90,22 +86,17 @@ public class AssetsLoader {
         if (cachedCapacities != null) {
             return cachedCapacities;
         }
-        try (final var fin =
-                AssetsLoader.class.getClassLoader().getResourceAsStream(CAPACITIES_RESOURCE)) {
+        try (final var fin = AssetsLoader.class.getClassLoader().getResourceAsStream(CAPACITIES_RESOURCE)) {
             final var om = new ObjectMapper();
             final var capacities = om.readValue(fin, Map.class);
 
-            final Map<UsableResource, BigDecimal> typedCapacities =
-                    new EnumMap<>(UsableResource.class);
-            capacities.forEach(
-                    (resourceName, amount) -> {
-                        final var resource = UsableResource.valueOf((String) resourceName);
-                        final var bdAmount =
-                                (amount instanceof Long val)
-                                        ? BigDecimal.valueOf(val)
-                                        : BigDecimal.valueOf((Integer) amount);
-                        typedCapacities.put(resource, bdAmount);
-                    });
+            final Map<UsableResource, BigDecimal> typedCapacities = new EnumMap<>(UsableResource.class);
+            capacities.forEach((resourceName, amount) -> {
+                final var resource = UsableResource.valueOf((String) resourceName);
+                final var bdAmount =
+                        (amount instanceof Long val) ? BigDecimal.valueOf(val) : BigDecimal.valueOf((Integer) amount);
+                typedCapacities.put(resource, bdAmount);
+            });
 
             cachedCapacities = typedCapacities;
             return typedCapacities;
@@ -120,36 +111,28 @@ public class AssetsLoader {
      * @return the desired per-type prices, in USD
      * @throws IOException if the backing JSON resource cannot be loaded
      */
-    public Map<HederaFunctionality, Map<SubType, BigDecimal>> loadCanonicalPrices()
-            throws IOException {
+    public Map<HederaFunctionality, Map<SubType, BigDecimal>> loadCanonicalPrices() throws IOException {
         if (cachedCanonicalPrices != null) {
             return cachedCanonicalPrices;
         }
-        try (final var fin =
-                AssetsLoader.class
-                        .getClassLoader()
-                        .getResourceAsStream(CANONICAL_PRICES_RESOURCE)) {
+        try (final var fin = AssetsLoader.class.getClassLoader().getResourceAsStream(CANONICAL_PRICES_RESOURCE)) {
             final var om = new ObjectMapper();
             final var prices = om.readValue(fin, Map.class);
 
             final Map<HederaFunctionality, Map<SubType, BigDecimal>> typedPrices =
                     new EnumMap<>(HederaFunctionality.class);
-            prices.forEach(
-                    (funName, priceMap) -> {
-                        final var function = HederaFunctionality.valueOf((String) funName);
-                        final Map<SubType, BigDecimal> scopedPrices = new EnumMap<>(SubType.class);
-                        ((Map) priceMap)
-                                .forEach(
-                                        (typeName, price) -> {
-                                            final var type = SubType.valueOf((String) typeName);
-                                            final var bdPrice =
-                                                    (price instanceof Double val)
-                                                            ? BigDecimal.valueOf(val)
-                                                            : BigDecimal.valueOf((Integer) price);
-                                            scopedPrices.put(type, bdPrice);
-                                        });
-                        typedPrices.put(function, scopedPrices);
-                    });
+            prices.forEach((funName, priceMap) -> {
+                final var function = HederaFunctionality.valueOf((String) funName);
+                final Map<SubType, BigDecimal> scopedPrices = new EnumMap<>(SubType.class);
+                ((Map) priceMap).forEach((typeName, price) -> {
+                    final var type = SubType.valueOf((String) typeName);
+                    final var bdPrice = (price instanceof Double val)
+                            ? BigDecimal.valueOf(val)
+                            : BigDecimal.valueOf((Integer) price);
+                    scopedPrices.put(type, bdPrice);
+                });
+                typedPrices.put(function, scopedPrices);
+            });
 
             cachedCanonicalPrices = typedPrices;
             return typedPrices;

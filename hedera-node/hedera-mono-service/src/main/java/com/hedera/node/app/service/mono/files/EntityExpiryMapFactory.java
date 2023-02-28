@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files;
 
 import com.google.common.primitives.Longs;
@@ -46,10 +47,7 @@ public final class EntityExpiryMapFactory {
         var flag = matcher.matches();
         assert flag;
 
-        return new EntityId(
-                0,
-                Long.parseLong(matcher.group(REALM_INDEX)),
-                Long.parseLong(matcher.group(NUM_INDEX)));
+        return new EntityId(0, Long.parseLong(matcher.group(REALM_INDEX)), Long.parseLong(matcher.group(NUM_INDEX)));
     }
 
     static Long toLong(byte[] bytes) {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.operation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,28 +45,35 @@ class HederaCreate2OperationTest {
     private static final Bytes oneOffsetStackItem = Bytes.of(10);
     private static final Bytes twoOffsetStackItem = Bytes.of(20);
     private static final MutableBytes initcode = MutableBytes.of((byte) 0xaa);
-    private Address recipientAddr =
-            Address.fromHexString("0x0102030405060708090a0b0c0d0e0f1011121314");
+    private Address recipientAddr = Address.fromHexString("0x0102030405060708090a0b0c0d0e0f1011121314");
 
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private MessageFrame frame;
-    @Mock private GasCalculator gasCalculator;
-    @Mock private HederaStackedWorldStateUpdater stackedUpdater;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private EntityCreator creator;
-    @Mock private RecordsHistorian recordsHistorian;
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private GasCalculator gasCalculator;
+
+    @Mock
+    private HederaStackedWorldStateUpdater stackedUpdater;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private EntityCreator creator;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
 
     private HederaCreate2Operation subject;
 
     @BeforeEach
     void setup() {
-        subject =
-                new HederaCreate2Operation(
-                        gasCalculator,
-                        creator,
-                        syntheticTxnFactory,
-                        recordsHistorian,
-                        dynamicProperties);
+        subject = new HederaCreate2Operation(
+                gasCalculator, creator, syntheticTxnFactory, recordsHistorian, dynamicProperties);
     }
 
     @Test

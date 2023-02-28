@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
@@ -36,8 +37,7 @@ public abstract class TxnUsage {
         this.usageEstimator = usageEstimator;
     }
 
-    public static <T> long keySizeIfPresent(
-            final T op, final Predicate<T> check, final Function<T, Key> getter) {
+    public static <T> long keySizeIfPresent(final T op, final Predicate<T> check, final Function<T, Key> getter) {
         return check.test(op) ? getAccountKeyStorageSize(getter.apply(op)) : 0L;
     }
 

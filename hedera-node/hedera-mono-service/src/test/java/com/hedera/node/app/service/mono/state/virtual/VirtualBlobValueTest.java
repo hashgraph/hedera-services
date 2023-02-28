@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -72,7 +73,8 @@ class VirtualBlobValueTest {
         final var inOrder = inOrder(out);
         subject.serialize(out);
 
-        inOrder.verify(out).writeByteArray(data);
+        inOrder.verify(out).writeInt(data.length);
+        inOrder.verify(out).write(data);
     }
 
     @Test
@@ -103,14 +105,13 @@ class VirtualBlobValueTest {
         int len = data.length;
 
         given(buffer.getInt()).willReturn(len);
-        doAnswer(
-                        new Answer() {
-                            @Override
-                            public Object answer(final InvocationOnMock invocationOnMock) {
-                                defaultSubject.setData(data);
-                                return null;
-                            }
-                        })
+        doAnswer(new Answer() {
+                    @Override
+                    public Object answer(final InvocationOnMock invocationOnMock) {
+                        defaultSubject.setData(data);
+                        return null;
+                    }
+                })
                 .when(buffer)
                 .get(ArgumentMatchers.any());
 

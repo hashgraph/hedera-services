@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.legacy.handler;
 
 import static com.hedera.node.app.hapi.utils.builder.RequestBuilder.getTimestamp;
@@ -56,9 +57,7 @@ public class SmartContractRequestHandler {
 
     @Inject
     public SmartContractRequestHandler(
-            final HederaLedger ledger,
-            final HbarCentExchange exchange,
-            final Map<EntityId, Long> entityExpiries) {
+            final HederaLedger ledger, final HbarCentExchange exchange, final Map<EntityId, Long> entityExpiries) {
         this.ledger = ledger;
         this.exchange = exchange;
         this.entityExpiries = entityExpiries;
@@ -83,28 +82,21 @@ public class SmartContractRequestHandler {
                 long oldExpiry = ledger.expiry(id);
                 var entity = EntityId.fromGrpcContractId(cid);
                 entityExpiries.put(entity, oldExpiry);
-                HederaAccountCustomizer customizer =
-                        new HederaAccountCustomizer().expiry(newExpiry);
+                HederaAccountCustomizer customizer = new HederaAccountCustomizer().expiry(newExpiry);
                 ledger.customizePotentiallyDeleted(id, customizer);
             }
         } catch (Exception e) {
             log.warn("Unhandled exception in SystemDelete", e);
-            log.debug(
-                    "File System Exception {} tx= {}",
-                    () -> e,
-                    () -> TextFormat.shortDebugString(op));
-            receipt =
-                    getTransactionReceipt(
-                            ResponseCodeEnum.FILE_SYSTEM_EXCEPTION, exchange.activeRates());
+            log.debug("File System Exception {} tx= {}", () -> e, () -> TextFormat.shortDebugString(op));
+            receipt = getTransactionReceipt(ResponseCodeEnum.FILE_SYSTEM_EXCEPTION, exchange.activeRates());
         }
 
-        TransactionRecord.Builder transactionRecord =
-                getTransactionRecord(
-                        txBody.getTransactionFee(),
-                        txBody.getMemo(),
-                        txBody.getTransactionID(),
-                        getTimestamp(consensusTimestamp),
-                        receipt);
+        TransactionRecord.Builder transactionRecord = getTransactionRecord(
+                txBody.getTransactionFee(),
+                txBody.getMemo(),
+                txBody.getTransactionID(),
+                getTimestamp(consensusTimestamp),
+                receipt);
         return transactionRecord.build();
     }
 
@@ -130,8 +122,7 @@ public class SmartContractRequestHandler {
                 receipt = getTransactionReceipt(INVALID_FILE_ID, exchange.activeRates());
             }
             if (oldExpiry > 0) {
-                HederaAccountCustomizer customizer =
-                        new HederaAccountCustomizer().expiry(oldExpiry);
+                HederaAccountCustomizer customizer = new HederaAccountCustomizer().expiry(oldExpiry);
                 ledger.customizePotentiallyDeleted(asAccount(cid), customizer);
             }
             if (receipt.getStatus() == SUCCESS) {
@@ -141,37 +132,29 @@ public class SmartContractRequestHandler {
                     receipt = getTransactionReceipt(FAIL_INVALID, exchange.activeRates());
                     if (log.isDebugEnabled()) {
                         log.debug(
-                                "systemUndelete exception: can't serialize or deserialize! tx= {}"
-                                        + " {}",
-                                txBody,
-                                e);
+                                "systemUndelete exception: can't serialize or deserialize! tx= {}" + " {}", txBody, e);
                     }
                 }
             }
             entityExpiries.remove(entity);
         } catch (Exception e) {
             log.warn("Unhandled exception in SystemUndelete", e);
-            log.debug(
-                    "File System Exception {} tx= {}",
-                    () -> e,
-                    () -> TextFormat.shortDebugString(op));
+            log.debug("File System Exception {} tx= {}", () -> e, () -> TextFormat.shortDebugString(op));
             receipt = getTransactionReceipt(FILE_SYSTEM_EXCEPTION, exchange.activeRates());
         }
-        TransactionRecord.Builder transactionRecord =
-                getTransactionRecord(
-                        txBody.getTransactionFee(),
-                        txBody.getMemo(),
-                        txBody.getTransactionID(),
-                        getTimestamp(consensusTimestamp),
-                        receipt);
+        TransactionRecord.Builder transactionRecord = getTransactionRecord(
+                txBody.getTransactionFee(),
+                txBody.getMemo(),
+                txBody.getTransactionID(),
+                getTimestamp(consensusTimestamp),
+                receipt);
         return transactionRecord.build();
     }
 
     private TransactionReceipt updateDeleteFlag(ContractID cid, boolean deleted) {
         var id = asAccount(cid);
         if (ledger.isDeleted(id)) {
-            ledger.customizePotentiallyDeleted(
-                    asAccount(cid), new HederaAccountCustomizer().isDeleted(deleted));
+            ledger.customizePotentiallyDeleted(asAccount(cid), new HederaAccountCustomizer().isDeleted(deleted));
         } else {
             ledger.customize(asAccount(cid), new HederaAccountCustomizer().isDeleted(deleted));
         }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.meta;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetAccountDetails;
@@ -60,18 +61,13 @@ public class GetAccountDetailsAnswer implements AnswerService {
     public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
         final AccountID id = query.getAccountDetails().getAccountId();
         final var entityNum =
-                id.getAlias().isEmpty()
-                        ? EntityNum.fromAccountId(id)
-                        : aliasManager.lookupIdBy(id.getAlias());
+                id.getAlias().isEmpty() ? EntityNum.fromAccountId(id) : aliasManager.lookupIdBy(id.getAlias());
         return optionValidator.queryableAccountStatus(entityNum, view.accounts());
     }
 
     @Override
     public Response responseGiven(
-            final Query query,
-            final @Nullable StateView view,
-            final ResponseCodeEnum validity,
-            final long cost) {
+            final Query query, final @Nullable StateView view, final ResponseCodeEnum validity, final long cost) {
         final GetAccountDetailsQuery op = query.getAccountDetails();
         final GetAccountDetailsResponse.Builder response = GetAccountDetailsResponse.newBuilder();
 
@@ -83,12 +79,8 @@ public class GetAccountDetailsAnswer implements AnswerService {
                 response.setHeader(costAnswerHeader(OK, cost));
             } else {
                 final AccountID id = op.getAccountId();
-                final var optionalDetails =
-                        Objects.requireNonNull(view)
-                                .accountDetails(
-                                        id,
-                                        aliasManager,
-                                        dynamicProperties.maxTokensRelsPerInfoQuery());
+                final var optionalDetails = Objects.requireNonNull(view)
+                        .accountDetails(id, aliasManager, dynamicProperties.maxTokensRelsPerInfoQuery());
                 if (optionalDetails.isPresent()) {
                     response.setHeader(answerOnlyHeader(OK));
                     response.setAccountDetails(optionalDetails.get());

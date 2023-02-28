@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -21,7 +22,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.ServicesState;
-import com.hedera.node.app.service.mono.stream.RecordStreamManager;
 import com.hedera.node.app.service.mono.txns.network.UpgradeActions;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -41,17 +41,24 @@ class ReconnectListenerTest {
     private final long sequence = 123L;
     private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
 
-    @Mock private ReconnectCompleteNotification notification;
-    @Mock private ServicesState servicesState;
-    @Mock private UpgradeActions upgradeActions;
-    @Mock private RecordStreamManager recordStreamManager;
+    @Mock
+    private ReconnectCompleteNotification notification;
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private ReconnectListener subject;
+    @Mock
+    private ServicesState servicesState;
+
+    @Mock
+    private UpgradeActions upgradeActions;
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private ReconnectListener subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ReconnectListener(upgradeActions, recordStreamManager);
+        subject = new ReconnectListener(upgradeActions);
     }
 
     @Test
@@ -67,12 +74,10 @@ class ReconnectListenerTest {
         // then:
         assertThat(
                 logCaptor.infoLogs(),
-                contains(
-                        "Notification Received: Reconnect Finished. consensusTimestamp:"
-                            + " 1970-01-15T06:56:07.000000890Z, roundNumber: 234, sequence: 123"));
+                contains("Notification Received: Reconnect Finished. consensusTimestamp:"
+                        + " 1970-01-15T06:56:07.000000890Z, roundNumber: 234, sequence: 123"));
         // and:
         verify(servicesState).logSummary();
-        verify(recordStreamManager).setStartWriteAtCompleteWindow(true);
         verify(upgradeActions).catchUpOnMissedSideEffects();
     }
 }

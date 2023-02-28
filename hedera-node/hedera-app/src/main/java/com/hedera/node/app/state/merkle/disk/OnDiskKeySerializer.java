@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.spi.state.Serdes;
+import com.hedera.node.app.spi.state.serdes.ByteBufferDataInput;
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.node.app.state.merkle.data.ByteBufferDataInput;
 import com.hedera.node.app.state.merkle.data.MeteredOutputStream;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -44,7 +45,7 @@ import java.util.Objects;
  *
  * @param <K>
  */
-public final class OnDiskKeySerializer<K extends Comparable<K>>
+public final class OnDiskKeySerializer<K extends Comparable<? super K>>
         implements KeySerializer<OnDiskKey<K>>, SelfSerializableSupplier<OnDiskKey<K>> {
 
     @Deprecated(forRemoval = true)
@@ -116,16 +117,14 @@ public final class OnDiskKeySerializer<K extends Comparable<K>>
     }
 
     @Override
-    public OnDiskKey<K> deserialize(@NonNull final ByteBuffer byteBuffer, final long ignored)
-            throws IOException {
+    public OnDiskKey<K> deserialize(@NonNull final ByteBuffer byteBuffer, final long ignored) throws IOException {
         final var k = serdes.parse(new ByteBufferDataInput(byteBuffer));
         Objects.requireNonNull(k);
         return new OnDiskKey<>(md, k);
     }
 
     @Override
-    public int serialize(
-            @Nullable final OnDiskKey<K> key, @NonNull final SerializableDataOutputStream out)
+    public int serialize(@Nullable final OnDiskKey<K> key, @NonNull final SerializableDataOutputStream out)
             throws IOException {
         final var metered = new MeteredOutputStream(out);
         final var k = Objects.requireNonNull(Objects.requireNonNull(key).getKey());
@@ -134,10 +133,7 @@ public final class OnDiskKeySerializer<K extends Comparable<K>>
     }
 
     @Override
-    public boolean equals(
-            @NonNull final ByteBuffer byteBuffer,
-            final int ignored,
-            @Nullable final OnDiskKey<K> key)
+    public boolean equals(@NonNull final ByteBuffer byteBuffer, final int ignored, @Nullable final OnDiskKey<K> key)
             throws IOException {
         // I really don't have a fast path for this. Which is very problematic for performance.
         // All we can do is serialize one or deserialize the other! It would be nice if PBJ
@@ -163,8 +159,7 @@ public final class OnDiskKeySerializer<K extends Comparable<K>>
     }
 
     @Override
-    public void deserialize(@NonNull final SerializableDataInputStream in, final int ignored)
-            throws IOException {
+    public void deserialize(@NonNull final SerializableDataInputStream in, final int ignored) throws IOException {
         // This class has nothing to deserialize
     }
 

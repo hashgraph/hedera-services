@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stream;
 
 import static com.hedera.node.app.hapi.utils.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
@@ -70,7 +71,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -101,16 +101,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class RecordStreamFileWriterTest {
     @BeforeEach
     void setUp() throws NoSuchAlgorithmException {
-        subject =
-                new RecordStreamFileWriter(
-                        expectedExportDir(),
-                        logPeriodMs,
-                        signer,
-                        false,
-                        streamType,
-                        expectedExportDir(),
-                        maxSidecarFileSize,
-                        globalDynamicProperties);
+        subject = new RecordStreamFileWriter(
+                expectedExportDir(),
+                signer,
+                streamType,
+                expectedExportDir(),
+                maxSidecarFileSize,
+                globalDynamicProperties);
         messageDigest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
         messageDigest.digest("yumyum".getBytes(StandardCharsets.UTF_8));
         final var startRunningHash = new Hash(messageDigest.digest());
@@ -125,19 +122,13 @@ class RecordStreamFileWriterTest {
         given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
         given(streamType.getSigFileHeader()).willReturn(SIG_FILE_HEADER_VALUES);
         given(streamType.getExtension()).willReturn(RecordStreamType.RECORD_EXTENSION);
-        given(streamType.getSidecarExtension())
-                .willReturn(RecordStreamType.SIDECAR_RECORD_EXTENSION);
-        given(globalDynamicProperties.shouldCompressRecordFilesOnCreation())
-                .willReturn(isCompressed);
+        given(streamType.getSidecarExtension()).willReturn(RecordStreamType.SIDECAR_RECORD_EXTENSION);
+        given(globalDynamicProperties.shouldCompressRecordFilesOnCreation()).willReturn(isCompressed);
 
-        final var firstBlockEntireFileSignature =
-                "entireSignatureBlock1".getBytes(StandardCharsets.UTF_8);
-        final var firstBlockMetadataSignature =
-                "metadataSignatureBlock1".getBytes(StandardCharsets.UTF_8);
-        final var secondBlockEntireFileSignature =
-                "entireSignatureBlock2".getBytes(StandardCharsets.UTF_8);
-        final var secondBlockMetadataSignature =
-                "metadataSignatureBlock2".getBytes(StandardCharsets.UTF_8);
+        final var firstBlockEntireFileSignature = "entireSignatureBlock1".getBytes(StandardCharsets.UTF_8);
+        final var firstBlockMetadataSignature = "metadataSignatureBlock1".getBytes(StandardCharsets.UTF_8);
+        final var secondBlockEntireFileSignature = "entireSignatureBlock2".getBytes(StandardCharsets.UTF_8);
+        final var secondBlockMetadataSignature = "metadataSignatureBlock2".getBytes(StandardCharsets.UTF_8);
         given(signer.sign(any()))
                 .willReturn(new Signature(RSA, firstBlockEntireFileSignature))
                 .willReturn(new Signature(RSA, firstBlockMetadataSignature))
@@ -152,22 +143,16 @@ class RecordStreamFileWriterTest {
 
         // when
         final int numberOfRSOsInFirstBlock = 4;
-        final var firstBlockRSOs =
-                generateNRecordStreamObjectsForBlockMStartingFromT(
-                        numberOfRSOsInFirstBlock, 1, firstTransactionInstant, allSidecarTypes);
+        final var firstBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(
+                numberOfRSOsInFirstBlock, 1, firstTransactionInstant, allSidecarTypes);
         final int numberOfRSOsInSecondBlock = 8;
-        final var secondBlockRSOs =
-                generateNRecordStreamObjectsForBlockMStartingFromT(
-                        numberOfRSOsInSecondBlock,
-                        2,
-                        firstTransactionInstant.plusSeconds(logPeriodMs / 1000),
-                        someSidecarTypes);
-        final var thirdBlockRSOs =
-                generateNRecordStreamObjectsForBlockMStartingFromT(
-                        1,
-                        3,
-                        firstTransactionInstant.plusSeconds(2 * logPeriodMs / 1000),
-                        Collections.emptyList());
+        final var secondBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(
+                numberOfRSOsInSecondBlock,
+                2,
+                firstTransactionInstant.plusSeconds(logPeriodMs / 1000),
+                someSidecarTypes);
+        final var thirdBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(
+                1, 3, firstTransactionInstant.plusSeconds(2 * logPeriodMs / 1000), Collections.emptyList());
         Stream.of(firstBlockRSOs, secondBlockRSOs, thirdBlockRSOs)
                 .flatMap(Collection::stream)
                 .forEach(subject::addObject);
@@ -195,78 +180,14 @@ class RecordStreamFileWriterTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void objectsFromFirstPeriodAreNotExternalizedWhenStartWriteAtCompleteWindowIsTrue(
-            final boolean isCompressed) throws IOException, NoSuchAlgorithmException {
+    void currentFileOnlyClosedWhenRsoHasMark(final boolean isCompressed) throws IOException, NoSuchAlgorithmException {
         // given
         given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
         given(streamType.getSigFileHeader()).willReturn(SIG_FILE_HEADER_VALUES);
         given(streamType.getExtension()).willReturn(RecordStreamType.RECORD_EXTENSION);
-        given(globalDynamicProperties.shouldCompressRecordFilesOnCreation())
-                .willReturn(isCompressed);
-        final var secondBlockEntireFileSignature =
-                "entireSignatureBlock2".getBytes(StandardCharsets.UTF_8);
-        final var secondBlockMetadataSignature =
-                "metadataSignatureBlock2".getBytes(StandardCharsets.UTF_8);
-        given(signer.sign(any()))
-                .willReturn(new Signature(RSA, secondBlockEntireFileSignature))
-                .willReturn(new Signature(RSA, secondBlockMetadataSignature));
-        final var firstTransactionInstant =
-                LocalDateTime.of(2022, 5, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
-        // set initial running hash
-        messageDigest.digest("yumyum".getBytes(StandardCharsets.UTF_8));
-        final var startRunningHash = new Hash(messageDigest.digest());
-        subject.setRunningHash(startRunningHash);
-        subject.setStartWriteAtCompleteWindow(true);
-
-        // when
-        final var firstBlockRSOs =
-                generateNRecordStreamObjectsForBlockMStartingFromT(
-                        1, 1, firstTransactionInstant, allSidecarTypes);
-        final int numberOfRSOsInSecondBlock = 5;
-        final var secondBlockRSOs =
-                generateNRecordStreamObjectsForBlockMStartingFromT(
-                        numberOfRSOsInSecondBlock,
-                        2,
-                        firstTransactionInstant.plusSeconds(logPeriodMs / 1000),
-                        allSidecarTypes);
-        final var thirdBlockRSOs =
-                generateNRecordStreamObjectsForBlockMStartingFromT(
-                        1,
-                        3,
-                        firstTransactionInstant.plusSeconds(2 * logPeriodMs / 1000),
-                        allSidecarTypes);
-        Stream.of(firstBlockRSOs, secondBlockRSOs, thirdBlockRSOs)
-                .flatMap(Collection::stream)
-                .forEach(subject::addObject);
-
-        // then
-        assertFalse(
-                Path.of(subject.generateRecordFilePath(firstTransactionInstant)).toFile().exists());
-        assertRecordStreamFiles(
-                2L,
-                secondBlockRSOs,
-                firstBlockRSOs.get(firstBlockRSOs.size() - 1).getRunningHash().getHash(),
-                secondBlockEntireFileSignature,
-                secondBlockMetadataSignature,
-                Map.of(1, allSidecarTypesEnum),
-                Map.of(1, transformToExpectedSidecars(allSidecarTypes, numberOfRSOsInSecondBlock)),
-                isCompressed);
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void objectsFromDifferentPeriodsButWithSameAlignmentAreExternalizedInSameFile(
-            final boolean isCompressed) throws IOException, NoSuchAlgorithmException {
-        // given
-        given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
-        given(streamType.getSigFileHeader()).willReturn(SIG_FILE_HEADER_VALUES);
-        given(streamType.getExtension()).willReturn(RecordStreamType.RECORD_EXTENSION);
-        given(globalDynamicProperties.shouldCompressRecordFilesOnCreation())
-                .willReturn(isCompressed);
-        final var firstBlockEntireFileSignature =
-                "entireSignatureBlock1".getBytes(StandardCharsets.UTF_8);
-        final var firstBlockMetadataSignature =
-                "metadataSignatureBlock1".getBytes(StandardCharsets.UTF_8);
+        given(globalDynamicProperties.shouldCompressRecordFilesOnCreation()).willReturn(isCompressed);
+        final var firstBlockEntireFileSignature = "entireSignatureBlock1".getBytes(StandardCharsets.UTF_8);
+        final var firstBlockMetadataSignature = "metadataSignatureBlock1".getBytes(StandardCharsets.UTF_8);
         given(signer.sign(any()))
                 .willReturn(new Signature(RSA, firstBlockEntireFileSignature))
                 .willReturn(new Signature(RSA, firstBlockMetadataSignature));
@@ -281,25 +202,14 @@ class RecordStreamFileWriterTest {
         // generate 2 RSOs for block #1, where the second RSO is in different period, but with same
         // alignment (block)
         final var numberOfRSOsInFirstBlock = 1;
-        final var firstBlockRSOs =
-                generateNRecordStreamObjectsForBlockMStartingFromT(
-                        numberOfRSOsInFirstBlock, 1, firstTransactionInstant, allSidecarTypes);
-        firstBlockRSOs.addAll(
-                generateNRecordStreamObjectsForBlockMStartingFromT(
-                        1,
-                        1,
-                        firstTransactionInstant.plusSeconds(2 * (logPeriodMs / 1000)),
-                        allSidecarTypes));
+        final var firstBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(
+                numberOfRSOsInFirstBlock, 1, firstTransactionInstant, allSidecarTypes);
+        firstBlockRSOs.addAll(generateNRecordStreamObjectsForBlockMStartingFromT(
+                1, 1, firstTransactionInstant.plusSeconds(2 * (logPeriodMs / 1000)), allSidecarTypes, false));
         // RSOs for second block to trigger externalization of first block
-        final var secondBlockRSOs =
-                generateNRecordStreamObjectsForBlockMStartingFromT(
-                        1,
-                        2,
-                        firstTransactionInstant.plusSeconds(3 * (logPeriodMs / 1000)),
-                        allSidecarTypes);
-        Stream.of(firstBlockRSOs, secondBlockRSOs)
-                .flatMap(Collection::stream)
-                .forEach(subject::addObject);
+        final var secondBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(
+                1, 2, firstTransactionInstant.plusSeconds(3 * (logPeriodMs / 1000)), allSidecarTypes);
+        Stream.of(firstBlockRSOs, secondBlockRSOs).flatMap(Collection::stream).forEach(subject::addObject);
 
         // then
         assertRecordStreamFiles(
@@ -321,12 +231,9 @@ class RecordStreamFileWriterTest {
         given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
         given(streamType.getSigFileHeader()).willReturn(SIG_FILE_HEADER_VALUES);
         given(streamType.getExtension()).willReturn(RecordStreamType.RECORD_EXTENSION);
-        given(globalDynamicProperties.shouldCompressRecordFilesOnCreation())
-                .willReturn(isCompressed);
-        final var firstBlockEntireFileSignature =
-                "entireSignatureBlock1".getBytes(StandardCharsets.UTF_8);
-        final var firstBlockMetadataSignature =
-                "metadataSignatureBlock1".getBytes(StandardCharsets.UTF_8);
+        given(globalDynamicProperties.shouldCompressRecordFilesOnCreation()).willReturn(isCompressed);
+        final var firstBlockEntireFileSignature = "entireSignatureBlock1".getBytes(StandardCharsets.UTF_8);
+        final var firstBlockMetadataSignature = "metadataSignatureBlock1".getBytes(StandardCharsets.UTF_8);
         given(signer.sign(any()))
                 .willReturn(new Signature(RSA, firstBlockEntireFileSignature))
                 .willReturn(new Signature(RSA, firstBlockMetadataSignature));
@@ -341,24 +248,14 @@ class RecordStreamFileWriterTest {
         // generate 2 RSOs for block #1 without alignment; should be externalized in same record
         // file
         final var numberOfRSOsInFirstBlock = 2;
-        final var firstBlockRSOs =
-                generateNRecordStreamObjectsForBlockMStartingFromT(
-                        numberOfRSOsInFirstBlock,
-                        NO_ALIGNMENT,
-                        firstTransactionInstant,
-                        allSidecarTypes);
+        final var firstBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(
+                numberOfRSOsInFirstBlock, NO_ALIGNMENT, firstTransactionInstant, allSidecarTypes);
         // generate 1 RSO in next block to trigger externalization of previous file; even though
         // alignments are equal,
         // when they are NO_ALIGNMENT, we ignore it and start a new file regardless
-        final var secondBlockRSOs =
-                generateNRecordStreamObjectsForBlockMStartingFromT(
-                        1,
-                        NO_ALIGNMENT,
-                        firstTransactionInstant.plusSeconds(4 * (logPeriodMs / 1000)),
-                        allSidecarTypes);
-        Stream.of(firstBlockRSOs, secondBlockRSOs)
-                .flatMap(Collection::stream)
-                .forEach(subject::addObject);
+        final var secondBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(
+                1, NO_ALIGNMENT, firstTransactionInstant.plusSeconds(4 * (logPeriodMs / 1000)), allSidecarTypes);
+        Stream.of(firstBlockRSOs, secondBlockRSOs).flatMap(Collection::stream).forEach(subject::addObject);
 
         // then
         assertRecordStreamFiles(
@@ -374,20 +271,15 @@ class RecordStreamFileWriterTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void sidecarFileSizeLimitIsRespected(final boolean isCompressed)
-            throws IOException, NoSuchAlgorithmException {
+    void sidecarFileSizeLimitIsRespected(final boolean isCompressed) throws IOException, NoSuchAlgorithmException {
         // given
         given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
         given(streamType.getSigFileHeader()).willReturn(SIG_FILE_HEADER_VALUES);
         given(streamType.getExtension()).willReturn(RecordStreamType.RECORD_EXTENSION);
-        given(streamType.getSidecarExtension())
-                .willReturn(RecordStreamType.SIDECAR_RECORD_EXTENSION);
-        given(globalDynamicProperties.shouldCompressRecordFilesOnCreation())
-                .willReturn(isCompressed);
-        final var firstBlockEntireFileSignature =
-                "entireSignatureBlock1".getBytes(StandardCharsets.UTF_8);
-        final var firstBlockMetadataSignature =
-                "metadataSignatureBlock1".getBytes(StandardCharsets.UTF_8);
+        given(streamType.getSidecarExtension()).willReturn(RecordStreamType.SIDECAR_RECORD_EXTENSION);
+        given(globalDynamicProperties.shouldCompressRecordFilesOnCreation()).willReturn(isCompressed);
+        final var firstBlockEntireFileSignature = "entireSignatureBlock1".getBytes(StandardCharsets.UTF_8);
+        final var firstBlockMetadataSignature = "metadataSignatureBlock1".getBytes(StandardCharsets.UTF_8);
         given(signer.sign(any()))
                 .willReturn(new Signature(RSA, firstBlockEntireFileSignature))
                 .willReturn(new Signature(RSA, firstBlockMetadataSignature));
@@ -398,58 +290,37 @@ class RecordStreamFileWriterTest {
         final var startRunningHash = new Hash(messageDigest.digest());
         subject.setRunningHash(startRunningHash);
 
-        final var bigBytecode =
-                ContractBytecode.newBuilder()
-                        .setInitcode(ByteString.copyFrom(new byte[maxSidecarFileSize - 50]))
-                        .build();
-        final var bigStateChange =
-                ContractStateChanges.newBuilder()
-                        .addContractStateChanges(
-                                ContractStateChange.newBuilder()
-                                        .addStorageChanges(
-                                                StorageChange.newBuilder()
-                                                        .setValueRead(
-                                                                ByteString.copyFrom(
-                                                                        new byte
-                                                                                [maxSidecarFileSize
-                                                                                        - 50]))
-                                                        .build())
-                                        .build())
-                        .build();
+        final var bigBytecode = ContractBytecode.newBuilder()
+                .setInitcode(ByteString.copyFrom(new byte[maxSidecarFileSize - 50]))
+                .build();
+        final var bigStateChange = ContractStateChanges.newBuilder()
+                .addContractStateChanges(ContractStateChange.newBuilder()
+                        .addStorageChanges(StorageChange.newBuilder()
+                                .setValueRead(ByteString.copyFrom(new byte[maxSidecarFileSize - 50]))
+                                .build())
+                        .build())
+                .build();
         final var bigSidecar1 = TransactionSidecarRecord.newBuilder().setBytecode(bigBytecode);
-        final var bigSidecar2 =
-                TransactionSidecarRecord.newBuilder().setStateChanges(bigStateChange);
+        final var bigSidecar2 = TransactionSidecarRecord.newBuilder().setStateChanges(bigStateChange);
 
         // when
-        final var firstBlockRSOs =
-                generateNRecordStreamObjectsForBlockMStartingFromT(
-                        1, 1, firstTransactionInstant, List.of(bigSidecar1, bigSidecar2));
-        final var secondBlockRSOs =
-                generateNRecordStreamObjectsForBlockMStartingFromT(
-                        1,
-                        3,
-                        firstTransactionInstant.plusSeconds(2 * logPeriodMs / 1000),
-                        Collections.emptyList());
-        Stream.of(firstBlockRSOs, secondBlockRSOs)
-                .flatMap(Collection::stream)
-                .forEach(subject::addObject);
+        final var firstBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(
+                1, 1, firstTransactionInstant, List.of(bigSidecar1, bigSidecar2));
+        final var secondBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(
+                1, 3, firstTransactionInstant.plusSeconds(2 * logPeriodMs / 1000), Collections.emptyList());
+        Stream.of(firstBlockRSOs, secondBlockRSOs).flatMap(Collection::stream).forEach(subject::addObject);
 
         // then
-        final var sidecarIdToExpectedContainedSidecars =
-                Map.of(
-                        1, List.of(bigSidecar1),
-                        2, List.of(bigSidecar2));
+        final var sidecarIdToExpectedContainedSidecars = Map.of(
+                1, List.of(bigSidecar1),
+                2, List.of(bigSidecar2));
         assertRecordStreamFiles(
                 1L,
                 firstBlockRSOs,
                 startRunningHash,
                 firstBlockEntireFileSignature,
                 firstBlockMetadataSignature,
-                Map.of(
-                        1,
-                        EnumSet.of(SidecarType.CONTRACT_BYTECODE),
-                        2,
-                        EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE)),
+                Map.of(1, EnumSet.of(SidecarType.CONTRACT_BYTECODE), 2, EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE)),
                 sidecarIdToExpectedContainedSidecars,
                 isCompressed);
     }
@@ -459,33 +330,38 @@ class RecordStreamFileWriterTest {
             final long blockNumber,
             final Instant firstBlockTransactionInstant,
             final List<TransactionSidecarRecord.Builder> sidecarRecords) {
+        return generateNRecordStreamObjectsForBlockMStartingFromT(
+                numberOfRSOs, blockNumber, firstBlockTransactionInstant, sidecarRecords, true);
+    }
+
+    private List<RecordStreamObject> generateNRecordStreamObjectsForBlockMStartingFromT(
+            final int numberOfRSOs,
+            final long blockNumber,
+            final Instant firstBlockTransactionInstant,
+            final List<TransactionSidecarRecord.Builder> sidecarRecords,
+            final boolean firstRsoClosesFile) {
         final var recordStreamObjects = new ArrayList<RecordStreamObject>();
         for (int i = 0; i < numberOfRSOs; i++) {
-            final var timestamp =
-                    Timestamp.newBuilder()
-                            .setSeconds(firstBlockTransactionInstant.getEpochSecond())
-                            .setNanos(1000 * i);
-            final var expirableBuilder =
-                    ExpirableTxnRecord.newBuilder()
-                            .setConsensusTime(
-                                    RichInstant.fromJava(
-                                            Instant.ofEpochSecond(
-                                                    timestamp.getSeconds(), timestamp.getNanos())));
-            final var transaction =
-                    Transaction.newBuilder()
-                            .setSignedTransactionBytes(
-                                    ByteString.copyFrom(
-                                            ("block #" + blockNumber + ", transaction #" + i)
-                                                    .getBytes(StandardCharsets.UTF_8)));
-            final var recordStreamObject =
-                    new RecordStreamObject(
-                            expirableBuilder.build(),
-                            transaction.build(),
-                            Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos()),
-                            sidecarRecords);
+            final var timestamp = Timestamp.newBuilder()
+                    .setSeconds(firstBlockTransactionInstant.getEpochSecond())
+                    .setNanos(1000 * i);
+            final var expirableBuilder = ExpirableTxnRecord.newBuilder()
+                    .setConsensusTime(
+                            RichInstant.fromJava(Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos())));
+            final var transaction = Transaction.newBuilder()
+                    .setSignedTransactionBytes(ByteString.copyFrom(
+                            ("block #" + blockNumber + ", transaction #" + i).getBytes(StandardCharsets.UTF_8)));
+            final var recordStreamObject = new RecordStreamObject(
+                    expirableBuilder.build(),
+                    transaction.build(),
+                    Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos()),
+                    sidecarRecords);
             final var hashInput = recordStreamObject.toString().getBytes(StandardCharsets.UTF_8);
             recordStreamObject.getRunningHash().setHash(new Hash(messageDigest.digest(hashInput)));
             recordStreamObject.withBlockNumber(blockNumber);
+            if (i == 0 && firstRsoClosesFile) {
+                recordStreamObject.setWriteNewFile();
+            }
             recordStreamObjects.add(recordStreamObject);
         }
         return recordStreamObjects;
@@ -502,16 +378,11 @@ class RecordStreamFileWriterTest {
             final boolean isCompressed)
             throws IOException, NoSuchAlgorithmException {
         final var firstTxnTimestamp = blockRSOs.get(0).getTimestamp();
-        final var recordStreamFilePath =
-                subject.generateRecordFilePath(
-                        Instant.ofEpochSecond(
-                                firstTxnTimestamp.getEpochSecond(), firstTxnTimestamp.getNano()));
-        final var recordStreamFilePair =
-                isCompressed
-                        ? RecordStreamingUtils.readRecordStreamFile(
-                                recordStreamFilePath + COMPRESSION_ALGORITHM_EXTENSION)
-                        : RecordStreamingUtils.readUncompressedRecordStreamFile(
-                                recordStreamFilePath);
+        final var recordStreamFilePath = subject.generateRecordFilePath(
+                Instant.ofEpochSecond(firstTxnTimestamp.getEpochSecond(), firstTxnTimestamp.getNano()));
+        final var recordStreamFilePair = isCompressed
+                ? RecordStreamingUtils.readRecordStreamFile(recordStreamFilePath + COMPRESSION_ALGORITHM_EXTENSION)
+                : RecordStreamingUtils.readUncompressedRecordStreamFile(recordStreamFilePath);
 
         assertEquals(RECORD_STREAM_VERSION, recordStreamFilePair.getLeft());
         final var recordStreamFileOptional = recordStreamFilePair.getRight();
@@ -523,10 +394,7 @@ class RecordStreamFileWriterTest {
                 blockRSOs,
                 startRunningHash,
                 recordStreamFile,
-                new File(
-                        isCompressed
-                                ? recordStreamFilePath + COMPRESSION_ALGORITHM_EXTENSION
-                                : recordStreamFilePath),
+                new File(isCompressed ? recordStreamFilePath + COMPRESSION_ALGORITHM_EXTENSION : recordStreamFilePath),
                 sidecarIdToExpectedSidecarTypes,
                 sidecarIdToExpectedSidecars,
                 isCompressed);
@@ -563,11 +431,7 @@ class RecordStreamFileWriterTest {
         assertEquals(toProto(startRunningHash), recordStreamFile.getStartObjectRunningHash());
 
         assertTrue(
-                logCaptor
-                        .debugLogs()
-                        .contains(
-                                "beginNew :: write startRunningHash to metadata "
-                                        + startRunningHash));
+                logCaptor.debugLogs().contains("beginNew :: write startRunningHash to metadata " + startRunningHash));
 
         // assert RSOs
         assertEquals(blockRSOs.size(), recordStreamFile.getRecordStreamItemsCount());
@@ -585,40 +449,29 @@ class RecordStreamFileWriterTest {
         final var expectedEndRunningHash = new Hash(messageDigest.digest(expectedHashInput));
         assertEquals(toProto(expectedEndRunningHash), recordStreamFile.getEndObjectRunningHash());
 
-        assertTrue(
-                logCaptor
-                        .debugLogs()
-                        .contains(
-                                "closeCurrentAndSign :: write endRunningHash "
-                                        + expectedEndRunningHash));
+        assertTrue(logCaptor
+                .debugLogs()
+                .contains("closeCurrentAndSign :: write endRunningHash " + expectedEndRunningHash));
 
         // assert block number
         assertEquals(expectedBlock, recordStreamFile.getBlockNumber());
-        assertTrue(
-                logCaptor
-                        .debugLogs()
-                        .contains("closeCurrentAndSign :: write block number " + expectedBlock));
+        assertTrue(logCaptor.debugLogs().contains("closeCurrentAndSign :: write block number " + expectedBlock));
 
         // assert sidecar metadata
         final var firstTxnTimestamp = blockRSOs.get(0).getTimestamp();
         final var firstTxnInstant =
-                Instant.ofEpochSecond(
-                        firstTxnTimestamp.getEpochSecond(), firstTxnTimestamp.getNano());
+                Instant.ofEpochSecond(firstTxnTimestamp.getEpochSecond(), firstTxnTimestamp.getNano());
         var sidecarId = 1;
         final var sidecarMetadataList = recordStreamFile.getSidecarsList();
         for (final var sidecarMetadata : sidecarMetadataList) {
             assertEquals(
-                    sidecarIdToExpectedSidecarTypes.get(sidecarId).stream().toList(),
-                    sidecarMetadata.getTypesList());
-            final var pathToSidecarFile =
-                    subject.generateSidecarFilePath(firstTxnInstant, sidecarId);
-            final var sidecarFileProto =
-                    isCompressed
-                            ? RecordStreamingUtils.readSidecarFile(pathToSidecarFile)
-                            : RecordStreamingUtils.readUncompressedSidecarFile(pathToSidecarFile);
+                    sidecarIdToExpectedSidecarTypes.get(sidecarId).stream().toList(), sidecarMetadata.getTypesList());
+            final var pathToSidecarFile = subject.generateSidecarFilePath(firstTxnInstant, sidecarId);
+            final var sidecarFileProto = isCompressed
+                    ? RecordStreamingUtils.readSidecarFile(pathToSidecarFile)
+                    : RecordStreamingUtils.readUncompressedSidecarFile(pathToSidecarFile);
             assertAllSidecarsAreInFile(
-                    sidecarIdToExpectedSidecars.get(sidecarId),
-                    sidecarFileProto.getSidecarRecordsList());
+                    sidecarIdToExpectedSidecars.get(sidecarId), sidecarFileProto.getSidecarRecordsList());
             final var sidecarFile = new File(pathToSidecarFile);
             assertFalse(sidecarFile.length() > maxSidecarFileSize);
             final var messageDigest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
@@ -626,19 +479,13 @@ class RecordStreamFileWriterTest {
             final var actualSidecarHash = sidecarMetadata.getHash();
             assertEquals(HashAlgorithm.SHA_384, actualSidecarHash.getAlgorithm());
             assertEquals(messageDigest.getDigestLength(), actualSidecarHash.getLength());
-            assertArrayEquals(messageDigest.digest(), actualSidecarHash.getHash().toByteArray());
-            assertTrue(
-                    logCaptor
-                            .debugLogs()
-                            .contains(
-                                    "Sidecar file created successfully " + sidecarFile.getName()));
+            assertArrayEquals(
+                    messageDigest.digest(), actualSidecarHash.getHash().toByteArray());
+            assertTrue(logCaptor.debugLogs().contains("Sidecar file created successfully " + sidecarFile.getName()));
             sidecarId++;
         }
 
-        assertTrue(
-                logCaptor
-                        .debugLogs()
-                        .contains("Stream file written successfully " + recordFile.getName()));
+        assertTrue(logCaptor.debugLogs().contains("Stream file written successfully " + recordFile.getName()));
     }
 
     private void assertAllSidecarsAreInFile(
@@ -677,15 +524,13 @@ class RecordStreamFileWriterTest {
         // assert entire file signature
         assertEquals(SignatureType.SHA_384_WITH_RSA, entireFileSignatureObject.getType());
         assertEquals(expectedEntireFileSignature.length, entireFileSignatureObject.getLength());
-        assertEquals(
-                101 - expectedEntireFileSignature.length, entireFileSignatureObject.getChecksum());
+        assertEquals(101 - expectedEntireFileSignature.length, entireFileSignatureObject.getChecksum());
         assertArrayEquals(
                 expectedEntireFileSignature,
                 entireFileSignatureObject.getSignature().toByteArray());
 
         /* --- assert metadata signature --- */
-        final var expectedMetaHash =
-                computeMetadataHashFrom(recordStreamVersion, recordStreamFileProto);
+        final var expectedMetaHash = computeMetadataHashFrom(recordStreamVersion, recordStreamFileProto);
         final var metadataSignatureObject = signatureFile.getMetadataSignature();
         final var actualMetaHash = metadataSignatureObject.getHashObject();
         // assert metadata hash
@@ -697,14 +542,10 @@ class RecordStreamFileWriterTest {
         assertEquals(expectedMetadataSignature.length, metadataSignatureObject.getLength());
         assertEquals(101 - expectedMetadataSignature.length, metadataSignatureObject.getChecksum());
         assertArrayEquals(
-                expectedMetadataSignature, metadataSignatureObject.getSignature().toByteArray());
+                expectedMetadataSignature,
+                metadataSignatureObject.getSignature().toByteArray());
 
-        assertTrue(
-                logCaptor
-                        .debugLogs()
-                        .contains(
-                                "closeCurrentAndSign :: signature file saved: "
-                                        + signatureFilePath));
+        assertTrue(logCaptor.debugLogs().contains("closeCurrentAndSign :: signature file saved: " + signatureFilePath));
     }
 
     private HashObject toProto(final Hash hash) {
@@ -715,10 +556,8 @@ class RecordStreamFileWriterTest {
                 .build();
     }
 
-    private Hash computeMetadataHashFrom(
-            final Integer version, final RecordStreamFile recordStreamFile) {
-        try (final var outputStream =
-                new SerializableDataOutputStream(new HashingOutputStream(messageDigest))) {
+    private Hash computeMetadataHashFrom(final Integer version, final RecordStreamFile recordStreamFile) {
+        try (final var outputStream = new SerializableDataOutputStream(new HashingOutputStream(messageDigest))) {
             // digest file header
             outputStream.writeInt(version);
             final var hapiProtoVersion = recordStreamFile.getHapiProtoVersion();
@@ -727,17 +566,13 @@ class RecordStreamFileWriterTest {
             outputStream.writeInt(hapiProtoVersion.getPatch());
 
             // digest startRunningHash
-            final var startRunningHash =
-                    new Hash(
-                            recordStreamFile.getStartObjectRunningHash().getHash().toByteArray(),
-                            DigestType.SHA_384);
+            final var startRunningHash = new Hash(
+                    recordStreamFile.getStartObjectRunningHash().getHash().toByteArray(), DigestType.SHA_384);
             outputStream.write(startRunningHash.getValue());
 
             // digest endRunningHash
-            final var endRunningHash =
-                    new Hash(
-                            recordStreamFile.getEndObjectRunningHash().getHash().toByteArray(),
-                            DigestType.SHA_384);
+            final var endRunningHash = new Hash(
+                    recordStreamFile.getEndObjectRunningHash().getHash().toByteArray(), DigestType.SHA_384);
             outputStream.write(endRunningHash.getValue());
 
             // digest block number
@@ -757,8 +592,7 @@ class RecordStreamFileWriterTest {
                 LocalDateTime.of(2022, 5, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
         // send RSOs for block 1
         final var firstBlockRSOs =
-                generateNRecordStreamObjectsForBlockMStartingFromT(
-                        4, 1, firstTransactionInstant, allSidecarTypes);
+                generateNRecordStreamObjectsForBlockMStartingFromT(4, 1, firstTransactionInstant, allSidecarTypes);
         firstBlockRSOs.forEach(subject::addObject);
 
         // when
@@ -774,24 +608,20 @@ class RecordStreamFileWriterTest {
         subject.clear();
 
         // then
-        assertThat(
-                logCaptor.debugLogs(),
-                contains(Matchers.startsWith("RecordStreamFileWriter::clear executed.")));
+        assertThat(logCaptor.debugLogs(), contains(Matchers.startsWith("RecordStreamFileWriter::clear executed.")));
     }
 
     @Test
     void clearCatchesIOExceptionWhenClosingStreamsAndLogsIt() {
-        try (final var ignored =
-                Mockito.mockConstruction(
-                        SerializableDataOutputStream.class,
-                        (mock, context) -> doThrow(IOException.class).when(mock).close())) {
+        try (final var ignored = Mockito.mockConstruction(
+                SerializableDataOutputStream.class,
+                (mock, context) -> doThrow(IOException.class).when(mock).close())) {
             // given
             given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
             final var firstTransactionInstant =
                     LocalDateTime.of(2022, 5, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
             // send RSOs for block 1
-            generateNRecordStreamObjectsForBlockMStartingFromT(
-                            1, 1, firstTransactionInstant, allSidecarTypes)
+            generateNRecordStreamObjectsForBlockMStartingFromT(1, 1, firstTransactionInstant, allSidecarTypes)
                     .forEach(subject::addObject);
 
             // when
@@ -800,9 +630,7 @@ class RecordStreamFileWriterTest {
             // then
             assertThat(
                     logCaptor.warnLogs(),
-                    contains(
-                            Matchers.startsWith(
-                                    "RecordStreamFileWriter::clear Exception in closing dosMeta")));
+                    contains(Matchers.startsWith("RecordStreamFileWriter::clear Exception in closing dosMeta")));
             assertTrue(logCaptor.debugLogs().contains("RecordStreamFileWriter::clear executed."));
         }
     }
@@ -819,10 +647,8 @@ class RecordStreamFileWriterTest {
         verify(subjectSpy).closeCurrentAndSign();
         assertThat(
                 logCaptor.debugLogs(),
-                contains(
-                        Matchers.startsWith(
-                                "RecordStreamFileWriter finished writing the last object, is"
-                                        + " stopped")));
+                contains(Matchers.startsWith(
+                        "RecordStreamFileWriter finished writing the last object, is" + " stopped")));
     }
 
     @Test
@@ -833,11 +659,9 @@ class RecordStreamFileWriterTest {
                 LocalDateTime.of(2022, 5, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
 
         // when
-        try (MockedConstruction<SerializableDataOutputStream> ignored =
-                Mockito.mockConstruction(
-                        SerializableDataOutputStream.class,
-                        (mock, context) ->
-                                doThrow(IOException.class).when(mock).writeLong(anyLong()))) {
+        try (MockedConstruction<SerializableDataOutputStream> ignored = Mockito.mockConstruction(
+                SerializableDataOutputStream.class,
+                (mock, context) -> doThrow(IOException.class).when(mock).writeLong(anyLong()))) {
             sendRSOsForBlock1And2StartingFrom(firstTransactionInstant);
         }
 
@@ -845,10 +669,8 @@ class RecordStreamFileWriterTest {
         assertTrue(Thread.currentThread().isInterrupted());
         assertThat(
                 logCaptor.warnLogs(),
-                contains(
-                        Matchers.startsWith(
-                                "closeCurrentAndSign :: IOException when serializing endRunningHash"
-                                        + " and block number into metadata")));
+                contains(Matchers.startsWith("closeCurrentAndSign :: IOException when serializing endRunningHash"
+                        + " and block number into metadata")));
     }
 
     @Test
@@ -858,66 +680,48 @@ class RecordStreamFileWriterTest {
         given(globalDynamicProperties.shouldCompressRecordFilesOnCreation()).willReturn(true);
         final var firstTransactionInstant =
                 LocalDateTime.of(2022, 1, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
-        final var expectedRecordFileName =
-                generateStreamFileNameFromInstant(firstTransactionInstant, streamType)
-                        + COMPRESSION_ALGORITHM_EXTENSION;
-        final var recordFile =
-                new File(expectedExportDir() + File.separator + expectedRecordFileName)
-                        .createNewFile();
+        final var expectedRecordFileName = generateStreamFileNameFromInstant(firstTransactionInstant, streamType)
+                + COMPRESSION_ALGORITHM_EXTENSION;
+        final var recordFile = new File(expectedExportDir() + File.separator + expectedRecordFileName).createNewFile();
         assertTrue(recordFile);
 
         // when
         sendRSOsForBlock1And2StartingFrom(firstTransactionInstant);
 
         // then
-        assertTrue(
-                logCaptor
-                        .debugLogs()
-                        .contains("Stream file already exists " + expectedRecordFileName));
+        assertTrue(logCaptor.debugLogs().contains("Stream file already exists " + expectedRecordFileName));
     }
 
     private void sendRSOsForBlock1And2StartingFrom(Instant firstTransactionInstant) {
         final var firstBlockRSOs =
-                generateNRecordStreamObjectsForBlockMStartingFromT(
-                        1, 1, firstTransactionInstant, allSidecarTypes);
-        final var secondBlockRSOs =
-                generateNRecordStreamObjectsForBlockMStartingFromT(
-                        1,
-                        2,
-                        firstTransactionInstant.plusSeconds(2 * logPeriodMs / 1000),
-                        allSidecarTypes);
+                generateNRecordStreamObjectsForBlockMStartingFromT(1, 1, firstTransactionInstant, allSidecarTypes);
+        final var secondBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(
+                1, 2, firstTransactionInstant.plusSeconds(2 * logPeriodMs / 1000), allSidecarTypes);
 
         // when
-        Stream.of(firstBlockRSOs, secondBlockRSOs)
-                .flatMap(Collection::stream)
-                .forEach(subject::addObject);
+        Stream.of(firstBlockRSOs, secondBlockRSOs).flatMap(Collection::stream).forEach(subject::addObject);
     }
 
     @Test
     void interruptThreadAndLogWhenIOExceptionIsCaughtWhileWritingSidecarRecordFile() {
         given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
         given(streamType.getExtension()).willReturn(RecordStreamType.RECORD_EXTENSION);
-        given(streamType.getSidecarExtension())
-                .willReturn(RecordStreamType.SIDECAR_RECORD_EXTENSION);
+        given(streamType.getSidecarExtension()).willReturn(RecordStreamType.SIDECAR_RECORD_EXTENSION);
         final var firstTransactionInstant =
                 LocalDateTime.of(2022, 11, 13, 11, 1, 55).toInstant(ZoneOffset.UTC);
         final var firstBlockRSOs =
-                generateNRecordStreamObjectsForBlockMStartingFromT(
-                        1, 1, firstTransactionInstant, allSidecarTypes);
+                generateNRecordStreamObjectsForBlockMStartingFromT(1, 1, firstTransactionInstant, allSidecarTypes);
         firstBlockRSOs.forEach(subject::addObject);
 
-        try (MockedConstruction<SerializableDataOutputStream> ignored =
-                Mockito.mockConstruction(
-                        SerializableDataOutputStream.class,
-                        (mock, context) -> doThrow(IOException.class).when(mock).write(any()))) {
+        try (MockedConstruction<SerializableDataOutputStream> ignored = Mockito.mockConstruction(
+                SerializableDataOutputStream.class,
+                (mock, context) -> doThrow(IOException.class).when(mock).write(any()))) {
             subject.closeCurrentAndSign();
             assertTrue(Thread.currentThread().isInterrupted());
             assertThat(
                     logCaptor.warnLogs(),
-                    contains(
-                            Matchers.startsWith(
-                                    "closeCurrentAndSign :: IOException when creating sidecar"
-                                            + " files")));
+                    contains(Matchers.startsWith(
+                            "closeCurrentAndSign :: IOException when creating sidecar" + " files")));
         }
     }
 
@@ -926,23 +730,18 @@ class RecordStreamFileWriterTest {
         given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
         final var firstTransactionInstant =
                 LocalDateTime.of(2022, 1, 3, 21, 2, 55).toInstant(ZoneOffset.UTC);
-        final var firstBlockRSOs =
-                generateNRecordStreamObjectsForBlockMStartingFromT(
-                        1, 1, firstTransactionInstant, Collections.emptyList());
+        final var firstBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(
+                1, 1, firstTransactionInstant, Collections.emptyList());
         firstBlockRSOs.forEach(subject::addObject);
 
-        try (MockedConstruction<SerializableDataOutputStream> ignored =
-                Mockito.mockConstruction(
-                        SerializableDataOutputStream.class,
-                        (mock, context) ->
-                                doThrow(IOException.class).when(mock).writeInt(anyInt()))) {
+        try (MockedConstruction<SerializableDataOutputStream> ignored = Mockito.mockConstruction(
+                SerializableDataOutputStream.class,
+                (mock, context) -> doThrow(IOException.class).when(mock).writeInt(anyInt()))) {
             subject.closeCurrentAndSign();
             assertTrue(Thread.currentThread().isInterrupted());
             assertThat(
                     logCaptor.warnLogs(),
-                    contains(
-                            Matchers.startsWith(
-                                    "closeCurrentAndSign :: IOException when serializing ")));
+                    contains(Matchers.startsWith("closeCurrentAndSign :: IOException when serializing ")));
         }
     }
 
@@ -950,23 +749,19 @@ class RecordStreamFileWriterTest {
     void interruptThreadAndLogWhenIOExceptionIsCaughtWhileWritingSidecarInConsume() {
         // given
         given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
-        given(streamType.getSidecarExtension())
-                .willReturn(RecordStreamType.SIDECAR_RECORD_EXTENSION);
+        given(streamType.getSidecarExtension()).willReturn(RecordStreamType.SIDECAR_RECORD_EXTENSION);
         final var firstTransactionInstant =
                 LocalDateTime.of(2022, 7, 21, 15, 59, 55).toInstant(ZoneOffset.UTC);
-        final var bigBytecode =
-                ContractBytecode.newBuilder()
-                        .setInitcode(ByteString.copyFrom(new byte[maxSidecarFileSize - 50]))
-                        .build();
+        final var bigBytecode = ContractBytecode.newBuilder()
+                .setInitcode(ByteString.copyFrom(new byte[maxSidecarFileSize - 50]))
+                .build();
         final var bigSidecar1 = TransactionSidecarRecord.newBuilder().setBytecode(bigBytecode);
         final var bigSidecar2 = TransactionSidecarRecord.newBuilder().setBytecode(bigBytecode);
-        final var firstBlockRSOs =
-                generateNRecordStreamObjectsForBlockMStartingFromT(
-                        1, 1, firstTransactionInstant, List.of(bigSidecar1, bigSidecar2));
-        try (MockedConstruction<SerializableDataOutputStream> ignored =
-                Mockito.mockConstruction(
-                        SerializableDataOutputStream.class,
-                        (mock, context) -> doThrow(IOException.class).when(mock).write(any()))) {
+        final var firstBlockRSOs = generateNRecordStreamObjectsForBlockMStartingFromT(
+                1, 1, firstTransactionInstant, List.of(bigSidecar1, bigSidecar2));
+        try (MockedConstruction<SerializableDataOutputStream> ignored = Mockito.mockConstruction(
+                SerializableDataOutputStream.class,
+                (mock, context) -> doThrow(IOException.class).when(mock).write(any()))) {
 
             // when
             firstBlockRSOs.forEach(subject::addObject);
@@ -975,9 +770,7 @@ class RecordStreamFileWriterTest {
             assertTrue(Thread.currentThread().isInterrupted());
             assertThat(
                     logCaptor.warnLogs(),
-                    contains(
-                            Matchers.startsWith(
-                                    "consume :: IOException when creating sidecar files")));
+                    contains(Matchers.startsWith("consume :: IOException when creating sidecar files")));
         }
     }
 
@@ -991,18 +784,14 @@ class RecordStreamFileWriterTest {
 
         // when
         Thread.currentThread().interrupt();
-        generateNRecordStreamObjectsForBlockMStartingFromT(
-                        1, 1, firstTransactionInstant, allSidecarTypes)
+        generateNRecordStreamObjectsForBlockMStartingFromT(1, 1, firstTransactionInstant, allSidecarTypes)
                 .forEach(subject::addObject);
 
         // then
-        assertTrue(
-                logCaptor
-                        .errorLogs()
-                        .get(0)
-                        .startsWith(
-                                "beginNew :: Exception when getting startRunningHash for writing to"
-                                        + " metadata stream"));
+        assertTrue(logCaptor
+                .errorLogs()
+                .get(0)
+                .startsWith("beginNew :: Exception when getting startRunningHash for writing to" + " metadata stream"));
     }
 
     @Test
@@ -1011,8 +800,7 @@ class RecordStreamFileWriterTest {
         given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
         final var firstTransactionInstant =
                 LocalDateTime.of(2022, 4, 29, 11, 2, 55).toInstant(ZoneOffset.UTC);
-        generateNRecordStreamObjectsForBlockMStartingFromT(
-                        1, 1, firstTransactionInstant, allSidecarTypes)
+        generateNRecordStreamObjectsForBlockMStartingFromT(1, 1, firstTransactionInstant, allSidecarTypes)
                 .forEach(subject::addObject);
 
         // when
@@ -1021,24 +809,17 @@ class RecordStreamFileWriterTest {
 
         // then
         assertTrue(
-                logCaptor
-                        .errorLogs()
-                        .get(0)
-                        .startsWith("closeCurrentAndSign :: failed when getting endRunningHash "));
+                logCaptor.errorLogs().get(0).startsWith("closeCurrentAndSign :: failed when getting endRunningHash "));
     }
 
     @Test
     void exceptionWhenWritingSignatureFileIsCaughtAndLogged() {
         // given
         given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
-        final var firstBlockEntireFileSignature =
-                "entireSignatureBlock1".getBytes(StandardCharsets.UTF_8);
-        final var firstBlockMetadataSignature =
-                "metadataSignatureBlock1".getBytes(StandardCharsets.UTF_8);
-        final var secondBlockEntireFileSignature =
-                "entireSignatureBlock2".getBytes(StandardCharsets.UTF_8);
-        final var secondBlockMetadataSignature =
-                "metadataSignatureBlock2".getBytes(StandardCharsets.UTF_8);
+        final var firstBlockEntireFileSignature = "entireSignatureBlock1".getBytes(StandardCharsets.UTF_8);
+        final var firstBlockMetadataSignature = "metadataSignatureBlock1".getBytes(StandardCharsets.UTF_8);
+        final var secondBlockEntireFileSignature = "entireSignatureBlock2".getBytes(StandardCharsets.UTF_8);
+        final var secondBlockMetadataSignature = "metadataSignatureBlock2".getBytes(StandardCharsets.UTF_8);
         given(signer.sign(any()))
                 .willReturn(new Signature(RSA, firstBlockEntireFileSignature))
                 .willReturn(new Signature(RSA, firstBlockMetadataSignature))
@@ -1048,20 +829,15 @@ class RecordStreamFileWriterTest {
                 LocalDateTime.of(2022, 5, 11, 16, 2, 55).toInstant(ZoneOffset.UTC);
         // bear in mind that IOException can't really be thrown from this invocation,
         // but this is the only way we can test the expected behavior
-        given(streamType.getSigFileHeader())
-                .willAnswer(
-                        invocation -> {
-                            throw new IOException();
-                        });
+        given(streamType.getSigFileHeader()).willAnswer(invocation -> {
+            throw new IOException();
+        });
 
         sendRSOsForBlock1And2StartingFrom(firstTransactionInstant);
 
         assertThat(
                 logCaptor.errorLogs(),
-                contains(
-                        Matchers.startsWith(
-                                "closeCurrentAndSign ::  :: Fail to "
-                                        + "generate signature file for")));
+                contains(Matchers.startsWith("closeCurrentAndSign ::  :: Fail to " + "generate signature file for")));
     }
 
     @Test
@@ -1072,12 +848,10 @@ class RecordStreamFileWriterTest {
                 LocalDateTime.of(2022, 5, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
 
         // when
-        try (MockedConstruction<SerializableDataOutputStream> ignored =
-                Mockito.mockConstruction(
-                        SerializableDataOutputStream.class,
-                        (mock, context) -> doThrow(IOException.class).when(mock).write(any()))) {
-            generateNRecordStreamObjectsForBlockMStartingFromT(
-                            1, 1, firstTransactionInstant, Collections.emptyList())
+        try (MockedConstruction<SerializableDataOutputStream> ignored = Mockito.mockConstruction(
+                SerializableDataOutputStream.class,
+                (mock, context) -> doThrow(IOException.class).when(mock).write(any()))) {
+            generateNRecordStreamObjectsForBlockMStartingFromT(1, 1, firstTransactionInstant, Collections.emptyList())
                     .forEach(subject::addObject);
         }
 
@@ -1085,9 +859,7 @@ class RecordStreamFileWriterTest {
         assertTrue(Thread.currentThread().isInterrupted());
         assertThat(
                 logCaptor.errorLogs(),
-                contains(
-                        Matchers.startsWith(
-                                "beginNew :: Got IOException when writing startRunningHash to")));
+                contains(Matchers.startsWith("beginNew :: Got IOException when writing startRunningHash to")));
     }
 
     @Test
@@ -1102,27 +874,24 @@ class RecordStreamFileWriterTest {
         subject.setRunningHash(startRunningHash);
 
         // when
-        final var faultyRSO =
-                new RecordStreamObject(
-                        ExpirableTxnRecord.newBuilder().build(),
-                        Transaction.getDefaultInstance(),
-                        firstTransactionInstant,
-                        List.of(TransactionSidecarRecord.newBuilder()));
+        final var faultyRSO = new RecordStreamObject(
+                ExpirableTxnRecord.newBuilder().build(),
+                Transaction.getDefaultInstance(),
+                firstTransactionInstant,
+                List.of(TransactionSidecarRecord.newBuilder()));
+        faultyRSO.setWriteNewFile();
         subject.addObject(faultyRSO);
 
         // then
         assertThat(
                 logCaptor.warnLogs(),
-                contains(
-                        Matchers.equalTo(
-                                "A sidecar record without an actual sidecar has been received")));
+                contains(Matchers.equalTo("A sidecar record without an actual sidecar has been received")));
     }
 
     @Test
     void sidecarFileNameIsCorrectWithIdOf1Digit() {
         // given
-        given(streamType.getSidecarExtension())
-                .willReturn(RecordStreamType.SIDECAR_RECORD_EXTENSION);
+        given(streamType.getSidecarExtension()).willReturn(RecordStreamType.SIDECAR_RECORD_EXTENSION);
         given(globalDynamicProperties.shouldCompressRecordFilesOnCreation()).willReturn(true);
         final var instant = Instant.parse("2022-05-26T11:02:55.000000000Z");
 
@@ -1130,20 +899,18 @@ class RecordStreamFileWriterTest {
         final var actualSidecarFileName = subject.generateSidecarFilePath(instant, 5);
 
         // then
-        final var expected =
-                expectedExportDir()
-                        + File.separator
-                        + "2022-05-26T11_02_55.000000000Z_05."
-                        + streamType.getSidecarExtension()
-                        + COMPRESSION_ALGORITHM_EXTENSION;
+        final var expected = expectedExportDir()
+                + File.separator
+                + "2022-05-26T11_02_55.000000000Z_05."
+                + streamType.getSidecarExtension()
+                + COMPRESSION_ALGORITHM_EXTENSION;
         assertEquals(expected, actualSidecarFileName);
     }
 
     @Test
     void sidecarFileNameIsCorrectWithIdOf2Digits() {
         // given
-        given(streamType.getSidecarExtension())
-                .willReturn(RecordStreamType.SIDECAR_RECORD_EXTENSION);
+        given(streamType.getSidecarExtension()).willReturn(RecordStreamType.SIDECAR_RECORD_EXTENSION);
         given(globalDynamicProperties.shouldCompressRecordFilesOnCreation()).willReturn(true);
         final var instant = Instant.parse("2022-05-26T11:02:55.000000000Z");
 
@@ -1151,12 +918,11 @@ class RecordStreamFileWriterTest {
         final var actualSidecarFileName = subject.generateSidecarFilePath(instant, 10);
 
         // then
-        final var expected =
-                expectedExportDir()
-                        + File.separator
-                        + "2022-05-26T11_02_55.000000000Z_10."
-                        + streamType.getSidecarExtension()
-                        + COMPRESSION_ALGORITHM_EXTENSION;
+        final var expected = expectedExportDir()
+                + File.separator
+                + "2022-05-26T11_02_55.000000000Z_10."
+                + streamType.getSidecarExtension()
+                + COMPRESSION_ALGORITHM_EXTENSION;
         assertEquals(expected, actualSidecarFileName);
     }
 
@@ -1174,8 +940,7 @@ class RecordStreamFileWriterTest {
     }
 
     private static String expectedExportDir() {
-        return TestFileUtils.toPath(
-                dynamicProperties.pathToBalancesExportDir(), "recordStreamWriterTest");
+        return TestFileUtils.toPath(dynamicProperties.pathToBalancesExportDir(), "recordStreamWriterTest");
     }
 
     private List<TransactionSidecarRecord.Builder> transformToExpectedSidecars(
@@ -1198,55 +963,45 @@ class RecordStreamFileWriterTest {
         RECORD_STREAM_VERSION,
     };
     public static final EnumSet<SidecarType> allSidecarTypesEnum =
-            EnumSet.of(
-                    SidecarType.CONTRACT_STATE_CHANGE,
-                    SidecarType.CONTRACT_BYTECODE,
-                    SidecarType.CONTRACT_ACTION);
+            EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE, SidecarType.CONTRACT_BYTECODE, SidecarType.CONTRACT_ACTION);
     public static final EnumSet<SidecarType> someSidecarTypesEnum =
             EnumSet.of(SidecarType.CONTRACT_BYTECODE, SidecarType.CONTRACT_ACTION);
-    private static final TransactionSidecarRecord.Builder bytecodeSidecar =
-            TransactionSidecarRecord.newBuilder()
-                    .setBytecode(
-                            ContractBytecode.newBuilder()
-                                    .setRuntimeBytecode(ByteString.copyFrom("runtime".getBytes()))
-                                    .build());
-    private static final TransactionSidecarRecord.Builder contractActionsSidecar =
-            TransactionSidecarRecord.newBuilder()
-                    .setActions(
-                            ContractActions.newBuilder()
-                                    .addContractActions(
-                                            ContractAction.newBuilder()
-                                                    .setInput(
-                                                            ByteString.copyFrom("input".getBytes()))
-                                                    .build()));
-    private static final TransactionSidecarRecord.Builder stateChangesSidecar =
-            TransactionSidecarRecord.newBuilder()
-                    .setStateChanges(
-                            ContractStateChanges.newBuilder()
-                                    .addContractStateChanges(
-                                            ContractStateChange.newBuilder()
-                                                    .addStorageChanges(
-                                                            StorageChange.newBuilder()
-                                                                    .setSlot(
-                                                                            ByteString.copyFrom(
-                                                                                    "slot"
-                                                                                            .getBytes()))
-                                                                    .setValueRead(
-                                                                            ByteString.copyFrom(
-                                                                                    "value"
-                                                                                            .getBytes()))
-                                                                    .build()))
-                                    .build());
+    private static final TransactionSidecarRecord.Builder bytecodeSidecar = TransactionSidecarRecord.newBuilder()
+            .setBytecode(ContractBytecode.newBuilder()
+                    .setRuntimeBytecode(ByteString.copyFrom("runtime".getBytes()))
+                    .build());
+    private static final TransactionSidecarRecord.Builder contractActionsSidecar = TransactionSidecarRecord.newBuilder()
+            .setActions(ContractActions.newBuilder()
+                    .addContractActions(ContractAction.newBuilder()
+                            .setInput(ByteString.copyFrom("input".getBytes()))
+                            .build()));
+    private static final TransactionSidecarRecord.Builder stateChangesSidecar = TransactionSidecarRecord.newBuilder()
+            .setStateChanges(ContractStateChanges.newBuilder()
+                    .addContractStateChanges(ContractStateChange.newBuilder()
+                            .addStorageChanges(StorageChange.newBuilder()
+                                    .setSlot(ByteString.copyFrom("slot".getBytes()))
+                                    .setValueRead(ByteString.copyFrom("value".getBytes()))
+                                    .build()))
+                    .build());
     private static final List<TransactionSidecarRecord.Builder> allSidecarTypes =
             List.of(stateChangesSidecar, bytecodeSidecar, contractActionsSidecar);
     private static final List<TransactionSidecarRecord.Builder> someSidecarTypes =
             List.of(bytecodeSidecar, contractActionsSidecar);
 
-    @Mock private RecordStreamType streamType;
-    @Mock private Signer signer;
-    @Mock private GlobalDynamicProperties globalDynamicProperties;
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private RecordStreamFileWriter subject;
+    @Mock
+    private RecordStreamType streamType;
+
+    @Mock
+    private Signer signer;
+
+    @Mock
+    private GlobalDynamicProperties globalDynamicProperties;
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private RecordStreamFileWriter subject;
 
     private MessageDigest messageDigest;
     private static final MockGlobalDynamicProps dynamicProperties = new MockGlobalDynamicProps();

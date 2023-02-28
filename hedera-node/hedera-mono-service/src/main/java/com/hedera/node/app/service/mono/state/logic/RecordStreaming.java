@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.extractTransactionBody;
@@ -83,15 +84,25 @@ public class RecordStreaming {
      * side effect of increasing the block number.
      */
     public void streamUserTxnRecords() {
-        blockNo =
-                blockManager.updateAndGetAlignmentBlockNumber(
-                        recordsHistorian.getTopLevelRecord().getTimestamp());
+        final var blockNoMeta = blockManager.updateAndGetAlignmentBlockNumber(
+                recordsHistorian.getTopLevelRecord().getTimestamp());
+        blockNo = blockNoMeta.blockNo();
+        final var closesFile = blockNoMeta.isFirstInBlock();
         if (recordsHistorian.hasPrecedingChildRecords()) {
-            for (final var childRso : recordsHistorian.getPrecedingChildRecords()) {
-                stream(childRso.withBlockNumber(blockNo));
+            final var precedingChildren = recordsHistorian.getPrecedingChildRecords();
+            for (int i = 0, n = precedingChildren.size(); i < n; i++) {
+                final var childRso = precedingChildren.get(i).withBlockNumber(blockNo);
+                if (i == 0 && closesFile) {
+                    childRso.setWriteNewFile();
+                }
+                stream(childRso);
             }
         }
-        stream(recordsHistorian.getTopLevelRecord().withBlockNumber(blockNo));
+        final var topLevelRso = recordsHistorian.getTopLevelRecord().withBlockNumber(blockNo);
+        if (closesFile && !recordsHistorian.hasPrecedingChildRecords()) {
+            topLevelRso.setWriteNewFile();
+        }
+        stream(topLevelRso);
         if (recordsHistorian.hasFollowingChildRecords()) {
             for (final var childRso : recordsHistorian.getFollowingChildRecords()) {
                 stream(childRso.withBlockNumber(blockNo));
@@ -131,16 +142,15 @@ public class RecordStreaming {
         final var consTimestamp = rso.getTimestamp().toString();
         final var blockNumber = rso.getStreamAlignment();
         final var txId = rso.getTransactionRecord().getTransactionID();
-        final var txIdString =
-                txId.getAccountID().getShardNum()
-                        + "."
-                        + txId.getAccountID().getRealmNum()
-                        + "."
-                        + txId.getAccountID().getAccountNum()
-                        + "-"
-                        + txId.getTransactionValidStart().getSeconds()
-                        + "-"
-                        + txId.getTransactionValidStart().getNanos();
+        final var txIdString = txId.getAccountID().getShardNum()
+                + "."
+                + txId.getAccountID().getRealmNum()
+                + "."
+                + txId.getAccountID().getAccountNum()
+                + "-"
+                + txId.getTransactionValidStart().getSeconds()
+                + "-"
+                + txId.getTransactionValidStart().getNanos();
         final var status = rso.getTransactionRecord().getReceipt().getStatus().toString();
         var type = "UNRECOGNIZED";
 
@@ -153,8 +163,7 @@ public class RecordStreaming {
         }
 
         final var logString =
-                "Consensus timestamp: {}, Block number: {}, Transaction ID: {}, Transaction"
-                        + " type: {}, Status: {}";
+                "Consensus timestamp: {}, Block number: {}, Transaction ID: {}, Transaction" + " type: {}, Status: {}";
         log.info(logString, consTimestamp, blockNumber, txIdString, type, status);
     }
 

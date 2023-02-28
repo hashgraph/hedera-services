@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.controllers;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
@@ -46,8 +47,7 @@ public class ConsensusController extends ConsensusServiceGrpc.ConsensusServiceIm
     public static final String SUBMIT_MESSAGE_METRIC = "submitMessage";
 
     @Inject
-    public ConsensusController(
-            HcsAnswers hcsAnswers, TxnResponseHelper txnHelper, QueryResponseHelper queryHelper) {
+    public ConsensusController(HcsAnswers hcsAnswers, TxnResponseHelper txnHelper, QueryResponseHelper queryHelper) {
         this.hcsAnswers = hcsAnswers;
         this.txnHelper = txnHelper;
         this.queryHelper = queryHelper;

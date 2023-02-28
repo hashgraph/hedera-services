@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.txnFrom;
-import static com.hedera.node.app.service.token.impl.test.util.MetaAssertion.basicMetaAssertions;
+import static com.hedera.node.app.service.token.impl.test.util.MetaAssertion.basicContextAssertions;
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_FOR_TOKEN_WITHOUT_KYC;
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_WITH_INVALID_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_WITH_MISSING_TOKEN;
@@ -33,6 +34,7 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,59 +56,45 @@ class TokenRevokeKycFromAccountHandlerTest {
     void tokenRevokeKycWithExtant() {
         final var txn = txnFrom(VALID_REVOKE_WITH_EXTANT_TOKEN);
 
-        final var meta =
-                subject.preHandle(
-                        txn, txn.getTransactionID().getAccountID(), tokenStore, accountStore);
+        final var context = new PreHandleContext(accountStore, txn);
+        subject.preHandle(context, tokenStore);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(TOKEN_KYC_KT.asKey()));
-        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_KYC_KT.asKey()));
+        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
     }
 
     @Test
     void tokenUnfreezeMissingToken() {
         final var txn = txnFrom(REVOKE_WITH_MISSING_TOKEN);
 
-        final var meta =
-                subject.preHandle(
-                        txn, txn.getTransactionID().getAccountID(), tokenStore, accountStore);
+        final var context = new PreHandleContext(accountStore, txn);
+        subject.preHandle(context, tokenStore);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        basicMetaAssertions(meta, 0, true, ResponseCodeEnum.INVALID_TOKEN_ID);
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        basicContextAssertions(context, 0, true, ResponseCodeEnum.INVALID_TOKEN_ID);
     }
 
     @Test
     void tokenRevokeKycWithInvalidToken() {
         final var txn = txnFrom(REVOKE_WITH_INVALID_TOKEN);
 
-        final var meta =
-                subject.preHandle(
-                        txn, txn.getTransactionID().getAccountID(), tokenStore, accountStore);
+        final var context = new PreHandleContext(accountStore, txn);
+        subject.preHandle(context, tokenStore);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertTrue(sanityRestored(meta.requiredNonPayerKeys()).isEmpty());
-        basicMetaAssertions(meta, 0, true, ResponseCodeEnum.INVALID_TOKEN_ID);
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertTrue(sanityRestored(context.getRequiredNonPayerKeys()).isEmpty());
+        basicContextAssertions(context, 0, true, ResponseCodeEnum.INVALID_TOKEN_ID);
     }
 
     @Test
     void tokenRevokeKycWithoutKyc() {
         final var txn = txnFrom(REVOKE_FOR_TOKEN_WITHOUT_KYC);
 
-        final var meta =
-                subject.preHandle(
-                        txn, txn.getTransactionID().getAccountID(), tokenStore, accountStore);
+        final var context = new PreHandleContext(accountStore, txn);
+        subject.preHandle(context, tokenStore);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertTrue(sanityRestored(meta.requiredNonPayerKeys()).isEmpty());
-    }
-
-    @Test
-    void handleFunctionalityTest() {
-        final var notImplemented = "Not implemented";
-        try {
-            subject.handle(null);
-        } catch (final UnsupportedOperationException e) {
-            assertEquals(e.getMessage(), notImplemented);
-        }
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertTrue(sanityRestored(context.getRequiredNonPayerKeys()).isEmpty());
     }
 }

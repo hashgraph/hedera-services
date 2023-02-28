@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
@@ -45,6 +46,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 import javax.inject.Inject;
@@ -53,46 +55,43 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Singleton
-public class TransitionRunner {
+public class TransitionRunner implements TransactionLastStep {
     private static final Logger log = LogManager.getLogger(TransitionRunner.class);
 
     /**
      * Some operation's transition logic still explicitly set SUCCESS instead of letting the runner
      * handle this.
      */
-    private static final EnumSet<HederaFunctionality> opsWithDefaultSuccessStatus =
-            EnumSet.of(
-                    TokenMint,
-                    TokenBurn,
-                    TokenFreezeAccount,
-                    TokenUnfreezeAccount,
-                    TokenGrantKycToAccount,
-                    TokenRevokeKycFromAccount,
-                    TokenAssociateToAccount,
-                    TokenDissociateFromAccount,
-                    TokenAccountWipe,
-                    TokenCreate,
-                    TokenPause,
-                    TokenUnpause,
-                    TokenFeeScheduleUpdate,
-                    CryptoTransfer,
-                    ConsensusCreateTopic,
-                    ContractDelete,
-                    TokenDelete,
-                    Freeze,
-                    FileDelete,
-                    CryptoApproveAllowance,
-                    UtilPrng);
+    private static final EnumSet<HederaFunctionality> opsWithDefaultSuccessStatus = EnumSet.of(
+            TokenMint,
+            TokenBurn,
+            TokenFreezeAccount,
+            TokenUnfreezeAccount,
+            TokenGrantKycToAccount,
+            TokenRevokeKycFromAccount,
+            TokenAssociateToAccount,
+            TokenDissociateFromAccount,
+            TokenAccountWipe,
+            TokenCreate,
+            TokenPause,
+            TokenUnpause,
+            TokenFeeScheduleUpdate,
+            CryptoTransfer,
+            ConsensusCreateTopic,
+            ContractDelete,
+            TokenDelete,
+            Freeze,
+            FileDelete,
+            CryptoApproveAllowance,
+            UtilPrng);
 
     private final EntityIdSource ids;
-    private final TransactionContext txnCtx;
     private final TransitionLogicLookup lookup;
+    protected final TransactionContext txnCtx;
 
     @Inject
     public TransitionRunner(
-            final EntityIdSource ids,
-            final TransactionContext txnCtx,
-            final TransitionLogicLookup lookup) {
+            final EntityIdSource ids, final TransactionContext txnCtx, final TransitionLogicLookup lookup) {
         this.ids = ids;
         this.txnCtx = txnCtx;
         this.lookup = lookup;
@@ -109,9 +108,7 @@ public class TransitionRunner {
         final var function = accessor.getFunction();
         final var logic = lookup.lookupFor(function, txn);
         if (logic.isEmpty()) {
-            log.warn(
-                    "Transaction w/o applicable transition logic at consensus :: {}",
-                    accessor::getSignedTxnWrapper);
+            log.warn("Transaction w/o applicable transition logic at consensus :: {}", accessor::getSignedTxnWrapper);
             txnCtx.setStatus(FAIL_INVALID);
             return false;
         } else {
@@ -128,7 +125,7 @@ public class TransitionRunner {
                     txnCtx.setStatus(SUCCESS);
                 }
             } catch (final InvalidTransactionException e) {
-                resolveFailure(e, accessor);
+                resolveFailure(e.getResponseCode(), accessor, e);
             } catch (final Exception processFailure) {
                 ids.reclaimProvisionalIds();
                 throw processFailure;
@@ -137,8 +134,7 @@ public class TransitionRunner {
         }
     }
 
-    private void resolveFailure(final InvalidTransactionException e, final TxnAccessor accessor) {
-        final var code = e.getResponseCode();
+    protected void resolveFailure(final ResponseCodeEnum code, final TxnAccessor accessor, final RuntimeException e) {
         if (code == FAIL_INVALID) {
             log.warn("Avoidable failure while handling {}", accessor.getSignedTxnWrapper(), e);
         }

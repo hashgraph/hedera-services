@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
@@ -28,6 +29,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -39,7 +41,9 @@ import org.mockito.Mock;
 class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     private final AccountID updateAccountId = asAccount("0.0.32132");
     private final HederaKey updateAccountKey = asHederaKey(A_COMPLEX_KEY).get();
-    @Mock private MerkleAccount updateAccount;
+
+    @Mock
+    private MerkleAccount updateAccount;
 
     private CryptoUpdateHandler subject = new CryptoUpdateHandler();
 
@@ -51,10 +55,11 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(false);
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
 
-        final var meta = subject.preHandle(txn, payer, store, waivers);
-        basicMetaAssertions(meta, 2, false, OK);
-        assertEquals(payerKey, meta.payerKey());
-        assertTrue(meta.requiredNonPayerKeys().contains(updateAccountKey));
+        final var context = new PreHandleContext(store, txn, payer);
+        subject.preHandle(context, waivers);
+        basicMetaAssertions(context, 2, false, OK);
+        assertEquals(payerKey, context.getPayerKey());
+        assertTrue(context.getRequiredNonPayerKeys().contains(updateAccountKey));
     }
 
     @Test
@@ -65,10 +70,11 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
 
-        final var meta = subject.preHandle(txn, payer, store, waivers);
-        basicMetaAssertions(meta, 1, false, OK);
-        assertEquals(payerKey, meta.payerKey());
-        assertIterableEquals(List.of(updateAccountKey), meta.requiredNonPayerKeys());
+        final var context = new PreHandleContext(store, txn, payer);
+        subject.preHandle(context, waivers);
+        basicMetaAssertions(context, 1, false, OK);
+        assertEquals(payerKey, context.getPayerKey());
+        assertIterableEquals(List.of(updateAccountKey), context.getRequiredNonPayerKeys());
     }
 
     @Test
@@ -77,10 +83,11 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(false);
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(true);
 
-        final var meta = subject.preHandle(txn, payer, store, waivers);
-        basicMetaAssertions(meta, 1, false, OK);
-        assertEquals(payerKey, meta.payerKey());
-        assertFalse(meta.requiredNonPayerKeys().contains(updateAccountKey));
+        final var context = new PreHandleContext(store, txn, payer);
+        subject.preHandle(context, waivers);
+        basicMetaAssertions(context, 1, false, OK);
+        assertEquals(payerKey, context.getPayerKey());
+        assertFalse(context.getRequiredNonPayerKeys().contains(updateAccountKey));
     }
 
     @Test
@@ -91,9 +98,10 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(false);
         given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
 
-        final var meta = subject.preHandle(txn, updateAccountId, store, waivers);
-        basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
-        assertNull(meta.payerKey());
+        final var context = new PreHandleContext(store, txn, updateAccountId);
+        subject.preHandle(context, waivers);
+        basicMetaAssertions(context, 0, true, INVALID_PAYER_ACCOUNT_ID);
+        assertNull(context.getPayerKey());
     }
 
     @Test
@@ -104,9 +112,10 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(true);
         given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
 
-        final var meta = subject.preHandle(txn, updateAccountId, store, waivers);
-        basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
-        assertNull(meta.payerKey());
+        final var context = new PreHandleContext(store, txn, updateAccountId);
+        subject.preHandle(context, waivers);
+        basicMetaAssertions(context, 0, true, INVALID_PAYER_ACCOUNT_ID);
+        assertNull(context.getPayerKey());
     }
 
     @Test
@@ -117,9 +126,10 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
 
-        final var meta = subject.preHandle(txn, payer, store, waivers);
-        basicMetaAssertions(meta, 0, true, INVALID_ACCOUNT_ID);
-        assertEquals(payerKey, meta.payerKey());
+        final var context = new PreHandleContext(store, txn, payer);
+        subject.preHandle(context, waivers);
+        basicMetaAssertions(context, 0, true, INVALID_ACCOUNT_ID);
+        assertEquals(payerKey, context.getPayerKey());
     }
 
     @Test
@@ -127,20 +137,16 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
     }
 
-    private TransactionBody cryptoUpdateTransaction(
-            final AccountID payerId, final AccountID accountToUpdate) {
+    private TransactionBody cryptoUpdateTransaction(final AccountID payerId, final AccountID accountToUpdate) {
         if (payerId.equals(payer)) {
             setUpPayer();
         }
         final var transactionID =
-                TransactionID.newBuilder()
-                        .setAccountID(payerId)
-                        .setTransactionValidStart(consensusTimestamp);
-        final var updateTxnBody =
-                CryptoUpdateTransactionBody.newBuilder()
-                        .setAccountIDToUpdate(accountToUpdate)
-                        .setKey(key)
-                        .build();
+                TransactionID.newBuilder().setAccountID(payerId).setTransactionValidStart(consensusTimestamp);
+        final var updateTxnBody = CryptoUpdateTransactionBody.newBuilder()
+                .setAccountIDToUpdate(accountToUpdate)
+                .setKey(key)
+                .build();
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)
                 .setCryptoUpdateAccount(updateTxnBody)

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.virtual.schedule;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -42,14 +43,12 @@ import org.mockito.ArgumentMatchers;
 
 class ScheduleEqualityVirtualValueTest {
     private ScheduleEqualityVirtualValue subject;
-    private Map<String, Long> ids =
-            ImmutableMap.of(
-                    "foo", 1L,
-                    "truck", 2L);
-    private Map<String, Long> otherIds =
-            ImmutableMap.of(
-                    "cat", 3L,
-                    "dog", 4L);
+    private Map<String, Long> ids = ImmutableMap.of(
+            "foo", 1L,
+            "truck", 2L);
+    private Map<String, Long> otherIds = ImmutableMap.of(
+            "cat", 3L,
+            "dog", 4L);
 
     @BeforeEach
     void setup() {
@@ -115,24 +114,14 @@ class ScheduleEqualityVirtualValueTest {
 
         given(in.readInt()).willReturn(2, 3, 5);
 
-        doAnswer(invocationOnMock -> null)
-                .when(in)
-                .readFully(
-                        ArgumentMatchers.argThat(
-                                b -> {
-                                    if (b.length == 3) {
-                                        System.arraycopy(
-                                                "foo".getBytes(StandardCharsets.UTF_8), 0, b, 0, 3);
-                                    } else {
-                                        System.arraycopy(
-                                                "truck".getBytes(StandardCharsets.UTF_8),
-                                                0,
-                                                b,
-                                                0,
-                                                5);
-                                    }
-                                    return true;
-                                }));
+        doAnswer(invocationOnMock -> null).when(in).readFully(ArgumentMatchers.argThat(b -> {
+            if (b.length == 3) {
+                System.arraycopy("foo".getBytes(StandardCharsets.UTF_8), 0, b, 0, 3);
+            } else {
+                System.arraycopy("truck".getBytes(StandardCharsets.UTF_8), 0, b, 0, 5);
+            }
+            return true;
+        }));
 
         given(in.readLong()).willReturn(1L, 2L, 3L);
         given(in.readByte()).willReturn((byte) 1);
@@ -172,24 +161,14 @@ class ScheduleEqualityVirtualValueTest {
         given(buffer.get()).willReturn((byte) 1);
         given(buffer.getLong()).willReturn(1L, 2L, 3L);
 
-        doAnswer(invocationOnMock -> null)
-                .when(buffer)
-                .get(
-                        ArgumentMatchers.argThat(
-                                b -> {
-                                    if (b.length == 3) {
-                                        System.arraycopy(
-                                                "foo".getBytes(StandardCharsets.UTF_8), 0, b, 0, 3);
-                                    } else {
-                                        System.arraycopy(
-                                                "truck".getBytes(StandardCharsets.UTF_8),
-                                                0,
-                                                b,
-                                                0,
-                                                5);
-                                    }
-                                    return true;
-                                }));
+        doAnswer(invocationOnMock -> null).when(buffer).get(ArgumentMatchers.argThat(b -> {
+            if (b.length == 3) {
+                System.arraycopy("foo".getBytes(StandardCharsets.UTF_8), 0, b, 0, 3);
+            } else {
+                System.arraycopy("truck".getBytes(StandardCharsets.UTF_8), 0, b, 0, 5);
+            }
+            return true;
+        }));
 
         defaultSubject.deserialize(buffer, ScheduleEqualityVirtualValue.CURRENT_VERSION);
 
@@ -198,75 +177,69 @@ class ScheduleEqualityVirtualValueTest {
 
     @Test
     void serializeActuallyWorks() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var byteArr = new ByteArrayOutputStream();
-                    final var out = new SerializableDataOutputStream(byteArr);
-                    subject.serialize(out);
+        checkSerialize(() -> {
+            final var byteArr = new ByteArrayOutputStream();
+            final var out = new SerializableDataOutputStream(byteArr);
+            subject.serialize(out);
 
-                    var copy = new ScheduleEqualityVirtualValue();
-                    copy.deserialize(
-                            new SerializableDataInputStream(
-                                    new ByteArrayInputStream(byteArr.toByteArray())),
-                            ScheduleEqualityVirtualValue.CURRENT_VERSION);
+            var copy = new ScheduleEqualityVirtualValue();
+            copy.deserialize(
+                    new SerializableDataInputStream(new ByteArrayInputStream(byteArr.toByteArray())),
+                    ScheduleEqualityVirtualValue.CURRENT_VERSION);
 
-                    assertSubjectEquals(subject, copy);
+            assertSubjectEquals(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     @Test
     void serializeActuallyWithByteBufferWorks() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var buffer = ByteBuffer.allocate(100000);
-                    subject.serialize(buffer);
-                    buffer.rewind();
-                    var copy = new ScheduleEqualityVirtualValue();
-                    copy.deserialize(buffer, ScheduleEqualityVirtualValue.CURRENT_VERSION);
+        checkSerialize(() -> {
+            final var buffer = ByteBuffer.allocate(100000);
+            subject.serialize(buffer);
+            buffer.rewind();
+            var copy = new ScheduleEqualityVirtualValue();
+            copy.deserialize(buffer, ScheduleEqualityVirtualValue.CURRENT_VERSION);
 
-                    assertSubjectEquals(subject, copy);
+            assertSubjectEquals(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     @Test
     void serializeActuallyWithMixedWorksBytesFirst() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var buffer = ByteBuffer.allocate(100000);
-                    subject.serialize(buffer);
+        checkSerialize(() -> {
+            final var buffer = ByteBuffer.allocate(100000);
+            subject.serialize(buffer);
 
-                    var copy = new ScheduleEqualityVirtualValue();
-                    copy.deserialize(
-                            new SerializableDataInputStream(
-                                    new ByteArrayInputStream(buffer.array())),
-                            ScheduleEqualityVirtualValue.CURRENT_VERSION);
+            var copy = new ScheduleEqualityVirtualValue();
+            copy.deserialize(
+                    new SerializableDataInputStream(new ByteArrayInputStream(buffer.array())),
+                    ScheduleEqualityVirtualValue.CURRENT_VERSION);
 
-                    assertSubjectEquals(subject, copy);
+            assertSubjectEquals(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     @Test
     void serializeActuallyWithMixedWorksBytesSecond() throws Exception {
-        checkSerialize(
-                () -> {
-                    final var byteArr = new ByteArrayOutputStream();
-                    final var out = new SerializableDataOutputStream(byteArr);
-                    subject.serialize(out);
+        checkSerialize(() -> {
+            final var byteArr = new ByteArrayOutputStream();
+            final var out = new SerializableDataOutputStream(byteArr);
+            subject.serialize(out);
 
-                    final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
-                    var copy = new ScheduleEqualityVirtualValue();
-                    copy.deserialize(buffer, ScheduleEqualityVirtualValue.CURRENT_VERSION);
+            final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
+            var copy = new ScheduleEqualityVirtualValue();
+            copy.deserialize(buffer, ScheduleEqualityVirtualValue.CURRENT_VERSION);
 
-                    assertSubjectEquals(subject, copy);
+            assertSubjectEquals(subject, copy);
 
-                    return copy;
-                });
+            return copy;
+        });
     }
 
     private void checkSerialize(Callable<ScheduleEqualityVirtualValue> check) throws Exception {
@@ -348,12 +321,10 @@ class ScheduleEqualityVirtualValueTest {
 
     @Test
     void toStringWorks() {
-        assertEquals(
-                "ScheduleEqualityVirtualValue{ids={foo=1, truck=2}, number=3}", subject.toString());
+        assertEquals("ScheduleEqualityVirtualValue{ids={foo=1, truck=2}, number=3}", subject.toString());
     }
 
-    private static void assertSubjectEquals(
-            ScheduleEqualityVirtualValue subject, ScheduleEqualityVirtualValue value) {
+    private static void assertSubjectEquals(ScheduleEqualityVirtualValue subject, ScheduleEqualityVirtualValue value) {
         assertEquals(subject, value);
         assertEquals(subject.getKey(), value.getKey());
     }

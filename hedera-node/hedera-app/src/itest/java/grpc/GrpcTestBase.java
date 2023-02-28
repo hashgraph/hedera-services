@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package grpc;
 
 import com.google.protobuf.ByteString;
@@ -20,6 +21,8 @@ import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.system.NodeId;
 import io.helidon.grpc.server.GrpcRouting;
 import io.helidon.grpc.server.GrpcServer;
 import io.helidon.grpc.server.GrpcServerConfiguration;
@@ -34,8 +37,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
 abstract class GrpcTestBase {
-    private static final ScheduledExecutorService METRIC_EXECUTOR =
-            Executors.newSingleThreadScheduledExecutor();
+    private static final ScheduledExecutorService METRIC_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
 
     private GrpcServer grpcServer;
 
@@ -46,7 +48,8 @@ abstract class GrpcTestBase {
     @BeforeEach
     void setUp() throws InterruptedException, UnknownHostException {
         final var latch = new CountDownLatch(1);
-        metrics = new DefaultMetrics(METRIC_EXECUTOR, new DefaultMetricsFactory());
+        metrics = new DefaultMetrics(
+                new NodeId(false, 0), new MetricKeyRegistry(), METRIC_EXECUTOR, new DefaultMetricsFactory());
         final var config = GrpcServerConfiguration.builder().port(0).build();
         final var routingBuilder = GrpcRouting.builder();
         configureRouting(routingBuilder);
@@ -70,55 +73,57 @@ abstract class GrpcTestBase {
     protected abstract void configureRouting(GrpcRouting.Builder rb);
 
     protected Transaction createSubmitMessageTransaction(int topicId, String msg) {
-        final var data =
-                ConsensusSubmitMessageTransactionBody.newBuilder()
-                        .setTopicID(TopicID.newBuilder().setTopicNum(topicId).build())
-                        .setMessage(ByteString.copyFrom(msg, StandardCharsets.UTF_8))
-                        .build();
+        final var data = ConsensusSubmitMessageTransactionBody.newBuilder()
+                .setTopicID(TopicID.newBuilder().setTopicNum(topicId).build())
+                .setMessage(ByteString.copyFrom(msg, StandardCharsets.UTF_8))
+                .build();
 
         return createTransaction(bodyBuilder -> bodyBuilder.setConsensusSubmitMessage(data));
     }
 
     protected Transaction createCreateTopicTransaction(String memo) {
-        final var data = ConsensusCreateTopicTransactionBody.newBuilder().setMemo(memo).build();
+        final var data =
+                ConsensusCreateTopicTransactionBody.newBuilder().setMemo(memo).build();
 
         return createTransaction(bodyBuilder -> bodyBuilder.setConsensusCreateTopic(data));
     }
 
     protected Transaction createUncheckedSubmitTransaction() {
-        final var data =
-                UncheckedSubmitBody.newBuilder().setTransactionBytes(ByteString.EMPTY).build();
+        final var data = UncheckedSubmitBody.newBuilder()
+                .setTransactionBytes(ByteString.EMPTY)
+                .build();
 
         return createTransaction(bodyBuilder -> bodyBuilder.setUncheckedSubmit(data));
     }
 
     protected Transaction createTransaction(Consumer<TransactionBody.Builder> txBodyBuilder) {
-        final var txId =
-                TransactionID.newBuilder()
-                        .setTransactionValidStart(
-                                Timestamp.newBuilder().setSeconds(2838283).setNanos(99902).build())
-                        .setAccountID(AccountID.newBuilder().setAccountNum(1001).build())
-                        .build();
+        final var txId = TransactionID.newBuilder()
+                .setTransactionValidStart(Timestamp.newBuilder()
+                        .setSeconds(2838283)
+                        .setNanos(99902)
+                        .build())
+                .setAccountID(AccountID.newBuilder().setAccountNum(1001).build())
+                .build();
 
-        final var bodyBuilder =
-                TransactionBody.newBuilder()
-                        .setTransactionID(txId)
-                        .setMemo("A Memo")
-                        .setTransactionFee(1_000_000);
+        final var bodyBuilder = TransactionBody.newBuilder()
+                .setTransactionID(txId)
+                .setMemo("A Memo")
+                .setTransactionFee(1_000_000);
         txBodyBuilder.accept(bodyBuilder);
         final var body = bodyBuilder.build();
 
         final var signedTx =
                 SignedTransaction.newBuilder().setBodyBytes(body.toByteString()).build();
 
-        return Transaction.newBuilder().setSignedTransactionBytes(signedTx.toByteString()).build();
+        return Transaction.newBuilder()
+                .setSignedTransactionBytes(signedTx.toByteString())
+                .build();
     }
 
     protected Query createGetTopicInfoQuery(int topicId) {
-        final var data =
-                ConsensusGetTopicInfoQuery.newBuilder()
-                        .setTopicID(TopicID.newBuilder().setTopicNum(topicId).build())
-                        .build();
+        final var data = ConsensusGetTopicInfoQuery.newBuilder()
+                .setTopicID(TopicID.newBuilder().setTopicNum(topicId).build())
+                .build();
 
         return Query.newBuilder().setConsensusGetTopicInfo(data).build();
     }

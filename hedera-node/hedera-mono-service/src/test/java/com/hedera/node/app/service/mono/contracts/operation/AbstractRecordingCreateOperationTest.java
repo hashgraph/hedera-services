@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.operation;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
@@ -84,21 +85,50 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AbstractRecordingCreateOperationTest {
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private GasCalculator gasCalculator;
-    @Mock private EVM evm;
-    @Mock private MessageFrame frame;
-    @Mock private EvmAccount recipientAccount;
-    @Mock private MutableAccount mutableAccount;
-    @Mock private HederaStackedWorldStateUpdater updater;
-    @Mock private Deque<MessageFrame> stack;
-    @Mock private BlockValues blockValues;
-    @Mock private EntityCreator creator;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private ContractCustomizer contractCustomizer;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private ContractAliases aliases;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private GasCalculator gasCalculator;
+
+    @Mock
+    private EVM evm;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private EvmAccount recipientAccount;
+
+    @Mock
+    private MutableAccount mutableAccount;
+
+    @Mock
+    private HederaStackedWorldStateUpdater updater;
+
+    @Mock
+    private Deque<MessageFrame> stack;
+
+    @Mock
+    private BlockValues blockValues;
+
+    @Mock
+    private EntityCreator creator;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private ContractCustomizer contractCustomizer;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private ContractAliases aliases;
+
+    @Mock
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
 
     private static final long childStipend = 1_000_000L;
     private static final Wei gasPrice = Wei.of(1000L);
@@ -109,29 +139,24 @@ class AbstractRecordingCreateOperationTest {
             new Operation.OperationResult(Subject.PRETEND_COST, null);
     private static final EntityId autoRenewId = new EntityId(0, 0, 8);
 
-    private static final JKey nonEmptyKey =
-            MiscUtils.asFcKeyUnchecked(
-                    Key.newBuilder()
-                            .setEd25519(
-                                    ByteString.copyFrom(
-                                            "01234567890123456789012345678901".getBytes()))
-                            .build());
+    private static final JKey nonEmptyKey = MiscUtils.asFcKeyUnchecked(Key.newBuilder()
+            .setEd25519(ByteString.copyFrom("01234567890123456789012345678901".getBytes()))
+            .build());
     private Subject subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new Subject(
-                        0xF0,
-                        "ħCREATE",
-                        3,
-                        1,
-                        1,
-                        gasCalculator,
-                        creator,
-                        syntheticTxnFactory,
-                        recordsHistorian,
-                        dynamicProperties);
+        subject = new Subject(
+                0xF0,
+                "ħCREATE",
+                3,
+                1,
+                1,
+                gasCalculator,
+                creator,
+                syntheticTxnFactory,
+                recordsHistorian,
+                dynamicProperties);
     }
 
     @Test
@@ -196,16 +221,11 @@ class AbstractRecordingCreateOperationTest {
     @Test
     void hasExpectedChildCompletionOnSuccessWithSidecarEnabled() {
         final var trackerCaptor = ArgumentCaptor.forClass(SideEffectsTracker.class);
-        final var liveRecord =
-                ExpirableTxnRecord.newBuilder()
-                        .setReceiptBuilder(
-                                TxnReceipt.newBuilder()
-                                        .setStatus(TxnReceipt.REVERTED_SUCCESS_LITERAL));
-        final var mockCreation =
-                TransactionBody.newBuilder()
-                        .setContractCreateInstance(
-                                ContractCreateTransactionBody.newBuilder()
-                                        .setAutoRenewAccountId(autoRenewId.toGrpcAccountId()));
+        final var liveRecord = ExpirableTxnRecord.newBuilder()
+                .setReceiptBuilder(TxnReceipt.newBuilder().setStatus(TxnReceipt.REVERTED_SUCCESS_LITERAL));
+        final var mockCreation = TransactionBody.newBuilder()
+                .setContractCreateInstance(ContractCreateTransactionBody.newBuilder()
+                        .setAutoRenewAccountId(autoRenewId.toGrpcAccountId()));
         final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
         givenSpawnPrereqs();
         givenBuilderPrereqs();
@@ -220,18 +240,13 @@ class AbstractRecordingCreateOperationTest {
         final var runtimeCode = "runtimeCode".getBytes();
         given(newContractMock.getCode()).willReturn(Bytes.of(runtimeCode));
         given(updater.get(Subject.PRETEND_CONTRACT_ADDRESS)).willReturn(newContractMock);
-        final var sidecarRecord =
-                TransactionSidecarRecord.newBuilder()
-                        .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
+        final var sidecarRecord = TransactionSidecarRecord.newBuilder()
+                .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
         final var sidecarUtilsMockedStatic = mockStatic(SidecarUtils.class);
         sidecarUtilsMockedStatic
-                .when(
-                        () ->
-                                SidecarUtils.createContractBytecodeSidecarFrom(
-                                        lastAllocated, initCode, runtimeCode))
+                .when(() -> SidecarUtils.createContractBytecodeSidecarFrom(lastAllocated, initCode, runtimeCode))
                 .thenReturn(sidecarRecord);
-        given(dynamicProperties.enabledSidecars())
-                .willReturn(Set.of(SidecarType.CONTRACT_BYTECODE));
+        given(dynamicProperties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_BYTECODE));
 
         assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
 
@@ -243,11 +258,8 @@ class AbstractRecordingCreateOperationTest {
         // then:
         verify(frame).pushStackItem(Words.fromAddress(Subject.PRETEND_CONTRACT_ADDRESS));
         verify(creator)
-                .createSuccessfulSyntheticRecord(
-                        eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
-        verify(updater)
-                .manageInProgressRecord(
-                        recordsHistorian, liveRecord, mockCreation, List.of(sidecarRecord));
+                .createSuccessfulSyntheticRecord(eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
+        verify(updater).manageInProgressRecord(recordsHistorian, liveRecord, mockCreation, List.of(sidecarRecord));
         // and:
         final var tracker = trackerCaptor.getValue();
         assertTrue(tracker.hasTrackedContractCreation());
@@ -263,16 +275,11 @@ class AbstractRecordingCreateOperationTest {
     @Test
     void hasExpectedChildCompletionOnSuccessWithoutSidecarEnabled() {
         final var trackerCaptor = ArgumentCaptor.forClass(SideEffectsTracker.class);
-        final var liveRecord =
-                ExpirableTxnRecord.newBuilder()
-                        .setReceiptBuilder(
-                                TxnReceipt.newBuilder()
-                                        .setStatus(TxnReceipt.REVERTED_SUCCESS_LITERAL));
-        final var mockCreation =
-                TransactionBody.newBuilder()
-                        .setContractCreateInstance(
-                                ContractCreateTransactionBody.newBuilder()
-                                        .setAutoRenewAccountId(autoRenewId.toGrpcAccountId()));
+        final var liveRecord = ExpirableTxnRecord.newBuilder()
+                .setReceiptBuilder(TxnReceipt.newBuilder().setStatus(TxnReceipt.REVERTED_SUCCESS_LITERAL));
+        final var mockCreation = TransactionBody.newBuilder()
+                .setContractCreateInstance(ContractCreateTransactionBody.newBuilder()
+                        .setAutoRenewAccountId(autoRenewId.toGrpcAccountId()));
         final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
         givenSpawnPrereqs();
         givenBuilderPrereqs();
@@ -293,11 +300,8 @@ class AbstractRecordingCreateOperationTest {
         // then:
         verify(frame).pushStackItem(Words.fromAddress(Subject.PRETEND_CONTRACT_ADDRESS));
         verify(creator)
-                .createSuccessfulSyntheticRecord(
-                        eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
-        verify(updater)
-                .manageInProgressRecord(
-                        recordsHistorian, liveRecord, mockCreation, Collections.emptyList());
+                .createSuccessfulSyntheticRecord(eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
+        verify(updater).manageInProgressRecord(recordsHistorian, liveRecord, mockCreation, Collections.emptyList());
         // and:
         final var tracker = trackerCaptor.getValue();
         assertTrue(tracker.hasTrackedContractCreation());
@@ -312,16 +316,11 @@ class AbstractRecordingCreateOperationTest {
     @Test
     void hasExpectedHollowAccountCompletionOnSuccessWithSidecarEnabled() {
         final var trackerCaptor = ArgumentCaptor.forClass(SideEffectsTracker.class);
-        final var liveRecord =
-                ExpirableTxnRecord.newBuilder()
-                        .setReceiptBuilder(
-                                TxnReceipt.newBuilder()
-                                        .setStatus(TxnReceipt.REVERTED_SUCCESS_LITERAL));
-        final var mockCreation =
-                TransactionBody.newBuilder()
-                        .setContractCreateInstance(
-                                ContractCreateTransactionBody.newBuilder()
-                                        .setAutoRenewAccountId(autoRenewId.toGrpcAccountId()));
+        final var liveRecord = ExpirableTxnRecord.newBuilder()
+                .setReceiptBuilder(TxnReceipt.newBuilder().setStatus(TxnReceipt.REVERTED_SUCCESS_LITERAL));
+        final var mockCreation = TransactionBody.newBuilder()
+                .setContractCreateInstance(ContractCreateTransactionBody.newBuilder()
+                        .setAutoRenewAccountId(autoRenewId.toGrpcAccountId()));
         final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
         givenSpawnPrereqs();
         givenBuilderPrereqs();
@@ -337,20 +336,14 @@ class AbstractRecordingCreateOperationTest {
         final var runtimeCode = "runtimeCode".getBytes();
         given(newContractMock.getCode()).willReturn(Bytes.of(runtimeCode));
         given(updater.get(Subject.PRETEND_CONTRACT_ADDRESS)).willReturn(newContractMock);
-        final var sidecarRecord =
-                TransactionSidecarRecord.newBuilder()
-                        .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
+        final var sidecarRecord = TransactionSidecarRecord.newBuilder()
+                .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
         final var sidecarUtilsMockedStatic = mockStatic(SidecarUtils.class);
         sidecarUtilsMockedStatic
-                .when(
-                        () ->
-                                SidecarUtils.createContractBytecodeSidecarFrom(
-                                        EntityIdUtils.asContract(hollowAccountId),
-                                        initCode,
-                                        runtimeCode))
+                .when(() -> SidecarUtils.createContractBytecodeSidecarFrom(
+                        EntityIdUtils.asContract(hollowAccountId), initCode, runtimeCode))
                 .thenReturn(sidecarRecord);
-        given(dynamicProperties.enabledSidecars())
-                .willReturn(Set.of(SidecarType.CONTRACT_BYTECODE));
+        given(dynamicProperties.enabledSidecars()).willReturn(Set.of(SidecarType.CONTRACT_BYTECODE));
 
         assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
 
@@ -362,15 +355,12 @@ class AbstractRecordingCreateOperationTest {
         // then:
         verify(frame).pushStackItem(Words.fromAddress(Subject.PRETEND_CONTRACT_ADDRESS));
         verify(creator)
-                .createSuccessfulSyntheticRecord(
-                        eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
+                .createSuccessfulSyntheticRecord(eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
         verify(updater).reclaimLatestContractId();
         verify(updater.trackingAccounts()).set(hollowAccountId, IS_SMART_CONTRACT, true);
         verify(updater.trackingAccounts()).set(hollowAccountId, KEY, STANDIN_CONTRACT_ID_KEY);
         verify(updater.trackingAccounts()).set(hollowAccountId, ETHEREUM_NONCE, 1L);
-        verify(updater)
-                .manageInProgressRecord(
-                        recordsHistorian, liveRecord, mockCreation, List.of(sidecarRecord));
+        verify(updater).manageInProgressRecord(recordsHistorian, liveRecord, mockCreation, List.of(sidecarRecord));
         // and:
         final var tracker = trackerCaptor.getValue();
         assertTrue(tracker.hasTrackedContractCreation());
@@ -386,16 +376,11 @@ class AbstractRecordingCreateOperationTest {
     @Test
     void hasExpectedHollowAccountCompletionOnSuccessWithoutSidecarEnabled() {
         final var trackerCaptor = ArgumentCaptor.forClass(SideEffectsTracker.class);
-        final var liveRecord =
-                ExpirableTxnRecord.newBuilder()
-                        .setReceiptBuilder(
-                                TxnReceipt.newBuilder()
-                                        .setStatus(TxnReceipt.REVERTED_SUCCESS_LITERAL));
-        final var mockCreation =
-                TransactionBody.newBuilder()
-                        .setContractCreateInstance(
-                                ContractCreateTransactionBody.newBuilder()
-                                        .setAutoRenewAccountId(autoRenewId.toGrpcAccountId()));
+        final var liveRecord = ExpirableTxnRecord.newBuilder()
+                .setReceiptBuilder(TxnReceipt.newBuilder().setStatus(TxnReceipt.REVERTED_SUCCESS_LITERAL));
+        final var mockCreation = TransactionBody.newBuilder()
+                .setContractCreateInstance(ContractCreateTransactionBody.newBuilder()
+                        .setAutoRenewAccountId(autoRenewId.toGrpcAccountId()));
         final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
         givenSpawnPrereqs();
         givenBuilderPrereqs();
@@ -417,15 +402,12 @@ class AbstractRecordingCreateOperationTest {
         // then:
         verify(frame).pushStackItem(Words.fromAddress(Subject.PRETEND_CONTRACT_ADDRESS));
         verify(creator)
-                .createSuccessfulSyntheticRecord(
-                        eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
+                .createSuccessfulSyntheticRecord(eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
         verify(updater).reclaimLatestContractId();
         verify(updater.trackingAccounts()).set(hollowAccountId, IS_SMART_CONTRACT, true);
         verify(updater.trackingAccounts()).set(hollowAccountId, KEY, STANDIN_CONTRACT_ID_KEY);
         verify(updater.trackingAccounts()).set(hollowAccountId, ETHEREUM_NONCE, 1L);
-        verify(updater)
-                .manageInProgressRecord(
-                        recordsHistorian, liveRecord, mockCreation, Collections.emptyList());
+        verify(updater).manageInProgressRecord(recordsHistorian, liveRecord, mockCreation, Collections.emptyList());
         // and:
         final var tracker = trackerCaptor.getValue();
         assertTrue(tracker.hasTrackedContractCreation());
@@ -457,8 +439,7 @@ class AbstractRecordingCreateOperationTest {
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(false);
         final var hollowAccountId = EntityIdUtils.parseAccount("0.0.5678");
         given(updater.aliases()).willReturn(aliases);
-        given(aliases.resolveForEvm(any()))
-                .willReturn(EntityIdUtils.asTypedEvmAddress(hollowAccountId));
+        given(aliases.resolveForEvm(any())).willReturn(EntityIdUtils.asTypedEvmAddress(hollowAccountId));
         given(updater.trackingAccounts()).willReturn(accounts);
         given(accounts.contains(hollowAccountId)).willReturn(false);
 
@@ -528,18 +509,15 @@ class AbstractRecordingCreateOperationTest {
         given(frame.getMessageStackDepth()).willReturn(1023);
     }
 
-    private void givenUpdaterWithAliases(
-            final AccountID expectedAccountId, final JKey expectedKey) {
+    private void givenUpdaterWithAliases(final AccountID expectedAccountId, final JKey expectedKey) {
         given(updater.aliases()).willReturn(aliases);
-        given(aliases.resolveForEvm(any()))
-                .willReturn(EntityIdUtils.asTypedEvmAddress(expectedAccountId));
+        given(aliases.resolveForEvm(any())).willReturn(EntityIdUtils.asTypedEvmAddress(expectedAccountId));
         given(updater.trackingAccounts()).willReturn(accounts);
         given(accounts.contains(expectedAccountId)).willReturn((expectedKey != null));
         given(accounts.get(expectedAccountId, AccountProperty.KEY)).willReturn(expectedKey);
     }
 
-    private void assertSameResult(
-            final Operation.OperationResult expected, final Operation.OperationResult actual) {
+    private void assertSameResult(final Operation.OperationResult expected, final Operation.OperationResult actual) {
         assertEquals(expected.getGasCost(), actual.getGasCost());
         assertEquals(expected.getHaltReason(), actual.getHaltReason());
     }

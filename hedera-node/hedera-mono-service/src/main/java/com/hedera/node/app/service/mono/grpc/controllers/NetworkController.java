@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.controllers;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetAccountDetails;
@@ -64,8 +65,7 @@ public class NetworkController extends NetworkServiceGrpc.NetworkServiceImplBase
     }
 
     @Override
-    public void uncheckedSubmit(
-            final Transaction signedTxn, final StreamObserver<TransactionResponse> observer) {
+    public void uncheckedSubmit(final Transaction signedTxn, final StreamObserver<TransactionResponse> observer) {
         txnResponseHelper.submit(signedTxn, observer, UncheckedSubmit);
     }
 

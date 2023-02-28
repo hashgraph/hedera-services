@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files;
 
 import com.hedera.node.app.service.mono.files.sysfiles.ConfigCallbacks;
@@ -34,9 +35,7 @@ public class SysFileCallbacks {
 
     @Inject
     public SysFileCallbacks(
-            ConfigCallbacks configCallbacks,
-            ThrottlesCallback throttlesCallback,
-            CurrencyCallbacks currencyCallbacks) {
+            ConfigCallbacks configCallbacks, ThrottlesCallback throttlesCallback, CurrencyCallbacks currencyCallbacks) {
         this.configCallbacks = configCallbacks;
         this.throttlesCallback = throttlesCallback;
         this.currencyCallbacks = currencyCallbacks;
