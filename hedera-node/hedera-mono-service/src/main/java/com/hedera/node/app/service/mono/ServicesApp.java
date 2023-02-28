@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono;
 
 import com.hedera.node.app.service.mono.config.ConfigModule;
@@ -51,6 +52,7 @@ import com.hedera.node.app.service.mono.state.forensics.HashLogger;
 import com.hedera.node.app.service.mono.state.initialization.SystemAccountsCreator;
 import com.hedera.node.app.service.mono.state.initialization.SystemFilesManager;
 import com.hedera.node.app.service.mono.state.initialization.TreasuryCloner;
+import com.hedera.node.app.service.mono.state.logic.LastStepModule;
 import com.hedera.node.app.service.mono.state.logic.NetworkCtxManager;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
@@ -83,6 +85,7 @@ import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import dagger.BindsInstance;
 import dagger.Component;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.util.Optional;
@@ -112,7 +115,8 @@ import javax.inject.Singleton;
             ThrottlingModule.class,
             SubmissionModule.class,
             TransactionsModule.class,
-            ExpiryModule.class
+            ExpiryModule.class,
+            LastStepModule.class
         })
 public interface ServicesApp {
     /* Needed by ServicesState */
@@ -147,6 +151,7 @@ public interface ServicesApp {
 
     NodeId nodeId();
 
+    @NonNull
     Platform platform();
 
     NodeInfo nodeInfo();
@@ -199,6 +204,9 @@ public interface ServicesApp {
 
     BackingStore<AccountID, HederaAccount> backingAccounts();
 
+    @BootstrapProps
+    PropertySource bootstrapProps();
+
     @Component.Builder
     interface Builder {
         @BindsInstance
@@ -208,7 +216,7 @@ public interface ServicesApp {
         Builder initialHash(Hash initialHash);
 
         @BindsInstance
-        Builder platform(Platform platform);
+        Builder platform(@NonNull Platform platform);
 
         @BindsInstance
         Builder consoleCreator(StateModule.ConsoleCreator consoleCreator);

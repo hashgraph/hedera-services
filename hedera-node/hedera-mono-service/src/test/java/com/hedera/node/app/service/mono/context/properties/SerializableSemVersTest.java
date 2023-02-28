@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.service.mono.context.properties.SerializableSemVers.SEM_VER_COMPARATOR;
@@ -56,29 +57,15 @@ class SerializableSemVersTest {
     @Test
     void comparatorPrioritizesOrderAsExpected() {
         assertTrue(
-                SEM_VER_COMPARATOR.compare(
-                                semVerWith(1, 9, 9, "pre", "build"),
-                                semVerWith(2, 0, 0, null, null))
-                        < 0);
+                SEM_VER_COMPARATOR.compare(semVerWith(1, 9, 9, "pre", "build"), semVerWith(2, 0, 0, null, null)) < 0);
         assertTrue(
-                SEM_VER_COMPARATOR.compare(
-                                semVerWith(1, 0, 9, "pre", "build"),
-                                semVerWith(1, 9, 0, null, null))
-                        < 0);
+                SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 9, "pre", "build"), semVerWith(1, 9, 0, null, null)) < 0);
         assertTrue(
-                SEM_VER_COMPARATOR.compare(
-                                semVerWith(1, 0, 0, "pre", "build"),
-                                semVerWith(1, 0, 1, null, null))
-                        < 0);
+                SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 0, "pre", "build"), semVerWith(1, 0, 1, null, null)) < 0);
         assertTrue(
-                SEM_VER_COMPARATOR.compare(
-                                semVerWith(1, 0, 1, "alpha.12345", null),
-                                semVerWith(1, 0, 1, null, "build"))
+                SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, "alpha.12345", null), semVerWith(1, 0, 1, null, "build"))
                         < 0);
-        assertTrue(
-                SEM_VER_COMPARATOR.compare(
-                                semVerWith(1, 0, 1, null, "build"), semVerWith(1, 0, 1, null, null))
-                        < 0);
+        assertTrue(SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, "build"), semVerWith(1, 0, 1, null, null)) < 0);
     }
 
     @Test
@@ -172,14 +159,11 @@ class SerializableSemVersTest {
         final var firstUnpreparedSubject = new SerializableSemVers(proto, services);
         final var secondUnpreparedSubject = new SerializableSemVers(proto, services);
         firstUnpreparedSubject.setProto(null);
-        assertThrows(
-                IllegalStateException.class, () -> firstUnpreparedSubject.compareTo(mockVersion));
+        assertThrows(IllegalStateException.class, () -> firstUnpreparedSubject.compareTo(mockVersion));
         secondUnpreparedSubject.setServices(null);
-        assertThrows(
-                IllegalStateException.class, () -> secondUnpreparedSubject.compareTo(mockVersion));
+        assertThrows(IllegalStateException.class, () -> secondUnpreparedSubject.compareTo(mockVersion));
         final var preparedSubject =
-                new SerializableSemVers(
-                        semVerWith(1, 0, 1, null, null), semVerWith(1, 0, 1, null, null));
+                new SerializableSemVers(semVerWith(1, 0, 1, null, null), semVerWith(1, 0, 1, null, null));
         assertThrows(IllegalArgumentException.class, () -> preparedSubject.compareTo(mockVersion));
     }
 

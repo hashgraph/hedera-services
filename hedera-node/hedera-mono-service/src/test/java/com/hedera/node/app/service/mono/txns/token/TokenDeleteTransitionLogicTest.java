@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -66,8 +67,7 @@ class TokenDeleteTransitionLogicTest {
         accountStore = mock(AccountStore.class);
         sigImpactHistorian = mock(SigImpactHistorian.class);
         token = mock(Token.class);
-        DeleteLogic deleteLogic =
-                new DeleteLogic(accountStore, typedTokenStore, sigImpactHistorian);
+        DeleteLogic deleteLogic = new DeleteLogic(accountStore, typedTokenStore, sigImpactHistorian);
         subject = new TokenDeleteTransitionLogic(txnCtx, deleteLogic);
     }
 
@@ -91,8 +91,7 @@ class TokenDeleteTransitionLogicTest {
     @Test
     void capturesInvalidDelete() {
         givenValidTxnCtx();
-        given(typedTokenStore.loadToken(tokenId))
-                .willThrow(new InvalidTransactionException(INVALID_TOKEN_ID));
+        given(typedTokenStore.loadToken(tokenId)).willThrow(new InvalidTransactionException(INVALID_TOKEN_ID));
 
         assertFailsWith(() -> subject.doStateTransition(), INVALID_TOKEN_ID);
 
@@ -108,8 +107,7 @@ class TokenDeleteTransitionLogicTest {
     @Test
     void capturesInvalidDeletionDueToAlreadyDeleted() {
         givenValidTxnCtx();
-        given(typedTokenStore.loadToken(tokenId))
-                .willThrow(new InvalidTransactionException(TOKEN_WAS_DELETED));
+        given(typedTokenStore.loadToken(tokenId)).willThrow(new InvalidTransactionException(TOKEN_WAS_DELETED));
 
         assertFailsWith(() -> subject.doStateTransition(), TOKEN_WAS_DELETED);
 
@@ -140,20 +138,17 @@ class TokenDeleteTransitionLogicTest {
     }
 
     private void givenValidTxnCtx() {
-        tokenDeleteTxn =
-                TransactionBody.newBuilder()
-                        .setTokenDeletion(
-                                TokenDeleteTransactionBody.newBuilder().setToken(grpcTokenId))
-                        .build();
+        tokenDeleteTxn = TransactionBody.newBuilder()
+                .setTokenDeletion(TokenDeleteTransactionBody.newBuilder().setToken(grpcTokenId))
+                .build();
         given(accessor.getTxn()).willReturn(tokenDeleteTxn);
         given(txnCtx.accessor()).willReturn(accessor);
         given(typedTokenStore.loadToken(tokenId)).willReturn(token);
     }
 
     private void givenMissingToken() {
-        tokenDeleteTxn =
-                TransactionBody.newBuilder()
-                        .setTokenDeletion(TokenDeleteTransactionBody.newBuilder())
-                        .build();
+        tokenDeleteTxn = TransactionBody.newBuilder()
+                .setTokenDeletion(TokenDeleteTransactionBody.newBuilder())
+                .build();
     }
 }

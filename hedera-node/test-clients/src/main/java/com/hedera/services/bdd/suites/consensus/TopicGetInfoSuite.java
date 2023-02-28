@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.consensus;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -57,15 +58,14 @@ public class TopicGetInfoSuite extends HapiSuite {
                                 .submitKeyName("submitKey")
                                 .autoRenewAccountId("autoRenewAccount"))
                 .when()
-                .then(
-                        getTopicInfo("testTopic")
-                                .hasExpectedLedgerId("0x03")
-                                .hasMemo("testmemo")
-                                .hasAdminKey("adminKey")
-                                .hasSubmitKey("submitKey")
-                                .hasAutoRenewAccount("autoRenewAccount")
-                                .hasSeqNo(0)
-                                .hasRunningHash(new byte[48]));
+                .then(getTopicInfo("testTopic")
+                        .hasExpectedLedgerId("0x03")
+                        .hasMemo("testmemo")
+                        .hasAdminKey("adminKey")
+                        .hasSubmitKey("submitKey")
+                        .hasAutoRenewAccount("autoRenewAccount")
+                        .hasSeqNo(0)
+                        .hasRunningHash(new byte[48]));
     }
 
     @Override

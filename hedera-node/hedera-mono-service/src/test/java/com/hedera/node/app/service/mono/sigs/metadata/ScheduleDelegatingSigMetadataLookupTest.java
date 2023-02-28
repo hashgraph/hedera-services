@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.metadata;
 
 import static com.hedera.test.factories.txns.ScheduledTxnFactory.scheduleCreateTxnWith;
@@ -48,16 +49,15 @@ class ScheduleDelegatingSigMetadataLookupTest {
 
     @BeforeEach
     void setup() {
-        schedule =
-                ScheduleVirtualValue.from(
-                        scheduleCreateTxnWith(
-                                        TxnHandlingScenario.TOKEN_ADMIN_KT.asKey(),
-                                        memo,
-                                        IdUtils.asAccount("0.0.2"),
-                                        schedulingAccount.toGrpcAccountId(),
-                                        schedulingTXValidStart.toGrpc())
-                                .toByteArray(),
-                        0L);
+        schedule = ScheduleVirtualValue.from(
+                scheduleCreateTxnWith(
+                                TxnHandlingScenario.TOKEN_ADMIN_KT.asKey(),
+                                memo,
+                                IdUtils.asAccount("0.0.2"),
+                                schedulingAccount.toGrpcAccountId(),
+                                schedulingTXValidStart.toGrpc())
+                        .toByteArray(),
+                0L);
         schedule.setPayer(new EntityId(0, 0, 2));
 
         scheduleStore = mock(ScheduleStore.class);
@@ -68,12 +68,11 @@ class ScheduleDelegatingSigMetadataLookupTest {
     @Test
     void returnsExpectedFailIfExplicitlyMissing() {
         given(scheduleStore.resolve(id))
-                .willReturn(
-                        ScheduleID.newBuilder()
-                                .setShardNum(0L)
-                                .setRealmNum(0L)
-                                .setScheduleNum(0L)
-                                .build());
+                .willReturn(ScheduleID.newBuilder()
+                        .setShardNum(0L)
+                        .setRealmNum(0L)
+                        .setScheduleNum(0L)
+                        .build());
 
         // when:
         var result = subject.apply(id);

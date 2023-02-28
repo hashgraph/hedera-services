@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.workflows;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,7 +39,6 @@ class InsufficientBalanceExceptionTest {
     @SuppressWarnings({"ThrowableNotThrown", "ConstantConditions"})
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new InsufficientBalanceException(null, 42L))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new InsufficientBalanceException(null, 42L)).isInstanceOf(NullPointerException.class);
     }
 }

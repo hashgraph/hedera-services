@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.ledger;
 
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ALIAS;
@@ -89,8 +90,7 @@ public class BaseHederaLedgerTestHelper {
     protected TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
     protected TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     protected TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
-    protected TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-            tokenRelsLedger;
+    protected TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRelsLedger;
     protected AccountID misc = AccountID.newBuilder().setAccountNum(1_234).build();
     protected long MISC_BALANCE = 1_234L;
     protected long RAND_BALANCE = 2_345L;
@@ -101,8 +101,7 @@ public class BaseHederaLedgerTestHelper {
     protected TokenID missingId = IdUtils.tokenWith(333);
     protected TokenID tokenId = IdUtils.tokenWith(222);
     protected TokenID frozenId = IdUtils.tokenWith(111);
-    protected ByteString alias =
-            ByteString.copyFromUtf8("These aren't the droids you're looking for");
+    protected ByteString alias = ByteString.copyFromUtf8("These aren't the droids you're looking for");
     protected HederaAccountCustomizer noopCustomizer = new HederaAccountCustomizer();
     protected AccountID deletable = AccountID.newBuilder().setAccountNum(666).build();
     protected AccountID rand = AccountID.newBuilder().setAccountNum(2_345).build();
@@ -115,55 +114,57 @@ public class BaseHederaLedgerTestHelper {
         creator = mock(ExpiringCreations.class);
         historian = mock(RecordsHistorian.class);
 
-        ids =
-                new EntityIdSource() {
-                    long nextId = NEXT_ID;
+        ids = new EntityIdSource() {
+            long nextId = NEXT_ID;
 
-                    @Override
-                    public TopicID newTopicId(final AccountID sponsor) {
-                        return TopicID.newBuilder().setTopicNum(nextId++).build();
-                    }
+            @Override
+            public TopicID newTopicId(final AccountID sponsor) {
+                return TopicID.newBuilder().setTopicNum(nextId++).build();
+            }
 
-                    @Override
-                    public AccountID newAccountId(AccountID newAccountSponsor) {
-                        return AccountID.newBuilder().setAccountNum(nextId++).build();
-                    }
+            @Override
+            public AccountID newAccountId(AccountID newAccountSponsor) {
+                return AccountID.newBuilder().setAccountNum(nextId++).build();
+            }
 
-                    @Override
-                    public ContractID newContractId(AccountID newContractSponsor) {
-                        return ContractID.newBuilder().setContractNum(nextId++).build();
-                    }
+            @Override
+            public ContractID newContractId(AccountID newContractSponsor) {
+                return ContractID.newBuilder().setContractNum(nextId++).build();
+            }
 
-                    @Override
-                    public FileID newFileId(AccountID newFileSponsor) {
-                        return FileID.newBuilder().setFileNum(nextId++).build();
-                    }
+            @Override
+            public FileID newFileId(AccountID newFileSponsor) {
+                return FileID.newBuilder().setFileNum(nextId++).build();
+            }
 
-                    @Override
-                    public TokenID newTokenId(AccountID sponsor) {
-                        return TokenID.newBuilder().setTokenNum(nextId++).build();
-                    }
+            @Override
+            public TokenID newTokenId(AccountID sponsor) {
+                return TokenID.newBuilder().setTokenNum(nextId++).build();
+            }
 
-                    @Override
-                    public ScheduleID newScheduleId(AccountID sponsor) {
-                        return ScheduleID.newBuilder().setScheduleNum(nextId++).build();
-                    }
+            @Override
+            public ScheduleID newScheduleId(AccountID sponsor) {
+                return ScheduleID.newBuilder().setScheduleNum(nextId++).build();
+            }
 
-                    @Override
-                    public void reclaimLastId() {
-                        nextId--;
-                    }
+            @Override
+            public void reclaimLastId() {
+                nextId--;
+            }
 
-                    @Override
-                    public void reclaimProvisionalIds() {}
+            @Override
+            public void reclaimProvisionalIds() {}
 
-                    @Override
-                    public void resetProvisionalIds() {}
-                };
+            @Override
+            public void resetProvisionalIds() {}
+        };
     }
 
     protected AccountAmount aa(AccountID account, long amount) {
-        return AccountAmount.newBuilder().setAccountID(account).setAmount(amount).build();
+        return AccountAmount.newBuilder()
+                .setAccountID(account)
+                .setAmount(amount)
+                .build();
     }
 
     protected void addToLedger(AccountID id, long balance, Map<TokenID, TokenInfo> tokenInfo) {
@@ -211,10 +212,7 @@ public class BaseHederaLedgerTestHelper {
         accountsLedger = mock(TransactionalLedger.class);
         tokenRelsLedger = mock(TransactionalLedger.class);
         tokensLedger = mock(TransactionalLedger.class);
-        addToLedger(
-                misc,
-                MISC_BALANCE,
-                Map.of(frozenId, new TokenInfo(miscFrozenTokenBalance, frozenToken)));
+        addToLedger(misc, MISC_BALANCE, Map.of(frozenId, new TokenInfo(miscFrozenTokenBalance, frozenToken)));
         addToLedger(deletable, MISC_BALANCE, Map.of(frozenId, new TokenInfo(0, frozenToken)));
         addToLedger(rand, RAND_BALANCE, noopCustomizer);
         given(accountsLedger.get(rand, ALIAS)).willReturn(ByteString.EMPTY);
@@ -236,18 +234,17 @@ public class BaseHederaLedgerTestHelper {
         sideEffectsTracker = mock(SideEffectsTracker.class);
         mutableEntityAccess = mock(MutableEntityAccess.class);
         final var autoCreationLogic = mock(AutoCreationLogic.class);
-        subject =
-                new HederaLedger(
-                        tokenStore,
-                        ids,
-                        creator,
-                        validator,
-                        sideEffectsTracker,
-                        historian,
-                        tokensLedger,
-                        accountsLedger,
-                        transferLogic,
-                        autoCreationLogic);
+        subject = new HederaLedger(
+                tokenStore,
+                ids,
+                creator,
+                validator,
+                sideEffectsTracker,
+                historian,
+                tokensLedger,
+                accountsLedger,
+                transferLogic,
+                autoCreationLogic);
         subject.setTokenRelsLedger(tokenRelsLedger);
         subject.setNftsLedger(nftsLedger);
         subject.setTokenRelsLedger(tokenRelsLedger);

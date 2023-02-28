@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile.utils;
 
 import static com.hedera.node.app.hapi.fees.pricing.FeeSchedules.USD_TO_TINYCENTS;
@@ -45,27 +46,35 @@ class PrecompilePricingUtilsTest {
     private static final long COST = 36;
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
-    @Mock private AssetsLoader assetLoader;
-    @Mock private HbarCentExchange exchange;
-    @Mock private ExchangeRate exchangeRate;
-    @Mock private Provider<FeeCalculator> feeCalculator;
-    @Mock private UsagePricesProvider resourceCosts;
-    @Mock private StateView stateView;
-    @Mock private AccessorFactory accessorFactory;
+
+    @Mock
+    private AssetsLoader assetLoader;
+
+    @Mock
+    private HbarCentExchange exchange;
+
+    @Mock
+    private ExchangeRate exchangeRate;
+
+    @Mock
+    private Provider<FeeCalculator> feeCalculator;
+
+    @Mock
+    private UsagePricesProvider resourceCosts;
+
+    @Mock
+    private StateView stateView;
+
+    @Mock
+    private AccessorFactory accessorFactory;
 
     @Test
     void failsToLoadCanonicalPrices() throws IOException {
         given(assetLoader.loadCanonicalPrices()).willThrow(IOException.class);
         assertThrows(
                 PrecompilePricingUtils.CanonicalOperationsUnloadableException.class,
-                () ->
-                        new PrecompilePricingUtils(
-                                assetLoader,
-                                exchange,
-                                feeCalculator,
-                                resourceCosts,
-                                stateView,
-                                accessorFactory));
+                () -> new PrecompilePricingUtils(
+                        assetLoader, exchange, feeCalculator, resourceCosts, stateView, accessorFactory));
     }
 
     @Test
@@ -73,25 +82,16 @@ class PrecompilePricingUtilsTest {
         final Timestamp timestamp = Timestamp.newBuilder().setSeconds(123456789).build();
         given(exchange.rate(timestamp)).willReturn(exchangeRate);
         given(assetLoader.loadCanonicalPrices())
-                .willReturn(
-                        Map.of(
-                                HederaFunctionality.TokenAssociateToAccount,
-                                Map.of(SubType.DEFAULT, BigDecimal.valueOf(COST))));
+                .willReturn(Map.of(
+                        HederaFunctionality.TokenAssociateToAccount,
+                        Map.of(SubType.DEFAULT, BigDecimal.valueOf(COST))));
         given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
         given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
 
-        final PrecompilePricingUtils subject =
-                new PrecompilePricingUtils(
-                        assetLoader,
-                        exchange,
-                        feeCalculator,
-                        resourceCosts,
-                        stateView,
-                        accessorFactory);
+        final PrecompilePricingUtils subject = new PrecompilePricingUtils(
+                assetLoader, exchange, feeCalculator, resourceCosts, stateView, accessorFactory);
 
-        final long price =
-                subject.getMinimumPriceInTinybars(
-                        PrecompilePricingUtils.GasCostType.ASSOCIATE, timestamp);
+        final long price = subject.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.ASSOCIATE, timestamp);
 
         assertEquals(
                 USD_TO_TINYCENTS

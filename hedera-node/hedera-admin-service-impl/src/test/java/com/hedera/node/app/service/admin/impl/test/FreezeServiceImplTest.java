@@ -13,14 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.admin.impl.test;
+
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.admin.FreezeService;
 import com.hedera.node.app.service.admin.impl.FreezeServiceImpl;
+import com.hedera.node.app.spi.state.SchemaRegistry;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class FreezeServiceImplTest {
+    @Mock
+    private SchemaRegistry registry;
 
     @Test
     void testSpi() {
@@ -33,5 +43,13 @@ class FreezeServiceImplTest {
                 FreezeServiceImpl.class,
                 service.getClass(),
                 "We must always receive an instance of type " + FreezeServiceImpl.class.getName());
+    }
+
+    @Test
+    void registersExpectedSchema() {
+        final var subject = FreezeService.getInstance();
+
+        subject.registerSchemas(registry);
+        verifyNoInteractions(registry);
     }
 }

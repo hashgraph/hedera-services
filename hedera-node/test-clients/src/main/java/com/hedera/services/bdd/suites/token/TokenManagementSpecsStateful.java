@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -53,11 +54,10 @@ public class TokenManagementSpecsStateful extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    /* Stateful specs from TokenManagementSpecs */
-                    freezeMgmtFailureCasesWork(),
-                });
+        return List.of(new HapiSpec[] {
+            /* Stateful specs from TokenManagementSpecs */
+            freezeMgmtFailureCasesWork(),
+        });
     }
 
     public HapiSpec freezeMgmtFailureCasesWork() {
@@ -85,10 +85,8 @@ public class TokenManagementSpecsStateful extends HapiSuite {
                         tokenFreeze(freezableToken, TOKEN_TREASURY)
                                 .signedBy(GENESIS)
                                 .hasKnownStatus(INVALID_SIGNATURE),
-                        tokenFreeze(freezableToken, "go")
-                                .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-                        tokenUnfreeze(freezableToken, "go")
-                                .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+                        tokenFreeze(freezableToken, "go").hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+                        tokenUnfreeze(freezableToken, "go").hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
                         tokenUnfreeze(unfreezableToken, TOKEN_TREASURY)
                                 .signedBy(GENESIS)
                                 .hasKnownStatus(TOKEN_HAS_NO_FREEZE_KEY),
@@ -96,7 +94,9 @@ public class TokenManagementSpecsStateful extends HapiSuite {
                         tokenUnfreeze(freezableToken, TOKEN_TREASURY)
                                 .signedBy(GENESIS)
                                 .hasKnownStatus(INVALID_SIGNATURE))
-                .then(getTokenInfo(unfreezableToken).hasRegisteredId(unfreezableToken).logged());
+                .then(getTokenInfo(unfreezableToken)
+                        .hasRegisteredId(unfreezableToken)
+                        .logged());
     }
 
     private HapiSpec nftMintingCapIsEnforced() {
@@ -109,24 +109,16 @@ public class TokenManagementSpecsStateful extends HapiSuite {
                                 .supplyType(TokenSupplyType.INFINITE)
                                 .supplyKey("supplyKey"),
                         mintToken("fungibleToken", List.of(ByteString.copyFromUtf8("Why not?"))))
-                .when(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of("tokens.nfts.maxAllowedMints", "" + 1)))
+                .when(fileUpdate(APP_PROPERTIES)
+                        .payingWith(ADDRESS_BOOK_CONTROL)
+                        .overridingProps(Map.of("tokens.nfts.maxAllowedMints", "" + 1)))
                 .then(
-                        mintToken(
-                                        "fungibleToken",
-                                        List.of(ByteString.copyFromUtf8("Again, why not?")))
+                        mintToken("fungibleToken", List.of(ByteString.copyFromUtf8("Again, why not?")))
                                 .hasKnownStatus(MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED),
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(
-                                        Map.of(
-                                                "tokens.nfts.maxAllowedMints",
-                                                "" + defaultMaxNftMints)),
-                        mintToken(
-                                "fungibleToken",
-                                List.of(ByteString.copyFromUtf8("Again, why not?"))));
+                                .overridingProps(Map.of("tokens.nfts.maxAllowedMints", "" + defaultMaxNftMints)),
+                        mintToken("fungibleToken", List.of(ByteString.copyFromUtf8("Again, why not?"))));
     }
 
     @Override

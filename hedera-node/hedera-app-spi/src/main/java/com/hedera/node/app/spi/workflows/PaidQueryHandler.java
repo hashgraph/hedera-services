@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.workflows;
 
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -24,8 +25,7 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * An abstract class for all queries that are not free. If payment is required depends on the {@link
- * ResponseType}
+ * An abstract class for all queries that are not free. If payment is required depends on the {@link ResponseType}
  */
 public abstract class PaidQueryHandler implements QueryHandler {
 

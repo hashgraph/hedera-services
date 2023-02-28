@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.consensus;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
@@ -25,13 +26,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.txns.TransitionLogic;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.merkle.map.MerkleMap;
 import java.io.IOException;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -45,17 +46,16 @@ import org.apache.logging.log4j.Logger;
 public class SubmitMessageTransitionLogic implements TransitionLogic {
     private static final Logger log = LogManager.getLogger(SubmitMessageTransitionLogic.class);
 
-    private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP =
-            ignore -> OK;
+    private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP = ignore -> OK;
 
     private final OptionValidator validator;
     private final TransactionContext transactionContext;
-    private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
+    private final Supplier<MerkleMapLike<EntityNum, MerkleTopic>> topics;
     private final GlobalDynamicProperties globalDynamicProperties;
 
     @Inject
     public SubmitMessageTransitionLogic(
-            Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
+            Supplier<MerkleMapLike<EntityNum, MerkleTopic>> topics,
             OptionValidator validator,
             TransactionContext transactionContext,
             GlobalDynamicProperties globalDynamicProperties) {
@@ -101,9 +101,7 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
                 return;
             }
             if (1 == chunkInfo.getNumber()
-                    && !chunkInfo
-                            .getInitialTransactionID()
-                            .equals(transactionBody.getTransactionID())) {
+                    && !chunkInfo.getInitialTransactionID().equals(transactionBody.getTransactionID())) {
                 transactionContext.setStatus(INVALID_CHUNK_TRANSACTION_ID);
                 return;
             }
@@ -118,8 +116,7 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
                     op.getMessage().toByteArray(),
                     op.getTopicID(),
                     transactionContext.consensusTime());
-            transactionContext.setTopicRunningHash(
-                    mutableTopic.getRunningHash(), mutableTopic.getSequenceNumber());
+            transactionContext.setTopicRunningHash(mutableTopic.getRunningHash(), mutableTopic.getSequenceNumber());
             transactionContext.setStatus(SUCCESS);
         } catch (IOException e) {
             log.error("Updating topic running hash failed.", e);

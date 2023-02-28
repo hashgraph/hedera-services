@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.issues;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -42,31 +43,24 @@ public class Issue2150Spec extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    multiKeyNonPayerEntityVerifiedAsync(),
-                });
+        return List.of(new HapiSpec[] {
+            multiKeyNonPayerEntityVerifiedAsync(),
+        });
     }
 
     private HapiSpec multiKeyNonPayerEntityVerifiedAsync() {
         KeyShape LARGE_THRESH_SHAPE = KeyShape.threshOf(1, 10);
-        SigControl firstOnly =
-                LARGE_THRESH_SHAPE.signedWith(
-                        sigs(ON, OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF));
+        SigControl firstOnly = LARGE_THRESH_SHAPE.signedWith(sigs(ON, OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF));
 
         return defaultHapiSpec("MultiKeyNonPayerEntityVerifiedAsync")
                 .given(
                         newKeyNamed("payerKey").shape(LARGE_THRESH_SHAPE),
                         newKeyNamed("receiverKey").shape(LARGE_THRESH_SHAPE),
                         cryptoCreate("payer").keyShape(LARGE_THRESH_SHAPE),
-                        cryptoCreate("receiver")
-                                .keyShape(LARGE_THRESH_SHAPE)
-                                .receiverSigRequired(true))
+                        cryptoCreate("receiver").keyShape(LARGE_THRESH_SHAPE).receiverSigRequired(true))
                 .when()
-                .then(
-                        cryptoTransfer(tinyBarsFromTo("payer", "receiver", 1L))
-                                .sigControl(
-                                        forKey("payer", firstOnly), forKey("receiver", firstOnly)));
+                .then(cryptoTransfer(tinyBarsFromTo("payer", "receiver", 1L))
+                        .sigControl(forKey("payer", firstOnly), forKey("receiver", firstOnly)));
     }
 
     @Override

@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stream;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.Units.MB_TO_BYTES;
-import static com.swirlds.common.utility.Units.SECONDS_TO_MILLISECONDS;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
@@ -31,7 +31,6 @@ import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.stream.QueueThreadObjectStream;
 import com.swirlds.common.stream.QueueThreadObjectStreamConfiguration;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
-import com.swirlds.common.stream.internal.TimestampStreamFileWriter;
 import com.swirlds.common.system.Platform;
 import java.io.File;
 import java.io.IOException;
@@ -69,26 +68,12 @@ public class RecordStreamManager {
 
     /**
      * receives {@link RecordStreamObject}s from writeQueueThread, serializes {@link
-     * RecordStreamObject}s to record stream files. <b>Should be deleted after migration to V6 is
-     * done</b>.
-     */
-    private TimestampStreamFileWriter<RecordStreamObject> v5StreamFileWriter;
-
-    /**
-     * receives {@link RecordStreamObject}s from writeQueueThread, serializes {@link
      * RecordStreamObject}s to record stream files. Will be used from V6 onwards.
      */
     private RecordStreamFileWriter protobufStreamFileWriter;
 
     /** initial running Hash of records */
     private Hash initialHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
-
-    /**
-     * when record streaming is started after reconnect, or at state recovering,
-     * startWriteAtCompleteWindow should be set to be true; when record streaming is started after
-     * restart, it should be set to be false
-     */
-    private boolean startWriteAtCompleteWindow = false;
 
     /** whether the platform is in freeze period */
     private volatile boolean inFreeze = false;
@@ -116,46 +101,26 @@ public class RecordStreamManager {
             final RecordStreamType streamType,
             final GlobalDynamicProperties globalDynamicProperties)
             throws NoSuchAlgorithmException, IOException {
-        final var nodeScopedRecordLogDir =
-                effectiveLogDir(nodeLocalProperties.recordLogDir(), accountMemo);
-        final var nodeScopedSidecarDir =
-                effectiveSidecarDir(nodeScopedRecordLogDir, nodeLocalProperties.sidecarDir());
+        final var nodeScopedRecordLogDir = effectiveLogDir(nodeLocalProperties.recordLogDir(), accountMemo);
+        final var nodeScopedSidecarDir = effectiveSidecarDir(nodeScopedRecordLogDir, nodeLocalProperties.sidecarDir());
         if (nodeLocalProperties.isRecordStreamEnabled()) {
             // the directory to which record stream files are written
             Files.createDirectories(Paths.get(nodeScopedRecordLogDir));
             Files.createDirectories(Paths.get(nodeScopedSidecarDir));
-            if (globalDynamicProperties.recordFileVersion() >= 6) {
-                protobufStreamFileWriter =
-                        new RecordStreamFileWriter(
-                                nodeScopedRecordLogDir,
-                                nodeLocalProperties.recordLogPeriod() * SECONDS_TO_MILLISECONDS,
-                                platform,
-                                startWriteAtCompleteWindow,
-                                streamType,
-                                nodeScopedSidecarDir,
-                                globalDynamicProperties.getSidecarMaxSizeMb() * MB_TO_BYTES,
-                                globalDynamicProperties);
-            } else {
-                v5StreamFileWriter =
-                        new TimestampStreamFileWriter<>(
-                                nodeScopedRecordLogDir,
-                                nodeLocalProperties.recordLogPeriod() * SECONDS_TO_MILLISECONDS,
-                                platform,
-                                startWriteAtCompleteWindow,
-                                streamType);
-            }
-            writeQueueThread =
-                    new QueueThreadObjectStreamConfiguration<RecordStreamObject>(
-                                    getStaticThreadManager())
-                            .setNodeId(platform.getSelfId().getId())
-                            .setCapacity(nodeLocalProperties.recordStreamQueueCapacity())
-                            .setForwardTo(
-                                    protobufStreamFileWriter == null
-                                            ? v5StreamFileWriter
-                                            : protobufStreamFileWriter)
-                            .setThreadName("writeQueueThread")
-                            .setComponent("recordStream")
-                            .build();
+            protobufStreamFileWriter = new RecordStreamFileWriter(
+                    nodeScopedRecordLogDir,
+                    platform,
+                    streamType,
+                    nodeScopedSidecarDir,
+                    globalDynamicProperties.getSidecarMaxSizeMb() * MB_TO_BYTES,
+                    globalDynamicProperties);
+            writeQueueThread = new QueueThreadObjectStreamConfiguration<RecordStreamObject>(getStaticThreadManager())
+                    .setNodeId(platform.getSelfId().getId())
+                    .setCapacity(nodeLocalProperties.recordStreamQueueCapacity())
+                    .setForwardTo(protobufStreamFileWriter)
+                    .setThreadName("writeQueueThread")
+                    .setComponent("recordStream")
+                    .build();
         }
 
         this.runningAvgs = runningAvgs;
@@ -166,21 +131,18 @@ public class RecordStreamManager {
                 new RunningHashCalculatorForStream<>();
 
         hashCalculator = new HashCalculatorForStream<>(runningHashCalculator);
-        hashQueueThread =
-                new QueueThreadObjectStreamConfiguration<RecordStreamObject>(
-                                getStaticThreadManager())
-                        .setNodeId(platform.getSelfId().getId())
-                        .setCapacity(nodeLocalProperties.recordStreamQueueCapacity())
-                        .setForwardTo(hashCalculator)
-                        .setThreadName("hashQueueThread")
-                        .setComponent("recordStream")
-                        .build();
+        hashQueueThread = new QueueThreadObjectStreamConfiguration<RecordStreamObject>(getStaticThreadManager())
+                .setNodeId(platform.getSelfId().getId())
+                .setCapacity(nodeLocalProperties.recordStreamQueueCapacity())
+                .setForwardTo(hashCalculator)
+                .setThreadName("hashQueueThread")
+                .setComponent("recordStream")
+                .build();
 
-        multiStream =
-                new MultiStream<>(
-                        nodeLocalProperties.isRecordStreamEnabled()
-                                ? List.of(hashQueueThread, writeQueueThread)
-                                : List.of(hashQueueThread));
+        multiStream = new MultiStream<>(
+                nodeLocalProperties.isRecordStreamEnabled()
+                        ? List.of(hashQueueThread, writeQueueThread)
+                        : List.of(hashQueueThread));
         this.initialHash = initialHash;
         multiStream.setRunningHash(initialHash);
 
@@ -191,8 +153,8 @@ public class RecordStreamManager {
 
         log.info(
                 "Finish initializing RecordStreamManager with: enableRecordStreaming: {},"
-                    + " recordStreamDir: {}, sidecarRecordStreamDir: {}, recordsLogPeriod: {} secs,"
-                    + " recordStreamQueueCapacity: {}, initialHash: {}",
+                        + " recordStreamDir: {}, sidecarRecordStreamDir: {}, recordsLogPeriod: {} secs,"
+                        + " recordStreamQueueCapacity: {}, initialHash: {}",
                 nodeLocalProperties::isRecordStreamEnabled,
                 () -> nodeScopedRecordLogDir,
                 () -> nodeScopedSidecarDir,
@@ -265,27 +227,6 @@ public class RecordStreamManager {
         multiStream.setRunningHash(initialHash);
     }
 
-    /**
-     * sets startWriteAtCompleteWindow: it should be set to be true after reconnect; it should be
-     * set to be false at restart
-     *
-     * @param startWriteAtCompleteWindow whether the writer should not write until the first
-     *     complete window
-     */
-    public void setStartWriteAtCompleteWindow(boolean startWriteAtCompleteWindow) {
-        if (v5StreamFileWriter != null) {
-            v5StreamFileWriter.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
-            log.info(
-                    "RecordStreamManager::setStartWriteAtCompleteWindow: {}",
-                    startWriteAtCompleteWindow);
-        } else if (protobufStreamFileWriter != null) {
-            protobufStreamFileWriter.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
-            log.info(
-                    "RecordStreamManager::setStartWriteAtCompleteWindow: {}",
-                    startWriteAtCompleteWindow);
-        }
-    }
-
     public static String effectiveLogDir(String baseDir, final String accountMemo) {
         if (!baseDir.endsWith(File.separator)) {
             baseDir += File.separator;
@@ -325,15 +266,6 @@ public class RecordStreamManager {
      */
     MultiStream<RecordStreamObject> getMultiStream() {
         return multiStream;
-    }
-
-    /**
-     * for unit testing
-     *
-     * @return current TimestampStreamFileWriter instance
-     */
-    TimestampStreamFileWriter<RecordStreamObject> getV5StreamFileWriter() {
-        return v5StreamFileWriter;
     }
 
     /**

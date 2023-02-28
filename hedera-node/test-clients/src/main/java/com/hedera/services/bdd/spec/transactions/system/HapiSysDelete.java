@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.system;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asContractId;
@@ -69,19 +70,14 @@ public class HapiSysDelete extends HapiTxnOp<HapiSysDelete> {
         if (file.isPresent() && contract.isPresent()) {
             Assertions.fail("Ambiguous SystemDelete---both file and contract present!");
         }
-        SystemDeleteTransactionBody opBody =
-                spec.txns()
-                        .<SystemDeleteTransactionBody, SystemDeleteTransactionBody.Builder>body(
-                                SystemDeleteTransactionBody.class,
-                                b -> {
-                                    newExpiry.ifPresent(
-                                            l ->
-                                                    b.setExpirationTime(
-                                                            TimestampSeconds.newBuilder()
-                                                                    .setSeconds(l)));
-                                    file.ifPresent(n -> b.setFileID(asFileId(n, spec)));
-                                    contract.ifPresent(n -> b.setContractID(asContractId(n, spec)));
-                                });
+        SystemDeleteTransactionBody opBody = spec.txns()
+                .<SystemDeleteTransactionBody, SystemDeleteTransactionBody.Builder>body(
+                        SystemDeleteTransactionBody.class, b -> {
+                            newExpiry.ifPresent(l -> b.setExpirationTime(
+                                    TimestampSeconds.newBuilder().setSeconds(l)));
+                            file.ifPresent(n -> b.setFileID(asFileId(n, spec)));
+                            contract.ifPresent(n -> b.setContractID(asContractId(n, spec)));
+                        });
         return b -> b.setSystemDelete(opBody);
     }
 

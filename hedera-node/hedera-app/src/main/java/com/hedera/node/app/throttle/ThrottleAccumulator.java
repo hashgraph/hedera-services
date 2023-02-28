@@ -13,20 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.throttle;
 
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Keeps track of the amount of usage of different throttle categories (by {@code id}), and returns
  * whether the throttle has been exceeded after applying the given incremental amount.
  */
-public class ThrottleAccumulator {
-
-    private static final Logger LOG = LoggerFactory.getLogger(ThrottleAccumulator.class);
+public interface ThrottleAccumulator {
 
     /**
      * Increments the throttle associated with functionality's {@code id} and returns whether the
@@ -40,9 +38,15 @@ public class ThrottleAccumulator {
      * @throws NullPointerException if (@code functionality} is {@code null}
      * @throws IllegalArgumentException if no throttle exists for {@code functionality}
      */
-    public boolean shouldThrottle(@NonNull final HederaFunctionality functionality) {
-        // TODO: Implement (#4206)
-        LOG.warn("ThrottleAccumulator.shouldThrottle() not implemented");
-        return false;
-    }
+    boolean shouldThrottle(@NonNull final HederaFunctionality functionality);
+
+    /**
+     * Tests whether the given query should be throttled, assuming its functionality is as
+     * specified.
+     *
+     * @param functionality the functionality of the query
+     * @param query the query to test
+     * @return true if the query should be throttled, false otherwise
+     */
+    boolean shouldThrottleQuery(@NonNull final HederaFunctionality functionality, @NonNull Query query);
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.contract;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -47,8 +48,7 @@ public class RandomContract implements OpProvider {
     private final SupportedContract[] choices = SupportedContract.values();
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(INVALID_CONTRACT_ID);
 
-    public RandomContract(
-            EntityNameProvider<Key> keys, RegistrySourcedNameProvider<ContractID> contracts) {
+    public RandomContract(EntityNameProvider<Key> keys, RegistrySourcedNameProvider<ContractID> contracts) {
         this.keys = keys;
         this.contracts = contracts;
     }
@@ -62,8 +62,7 @@ public class RandomContract implements OpProvider {
     public List<HapiSpecOperation> suggestedInitializers() {
         List<HapiSpecOperation> ops = new ArrayList<>();
         for (SupportedContract choice : choices) {
-            HapiFileCreate op =
-                    fileCreate(fileFor(choice)).noLogging().path(choice.getPathToBytecode());
+            HapiFileCreate op = fileCreate(fileFor(choice)).noLogging().path(choice.getPathToBytecode());
             ops.add(op);
         }
         return ops;
@@ -88,42 +87,24 @@ public class RandomContract implements OpProvider {
         final String tentativeContract = my("contract" + n);
         final SupportedContract choice = choices[n % choices.length];
 
-        HapiContractCreate op =
-                contractCreate(tentativeContract)
-                        .adminKey(key.get())
-                        .bytecode(fileFor(choice))
-                        .skipAccountRegistration()
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                        .hasKnownStatusFrom(permissibleOutcomes)
-                        .uponSuccess(
-                                registry -> {
-                                    registry.saveContractChoice(tentativeContract, choice);
-                                    AtomicInteger tag = new AtomicInteger();
-                                    choice.getCallDetails()
-                                            .forEach(
-                                                    detail -> {
-                                                        ActionableContractCall call =
-                                                                new ActionableContractCall(
-                                                                        tentativeContract, detail);
-                                                        registry.saveActionableCall(
-                                                                tentativeContract
-                                                                        + "-"
-                                                                        + tag.getAndIncrement(),
-                                                                call);
-                                                    });
-                                    choice.getLocalCallDetails()
-                                            .forEach(
-                                                    detail -> {
-                                                        ActionableContractCallLocal call =
-                                                                new ActionableContractCallLocal(
-                                                                        tentativeContract, detail);
-                                                        registry.saveActionableLocalCall(
-                                                                tentativeContract
-                                                                        + "-"
-                                                                        + tag.getAndIncrement(),
-                                                                call);
-                                                    });
-                                });
+        HapiContractCreate op = contractCreate(tentativeContract)
+                .adminKey(key.get())
+                .bytecode(fileFor(choice))
+                .skipAccountRegistration()
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                .hasKnownStatusFrom(permissibleOutcomes)
+                .uponSuccess(registry -> {
+                    registry.saveContractChoice(tentativeContract, choice);
+                    AtomicInteger tag = new AtomicInteger();
+                    choice.getCallDetails().forEach(detail -> {
+                        ActionableContractCall call = new ActionableContractCall(tentativeContract, detail);
+                        registry.saveActionableCall(tentativeContract + "-" + tag.getAndIncrement(), call);
+                    });
+                    choice.getLocalCallDetails().forEach(detail -> {
+                        ActionableContractCallLocal call = new ActionableContractCallLocal(tentativeContract, detail);
+                        registry.saveActionableLocalCall(tentativeContract + "-" + tag.getAndIncrement(), call);
+                    });
+                });
         return Optional.of(op);
     }
 

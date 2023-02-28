@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.answering;
 
 import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
@@ -32,6 +33,7 @@ import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.records.RecordCache;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
@@ -55,11 +57,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AnswerFunctionsTest {
-    @Mock private StateView view;
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private RecordCache recordCache;
-    @Mock private MerkleAccount targetAccount;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock
+    private StateView view;
+
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private RecordCache recordCache;
+
+    @Mock
+    private MerkleAccount targetAccount;
+
+    @Mock
+    private MerkleMap<EntityNum, MerkleAccount> accounts;
 
     private final List<ExpirableTxnRecord> targetRecords = new ArrayList<>();
     private AnswerFunctions subject;
@@ -71,10 +82,9 @@ class AnswerFunctionsTest {
 
     @Test
     void returnsEmptyListForMissingAccount() {
-        final var op =
-                CryptoGetAccountRecordsQuery.newBuilder()
-                        .setAccountID(targetId.toGrpcAccountId())
-                        .build();
+        final var op = CryptoGetAccountRecordsQuery.newBuilder()
+                .setAccountID(targetId.toGrpcAccountId())
+                .build();
         setupAccountsView();
 
         assertEquals(Collections.emptyList(), subject.mostRecentRecords(view, op));
@@ -86,10 +96,9 @@ class AnswerFunctionsTest {
         givenRecordCount(3);
         given(dynamicProperties.maxNumQueryableRecords()).willReturn(4);
 
-        final var op =
-                CryptoGetAccountRecordsQuery.newBuilder()
-                        .setAccountID(targetId.toGrpcAccountId())
-                        .build();
+        final var op = CryptoGetAccountRecordsQuery.newBuilder()
+                .setAccountID(targetId.toGrpcAccountId())
+                .build();
         final var actual = subject.mostRecentRecords(view, op);
 
         final var expected = ExpirableTxnRecord.allToGrpc(targetRecords);
@@ -102,10 +111,9 @@ class AnswerFunctionsTest {
         givenRecordCount(10);
         given(dynamicProperties.maxNumQueryableRecords()).willReturn(2);
 
-        final var op =
-                CryptoGetAccountRecordsQuery.newBuilder()
-                        .setAccountID(targetId.toGrpcAccountId())
-                        .build();
+        final var op = CryptoGetAccountRecordsQuery.newBuilder()
+                .setAccountID(targetId.toGrpcAccountId())
+                .build();
         final var actual = subject.mostRecentRecords(view, op);
 
         final var expected = ExpirableTxnRecord.allToGrpc(targetRecords.subList(8, 10));
@@ -120,10 +128,9 @@ class AnswerFunctionsTest {
         targetRecords.remove(1);
         given(dynamicProperties.maxNumQueryableRecords()).willReturn(2);
 
-        final var op =
-                CryptoGetAccountRecordsQuery.newBuilder()
-                        .setAccountID(targetId.toGrpcAccountId())
-                        .build();
+        final var op = CryptoGetAccountRecordsQuery.newBuilder()
+                .setAccountID(targetId.toGrpcAccountId())
+                .build();
         final var actual = subject.mostRecentRecords(view, op);
 
         assertEquals(Collections.emptyList(), actual);
@@ -137,10 +144,9 @@ class AnswerFunctionsTest {
         given(targetAccount.recordIterator()).willReturn(targetRecords.iterator());
         given(dynamicProperties.maxNumQueryableRecords()).willReturn(2);
 
-        final var op =
-                CryptoGetAccountRecordsQuery.newBuilder()
-                        .setAccountID(targetId.toGrpcAccountId())
-                        .build();
+        final var op = CryptoGetAccountRecordsQuery.newBuilder()
+                .setAccountID(targetId.toGrpcAccountId())
+                .build();
         final var actual = subject.mostRecentRecords(view, op);
 
         assertEquals(Collections.emptyList(), actual);
@@ -170,8 +176,8 @@ class AnswerFunctionsTest {
 
     private void setupAccountsView() {
         final var children = new MutableStateChildren();
-        children.setAccounts(AccountStorageAdapter.fromInMemory(accounts));
-        children.setPayerRecords(RecordsStorageAdapter.fromLegacy(accounts));
+        children.setAccounts(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
+        children.setPayerRecords(RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(accounts)));
 
         view = new StateView(null, children, null);
     }
@@ -179,45 +185,36 @@ class AnswerFunctionsTest {
     private void givenRecordCount(final int n) {
         given(accounts.get(targetId)).willReturn(targetAccount);
         for (int i = 0; i < n; i++) {
-            targetRecords.add(
-                    ExpirableTxnRecordTestHelper.fromGprc(
-                            grpcRecord.toBuilder()
-                                    .setConsensusTimestamp(
-                                            Timestamp.newBuilder().setSeconds(firstConsSecond + i))
-                                    .build()));
+            targetRecords.add(ExpirableTxnRecordTestHelper.fromGprc(grpcRecord.toBuilder()
+                    .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(firstConsSecond + i))
+                    .build()));
         }
         given(targetAccount.numRecords()).willReturn(n);
         given(targetAccount.recordIterator()).willReturn(targetRecords.iterator());
     }
 
     private static final EntityNum targetId = EntityNum.fromLong(12345L);
-    private static final TransactionID targetTxnId =
-            TransactionID.newBuilder()
-                    .setAccountID(asAccount(payer))
-                    .setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234L))
-                    .build();
-    private static final TransactionID absentTxnId =
-            TransactionID.newBuilder()
-                    .setAccountID(asAccount("3.2.1"))
-                    .setTransactionValidStart(Timestamp.newBuilder().setSeconds(4_321L))
-                    .build();
+    private static final TransactionID targetTxnId = TransactionID.newBuilder()
+            .setAccountID(asAccount(payer))
+            .setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234L))
+            .build();
+    private static final TransactionID absentTxnId = TransactionID.newBuilder()
+            .setAccountID(asAccount("3.2.1"))
+            .setTransactionValidStart(Timestamp.newBuilder().setSeconds(4_321L))
+            .build();
     private static final long firstConsSecond = 1_234_567L;
-    private static final TransactionRecord grpcRecord =
-            TransactionRecord.newBuilder()
-                    .setReceipt(
-                            TransactionReceipt.newBuilder()
-                                    .setStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS))
-                    .setTransactionID(targetTxnId)
-                    .setMemo("Dim galleries, dusk winding stairs got past...")
-                    .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(firstConsSecond))
-                    .setTransactionFee(555L)
-                    .setTransferList(
-                            withAdjustments(
-                                    asAccount("0.0.2"), -2L,
-                                    asAccount("0.0.2"), -2L,
-                                    asAccount("0.0.1001"), 2L,
-                                    asAccount("0.0.1002"), 2L))
-                    .build();
+    private static final TransactionRecord grpcRecord = TransactionRecord.newBuilder()
+            .setReceipt(TransactionReceipt.newBuilder().setStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS))
+            .setTransactionID(targetTxnId)
+            .setMemo("Dim galleries, dusk winding stairs got past...")
+            .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(firstConsSecond))
+            .setTransactionFee(555L)
+            .setTransferList(withAdjustments(
+                    asAccount("0.0.2"), -2L,
+                    asAccount("0.0.2"), -2L,
+                    asAccount("0.0.1001"), 2L,
+                    asAccount("0.0.1002"), 2L))
+            .build();
     private static final ExpirableTxnRecord targetRecord = fromGprc(grpcRecord);
     private static final ExpirableTxnRecord cachedTargetRecord = targetRecord;
 }

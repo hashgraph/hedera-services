@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static com.google.protobuf.ByteString.copyFrom;
@@ -68,16 +69,25 @@ public class MerkleSchedule extends PartialMerkleLeaf implements Keyed<EntityNum
 
     static final int MAX_NUM_PUBKEY_BYTES = 33;
 
-    @Nullable private Key grpcAdminKey = null;
-    @Nullable private JKey adminKey = null;
+    @Nullable
+    private Key grpcAdminKey = null;
+
+    @Nullable
+    private JKey adminKey = null;
+
     private String memo;
     private boolean deleted = false;
     private boolean executed = false;
-    @Nullable private EntityId payer = null;
+
+    @Nullable
+    private EntityId payer = null;
+
     private EntityId schedulingAccount;
     private RichInstant schedulingTXValidStart;
     private long expiry;
-    @Nullable private RichInstant resolutionTime = null;
+
+    @Nullable
+    private RichInstant resolutionTime = null;
 
     private int number;
 
@@ -115,18 +125,16 @@ public class MerkleSchedule extends PartialMerkleLeaf implements Keyed<EntityNum
 
     Transaction asSignedTxn() {
         return Transaction.newBuilder()
-                .setSignedTransactionBytes(
-                        SignedTransaction.newBuilder()
-                                .setBodyBytes(ordinaryScheduledTxn.toByteString())
-                                .build()
-                                .toByteString())
+                .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                        .setBodyBytes(ordinaryScheduledTxn.toByteString())
+                        .build()
+                        .toByteString())
                 .build();
     }
 
     TransactionID scheduledTransactionId() {
         if (schedulingAccount == null || schedulingTXValidStart == null) {
-            throw new IllegalStateException(
-                    "Cannot invoke scheduledTransactionId on a content-addressable view!");
+            throw new IllegalStateException("Cannot invoke scheduledTransactionId on a content-addressable view!");
         }
         return TransactionID.newBuilder()
                 .setAccountID(schedulingAccount.toGrpcAccountId())
@@ -168,19 +176,18 @@ public class MerkleSchedule extends PartialMerkleLeaf implements Keyed<EntityNum
 
     @Override
     public String toString() {
-        final var helper =
-                MoreObjects.toStringHelper(MerkleSchedule.class)
-                        .add("number", number + " <-> " + EntityIdUtils.asIdLiteral(number))
-                        .add("scheduledTxn", scheduledTxn)
-                        .add("expiry", expiry)
-                        .add("executed", executed)
-                        .add("deleted", deleted)
-                        .add("memo", memo)
-                        .add("payer", readablePayer())
-                        .add("schedulingAccount", schedulingAccount)
-                        .add("schedulingTXValidStart", schedulingTXValidStart)
-                        .add("signatories", signatories.stream().map(CommonUtils::hex).toList())
-                        .add("adminKey", describe(adminKey));
+        final var helper = MoreObjects.toStringHelper(MerkleSchedule.class)
+                .add("number", number + " <-> " + EntityIdUtils.asIdLiteral(number))
+                .add("scheduledTxn", scheduledTxn)
+                .add("expiry", expiry)
+                .add("executed", executed)
+                .add("deleted", deleted)
+                .add("memo", memo)
+                .add("payer", readablePayer())
+                .add("schedulingAccount", schedulingAccount)
+                .add("schedulingTXValidStart", schedulingTXValidStart)
+                .add("signatories", signatories.stream().map(CommonUtils::hex).toList())
+                .add("adminKey", describe(adminKey));
         if (resolutionTime != null) {
             helper.add("resolutionTime", resolutionTime);
         }
@@ -188,12 +195,13 @@ public class MerkleSchedule extends PartialMerkleLeaf implements Keyed<EntityNum
     }
 
     private String readablePayer() {
-        return Optional.ofNullable(effectivePayer()).map(EntityId::toAbbrevString).orElse("<N/A>");
+        return Optional.ofNullable(effectivePayer())
+                .map(EntityId::toAbbrevString)
+                .orElse("<N/A>");
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         expiry = in.readLong();
         bodyBytes = in.readByteArray(Integer.MAX_VALUE);
         executed = in.readBoolean();
@@ -416,9 +424,7 @@ public class MerkleSchedule extends PartialMerkleLeaf implements Keyed<EntityNum
             ordinaryScheduledTxn = MiscUtils.asOrdinary(scheduledTxn, scheduledTransactionId());
         } catch (final InvalidProtocolBufferException e) {
             throw new IllegalArgumentException(
-                    String.format(
-                            "Argument bodyBytes=0x%s was not a TransactionBody!",
-                            CommonUtils.hex(bodyBytes)));
+                    String.format("Argument bodyBytes=0x%s was not a TransactionBody!", CommonUtils.hex(bodyBytes)));
         }
     }
 }

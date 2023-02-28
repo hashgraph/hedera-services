@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -51,8 +52,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class MerkleSpecialFilesTest {
-    private static final byte[] stuff =
-            "01234578901234578901234578901234578901234567".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] stuff = "01234578901234578901234578901234578901234567".getBytes(StandardCharsets.UTF_8);
     private static final FileID fid = IdUtils.asFile("0.0.150");
     private static final FileID secondFid = IdUtils.asFile("0.0.151");
     private static final byte[] stuffHash = CommonUtils.noThrowSha384HashOf(stuff);
@@ -77,8 +77,7 @@ class MerkleSpecialFilesTest {
 
     @Test
     void emptySpecialFilesNeverMatchHashes() {
-        assertFalse(
-                subject.hashMatches(fid, stuffHash), "Empty special files shouldn't match hashes");
+        assertFalse(subject.hashMatches(fid, stuffHash), "Empty special files shouldn't match hashes");
     }
 
     @Test
@@ -87,9 +86,7 @@ class MerkleSpecialFilesTest {
         final var copySub = subject.copy();
 
         assertNotSame(
-                subject.getFileContents(),
-                copySub.getFileContents(),
-                "copy() should create new file contents map");
+                subject.getFileContents(), copySub.getFileContents(), "copy() should create new file contents map");
         for (final var entry : subject.getFileContents().entrySet()) {
             assertNotSame(entry.getValue(), copySub.getFileContents().get(entry.getKey()));
         }
@@ -101,14 +98,8 @@ class MerkleSpecialFilesTest {
 
         subject.copy();
 
-        assertThrows(
-                MutabilityException.class,
-                () -> subject.update(fid, stuff),
-                "Copies shouldn't be updatable");
-        assertThrows(
-                MutabilityException.class,
-                () -> subject.append(fid, stuff),
-                "Copies shouldn't be appendable");
+        assertThrows(MutabilityException.class, () -> subject.update(fid, stuff), "Copies shouldn't be updatable");
+        assertThrows(MutabilityException.class, () -> subject.append(fid, stuff), "Copies shouldn't be appendable");
     }
 
     @Test
@@ -148,9 +139,7 @@ class MerkleSpecialFilesTest {
 
         assertArrayEquals(stuff, subject.get(secondFid), "Appended stuff should be identical");
 
-        assertTrue(
-                subject.hashMatches(secondFid, stuffHash),
-                "Appended stuff should have SHA-384 hash");
+        assertTrue(subject.hashMatches(secondFid, stuffHash), "Appended stuff should have SHA-384 hash");
     }
 
     @Test
@@ -162,9 +151,7 @@ class MerkleSpecialFilesTest {
 
         assertArrayEquals(stuff, subject.get(secondFid), "Appended stuff should be identical");
 
-        assertTrue(
-                subject.hashMatches(secondFid, stuffHash),
-                "Appended stuff should have SHA-384 hash");
+        assertTrue(subject.hashMatches(secondFid, stuffHash), "Appended stuff should have SHA-384 hash");
     }
 
     @Test
@@ -190,8 +177,7 @@ class MerkleSpecialFilesTest {
     @Test
     void propagatesFailureOnGetThatShouldBeNeverProblematic() throws IOException {
         @SuppressWarnings("unchecked")
-        final Supplier<ByteArrayOutputStream> baosSupplier =
-                (Supplier<ByteArrayOutputStream>) mock(Supplier.class);
+        final Supplier<ByteArrayOutputStream> baosSupplier = (Supplier<ByteArrayOutputStream>) mock(Supplier.class);
 
         final var baos = mock(ByteArrayOutputStream.class);
         willThrow(IOException.class).given(baos).write(stuff);
@@ -208,8 +194,7 @@ class MerkleSpecialFilesTest {
     @Test
     void propagatesFailureOnHashThatShouldBeNeverProblematic() throws IOException {
         @SuppressWarnings("unchecked")
-        final Supplier<ByteArrayOutputStream> baosSupplier =
-                (Supplier<ByteArrayOutputStream>) mock(Supplier.class);
+        final Supplier<ByteArrayOutputStream> baosSupplier = (Supplier<ByteArrayOutputStream>) mock(Supplier.class);
 
         final var baos = mock(ByteArrayOutputStream.class);
         willThrow(IOException.class).given(baos).write(Longs.toByteArray(secondFid.getFileNum()));
@@ -241,14 +226,11 @@ class MerkleSpecialFilesTest {
         final var baos = new ByteArrayOutputStream();
         final var dos = new SerializableDataOutputStream(baos);
         ConstructableRegistry.getInstance()
-                .registerConstructable(
-                        new ClassConstructorPair(
-                                MerkleSpecialFiles.class, MerkleSpecialFiles::new));
+                .registerConstructable(new ClassConstructorPair(MerkleSpecialFiles.class, MerkleSpecialFiles::new));
         ConstructableRegistry.getInstance()
                 .registerConstructable(new ClassConstructorPair(FCQueue.class, FCQueue::new));
         ConstructableRegistry.getInstance()
-                .registerConstructable(
-                        new ClassConstructorPair(BytesElement.class, BytesElement::new));
+                .registerConstructable(new ClassConstructorPair(BytesElement.class, BytesElement::new));
 
         subject.update(fid, Arrays.copyOfRange(stuff, 0, stuff.length / 2));
         subject.update(secondFid, Arrays.copyOfRange(stuff, stuff.length / 2, stuff.length));
@@ -262,10 +244,7 @@ class MerkleSpecialFilesTest {
         final var newSubject = new MerkleSpecialFiles();
         newSubject.deserialize(din, MerkleSpecialFiles.CURRENT_VERSION);
 
-        assertArrayEquals(
-                subject.get(fid),
-                newSubject.get(fid),
-                "Deserialized contents should match for first file");
+        assertArrayEquals(subject.get(fid), newSubject.get(fid), "Deserialized contents should match for first file");
         assertArrayEquals(
                 subject.get(secondFid),
                 newSubject.get(secondFid),
@@ -277,9 +256,7 @@ class MerkleSpecialFilesTest {
         final var baos = new ByteArrayOutputStream();
         final var dos = new SerializableDataOutputStream(baos);
         ConstructableRegistry.getInstance()
-                .registerConstructable(
-                        new ClassConstructorPair(
-                                MerkleSpecialFiles.class, MerkleSpecialFiles::new));
+                .registerConstructable(new ClassConstructorPair(MerkleSpecialFiles.class, MerkleSpecialFiles::new));
 
         subject.serialize(dos);
         dos.flush();
@@ -311,9 +288,7 @@ class MerkleSpecialFilesTest {
         subject.append(fid, new byte[] {123});
         assertTrue(subject.toString().contains(String.valueOf(fid.getFileNum())));
         subject.append(secondFid, new byte[] {111});
-        assertTrue(
-                subject.toString().contains(String.valueOf(secondFid.getFileNum())),
-                subject.toString());
+        assertTrue(subject.toString().contains(String.valueOf(secondFid.getFileNum())), subject.toString());
     }
 
     @Test

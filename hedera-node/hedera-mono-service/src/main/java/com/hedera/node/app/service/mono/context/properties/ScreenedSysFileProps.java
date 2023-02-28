@@ -13,33 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.service.mono.context.properties.BootstrapProperties.GLOBAL_DYNAMIC_PROPS;
 import static com.hedera.node.app.service.mono.context.properties.BootstrapProperties.transformFor;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BALANCES_EXPORT_DIR_PATH;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BALANCES_EXPORT_ENABLED;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BALANCES_EXPORT_PERIOD_SECS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CACHE_RECORDS_TTL;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_LOCAL_CALL_EST_RET_BYTES;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_MAX_GAS_PER_SEC;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_MAX_SIZE_KB;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MAX_VALID_DURATION;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MIN_VALID_DURATION;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_FUNDING_ACCOUNT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOKEN_TRANSFERS_MAX_LEN;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TRANSFERS_MAX_LEN;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.SCHEDULING_WHITE_LIST;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_MAX_SYMBOL_UTF8_BYTES;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_MAX_TOKEN_NAME_UTF8_BYTES;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.parseAccount;
+import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_DIR_PATH;
+import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_PERIOD_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD;
+import static com.hedera.node.app.spi.config.PropertyNames.CACHE_RECORDS_TTL;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_LOCAL_CALL_EST_RET_BYTES;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_GAS_PER_SEC;
+import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_MAX_SIZE_KB;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_TXN_MAX_VALID_DURATION;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_TXN_MIN_VALID_DURATION;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_FUNDING_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOKEN_TRANSFERS_MAX_LEN;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TRANSFERS_MAX_LEN;
+import static com.hedera.node.app.spi.config.PropertyNames.RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT;
+import static com.hedera.node.app.spi.config.PropertyNames.SCHEDULING_WHITE_LIST;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_SYMBOL_UTF8_BYTES;
+import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_TOKEN_NAME_UTF8_BYTES;
 import static java.util.Map.entry;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
@@ -49,7 +50,9 @@ import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import java.util.Collections;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
@@ -61,78 +64,60 @@ import org.apache.logging.log4j.Logger;
 
 @Singleton
 public final class ScreenedSysFileProps implements PropertySource {
+
     private static final Logger log = LogManager.getLogger(ScreenedSysFileProps.class);
 
     static final String UNUSABLE_PROP_TPL = "Value '%s' is unusable for '%s', being ignored!";
-    static final String MISPLACED_PROP_TPL =
-            "Property '%s' is not global/dynamic, please find it a proper home!";
-    static final String DEPRECATED_PROP_TPL =
-            "Property name '%s' is deprecated, please use '%s' instead!";
-    static final String UNPARSEABLE_PROP_TPL =
-            "Value '%s' is unparseable for '%s' (%s), being ignored!";
+    static final String MISPLACED_PROP_TPL = "Property '%s' is not global/dynamic, please find it a proper home!";
+    static final String DEPRECATED_PROP_TPL = "Property name '%s' is deprecated, please use '%s' instead!";
+    static final String UNPARSEABLE_PROP_TPL = "Value '%s' is unparseable for '%s' (%s), being ignored!";
     static final String UNTRANSFORMABLE_PROP_TPL =
             "Value '%s' is untransformable for deprecated '%s' (%s), being " + "ignored!";
 
-    private static final Map<String, String> STANDARDIZED_NAMES =
-            Map.ofEntries(
-                    entry("defaultContractDurationSec", CONTRACTS_DEFAULT_LIFETIME),
-                    entry("maxGasLimit", CONTRACTS_MAX_GAS_PER_SEC),
-                    entry("maxFileSize", FILES_MAX_SIZE_KB),
-                    entry("defaultFeeCollectionAccount", LEDGER_FUNDING_ACCOUNT),
-                    entry("txReceiptTTL", CACHE_RECORDS_TTL),
-                    entry("exchangeRateAllowedPercentage", RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT),
-                    entry("accountBalanceExportPeriodMinutes", BALANCES_EXPORT_PERIOD_SECS),
-                    entry("accountBalanceExportEnabled", BALANCES_EXPORT_ENABLED),
-                    entry("nodeAccountBalanceValidity", BALANCES_NODE_BALANCE_WARN_THRESHOLD),
-                    entry("accountBalanceExportDir", BALANCES_EXPORT_DIR_PATH),
-                    entry("transferListSizeLimit", LEDGER_TRANSFERS_MAX_LEN),
-                    entry("txMaximumDuration", HEDERA_TXN_MAX_VALID_DURATION),
-                    entry("txMinimumDuration", HEDERA_TXN_MIN_VALID_DURATION),
-                    entry("txMinimumRemaining", HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS),
-                    entry("maximumAutoRenewDuration", LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION),
-                    entry("minimumAutoRenewDuration", LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION),
-                    entry("localCallEstReturnBytes", CONTRACTS_LOCAL_CALL_EST_RET_BYTES));
-    private static final Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS =
-            Map.ofEntries(
-                    entry(
-                            "defaultFeeCollectionAccount",
-                            legacy -> "" + parseAccount(legacy).getAccountNum()),
-                    entry(
-                            "accountBalanceExportPeriodMinutes",
-                            legacy -> "" + (60 * Integer.parseInt(legacy))));
+    private static final Map<String, String> STANDARDIZED_NAMES = Map.ofEntries(
+            entry("defaultContractDurationSec", CONTRACTS_DEFAULT_LIFETIME),
+            entry("maxGasLimit", CONTRACTS_MAX_GAS_PER_SEC),
+            entry("maxFileSize", FILES_MAX_SIZE_KB),
+            entry("defaultFeeCollectionAccount", LEDGER_FUNDING_ACCOUNT),
+            entry("txReceiptTTL", CACHE_RECORDS_TTL),
+            entry("exchangeRateAllowedPercentage", RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT),
+            entry("accountBalanceExportPeriodMinutes", BALANCES_EXPORT_PERIOD_SECS),
+            entry("accountBalanceExportEnabled", BALANCES_EXPORT_ENABLED),
+            entry("nodeAccountBalanceValidity", BALANCES_NODE_BALANCE_WARN_THRESHOLD),
+            entry("accountBalanceExportDir", BALANCES_EXPORT_DIR_PATH),
+            entry("transferListSizeLimit", LEDGER_TRANSFERS_MAX_LEN),
+            entry("txMaximumDuration", HEDERA_TXN_MAX_VALID_DURATION),
+            entry("txMinimumDuration", HEDERA_TXN_MIN_VALID_DURATION),
+            entry("txMinimumRemaining", HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS),
+            entry("maximumAutoRenewDuration", LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION),
+            entry("minimumAutoRenewDuration", LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION),
+            entry("localCallEstReturnBytes", CONTRACTS_LOCAL_CALL_EST_RET_BYTES));
+    private static final Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS = Map.ofEntries(
+            entry(
+                    "defaultFeeCollectionAccount",
+                    legacy -> "" + parseAccount(legacy).getAccountNum()),
+            entry("accountBalanceExportPeriodMinutes", legacy -> "" + (60 * Integer.parseInt(legacy))));
 
     @SuppressWarnings("unchecked")
-    private static final Map<String, Predicate<Object>> VALUE_SCREENS =
-            Map.ofEntries(
-                    entry(
-                            RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT,
-                            limitPercent -> (int) limitPercent > 0),
-                    entry(
-                            SCHEDULING_WHITE_LIST,
-                            whitelist ->
-                                    ((Set<HederaFunctionality>) whitelist)
-                                            .stream()
-                                                    .noneMatch(
-                                                            MiscUtils.QUERY_FUNCTIONS::contains)),
-                    entry(
-                            TOKENS_MAX_SYMBOL_UTF8_BYTES,
-                            maxUtf8Bytes ->
-                                    (int) maxUtf8Bytes
-                                            <= MerkleToken.UPPER_BOUND_SYMBOL_UTF8_BYTES),
-                    entry(
-                            TOKENS_MAX_TOKEN_NAME_UTF8_BYTES,
-                            maxUtf8Bytes ->
-                                    (int) maxUtf8Bytes
-                                            <= MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES),
-                    entry(LEDGER_TRANSFERS_MAX_LEN, maxLen -> (int) maxLen >= 2),
-                    entry(LEDGER_TOKEN_TRANSFERS_MAX_LEN, maxLen -> (int) maxLen >= 2),
-                    entry(
-                            CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT,
-                            maxRefundPercentage ->
-                                    (int) maxRefundPercentage >= 0
-                                            && (int) maxRefundPercentage <= 100));
+    private static final Map<String, Predicate<Object>> VALUE_SCREENS = Map.ofEntries(
+            entry(RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT, limitPercent -> (int) limitPercent > 0),
+            entry(SCHEDULING_WHITE_LIST, whitelist -> ((Set<HederaFunctionality>) whitelist)
+                    .stream().noneMatch(MiscUtils.QUERY_FUNCTIONS::contains)),
+            entry(
+                    TOKENS_MAX_SYMBOL_UTF8_BYTES,
+                    maxUtf8Bytes -> (int) maxUtf8Bytes <= MerkleToken.UPPER_BOUND_SYMBOL_UTF8_BYTES),
+            entry(
+                    TOKENS_MAX_TOKEN_NAME_UTF8_BYTES,
+                    maxUtf8Bytes -> (int) maxUtf8Bytes <= MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES),
+            entry(LEDGER_TRANSFERS_MAX_LEN, maxLen -> (int) maxLen >= 2),
+            entry(LEDGER_TOKEN_TRANSFERS_MAX_LEN, maxLen -> (int) maxLen >= 2),
+            entry(
+                    CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT,
+                    maxRefundPercentage -> (int) maxRefundPercentage >= 0 && (int) maxRefundPercentage <= 100));
 
     Map<String, Object> from121 = Collections.emptyMap();
+
+    private final Properties rawProperties = new Properties();
 
     @Inject
     public ScreenedSysFileProps() {
@@ -140,36 +125,38 @@ public final class ScreenedSysFileProps implements PropertySource {
     }
 
     void screenNew(final ServicesConfigurationList rawProps) {
-        from121 =
-                rawProps.getNameValueList().stream()
-                        .map(this::withStandardizedName)
-                        .filter(this::isValidGlobalDynamic)
-                        .filter(this::hasParseableValue)
-                        .filter(this::isUsableGlobalDynamic)
-                        .collect(
-                                Collectors.toMap(
-                                        Setting::getName, this::asTypedValue, (a, b) -> b));
-        final var msg =
-                "Global/dynamic properties overridden in system file are:\n  "
-                        + GLOBAL_DYNAMIC_PROPS.stream()
-                                .filter(from121::containsKey)
-                                .sorted()
-                                .map(name -> String.format("%s=%s", name, from121.get(name)))
-                                .collect(Collectors.joining("\n  "));
+        from121 = rawProps.getNameValueList().stream()
+                .map(this::withStandardizedName)
+                .filter(this::isValidGlobalDynamic)
+                .filter(this::hasParseableValue)
+                .filter(this::isUsableGlobalDynamic)
+                .collect(Collectors.toMap(Setting::getName, this::asTypedValue, (a, b) -> b));
+
+        rawProperties.clear();
+        rawProps.getNameValueList().stream()
+                .map(this::withStandardizedName)
+                .filter(setting -> from121.containsKey(setting.getName()))
+                .forEach(setting -> rawProperties.put(setting.getName(), setting.getValue()));
+
+        final var msg = "Global/dynamic properties overridden in system file are:\n  "
+                + GLOBAL_DYNAMIC_PROPS.stream()
+                        .filter(from121::containsKey)
+                        .sorted()
+                        .map(name -> String.format("%s=%s", name, from121.get(name)))
+                        .collect(Collectors.joining("\n  "));
         log.info(msg);
     }
 
     private boolean isUsableGlobalDynamic(final Setting prop) {
         final var name = prop.getName();
         return Optional.ofNullable(VALUE_SCREENS.get(name))
-                .map(
-                        screen -> {
-                            final var usable = screen.test(asTypedValue(prop));
-                            if (!usable) {
-                                log.warn(String.format(UNUSABLE_PROP_TPL, prop.getValue(), name));
-                            }
-                            return usable;
-                        })
+                .map(screen -> {
+                    final var usable = screen.test(asTypedValue(prop));
+                    if (!usable) {
+                        log.warn(String.format(UNUSABLE_PROP_TPL, prop.getValue(), name));
+                    }
+                    return usable;
+                })
                 .orElse(true);
     }
 
@@ -194,12 +181,11 @@ public final class ScreenedSysFileProps implements PropertySource {
             try {
                 builder.setValue(STANDARDIZED_FORMATS.get(rawName).apply(rawProp.getValue()));
             } catch (final Exception reason) {
-                log.warn(
-                        String.format(
-                                UNTRANSFORMABLE_PROP_TPL,
-                                rawProp.getValue(),
-                                rawName,
-                                reason.getClass().getSimpleName()));
+                log.warn(String.format(
+                        UNTRANSFORMABLE_PROP_TPL,
+                        rawProp.getValue(),
+                        rawName,
+                        reason.getClass().getSimpleName()));
                 return rawProp;
             }
         }
@@ -215,12 +201,11 @@ public final class ScreenedSysFileProps implements PropertySource {
             transformFor(prop.getName()).apply(prop.getValue());
             return true;
         } catch (final Exception reason) {
-            log.warn(
-                    String.format(
-                            UNPARSEABLE_PROP_TPL,
-                            prop.getValue(),
-                            prop.getName(),
-                            reason.getClass().getSimpleName()));
+            log.warn(String.format(
+                    UNPARSEABLE_PROP_TPL,
+                    prop.getValue(),
+                    prop.getName(),
+                    reason.getClass().getSimpleName()));
             return false;
         }
     }
@@ -238,5 +223,13 @@ public final class ScreenedSysFileProps implements PropertySource {
     @Override
     public Set<String> allPropertyNames() {
         return from121.keySet();
+    }
+
+    @Override
+    public String getRawValue(final String name) {
+        if (rawProperties.contains(name)) {
+            return rawProperties.getProperty(name);
+        }
+        throw new NoSuchElementException("Property of name '" + name + "' can not be found!");
     }
 }

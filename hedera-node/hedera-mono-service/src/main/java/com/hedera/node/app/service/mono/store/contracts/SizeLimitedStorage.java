@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
@@ -27,6 +28,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.fees.charging.StorageFeeCharging;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.validation.ContractStorageLimits;
@@ -74,7 +76,7 @@ public class SizeLimitedStorage {
     // Used to look up the initial key/value counts for the contracts involved in a change set
     private final Supplier<AccountStorageAdapter> accounts;
     // Used to both read and write key/value pairs throughout the lifecycle of a change set
-    private final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage;
+    private final Supplier<VirtualMapLike<ContractKey, IterableContractValue>> storage;
 
     private final Map<Long, ContractKey> newFirstKeys = new HashMap<>();
     private final Map<Long, KvUsageInfo> usageChanges = new TreeMap<>();
@@ -91,7 +93,7 @@ public class SizeLimitedStorage {
             final IterableStorageUpserter storageUpserter,
             final IterableStorageRemover storageRemover,
             final Supplier<AccountStorageAdapter> accounts,
-            final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage) {
+            final Supplier<VirtualMapLike<ContractKey, IterableContractValue>> storage) {
         this.storageRemover = storageRemover;
         this.storageUpserter = storageUpserter;
         this.storageFeeCharging = storageFeeCharging;
@@ -118,8 +120,7 @@ public class SizeLimitedStorage {
      *
      * @throws InvalidTransactionException if a storage limit is exceeded
      */
-    public void validateAndCommit(
-            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
+    public void validateAndCommit(final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
         validatePendingSizeChanges();
         // If fees cannot be paid, throws an ITE,  rolling back this EVM transaction
         storageFeeCharging.chargeStorageRent(totalKvPairs, usageChanges, accountsLedger);
@@ -143,16 +144,12 @@ public class SizeLimitedStorage {
         if (usageChanges.isEmpty()) {
             return;
         }
-        usageChanges.forEach(
-                (contractNum, kvUsageInfo) -> {
-                    final var id = STATIC_PROPERTIES.scopedAccountWith(contractNum);
-                    accountsLedger.set(id, NUM_CONTRACT_KV_PAIRS, kvUsageInfo.pendingUsage());
-                    final var newFirstKey = newFirstKeys.get(contractNum);
-                    accountsLedger.set(
-                            id,
-                            FIRST_CONTRACT_STORAGE_KEY,
-                            newFirstKey == null ? null : newFirstKey.getKey());
-                });
+        usageChanges.forEach((contractNum, kvUsageInfo) -> {
+            final var id = STATIC_PROPERTIES.scopedAccountWith(contractNum);
+            accountsLedger.set(id, NUM_CONTRACT_KV_PAIRS, kvUsageInfo.pendingUsage());
+            final var newFirstKey = newFirstKeys.get(contractNum);
+            accountsLedger.set(id, FIRST_CONTRACT_STORAGE_KEY, newFirstKey == null ? null : newFirstKey.getKey());
+        });
     }
 
     /**
@@ -190,17 +187,9 @@ public class SizeLimitedStorage {
         final var contractKey = ContractKey.from(id, key);
         final var contractValue = virtualValueFrom(value);
         final var kvCountImpact =
-                incorporateKvImpact(
-                        contractKey,
-                        contractValue,
-                        updatedKeys,
-                        removedKeys,
-                        newMappings,
-                        storage.get());
+                incorporateKvImpact(contractKey, contractValue, updatedKeys, removedKeys, newMappings, storage.get());
         if (kvCountImpact != 0) {
-            usageChanges
-                    .computeIfAbsent(id.getAccountNum(), usageInfoLookup)
-                    .updatePendingBy(kvCountImpact);
+            usageChanges.computeIfAbsent(id.getAccountNum(), usageInfoLookup).updatePendingBy(kvCountImpact);
             totalKvPairs += kvCountImpact;
         }
     }
@@ -213,16 +202,14 @@ public class SizeLimitedStorage {
                 IterableContractValue value,
                 ContractKey rootKey,
                 IterableContractValue rootValue,
-                VirtualMap<ContractKey, IterableContractValue> storage);
+                VirtualMapLike<ContractKey, IterableContractValue> storage);
     }
 
     @FunctionalInterface
     public interface IterableStorageRemover {
 
         ContractKey removeMapping(
-                ContractKey key,
-                ContractKey rootKey,
-                VirtualMap<ContractKey, IterableContractValue> storage);
+                ContractKey key, ContractKey rootKey, VirtualMapLike<ContractKey, IterableContractValue> storage);
     }
 
     private int kvPairsLookup(final Long num) {
@@ -268,7 +255,7 @@ public class SizeLimitedStorage {
             final Map<Long, TreeSet<ContractKey>> updatedKeys,
             final Map<Long, TreeSet<ContractKey>> removedKeys,
             final Map<ContractKey, IterableContractValue> newMappings,
-            final VirtualMap<ContractKey, IterableContractValue> storage) {
+            final VirtualMapLike<ContractKey, IterableContractValue> storage) {
         if (value == ZERO_VALUE) {
             return incorporateZeroingOf(key, updatedKeys, removedKeys, newMappings, storage);
         } else {
@@ -282,7 +269,7 @@ public class SizeLimitedStorage {
             final Map<Long, TreeSet<ContractKey>> updatedKeys,
             final Map<Long, TreeSet<ContractKey>> removedKeys,
             final Map<ContractKey, IterableContractValue> newMappings,
-            final VirtualMap<ContractKey, IterableContractValue> storage) {
+            final VirtualMapLike<ContractKey, IterableContractValue> storage) {
         final Long contractId = key.getContractId();
         final var hasPendingUpdate = newMappings.containsKey(key);
         final var wasAlreadyPresent = storage.containsKey(key);
@@ -309,7 +296,7 @@ public class SizeLimitedStorage {
             final Map<Long, TreeSet<ContractKey>> updatedKeys,
             final Map<Long, TreeSet<ContractKey>> removedKeys,
             final Map<ContractKey, IterableContractValue> newMappings,
-            final VirtualMap<ContractKey, IterableContractValue> storage) {
+            final VirtualMapLike<ContractKey, IterableContractValue> storage) {
         final Long contractId = key.getContractId();
         final var hasPendingUpdate = newMappings.containsKey(key);
         final var wasAlreadyPresent = storage.containsKey(key);
@@ -318,12 +305,11 @@ public class SizeLimitedStorage {
                 // We need to drop any pending update from our auxiliary data structures.
                 final var scopedAdditions = updatedKeys.get(contractId);
                 if (scopedAdditions == null) {
-                    final var detailMsg =
-                            "A new mapping "
-                                    + key
-                                    + " -> "
-                                    + newMappings.get(key)
-                                    + " did not belong to a key addition set";
+                    final var detailMsg = "A new mapping "
+                            + key
+                            + " -> "
+                            + newMappings.get(key)
+                            + " did not belong to a key addition set";
                     throw new IllegalStateException(detailMsg);
                 }
                 scopedAdditions.remove(key);
@@ -345,9 +331,7 @@ public class SizeLimitedStorage {
 
     private void validatePendingSizeChanges() {
         usageLimits.assertUsableTotalSlots(totalKvPairs);
-        usageChanges.forEach(
-                (id, kvUsageInfo) ->
-                        usageLimits.assertUsableContractSlots(kvUsageInfo.pendingUsage()));
+        usageChanges.forEach((id, kvUsageInfo) -> usageLimits.assertUsableContractSlots(kvUsageInfo.pendingUsage()));
     }
 
     private void commitPendingUpdates() {
@@ -355,44 +339,35 @@ public class SizeLimitedStorage {
             return;
         }
         final var curStorage = storage.get();
-        updatedKeys.forEach(
-                (id, changeSet) -> {
-                    IterableContractValue firstValue = null;
-                    // We can't use newFirstKeys.computeIfAbsent() below, since that method treats
-                    // an id->null mapping as ABSENT(!); but if newFirstKeys contains an id->null
-                    // mapping,
-                    // it means that all the existing key/value pairs were removed for that
-                    // contract, and
-                    // we must ignore any existing first key in the accounts map
-                    var firstKey =
-                            newFirstKeys.containsKey(id)
-                                    ? newFirstKeys.get(id)
-                                    : firstKeyLookup(id);
-                    for (final var changedKey : changeSet) {
-                        final var newValue = newMappings.get(changedKey);
-                        final var preInsertSize = curStorage.size();
-                        try {
-                            firstKey =
-                                    storageUpserter.upsertMapping(
-                                            changedKey, newValue, firstKey, firstValue, curStorage);
-                        } catch (Exception irreparable) {
-                            log.error(
-                                    "Failed link management when upserting {} -> {}; will be unable"
-                                            + " to expire all slots for this contract",
-                                    changedKey,
-                                    newValue,
-                                    irreparable);
-                        }
-                        // If newValue was just added to the map, it is the mutable root value; but
-                        // if we only updated the existing root, newValue is NOT the mutable root
-                        // value
-                        firstValue =
-                                (changedKey.equals(firstKey) && curStorage.size() > preInsertSize)
-                                        ? newValue
-                                        : null;
-                    }
-                    newFirstKeys.put(id, firstKey);
-                });
+        updatedKeys.forEach((id, changeSet) -> {
+            IterableContractValue firstValue = null;
+            // We can't use newFirstKeys.computeIfAbsent() below, since that method treats
+            // an id->null mapping as ABSENT(!); but if newFirstKeys contains an id->null
+            // mapping,
+            // it means that all the existing key/value pairs were removed for that
+            // contract, and
+            // we must ignore any existing first key in the accounts map
+            var firstKey = newFirstKeys.containsKey(id) ? newFirstKeys.get(id) : firstKeyLookup(id);
+            for (final var changedKey : changeSet) {
+                final var newValue = newMappings.get(changedKey);
+                final var preInsertSize = curStorage.size();
+                try {
+                    firstKey = storageUpserter.upsertMapping(changedKey, newValue, firstKey, firstValue, curStorage);
+                } catch (Exception irreparable) {
+                    log.error(
+                            "Failed link management when upserting {} -> {}; will be unable"
+                                    + " to expire all slots for this contract",
+                            changedKey,
+                            newValue,
+                            irreparable);
+                }
+                // If newValue was just added to the map, it is the mutable root value; but
+                // if we only updated the existing root, newValue is NOT the mutable root
+                // value
+                firstValue = (changedKey.equals(firstKey) && curStorage.size() > preInsertSize) ? newValue : null;
+            }
+            newFirstKeys.put(id, firstKey);
+        });
     }
 
     private void commitPendingRemovals() {
@@ -400,23 +375,21 @@ public class SizeLimitedStorage {
             return;
         }
         final var curStorage = storage.get();
-        removedKeys.forEach(
-                (id, zeroedOut) -> {
-                    var firstKey = firstKeyLookup(id);
-                    for (final var removedKey : zeroedOut) {
-                        try {
-                            firstKey =
-                                    storageRemover.removeMapping(removedKey, firstKey, curStorage);
-                        } catch (Exception irreparable) {
-                            log.error(
-                                    "Failed link management when removing {}; will be unable to"
-                                            + " expire all slots for this contract",
-                                    removedKey,
-                                    irreparable);
-                        }
-                    }
-                    newFirstKeys.put(id, firstKey);
-                });
+        removedKeys.forEach((id, zeroedOut) -> {
+            var firstKey = firstKeyLookup(id);
+            for (final var removedKey : zeroedOut) {
+                try {
+                    firstKey = storageRemover.removeMapping(removedKey, firstKey, curStorage);
+                } catch (Exception irreparable) {
+                    log.error(
+                            "Failed link management when removing {}; will be unable to"
+                                    + " expire all slots for this contract",
+                            removedKey,
+                            irreparable);
+                }
+            }
+            newFirstKeys.put(id, firstKey);
+        });
     }
 
     static Function<Long, TreeSet<ContractKey>> treeSetFactory = ignore -> new TreeSet<>();

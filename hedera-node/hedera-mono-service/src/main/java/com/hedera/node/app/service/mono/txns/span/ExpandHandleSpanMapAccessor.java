@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.span;
 
 import com.hedera.node.app.hapi.fees.usage.crypto.CryptoApproveAllowanceMeta;
@@ -73,8 +74,7 @@ public class ExpandHandleSpanMapAccessor {
         return (FeeScheduleUpdateMeta) accessor.getSpanMap().get(FEE_SCHEDULE_UPDATE_META_KEY);
     }
 
-    public void setImpliedTransfers(
-            final TxnAccessor accessor, final ImpliedTransfers impliedTransfers) {
+    public void setImpliedTransfers(final TxnAccessor accessor, final ImpliedTransfers impliedTransfers) {
         accessor.getSpanMap().put(IMPLIED_TRANSFERS_KEY, impliedTransfers);
     }
 
@@ -82,8 +82,7 @@ public class ExpandHandleSpanMapAccessor {
         return (ImpliedTransfers) accessor.getSpanMap().get(IMPLIED_TRANSFERS_KEY);
     }
 
-    public void setTokenCreateMeta(
-            final TxnAccessor accessor, final TokenCreateMeta tokenCreateMeta) {
+    public void setTokenCreateMeta(final TxnAccessor accessor, final TokenCreateMeta tokenCreateMeta) {
         accessor.getSpanMap().put(TOKEN_CREATE_META_KEY, tokenCreateMeta);
     }
 
@@ -107,8 +106,7 @@ public class ExpandHandleSpanMapAccessor {
         return (TokenWipeMeta) accessor.getSpanMap().get(TOKEN_WIPE_META_KEY);
     }
 
-    public void setTokenFreezeMeta(
-            final TxnAccessor accessor, final TokenFreezeMeta tokenFreezeMeta) {
+    public void setTokenFreezeMeta(final TxnAccessor accessor, final TokenFreezeMeta tokenFreezeMeta) {
         accessor.getSpanMap().put(TOKEN_FREEZE_META_KEY, tokenFreezeMeta);
     }
 
@@ -116,8 +114,7 @@ public class ExpandHandleSpanMapAccessor {
         return (TokenFreezeMeta) accessor.getSpanMap().get(TOKEN_FREEZE_META_KEY);
     }
 
-    public void setTokenUnfreezeMeta(
-            final TxnAccessor accessor, final TokenUnfreezeMeta tokenUnfreezeMeta) {
+    public void setTokenUnfreezeMeta(final TxnAccessor accessor, final TokenUnfreezeMeta tokenUnfreezeMeta) {
         accessor.getSpanMap().put(TOKEN_UNFREEZE_META_KEY, tokenUnfreezeMeta);
     }
 
@@ -133,8 +130,7 @@ public class ExpandHandleSpanMapAccessor {
         return (TokenPauseMeta) accessor.getSpanMap().get(TOKEN_PAUSE_META_KEY);
     }
 
-    public void setTokenUnpauseMeta(
-            final TxnAccessor accessor, final TokenUnpauseMeta tokenUnpauseMeta) {
+    public void setTokenUnpauseMeta(final TxnAccessor accessor, final TokenUnpauseMeta tokenUnpauseMeta) {
         accessor.getSpanMap().put(TOKEN_UNPAUSE_META_KEY, tokenUnpauseMeta);
     }
 
@@ -142,8 +138,7 @@ public class ExpandHandleSpanMapAccessor {
         return (TokenUnpauseMeta) accessor.getSpanMap().get(TOKEN_UNPAUSE_META_KEY);
     }
 
-    public void setCryptoCreateMeta(
-            final TxnAccessor accessor, final CryptoCreateMeta cryptoCreateMeta) {
+    public void setCryptoCreateMeta(final TxnAccessor accessor, final CryptoCreateMeta cryptoCreateMeta) {
         accessor.getSpanMap().put(CRYPTO_CREATE_META_KEY, cryptoCreateMeta);
     }
 
@@ -151,8 +146,7 @@ public class ExpandHandleSpanMapAccessor {
         return (CryptoCreateMeta) accessor.getSpanMap().get(CRYPTO_CREATE_META_KEY);
     }
 
-    public void setCryptoUpdate(
-            final TxnAccessor accessor, final CryptoUpdateMeta cryptoUpdateMeta) {
+    public void setCryptoUpdate(final TxnAccessor accessor, final CryptoUpdateMeta cryptoUpdateMeta) {
         accessor.getSpanMap().put(CRYPTO_UPDATE_META_KEY, cryptoUpdateMeta);
     }
 
@@ -160,8 +154,7 @@ public class ExpandHandleSpanMapAccessor {
         return (CryptoUpdateMeta) accessor.getSpanMap().get(CRYPTO_UPDATE_META_KEY);
     }
 
-    public void setCryptoApproveMeta(
-            final TxnAccessor accessor, final CryptoApproveAllowanceMeta cryptoApproveMeta) {
+    public void setCryptoApproveMeta(final TxnAccessor accessor, final CryptoApproveAllowanceMeta cryptoApproveMeta) {
         accessor.getSpanMap().put(CRYPTO_APPROVE_META_KEY, cryptoApproveMeta);
     }
 
@@ -175,8 +168,7 @@ public class ExpandHandleSpanMapAccessor {
     }
 
     public CryptoDeleteAllowanceMeta getCryptoDeleteAllowanceMeta(final TxnAccessor accessor) {
-        return (CryptoDeleteAllowanceMeta)
-                accessor.getSpanMap().get(CRYPTO_DELETE_ALLOWANCE_META_KEY);
+        return (CryptoDeleteAllowanceMeta) accessor.getSpanMap().get(CRYPTO_DELETE_ALLOWANCE_META_KEY);
     }
 
     public void setEthTxDataMeta(final TxnAccessor accessor, final EthTxData ethTxData) {
@@ -223,8 +215,7 @@ public class ExpandHandleSpanMapAccessor {
         accessor.getSpanMap().put(ETH_TX_EXPANSION_KEY, expansion);
     }
 
-    public void setEthTxExpansion(
-            final Map<String, Object> spanMap, final EthTxExpansion expansion) {
+    public void setEthTxExpansion(final Map<String, Object> spanMap, final EthTxExpansion expansion) {
         spanMap.put(ETH_TX_EXPANSION_KEY, expansion);
     }
 

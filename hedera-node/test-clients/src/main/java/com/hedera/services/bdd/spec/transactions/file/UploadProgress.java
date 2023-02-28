@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.file;
 
 public class UploadProgress {
@@ -25,8 +26,7 @@ public class UploadProgress {
     public void markFinished(final int i) {
         assertInitialized();
         if (i < 0 || i >= finishedAppends.length) {
-            throw new IllegalArgumentException(
-                    "Only " + finishedAppends.length + " appends to do, cannot mark " + i);
+            throw new IllegalArgumentException("Only " + finishedAppends.length + " appends to do, cannot mark " + i);
         }
         finishedAppends[i] = true;
     }

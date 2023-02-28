@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.file;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
@@ -41,9 +42,7 @@ public final class FileDeleteTransitionLogic implements TransitionLogic {
 
     @Inject
     public FileDeleteTransitionLogic(
-            final HederaFs hfs,
-            final SigImpactHistorian sigImpactHistorian,
-            final TransactionContext txnCtx) {
+            final HederaFs hfs, final SigImpactHistorian sigImpactHistorian, final TransactionContext txnCtx) {
         this.hfs = hfs;
         this.txnCtx = txnCtx;
         this.sigImpactHistorian = sigImpactHistorian;

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -154,14 +155,10 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                         tokenAssociate(ANOTHER_USER, NFTdeleted),
                         mintToken(NFTdeleted, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO))),
                         cryptoTransfer(
-                                TokenMovement.movingUnique(NFTdeleted, 1L)
-                                        .between(TOKEN_TREASURY, ANOTHER_USER)),
+                                TokenMovement.movingUnique(NFTdeleted, 1L).between(TOKEN_TREASURY, ANOTHER_USER)),
                         tokenDelete(NFTdeleted))
-                .then(
-                        cryptoTransfer(
-                                        TokenMovement.movingUnique(NFTdeleted, 2L)
-                                                .between(TOKEN_TREASURY, ANOTHER_USER))
-                                .hasKnownStatus(TOKEN_WAS_DELETED));
+                .then(cryptoTransfer(TokenMovement.movingUnique(NFTdeleted, 2L).between(TOKEN_TREASURY, ANOTHER_USER))
+                        .hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
     private HapiSpec cannotUnfreezeNftWhenDeleted() {
@@ -198,10 +195,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                                 .initialSupply(0L)
                                 .treasury(TOKEN_TREASURY))
                 .when(tokenDelete(NFTdeleted))
-                .then(
-                        tokenFreeze(NFTdeleted, TOKEN_TREASURY)
-                                .hasPrecheck(OK)
-                                .hasKnownStatus(TOKEN_WAS_DELETED));
+                .then(tokenFreeze(NFTdeleted, TOKEN_TREASURY).hasPrecheck(OK).hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
     private HapiSpec cannotDissociateNftWhenDeleted() {
@@ -273,9 +267,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                                 .wipeKey(WIPE_KEY),
                         tokenAssociate(NEW_TOKEN_TREASURY, NFTdeleted),
                         // can update before NFT is deleted
-                        tokenUpdate(NFTdeleted)
-                                .entityMemo(ZERO_BYTE_MEMO)
-                                .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+                        tokenUpdate(NFTdeleted).entityMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
                         tokenUpdate(NFTdeleted)
                                 .name(NEW_SALTED_NAME)
                                 .entityMemo(SECOND_MEMO)
@@ -294,9 +286,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                                 .name(NEW_SALTED_NAME)
                                 .entityMemo(SECOND_MEMO)
                                 .hasKnownStatus(TOKEN_WAS_DELETED),
-                        tokenUpdate(NFTdeleted)
-                                .treasury(NEW_TOKEN_TREASURY)
-                                .hasKnownStatus(TOKEN_WAS_DELETED),
+                        tokenUpdate(NFTdeleted).treasury(NEW_TOKEN_TREASURY).hasKnownStatus(TOKEN_WAS_DELETED),
                         tokenUpdate(NFTdeleted)
                                 .autoRenewAccount(NEW_AUTO_RENEW_ACCT)
                                 .autoRenewPeriod(102)
@@ -329,10 +319,9 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                                 .feeScheduleKey(FEE_SCHEDULE_KEY)
                                 .withCustom(fixedHbarFee(origHbarFee, hbarCollector)))
                 .when(tokenDelete(NFTdeleted))
-                .then(
-                        tokenFeeScheduleUpdate(NFTdeleted)
-                                .withCustom(fixedHbarFee(newHbarFee, hbarCollector))
-                                .hasKnownStatus(TOKEN_WAS_DELETED));
+                .then(tokenFeeScheduleUpdate(NFTdeleted)
+                        .withCustom(fixedHbarFee(newHbarFee, hbarCollector))
+                        .hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
     private HapiSpec cannotMintNftWhenDeleted() {
@@ -351,9 +340,8 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .adminKey(ADMIN_KEY))
                 .when(tokenDelete(NFTdeleted))
-                .then(
-                        mintToken(NFTdeleted, List.of(ByteString.copyFromUtf8(FIRST_MEMO)))
-                                .hasKnownStatus(TOKEN_WAS_DELETED));
+                .then(mintToken(NFTdeleted, List.of(ByteString.copyFromUtf8(FIRST_MEMO)))
+                        .hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
     private HapiSpec cannotBurnNftWhenDeleted() {
@@ -375,11 +363,8 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                         tokenAssociate(ANOTHER_USER, NFTdeleted),
                         mintToken(
                                 NFTdeleted,
-                                List.of(
-                                        ByteString.copyFromUtf8(FIRST_MEMO),
-                                        ByteString.copyFromUtf8(SECOND_MEMO))),
-                        cryptoTransfer(
-                                movingUnique(NFTdeleted, 2L).between(TOKEN_TREASURY, ANOTHER_USER)),
+                                List.of(ByteString.copyFromUtf8(FIRST_MEMO), ByteString.copyFromUtf8(SECOND_MEMO))),
+                        cryptoTransfer(movingUnique(NFTdeleted, 2L).between(TOKEN_TREASURY, ANOTHER_USER)),
                         getAccountInfo(ANOTHER_USER).hasOwnedNfts(1),
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(1),
                         getTokenInfo(NFTdeleted).hasTotalSupply(2),
@@ -409,20 +394,15 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                         tokenAssociate(ANOTHER_USER, NFTdeleted),
                         mintToken(
                                 NFTdeleted,
-                                List.of(
-                                        ByteString.copyFromUtf8(FIRST_MEMO),
-                                        ByteString.copyFromUtf8(SECOND_MEMO))),
-                        cryptoTransfer(
-                                movingUnique(NFTdeleted, 2L).between(TOKEN_TREASURY, ANOTHER_USER)),
+                                List.of(ByteString.copyFromUtf8(FIRST_MEMO), ByteString.copyFromUtf8(SECOND_MEMO))),
+                        cryptoTransfer(movingUnique(NFTdeleted, 2L).between(TOKEN_TREASURY, ANOTHER_USER)),
                         getAccountInfo(ANOTHER_USER).hasOwnedNfts(1),
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(1),
                         getTokenInfo(NFTdeleted).hasTotalSupply(2),
                         getTokenNftInfo(NFTdeleted, 2).hasCostAnswerPrecheck(OK),
                         getTokenNftInfo(NFTdeleted, 1).hasSerialNum(1))
                 .when(tokenDelete(NFTdeleted))
-                .then(
-                        wipeTokenAccount(NFTdeleted, ANOTHER_USER, List.of(1L))
-                                .hasKnownStatus(TOKEN_WAS_DELETED));
+                .then(wipeTokenAccount(NFTdeleted, ANOTHER_USER, List.of(1L)).hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
     private HapiSpec cannotGetNftInfoWhenExpired() {
@@ -431,9 +411,7 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                         tokenOpsEnablement(),
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(GENESIS)
-                                .overridingProps(
-                                        AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(
-                                                1, 0L, 2, 2)),
+                                .overridingProps(AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(1, 0L, 2, 2)),
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(NFTexpired)
@@ -454,15 +432,11 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                         tokenOpsEnablement(),
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(GENESIS)
-                                .overridingProps(
-                                        AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(
-                                                1, 0L, 100, 100))
+                                .overridingProps(AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(1, 0L, 100, 100))
                                 .erasingProps(Set.of("minimumAutoRenewDuration")),
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(ADMIN_KEY),
-                        cryptoCreate(TOKEN_TREASURY)
-                                .balance(ONE_HUNDRED_HBARS)
-                                .autoRenewSecs(THREE_MONTHS_IN_SECONDS),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).autoRenewSecs(THREE_MONTHS_IN_SECONDS),
                         tokenCreate(NFTautoRemoved)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .supplyType(TokenSupplyType.INFINITE)
@@ -473,33 +447,29 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                                 .autoRenewPeriod(2L)
                                 .expiry(Instant.now().getEpochSecond() + 5L)
                                 .treasury(TOKEN_TREASURY),
-                        mintToken(
-                                        NFTautoRemoved,
-                                        List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO)),
-                                        "nftMint")
+                        mintToken(NFTautoRemoved, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO)), "nftMint")
                                 .payingWith(GENESIS))
                 .when(
-                        cryptoTransfer(
-                                        tinyBarsFromTo(
-                                                TOKEN_TREASURY, GENESIS, ONE_HUNDRED_HBARS - 10))
+                        cryptoTransfer(tinyBarsFromTo(TOKEN_TREASURY, GENESIS, ONE_HUNDRED_HBARS - 10))
                                 .payingWith(GENESIS),
                         sleepFor(8000),
                         cryptoTransfer(tinyBarsFromTo(TOKEN_TREASURY, GENESIS, 10))
                                 .payingWith(GENESIS))
                 .then(
                         getAccountBalance(TOKEN_TREASURY).logged(),
-                        getTokenNftInfo(NFTautoRemoved, 1).hasAnswerOnlyPrecheck(OK).logged(),
-                        getTokenNftInfo(NFTautoRemoved, 1).hasCostAnswerPrecheckFrom(OK).logged());
+                        getTokenNftInfo(NFTautoRemoved, 1)
+                                .hasAnswerOnlyPrecheck(OK)
+                                .logged(),
+                        getTokenNftInfo(NFTautoRemoved, 1)
+                                .hasCostAnswerPrecheckFrom(OK)
+                                .logged());
     }
 
     private HapiSpec autoRemovalCasesSuiteCleanup() {
         return defaultHapiSpec("AutoRemovalCasesSuiteCleanup")
                 .given()
                 .when()
-                .then(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(disablingAutoRenewWithDefaults()));
+                .then(fileUpdate(APP_PROPERTIES).payingWith(GENESIS).overridingProps(disablingAutoRenewWithDefaults()));
     }
 
     private ByteString metadata(String contents) {

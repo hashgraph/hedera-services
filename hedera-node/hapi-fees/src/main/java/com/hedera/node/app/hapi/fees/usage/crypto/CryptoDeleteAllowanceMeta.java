@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.usage.crypto;
 
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
@@ -36,8 +37,7 @@ public class CryptoDeleteAllowanceMeta {
     }
 
     public CryptoDeleteAllowanceMeta(
-            CryptoDeleteAllowanceTransactionBody cryptoDeleteTxnBody,
-            long transactionValidStartSecs) {
+            CryptoDeleteAllowanceTransactionBody cryptoDeleteTxnBody, long transactionValidStartSecs) {
         effectiveNow = transactionValidStartSecs;
         msgBytesUsed = bytesUsedInTxn(cryptoDeleteTxnBody);
     }

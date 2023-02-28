@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.queries.meta;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
@@ -44,10 +45,7 @@ public class GetExecTimeAnswer extends AbstractAnswer {
                 NetworkGetExecutionTime,
                 query -> query.getNetworkGetExecutionTime().getHeader().getPayment(),
                 query -> query.getNetworkGetExecutionTime().getHeader().getResponseType(),
-                response ->
-                        response.getNetworkGetExecutionTime()
-                                .getHeader()
-                                .getNodeTransactionPrecheckCode(),
+                response -> response.getNetworkGetExecutionTime().getHeader().getNodeTransactionPrecheckCode(),
                 (query, view) -> OK);
 
         this.executionTimeTracker = executionTimeTracker;
@@ -55,10 +53,7 @@ public class GetExecTimeAnswer extends AbstractAnswer {
 
     @Override
     public Response responseGiven(
-            final Query query,
-            @Nullable final StateView view,
-            final ResponseCodeEnum validity,
-            final long cost) {
+            final Query query, @Nullable final StateView view, final ResponseCodeEnum validity, final long cost) {
         final var op = query.getNetworkGetExecutionTime();
         final var response = NetworkGetExecutionTimeResponse.newBuilder();
 

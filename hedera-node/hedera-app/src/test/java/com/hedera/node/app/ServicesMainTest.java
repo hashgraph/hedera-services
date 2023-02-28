@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app;
 
 import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
@@ -33,6 +34,7 @@ import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.context.properties.GlobalStaticProperties;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.node.app.service.mono.grpc.GrpcStarter;
 import com.hedera.node.app.service.mono.state.exports.AccountsExporter;
@@ -71,28 +73,77 @@ class ServicesMainTest {
     private final NodeId nodeId = new NodeId(false, selfId);
     private final NodeId edonId = new NodeId(false, unselfId);
 
-    @Mock private Platform platform;
-    @Mock private SystemExits systemExits;
-    @Mock private PrintStream consoleOut;
-    @Mock private Supplier<Charset> nativeCharset;
-    @Mock private ServicesApp app;
-    @Mock private GlobalStaticProperties globalStaticProperties;
-    @Mock private NamedDigestFactory namedDigestFactory;
-    @Mock private MutableStateChildren workingState;
-    @Mock private AccountStorageAdapter accounts;
-    @Mock private LedgerValidator ledgerValidator;
-    @Mock private NodeInfo nodeInfo;
-    @Mock private ReconnectCompleteListener reconnectListener;
-    @Mock private StateWriteToDiskCompleteListener stateToDiskListener;
-    @Mock private PlatformStatusChangeListener statusChangeListener;
-    @Mock private IssListener issListener;
-    @Mock private NewSignedStateListener newSignedStateListener;
-    @Mock private NotificationEngine notificationEngine;
-    @Mock private ServicesStatsManager statsManager;
-    @Mock private AccountsExporter accountsExporter;
-    @Mock private GrpcStarter grpcStarter;
-    @Mock private CurrentPlatformStatus currentPlatformStatus;
-    @Mock private RecordStreamManager recordStreamManager;
+    @Mock
+    private Platform platform;
+
+    @Mock
+    private SystemExits systemExits;
+
+    @Mock
+    private PrintStream consoleOut;
+
+    @Mock
+    private Supplier<Charset> nativeCharset;
+
+    @Mock
+    private ServicesApp app;
+
+    @Mock
+    private HederaApp hederaApp;
+
+    @Mock
+    private GlobalStaticProperties globalStaticProperties;
+
+    @Mock
+    private NodeLocalProperties nodeLocalProperties;
+
+    @Mock
+    private NamedDigestFactory namedDigestFactory;
+
+    @Mock
+    private MutableStateChildren workingState;
+
+    @Mock
+    private AccountStorageAdapter accounts;
+
+    @Mock
+    private LedgerValidator ledgerValidator;
+
+    @Mock
+    private NodeInfo nodeInfo;
+
+    @Mock
+    private ReconnectCompleteListener reconnectListener;
+
+    @Mock
+    private StateWriteToDiskCompleteListener stateToDiskListener;
+
+    @Mock
+    private PlatformStatusChangeListener statusChangeListener;
+
+    @Mock
+    private IssListener issListener;
+
+    @Mock
+    private NewSignedStateListener newSignedStateListener;
+
+    @Mock
+    private NotificationEngine notificationEngine;
+
+    @Mock
+    private ServicesStatsManager statsManager;
+
+    @Mock
+    private AccountsExporter accountsExporter;
+
+    @Mock
+    private GrpcStarter grpcStarter;
+
+    @Mock
+    private CurrentPlatformStatus currentPlatformStatus;
+
+    @Mock
+    private RecordStreamManager recordStreamManager;
 
     private final ServicesMain subject = new ServicesMain();
 
@@ -137,7 +188,8 @@ class ServicesMainTest {
 
     @Test
     void doesAppDrivenInit() throws NoSuchAlgorithmException {
-        withRunnableApp();
+        withRunnableApp(app);
+        withChangeableApp();
 
         // when:
         subject.init(platform, nodeId);
@@ -146,15 +198,13 @@ class ServicesMainTest {
         verify(ledgerValidator).validate(accounts);
         verify(nodeInfo).validateSelfAccountIfStaked();
         // and:
-        verify(notificationEngine)
-                .register(PlatformStatusChangeListener.class, statusChangeListener);
+        verify(notificationEngine).register(PlatformStatusChangeListener.class, statusChangeListener);
         verify(notificationEngine).register(IssListener.class, issListener);
         verify(notificationEngine).register(NewSignedStateListener.class, newSignedStateListener);
         verify(statsManager).initializeFor(platform);
         verify(accountsExporter).toFile(accounts);
         verify(notificationEngine).register(ReconnectCompleteListener.class, reconnectListener);
-        verify(notificationEngine)
-                .register(StateWriteToDiskCompleteListener.class, stateToDiskListener);
+        verify(notificationEngine).register(StateWriteToDiskCompleteListener.class, stateToDiskListener);
         verify(grpcStarter).startIfAppropriate();
     }
 
@@ -172,9 +222,8 @@ class ServicesMainTest {
 
     @Test
     void updatesCurrentMiscPlatformStatus() throws NoSuchAlgorithmException {
-        final var listener =
-                new StatusChangeListener(currentPlatformStatus, nodeId, recordStreamManager);
-        withRunnableApp();
+        final var listener = new StatusChangeListener(currentPlatformStatus, nodeId, recordStreamManager);
+        withRunnableApp(app);
         withChangeableApp();
         withNotificationEngine();
 
@@ -186,9 +235,8 @@ class ServicesMainTest {
 
     @Test
     void updatesCurrentActivePlatformStatus() throws NoSuchAlgorithmException {
-        final var listener =
-                new StatusChangeListener(currentPlatformStatus, nodeId, recordStreamManager);
-        withRunnableApp();
+        final var listener = new StatusChangeListener(currentPlatformStatus, nodeId, recordStreamManager);
+        withRunnableApp(app);
         withChangeableApp();
         withNotificationEngine();
 
@@ -201,9 +249,8 @@ class ServicesMainTest {
 
     @Test
     void updatesCurrentMaintenancePlatformStatus() throws NoSuchAlgorithmException {
-        final var listener =
-                new StatusChangeListener(currentPlatformStatus, nodeId, recordStreamManager);
-        withRunnableApp();
+        final var listener = new StatusChangeListener(currentPlatformStatus, nodeId, recordStreamManager);
+        withRunnableApp(app);
         withChangeableApp();
         withNotificationEngine();
 
@@ -240,7 +287,7 @@ class ServicesMainTest {
         given(app.systemExits()).willReturn(systemExits);
     }
 
-    private void withRunnableApp() throws NoSuchAlgorithmException {
+    private void withRunnableApp(final ServicesApp app) throws NoSuchAlgorithmException {
         APPS.save(selfId, app);
         given(nativeCharset.get()).willReturn(UTF_8);
         given(namedDigestFactory.forName("SHA-384")).willReturn(null);

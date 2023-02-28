@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
@@ -96,39 +97,92 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class FreezeTokenPrecompileTest {
-    @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private GasCalculator gasCalculator;
-    @Mock private TypedTokenStore tokenStore;
-    @Mock private AccountStore accountStore;
-    @Mock private MessageFrame frame;
-    @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private EncodingFacade encoder;
-    @Mock private EvmEncodingFacade evmEncoder;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private ExpiringCreations creator;
-    @Mock private FeeCalculator feeCalculator;
-    @Mock private ExchangeRate exchangeRate;
-    @Mock private StateView stateView;
-    @Mock private ContractAliases aliases;
-    @Mock private HederaStackedWorldStateUpdater worldUpdater;
-    @Mock private FreezeLogic freezeLogic;
-    @Mock private WorldLedgers wrappedLedgers;
-    @Mock private UsagePricesProvider resourceCosts;
-    @Mock private HbarCentExchange exchange;
-    @Mock private ExpirableTxnRecord.Builder mockRecordBuilder;
-    @Mock private InfrastructureFactory infrastructureFactory;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
-    @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
-    @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
-    @Mock private AccessorFactory accessorFactory;
-    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+    @Mock
+    private GlobalDynamicProperties dynamicProperties;
 
     @Mock
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
-            tokenRels;
+    private GasCalculator gasCalculator;
 
-    @Mock private AssetsLoader assetLoader;
+    @Mock
+    private TypedTokenStore tokenStore;
+
+    @Mock
+    private AccountStore accountStore;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
+    private TxnAwareEvmSigsVerifier sigsVerifier;
+
+    @Mock
+    private RecordsHistorian recordsHistorian;
+
+    @Mock
+    private EncodingFacade encoder;
+
+    @Mock
+    private EvmEncodingFacade evmEncoder;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private ExpiringCreations creator;
+
+    @Mock
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private ExchangeRate exchangeRate;
+
+    @Mock
+    private StateView stateView;
+
+    @Mock
+    private ContractAliases aliases;
+
+    @Mock
+    private HederaStackedWorldStateUpdater worldUpdater;
+
+    @Mock
+    private FreezeLogic freezeLogic;
+
+    @Mock
+    private WorldLedgers wrappedLedgers;
+
+    @Mock
+    private UsagePricesProvider resourceCosts;
+
+    @Mock
+    private HbarCentExchange exchange;
+
+    @Mock
+    private ExpirableTxnRecord.Builder mockRecordBuilder;
+
+    @Mock
+    private InfrastructureFactory infrastructureFactory;
+
+    @Mock
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
+
+    @Mock
+    private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
+
+    @Mock
+    private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
+
+    @Mock
+    private AccessorFactory accessorFactory;
+
+    @Mock
+    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+
+    @Mock
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRels;
+
+    @Mock
+    private AssetsLoader assetLoader;
 
     private HTSPrecompiledContract subject;
     private MockedStatic<FreezeTokenPrecompile> freezeTokenPrecompile;
@@ -139,40 +193,30 @@ class FreezeTokenPrecompileTest {
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
             (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
-    public static final Bytes FREEZE_INPUT =
-            Bytes.fromHexString(
-                    "0x5b8f8584000000000000000000000000000000000000000000000000000000000000050e000000000000000000000000000000000000000000000000000000000000050c");
+    public static final Bytes FREEZE_INPUT = Bytes.fromHexString(
+            "0x5b8f8584000000000000000000000000000000000000000000000000000000000000050e000000000000000000000000000000000000000000000000000000000000050c");
 
     @BeforeEach
     void setUp() throws IOException {
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
-        canonicalPrices.put(
-                HederaFunctionality.TokenFreezeAccount,
-                Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
+        canonicalPrices.put(HederaFunctionality.TokenFreezeAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-        final PrecompilePricingUtils precompilePricingUtils =
-                new PrecompilePricingUtils(
-                        assetLoader,
-                        exchange,
-                        () -> feeCalculator,
-                        resourceCosts,
-                        stateView,
-                        accessorFactory);
-        subject =
-                new HTSPrecompiledContract(
-                        dynamicProperties,
-                        gasCalculator,
-                        recordsHistorian,
-                        sigsVerifier,
-                        encoder,
-                        evmEncoder,
-                        syntheticTxnFactory,
-                        creator,
-                        () -> feeCalculator,
-                        stateView,
-                        precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
+                assetLoader, exchange, () -> feeCalculator, resourceCosts, stateView, accessorFactory);
+        subject = new HTSPrecompiledContract(
+                dynamicProperties,
+                gasCalculator,
+                recordsHistorian,
+                sigsVerifier,
+                encoder,
+                evmEncoder,
+                syntheticTxnFactory,
+                creator,
+                () -> feeCalculator,
+                stateView,
+                precompilePricingUtils,
+                infrastructureFactory,
+                evmHTSPrecompiledContract);
         freezeTokenPrecompile = Mockito.mockStatic(FreezeTokenPrecompile.class);
     }
 
@@ -211,15 +255,11 @@ class FreezeTokenPrecompileTest {
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         given(feeCalculator.computeFee(any(), any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
-        given(feeCalculator.estimatedGasPriceInTinybars(any(), any()))
-                .willReturn(DEFAULT_GAS_PRICE);
-        freezeTokenPrecompile
-                .when(() -> decodeFreeze(any(), any()))
-                .thenReturn(tokenFreezeUnFreezeWrapper);
+        given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+        freezeTokenPrecompile.when(() -> decodeFreeze(any(), any())).thenReturn(tokenFreezeUnFreezeWrapper);
         given(syntheticTxnFactory.createFreeze(tokenFreezeUnFreezeWrapper))
                 .willReturn(
-                        TransactionBody.newBuilder()
-                                .setTokenFreeze(TokenFreezeAccountTransactionBody.newBuilder()));
+                        TransactionBody.newBuilder().setTokenFreeze(TokenFreezeAccountTransactionBody.newBuilder()));
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
@@ -230,9 +270,7 @@ class FreezeTokenPrecompileTest {
 
     @Test
     void decodeTokenFreezeWithValidInput() {
-        freezeTokenPrecompile
-                .when(() -> decodeFreeze(FREEZE_INPUT, identity()))
-                .thenCallRealMethod();
+        freezeTokenPrecompile.when(() -> decodeFreeze(FREEZE_INPUT, identity())).thenCallRealMethod();
         final var decodedInput = decodeFreeze(FREEZE_INPUT, identity());
 
         assertEquals(TokenID.newBuilder().setTokenNum(1294).build(), decodedInput.token());
@@ -255,8 +293,7 @@ class FreezeTokenPrecompileTest {
         final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.aliases()).willReturn(aliases);
-        given(aliases.resolveForEvm(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
     }
@@ -265,20 +302,13 @@ class FreezeTokenPrecompileTest {
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(infrastructureFactory.newTokenStore(accountStore, null, tokens, nfts, tokenRels))
                 .willReturn(tokenStore);
-        given(infrastructureFactory.newFreezeLogic(accountStore, tokenStore))
-                .willReturn(freezeLogic);
+        given(infrastructureFactory.newFreezeLogic(accountStore, tokenStore)).willReturn(freezeLogic);
         given(freezeLogic.validate(any())).willReturn(OK);
-        freezeTokenPrecompile
-                .when(() -> decodeFreeze(any(), any()))
-                .thenReturn(tokenFreezeUnFreezeWrapper);
+        freezeTokenPrecompile.when(() -> decodeFreeze(any(), any())).thenReturn(tokenFreezeUnFreezeWrapper);
         given(syntheticTxnFactory.createFreeze(tokenFreezeUnFreezeWrapper))
-                .willReturn(
-                        TransactionBody.newBuilder()
-                                .setTokenUnfreeze(
-                                        TokenUnfreezeAccountTransactionBody.newBuilder()));
-        given(
-                        sigsVerifier.hasActiveFreezeKey(
-                                true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
+                .willReturn(TransactionBody.newBuilder()
+                        .setTokenUnfreeze(TokenUnfreezeAccountTransactionBody.newBuilder()));
+        given(sigsVerifier.hasActiveFreezeKey(true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
                 .willReturn(true);
     }
 

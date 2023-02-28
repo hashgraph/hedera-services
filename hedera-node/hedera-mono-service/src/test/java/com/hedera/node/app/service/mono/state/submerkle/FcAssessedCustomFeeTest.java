@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee.assessedHbarFeeFrom;
@@ -50,28 +51,25 @@ class FcAssessedCustomFeeTest {
     private final EntityId token = new EntityId(1, 2, 3);
     private final long[] effectivePayers = new long[] {1234L, 4321L};
 
-    @Mock private SerializableDataInputStream din;
-    @Mock private SerializableDataOutputStream dos;
+    @Mock
+    private SerializableDataInputStream din;
+
+    @Mock
+    private SerializableDataOutputStream dos;
 
     @Test
     void objectContractSanityChecks() {
         // given:
         final var hbarChange =
-                assessedHbarFeeFrom(
-                        IdUtils.adjustFrom(account.toGrpcAccountId(), units), effectivePayers);
-        final var tokenChange =
-                FcAssessedCustomFee.assessedHtsFeeFrom(
-                        token,
-                        IdUtils.adjustFrom(account.toGrpcAccountId(), units),
-                        effectivePayers);
+                assessedHbarFeeFrom(IdUtils.adjustFrom(account.toGrpcAccountId(), units), effectivePayers);
+        final var tokenChange = FcAssessedCustomFee.assessedHtsFeeFrom(
+                token, IdUtils.adjustFrom(account.toGrpcAccountId(), units), effectivePayers);
         // and:
-        final var hbarRepr =
-                "FcAssessedCustomFee{token=ℏ, account=EntityId{shard=4, realm=5, num=6},"
-                        + " units=-1234, effective payer accounts=[1234, 4321]}";
-        final var tokenRepr =
-                "FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=3},"
-                        + " account=EntityId{shard=4, realm=5, num=6}, units=-1234, effective payer"
-                        + " accounts=[1234, 4321]}";
+        final var hbarRepr = "FcAssessedCustomFee{token=ℏ, account=EntityId{shard=4, realm=5, num=6},"
+                + " units=-1234, effective payer accounts=[1234, 4321]}";
+        final var tokenRepr = "FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=3},"
+                + " account=EntityId{shard=4, realm=5, num=6}, units=-1234, effective payer"
+                + " accounts=[1234, 4321]}";
 
         // expect:
         assertNotEquals(hbarChange, tokenChange);
@@ -86,8 +84,7 @@ class FcAssessedCustomFeeTest {
     }
 
     @Test
-    void liveFireSerdeWorksForHtsFeeCurrentVersion()
-            throws IOException, ConstructableRegistryException {
+    void liveFireSerdeWorksForHtsFeeCurrentVersion() throws IOException, ConstructableRegistryException {
         // setup:
         final var account = new EntityId(1, 2, 3);
         final var token = new EntityId(2, 3, 4);
@@ -117,18 +114,13 @@ class FcAssessedCustomFeeTest {
     }
 
     @Test
-    void liveFireSerdeWorksForHtsFee0170Version()
-            throws IOException, ConstructableRegistryException {
+    void liveFireSerdeWorksForHtsFee0170Version() throws IOException, ConstructableRegistryException {
         // setup:
         final var account = new EntityId(1, 2, 3);
         final var token = new EntityId(2, 3, 4);
         final var amount = 345L;
-        final var subject =
-                new FcAssessedCustomFee(
-                        account,
-                        token,
-                        amount,
-                        FcAssessedCustomFee.UNKNOWN_EFFECTIVE_PAYER_ACCOUNT_NUMS);
+        final var subject = new FcAssessedCustomFee(
+                account, token, amount, FcAssessedCustomFee.UNKNOWN_EFFECTIVE_PAYER_ACCOUNT_NUMS);
         // and:
         ConstructableRegistry.getInstance()
                 .registerConstructable(new ClassConstructorPair(EntityId.class, EntityId::new));
@@ -153,8 +145,7 @@ class FcAssessedCustomFeeTest {
     }
 
     @Test
-    void liveFireSerdeWorksForHbarFeeCurrentVersion()
-            throws IOException, ConstructableRegistryException {
+    void liveFireSerdeWorksForHbarFeeCurrentVersion() throws IOException, ConstructableRegistryException {
         // setup:
         final var account = new EntityId(1, 2, 3);
         final var amount = 345L;
@@ -183,14 +174,12 @@ class FcAssessedCustomFeeTest {
     }
 
     @Test
-    void liveFireSerdeWorksForHbarFee0170Version()
-            throws IOException, ConstructableRegistryException {
+    void liveFireSerdeWorksForHbarFee0170Version() throws IOException, ConstructableRegistryException {
         // setup:
         final var account = new EntityId(1, 2, 3);
         final var amount = 345L;
         final var subject =
-                new FcAssessedCustomFee(
-                        account, amount, FcAssessedCustomFee.UNKNOWN_EFFECTIVE_PAYER_ACCOUNT_NUMS);
+                new FcAssessedCustomFee(account, amount, FcAssessedCustomFee.UNKNOWN_EFFECTIVE_PAYER_ACCOUNT_NUMS);
         // and:
         ConstructableRegistry.getInstance()
                 .registerConstructable(new ClassConstructorPair(EntityId.class, EntityId::new));
@@ -235,12 +224,8 @@ class FcAssessedCustomFeeTest {
     @Test
     void deserializeWorksAsExpectedFor0170() throws IOException {
         // setup:
-        final var expectedBalanceChange =
-                new FcAssessedCustomFee(
-                        account,
-                        token,
-                        units,
-                        FcAssessedCustomFee.UNKNOWN_EFFECTIVE_PAYER_ACCOUNT_NUMS);
+        final var expectedBalanceChange = new FcAssessedCustomFee(
+                account, token, units, FcAssessedCustomFee.UNKNOWN_EFFECTIVE_PAYER_ACCOUNT_NUMS);
 
         given(din.readSerializable()).willReturn(account).willReturn(token);
         given(din.readLong()).willReturn(units);
@@ -262,8 +247,7 @@ class FcAssessedCustomFeeTest {
     @Test
     void deserializeWorksAsExpectedFor0171() throws IOException {
         // setup:
-        final var expectedBalanceChange =
-                new FcAssessedCustomFee(account, token, units, effectivePayers);
+        final var expectedBalanceChange = new FcAssessedCustomFee(account, token, units, effectivePayers);
 
         given(din.readSerializable()).willReturn(account).willReturn(token);
         given(din.readLong()).willReturn(units);
@@ -296,14 +280,10 @@ class FcAssessedCustomFeeTest {
     @Test
     void recognizesIfForHbar() {
         // given:
-        final var hbarChange =
-                FcAssessedCustomFee.assessedHbarFeeFrom(
-                        IdUtils.adjustFrom(account.toGrpcAccountId(), units), effectivePayers);
-        final var tokenChange =
-                FcAssessedCustomFee.assessedHtsFeeFrom(
-                        token,
-                        IdUtils.adjustFrom(account.toGrpcAccountId(), units),
-                        effectivePayers);
+        final var hbarChange = FcAssessedCustomFee.assessedHbarFeeFrom(
+                IdUtils.adjustFrom(account.toGrpcAccountId(), units), effectivePayers);
+        final var tokenChange = FcAssessedCustomFee.assessedHtsFeeFrom(
+                token, IdUtils.adjustFrom(account.toGrpcAccountId(), units), effectivePayers);
 
         assertTrue(hbarChange.isForHbar());
         assertFalse(tokenChange.isForHbar());
@@ -348,16 +328,13 @@ class FcAssessedCustomFeeTest {
     @Test
     void testFromGrpc() {
         // given:
-        final var grpc =
-                AssessedCustomFee.newBuilder()
-                        .setTokenId(token.toGrpcTokenId())
-                        .setFeeCollectorAccountId(account.toGrpcAccountId())
-                        .addEffectivePayerAccountId(
-                                AccountID.newBuilder().setAccountNum(effectivePayers[0]))
-                        .addEffectivePayerAccountId(
-                                AccountID.newBuilder().setAccountNum(effectivePayers[1]))
-                        .setAmount(units)
-                        .build();
+        final var grpc = AssessedCustomFee.newBuilder()
+                .setTokenId(token.toGrpcTokenId())
+                .setFeeCollectorAccountId(account.toGrpcAccountId())
+                .addEffectivePayerAccountId(AccountID.newBuilder().setAccountNum(effectivePayers[0]))
+                .addEffectivePayerAccountId(AccountID.newBuilder().setAccountNum(effectivePayers[1]))
+                .setAmount(units)
+                .build();
 
         // expect:
         final var fcFee = FcAssessedCustomFee.fromGrpc(grpc);
@@ -370,12 +347,11 @@ class FcAssessedCustomFeeTest {
     @Test
     void testFromGrpcFails() {
         // given:
-        final var grpc =
-                AssessedCustomFee.newBuilder()
-                        .setTokenId(token.toGrpcTokenId())
-                        .setFeeCollectorAccountId(account.toGrpcAccountId())
-                        .setAmount(units)
-                        .build();
+        final var grpc = AssessedCustomFee.newBuilder()
+                .setTokenId(token.toGrpcTokenId())
+                .setFeeCollectorAccountId(account.toGrpcAccountId())
+                .setAmount(units)
+                .build();
 
         // expect:
         final var fcFee = FcAssessedCustomFee.fromGrpc(grpc);
@@ -388,15 +364,12 @@ class FcAssessedCustomFeeTest {
     @Test
     void testFromGrpcForHbarAdjust() {
         // given:
-        final var grpc =
-                AssessedCustomFee.newBuilder()
-                        .setFeeCollectorAccountId(account.toGrpcAccountId())
-                        .addEffectivePayerAccountId(
-                                AccountID.newBuilder().setAccountNum(effectivePayers[0]))
-                        .addEffectivePayerAccountId(
-                                AccountID.newBuilder().setAccountNum(effectivePayers[1]))
-                        .setAmount(units)
-                        .build();
+        final var grpc = AssessedCustomFee.newBuilder()
+                .setFeeCollectorAccountId(account.toGrpcAccountId())
+                .addEffectivePayerAccountId(AccountID.newBuilder().setAccountNum(effectivePayers[0]))
+                .addEffectivePayerAccountId(AccountID.newBuilder().setAccountNum(effectivePayers[1]))
+                .setAmount(units)
+                .build();
 
         // expect:
         final var fcFee = FcAssessedCustomFee.fromGrpc(grpc);

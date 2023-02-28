@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stats;
 
 import static com.hedera.node.app.service.mono.stats.ServicesStatsManager.GAUGE_FORMAT;
@@ -30,59 +31,65 @@ import javax.inject.Singleton;
 
 @Singleton
 public class EntityUtilGauges {
-    private static final String UTIL_NAME_TPL = "%sPercentUsed";
+    private static final String UTIL_NAME_TPL = "%sUsed";
     private static final String UTIL_DESCRIPTION_TPL = "instantaneous %% used of %s system limit";
 
     private final List<UtilGauge> utils;
 
     @Inject
     public EntityUtilGauges(final UsageLimits usageLimits) {
-        utils =
-                List.of(
-                        new UtilGauge(
-                                usageLimits::percentAccountsUsed,
-                                gaugeConfigFor("accounts"),
-                                new NonAtomicReference<>()),
-                        new UtilGauge(
-                                usageLimits::percentContractsUsed,
-                                gaugeConfigFor("contracts"),
-                                new NonAtomicReference<>()),
-                        new UtilGauge(
-                                usageLimits::percentFilesUsed,
-                                gaugeConfigFor("files"),
-                                new NonAtomicReference<>()),
-                        new UtilGauge(
-                                usageLimits::percentNftsUsed,
-                                gaugeConfigFor("nfts"),
-                                new NonAtomicReference<>()),
-                        new UtilGauge(
-                                usageLimits::percentSchedulesUsed,
-                                gaugeConfigFor("schedules"),
-                                new NonAtomicReference<>()),
-                        new UtilGauge(
-                                usageLimits::percentStorageSlotsUsed,
-                                gaugeConfigFor("storageSlots", "storage slots"),
-                                new NonAtomicReference<>()),
-                        new UtilGauge(
-                                usageLimits::percentTokensUsed,
-                                gaugeConfigFor("tokens"),
-                                new NonAtomicReference<>()),
-                        new UtilGauge(
-                                usageLimits::percentTokenRelsUsed,
-                                gaugeConfigFor("tokenAssociations", "token associations"),
-                                new NonAtomicReference<>()),
-                        new UtilGauge(
-                                usageLimits::percentTopicsUsed,
-                                gaugeConfigFor("topics"),
-                                new NonAtomicReference<>()));
+        utils = List.of(
+                // percent metrics for the current number of each entity type
+                new UtilGauge(
+                        usageLimits::percentAccountsUsed,
+                        gaugeConfigFor("accountsPercent"),
+                        new NonAtomicReference<>()),
+                new UtilGauge(
+                        usageLimits::percentContractsUsed,
+                        gaugeConfigFor("contractsPercent"),
+                        new NonAtomicReference<>()),
+                new UtilGauge(
+                        usageLimits::percentFilesUsed, gaugeConfigFor("filesPercent"), new NonAtomicReference<>()),
+                new UtilGauge(usageLimits::percentNftsUsed, gaugeConfigFor("nftsPercent"), new NonAtomicReference<>()),
+                new UtilGauge(
+                        usageLimits::percentSchedulesUsed,
+                        gaugeConfigFor("schedulesPercent"),
+                        new NonAtomicReference<>()),
+                new UtilGauge(
+                        usageLimits::percentStorageSlotsUsed,
+                        gaugeConfigFor("storageSlotsPercent", "storage slots"),
+                        new NonAtomicReference<>()),
+                new UtilGauge(
+                        usageLimits::percentTokensUsed, gaugeConfigFor("tokensPercent"), new NonAtomicReference<>()),
+                new UtilGauge(
+                        usageLimits::percentTokenRelsUsed,
+                        gaugeConfigFor("tokenAssociationsPercent", "token associations"),
+                        new NonAtomicReference<>()),
+                new UtilGauge(
+                        usageLimits::percentTopicsUsed, gaugeConfigFor("topicsPercent"), new NonAtomicReference<>()),
+                // plain metrics for the current number of each entity type
+                new UtilGauge(usageLimits::getNumAccounts, gaugeConfigFor("accounts"), new NonAtomicReference<>()),
+                new UtilGauge(usageLimits::getNumContracts, gaugeConfigFor("contracts"), new NonAtomicReference<>()),
+                new UtilGauge(usageLimits::getNumFiles, gaugeConfigFor("files"), new NonAtomicReference<>()),
+                new UtilGauge(usageLimits::getNumNfts, gaugeConfigFor("nfts"), new NonAtomicReference<>()),
+                new UtilGauge(usageLimits::getNumSchedules, gaugeConfigFor("schedules"), new NonAtomicReference<>()),
+                new UtilGauge(
+                        usageLimits::getNumStorageSlots,
+                        gaugeConfigFor("storageSlots", "storage slots"),
+                        new NonAtomicReference<>()),
+                new UtilGauge(usageLimits::getNumTokens, gaugeConfigFor("tokens"), new NonAtomicReference<>()),
+                new UtilGauge(
+                        usageLimits::getNumTokenRels,
+                        gaugeConfigFor("tokenAssociations", "token associations"),
+                        new NonAtomicReference<>()),
+                new UtilGauge(usageLimits::getNumTopics, gaugeConfigFor("topics"), new NonAtomicReference<>()));
     }
 
     public void registerWith(final Platform platform) {
-        utils.forEach(
-                util -> {
-                    final var gauge = platform.getMetrics().getOrCreate(util.config());
-                    util.gauge().set(gauge);
-                });
+        utils.forEach(util -> {
+            final var gauge = platform.getMetrics().getOrCreate(util.config());
+            util.gauge().set(gauge);
+        });
     }
 
     public void updateAll() {
@@ -93,13 +100,10 @@ public class EntityUtilGauges {
         return gaugeConfigFor(utilType, null);
     }
 
-    private static DoubleGauge.Config gaugeConfigFor(
-            final String utilType, @Nullable final String forDesc) {
+    private static DoubleGauge.Config gaugeConfigFor(final String utilType, @Nullable final String forDesc) {
         return new DoubleGauge.Config(STAT_CATEGORY, String.format(UTIL_NAME_TPL, utilType))
-                .withDescription(
-                        String.format(
-                                UTIL_DESCRIPTION_TPL,
-                                Optional.ofNullable(forDesc).orElse(utilType)))
+                .withDescription(String.format(
+                        UTIL_DESCRIPTION_TPL, Optional.ofNullable(forDesc).orElse(utilType)))
                 .withFormat(GAUGE_FORMAT);
     }
 }

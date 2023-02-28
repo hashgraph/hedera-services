@@ -13,14 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.network.impl.test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.network.NetworkService;
 import com.hedera.node.app.service.network.impl.NetworkServiceImpl;
+import com.hedera.node.app.spi.state.Schema;
+import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.spi.state.StateDefinition;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class NetworkServiceImplTest {
+    @Mock
+    private SchemaRegistry registry;
 
     @Test
     void testSpi() {
@@ -33,5 +47,26 @@ class NetworkServiceImplTest {
                 NetworkServiceImpl.class,
                 service.getClass(),
                 "We must always receive an instance of type " + NetworkServiceImpl.class.getName());
+    }
+
+    @Test
+    void registersExpectedSchema() {
+        ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
+
+        final var subject = NetworkService.getInstance();
+
+        subject.registerSchemas(registry);
+        verify(registry).register(schemaCaptor.capture());
+
+        final var schema = schemaCaptor.getValue();
+
+        final var statesToCreate = schema.statesToCreate();
+        assertEquals(4, statesToCreate.size());
+        final var iter =
+                statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
+        assertEquals(NetworkServiceImpl.CONTEXT_KEY, iter.next());
+        assertEquals(NetworkServiceImpl.RUNNING_HASHES_KEY, iter.next());
+        assertEquals(NetworkServiceImpl.SPECIAL_FILES_KEY, iter.next());
+        assertEquals(NetworkServiceImpl.STAKING_KEY, iter.next());
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -31,8 +32,7 @@ public class TokenFreezeTransitionLogic implements TransitionLogic {
     private final FreezeLogic freezeLogic;
 
     @Inject
-    public TokenFreezeTransitionLogic(
-            final TransactionContext txnCtx, final FreezeLogic freezeLogic) {
+    public TokenFreezeTransitionLogic(final TransactionContext txnCtx, final FreezeLogic freezeLogic) {
         this.txnCtx = txnCtx;
         this.freezeLogic = freezeLogic;
     }

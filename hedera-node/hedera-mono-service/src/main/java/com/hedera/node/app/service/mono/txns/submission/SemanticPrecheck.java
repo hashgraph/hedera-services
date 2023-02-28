@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.submission;
 
 import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
@@ -39,9 +40,7 @@ public class SemanticPrecheck {
     }
 
     ResponseCodeEnum validate(
-            TxnAccessor accessor,
-            HederaFunctionality requiredFunction,
-            ResponseCodeEnum failureType) {
+            TxnAccessor accessor, HederaFunctionality requiredFunction, ResponseCodeEnum failureType) {
         final var txn = accessor.getTxn();
         final var logic = transitionLogic.lookupFor(requiredFunction, txn);
         return logic.map(l -> l.validateSemantics(accessor)).orElse(failureType);

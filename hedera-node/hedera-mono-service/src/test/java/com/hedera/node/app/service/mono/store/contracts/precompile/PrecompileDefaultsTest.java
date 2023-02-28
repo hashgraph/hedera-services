@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -28,7 +29,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class PrecompileDefaultsTest {
-    @Mock private WorldLedgers worldLedgers;
+    @Mock
+    private WorldLedgers worldLedgers;
 
     @Test
     void customizationIsNoop() {

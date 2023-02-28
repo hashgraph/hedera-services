@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.records;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -53,12 +54,11 @@ public class DuplicateManagementTest extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    usesUnclassifiableIfNoClassifiableAvailable(),
-                    hasExpectedDuplicates(),
-                    classifiableTakesPriorityOverUnclassifiable(),
-                });
+        return List.of(new HapiSpec[] {
+            usesUnclassifiableIfNoClassifiableAvailable(),
+            hasExpectedDuplicates(),
+            classifiableTakesPriorityOverUnclassifiable(),
+        });
     }
 
     private HapiSpec hasExpectedDuplicates() {
@@ -67,10 +67,9 @@ public class DuplicateManagementTest extends HapiSuite {
                         cryptoCreate("civilian").balance(ONE_HUNDRED_HBARS),
                         usableTxnIdNamed("txnId").payerId("civilian"))
                 .when(
-                        uncheckedSubmit(
-                                        cryptoCreate("repeated")
-                                                .payingWith("civilian")
-                                                .txnId("txnId"))
+                        uncheckedSubmit(cryptoCreate("repeated")
+                                        .payingWith("civilian")
+                                        .txnId("txnId"))
                                 .payingWith("civilian")
                                 .fee(ONE_HBAR)
                                 .hasPrecheck(NOT_SUPPORTED),
@@ -98,33 +97,28 @@ public class DuplicateManagementTest extends HapiSuite {
                                 .via("costlyTxn")
                                 .assertingNothingAboutHashes()
                                 .hasPriority(recordWith().status(SUCCESS))
-                                .hasDuplicates(
-                                        inOrder(
-                                                recordWith().status(DUPLICATE_TRANSACTION),
-                                                recordWith().status(DUPLICATE_TRANSACTION))),
+                                .hasDuplicates(inOrder(
+                                        recordWith().status(DUPLICATE_TRANSACTION),
+                                        recordWith().status(DUPLICATE_TRANSACTION))),
                         sleepFor(1_000L),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    var cheapGet =
-                                            getTxnRecord("cheapTxn").assertingNothingAboutHashes();
-                                    var costlyGet =
-                                            getTxnRecord("costlyTxn").assertingNothingAboutHashes();
-                                    allRunFor(spec, cheapGet, costlyGet);
-                                    var payer = spec.registry().getAccountID("civilian");
-                                    var cheapRecord = cheapGet.getResponseRecord();
-                                    var costlyRecord = costlyGet.getResponseRecord();
-                                    opLog.info("cheapRecord: {}", cheapRecord);
-                                    opLog.info("costlyRecord: {}", costlyRecord);
-                                    var cheapPrice = getNonFeeDeduction(cheapRecord).orElse(0);
-                                    var costlyPrice = getNonFeeDeduction(costlyRecord).orElse(0);
-                                    assertEquals(
-                                            3 * cheapPrice,
-                                            costlyPrice,
-                                            String.format(
-                                                    "Costly (%d) should be 3x more expensive than"
-                                                            + " cheap (%d)!",
-                                                    costlyPrice, cheapPrice));
-                                }));
+                        withOpContext((spec, opLog) -> {
+                            var cheapGet = getTxnRecord("cheapTxn").assertingNothingAboutHashes();
+                            var costlyGet = getTxnRecord("costlyTxn").assertingNothingAboutHashes();
+                            allRunFor(spec, cheapGet, costlyGet);
+                            var payer = spec.registry().getAccountID("civilian");
+                            var cheapRecord = cheapGet.getResponseRecord();
+                            var costlyRecord = costlyGet.getResponseRecord();
+                            opLog.info("cheapRecord: {}", cheapRecord);
+                            opLog.info("costlyRecord: {}", costlyRecord);
+                            var cheapPrice = getNonFeeDeduction(cheapRecord).orElse(0);
+                            var costlyPrice = getNonFeeDeduction(costlyRecord).orElse(0);
+                            assertEquals(
+                                    3 * cheapPrice,
+                                    costlyPrice,
+                                    String.format(
+                                            "Costly (%d) should be 3x more expensive than" + " cheap (%d)!",
+                                            costlyPrice, cheapPrice));
+                        }));
     }
 
     private HapiSpec usesUnclassifiableIfNoClassifiableAvailable() {
@@ -135,22 +129,18 @@ public class DuplicateManagementTest extends HapiSuite {
                         usableTxnIdNamed("txnId").payerId("civilian"),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.3", 100_000_000L)))
                 .when(
-                        uncheckedSubmit(
-                                cryptoCreate("nope")
-                                        .payingWith("civilian")
-                                        .txnId("txnId")
-                                        .signedBy("wrongKey")),
+                        uncheckedSubmit(cryptoCreate("nope")
+                                .payingWith("civilian")
+                                .txnId("txnId")
+                                .signedBy("wrongKey")),
                         sleepFor(1_000L))
                 .then(
                         getReceipt("txnId").hasPriorityStatus(INVALID_PAYER_SIGNATURE),
                         getTxnRecord("txnId")
                                 .assertingNothingAboutHashes()
-                                .hasPriority(
-                                        recordWith()
-                                                .status(INVALID_PAYER_SIGNATURE)
-                                                .transfers(
-                                                        includingDeduction(
-                                                                "node payment", "0.0.3"))));
+                                .hasPriority(recordWith()
+                                        .status(INVALID_PAYER_SIGNATURE)
+                                        .transfers(includingDeduction("node payment", "0.0.3"))));
     }
 
     private HapiSpec classifiableTakesPriorityOverUnclassifiable() {
@@ -160,17 +150,15 @@ public class DuplicateManagementTest extends HapiSuite {
                         usableTxnIdNamed("txnId").payerId("civilian"),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.3", 100_000_000L)))
                 .when(
-                        uncheckedSubmit(
-                                        cryptoCreate("nope")
-                                                .txnId("txnId")
-                                                .payingWith("civilian")
-                                                .setNode("0.0.4"))
-                                .logged(),
-                        uncheckedSubmit(
-                                cryptoCreate("sure")
+                        uncheckedSubmit(cryptoCreate("nope")
                                         .txnId("txnId")
                                         .payingWith("civilian")
-                                        .setNode("0.0.3")),
+                                        .setNode("0.0.4"))
+                                .logged(),
+                        uncheckedSubmit(cryptoCreate("sure")
+                                .txnId("txnId")
+                                .payingWith("civilian")
+                                .setNode("0.0.3")),
                         sleepFor(1_000L))
                 .then(
                         getReceipt("txnId")

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.queries.consensus;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
@@ -135,7 +136,9 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) {
         Query query = getTopicInfoQuery(spec, payment, false);
-        response = spec.clients().getConsSvcStub(targetNodeFor(spec), useTls).getTopicInfo(query);
+        response = spec.clients()
+                .getConsSvcStub(targetNodeFor(spec), useTls, spec.setup().workflowOperations())
+                .getTopicInfo(query);
         if (verboseLoggingOn) {
             log.info("Info: " + response.getConsensusGetTopicInfo().getTopicInfo());
         }
@@ -159,38 +162,18 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
         runningHashEntry.ifPresent(
                 entry -> runningHash = Optional.of(spec.registry().getBytes(entry)));
         runningHash.ifPresent(
-                exp ->
-                        assertArrayEquals(
-                                exp, info.getRunningHash().toByteArray(), "Bad running hash!"));
-        expiry.ifPresent(
-                exp -> assertEquals(exp, info.getExpirationTime().getSeconds(), "Bad expiry!"));
+                exp -> assertArrayEquals(exp, info.getRunningHash().toByteArray(), "Bad running hash!"));
+        expiry.ifPresent(exp -> assertEquals(exp, info.getExpirationTime().getSeconds(), "Bad expiry!"));
         autoRenewPeriod.ifPresent(
-                exp ->
-                        assertEquals(
-                                exp,
-                                info.getAutoRenewPeriod().getSeconds(),
-                                "Bad auto-renew period!"));
-        adminKey.ifPresent(
-                exp ->
-                        assertEquals(
-                                spec.registry().getKey(exp), info.getAdminKey(), "Bad admin key!"));
-        submitKey.ifPresent(
-                exp ->
-                        assertEquals(
-                                spec.registry().getKey(exp),
-                                info.getSubmitKey(),
-                                "Bad submit key!"));
+                exp -> assertEquals(exp, info.getAutoRenewPeriod().getSeconds(), "Bad auto-renew period!"));
+        adminKey.ifPresent(exp -> assertEquals(spec.registry().getKey(exp), info.getAdminKey(), "Bad admin key!"));
+        submitKey.ifPresent(exp -> assertEquals(spec.registry().getKey(exp), info.getSubmitKey(), "Bad submit key!"));
         autoRenewAccount.ifPresent(
-                exp ->
-                        assertEquals(
-                                asId(exp, spec),
-                                info.getAutoRenewAccount(),
-                                "Bad auto-renew account!"));
+                exp -> assertEquals(asId(exp, spec), info.getAutoRenewAccount(), "Bad auto-renew account!"));
         if (hasNoAdminKey) {
             assertFalse(info.hasAdminKey(), "Should have no admin key!");
         }
-        expectedLedgerId.ifPresent(
-                id -> Assertions.assertEquals(rationalize(id), info.getLedgerId()));
+        expectedLedgerId.ifPresent(id -> Assertions.assertEquals(rationalize(id), info.getLedgerId()));
     }
 
     @Override
@@ -201,17 +184,17 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
     @Override
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getTopicInfoQuery(spec, payment, true);
-        Response response =
-                spec.clients().getConsSvcStub(targetNodeFor(spec), useTls).getTopicInfo(query);
+        Response response = spec.clients()
+                .getConsSvcStub(targetNodeFor(spec), useTls, spec.setup().workflowOperations())
+                .getTopicInfo(query);
         return costFrom(response);
     }
 
     private Query getTopicInfoQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
-        ConsensusGetTopicInfoQuery topicGetInfo =
-                ConsensusGetTopicInfoQuery.newBuilder()
-                        .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
-                        .setTopicID(TxnUtils.asTopicId(topic, spec))
-                        .build();
+        ConsensusGetTopicInfoQuery topicGetInfo = ConsensusGetTopicInfoQuery.newBuilder()
+                .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
+                .setTopicID(TxnUtils.asTopicId(topic, spec))
+                .build();
         return Query.newBuilder().setConsensusGetTopicInfo(topicGetInfo).build();
     }
 

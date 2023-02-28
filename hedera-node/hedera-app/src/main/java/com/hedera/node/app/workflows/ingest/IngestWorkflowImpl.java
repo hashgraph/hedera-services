@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.ingest;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -27,15 +28,14 @@ import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -43,12 +43,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.inject.Inject;
 
 /** Implementation of {@link IngestWorkflow} */
 public final class IngestWorkflowImpl implements IngestWorkflow {
-
-    // TODO: Intermediate solution until we find a better way to get the service-key
-    private static final String TOKEN_SERVICE_KEY = new TokenServiceImpl().getServiceName();
 
     private final NodeInfo nodeInfo;
     private final CurrentPlatformStatus currentPlatformStatus;
@@ -65,14 +63,14 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
      * @param nodeInfo the {@link NodeInfo} of the current node
      * @param currentPlatformStatus the {@link CurrentPlatformStatus}
      * @param stateAccessor a {@link Supplier} that provides the latest immutable state
-     * @param onset the {@link WorkflowOnset} that pre-processes the {@link ByteBuffer} of a
-     *     transaction
+     * @param onset the {@link WorkflowOnset} that pre-processes the {@link ByteBuffer} of a transaction
      * @param checker the {@link IngestChecker} with specific checks of an ingest-workflow
      * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
      * @param opCounters the {@link HapiOpCounters} with workflow-specific metrics
      * @throws NullPointerException if one of the arguments is {@code null}
      */
+    @Inject
     public IngestWorkflowImpl(
             @NonNull final NodeInfo nodeInfo,
             @NonNull final CurrentPlatformStatus currentPlatformStatus,
@@ -146,28 +144,21 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 checker.checkTransactionSemantics(txBody, functionality);
 
                 // 4. Get payer account
-                final AccountID payerID = txBody.getTransactionID().getAccountID();
-                final var tokenStates = state.createReadableStates(TOKEN_SERVICE_KEY);
+                final var payerID = txBody.getTransactionID().getAccountID();
+                final var tokenStates = state.createReadableStates(TokenService.NAME);
                 final var accountStore = storeSupplier.apply(tokenStates);
-                final var payer =
-                        accountStore
-                                .getAccount(payerID)
-                                .orElseThrow(() -> new PreCheckException(PAYER_ACCOUNT_NOT_FOUND));
+                final var payer = accountStore
+                        .getAccount(payerID)
+                        .orElseThrow(() -> new PreCheckException(PAYER_ACCOUNT_NOT_FOUND));
 
                 // 5. Check payer's signature
-                checker.checkPayerSignature(txBody, signatureMap, payer);
+                checker.checkPayerSignature(state, requestBuffer, signatureMap, payerID);
 
                 // 6. Check account balance
                 checker.checkSolvency(txBody, functionality, payer);
 
                 // 7. Submit to platform
-                final byte[] byteArray;
-                if (requestBuffer.hasArray()) {
-                    byteArray = requestBuffer.array();
-                } else {
-                    byteArray = new byte[requestBuffer.limit()];
-                    requestBuffer.get(byteArray);
-                }
+                final var byteArray = checker.extractByteArray(requestBuffer);
                 submissionManager.submit(txBody, byteArray, ctx.txBodyParser());
 
                 opCounters.countSubmitted(functionality);

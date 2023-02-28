@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.contracts.operations;
 
 /*
@@ -64,10 +65,6 @@ public class HederaDelegateCallOperation extends DelegateCallOperation {
     @Override
     public OperationResult execute(MessageFrame frame, EVM evm) {
         return HederaEvmOperationsUtil.addressCheckExecution(
-                frame,
-                () -> to(frame),
-                () -> cost(frame),
-                () -> super.execute(frame, evm),
-                addressValidator);
+                frame, () -> to(frame), () -> cost(frame), () -> super.execute(frame, evm), addressValidator);
     }
 }

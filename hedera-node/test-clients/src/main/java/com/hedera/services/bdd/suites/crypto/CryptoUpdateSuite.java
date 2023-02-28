@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
@@ -42,6 +42,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -61,6 +62,8 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -76,34 +79,28 @@ public class CryptoUpdateSuite extends HapiSuite {
     public static final String UPD_KEY = "updKey";
 
     public static void main(String... args) {
-        new CryptoUpdateSuite().runSuiteAsync();
+        new CryptoUpdateSuite().runSuiteConcurrentWithOverrides(Map.of("spec.autoScheduledTxns", "CryptoUpdate"));
     }
 
-    private final SigControl twoLevelThresh =
-            SigControl.threshSigs(
-                    2,
-                    SigControl.threshSigs(1, ANY, ANY, ANY, ANY, ANY, ANY, ANY),
-                    SigControl.threshSigs(3, ANY, ANY, ANY, ANY, ANY, ANY, ANY));
+    private final SigControl twoLevelThresh = SigControl.threshSigs(
+            2,
+            SigControl.threshSigs(1, ANY, ANY, ANY, ANY, ANY, ANY, ANY),
+            SigControl.threshSigs(3, ANY, ANY, ANY, ANY, ANY, ANY, ANY));
     private final KeyLabel overlappingKeys =
-            complex(
-                    complex("A", "B", "C", "D", "E", "F", "G"),
-                    complex("H", "I", "J", "K", "L", "M", "A"));
+            complex(complex("A", "B", "C", "D", "E", "F", "G"), complex("H", "I", "J", "K", "L", "M", "A"));
 
-    private final SigControl ENOUGH_UNIQUE_SIGS =
-            SigControl.threshSigs(
-                    2,
-                    SigControl.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, ON),
-                    SigControl.threshSigs(3, ON, ON, ON, OFF, OFF, OFF, OFF));
-    private final SigControl NOT_ENOUGH_UNIQUE_SIGS =
-            SigControl.threshSigs(
-                    2,
-                    SigControl.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, OFF),
-                    SigControl.threshSigs(3, ON, ON, ON, OFF, OFF, OFF, OFF));
-    private final SigControl ENOUGH_OVERLAPPING_SIGS =
-            SigControl.threshSigs(
-                    2,
-                    SigControl.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, OFF),
-                    SigControl.threshSigs(3, ON, ON, OFF, OFF, OFF, OFF, ON));
+    private final SigControl ENOUGH_UNIQUE_SIGS = SigControl.threshSigs(
+            2,
+            SigControl.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, ON),
+            SigControl.threshSigs(3, ON, ON, ON, OFF, OFF, OFF, OFF));
+    private final SigControl NOT_ENOUGH_UNIQUE_SIGS = SigControl.threshSigs(
+            2,
+            SigControl.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, OFF),
+            SigControl.threshSigs(3, ON, ON, ON, OFF, OFF, OFF, OFF));
+    private final SigControl ENOUGH_OVERLAPPING_SIGS = SigControl.threshSigs(
+            2,
+            SigControl.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, OFF),
+            SigControl.threshSigs(3, ON, ON, OFF, OFF, OFF, OFF, ON));
 
     private final String TARGET_KEY = "twoLevelThreshWithOverlap";
     private final String TARGET_ACCOUNT = "complexKeyAccount";
@@ -141,28 +138,25 @@ public class CryptoUpdateSuite extends HapiSuite {
                                 .stakedAccountId("0.0.20")
                                 .declinedReward(true),
                         getAccountInfo("user")
-                                .has(
-                                        AccountInfoAsserts.accountWith()
-                                                .stakedAccountId("0.0.20")
-                                                .noStakingNodeId()
-                                                .isDeclinedReward(true))
+                                .has(AccountInfoAsserts.accountWith()
+                                        .stakedAccountId("0.0.20")
+                                        .noStakingNodeId()
+                                        .isDeclinedReward(true))
                                 .logged())
                 .when(
                         cryptoUpdate("user").newStakedNodeId(0L).newDeclinedReward(false),
                         getAccountInfo("user")
-                                .has(
-                                        AccountInfoAsserts.accountWith()
-                                                .noStakedAccountId()
-                                                .stakedNodeId(0L)
-                                                .isDeclinedReward(false))
+                                .has(AccountInfoAsserts.accountWith()
+                                        .noStakedAccountId()
+                                        .stakedNodeId(0L)
+                                        .isDeclinedReward(false))
                                 .logged(),
                         cryptoUpdate("user").newStakedNodeId(-1L),
                         getAccountInfo("user")
-                                .has(
-                                        AccountInfoAsserts.accountWith()
-                                                .noStakedAccountId()
-                                                .noStakingNodeId()
-                                                .isDeclinedReward(false))
+                                .has(AccountInfoAsserts.accountWith()
+                                        .noStakedAccountId()
+                                        .noStakingNodeId()
+                                        .isDeclinedReward(false))
                                 .logged())
                 .then(
                         cryptoUpdate("user")
@@ -170,19 +164,17 @@ public class CryptoUpdateSuite extends HapiSuite {
                                 .newStakedAccountId("0.0.20")
                                 .newDeclinedReward(true),
                         getAccountInfo("user")
-                                .has(
-                                        AccountInfoAsserts.accountWith()
-                                                .stakedAccountId("0.0.20")
-                                                .noStakingNodeId()
-                                                .isDeclinedReward(true))
+                                .has(AccountInfoAsserts.accountWith()
+                                        .stakedAccountId("0.0.20")
+                                        .noStakingNodeId()
+                                        .isDeclinedReward(true))
                                 .logged(),
                         cryptoUpdate("user").key(ADMIN_KEY).newStakedAccountId("0.0.0"),
                         getAccountInfo("user")
-                                .has(
-                                        AccountInfoAsserts.accountWith()
-                                                .noStakedAccountId()
-                                                .noStakingNodeId()
-                                                .isDeclinedReward(true))
+                                .has(AccountInfoAsserts.accountWith()
+                                        .noStakedAccountId()
+                                        .noStakingNodeId()
+                                        .isDeclinedReward(true))
                                 .logged());
     }
 
@@ -215,14 +207,11 @@ public class CryptoUpdateSuite extends HapiSuite {
                                 .payingWith("payer"),
                         getAccountInfo("canonicalAccount").exposingExpiry(expiration::set))
                 .when(
-                        sourcing(
-                                () ->
-                                        cryptoUpdate("canonicalAccount")
-                                                .payingWith("canonicalAccount")
-                                                .expiring(
-                                                        expiration.get() + THREE_MONTHS_IN_SECONDS)
-                                                .blankMemo()
-                                                .via(baseTxn)),
+                        sourcing(() -> cryptoUpdate("canonicalAccount")
+                                .payingWith("canonicalAccount")
+                                .expiring(expiration.get() + THREE_MONTHS_IN_SECONDS)
+                                .blankMemo()
+                                .via(baseTxn)),
                         cryptoUpdate("autoAssocTarget")
                                 .payingWith("autoAssocTarget")
                                 .blankMemo()
@@ -234,22 +223,18 @@ public class CryptoUpdateSuite extends HapiSuite {
                                 .maxAutomaticAssociations(11)
                                 .via(plusTenTxn))
                 .then(
-                        validateChargedUsd(baseTxn, baseFee),
-                        validateChargedUsd(plusOneTxn, plusOneSlotFee),
-                        validateChargedUsd(plusTenTxn, plusTenSlotsFee));
+                        validateChargedUsd(baseTxn, baseFee).skippedIfAutoScheduling(Set.of(CryptoUpdate)),
+                        validateChargedUsd(plusOneTxn, plusOneSlotFee).skippedIfAutoScheduling(Set.of(CryptoUpdate)),
+                        validateChargedUsd(plusTenTxn, plusTenSlotsFee).skippedIfAutoScheduling(Set.of(CryptoUpdate)));
     }
 
     private HapiSpec updateFailsWithOverlyLongLifetime() {
         final var smallBuffer = 12_345L;
-        final var excessiveExpiry =
-                DEFAULT_MAX_LIFETIME + Instant.now().getEpochSecond() + smallBuffer;
+        final var excessiveExpiry = DEFAULT_MAX_LIFETIME + Instant.now().getEpochSecond() + smallBuffer;
         return defaultHapiSpec("UpdateFailsWithOverlyLongLifetime")
                 .given(cryptoCreate(TARGET_ACCOUNT))
                 .when()
-                .then(
-                        cryptoUpdate(TARGET_ACCOUNT)
-                                .expiring(excessiveExpiry)
-                                .hasKnownStatus(INVALID_EXPIRATION_TIME));
+                .then(cryptoUpdate(TARGET_ACCOUNT).expiring(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME));
     }
 
     private HapiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
@@ -259,7 +244,9 @@ public class CryptoUpdateSuite extends HapiSuite {
         String secondKey = "secondKey";
 
         return defaultHapiSpec("sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign")
-                .given(newKeyNamed(firstKey).shape(SIMPLE), newKeyNamed(secondKey).shape(SIMPLE))
+                .given(
+                        newKeyNamed(firstKey).shape(SIMPLE),
+                        newKeyNamed(secondKey).shape(SIMPLE))
                 .when(cryptoCreate(randomAccount).key(firstKey))
                 .then(
                         cryptoUpdate(sysAccount)
@@ -285,10 +272,9 @@ public class CryptoUpdateSuite extends HapiSuite {
                                 .entityMemo(ZERO_BYTE_MEMO)
                                 .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
                         cryptoUpdate(TARGET_ACCOUNT).entityMemo(secondMemo))
-                .then(
-                        getAccountDetails(TARGET_ACCOUNT)
-                                .payingWith(GENESIS)
-                                .has(accountDetailsWith().memo(secondMemo)));
+                .then(getAccountDetails(TARGET_ACCOUNT)
+                        .payingWith(GENESIS)
+                        .has(accountDetailsWith().memo(secondMemo)));
     }
 
     private HapiSpec updateWithUniqueSigs() {
@@ -297,33 +283,28 @@ public class CryptoUpdateSuite extends HapiSuite {
                         newKeyNamed(TARGET_KEY).shape(twoLevelThresh).labels(overlappingKeys),
                         cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY))
                 .when()
-                .then(
-                        cryptoUpdate(TARGET_ACCOUNT)
-                                .sigControl(forKey(TARGET_KEY, ENOUGH_UNIQUE_SIGS))
-                                .receiverSigRequired(true));
+                .then(cryptoUpdate(TARGET_ACCOUNT)
+                        .sigControl(forKey(TARGET_KEY, ENOUGH_UNIQUE_SIGS))
+                        .receiverSigRequired(true));
     }
 
     private HapiSpec updateWithOneEffectiveSig() {
         KeyLabel oneUniqueKey =
-                complex(
-                        complex("X", "X", "X", "X", "X", "X", "X"),
-                        complex("X", "X", "X", "X", "X", "X", "X"));
-        SigControl singleSig =
-                SigControl.threshSigs(
-                        2,
-                        SigControl.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, OFF),
-                        SigControl.threshSigs(3, OFF, OFF, OFF, ON, OFF, OFF, OFF));
+                complex(complex("X", "X", "X", "X", "X", "X", "X"), complex("X", "X", "X", "X", "X", "X", "X"));
+        SigControl singleSig = SigControl.threshSigs(
+                2,
+                SigControl.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, OFF),
+                SigControl.threshSigs(3, OFF, OFF, OFF, ON, OFF, OFF, OFF));
 
         return defaultHapiSpec("UpdateWithOneEffectiveSig")
                 .given(
                         newKeyNamed(REPEATING_KEY).shape(twoLevelThresh).labels(oneUniqueKey),
                         cryptoCreate(TARGET_ACCOUNT).key(REPEATING_KEY).balance(1_000_000_000L))
                 .when()
-                .then(
-                        cryptoUpdate(TARGET_ACCOUNT)
-                                .sigControl(forKey(REPEATING_KEY, singleSig))
-                                .receiverSigRequired(true)
-                                .hasKnownStatus(SUCCESS));
+                .then(cryptoUpdate(TARGET_ACCOUNT)
+                        .sigControl(forKey(REPEATING_KEY, singleSig))
+                        .receiverSigRequired(true)
+                        .hasKnownStatus(SUCCESS));
     }
 
     private HapiSpec updateWithOverlappingSigs() {
@@ -332,21 +313,17 @@ public class CryptoUpdateSuite extends HapiSuite {
                         newKeyNamed(TARGET_KEY).shape(twoLevelThresh).labels(overlappingKeys),
                         cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY))
                 .when()
-                .then(
-                        cryptoUpdate(TARGET_ACCOUNT)
-                                .sigControl(forKey(TARGET_KEY, ENOUGH_OVERLAPPING_SIGS))
-                                .receiverSigRequired(true)
-                                .hasKnownStatus(SUCCESS));
+                .then(cryptoUpdate(TARGET_ACCOUNT)
+                        .sigControl(forKey(TARGET_KEY, ENOUGH_OVERLAPPING_SIGS))
+                        .receiverSigRequired(true)
+                        .hasKnownStatus(SUCCESS));
     }
 
     private HapiSpec updateFailsWithContractKey() {
         return defaultHapiSpec("UpdateFailsWithContractKey")
                 .given(cryptoCreate(TARGET_ACCOUNT))
                 .when()
-                .then(
-                        cryptoUpdate(TARGET_ACCOUNT)
-                                .usingContractKey()
-                                .hasKnownStatus(INVALID_SIGNATURE));
+                .then(cryptoUpdate(TARGET_ACCOUNT).usingContractKey().hasKnownStatus(INVALID_SIGNATURE));
     }
 
     private HapiSpec updateFailsWithInsufficientSigs() {
@@ -355,11 +332,10 @@ public class CryptoUpdateSuite extends HapiSuite {
                         newKeyNamed(TARGET_KEY).shape(twoLevelThresh).labels(overlappingKeys),
                         cryptoCreate(TARGET_ACCOUNT).key(TARGET_KEY))
                 .when()
-                .then(
-                        cryptoUpdate(TARGET_ACCOUNT)
-                                .sigControl(forKey(TARGET_KEY, NOT_ENOUGH_UNIQUE_SIGS))
-                                .receiverSigRequired(true)
-                                .hasKnownStatus(INVALID_SIGNATURE));
+                .then(cryptoUpdate(TARGET_ACCOUNT)
+                        .sigControl(forKey(TARGET_KEY, NOT_ENOUGH_UNIQUE_SIGS))
+                        .receiverSigRequired(true)
+                        .hasKnownStatus(INVALID_SIGNATURE));
     }
 
     private HapiSpec cannotSetThresholdNegative() {
@@ -370,27 +346,21 @@ public class CryptoUpdateSuite extends HapiSuite {
     }
 
     private HapiSpec updateFailsIfMissingSigs() {
-        SigControl origKeySigs =
-                SigControl.threshSigs(3, ON, ON, SigControl.threshSigs(1, OFF, ON));
-        SigControl updKeySigs =
-                SigControl.listSigs(ON, OFF, SigControl.threshSigs(1, ON, OFF, OFF, OFF));
+        SigControl origKeySigs = SigControl.threshSigs(3, ON, ON, SigControl.threshSigs(1, OFF, ON));
+        SigControl updKeySigs = SigControl.listSigs(ON, OFF, SigControl.threshSigs(1, ON, OFF, OFF, OFF));
 
         return defaultHapiSpec("UpdateFailsIfMissingSigs")
                 .given(
                         newKeyNamed(ORIG_KEY).shape(origKeySigs),
                         newKeyNamed(UPD_KEY).shape(updKeySigs))
-                .when(
-                        cryptoCreate(TEST_ACCOUNT)
-                                .receiverSigRequired(true)
-                                .key(ORIG_KEY)
-                                .sigControl(forKey(ORIG_KEY, origKeySigs)))
-                .then(
-                        cryptoUpdate(TEST_ACCOUNT)
-                                .key(UPD_KEY)
-                                .sigControl(
-                                        forKey(TEST_ACCOUNT, origKeySigs),
-                                        forKey(UPD_KEY, updKeySigs))
-                                .hasKnownStatus(INVALID_SIGNATURE));
+                .when(cryptoCreate(TEST_ACCOUNT)
+                        .receiverSigRequired(true)
+                        .key(ORIG_KEY)
+                        .sigControl(forKey(ORIG_KEY, origKeySigs)))
+                .then(cryptoUpdate(TEST_ACCOUNT)
+                        .key(UPD_KEY)
+                        .sigControl(forKey(TEST_ACCOUNT, origKeySigs), forKey(UPD_KEY, updKeySigs))
+                        .hasKnownStatus(INVALID_SIGNATURE));
     }
 
     private HapiSpec updateWithEmptyKeyFails() {
@@ -420,14 +390,12 @@ public class CryptoUpdateSuite extends HapiSuite {
         final String CONTRACT = "Multipurpose";
         final String ADMIN_KEY = "adminKey";
 
-        return onlyDefaultHapiSpec("updateMaxAutoAssociationsWorks")
+        return defaultHapiSpec("updateMaxAutoAssociationsWorks")
                 .given(
                         cryptoCreate(treasury).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed(ADMIN_KEY),
                         uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT)
-                                .adminKey(ADMIN_KEY)
-                                .maxAutomaticTokenAssociations(originalMax),
+                        contractCreate(CONTRACT).adminKey(ADMIN_KEY).maxAutomaticTokenAssociations(originalMax),
                         tokenCreate(tokenA)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .initialSupply(Long.MAX_VALUE)
@@ -441,9 +409,7 @@ public class CryptoUpdateSuite extends HapiSuite {
                                 .via(tokenBCreate),
                         getTxnRecord(tokenBCreate).hasNewTokenAssociation(tokenB, treasury),
                         getContractInfo(CONTRACT)
-                                .has(
-                                        ContractInfoAsserts.contractWith()
-                                                .maxAutoAssociations(originalMax))
+                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(originalMax))
                                 .logged())
                 .when(
                         cryptoTransfer(moving(1, tokenA).between(treasury, CONTRACT))
@@ -455,18 +421,16 @@ public class CryptoUpdateSuite extends HapiSuite {
                 .then(
                         getContractInfo(CONTRACT)
                                 .payingWith(GENESIS)
-                                .has(
-                                        contractWith()
-                                                .hasAlreadyUsedAutomaticAssociations(originalMax)
-                                                .maxAutoAssociations(originalMax)),
+                                .has(contractWith()
+                                        .hasAlreadyUsedAutomaticAssociations(originalMax)
+                                        .maxAutoAssociations(originalMax)),
                         contractUpdate(CONTRACT)
                                 .newMaxAutomaticAssociations(newBadMax)
                                 .hasKnownStatus(EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT),
                         contractUpdate(CONTRACT).newMaxAutomaticAssociations(newGoodMax),
                         contractUpdate(CONTRACT)
                                 .newMaxAutomaticAssociations(maxAllowedAssociations + 1)
-                                .hasKnownStatus(
-                                        REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT));
+                                .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT));
     }
 
     @Override

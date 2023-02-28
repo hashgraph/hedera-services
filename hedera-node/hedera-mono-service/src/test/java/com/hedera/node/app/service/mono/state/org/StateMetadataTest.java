@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.org;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -32,9 +33,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StateMetadataTest {
-    @Mock private ServicesApp app;
-    @Mock private FCHashMap<ByteString, EntityNum> aliases;
-    @Mock private FCHashMap<ByteString, EntityNum> copyAliases;
+    @Mock
+    private ServicesApp app;
+
+    @Mock
+    private FCHashMap<ByteString, EntityNum> aliases;
+
+    @Mock
+    private FCHashMap<ByteString, EntityNum> copyAliases;
 
     private StateMetadata subject;
 

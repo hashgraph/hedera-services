@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.validation;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
@@ -26,6 +27,7 @@ import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.exceptions.NegativeAccountBalanceException;
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -34,6 +36,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class BasedLedgerValidatorTest {
+
     private final long shard = 1;
     private final long realm = 2;
 
@@ -63,7 +66,7 @@ class BasedLedgerValidatorTest {
         accounts.put(EntityNum.fromLong(2L), expectedWith(50L));
 
         // expect:
-        assertDoesNotThrow(() -> subject.validate(AccountStorageAdapter.fromInMemory(accounts)));
+        assertDoesNotThrow(() -> subject.validate(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))));
     }
 
     @Test
@@ -72,7 +75,7 @@ class BasedLedgerValidatorTest {
         accounts.put(EntityNum.fromLong(1L), expectedWith(50L));
         accounts.put(EntityNum.fromLong(2L), expectedWith(51L));
 
-        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
+        final var adapter = AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts));
         // expect:
         assertThrows(IllegalStateException.class, () -> subject.validate(adapter));
     }
@@ -83,7 +86,7 @@ class BasedLedgerValidatorTest {
         accounts.put(EntityNum.fromLong(1L), expectedWith(Long.MAX_VALUE));
         accounts.put(EntityNum.fromLong(2L), expectedWith(51L));
 
-        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
+        final var adapter = AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts));
         // expect:
         assertThrows(IllegalStateException.class, () -> subject.validate(adapter));
     }
@@ -93,7 +96,7 @@ class BasedLedgerValidatorTest {
         // given:
         accounts.put(EntityNum.fromLong(3L), expectedWith(100L));
 
-        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
+        final var adapter = AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts));
         // expect:
         assertDoesNotThrow(() -> subject.validate(adapter));
     }
@@ -103,22 +106,20 @@ class BasedLedgerValidatorTest {
         // given:
         accounts.put(EntityNum.fromLong(0L), expectedWith(100L));
 
-        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
+        final var adapter = AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts));
         // expect:
         assertThrows(IllegalStateException.class, () -> subject.validate(adapter));
     }
 
-    private MerkleAccount expectedWith(long balance) throws NegativeAccountBalanceException {
-        MerkleAccount hAccount =
-                (MerkleAccount)
-                        new HederaAccountCustomizer()
-                                .isReceiverSigRequired(false)
-                                .proxy(MISSING_ENTITY_ID)
-                                .isDeleted(false)
-                                .expiry(1_234_567L)
-                                .memo("")
-                                .isSmartContract(false)
-                                .customizing(new MerkleAccount());
+    private MerkleAccount expectedWith(final long balance) throws NegativeAccountBalanceException {
+        final MerkleAccount hAccount = (MerkleAccount) new HederaAccountCustomizer()
+                .isReceiverSigRequired(false)
+                .proxy(MISSING_ENTITY_ID)
+                .isDeleted(false)
+                .expiry(1_234_567L)
+                .memo("")
+                .isSmartContract(false)
+                .customizing(new MerkleAccount());
         hAccount.setBalance(balance);
         return hAccount;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app;
 
 import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
 import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.WORKFLOWS_ENABLED;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.state.merkle.MerkleHederaState;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
@@ -28,11 +33,14 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
+import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.platform.Browser;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,7 +56,7 @@ public class ServicesMain implements SwirldMain {
 
     /**
      * Stores information related to the running of the Hedera application in the modular app. This
-     * is unused when the "hedera.workflows.enabled" flag is false.
+     * is unused when the "hedera.workflows.enabled" is empty.
      */
     private final Hedera hedera = new Hedera();
 
@@ -78,8 +86,9 @@ public class ServicesMain implements SwirldMain {
     }
 
     @Override
-    public ServicesState newState() {
-        return new ServicesState();
+    public SwirldState2 newState() {
+        final var workflowsEnabled = new BootstrapProperties(false).getFunctionsProperty(WORKFLOWS_ENABLED);
+        return stateWithWorkflowsEnabled(!workflowsEnabled.isEmpty());
     }
 
     @Override
@@ -87,13 +96,30 @@ public class ServicesMain implements SwirldMain {
         /* No-op. */
     }
 
+    SwirldState2 stateWithWorkflowsEnabled(final boolean enabled) {
+        return enabled ? newMerkleHederaState(Hedera::registerServiceSchemasForMigration) : new ServicesState();
+    }
+
+    MerkleHederaState newMerkleHederaState(
+            final Function<SemanticVersion, Consumer<MerkleHederaState>> migrationFactory) {
+        final var servicesSemVer = SEMANTIC_VERSIONS.deployedSoftwareVersion().getServices();
+        log.info("Registering schemas for migration to {}", servicesSemVer);
+        final var migration = migrationFactory.apply(servicesSemVer);
+        return new MerkleHederaState(
+                migration,
+                (event, metadata, provider) -> metadata.app().eventExpansion().expandAllSigs(event, provider),
+                (round, dualState, metadata) -> {
+                    final var metaApp = metadata.app();
+                    metaApp.dualStateAccessor().setDualState(dualState);
+                    metaApp.logic().incorporateConsensus(round);
+                });
+    }
+
     private void initApp() {
         if (defaultCharsetIsCorrect() && sha384DigestIsAvailable()) {
             try {
                 Locale.setDefault(Locale.US);
-                consoleLog(
-                        String.format(
-                                "Using context to initialize HederaNode#%s...", app.nodeId()));
+                consoleLog(String.format("Using context to initialize HederaNode#%s...", app.nodeId()));
                 doStagedInit();
             } catch (final Exception e) {
                 log.error("Fatal precondition violated in HederaNode#{}", app.nodeId(), e);
@@ -123,11 +149,14 @@ public class ServicesMain implements SwirldMain {
     }
 
     private void startNettyIfAppropriate() {
-        // The "hedera.workflows.enabled" feature flag indicates whether we enable the new gRPC
-        // server and workflows, or use the existing gRPC handlers in mono-service.
+        // The "hedera.workflows.enabled" is a list of HAPI operations indicates whether we enable the new gRPC
+        // server and workflows, or use the existing gRPC handlers in mono-service, for that specific HAPI operations.
         final var props = app.globalStaticProperties();
-        if (props.workflowsEnabled()) {
-            hedera.start(app, app.nodeLocalProperties().port());
+        if (!props.workflowsEnabled().isEmpty()) {
+            // If there are any operations that use new workflows, start both the new gRPC server and the old gRPC
+            // server on different ports.
+            hedera.start((HederaApp) app, app.nodeLocalProperties().workflowsPort());
+            app.grpcStarter().startIfAppropriate();
         } else {
             app.grpcStarter().startIfAppropriate();
         }
@@ -144,8 +173,7 @@ public class ServicesMain implements SwirldMain {
         final var notifications = app.notificationEngine().get();
         notifications.register(PlatformStatusChangeListener.class, app.statusChangeListener());
         notifications.register(ReconnectCompleteListener.class, app.reconnectListener());
-        notifications.register(
-                StateWriteToDiskCompleteListener.class, app.stateWriteToDiskListener());
+        notifications.register(StateWriteToDiskCompleteListener.class, app.stateWriteToDiskListener());
         notifications.register(NewSignedStateListener.class, app.newSignedStateListener());
         notifications.register(IssListener.class, app.issListener());
     }

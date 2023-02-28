@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.freeze;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -34,18 +35,14 @@ public class FreezeDockerNetwork extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    justFreeze(),
-                });
+        return List.of(new HapiSpec[] {
+            justFreeze(),
+        });
     }
 
     private HapiSpec justFreeze() {
         return customHapiSpec("JustFreeze")
-                .withProperties(
-                        Map.of(
-                                "nodes",
-                                "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"))
+                .withProperties(Map.of("nodes", "127.0.0.1:50213:0.0.3,127.0.0.1:50214:0.0.4,127.0.0.1:50215:0.0.5"))
                 .given()
                 .when()
                 .then(freezeOnly().startingIn(60).seconds());

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.infrastructure;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
@@ -96,6 +97,7 @@ public class HapiSpecRegistry {
         saveContractId(setup.invalidContractName(), setup.invalidContract());
         saveAccountId(setup.stakingRewardAccountName(), setup.stakingRewardAccount());
         saveAccountId(setup.nodeRewardAccountName(), setup.nodeRewardAccount());
+        saveAccountId(setup.feeCollectorAccountName(), setup.feeCollectorAccount());
 
         saveAccountId(setup.strongControlName(), setup.strongControlAccount());
         saveKey(setup.strongControlName(), asKeyList(genesisKey));
@@ -426,8 +428,7 @@ public class HapiSpecRegistry {
         }
     }
 
-    public void saveTopicMeta(
-            String name, ConsensusCreateTopicTransactionBody meta, Long approxConsensusTime) {
+    public void saveTopicMeta(String name, ConsensusCreateTopicTransactionBody meta, Long approxConsensusTime) {
         put(name, meta);
         put(name, approxConsensusTime + meta.getAutoRenewPeriod().getSeconds() + 60);
     }
@@ -817,8 +818,7 @@ public class HapiSpecRegistry {
         return get(name, type);
     }
 
-    private synchronized void remove(
-            String name, Class<?> type, Optional<HapiSpecOperation> cause) {
+    private synchronized void remove(String name, Class<?> type, Optional<HapiSpecOperation> cause) {
         registry.remove(full(name, type));
         notifyAllOnDelete(type, name, cause);
     }
@@ -828,12 +828,10 @@ public class HapiSpecRegistry {
     }
 
     private void notifyAllOnDelete(Class type, String name, Optional<HapiSpecOperation> cause) {
-        Optional.ofNullable(listenersByType.get(type))
-                .ifPresent(a -> a.forEach(l -> l.onDelete(name, cause)));
+        Optional.ofNullable(listenersByType.get(type)).ifPresent(a -> a.forEach(l -> l.onDelete(name, cause)));
     }
 
-    private synchronized void put(
-            String name, Object obj, Optional<HapiSpecOperation> cause, Class type) {
+    private synchronized void put(String name, Object obj, Optional<HapiSpecOperation> cause, Class type) {
         if (obj == null) {
             return;
         }
@@ -849,16 +847,12 @@ public class HapiSpecRegistry {
         put(name, obj, obj.getClass());
     }
 
-    private void notifyAllOnPut(
-            Class type, String name, Object value, Optional<HapiSpecOperation> cause) {
+    private void notifyAllOnPut(Class type, String name, Object value, Optional<HapiSpecOperation> cause) {
         Optional.ofNullable(listenersByType.get(type))
-                .ifPresent(
-                        a ->
-                                a.forEach(
-                                        l -> {
-                                            Class<?> lType = l.forType();
-                                            notifyOnPut(l, lType, name, value, cause);
-                                        }));
+                .ifPresent(a -> a.forEach(l -> {
+                    Class<?> lType = l.forType();
+                    notifyOnPut(l, lType, name, value, cause);
+                }));
     }
 
     private <T> void notifyOnPut(
@@ -902,10 +896,8 @@ public class HapiSpecRegistry {
     public List<String> stringValues() {
         return registry.entrySet().stream()
                 .filter(entry -> entry.getValue().getClass().equals(String.class))
-                .map(
-                        entry ->
-                                String.format(
-                                        "%s -> %s", entry.getKey(), entry.getValue().toString()))
+                .map(entry -> String.format(
+                        "%s -> %s", entry.getKey(), entry.getValue().toString()))
                 .collect(toList());
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs;
 
 import static com.hedera.node.app.service.mono.sigs.PlatformSigOps.createCryptoSigsFrom;
@@ -80,9 +81,7 @@ public class Rationalization {
         if (linkedRefs != null && linkedRefs.haveNoChangesAccordingTo(sigImpactHistorian)) {
             finalStatus = txnAccessor.getExpandedSigStatus();
             if (finalStatus == null) {
-                log.warn(
-                        "{} had non-null linked refs but null sig status",
-                        txnAccessor.getSignedTxnWrapper());
+                log.warn("{} had non-null linked refs but null sig status", txnAccessor.getSignedTxnWrapper());
             } else {
                 verifiedSync = false;
                 return;
@@ -137,18 +136,14 @@ public class Rationalization {
         } else {
             reqOthersSigs = lastOrderResult.getOrderedKeys();
             if (pkToSigFn.hasAtLeastOneUnusedSigWithFullPrefix()) {
-                pkToSigFn.forEachUnusedSigWithFullPrefix(
-                        (type, pubKey, sig) ->
-                                realOtherPartySigs.add(
-                                        bodySigningFactory.signAppropriately(type, pubKey, sig)));
+                pkToSigFn.forEachUnusedSigWithFullPrefix((type, pubKey, sig) ->
+                        realOtherPartySigs.add(bodySigningFactory.signAppropriately(type, pubKey, sig)));
             }
         }
 
         final var rationalizedPayerSigs = rationalize(realPayerSigs, 0);
-        final var rationalizedOtherPartySigs =
-                rationalize(realOtherPartySigs, realPayerSigs.size());
-        if (rationalizedPayerSigs == realPayerSigs
-                || rationalizedOtherPartySigs == realOtherPartySigs) {
+        final var rationalizedOtherPartySigs = rationalize(realOtherPartySigs, realPayerSigs.size());
+        if (rationalizedPayerSigs == realPayerSigs || rationalizedOtherPartySigs == realOtherPartySigs) {
             txnSigs = new ArrayList<>();
             txnSigs.addAll(rationalizedPayerSigs);
             txnSigs.addAll(rationalizedOtherPartySigs);
@@ -164,13 +159,11 @@ public class Rationalization {
         if (reqOthersSigs == null) {
             txnAccessor.setSigMeta(forPayerOnly(reqPayerSig, txnSigs, txnAccessor));
         } else {
-            txnAccessor.setSigMeta(
-                    forPayerAndOthers(reqPayerSig, reqOthersSigs, txnSigs, txnAccessor));
+            txnAccessor.setSigMeta(forPayerAndOthers(reqPayerSig, reqOthersSigs, txnSigs, txnAccessor));
         }
     }
 
-    private List<TransactionSignature> rationalize(
-            final List<TransactionSignature> realSigs, final int startingAt) {
+    private List<TransactionSignature> rationalize(final List<TransactionSignature> realSigs, final int startingAt) {
         final var maxSubListEnd = txnSigs.size();
         final var requestedSubListEnd = startingAt + realSigs.size();
         if (requestedSubListEnd <= maxSubListEnd) {
@@ -185,20 +178,12 @@ public class Rationalization {
         return realSigs;
     }
 
-    private ResponseCodeEnum expandIn(
-            final List<TransactionSignature> target, final Expansion.SigReqsFunction keysFn) {
-        lastOrderResult =
-                keysFn.apply(
-                        txnAccessor.getTxn(),
-                        CODE_ORDER_RESULT_FACTORY,
-                        null,
-                        txnAccessor.getPayer());
+    private ResponseCodeEnum expandIn(final List<TransactionSignature> target, final Expansion.SigReqsFunction keysFn) {
+        lastOrderResult = keysFn.apply(txnAccessor.getTxn(), CODE_ORDER_RESULT_FACTORY, null, txnAccessor.getPayer());
         if (lastOrderResult.hasErrorReport()) {
             return lastOrderResult.getErrorReport();
         }
-        final var creation =
-                createCryptoSigsFrom(
-                        lastOrderResult.getOrderedKeys(), pkToSigFn, bodySigningFactory);
+        final var creation = createCryptoSigsFrom(lastOrderResult.getOrderedKeys(), pkToSigFn, bodySigningFactory);
         if (creation.hasFailed()) {
             return creation.asCode();
         }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
@@ -59,9 +60,7 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 
     @Inject
     public CryptoDeleteTransitionLogic(
-            final HederaLedger ledger,
-            final SigImpactHistorian sigImpactHistorian,
-            final TransactionContext txnCtx) {
+            final HederaLedger ledger, final SigImpactHistorian sigImpactHistorian, final TransactionContext txnCtx) {
         this.ledger = ledger;
         this.txnCtx = txnCtx;
         this.sigImpactHistorian = sigImpactHistorian;

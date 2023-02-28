@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.spi.state.Serdes;
+import com.hedera.node.app.spi.state.serdes.ByteBufferDataInput;
+import com.hedera.node.app.spi.state.serdes.ByteBufferDataOutput;
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.node.app.state.merkle.data.ByteBufferDataInput;
-import com.hedera.node.app.state.merkle.data.ByteBufferDataOutput;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -68,7 +68,7 @@ public class OnDiskValue<V> implements VirtualValue {
     /** {@inheritDoc} */
     @Override
     public VirtualValue copy() {
-        throwIfImmutable();
+        //        throwIfImmutable();
         final var copy = new OnDiskValue<>(md, value);
         this.immutable = true;
         return copy;
@@ -101,8 +101,7 @@ public class OnDiskValue<V> implements VirtualValue {
 
     /** {@inheritDoc} */
     @Override
-    public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream)
-            throws IOException {
+    public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream) throws IOException {
         serdes.write(value, serializableDataOutputStream);
     }
 
@@ -115,10 +114,9 @@ public class OnDiskValue<V> implements VirtualValue {
 
     /** {@inheritDoc} */
     @Override
-    public void deserialize(
-            @NonNull final SerializableDataInputStream serializableDataInputStream, int ignored)
+    public void deserialize(@NonNull final SerializableDataInputStream serializableDataInputStream, int ignored)
             throws IOException {
-        value = serdes.parse(new DataInputStream(serializableDataInputStream));
+        value = serdes.parse(serializableDataInputStream);
     }
 
     /** {@inheritDoc} */

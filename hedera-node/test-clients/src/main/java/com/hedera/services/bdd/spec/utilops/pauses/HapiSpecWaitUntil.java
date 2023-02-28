@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops.pauses;
 
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
@@ -43,8 +44,7 @@ public class HapiSpecWaitUntil extends UtilOp {
         return new HapiSpecWaitUntil(stakePeriodMins);
     }
 
-    public static HapiSpecWaitUntil untilJustBeforeStakingPeriod(
-            final long stakePeriodMins, final long secondsBefore) {
+    public static HapiSpecWaitUntil untilJustBeforeStakingPeriod(final long stakePeriodMins, final long secondsBefore) {
         return new HapiSpecWaitUntil(stakePeriodMins, -secondsBefore);
     }
 

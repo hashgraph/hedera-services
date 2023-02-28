@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.contracts.sources;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -76,8 +77,7 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
             @NonNull final Address accountAddress,
             @NonNull final Address activeContract,
             @NonNull final WorldLedgers worldLedgers) {
-        return internalHasActiveKey(
-                isDelegateCall, accountAddress, activeContract, worldLedgers, null, null);
+        return internalHasActiveKey(isDelegateCall, accountAddress, activeContract, worldLedgers, null, null);
     }
 
     @Override
@@ -91,12 +91,7 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
         // The contracts (if any) that retain legacy activation for this account's key
         final var legacyActiveContracts = legacyActivations.getLegacyActiveContractsFor(account);
         return internalHasActiveKey(
-                isDelegateCall,
-                account,
-                activeContract,
-                worldLedgers,
-                legacyActivationTest,
-                legacyActiveContracts);
+                isDelegateCall, account, activeContract, worldLedgers, legacyActivationTest, legacyActiveContracts);
     }
 
     @Override
@@ -201,13 +196,7 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
         }
         final var requiredKey = receiverSigKeyIfAnyOf(accountId, worldLedgers);
         return requiredKey
-                .map(
-                        key ->
-                                isActiveInFrame(
-                                        key,
-                                        isDelegateCall,
-                                        activeContract,
-                                        worldLedgers.aliases()))
+                .map(key -> isActiveInFrame(key, isDelegateCall, activeContract, worldLedgers.aliases()))
                 .orElse(true);
     }
 
@@ -245,10 +234,7 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
     }
 
     private boolean isActiveInFrame(
-            final JKey key,
-            final boolean isDelegateCall,
-            final Address activeContract,
-            final ContractAliases aliases) {
+            final JKey key, final boolean isDelegateCall, final Address activeContract, final ContractAliases aliases) {
         return isActiveInFrame(key, isDelegateCall, activeContract, aliases, null, null);
     }
 
@@ -267,18 +253,11 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
         return activationTest.test(
                 key,
                 pkToCryptoSigsFn,
-                validityTestFor(
-                        isDelegateCall,
-                        activeContract,
-                        aliases,
-                        legacyActivationTest,
-                        legacyActiveContracts));
+                validityTestFor(isDelegateCall, activeContract, aliases, legacyActivationTest, legacyActiveContracts));
     }
 
     BiPredicate<JKey, TransactionSignature> validityTestFor(
-            final boolean isDelegateCall,
-            final Address activeContract,
-            final ContractAliases aliases) {
+            final boolean isDelegateCall, final Address activeContract, final ContractAliases aliases) {
         return validityTestFor(isDelegateCall, activeContract, aliases, null, null);
     }
 
@@ -293,21 +272,18 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
         // that key's verified cryptographic signature (if any was available in the sigMap)
         return (key, sig) -> {
             if (key.hasDelegatableContractId() || key.hasDelegatableContractAlias()) {
-                final var controllingId =
-                        key.hasDelegatableContractId()
-                                ? key.getDelegatableContractIdKey().getContractID()
-                                : key.getDelegatableContractAliasKey().getContractID();
+                final var controllingId = key.hasDelegatableContractId()
+                        ? key.getDelegatableContractIdKey().getContractID()
+                        : key.getDelegatableContractAliasKey().getContractID();
                 final var controllingContract = aliases.currentAddress(controllingId);
                 return controllingContract.equals(activeContract);
             } else if (key.hasContractID() || key.hasContractAlias()) {
-                final var controllingId =
-                        key.hasContractID()
-                                ? key.getContractIDKey().getContractID()
-                                : key.getContractAliasKey().getContractID();
+                final var controllingId = key.hasContractID()
+                        ? key.getContractIDKey().getContractID()
+                        : key.getContractAliasKey().getContractID();
                 final var controllingContract = aliases.currentAddress(controllingId);
                 return (!isDelegateCall && controllingContract.equals(activeContract))
-                        || hasLegacyActivation(
-                                controllingContract, legacyActivationTest, legacyActiveContracts);
+                        || hasLegacyActivation(controllingContract, legacyActivationTest, legacyActiveContracts);
             } else {
                 // Otherwise, apply the standard cryptographic validity test
                 return cryptoValidity.test(key, sig);
@@ -322,25 +298,20 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
         if (legacyActivationTest == null || legacyActiveContracts == null) {
             return false;
         }
-        return legacyActiveContracts.contains(contract)
-                && legacyActivationTest.stackIncludesReceiver(contract);
+        return legacyActiveContracts.contains(contract) && legacyActivationTest.stackIncludesReceiver(contract);
     }
 
-    private Optional<JKey> receiverSigKeyIfAnyOf(
-            final AccountID id, final WorldLedgers worldLedgers) {
+    private Optional<JKey> receiverSigKeyIfAnyOf(final AccountID id, final WorldLedgers worldLedgers) {
         final var accounts = worldLedgers.accounts();
         if (accounts == null) {
             // This must be a static call, hence cannot contain value and cannot require a signature
             return Optional.empty();
         }
-        return isReceiverSigExempt(id, accounts)
-                ? Optional.empty()
-                : Optional.ofNullable((JKey) accounts.get(id, KEY));
+        return isReceiverSigExempt(id, accounts) ? Optional.empty() : Optional.ofNullable((JKey) accounts.get(id, KEY));
     }
 
     private boolean isReceiverSigExempt(
-            final AccountID id,
-            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts) {
+            final AccountID id, final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts) {
         return !accounts.contains(id) || !(boolean) accounts.get(id, IS_RECEIVER_SIG_REQUIRED);
     }
 }

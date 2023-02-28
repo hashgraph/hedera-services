@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.network;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -35,17 +36,12 @@ class UncheckedSubmitTransitionLogicTest {
         var applicability = subject.applicability();
 
         // expect:
-        assertTrue(
-                applicability.test(
-                        TransactionBody.newBuilder()
-                                .setUncheckedSubmit(UncheckedSubmitBody.getDefaultInstance())
-                                .build()));
-        assertFalse(
-                applicability.test(
-                        TransactionBody.newBuilder()
-                                .setCryptoCreateAccount(
-                                        CryptoCreateTransactionBody.getDefaultInstance())
-                                .build()));
+        assertTrue(applicability.test(TransactionBody.newBuilder()
+                .setUncheckedSubmit(UncheckedSubmitBody.getDefaultInstance())
+                .build()));
+        assertFalse(applicability.test(TransactionBody.newBuilder()
+                .setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
+                .build()));
     }
 
     @Test

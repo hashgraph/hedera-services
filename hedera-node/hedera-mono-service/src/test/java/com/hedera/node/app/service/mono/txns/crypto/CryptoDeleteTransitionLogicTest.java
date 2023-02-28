@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -63,7 +64,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(LogCaptureExtension.class)
 class CryptoDeleteTransitionLogicTest {
     private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
-    private final AccountID target = AccountID.newBuilder().setAccountNum(9_999L).build();
+    private final AccountID target =
+            AccountID.newBuilder().setAccountNum(9_999L).build();
     private final boolean withKnownTreasury = true;
 
     private HederaLedger ledger;
@@ -72,8 +74,11 @@ class CryptoDeleteTransitionLogicTest {
     private TransactionContext txnCtx;
     private SignedTxnAccessor accessor;
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private CryptoDeleteTransitionLogic subject;
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private CryptoDeleteTransitionLogic subject;
 
     @BeforeEach
     void setup() {
@@ -102,8 +107,7 @@ class CryptoDeleteTransitionLogicTest {
 
         // expect:
         assertEquals(
-                TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT,
-                subject.semanticCheck().apply(cryptoDeleteTxn));
+                TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT, subject.semanticCheck().apply(cryptoDeleteTxn));
     }
 
     @Test
@@ -252,39 +256,33 @@ class CryptoDeleteTransitionLogicTest {
     }
 
     private void givenValidTxnCtx(AccountID transfer) {
-        cryptoDeleteTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(ourTxnId())
-                        .setCryptoDelete(
-                                CryptoDeleteTransactionBody.newBuilder()
-                                        .setDeleteAccountID(target)
-                                        .setTransferAccountID(transfer)
-                                        .build())
-                        .build();
+        cryptoDeleteTxn = TransactionBody.newBuilder()
+                .setTransactionID(ourTxnId())
+                .setCryptoDelete(CryptoDeleteTransactionBody.newBuilder()
+                        .setDeleteAccountID(target)
+                        .setTransferAccountID(transfer)
+                        .build())
+                .build();
         given(accessor.getTxn()).willReturn(cryptoDeleteTxn);
         given(txnCtx.accessor()).willReturn(accessor);
     }
 
     private void givenDeleteTxnMissingTarget() {
-        cryptoDeleteTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(ourTxnId())
-                        .setCryptoDelete(
-                                CryptoDeleteTransactionBody.newBuilder()
-                                        .setTransferAccountID(asAccount("0.0.1234"))
-                                        .build())
-                        .build();
+        cryptoDeleteTxn = TransactionBody.newBuilder()
+                .setTransactionID(ourTxnId())
+                .setCryptoDelete(CryptoDeleteTransactionBody.newBuilder()
+                        .setTransferAccountID(asAccount("0.0.1234"))
+                        .build())
+                .build();
     }
 
     private void givenDeleteTxnMissingTransfer() {
-        cryptoDeleteTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(ourTxnId())
-                        .setCryptoDelete(
-                                CryptoDeleteTransactionBody.newBuilder()
-                                        .setDeleteAccountID(asAccount("0.0.1234"))
-                                        .build())
-                        .build();
+        cryptoDeleteTxn = TransactionBody.newBuilder()
+                .setTransactionID(ourTxnId())
+                .setCryptoDelete(CryptoDeleteTransactionBody.newBuilder()
+                        .setDeleteAccountID(asAccount("0.0.1234"))
+                        .build())
+                .build();
     }
 
     private TransactionID ourTxnId() {

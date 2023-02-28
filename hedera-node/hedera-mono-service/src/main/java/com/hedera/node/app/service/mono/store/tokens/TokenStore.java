@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.tokens;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -87,15 +88,12 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
         if (tokenId == MISSING_TOKEN) {
             validity = INVALID_TOKEN_ID;
         }
-        if (change.hasExpectedDecimals()
-                && !matchesTokenDecimals(change.tokenId(), change.getExpectedDecimals())) {
+        if (change.hasExpectedDecimals() && !matchesTokenDecimals(change.tokenId(), change.getExpectedDecimals())) {
             validity = UNEXPECTED_TOKEN_DECIMALS;
         }
         if (validity == OK) {
             if (change.isForNft()) {
-                validity =
-                        changeOwner(
-                                change.nftId(), change.accountId(), change.counterPartyAccountId());
+                validity = changeOwner(change.nftId(), change.accountId(), change.counterPartyAccountId());
             } else {
                 validity = adjustBalance(change.accountId(), tokenId, change.getAggregatedUnits());
                 if (validity == INSUFFICIENT_TOKEN_BALANCE) {

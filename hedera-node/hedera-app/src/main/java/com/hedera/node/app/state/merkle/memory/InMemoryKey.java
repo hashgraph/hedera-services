@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle.memory;
 
 import com.swirlds.merkle.map.MerkleMap;
@@ -24,4 +25,4 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param key The key to use. Cannot be null.
  * @param <K> The type of the key
  */
-public record InMemoryKey<K extends Comparable<K>>(@NonNull K key) {}
+public record InMemoryKey<K extends Comparable<? super K>>(@NonNull K key) {}

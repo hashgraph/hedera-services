@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.models;
 
 import static org.apache.tuweni.units.bigints.UInt256.ZERO;
@@ -43,9 +44,14 @@ public class UpdatedHederaEvmAccount<A extends Account> implements MutableAccoun
     private HederaEvmEntityAccess hederaEvmEntityAccess;
     protected final NavigableMap<UInt256, UInt256> updatedStorage;
 
-    @Nullable protected final A account;
-    @Nullable protected Bytes updatedCode;
-    @Nullable private Hash updatedCodeHash;
+    @Nullable
+    protected final A account;
+
+    @Nullable
+    protected Bytes updatedCode;
+
+    @Nullable
+    private Hash updatedCodeHash;
 
     public UpdatedHederaEvmAccount(Address address) {
         this.address = address;
@@ -160,8 +166,7 @@ public class UpdatedHederaEvmAccount<A extends Account> implements MutableAccoun
     }
 
     @Override
-    public NavigableMap<Bytes32, AccountStorageEntry> storageEntriesFrom(
-            Bytes32 startKeyHash, int limit) {
+    public NavigableMap<Bytes32, AccountStorageEntry> storageEntriesFrom(Bytes32 startKeyHash, int limit) {
         return Collections.emptyNavigableMap();
     }
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
@@ -36,29 +37,31 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HbarFeeAssessorTest {
     private final List<AssessedCustomFeeWrapper> accumulator = new ArrayList<>();
 
-    @Mock private BalanceChange payerChange;
-    @Mock private BalanceChange collectorChange;
-    @Mock private BalanceChangeManager balanceChangeManager;
+    @Mock
+    private BalanceChange payerChange;
+
+    @Mock
+    private BalanceChange collectorChange;
+
+    @Mock
+    private BalanceChangeManager balanceChangeManager;
 
     private HbarFeeAssessor subject = new HbarFeeAssessor();
 
     @Test
     void updatesExistingChangesIfPresent() {
         // setup:
-        final var expectedFee =
-                new AssessedCustomFeeWrapper(hbarFeeCollector, amountOfHbarFee, effPayerNums);
+        final var expectedFee = new AssessedCustomFeeWrapper(hbarFeeCollector, amountOfHbarFee, effPayerNums);
 
         given(balanceChangeManager.changeFor(payer, Id.MISSING_ID)).willReturn(payerChange);
-        given(balanceChangeManager.changeFor(feeCollector, Id.MISSING_ID))
-                .willReturn(collectorChange);
+        given(balanceChangeManager.changeFor(feeCollector, Id.MISSING_ID)).willReturn(collectorChange);
 
         // when:
         subject.assess(payer, hbarFee, balanceChangeManager, accumulator);
 
         // then:
         verify(payerChange).aggregateUnits(-amountOfHbarFee);
-        verify(payerChange)
-                .setCodeForInsufficientBalance(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+        verify(payerChange).setCodeForInsufficientBalance(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
         // and:
         verify(collectorChange).aggregateUnits(+amountOfHbarFee);
         // and:
@@ -70,16 +73,14 @@ class HbarFeeAssessorTest {
     void addsNewChangesIfNotPresent() {
         // given:
         final var expectedPayerChange = BalanceChange.hbarCustomFeeAdjust(payer, -amountOfHbarFee);
-        expectedPayerChange.setCodeForInsufficientBalance(
-                INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+        expectedPayerChange.setCodeForInsufficientBalance(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
 
         // when:
         subject.assess(payer, hbarFee, balanceChangeManager, accumulator);
 
         // then:
         verify(balanceChangeManager).includeChange(expectedPayerChange);
-        verify(balanceChangeManager)
-                .includeChange(BalanceChange.hbarCustomFeeAdjust(feeCollector, +amountOfHbarFee));
+        verify(balanceChangeManager).includeChange(BalanceChange.hbarCustomFeeAdjust(feeCollector, +amountOfHbarFee));
     }
 
     private final long amountOfHbarFee = 100_000L;
@@ -88,6 +89,5 @@ class HbarFeeAssessorTest {
             new AccountID[] {AccountID.newBuilder().setAccountNum(2L).build()};
     private final Id feeCollector = new Id(1, 2, 3);
     private final EntityId hbarFeeCollector = feeCollector.asEntityId();
-    private final FcCustomFee hbarFee =
-            FcCustomFee.fixedFee(amountOfHbarFee, null, hbarFeeCollector, false);
+    private final FcCustomFee hbarFee = FcCustomFee.fixedFee(amountOfHbarFee, null, hbarFeeCollector, false);
 }

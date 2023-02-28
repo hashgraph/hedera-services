@@ -13,18 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.primitives;
 
-import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.ImmutableStateChildren;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.StateChildren;
+import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.exceptions.NoValidSignedStateException;
 import com.hedera.node.app.service.mono.state.migration.StateVersions;
 import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -40,9 +42,7 @@ public class SignedStateViewFactory {
 
     @Inject
     public SignedStateViewFactory(
-            final Platform platform,
-            final ScheduleStore scheduleStore,
-            final NetworkInfo nodeInfo) {
+            final Platform platform, final ScheduleStore scheduleStore, final NetworkInfo nodeInfo) {
         this.platform = platform;
         this.scheduleStore = scheduleStore;
         this.networkInfo = nodeInfo;
@@ -56,7 +56,7 @@ public class SignedStateViewFactory {
      */
     public void tryToUpdateToLatestSignedChildren(final MutableStateChildren children)
             throws NoValidSignedStateException {
-        doWithLatest(state -> children.updateFromImmutable(state, state.getTimeOfLastHandledTxn()));
+        doWithLatest(provider -> children.updateFromImmutable(provider, provider.getTimeOfLastHandledTxn()));
     }
 
     /**
@@ -82,25 +82,24 @@ public class SignedStateViewFactory {
      * @return the requested view, if present
      */
     public Optional<StateView> latestSignedStateView() {
-        return childrenOfLatestSignedState()
-                .map(children -> new StateView(scheduleStore, children, networkInfo));
+        return childrenOfLatestSignedState().map(children -> new StateView(scheduleStore, children, networkInfo));
     }
 
     /**
      * Checks if the provided state is usable as the latest signed state.
      *
-     * @param state a services state
+     * @param provider a services state
      * @return if the given state is usable
      */
-    public static boolean isUsable(final ServicesState state) {
-        if (state == null) {
+    public static boolean isUsable(final StateChildrenProvider provider) {
+        if (provider == null) {
             return false;
         }
         // Since we can't get the enclosing platform SignedState, we don't know exactly when this
         // state was signed.
         // So we just use, as a guaranteed lower bound, the consensus time of its last-handled
         // transaction.
-        final var latestSigningTime = state.getTimeOfLastHandledTxn();
+        final var latestSigningTime = provider.getTimeOfLastHandledTxn();
 
         // There are a few edge cases that disqualify a state:
         //   1. No transactions have been handled (latestSigningTime == null); abort now to avoid
@@ -110,8 +109,8 @@ public class SignedStateViewFactory {
         //   3. The state has not completed an init() call---again, likely a symptom of a larger
         // problem
         return latestSigningTime != null
-                && state.getStateVersion() == StateVersions.CURRENT_VERSION
-                && state.isInitialized();
+                && provider.getStateVersion() == StateVersions.CURRENT_VERSION
+                && provider.isInitialized();
     }
 
     /**
@@ -122,15 +121,13 @@ public class SignedStateViewFactory {
      * @param action what to do with the latest state
      * @throws NoValidSignedStateException
      */
-    private void doWithLatest(final Consumer<ServicesState> action)
-            throws NoValidSignedStateException {
-        try (final AutoCloseableWrapper<ServicesState> wrapper =
-                platform.getLatestImmutableState()) {
-            final var signedState = wrapper.get();
-            if (!isUsable(signedState)) {
+    private void doWithLatest(final Consumer<StateChildrenProvider> action) throws NoValidSignedStateException {
+        try (final AutoCloseableWrapper<SwirldState2> wrapper = platform.getLatestImmutableState()) {
+            final var provider = (StateChildrenProvider) wrapper.get();
+            if (!isUsable(provider)) {
                 throw new NoValidSignedStateException();
             }
-            action.accept(signedState);
+            action.accept(provider);
         }
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops.inventory;
 
 import static com.hedera.services.bdd.spec.keys.DefaultKeyGen.DEFAULT_KEY_GEN;
@@ -112,7 +113,8 @@ public class NewSpecKey extends UtilOp {
             final EdDSAPrivateKey privateKey = Ed25519Utils.keyFrom(curvePoint);
 
             final var pubKey = privateKey.getAbyte();
-            final var key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
+            final var key =
+                    Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
 
             spec.registry().saveKey(name, key);
             spec.keys().incorporate(name, privateKey);
@@ -142,8 +144,7 @@ public class NewSpecKey extends UtilOp {
             final var exportPass = immediateExportPass.get();
             exportWithPass(spec, name, exportLoc, exportPass);
             if (verboseLoggingOn && yahcliLogger) {
-                COMMON_MESSAGES.info(
-                        "Exported a newly generated key in PEM format to " + exportLoc);
+                COMMON_MESSAGES.info("Exported a newly generated key in PEM format to " + exportLoc);
             }
         }
         if (verboseLoggingOn && !yahcliLogger) {
@@ -159,8 +160,7 @@ public class NewSpecKey extends UtilOp {
         return false;
     }
 
-    static void exportWithPass(HapiSpec spec, String name, String exportLoc, String exportPass)
-            throws IOException {
+    static void exportWithPass(HapiSpec spec, String name, String exportLoc, String exportPass) throws IOException {
         spec.keys().exportSimpleKey(exportLoc, name, exportPass);
         final var passLoc = exportLoc.replace(".pem", ".pass");
         Files.writeString(Paths.get(passLoc), exportPass);

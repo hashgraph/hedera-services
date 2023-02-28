@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.store.contracts;
 
 import static com.hedera.node.app.service.mono.store.models.NftId.fromGrpc;
@@ -43,9 +44,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     UnaryOperator<byte[]> aliasResolver;
 
     public TokenAccessorImpl(
-            final WorldLedgers trackingLedgers,
-            ByteString ledgerId,
-            UnaryOperator<byte[]> aliasResolver) {
+            final WorldLedgers trackingLedgers, ByteString ledgerId, UnaryOperator<byte[]> aliasResolver) {
         this.trackingLedgers = trackingLedgers;
         this.ledgerId = ledgerId;
         this.aliasResolver = aliasResolver;
@@ -58,11 +57,10 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public Optional<EvmNftInfo> evmNftInfo(final Address token, long serialNo) {
-        final var target =
-                NftID.newBuilder()
-                        .setSerialNumber(serialNo)
-                        .setTokenID(tokenIdFromEvmAddress(token))
-                        .build();
+        final var target = NftID.newBuilder()
+                .setSerialNumber(serialNo)
+                .setTokenID(tokenIdFromEvmAddress(token))
+                .build();
         return trackingLedgers.evmNftInfo(target, ledgerId);
     }
 
@@ -74,8 +72,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public boolean isFrozen(Address account, Address token) {
         return trackingLedgers.isFrozen(
-                accountIdFromEvmAddress(aliasResolver.apply(account.toArrayUnsafe())),
-                tokenIdFromEvmAddress(token));
+                accountIdFromEvmAddress(aliasResolver.apply(account.toArrayUnsafe())), tokenIdFromEvmAddress(token));
     }
 
     @Override
@@ -91,8 +88,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public boolean isKyc(Address account, Address token) {
         return trackingLedgers.isKyc(
-                accountIdFromEvmAddress(aliasResolver.apply(account.toArrayUnsafe())),
-                tokenIdFromEvmAddress(token));
+                accountIdFromEvmAddress(aliasResolver.apply(account.toArrayUnsafe())), tokenIdFromEvmAddress(token));
     }
 
     @Override
@@ -107,9 +103,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public EvmKey keyOf(Address token, TokenKeyType keyType) {
-        final var key =
-                trackingLedgers.keyOf(
-                        tokenIdFromEvmAddress(token), TokenProperty.valueOf(keyType.name()));
+        final var key = trackingLedgers.keyOf(tokenIdFromEvmAddress(token), TokenProperty.valueOf(keyType.name()));
 
         return convertToEvmKey(asKeyUnchecked(key));
     }
@@ -137,8 +131,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public long balanceOf(Address account, Address token) {
         return trackingLedgers.balanceOf(
-                accountIdFromEvmAddress(aliasResolver.apply(account.toArrayUnsafe())),
-                tokenIdFromEvmAddress(token));
+                accountIdFromEvmAddress(aliasResolver.apply(account.toArrayUnsafe())), tokenIdFromEvmAddress(token));
     }
 
     @Override

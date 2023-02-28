@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.issues;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -42,12 +43,11 @@ public class Issue2051Spec extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    transferAccountCannotBeDeletedForContractTarget(),
-                    transferAccountCannotBeDeleted(),
-                    tbdCanPayForItsOwnDeletion(),
-                });
+        return List.of(new HapiSpec[] {
+            transferAccountCannotBeDeletedForContractTarget(),
+            transferAccountCannotBeDeleted(),
+            tbdCanPayForItsOwnDeletion(),
+        });
     }
 
     private HapiSpec tbdCanPayForItsOwnDeletion() {
@@ -74,16 +74,12 @@ public class Issue2051Spec extends HapiSuite {
                                 .transfer("transfer")
                                 .hasKnownStatus(ACCOUNT_DELETED),
                         getTxnRecord("deleteTxn").logged(),
-                        getAccountBalance("payer")
-                                .hasTinyBars(approxChangeFromSnapshot("snapshot", -9295610, 1000)));
+                        getAccountBalance("payer").hasTinyBars(approxChangeFromSnapshot("snapshot", -9295610, 1000)));
     }
 
     private HapiSpec transferAccountCannotBeDeletedForContractTarget() {
         return defaultHapiSpec("TransferAccountCannotBeDeletedForContractTarget")
-                .given(
-                        cryptoCreate("transfer"),
-                        contractCreate("tbd"),
-                        contractCreate("transferContract"))
+                .given(cryptoCreate("transfer"), contractCreate("tbd"), contractCreate("transferContract"))
                 .when(cryptoDelete("transfer"), contractDelete("transferContract"))
                 .then(
                         balanceSnapshot("snapshot", GENESIS),
@@ -96,9 +92,7 @@ public class Issue2051Spec extends HapiSuite {
                                 .transferContract("transferContract")
                                 .hasKnownStatus(CONTRACT_DELETED),
                         getTxnRecord("deleteTxn").logged(),
-                        getAccountBalance(GENESIS)
-                                .hasTinyBars(
-                                        approxChangeFromSnapshot("snapshot", -18985232, 1000)));
+                        getAccountBalance(GENESIS).hasTinyBars(approxChangeFromSnapshot("snapshot", -18985232, 1000)));
     }
 
     @Override

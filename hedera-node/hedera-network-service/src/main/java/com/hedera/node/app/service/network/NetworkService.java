@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.network;
 
 import com.hedera.node.app.spi.Service;
@@ -26,11 +27,12 @@ import java.util.ServiceLoader;
  * Service</a>.
  */
 public interface NetworkService extends Service {
+    String NAME = "NetworkService";
 
     @NonNull
     @Override
     default String getServiceName() {
-        return NetworkService.class.getSimpleName();
+        return NAME;
     }
 
     /**
@@ -40,7 +42,6 @@ public interface NetworkService extends Service {
      */
     @NonNull
     static NetworkService getInstance() {
-        return ServiceFactory.loadService(
-                NetworkService.class, ServiceLoader.load(NetworkService.class));
+        return ServiceFactory.loadService(NetworkService.class, ServiceLoader.load(NetworkService.class));
     }
 }

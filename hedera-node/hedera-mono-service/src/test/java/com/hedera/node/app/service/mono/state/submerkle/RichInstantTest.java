@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.*;
@@ -72,7 +73,8 @@ class RichInstantTest {
 
     @Test
     void viewWorks() {
-        final var grpc = Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
+        final var grpc =
+                Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
 
         assertEquals(grpc, subject.toGrpc());
     }
@@ -85,8 +87,7 @@ class RichInstantTest {
 
     @Test
     void toStringWorks() {
-        assertEquals(
-                "RichInstant{seconds=" + seconds + ", nanos=" + nanos + "}", subject.toString());
+        assertEquals("RichInstant{seconds=" + seconds + ", nanos=" + nanos + "}", subject.toString());
     }
 
     @Test
@@ -119,14 +120,12 @@ class RichInstantTest {
 
     @Test
     void javaFactoryWorks() {
-        assertEquals(
-                subject, fromJava(Instant.ofEpochSecond(subject.getSeconds(), subject.getNanos())));
+        assertEquals(subject, fromJava(Instant.ofEpochSecond(subject.getSeconds(), subject.getNanos())));
     }
 
     @Test
     void javaViewWorks() {
-        assertEquals(
-                Instant.ofEpochSecond(subject.getSeconds(), subject.getNanos()), subject.toJava());
+        assertEquals(Instant.ofEpochSecond(subject.getSeconds(), subject.getNanos()), subject.toJava());
     }
 
     @Test

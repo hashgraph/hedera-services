@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.misc;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -40,24 +41,22 @@ public class FreezeRekeyedState extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    freezeWithNewTreasuryKey(),
-                });
+        return List.of(new HapiSpec[] {
+            freezeWithNewTreasuryKey(),
+        });
     }
 
     private HapiSpec freezeWithNewTreasuryKey() {
         return customHapiSpec("FreezeWithNewTreasuryKey")
-                .withProperties(
-                        Map.of(
-                                "nodes",
-                                "localhost",
-                                "default.payer",
-                                "0.0.2",
-                                "default.payer.pemKeyLoc",
-                                newTreasuryPemLoc,
-                                "default.payer.pemKeyPassphrase",
-                                newTreasuryPassphrase))
+                .withProperties(Map.of(
+                        "nodes",
+                        "localhost",
+                        "default.payer",
+                        "0.0.2",
+                        "default.payer.pemKeyLoc",
+                        newTreasuryPemLoc,
+                        "default.payer.pemKeyPassphrase",
+                        newTreasuryPassphrase))
                 .given()
                 .when()
                 .then(freezeOnly().startingIn(60).seconds());

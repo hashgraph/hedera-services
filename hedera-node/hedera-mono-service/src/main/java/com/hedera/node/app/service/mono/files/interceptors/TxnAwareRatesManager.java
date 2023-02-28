@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.files.interceptors;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED;
@@ -104,8 +105,7 @@ public class TxnAwareRatesManager implements FileUpdateInterceptor {
     private Map.Entry<ResponseCodeEnum, Boolean> checkBound(Optional<ExchangeRateSet> rates) {
         var bound = properties.ratesIntradayChangeLimitPercent();
         var intradayLimit = intradayLimitFactory.apply(bound);
-        if (isSudoer()
-                || (rates.isPresent() && intradayLimit.test(midnightRates.get(), rates.get()))) {
+        if (isSudoer() || (rates.isPresent() && intradayLimit.test(midnightRates.get(), rates.get()))) {
             return YES_VERDICT;
         } else {
             return LIMIT_EXCEEDED_VERDICT;
@@ -124,10 +124,9 @@ public class TxnAwareRatesManager implements FileUpdateInterceptor {
                                     midnightRates.get().replaceWith(rates);
                                 }
                             },
-                            () ->
-                                    log.error(
-                                            "Rates postUpdate called with invalid data by {}!",
-                                            txnCtx.accessor().getSignedTxnWrapper()));
+                            () -> log.error(
+                                    "Rates postUpdate called with invalid data by {}!",
+                                    txnCtx.accessor().getSignedTxnWrapper()));
         }
     }
 

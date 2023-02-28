@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context;
 
 import com.hedera.node.app.service.mono.state.submerkle.EvmFnResult;
@@ -78,18 +79,17 @@ public class EvmFnResultBench {
 
     @Setup(Level.Trial)
     public void setupParams() {
-        params =
-                new EvmResultRandomParams(
-                        maxLogs,
-                        maxLogData,
-                        maxLogTopics,
-                        maxCreations,
-                        maxOutputWords,
-                        numAddressesWithChanges,
-                        numStateChangesPerAddress,
-                        creationProbability,
-                        callSuccessProbability,
-                        enableTraceability);
+        params = new EvmResultRandomParams(
+                maxLogs,
+                maxLogData,
+                maxLogTopics,
+                maxCreations,
+                maxOutputWords,
+                numAddressesWithChanges,
+                numStateChangesPerAddress,
+                creationProbability,
+                callSuccessProbability,
+                enableTraceability);
     }
 
     @Setup(Level.Iteration)

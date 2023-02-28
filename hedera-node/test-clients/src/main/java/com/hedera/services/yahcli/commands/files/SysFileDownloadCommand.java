@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.commands.files;
 
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED;
@@ -31,7 +32,8 @@ import picocli.CommandLine.ParentCommand;
         subcommands = {picocli.CommandLine.HelpCommand.class},
         description = "Downloads system files")
 public class SysFileDownloadCommand implements Callable<Integer> {
-    @ParentCommand private SysFilesCommand sysFilesCommand;
+    @ParentCommand
+    private SysFilesCommand sysFilesCommand;
 
     @CommandLine.Option(
             names = {"-d", "--dest-dir"},
@@ -42,11 +44,10 @@ public class SysFileDownloadCommand implements Callable<Integer> {
     @Parameters(
             arity = "1..*",
             paramLabel = "<sysfiles>",
-            description =
-                    "one or more from "
-                            + "{ address-book, node-details, fees, rates, props, "
-                            + "permissions, throttles, software-zip, telemetry-zip } (or "
-                            + "{ 101, 102, 111, 112, 121, 122, 123, 150, 159 })---or 'all'")
+            description = "one or more from "
+                    + "{ address-book, node-details, fees, rates, props, "
+                    + "permissions, throttles, software-zip, telemetry-zip } (or "
+                    + "{ 101, 102, 111, 112, 121, 122, 123, 150, 159 })---or 'all'")
     private String[] sysFiles;
 
     @Override

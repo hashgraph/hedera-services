@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.file;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -49,19 +50,13 @@ public class ValidateNewAddressBook extends HapiSuite {
                 .then(
                         getFileContents(NODE_DETAILS)
                                 .saveTo(path("nodeDetails.bin"))
-                                .saveReadableTo(
-                                        unchecked(NodeAddressBook::parseFrom),
-                                        path("nodeDetails.json")),
+                                .saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("nodeDetails.json")),
                         getFileContents(ADDRESS_BOOK)
                                 .saveTo(path("addressBook.bin"))
-                                .saveReadableTo(
-                                        unchecked(NodeAddressBook::parseFrom),
-                                        path("addressBook.txt")),
+                                .saveReadableTo(unchecked(NodeAddressBook::parseFrom), path("addressBook.txt")),
                         getFileContents(NODE_DETAILS)
                                 .saveTo(path("nodeDetails.bin"))
-                                .saveReadableTo(
-                                        SYS_FILE_SERDES.get(102L)::fromRawFile,
-                                        path("nodeDetails.json")));
+                                .saveReadableTo(SYS_FILE_SERDES.get(102L)::fromRawFile, path("nodeDetails.json")));
     }
 
     private String path(String file) {

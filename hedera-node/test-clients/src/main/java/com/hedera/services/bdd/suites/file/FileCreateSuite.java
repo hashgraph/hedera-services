@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.file;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -78,27 +79,22 @@ public class FileCreateSuite extends HapiSuite {
     private HapiSpec exchangeRateControlAccountIsntCharged() {
         return defaultHapiSpec("ExchangeRateControlAccountIsntCharged")
                 .given(
-                        cryptoTransfer(
-                                tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, 1_000_000_000_000L)),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, 1_000_000_000_000L)),
                         balanceSnapshot("pre", EXCHANGE_RATE_CONTROL),
                         getFileContents(EXCHANGE_RATES).saveTo("exchangeRates.bin"))
-                .when(
-                        fileUpdate(EXCHANGE_RATES)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .path(Path.of("./", "exchangeRates.bin").toString()))
-                .then(
-                        getAccountBalance(EXCHANGE_RATE_CONTROL)
-                                .hasTinyBars(changeFromSnapshot("pre", 0)));
+                .when(fileUpdate(EXCHANGE_RATES)
+                        .payingWith(EXCHANGE_RATE_CONTROL)
+                        .path(Path.of("./", "exchangeRates.bin").toString()))
+                .then(getAccountBalance(EXCHANGE_RATE_CONTROL).hasTinyBars(changeFromSnapshot("pre", 0)));
     }
 
     private HapiSpec createFailsWithExcessiveLifetime() {
         return defaultHapiSpec("CreateFailsWithExcessiveLifetime")
                 .given()
                 .when()
-                .then(
-                        fileCreate("test")
-                                .lifetime(defaultMaxLifetime + 12_345L)
-                                .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE));
+                .then(fileCreate("test")
+                        .lifetime(defaultMaxLifetime + 12_345L)
+                        .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
     private HapiSpec createWithMemoWorks() {
@@ -106,9 +102,7 @@ public class FileCreateSuite extends HapiSuite {
 
         return defaultHapiSpec("createWithMemoWorks")
                 .given(
-                        fileCreate("ntb")
-                                .entityMemo(ZERO_BYTE_MEMO)
-                                .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+                        fileCreate("ntb").entityMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
                         fileCreate("memorable").entityMemo(memo))
                 .when()
                 .then(getFileInfo("memorable").hasExpectedLedgerId("0x03").hasMemo(memo));
@@ -131,8 +125,11 @@ public class FileCreateSuite extends HapiSuite {
     }
 
     private static Transaction replaceTxnNodeAccount(Transaction txn) {
-        AccountID badNodeAccount =
-                AccountID.newBuilder().setAccountNum(2000).setRealmNum(0).setShardNum(0).build();
+        AccountID badNodeAccount = AccountID.newBuilder()
+                .setAccountNum(2000)
+                .setRealmNum(0)
+                .setShardNum(0)
+                .build();
         return TxnUtils.replaceTxnNodeAccount(txn, badNodeAccount);
     }
 
@@ -143,13 +140,12 @@ public class FileCreateSuite extends HapiSuite {
         return defaultHapiSpec("CreateFailsWithPayerAccountNotFound")
                 .given()
                 .when()
-                .then(
-                        fileCreate("test")
-                                .withProtoStructure(HapiSpecSetup.TxnProtoStructure.OLD)
-                                .waclShape(shape)
-                                .sigControl(forKey("test", validSig))
-                                .scrambleTxnBody(FileCreateSuite::replaceTxnNodeAccount)
-                                .hasPrecheckFrom(INVALID_NODE_ACCOUNT));
+                .then(fileCreate("test")
+                        .withProtoStructure(HapiSpecSetup.TxnProtoStructure.OLD)
+                        .waclShape(shape)
+                        .sigControl(forKey("test", validSig))
+                        .scrambleTxnBody(FileCreateSuite::replaceTxnNodeAccount)
+                        .hasPrecheckFrom(INVALID_NODE_ACCOUNT));
     }
 
     @Override

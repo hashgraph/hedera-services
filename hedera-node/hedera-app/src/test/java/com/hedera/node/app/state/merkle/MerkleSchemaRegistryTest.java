@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.state.merkle;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -87,8 +88,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         @DisplayName("Registering with a null Schema throws NPE")
         void nullSchemaThrows() {
             //noinspection DataFlowIssue
-            assertThatThrownBy(() -> schemaRegistry.register(null))
-                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> schemaRegistry.register(null)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
@@ -122,8 +122,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
 
         @Test
         @DisplayName(
-                "Registering two schemas that are different but have the same version number, the"
-                        + " second is used")
+                "Registering two schemas that are different but have the same version number, the" + " second is used")
         void registerSameVersionDifferentInstances() {
             // Given two schemas which do different things but have the same version
             final var schema1 = Mockito.spy(new TestSchema(10));
@@ -142,7 +141,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         /** Utility method that migrates from version 9 to 10 */
         void migrateFromV9ToV10() {
             schemaRegistry.migrate(
-                    new MerkleHederaState(tree -> {}, (e) -> {}, (round, dualState) -> {}),
+                    new MerkleHederaState(tree -> {}, (e, m, p) -> {}, (round, dualState, metadata) -> {}),
                     version(9, 0, 0),
                     version(10, 0, 0));
         }
@@ -156,7 +155,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
 
         @BeforeEach
         void setUp() {
-            merkleTree = new MerkleHederaState(tree -> {}, (e) -> {}, (round, dualState) -> {});
+            merkleTree = new MerkleHederaState(tree -> {}, (e, m, p) -> {}, (r, ds, m) -> {});
 
             // Let the first version[0] be null, and all others have a number
             versions = new SemanticVersion[10];
@@ -259,7 +258,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
             var prev = itr.next();
             while (itr.hasNext()) {
                 final var ver = itr.next();
-                assertThat(SemanticVersionComparator.INSTANCE.compare(ver, prev)).isPositive();
+                assertThat(SemanticVersionComparator.INSTANCE.compare(ver, prev))
+                        .isPositive();
                 prev = ver;
             }
         }
@@ -301,20 +301,15 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     @Override
                     @SuppressWarnings("rawtypes")
                     public Set<StateDefinition> statesToCreate() {
-                        final var fruitDef =
-                                StateDefinition.inMemory(
-                                        FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES);
+                        final var fruitDef = StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES);
                         return Set.of(fruitDef);
                     }
 
                     @Override
-                    public void migrate(
-                            @NonNull ReadableStates previousStates,
-                            @NonNull WritableStates newStates) {
+                    public void migrate(@NonNull ReadableStates previousStates, @NonNull WritableStates newStates) {
                         assertThat(previousStates.isEmpty()).isTrue();
                         assertThat(newStates.size()).isEqualTo(1);
-                        final WritableKVState<String, String> fruit =
-                                newStates.get(FRUIT_STATE_KEY);
+                        final WritableKVState<String, String> fruit = newStates.get(FRUIT_STATE_KEY);
                         fruit.put(A_KEY, APPLE);
                         fruit.put(B_KEY, BANANA);
                         fruit.put(C_KEY, CHERRY);
@@ -329,23 +324,18 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     @SuppressWarnings("rawtypes")
                     public Set<StateDefinition> statesToCreate() {
                         final var animalDef =
-                                StateDefinition.onDisk(
-                                        ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES, 100);
-                        final var countryDef =
-                                StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_SERDES);
+                                StateDefinition.onDisk(ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES, 100);
+                        final var countryDef = StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_SERDES);
                         return Set.of(animalDef, countryDef);
                     }
 
                     @Override
-                    public void migrate(
-                            @NonNull ReadableStates previousStates,
-                            @NonNull WritableStates newStates) {
+                    public void migrate(@NonNull ReadableStates previousStates, @NonNull WritableStates newStates) {
                         // First check that the previous states only includes what was there before,
                         // and nothing new
                         assertThat(previousStates.isEmpty()).isFalse();
                         assertThat(previousStates.contains(FRUIT_STATE_KEY)).isTrue();
-                        final ReadableKVState<String, String> oldFruit =
-                                previousStates.get(FRUIT_STATE_KEY);
+                        final ReadableKVState<String, String> oldFruit = previousStates.get(FRUIT_STATE_KEY);
                         assertThat(oldFruit.keys()).toIterable().hasSize(3);
                         assertThat(oldFruit.get(A_KEY)).isEqualTo(APPLE);
                         assertThat(oldFruit.get(B_KEY)).isEqualTo(BANANA);
@@ -358,21 +348,18 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         assertThat(newStates.contains(COUNTRY_STATE_KEY)).isTrue();
 
                         // Add in the new animals
-                        final WritableKVState<String, String> animals =
-                                newStates.get(ANIMAL_STATE_KEY);
+                        final WritableKVState<String, String> animals = newStates.get(ANIMAL_STATE_KEY);
                         animals.put(A_KEY, AARDVARK);
                         animals.put(B_KEY, BEAR);
 
                         // Remove, update, and add fruit
-                        final WritableKVState<String, String> fruit =
-                                newStates.get(FRUIT_STATE_KEY);
+                        final WritableKVState<String, String> fruit = newStates.get(FRUIT_STATE_KEY);
                         fruit.remove(A_KEY);
                         fruit.put(B_KEY, BLACKBERRY);
                         fruit.put(E_KEY, EGGPLANT);
 
                         // Initialize the COUNTRY to be BRAZIL
-                        final WritableSingletonState<String> country =
-                                newStates.getSingleton(COUNTRY_STATE_KEY);
+                        final WritableSingletonState<String> country = newStates.getSingleton(COUNTRY_STATE_KEY);
                         country.put(BRAZIL);
 
                         // And the old states shouldn't have a COUNTRY_STATE_KEY
@@ -396,23 +383,16 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     }
 
                     @Override
-                    public void migrate(
-                            @NonNull ReadableStates previousStates,
-                            @NonNull WritableStates newStates) {
+                    public void migrate(@NonNull ReadableStates previousStates, @NonNull WritableStates newStates) {
                         // Verify that everything in v2 is still here
                         assertThat(previousStates.stateKeys())
-                                .containsExactlyInAnyOrder(
-                                        FRUIT_STATE_KEY, ANIMAL_STATE_KEY, COUNTRY_STATE_KEY);
-                        final ReadableKVState<String, String> oldFruit =
-                                previousStates.get(FRUIT_STATE_KEY);
-                        assertThat(oldFruit.keys())
-                                .toIterable()
-                                .containsExactlyInAnyOrder(B_KEY, C_KEY, E_KEY);
+                                .containsExactlyInAnyOrder(FRUIT_STATE_KEY, ANIMAL_STATE_KEY, COUNTRY_STATE_KEY);
+                        final ReadableKVState<String, String> oldFruit = previousStates.get(FRUIT_STATE_KEY);
+                        assertThat(oldFruit.keys()).toIterable().containsExactlyInAnyOrder(B_KEY, C_KEY, E_KEY);
                         assertThat(oldFruit.get(B_KEY)).isEqualTo(BLACKBERRY);
                         assertThat(oldFruit.get(C_KEY)).isEqualTo(CHERRY);
                         assertThat(oldFruit.get(E_KEY)).isEqualTo(EGGPLANT);
-                        final ReadableKVState<String, String> oldAnimals =
-                                previousStates.get(ANIMAL_STATE_KEY);
+                        final ReadableKVState<String, String> oldAnimals = previousStates.get(ANIMAL_STATE_KEY);
                         assertThat(oldAnimals.get(A_KEY)).isEqualTo(AARDVARK);
                         assertThat(oldAnimals.get(B_KEY)).isEqualTo(BEAR);
 
@@ -422,14 +402,12 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         assertThat(newStates.contains(ANIMAL_STATE_KEY)).isTrue();
 
                         // Add in a new animal
-                        final WritableKVState<String, String> animals =
-                                newStates.get(ANIMAL_STATE_KEY);
+                        final WritableKVState<String, String> animals = newStates.get(ANIMAL_STATE_KEY);
                         animals.put(C_KEY, CUTTLEFISH);
 
                         // And I should still see the COUNTRY_STATE_KEY in the previousStates,
                         // but not in the newStates
-                        final ReadableSingletonState<String> country =
-                                previousStates.getSingleton(COUNTRY_STATE_KEY);
+                        final ReadableSingletonState<String> country = previousStates.getSingleton(COUNTRY_STATE_KEY);
                         assertThat(country.get()).isEqualTo(BRAZIL);
                         assertThat(newStates.contains(COUNTRY_STATE_KEY)).isFalse();
 
@@ -441,9 +419,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
             }
 
             @Test
-            @DisplayName(
-                    "Migration from genesis sees nothing in oldStates but can insert into new"
-                            + " states")
+            @DisplayName("Migration from genesis sees nothing in oldStates but can insert into new" + " states")
             void genesis() {
                 // Given a schema that adds the FRUIT state with k/v for A, B, and C
                 final var schemaV1 = createV1Schema();
@@ -456,9 +432,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                 final var readableStates = merkleTree.createReadableStates(FIRST_SERVICE);
                 assertThat(readableStates.size()).isEqualTo(1);
                 final ReadableKVState<String, String> fruitV1 = readableStates.get(FRUIT_STATE_KEY);
-                assertThat(fruitV1.keys())
-                        .toIterable()
-                        .containsExactlyInAnyOrder(A_KEY, B_KEY, C_KEY);
+                assertThat(fruitV1.keys()).toIterable().containsExactlyInAnyOrder(A_KEY, B_KEY, C_KEY);
             }
 
             @Test
@@ -478,18 +452,14 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                 assertThat(readableStates.size()).isEqualTo(3);
 
                 final ReadableKVState<String, String> fruitV2 = readableStates.get(FRUIT_STATE_KEY);
-                assertThat(fruitV2.keys())
-                        .toIterable()
-                        .containsExactlyInAnyOrder(B_KEY, C_KEY, E_KEY);
+                assertThat(fruitV2.keys()).toIterable().containsExactlyInAnyOrder(B_KEY, C_KEY, E_KEY);
                 assertThat(fruitV2.get(B_KEY)).isEqualTo(BLACKBERRY);
 
-                final ReadableKVState<String, String> animalV2 =
-                        readableStates.get(ANIMAL_STATE_KEY);
+                final ReadableKVState<String, String> animalV2 = readableStates.get(ANIMAL_STATE_KEY);
                 assertThat(animalV2.get(A_KEY)).isEqualTo(AARDVARK);
                 assertThat(animalV2.get(B_KEY)).isEqualTo(BEAR);
 
-                final ReadableSingletonState<String> countryV2 =
-                        readableStates.getSingleton(COUNTRY_STATE_KEY);
+                final ReadableSingletonState<String> countryV2 = readableStates.getSingleton(COUNTRY_STATE_KEY);
                 assertThat(countryV2.get()).isEqualTo(BRAZIL);
             }
 
@@ -519,8 +489,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         .isInstanceOf(IllegalArgumentException.class);
 
                 // And this should be updated
-                final ReadableKVState<String, String> animalV2 =
-                        readableStates.get(ANIMAL_STATE_KEY);
+                final ReadableKVState<String, String> animalV2 = readableStates.get(ANIMAL_STATE_KEY);
                 assertThat(animalV2.get(A_KEY)).isEqualTo(AARDVARK);
                 assertThat(animalV2.get(B_KEY)).isEqualTo(BEAR);
                 assertThat(animalV2.get(C_KEY)).isEqualTo(CUTTLEFISH);
@@ -531,12 +500,9 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
             void badSchema() {
                 // Given a bad schema followed by a good one
                 final var schemaV2Called = new AtomicBoolean(false);
-                final var schemaV1 =
-                        new TestSchema(
-                                versions[1],
-                                () -> {
-                                    throw new RuntimeException("Bad");
-                                });
+                final var schemaV1 = new TestSchema(versions[1], () -> {
+                    throw new RuntimeException("Bad");
+                });
                 final var schemaV2 = new TestSchema(versions[2], () -> schemaV2Called.set(true));
 
                 // When we migrate
@@ -544,8 +510,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                 schemaRegistry.register(schemaV2);
 
                 // We should see that the migration failed
-                assertThatThrownBy(
-                                () -> schemaRegistry.migrate(merkleTree, versions[0], versions[2]))
+                assertThatThrownBy(() -> schemaRegistry.migrate(merkleTree, versions[0], versions[2]))
                         .isInstanceOf(RuntimeException.class)
                         .hasMessage("Bad");
 
@@ -554,8 +519,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
             }
 
             @Test
-            @DisplayName(
-                    "If something unexpected fails with the ConstructableRegistry, migration fails")
+            @DisplayName("If something unexpected fails with the ConstructableRegistry, migration fails")
             void badRegistry() throws ConstructableRegistryException {
                 // Given a bad registry
                 Mockito.doThrow(new ConstructableRegistryException("Blew Up In Test"))

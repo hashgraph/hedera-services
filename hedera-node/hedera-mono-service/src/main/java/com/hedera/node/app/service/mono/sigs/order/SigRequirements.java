@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.order;
 
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.IMMUTABLE_ACCOUNT;
@@ -84,14 +85,12 @@ import java.util.function.Predicate;
  * an equivalent decision for a crypto account.
  */
 public class SigRequirements {
-    private static final Set<KeyOrderingFailure> INVALID_ACCOUNT_CODES =
-            EnumSet.of(MISSING_ACCOUNT, IMMUTABLE_ACCOUNT);
+    private static final Set<KeyOrderingFailure> INVALID_ACCOUNT_CODES = EnumSet.of(MISSING_ACCOUNT, IMMUTABLE_ACCOUNT);
 
     private final SignatureWaivers signatureWaivers;
     private final SigMetadataLookup sigMetaLookup;
 
-    public SigRequirements(
-            final SigMetadataLookup sigMetaLookup, final SignatureWaivers signatureWaivers) {
+    public SigRequirements(final SigMetadataLookup sigMetaLookup, final SignatureWaivers signatureWaivers) {
         this.sigMetaLookup = sigMetaLookup;
         this.signatureWaivers = signatureWaivers;
     }
@@ -200,9 +199,7 @@ public class SigRequirements {
     }
 
     private <T> SigningOrderResult<T> orderForPayer(
-            final SigningOrderResultFactory<T> factory,
-            final @Nullable LinkedRefs linkedRefs,
-            final AccountID payer) {
+            final SigningOrderResultFactory<T> factory, final @Nullable LinkedRefs linkedRefs, final AccountID payer) {
         final var result = sigMetaLookup.accountSigningMetaFor(payer, linkedRefs);
         if (result.succeeded()) {
             return factory.forValidOrder(List.of(result.metadata().key()));
@@ -254,8 +251,7 @@ public class SigRequirements {
                     linkedRefs);
         } else if (txn.hasCryptoDeleteAllowance()) {
             final var deleteAllowanceTxn = txn.getCryptoDeleteAllowance();
-            return cryptoDeleteAllowance(
-                    payer, deleteAllowanceTxn.getNftAllowancesList(), factory, linkedRefs);
+            return cryptoDeleteAllowance(payer, deleteAllowanceTxn.getNftAllowancesList(), factory, linkedRefs);
         } else {
             return null;
         }
@@ -307,8 +303,7 @@ public class SigRequirements {
         } else if (txn.hasTokenUpdate()) {
             return tokenUpdates(payer, txn.getTokenUpdate(), factory, linkedRefs);
         } else if (txn.hasTokenFeeScheduleUpdate()) {
-            return tokenFeeScheduleUpdates(
-                    payer, txn.getTokenFeeScheduleUpdate(), factory, linkedRefs);
+            return tokenFeeScheduleUpdates(payer, txn.getTokenFeeScheduleUpdate(), factory, linkedRefs);
         } else if (txn.hasTokenPause()) {
             return tokenPausing(txn.getTokenPause().getToken(), factory, linkedRefs);
         } else if (txn.hasTokenUnpause()) {
@@ -370,8 +365,7 @@ public class SigRequirements {
 
         if (op.hasTransferAccountID()) {
             final var beneficiary = op.getTransferAccountID();
-            final var beneficiaryResult =
-                    sigMetaLookup.accountSigningMetaFor(beneficiary, linkedRefs);
+            final var beneficiaryResult = sigMetaLookup.accountSigningMetaFor(beneficiary, linkedRefs);
             if (!beneficiaryResult.succeeded()) {
                 return factory.forInvalidAccount();
             } else if (beneficiaryResult.metadata().receiverSigRequired()) {
@@ -379,8 +373,7 @@ public class SigRequirements {
             }
         } else if (op.hasTransferContractID()) {
             final var beneficiary = op.getTransferContractID();
-            final var beneficiaryResult =
-                    sigMetaLookup.aliasableContractSigningMetaFor(beneficiary, linkedRefs);
+            final var beneficiaryResult = sigMetaLookup.aliasableContractSigningMetaFor(beneficiary, linkedRefs);
             if (!beneficiaryResult.succeeded()) {
                 return factory.forInvalidContract();
             } else if (beneficiaryResult.metadata().receiverSigRequired()) {
@@ -460,21 +453,17 @@ public class SigRequirements {
             required = mutable(required);
             required.add(autoRenewAccountResult.metadata().key());
         }
-        return !required.isEmpty()
-                ? factory.forValidOrder(required)
-                : SigningOrderResult.noKnownKeys();
+        return !required.isEmpty() ? factory.forValidOrder(required) : SigningOrderResult.noKnownKeys();
     }
 
     private boolean hasAutoRenewId(final ContractCreateTransactionBody op) {
         return op.hasAutoRenewAccountId()
-                && !EntityId.fromGrpcAccountId(op.getAutoRenewAccountId())
-                        .equals(EntityId.MISSING_ENTITY_ID);
+                && !EntityId.fromGrpcAccountId(op.getAutoRenewAccountId()).equals(EntityId.MISSING_ENTITY_ID);
     }
 
     private boolean hasAutoRenewId(final ContractUpdateTransactionBody op) {
         return op.hasAutoRenewAccountId()
-                && !EntityId.fromGrpcAccountId(op.getAutoRenewAccountId())
-                        .equals(EntityId.MISSING_ENTITY_ID);
+                && !EntityId.fromGrpcAccountId(op.getAutoRenewAccountId()).equals(EntityId.MISSING_ENTITY_ID);
     }
 
     private <T> SigningOrderResult<T> fileDelete(
@@ -487,9 +476,7 @@ public class SigRequirements {
             return factory.forMissingFile();
         } else {
             final var wacl = targetResult.metadata().wacl();
-            return wacl.isEmpty()
-                    ? SigningOrderResult.noKnownKeys()
-                    : factory.forValidOrder(List.of(wacl));
+            return wacl.isEmpty() ? SigningOrderResult.noKnownKeys() : factory.forValidOrder(List.of(wacl));
         }
     }
 
@@ -499,8 +486,7 @@ public class SigRequirements {
             final @Nullable LinkedRefs linkedRefs,
             final AccountID payer) {
         final var newWaclMustSign = !signatureWaivers.isNewFileWaclWaived(fileUpdateTxn, payer);
-        final var targetWaclMustSign =
-                !signatureWaivers.isTargetFileWaclWaived(fileUpdateTxn, payer);
+        final var targetWaclMustSign = !signatureWaivers.isTargetFileWaclWaived(fileUpdateTxn, payer);
         final var op = fileUpdateTxn.getFileUpdate();
         final var target = op.getFileID();
         final var targetResult = sigMetaLookup.fileSigningMetaFor(target, linkedRefs);
@@ -528,8 +514,7 @@ public class SigRequirements {
             final SigningOrderResultFactory<T> factory,
             final @Nullable LinkedRefs linkedRefs,
             final AccountID payer) {
-        final var targetWaclMustSign =
-                !signatureWaivers.isAppendFileWaclWaived(fileAppendTxn, payer);
+        final var targetWaclMustSign = !signatureWaivers.isAppendFileWaclWaived(fileAppendTxn, payer);
         final var op = fileAppendTxn.getFileAppend();
         final var target = op.getFileID();
         final var targetResult = sigMetaLookup.fileSigningMetaFor(target, linkedRefs);
@@ -538,9 +523,7 @@ public class SigRequirements {
         } else {
             if (targetWaclMustSign) {
                 final var wacl = targetResult.metadata().wacl();
-                return wacl.isEmpty()
-                        ? SigningOrderResult.noKnownKeys()
-                        : factory.forValidOrder(List.of(wacl));
+                return wacl.isEmpty() ? SigningOrderResult.noKnownKeys() : factory.forValidOrder(List.of(wacl));
             } else {
                 return SigningOrderResult.noKnownKeys();
             }
@@ -549,7 +532,8 @@ public class SigRequirements {
 
     private <T> SigningOrderResult<T> fileCreate(
             final FileCreateTransactionBody op, final SigningOrderResultFactory<T> factory) {
-        final var candidate = asUsableFcKey(Key.newBuilder().setKeyList(op.getKeys()).build());
+        final var candidate =
+                asUsableFcKey(Key.newBuilder().setKeyList(op.getKeys()).build());
         return candidate.isPresent()
                 ? factory.forValidOrder(List.of(candidate.get()))
                 : SigningOrderResult.noKnownKeys();
@@ -578,8 +562,7 @@ public class SigRequirements {
         }
         for (final var allowance : nftAllowancesList) {
             final var ownerId = allowance.getOwner();
-            var operatorId =
-                    allowance.hasDelegatingSpender() ? allowance.getDelegatingSpender() : ownerId;
+            var operatorId = allowance.hasDelegatingSpender() ? allowance.getDelegatingSpender() : ownerId;
             // Only the owner can grant approveForAll
             if (allowance.getApprovedForAll().getValue()) {
                 operatorId = ownerId;
@@ -631,8 +614,7 @@ public class SigRequirements {
 
         final var beneficiary = op.getTransferAccountID();
         if (!payer.equals(beneficiary)) {
-            final var beneficiaryResult =
-                    sigMetaLookup.accountSigningMetaFor(beneficiary, linkedRefs);
+            final var beneficiaryResult = sigMetaLookup.accountSigningMetaFor(beneficiary, linkedRefs);
             if (!beneficiaryResult.succeeded()) {
                 return accountFailure(beneficiaryResult.failureIfAny(), factory);
             } else if (beneficiaryResult.metadata().receiverSigRequired()) {
@@ -650,10 +632,8 @@ public class SigRequirements {
             final SigningOrderResultFactory<T> factory,
             final @Nullable LinkedRefs linkedRefs) {
         List<JKey> required = EMPTY_LIST;
-        final var newAccountKeyMustSign =
-                !signatureWaivers.isNewAccountKeyWaived(cryptoUpdateTxn, payer);
-        final var targetAccountKeyMustSign =
-                !signatureWaivers.isTargetAccountKeyWaived(cryptoUpdateTxn, payer);
+        final var newAccountKeyMustSign = !signatureWaivers.isNewAccountKeyWaived(cryptoUpdateTxn, payer);
+        final var targetAccountKeyMustSign = !signatureWaivers.isTargetAccountKeyWaived(cryptoUpdateTxn, payer);
         final var op = cryptoUpdateTxn.getCryptoUpdateAccount();
         final var target = op.getAccountIDToUpdate();
         final var result = sigMetaLookup.accountSigningMetaFor(target, linkedRefs);
@@ -684,50 +664,28 @@ public class SigRequirements {
         KeyOrderingFailure failure;
         for (final TokenTransferList xfers : op.getTokenTransfersList()) {
             for (final AccountAmount adjust : xfers.getTransfersList()) {
-                if ((failure = includeIfNecessary(payer, adjust, required, true, linkedRefs, false))
-                        != NONE) {
+                if ((failure = includeIfNecessary(payer, adjust, required, true, linkedRefs, false)) != NONE) {
                     return accountFailure(failure, factory);
                 }
             }
             final var token = xfers.getToken();
             for (final NftTransfer adjust : xfers.getNftTransfersList()) {
                 final var sender = adjust.getSenderAccountID();
-                if ((failure =
-                                nftIncludeIfNecessary(
-                                        payer,
-                                        sender,
-                                        null,
-                                        adjust.getIsApproval(),
-                                        required,
-                                        token,
-                                        op,
-                                        linkedRefs,
-                                        false))
+                if ((failure = nftIncludeIfNecessary(
+                                payer, sender, null, adjust.getIsApproval(), required, token, op, linkedRefs, false))
                         != NONE) {
                     return accountFailure(failure, factory);
                 }
                 final var receiver = adjust.getReceiverAccountID();
-                if ((failure =
-                                nftIncludeIfNecessary(
-                                        payer,
-                                        receiver,
-                                        sender,
-                                        false,
-                                        required,
-                                        token,
-                                        op,
-                                        linkedRefs,
-                                        true))
+                if ((failure = nftIncludeIfNecessary(
+                                payer, receiver, sender, false, required, token, op, linkedRefs, true))
                         != NONE) {
-                    return (failure == MISSING_TOKEN)
-                            ? factory.forMissingToken()
-                            : accountFailure(failure, factory);
+                    return (failure == MISSING_TOKEN) ? factory.forMissingToken() : accountFailure(failure, factory);
                 }
             }
         }
         for (final AccountAmount adjust : op.getTransfers().getAccountAmountsList()) {
-            if ((failure = includeIfNecessary(payer, adjust, required, true, linkedRefs, true))
-                    != NONE) {
+            if ((failure = includeIfNecessary(payer, adjust, required, true, linkedRefs, true)) != NONE) {
                 return accountFailure(failure, factory);
             }
         }
@@ -817,34 +775,29 @@ public class SigRequirements {
             final @Nullable LinkedRefs linkedRefs) {
         final List<JKey> required = new ArrayList<>();
 
-        final var failure =
-                addAccount(
-                        payer,
-                        op,
-                        TokenCreateTransactionBody::hasTreasury,
-                        TokenCreateTransactionBody::getTreasury,
-                        required,
-                        linkedRefs);
+        final var failure = addAccount(
+                payer,
+                op,
+                TokenCreateTransactionBody::hasTreasury,
+                TokenCreateTransactionBody::getTreasury,
+                required,
+                linkedRefs);
         if (failure != NONE) {
             return accountFailure(failure, factory);
         }
-        final var couldAddAutoRenew =
-                addAccount(
-                                payer,
-                                op,
-                                TokenCreateTransactionBody::hasAutoRenewAccount,
-                                TokenCreateTransactionBody::getAutoRenewAccount,
-                                required,
-                                linkedRefs)
-                        == NONE;
+        final var couldAddAutoRenew = addAccount(
+                        payer,
+                        op,
+                        TokenCreateTransactionBody::hasAutoRenewAccount,
+                        TokenCreateTransactionBody::getAutoRenewAccount,
+                        required,
+                        linkedRefs)
+                == NONE;
         if (!couldAddAutoRenew) {
             return accountFailure(INVALID_AUTORENEW_ACCOUNT, factory);
         }
         addToMutableReqIfPresent(
-                op,
-                TokenCreateTransactionBody::hasAdminKey,
-                TokenCreateTransactionBody::getAdminKey,
-                required);
+                op, TokenCreateTransactionBody::hasAdminKey, TokenCreateTransactionBody::getAdminKey, required);
         for (final var customFee : op.getCustomFeesList()) {
             final var collector = customFee.getFeeCollectorAccountId();
             /* A fractional fee collector and a collector for a fixed fee denominated
@@ -853,25 +806,20 @@ public class SigRequirements {
             final boolean couldAddCollector;
             if (customFee.hasFixedFee()) {
                 final var fixedFee = customFee.getFixedFee();
-                final var alwaysAdd =
-                        fixedFee.hasDenominatingTokenId()
-                                && fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
-                couldAddCollector =
-                        addAccount(payer, collector, required, alwaysAdd, linkedRefs) == NONE;
+                final var alwaysAdd = fixedFee.hasDenominatingTokenId()
+                        && fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
+                couldAddCollector = addAccount(payer, collector, required, alwaysAdd, linkedRefs) == NONE;
             } else if (customFee.hasFractionalFee()) {
-                couldAddCollector =
-                        addAccount(payer, collector, required, true, linkedRefs) == NONE;
+                couldAddCollector = addAccount(payer, collector, required, true, linkedRefs) == NONE;
             } else {
                 final var royaltyFee = customFee.getRoyaltyFee();
                 var alwaysAdd = false;
                 if (royaltyFee.hasFallbackFee()) {
                     final var fFee = royaltyFee.getFallbackFee();
-                    alwaysAdd =
-                            fFee.hasDenominatingTokenId()
-                                    && fFee.getDenominatingTokenId().getTokenNum() == 0;
+                    alwaysAdd = fFee.hasDenominatingTokenId()
+                            && fFee.getDenominatingTokenId().getTokenNum() == 0;
                 }
-                couldAddCollector =
-                        addAccount(payer, collector, required, alwaysAdd, linkedRefs) == NONE;
+                couldAddCollector = addAccount(payer, collector, required, alwaysAdd, linkedRefs) == NONE;
             }
             if (!couldAddCollector) {
                 return factory.forInvalidFeeCollector();
@@ -882,37 +830,27 @@ public class SigRequirements {
     }
 
     private <T> SigningOrderResult<T> tokenFreezing(
-            final TokenID id,
-            final SigningOrderResultFactory<T> factory,
-            final @Nullable LinkedRefs linkedRefs) {
+            final TokenID id, final SigningOrderResultFactory<T> factory, final @Nullable LinkedRefs linkedRefs) {
         return tokenAdjusts(id, factory, TokenSigningMetadata::freezeKey, linkedRefs);
     }
 
     private <T> SigningOrderResult<T> tokenKnowing(
-            final TokenID id,
-            final SigningOrderResultFactory<T> factory,
-            final @Nullable LinkedRefs linkedRefs) {
+            final TokenID id, final SigningOrderResultFactory<T> factory, final @Nullable LinkedRefs linkedRefs) {
         return tokenAdjusts(id, factory, TokenSigningMetadata::kycKey, linkedRefs);
     }
 
     private <T> SigningOrderResult<T> tokenRefloating(
-            final TokenID id,
-            final SigningOrderResultFactory<T> factory,
-            final @Nullable LinkedRefs linkedRefs) {
+            final TokenID id, final SigningOrderResultFactory<T> factory, final @Nullable LinkedRefs linkedRefs) {
         return tokenAdjusts(id, factory, TokenSigningMetadata::supplyKey, linkedRefs);
     }
 
     private <T> SigningOrderResult<T> tokenWiping(
-            final TokenID id,
-            final SigningOrderResultFactory<T> factory,
-            final @Nullable LinkedRefs linkedRefs) {
+            final TokenID id, final SigningOrderResultFactory<T> factory, final @Nullable LinkedRefs linkedRefs) {
         return tokenAdjusts(id, factory, TokenSigningMetadata::wipeKey, linkedRefs);
     }
 
     private <T> SigningOrderResult<T> tokenPausing(
-            final TokenID id,
-            final SigningOrderResultFactory<T> factory,
-            final @Nullable LinkedRefs linkedRefs) {
+            final TokenID id, final SigningOrderResultFactory<T> factory, final @Nullable LinkedRefs linkedRefs) {
         return tokenAdjusts(id, factory, TokenSigningMetadata::pauseKey, linkedRefs);
     }
 
@@ -931,8 +869,7 @@ public class SigRequirements {
                 for (final var customFee : op.getCustomFeesList()) {
                     final var collector = customFee.getFeeCollectorAccountId();
                     final var couldAddCollector =
-                            addAccountIfReceiverSigRequired(payer, collector, required, linkedRefs)
-                                    == NONE;
+                            addAccountIfReceiverSigRequired(payer, collector, required, linkedRefs) == NONE;
                     if (!couldAddCollector) {
                         return factory.forInvalidFeeCollector();
                     }
@@ -952,8 +889,7 @@ public class SigRequirements {
             final TokenUpdateTransactionBody op,
             final SigningOrderResultFactory<T> factory,
             final LinkedRefs linkedRefs) {
-        final List<Function<TokenSigningMetadata, Optional<JKey>>> nonAdminReqs =
-                Collections.emptyList();
+        final List<Function<TokenSigningMetadata, Optional<JKey>>> nonAdminReqs = Collections.emptyList();
         final var basic = tokenMutates(op.getToken(), factory, nonAdminReqs, linkedRefs);
         if (basic.hasErrorReport()) {
             return basic;
@@ -971,30 +907,23 @@ public class SigRequirements {
             return accountFailure(INVALID_AUTORENEW_ACCOUNT, factory);
         }
         final KeyOrderingFailure failure;
-        if ((failure =
-                        addAccount(
-                                payer,
-                                op,
-                                TokenUpdateTransactionBody::hasTreasury,
-                                TokenUpdateTransactionBody::getTreasury,
-                                required,
-                                linkedRefs))
+        if ((failure = addAccount(
+                        payer,
+                        op,
+                        TokenUpdateTransactionBody::hasTreasury,
+                        TokenUpdateTransactionBody::getTreasury,
+                        required,
+                        linkedRefs))
                 != NONE) {
             return accountFailure(failure, factory);
         }
         addToMutableReqIfPresent(
-                op,
-                TokenUpdateTransactionBody::hasAdminKey,
-                TokenUpdateTransactionBody::getAdminKey,
-                required);
+                op, TokenUpdateTransactionBody::hasAdminKey, TokenUpdateTransactionBody::getAdminKey, required);
         return basic;
     }
 
     private KeyOrderingFailure addAccountIfReceiverSigRequired(
-            final AccountID payer,
-            final AccountID id,
-            final List<JKey> reqs,
-            final @Nullable LinkedRefs linkedRefs) {
+            final AccountID payer, final AccountID id, final List<JKey> reqs, final @Nullable LinkedRefs linkedRefs) {
         return addAccount(payer, id, reqs, false, linkedRefs);
     }
 
@@ -1032,9 +961,7 @@ public class SigRequirements {
     }
 
     private <T> SigningOrderResult<T> tokenMutates(
-            final TokenID id,
-            final SigningOrderResultFactory<T> factory,
-            final @Nullable LinkedRefs linkedRefs) {
+            final TokenID id, final SigningOrderResultFactory<T> factory, final @Nullable LinkedRefs linkedRefs) {
         return tokenMutates(id, factory, Collections.emptyList(), linkedRefs);
     }
 
@@ -1049,11 +976,10 @@ public class SigRequirements {
         if (result.succeeded()) {
             final var meta = result.metadata();
             meta.adminKey().ifPresent(required::add);
-            optionalKeyLookups.forEach(
-                    lookup -> {
-                        final var candidate = lookup.apply(meta);
-                        candidate.ifPresent(required::add);
-                    });
+            optionalKeyLookups.forEach(lookup -> {
+                final var candidate = lookup.apply(meta);
+                candidate.ifPresent(required::add);
+            });
         } else {
             return factory.forMissingToken();
         }
@@ -1107,10 +1033,7 @@ public class SigRequirements {
         final List<JKey> required = new ArrayList<>();
 
         addToMutableReqIfPresent(
-                op,
-                ScheduleCreateTransactionBody::hasAdminKey,
-                ScheduleCreateTransactionBody::getAdminKey,
-                required);
+                op, ScheduleCreateTransactionBody::hasAdminKey, ScheduleCreateTransactionBody::getAdminKey, required);
 
         // We need to always add the custom payer to the sig requirements even if it equals the
         // payer.
@@ -1122,8 +1045,7 @@ public class SigRequirements {
         // would
         // not execute the transaction without and extra signature from the custom payer.
         if (op.hasPayerAccountID()) {
-            final var payerResult =
-                    sigMetaLookup.accountSigningMetaFor(op.getPayerAccountID(), linkedRefs);
+            final var payerResult = sigMetaLookup.accountSigningMetaFor(op.getPayerAccountID(), linkedRefs);
             if (!payerResult.succeeded()) {
                 return accountFailure(payerResult.failureIfAny(), factory);
             } else {
@@ -1144,15 +1066,12 @@ public class SigRequirements {
             return factory.forInvalidAccount();
         }
 
-        final var payerForNested =
-                op.hasPayerAccountID()
-                        ? op.getPayerAccountID()
-                        : txn.getTransactionID().getAccountID();
+        final var payerForNested = op.hasPayerAccountID()
+                ? op.getPayerAccountID()
+                : txn.getTransactionID().getAccountID();
 
-        final var scheduledTxn =
-                MiscUtils.asOrdinary(op.getScheduledTransactionBody(), txn.getTransactionID());
-        final var mergeError =
-                mergeScheduledKeys(required, scheduledTxn, factory, linkedRefs, payerForNested);
+        final var scheduledTxn = MiscUtils.asOrdinary(op.getScheduledTransactionBody(), txn.getTransactionID());
+        final var mergeError = mergeScheduledKeys(required, scheduledTxn, factory, linkedRefs, payerForNested);
         return mergeError.orElseGet(() -> factory.forValidOrder(required));
     }
 
@@ -1170,8 +1089,7 @@ public class SigRequirements {
 
         final var optionalPayer = result.metadata().designatedPayer();
         if (optionalPayer.isPresent()) {
-            final var payerResult =
-                    sigMetaLookup.accountSigningMetaFor(optionalPayer.get(), linkedRefs);
+            final var payerResult = sigMetaLookup.accountSigningMetaFor(optionalPayer.get(), linkedRefs);
             if (!payerResult.succeeded()) {
                 return accountFailure(payerResult.failureIfAny(), factory);
             } else {
@@ -1185,8 +1103,7 @@ public class SigRequirements {
         final var payerForNested =
                 optionalPayer.orElse(scheduledTxn.getTransactionID().getAccountID());
 
-        final var mergeError =
-                mergeScheduledKeys(required, scheduledTxn, factory, linkedRefs, payerForNested);
+        final var mergeError = mergeScheduledKeys(required, scheduledTxn, factory, linkedRefs, payerForNested);
         return mergeError.orElseGet(() -> factory.forValidOrder(required));
     }
 
@@ -1201,8 +1118,7 @@ public class SigRequirements {
             if (!MiscUtils.isSchedulable(scheduledFunction)) {
                 return Optional.of(factory.forUnschedulableTxn());
             }
-            final var scheduledOrderResult =
-                    keysForOtherParties(scheduledTxn, factory, linkedRefs, payerForNested);
+            final var scheduledOrderResult = keysForOtherParties(scheduledTxn, factory, linkedRefs, payerForNested);
             if (scheduledOrderResult.hasErrorReport()) {
                 return Optional.of(factory.forUnresolvableRequiredSigners());
             } else {
@@ -1220,9 +1136,7 @@ public class SigRequirements {
     }
 
     private <T> SigningOrderResult<T> scheduleDelete(
-            final ScheduleID id,
-            final SigningOrderResultFactory<T> factory,
-            final @Nullable LinkedRefs linkedRefs) {
+            final ScheduleID id, final SigningOrderResultFactory<T> factory, final @Nullable LinkedRefs linkedRefs) {
         final List<JKey> required = new ArrayList<>();
 
         final var result = sigMetaLookup.scheduleSigningMetaFor(id, linkedRefs);
@@ -1258,10 +1172,7 @@ public class SigRequirements {
     }
 
     private KeyOrderingFailure includeOwnerIfNecessary(
-            final AccountID payer,
-            final AccountID owner,
-            final List<JKey> required,
-            final LinkedRefs linkedRefs) {
+            final AccountID payer, final AccountID owner, final List<JKey> required, final LinkedRefs linkedRefs) {
         if (!owner.equals(AccountID.getDefaultInstance()) && !payer.equals(owner)) {
             final var ownerResult = sigMetaLookup.accountSigningMetaFor(owner, linkedRefs);
             if (!ownerResult.succeeded()) {
@@ -1299,10 +1210,7 @@ public class SigRequirements {
                 // not valid.
                 if (reason == IMMUTABLE_ACCOUNT && isCredit && isForHbar) {
                     return NONE;
-                } else if (reason == MISSING_ACCOUNT
-                        && autoCreationAllowed
-                        && isCredit
-                        && isAlias(account)) {
+                } else if (reason == MISSING_ACCOUNT && autoCreationAllowed && isCredit && isAlias(account)) {
                     return NONE;
                 } else {
                     // These response codes can be refined in a future release
@@ -1329,10 +1237,7 @@ public class SigRequirements {
             if (!result.succeeded()) {
                 final var reason = result.failureIfAny();
                 // Any token transfer to immutable accounts 0.0.800 and 0.0.801 is not valid.
-                if (reason == MISSING_ACCOUNT
-                        && autoCreationAllowed
-                        && isAlias(party)
-                        && !isSender) {
+                if (reason == MISSING_ACCOUNT && autoCreationAllowed && isAlias(party) && !isSender) {
                     return NONE;
                 } else {
                     return reason;
@@ -1350,8 +1255,7 @@ public class SigRequirements {
                     return tokenResult.failureIfAny();
                 } else {
                     final var tokenMeta = tokenResult.metadata();
-                    if (tokenMeta.hasRoyaltyWithFallback()
-                            && !receivesFungibleValue(counterparty, op)) {
+                    if (tokenMeta.hasRoyaltyWithFallback() && !receivesFungibleValue(counterparty, op, linkedRefs)) {
                         // Fallback situation; but we still need to check if the treasury is
                         // the sender or receiver, since in neither case will the fallback fee
                         // actually be charged
@@ -1369,15 +1273,15 @@ public class SigRequirements {
     }
 
     private boolean receivesFungibleValue(
-            final AccountID target, final CryptoTransferTransactionBody op) {
+            final AccountID target, final CryptoTransferTransactionBody op, LinkedRefs linkedRefs) {
         for (final var adjust : op.getTransfers().getAccountAmountsList()) {
-            if (adjust.getAmount() > 0 && adjust.getAccountID().equals(target)) {
+            if (isReceivingFungibleValue(adjust, target, linkedRefs)) {
                 return true;
             }
         }
         for (final var transfers : op.getTokenTransfersList()) {
             for (final var adjust : transfers.getTransfersList()) {
-                if (adjust.getAmount() > 0 && adjust.getAccountID().equals(target)) {
+                if (isReceivingFungibleValue(adjust, target, linkedRefs)) {
                     return true;
                 }
             }
@@ -1385,11 +1289,15 @@ public class SigRequirements {
         return false;
     }
 
+    private boolean isReceivingFungibleValue(
+            final AccountAmount adjust, final AccountID target, final LinkedRefs linkedRefs) {
+        final var unaliasedAccountNum = sigMetaLookup.unaliasedAccount(adjust.getAccountID(), linkedRefs);
+        final var unaliasedTargetNum = sigMetaLookup.unaliasedAccount(target, linkedRefs);
+        return adjust.getAmount() > 0 && unaliasedAccountNum.equals(unaliasedTargetNum);
+    }
+
     private <T> void addToMutableReqIfPresent(
-            final T op,
-            final Predicate<T> checker,
-            final Function<T, Key> getter,
-            final List<JKey> required) {
+            final T op, final Predicate<T> checker, final Function<T, Key> getter, final List<JKey> required) {
         if (checker.test(op)) {
             final var candidate = asUsableFcKey(getter.apply(op));
             candidate.ifPresent(required::add);
@@ -1442,8 +1350,7 @@ public class SigRequirements {
         if (op.hasAutoRenewAccount() && !isEliding(op.getAutoRenewAccount())) {
             final var account = op.getAutoRenewAccount();
             if (!payer.equals(account)) {
-                final var autoRenewResult =
-                        sigMetaLookup.accountSigningMetaFor(account, linkedRefs);
+                final var autoRenewResult = sigMetaLookup.accountSigningMetaFor(account, linkedRefs);
                 if (autoRenewResult.succeeded()) {
                     required = mutable(required);
                     required.add(autoRenewResult.metadata().key());

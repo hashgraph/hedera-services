@@ -13,25 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
  * com.hederahashgraph.api.proto.java.HederaFunctionality#ContractUpdate}.
  */
+@Singleton
 public class ContractUpdateHandler implements TransactionHandler {
+    @Inject
+    public ContractUpdateHandler() {}
 
     /**
      * This method is called during the pre-handle workflow.
@@ -43,11 +49,11 @@ public class ContractUpdateHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param context the {@link PrehandleHandlerContext} which collects all information that will
-     *     be passed to {@link #handle(TransactionMetadata)}
+     * @param context the {@link PreHandleContext} which collects all information that will be
+     *     passed to {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PrehandleHandlerContext context) {
+    public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
         final var op = context.getTxn().getContractUpdateInstance();
 
@@ -58,8 +64,7 @@ public class ContractUpdateHandler implements TransactionHandler {
             final var key = asHederaKey(op.getAdminKey());
             key.ifPresent(context::addToReqNonPayerKeys);
         }
-        if (op.hasAutoRenewAccountId()
-                && !op.getAutoRenewAccountId().equals(AccountID.getDefaultInstance())) {
+        if (op.hasAutoRenewAccountId() && !op.getAutoRenewAccountId().equals(AccountID.getDefaultInstance())) {
             context.addNonPayerKey(op.getAutoRenewAccountId(), INVALID_AUTORENEW_ACCOUNT);
         }
     }

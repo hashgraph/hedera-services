@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.test.utils;
 
 import java.time.Instant;
@@ -22,8 +23,7 @@ import org.junit.jupiter.params.converter.ArgumentConverter;
 
 public final class InstantConverter implements ArgumentConverter {
     @Override
-    public Object convert(Object input, ParameterContext parameterContext)
-            throws ArgumentConversionException {
+    public Object convert(Object input, ParameterContext parameterContext) throws ArgumentConversionException {
         if (null == input) {
             return null;
         }

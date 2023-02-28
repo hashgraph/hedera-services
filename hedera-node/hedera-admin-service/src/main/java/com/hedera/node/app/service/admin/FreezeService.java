@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.admin;
 
 import com.hedera.node.app.spi.Service;
@@ -27,10 +28,12 @@ import java.util.ServiceLoader;
  */
 public interface FreezeService extends Service {
 
+    String NAME = "FreezeService";
+
     @NonNull
     @Override
     default String getServiceName() {
-        return FreezeService.class.getSimpleName();
+        return NAME;
     }
 
     /**
@@ -40,7 +43,6 @@ public interface FreezeService extends Service {
      */
     @NonNull
     static FreezeService getInstance() {
-        return ServiceFactory.loadService(
-                FreezeService.class, ServiceLoader.load(FreezeService.class));
+        return ServiceFactory.loadService(FreezeService.class, ServiceLoader.load(FreezeService.class));
     }
 }

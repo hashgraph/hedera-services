@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.schedule;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asScheduleId;
@@ -40,10 +41,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
     private final String schedule;
     private List<String> signatories = Collections.emptyList();
+
+    @Nullable
+    private List<Key> explicitSigners = null;
+
     private boolean ignoreMissing = false;
     private boolean saveScheduledTxnId = false;
 
@@ -53,6 +59,11 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 
     public HapiScheduleSign alsoSigningWith(String... keys) {
         signatories = List.of(keys);
+        return this;
+    }
+
+    public HapiScheduleSign alsoSigningWithExplicit(final List<Key> keys) {
+        explicitSigners = keys;
         return this;
     }
 
@@ -78,21 +89,19 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
-        ScheduleSignTransactionBody opBody =
-                spec.txns()
-                        .<ScheduleSignTransactionBody, ScheduleSignTransactionBody.Builder>body(
-                                ScheduleSignTransactionBody.class,
-                                b -> {
-                                    ScheduleID id;
-                                    try {
-                                        id = asScheduleId(schedule, spec);
-                                        b.setScheduleID(id);
-                                    } catch (RegistryNotFound e) {
-                                        if (!ignoreMissing) {
-                                            throw e;
-                                        }
-                                    }
-                                });
+        ScheduleSignTransactionBody opBody = spec.txns()
+                .<ScheduleSignTransactionBody, ScheduleSignTransactionBody.Builder>body(
+                        ScheduleSignTransactionBody.class, b -> {
+                            ScheduleID id;
+                            try {
+                                id = asScheduleId(schedule, spec);
+                                b.setScheduleID(id);
+                            } catch (RegistryNotFound e) {
+                                if (!ignoreMissing) {
+                                    throw e;
+                                }
+                            }
+                        });
         return b -> b.setScheduleSign(opBody);
     }
 
@@ -107,10 +116,7 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
             return;
         }
         if (saveScheduledTxnId) {
-            spec.registry()
-                    .saveTxnId(
-                            correspondingScheduledTxnId(schedule),
-                            lastReceipt.getScheduledTransactionID());
+            spec.registry().saveTxnId(correspondingScheduledTxnId(schedule), lastReceipt.getScheduledTransactionID());
         }
     }
 
@@ -118,13 +124,9 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         try {
             final ScheduleInfo info = ScheduleFeeUtils.lookupInfo(spec, schedule, loggingOff);
-            FeeCalculator.ActivityMetrics metricsCalc =
-                    (_txn, svo) ->
-                            scheduleOpsUsage.scheduleSignUsage(
-                                    _txn, suFrom(svo), info.getExpirationTime().getSeconds());
-            return spec.fees()
-                    .forActivityBasedOp(
-                            HederaFunctionality.ScheduleSign, metricsCalc, txn, numPayerKeys);
+            FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> scheduleOpsUsage.scheduleSignUsage(
+                    _txn, suFrom(svo), info.getExpirationTime().getSeconds());
+            return spec.fees().forActivityBasedOp(HederaFunctionality.ScheduleSign, metricsCalc, txn, numPayerKeys);
         } catch (Throwable ignore) {
             return HapiSuite.ONE_HBAR;
         }
@@ -134,8 +136,12 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
     protected List<Function<HapiSpec, Key>> defaultSigners() {
         final var signers = new ArrayList<Function<HapiSpec, Key>>();
         signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
-        for (String added : signatories) {
-            signers.add(spec -> spec.registry().getKey(added));
+        if (explicitSigners != null) {
+            explicitSigners.forEach(key -> signers.add(spec -> key));
+        } else {
+            for (String added : signatories) {
+                signers.add(spec -> spec.registry().getKey(added));
+            }
         }
         return signers;
     }

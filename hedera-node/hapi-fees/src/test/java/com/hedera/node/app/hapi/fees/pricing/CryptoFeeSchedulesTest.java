@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.fees.pricing;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
@@ -58,19 +59,13 @@ class CryptoFeeSchedulesTest extends FeeSchedulesTestHelper {
     }
 
     private void testExpectedCreatePriceWith(int numAutoAssocSlots) throws IOException {
-        final var expectedBasePrice = canonicalTotalPricesInUsd.get(CryptoCreate).get(DEFAULT);
+        final var expectedBasePrice =
+                canonicalTotalPricesInUsd.get(CryptoCreate).get(DEFAULT);
 
         final var expectedScaledPrice =
-                expectedBasePrice.add(
-                        APPROX_AUTO_ASSOC_SLOT_PRICE.multiply(
-                                BigDecimal.valueOf(numAutoAssocSlots)));
+                expectedBasePrice.add(APPROX_AUTO_ASSOC_SLOT_PRICE.multiply(BigDecimal.valueOf(numAutoAssocSlots)));
         final var scaledUsage = baseOperationUsage.cryptoCreate(numAutoAssocSlots);
-        testExpected(
-                expectedScaledPrice,
-                scaledUsage,
-                CryptoCreate,
-                DEFAULT,
-                CREATE_AUTO_ASSOC_ALLOWED_DEVIATION);
+        testExpected(expectedScaledPrice, scaledUsage, CryptoCreate, DEFAULT, CREATE_AUTO_ASSOC_ALLOWED_DEVIATION);
     }
 
     @Test
@@ -83,18 +78,12 @@ class CryptoFeeSchedulesTest extends FeeSchedulesTestHelper {
     }
 
     private void testExpectedUpdatePriceWith(int numAutoAssocSlots) throws IOException {
-        final var expectedBasePrice = canonicalTotalPricesInUsd.get(CryptoUpdate).get(DEFAULT);
+        final var expectedBasePrice =
+                canonicalTotalPricesInUsd.get(CryptoUpdate).get(DEFAULT);
 
         final var expectedScaledPrice =
-                expectedBasePrice.add(
-                        APPROX_AUTO_ASSOC_SLOT_PRICE.multiply(
-                                BigDecimal.valueOf(numAutoAssocSlots)));
+                expectedBasePrice.add(APPROX_AUTO_ASSOC_SLOT_PRICE.multiply(BigDecimal.valueOf(numAutoAssocSlots)));
         final var scaledUsage = baseOperationUsage.cryptoUpdate(numAutoAssocSlots);
-        testExpected(
-                expectedScaledPrice,
-                scaledUsage,
-                CryptoUpdate,
-                DEFAULT,
-                UPDATE_AUTO_ASSOC_ALLOWED_DEVIATION);
+        testExpected(expectedScaledPrice, scaledUsage, CryptoUpdate, DEFAULT, UPDATE_AUTO_ASSOC_ALLOWED_DEVIATION);
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.sysfiles.domain.throttling;
 
 import com.google.common.base.MoreObjects;
@@ -27,12 +28,10 @@ public record ScaleFactor(int numerator, int denominator) implements Comparable<
                 ":",
                 (n, d) -> {
                     if (n < 0 || d < 0) {
-                        throw new IllegalArgumentException(
-                                "Negative number in scale literal '" + literal + "'");
+                        throw new IllegalArgumentException("Negative number in scale literal '" + literal + "'");
                     }
                     if (d == 0) {
-                        throw new IllegalArgumentException(
-                                "Division by zero in scale literal '" + literal + "'");
+                        throw new IllegalArgumentException("Division by zero in scale literal '" + literal + "'");
                     }
                 },
                 Integer::parseInt,
@@ -50,8 +49,7 @@ public record ScaleFactor(int numerator, int denominator) implements Comparable<
 
     @Override
     public int compareTo(final ScaleFactor that) {
-        return Integer.compare(
-                this.numerator * that.denominator, that.numerator * this.denominator);
+        return Integer.compare(this.numerator * that.denominator, that.numerator * this.denominator);
     }
 
     @Override

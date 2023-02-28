@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.queries.crypto;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
@@ -65,10 +66,12 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
     private boolean exportAccount = false;
     Optional<Long> expected = Optional.empty();
     Optional<Supplier<String>> entityFn = Optional.empty();
-    Optional<Function<HapiSpec, Function<Long, Optional<String>>>> expectedCondition =
-            Optional.empty();
+    Optional<Function<HapiSpec, Function<Long, Optional<String>>>> expectedCondition = Optional.empty();
     Optional<Map<String, LongConsumer>> tokenBalanceObservers = Optional.empty();
-    @Nullable LongConsumer balanceObserver;
+
+    @Nullable
+    LongConsumer balanceObserver;
+
     private String repr;
 
     private AccountID expectedId = null;
@@ -118,8 +121,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
         return this;
     }
 
-    public HapiGetAccountBalance hasTinyBars(
-            Function<HapiSpec, Function<Long, Optional<String>>> condition) {
+    public HapiGetAccountBalance hasTinyBars(Function<HapiSpec, Function<Long, Optional<String>>> condition) {
         expectedCondition = Optional.of(condition);
         return this;
     }
@@ -136,8 +138,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
         if (expectedTokenBalances.isEmpty()) {
             expectedTokenBalances = new ArrayList<>();
         }
-        expectedTokenBalances.add(
-                new AbstractMap.SimpleImmutableEntry<>(token, amount + "-" + decimals));
+        expectedTokenBalances.add(new AbstractMap.SimpleImmutableEntry<>(token, amount + "-" + decimals));
         return this;
     }
 
@@ -187,27 +188,21 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             balanceObserver.accept(actual);
         }
         if (verboseLoggingOn) {
-            log.info(
-                    "Explicit token balances: "
-                            + response.getCryptogetAccountBalance().getTokenBalancesList());
+            log.info("Explicit token balances: "
+                    + response.getCryptogetAccountBalance().getTokenBalancesList());
         }
 
         if (assertAccountIDIsNotAlias) {
-            final var expectedID =
-                    spec.registry()
-                            .getAccountID(
-                                    spec.registry()
-                                            .getKey(aliasKeySource)
-                                            .toByteString()
-                                            .toStringUtf8());
+            final var expectedID = spec.registry()
+                    .getAccountID(spec.registry()
+                            .getKey(aliasKeySource)
+                            .toByteString()
+                            .toStringUtf8());
             assertEquals(expectedID, response.getCryptogetAccountBalance().getAccountID());
         }
 
         if (expectedId != null) {
-            assertEquals(
-                    expectedId,
-                    response.getCryptogetAccountBalance().getAccountID(),
-                    "Wrong account id");
+            assertEquals(expectedId, response.getCryptogetAccountBalance().getAccountID(), "Wrong account id");
         }
 
         if (expectedCondition.isPresent()) {
@@ -222,10 +217,8 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 
         Map<TokenID, Pair<Long, Integer>> actualTokenBalances =
                 response.getCryptogetAccountBalance().getTokenBalancesList().stream()
-                        .collect(
-                                Collectors.toMap(
-                                        TokenBalance::getTokenId,
-                                        tb -> Pair.of(tb.getBalance(), tb.getDecimals())));
+                        .collect(Collectors.toMap(
+                                TokenBalance::getTokenId, tb -> Pair.of(tb.getBalance(), tb.getDecimals())));
         if (expectedTokenBalances.size() > 0) {
             Pair<Long, Integer> defaultTb = Pair.of(0L, 0);
             for (Map.Entry<String, String> tokenBalance : expectedTokenBalances) {
@@ -235,17 +228,13 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
                 assertEquals(
                         expectedBalance,
                         actualTokenBalances.getOrDefault(tokenId, defaultTb).getLeft(),
-                        String.format(
-                                "Wrong balance for token '%s'!",
-                                HapiPropertySource.asTokenString(tokenId)));
+                        String.format("Wrong balance for token '%s'!", HapiPropertySource.asTokenString(tokenId)));
                 if (!"G".equals(expectedParts[1])) {
                     Integer expectedDecimals = Integer.valueOf(expectedParts[1]);
                     assertEquals(
                             expectedDecimals,
                             actualTokenBalances.getOrDefault(tokenId, defaultTb).getRight(),
-                            String.format(
-                                    "Wrong decimals for token '%s'!",
-                                    HapiPropertySource.asTokenString(tokenId)));
+                            String.format("Wrong decimals for token '%s'!", HapiPropertySource.asTokenString(tokenId)));
                 }
             }
         }
@@ -255,7 +244,8 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             for (var entry : observers.entrySet()) {
                 var id = TxnUtils.asTokenId(entry.getKey(), spec);
                 var obs = entry.getValue();
-                obs.accept(actualTokenBalances.getOrDefault(id, Pair.of(-1L, -1)).getLeft());
+                obs.accept(
+                        actualTokenBalances.getOrDefault(id, Pair.of(-1L, -1)).getLeft());
             }
         }
 
@@ -263,12 +253,10 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             SingleAccountBalances.Builder sab = SingleAccountBalances.newBuilder();
             List<TokenUnitBalance> tokenUnitBalanceList =
                     response.getCryptogetAccountBalance().getTokenBalancesList().stream()
-                            .map(
-                                    a ->
-                                            TokenUnitBalance.newBuilder()
-                                                    .setTokenId(a.getTokenId())
-                                                    .setBalance(a.getBalance())
-                                                    .build())
+                            .map(a -> TokenUnitBalance.newBuilder()
+                                    .setTokenId(a.getTokenId())
+                                    .setBalance(a.getBalance())
+                                    .build())
                             .collect(Collectors.toList());
             sab.setAccountID(accountID.get())
                     .setHbarBalance(response.getCryptogetAccountBalance().getBalance())
@@ -280,10 +268,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getAccountBalanceQuery(spec, payment, false);
-        response =
-                spec.clients()
-                        .getCryptoSvcStub(targetNodeFor(spec), useTls)
-                        .cryptoGetBalance(query);
+        response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).cryptoGetBalance(query);
         ResponseCodeEnum status =
                 response.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode();
         if (status == ResponseCodeEnum.ACCOUNT_DELETED) {
@@ -293,15 +278,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             long TINYBARS_PER_HBAR = 100_000_000L;
             long hBars = balance / TINYBARS_PER_HBAR;
             if (!loggingOff) {
-                log.info(
-                        spec.logPrefix()
-                                + "balance for '"
-                                + repr
-                                + "': "
-                                + balance
-                                + " tinyBars ("
-                                + hBars
-                                + "ħ)");
+                log.info(spec.logPrefix() + "balance for '" + repr + "': " + balance + " tinyBars (" + hBars + "ħ)");
             }
             if (yahcliLogger) {
                 COMMON_MESSAGES.info(String.format("%20s | %20d |", repr, balance));
@@ -319,11 +296,9 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
         if (isContract || spec.registry().hasContractId(account)) {
             config = b -> b.setContractID(TxnUtils.asContractId(account, spec));
         } else if (referenceType == ReferenceType.HEXED_CONTRACT_ALIAS) {
-            final var cid =
-                    ContractID.newBuilder()
-                            .setEvmAddress(
-                                    ByteString.copyFrom(CommonUtils.unhex(literalHexedAlias)))
-                            .build();
+            final var cid = ContractID.newBuilder()
+                    .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(literalHexedAlias)))
+                    .build();
             config = b -> b.setContractID(cid);
         } else {
             AccountID id;
@@ -337,9 +312,8 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             config = b -> b.setAccountID(id);
             accountID = Optional.of(id);
         }
-        CryptoGetAccountBalanceQuery.Builder query =
-                CryptoGetAccountBalanceQuery.newBuilder()
-                        .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment));
+        CryptoGetAccountBalanceQuery.Builder query = CryptoGetAccountBalanceQuery.newBuilder()
+                .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment));
         config.accept(query);
         return Query.newBuilder().setCryptogetAccountBalance(query).build();
     }

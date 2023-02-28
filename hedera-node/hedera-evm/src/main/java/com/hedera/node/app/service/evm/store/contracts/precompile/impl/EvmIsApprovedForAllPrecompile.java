@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
@@ -32,17 +33,12 @@ public interface EvmIsApprovedForAllPrecompile {
     Bytes ERC_IS_APPROVED_FOR_ALL_SELECTOR = Bytes.wrap(ERC_IS_APPROVED_FOR_ALL.selector());
     ABIType<Tuple> ERC_IS_APPROVED_FOR_ALL_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
-    static IsApproveForAllWrapper<byte[], byte[], byte[]> decodeIsApprovedForAll(
-            final Bytes input) {
+    static IsApproveForAllWrapper<byte[], byte[], byte[]> decodeIsApprovedForAll(final Bytes input) {
         final var tokenAddress = input.slice(4, 20).toArrayUnsafe();
         final var nestedInput = input.slice(24);
         final Tuple decodedArguments =
-                decodeFunctionCall(
-                        nestedInput,
-                        ERC_IS_APPROVED_FOR_ALL_SELECTOR,
-                        ERC_IS_APPROVED_FOR_ALL_DECODER);
+                decodeFunctionCall(nestedInput, ERC_IS_APPROVED_FOR_ALL_SELECTOR, ERC_IS_APPROVED_FOR_ALL_DECODER);
 
-        return new IsApproveForAllWrapper<>(
-                tokenAddress, decodedArguments.get(0), decodedArguments.get(1));
+        return new IsApproveForAllWrapper<>(tokenAddress, decodedArguments.get(0), decodedArguments.get(1));
     }
 }

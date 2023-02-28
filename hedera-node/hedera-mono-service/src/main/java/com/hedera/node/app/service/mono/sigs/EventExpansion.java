@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.sigs.order.SigReqsManager;
 import com.hedera.node.app.service.mono.txns.prefetch.PrefetchProcessor;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpan;
@@ -48,26 +49,22 @@ public class EventExpansion {
         this.prefetchProcessor = prefetchProcessor;
     }
 
-    public void expandAllSigs(final Event event, final ServicesState sourceState) {
-        event.forEachTransaction(
-                txn -> {
-                    try {
-                        final var accessor = expandHandleSpan.track(txn);
-                        // Submit the transaction for any pre-handle processing that can be
-                        // performed asynchronously; for
-                        // example, pre-fetching of contract bytecode; should start before
-                        // synchronous signature expansion
-                        prefetchProcessor.submit(accessor);
-                        sigReqsManager.expandSigs(sourceState, accessor);
-                        engine.verifyAsync(accessor.getCryptoSigs());
-                    } catch (final InvalidProtocolBufferException e) {
-                        log.warn("Event contained a non-GRPC transaction", e);
-                    } catch (final Exception race) {
-                        log.warn(
-                                "Unable to expand signatures, will be verified synchronously in"
-                                        + " handleTransaction",
-                                race);
-                    }
-                });
+    public void expandAllSigs(final Event event, final StateChildrenProvider provider) {
+        event.forEachTransaction(txn -> {
+            try {
+                final var accessor = expandHandleSpan.track(txn);
+                // Submit the transaction for any pre-handle processing that can be
+                // performed asynchronously; for
+                // example, pre-fetching of contract bytecode; should start before
+                // synchronous signature expansion
+                prefetchProcessor.submit(accessor);
+                sigReqsManager.expandSigs(provider, accessor);
+                engine.verifyAsync(accessor.getCryptoSigs());
+            } catch (final InvalidProtocolBufferException e) {
+                log.warn("Event contained a non-GRPC transaction", e);
+            } catch (final Exception race) {
+                log.warn("Unable to expand signatures, will be verified synchronously in" + " handleTransaction", race);
+            }
+        });
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.stats;
 
 import static com.hedera.node.app.service.mono.stats.ServicesStatsConfig.*;
@@ -32,7 +33,10 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
+@Singleton
 public class HapiOpCounters {
     static Supplier<HederaFunctionality[]> allFunctions =
             HederaFunctionality.class::getEnumConstants;
@@ -56,18 +60,16 @@ public class HapiOpCounters {
     private Counter onDisk;
     private Counter inMemory;
 
-    private EnumMap<HederaFunctionality, Counter.Config> receivedOpsConfig =
-            new EnumMap<>(HederaFunctionality.class);
-    private EnumMap<HederaFunctionality, Counter.Config> handledTxnsConfig =
-            new EnumMap<>(HederaFunctionality.class);
-    private EnumMap<HederaFunctionality, Counter.Config> submittedTxnsConfig =
-            new EnumMap<>(HederaFunctionality.class);
+    private EnumMap<HederaFunctionality, Counter.Config> receivedOpsConfig = new EnumMap<>(HederaFunctionality.class);
+    private EnumMap<HederaFunctionality, Counter.Config> handledTxnsConfig = new EnumMap<>(HederaFunctionality.class);
+    private EnumMap<HederaFunctionality, Counter.Config> submittedTxnsConfig = new EnumMap<>(HederaFunctionality.class);
     private EnumMap<HederaFunctionality, Counter.Config> answeredQueriesConfig =
             new EnumMap<>(HederaFunctionality.class);
     private EnumMap<ResponseCodeEnum, Counter.Config> responseCodesConfig =
             new EnumMap<>(ResponseCodeEnum.class);
     private Counter.Config deprecatedTxnsConfig;
 
+    @Inject
     public HapiOpCounters(
             final MiscRunningAvgs runningAvgs,
             final TransactionContext txnCtx,
@@ -168,9 +170,8 @@ public class HapiOpCounters {
             final Platform platform,
             final Map<HederaFunctionality, Counter> counters,
             final Map<HederaFunctionality, Counter.Config> configs) {
-        configs.forEach(
-                (function, config) ->
-                        counters.put(function, platform.getMetrics().getOrCreate(config)));
+        configs.forEach((function, config) ->
+                counters.put(function, platform.getMetrics().getOrCreate(config)));
     }
 
     public void countReceived(final HederaFunctionality op) {
@@ -206,11 +207,12 @@ public class HapiOpCounters {
     }
 
     public long answeredSoFar(final HederaFunctionality query) {
-        return IGNORED_FUNCTIONS.contains(query) ? 0 : answeredQueries.get(query).get();
+        return IGNORED_FUNCTIONS.contains(query)
+                ? 0
+                : answeredQueries.get(query).get();
     }
 
-    private void safeIncrement(
-            final Map<HederaFunctionality, Counter> counters, final HederaFunctionality function) {
+    private void safeIncrement(final Map<HederaFunctionality, Counter> counters, final HederaFunctionality function) {
         if (!IGNORED_FUNCTIONS.contains(function)) {
             counters.get(function).increment();
         }

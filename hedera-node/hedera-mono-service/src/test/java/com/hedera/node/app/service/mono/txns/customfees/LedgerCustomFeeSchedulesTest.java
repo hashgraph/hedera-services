@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.customfees;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -23,6 +24,7 @@ import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.backing.BackingTokens;
 import com.hedera.node.app.service.mono.ledger.properties.ChangeSummaryManager;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
@@ -67,12 +69,11 @@ class LedgerCustomFeeSchedulesTest {
         tokens.put(EntityNum.fromLong(tokenA.num()), aToken);
         tokens.put(EntityNum.fromLong(tokenB.num()), bToken);
 
-        tokensLedger =
-                new TransactionalLedger<>(
-                        TokenProperty.class,
-                        MerkleToken::new,
-                        new BackingTokens(() -> tokens),
-                        new ChangeSummaryManager<>());
+        tokensLedger = new TransactionalLedger<>(
+                TokenProperty.class,
+                MerkleToken::new,
+                new BackingTokens(() -> MerkleMapLike.from(tokens)),
+                new ChangeSummaryManager<>());
         subject = new LedgerCustomFeeSchedules(tokensLedger);
     }
 
@@ -118,18 +119,17 @@ class LedgerCustomFeeSchedulesTest {
         // given:
         MerkleMap<EntityNum, MerkleToken> secondMerkleMap = new MerkleMap<>();
         final var token = new MerkleToken();
-        final var missingFees =
-                List.of(FcCustomFee.fixedFee(50L, missingToken, feeCollector, false).asGrpc());
+        final var missingFees = List.of(
+                FcCustomFee.fixedFee(50L, missingToken, feeCollector, false).asGrpc());
 
         token.setFeeScheduleFrom(missingFees);
         secondMerkleMap.put(EntityNum.fromLong(missingToken.num()), new MerkleToken());
 
-        final var secondTokensLedger =
-                new TransactionalLedger<>(
-                        TokenProperty.class,
-                        MerkleToken::new,
-                        new BackingTokens(() -> secondMerkleMap),
-                        new ChangeSummaryManager<>());
+        final var secondTokensLedger = new TransactionalLedger<>(
+                TokenProperty.class,
+                MerkleToken::new,
+                new BackingTokens(() -> MerkleMapLike.from(secondMerkleMap)),
+                new ChangeSummaryManager<>());
 
         final var fees1 = new LedgerCustomFeeSchedules(tokensLedger);
         final var fees2 = new LedgerCustomFeeSchedules(secondTokensLedger);

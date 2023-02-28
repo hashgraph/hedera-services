@@ -13,9 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.merkle;
 
 import com.google.common.base.MoreObjects;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.logic.ScheduledTransactions;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualValue;
@@ -31,7 +34,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
-        implements MerkleInternal {
+        implements MerkleInternal, ScheduledTransactions {
     private static final Logger log = LogManager.getLogger(MerkleScheduledTransactions.class);
 
     private int pendingMigrationSize;
@@ -57,8 +60,7 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
     }
 
     public MerkleScheduledTransactions(
-            final List<MerkleNode> children,
-            final MerkleScheduledTransactions immutableMerkleScheduledTransactions) {
+            final List<MerkleNode> children, final MerkleScheduledTransactions immutableMerkleScheduledTransactions) {
         super(immutableMerkleScheduledTransactions);
         addDeserializedChildren(children, CURRENT_VERSION);
     }
@@ -108,24 +110,22 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
     @Override
     public MerkleScheduledTransactions copy() {
         if (isImmutable()) {
-            final var msg =
-                    String.format(
-                            "Copy called on immutable MerkleScheduledTransactions by thread '%s'!",
-                            Thread.currentThread().getName());
+            final var msg = String.format(
+                    "Copy called on immutable MerkleScheduledTransactions by thread '%s'!",
+                    Thread.currentThread().getName());
             log.warn(msg);
             /* Ensure we get this stack trace in case a caller incorrectly suppresses the exception. */
             stackDump.run();
-            throw new IllegalStateException(
-                    "Tried to make a copy of an immutable MerkleScheduledTransactions!");
+            throw new IllegalStateException("Tried to make a copy of an immutable MerkleScheduledTransactions!");
         }
 
         setImmutable(true);
         return new MerkleScheduledTransactions(
                 List.of(
                         state().copy(),
-                        byId().copy(),
-                        byExpirationSecond().copy(),
-                        byEquality().copy()),
+                        byIdInternal().copy(),
+                        byExpirationSecondInternal().copy(),
+                        byEqualityInternal().copy()),
                 this);
     }
 
@@ -144,38 +144,55 @@ public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
     }
 
     /* ----  Merkle children  ---- */
+    @Override
     public MerkleScheduledTransactionsState state() {
         return getChild(ChildIndices.STATE);
     }
 
-    public MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> byId() {
+    @Override
+    public MerkleMapLike<EntityNumVirtualKey, ScheduleVirtualValue> byId() {
+        return MerkleMapLike.from(byIdInternal());
+    }
+
+    MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> byIdInternal() {
         return getChild(ChildIndices.BY_ID);
     }
 
-    public MerkleMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond() {
+    @Override
+    public MerkleMapLike<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond() {
+        return MerkleMapLike.from(byExpirationSecondInternal());
+    }
+
+    MerkleMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecondInternal() {
         return getChild(ChildIndices.BY_EXPIRATION_SECOND);
     }
 
-    public MerkleMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality() {
+    @Override
+    public MerkleMapLike<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality() {
+        return MerkleMapLike.from(getChild(ChildIndices.BY_EQUALITY));
+    }
+
+    MerkleMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEqualityInternal() {
         return getChild(ChildIndices.BY_EQUALITY);
     }
 
+    @Override
     public long getNumSchedules() {
-        var byIdSize = byId().size();
+        var byIdSize = byIdInternal().size();
         if (pendingMigrationSize > 0 && byIdSize <= 0) {
             return pendingMigrationSize;
         }
         return byIdSize;
     }
 
+    @Override
     public long getCurrentMinSecond() {
         return state().currentMinSecond();
     }
 
+    @Override
     public void setCurrentMinSecond(final long currentMinSecond) {
-        throwIfImmutable(
-                "Cannot change this MerkleScheduledTransactions' currentMinSecond if it's"
-                        + " immutable.");
+        throwIfImmutable("Cannot change this MerkleScheduledTransactions' currentMinSecond if it's" + " immutable.");
         state().setCurrentMinSecond(currentMinSecond);
     }
 }

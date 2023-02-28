@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.context.primitives;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
@@ -77,6 +78,8 @@ import com.hedera.node.app.service.mono.ledger.backing.BackingTokens;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.enums.TokenSupplyType;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
@@ -129,7 +132,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
@@ -183,8 +185,7 @@ class StateViewTest {
     private final AccountID creatorAccountID = asAccount("0.0.7");
     private final long autoRenewPeriod = 1_234_567;
     private final String fileMemo = "Originally she thought";
-    private final ByteString create2Address =
-            ByteString.copyFrom(unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb"));
+    private final ByteString create2Address = ByteString.copyFrom(unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb"));
     private final ByteString ledgerId = ByteString.copyFromUtf8("0x03");
 
     private FileGetInfoResponse.FileInfo expected;
@@ -194,14 +195,14 @@ class StateViewTest {
     private Map<FileID, byte[]> contents;
     private Map<FileID, HFileMeta> attrs;
 
-    private MerkleMap<EntityNum, MerkleToken> tokens;
-    private MerkleMap<EntityNum, MerkleTopic> topics;
+    private MerkleMapLike<EntityNum, MerkleToken> tokens;
+    private MerkleMapLike<EntityNum, MerkleTopic> topics;
     private AccountStorageAdapter contracts;
     private UniqueTokenMapAdapter uniqueTokens;
     private TokenRelStorageAdapter tokenRels;
-    private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
-    private VirtualMap<ContractKey, IterableContractValue> contractStorage;
-    private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
+    private VirtualMapLike<VirtualBlobKey, VirtualBlobValue> storage;
+    private VirtualMapLike<ContractKey, IterableContractValue> contractStorage;
+    private MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfo;
     private MerkleNetworkContext networkContext;
     private ScheduleStore scheduleStore;
     private TransactionBody parentScheduleCreate;
@@ -219,35 +220,36 @@ class StateViewTest {
 
     private MockedStatic<StateView> mockedStatic;
 
-    @Mock private AliasManager aliasManager;
-    @Mock private RewardCalculator rewardCalculator;
+    @Mock
+    private AliasManager aliasManager;
+
+    @Mock
+    private RewardCalculator rewardCalculator;
 
     private StateView subject;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
     public void setup() throws Throwable {
-        metadata =
-                new HFileMeta(
-                        false, TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey(), expiry, fileMemo);
+        metadata = new HFileMeta(false, TxnHandlingScenario.MISC_FILE_WACL_KT.asJKey(), expiry, fileMemo);
         immutableMetadata = new HFileMeta(false, StateView.EMPTY_WACL, expiry);
 
-        expectedImmutable =
-                FileGetInfoResponse.FileInfo.newBuilder()
-                        .setLedgerId(ledgerId)
-                        .setDeleted(false)
-                        .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
-                        .setFileID(target)
-                        .setSize(data.length)
-                        .build();
-        expected =
-                expectedImmutable.toBuilder()
-                        .setKeys(TxnHandlingScenario.MISC_FILE_WACL_KT.asKey().getKeyList())
-                        .setMemo(fileMemo)
-                        .build();
+        expectedImmutable = FileGetInfoResponse.FileInfo.newBuilder()
+                .setLedgerId(ledgerId)
+                .setDeleted(false)
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
+                .setFileID(target)
+                .setSize(data.length)
+                .build();
+        expected = expectedImmutable.toBuilder()
+                .setKeys(TxnHandlingScenario.MISC_FILE_WACL_KT.asKey().getKeyList())
+                .setMemo(fileMemo)
+                .build();
 
-        tokenAccount =
-                MerkleAccountFactory.newAccount().isSmartContract(false).tokens(tokenId).get();
+        tokenAccount = MerkleAccountFactory.newAccount()
+                .isSmartContract(false)
+                .tokens(tokenId)
+                .get();
         tokenAccount.setKey(EntityNum.fromAccountId(tokenAccountId));
         tokenAccount.setNftsOwned(10);
         tokenAccount.setMaxAutomaticAssociations(123);
@@ -258,25 +260,24 @@ class StateViewTest {
         tokenAccount.setNumPositiveBalances(0);
         tokenAccount.setStakedId(10L);
         tokenAccount.setDeclineReward(true);
-        contract =
-                MerkleAccountFactory.newAccount()
-                        .alias(create2Address)
-                        .memo("Stay cold...")
-                        .numKvPairs(wellKnownNumKvPairs)
-                        .isSmartContract(true)
-                        .accountKeys(COMPLEX_KEY_ACCOUNT_KT)
-                        .proxy(asAccount("0.0.3"))
-                        .receiverSigRequired(true)
-                        .balance(555L)
-                        .autoRenewPeriod(1_000_000L)
-                        .deleted(true)
-                        .expirationTime(9_999_999L)
-                        .autoRenewAccount(asAccount("0.0.4"))
-                        .maxAutomaticAssociations(10)
-                        .get();
+        contract = MerkleAccountFactory.newAccount()
+                .alias(create2Address)
+                .memo("Stay cold...")
+                .numKvPairs(wellKnownNumKvPairs)
+                .isSmartContract(true)
+                .accountKeys(COMPLEX_KEY_ACCOUNT_KT)
+                .proxy(asAccount("0.0.3"))
+                .receiverSigRequired(true)
+                .balance(555L)
+                .autoRenewPeriod(1_000_000L)
+                .deleted(true)
+                .expirationTime(9_999_999L)
+                .autoRenewAccount(asAccount("0.0.4"))
+                .maxAutomaticAssociations(10)
+                .get();
         contracts = mock(AccountStorageAdapter.class);
-        topics = (MerkleMap<EntityNum, MerkleTopic>) mock(MerkleMap.class);
-        stakingInfo = (MerkleMap<EntityNum, MerkleStakingInfo>) mock(MerkleMap.class);
+        topics = (MerkleMapLike<EntityNum, MerkleTopic>) mock(MerkleMapLike.class);
+        stakingInfo = (MerkleMapLike<EntityNum, MerkleStakingInfo>) mock(MerkleMapLike.class);
         networkContext = mock(MerkleNetworkContext.class);
 
         tokenAccountRel = new MerkleTokenRelStatus(123L, false, true, true);
@@ -291,31 +292,29 @@ class StateViewTest {
         tokenRels.put(tokenAssociationId, tokenAccountRel);
         tokenRels.put(nftAssociationId, nftAccountRel);
 
-        tokens = (MerkleMap<EntityNum, MerkleToken>) mock(MerkleMap.class);
-        token =
-                new MerkleToken(
-                        Long.MAX_VALUE,
-                        100,
-                        1,
-                        "UnfrozenToken",
-                        "UnfrozenTokenName",
-                        true,
-                        true,
-                        EntityId.fromGrpcTokenId(tokenId));
+        tokens = (MerkleMapLike<EntityNum, MerkleToken>) mock(MerkleMapLike.class);
+        token = new MerkleToken(
+                Long.MAX_VALUE,
+                100,
+                1,
+                "UnfrozenToken",
+                "UnfrozenTokenName",
+                true,
+                true,
+                EntityId.fromGrpcTokenId(tokenId));
         setUpToken(token);
         token.setKey(tokenNum);
         token.setTokenType(TokenType.FUNGIBLE_COMMON);
 
-        nft =
-                new MerkleToken(
-                        Long.MAX_VALUE,
-                        100,
-                        1,
-                        "UnfrozenToken",
-                        "UnfrozenTokenName",
-                        true,
-                        true,
-                        EntityId.fromGrpcTokenId(nftTokenId));
+        nft = new MerkleToken(
+                Long.MAX_VALUE,
+                100,
+                1,
+                "UnfrozenToken",
+                "UnfrozenTokenName",
+                true,
+                true,
+                EntityId.fromGrpcTokenId(nftTokenId));
         setUpToken(nft);
         nft.setKey(EntityNum.fromTokenId(nftTokenId));
         nft.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
@@ -325,13 +324,12 @@ class StateViewTest {
 
         scheduleStore = mock(ScheduleStore.class);
         final var scheduleMemo = "For what but eye and ear";
-        parentScheduleCreate =
-                scheduleCreateTxnWith(
-                        SCHEDULE_ADMIN_KT.asKey(),
-                        scheduleMemo,
-                        payerAccountId,
-                        creatorAccountID,
-                        MiscUtils.asTimestamp(now.toJava()));
+        parentScheduleCreate = scheduleCreateTxnWith(
+                SCHEDULE_ADMIN_KT.asKey(),
+                scheduleMemo,
+                payerAccountId,
+                creatorAccountID,
+                MiscUtils.asTimestamp(now.toJava()));
         schedule = ScheduleVirtualValue.from(parentScheduleCreate.toByteArray(), expiry);
         schedule.witnessValidSignature("01234567890123456789012345678901".getBytes());
         schedule.witnessValidSignature("_123456789_123456789_123456789_1".getBytes());
@@ -346,8 +344,8 @@ class StateViewTest {
         uniqueTokens.put(targetNftKey.asNftNumPair().nftId(), targetNft);
         uniqueTokens.put(treasuryNftKey.asNftNumPair().nftId(), treasuryNft);
 
-        storage = (VirtualMap<VirtualBlobKey, VirtualBlobValue>) mock(VirtualMap.class);
-        contractStorage = (VirtualMap<ContractKey, IterableContractValue>) mock(VirtualMap.class);
+        storage = (VirtualMapLike<VirtualBlobKey, VirtualBlobValue>) mock(VirtualMapLike.class);
+        contractStorage = (VirtualMapLike<ContractKey, IterableContractValue>) mock(VirtualMapLike.class);
 
         children = new MutableStateChildren();
         children.setUniqueTokens(uniqueTokens);
@@ -450,10 +448,7 @@ class StateViewTest {
         assertEquals(Timestamp.newBuilder().setSeconds(expiry).build(), info.getExpirationTime());
         final var expectedSignatoryList = KeyList.newBuilder();
         schedule.signatories()
-                .forEach(
-                        a ->
-                                expectedSignatoryList.addKeys(
-                                        Key.newBuilder().setEd25519(ByteString.copyFrom(a))));
+                .forEach(a -> expectedSignatoryList.addKeys(Key.newBuilder().setEd25519(ByteString.copyFrom(a))));
         assertArrayEquals(
                 expectedSignatoryList.build().getKeysList().toArray(),
                 info.getSigners().getKeysList().toArray());
@@ -467,8 +462,7 @@ class StateViewTest {
     @Test
     void getsScheduleInfoForExecuted() {
         final var mockEd25519Key = new JEd25519Key("a123456789a123456789a123456789a1".getBytes());
-        final var mockSecp256k1Key =
-                new JECDSASecp256k1Key("012345678901234567890123456789012".getBytes());
+        final var mockSecp256k1Key = new JECDSASecp256k1Key("012345678901234567890123456789012".getBytes());
         given(scheduleStore.resolve(scheduleId)).willReturn(scheduleId);
         given(scheduleStore.get(scheduleId)).willReturn(schedule);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
@@ -569,9 +563,7 @@ class StateViewTest {
         assertEquals(miscKey, info.getWipeKey());
         assertEquals(miscKey, info.getFeeScheduleKey());
         assertEquals(autoRenew, info.getAutoRenewAccount());
-        assertEquals(
-                Duration.newBuilder().setSeconds(autoRenewPeriod).build(),
-                info.getAutoRenewPeriod());
+        assertEquals(Duration.newBuilder().setSeconds(autoRenewPeriod).build(), info.getAutoRenewPeriod());
         assertEquals(Timestamp.newBuilder().setSeconds(expiry).build(), info.getExpiry());
         assertEquals(TokenFreezeStatus.Frozen, info.getDefaultFreezeStatus());
         assertEquals(TokenKycStatus.Granted, info.getDefaultKycStatus());
@@ -591,9 +583,7 @@ class StateViewTest {
         assertEquals(token.memo(), info.getMemo());
         assertEquals(token.symbol(), info.getSymbol());
         assertEquals(token.name(), info.getName());
-        assertEquals(
-                token.treasury().toGrpcAccountId(),
-                EntityIdUtils.accountIdFromEvmAddress(info.getTreasury()));
+        assertEquals(token.treasury().toGrpcAccountId(), EntityIdUtils.accountIdFromEvmAddress(info.getTreasury()));
         assertEquals(token.totalSupply(), info.getTotalSupply());
         assertEquals(token.decimals(), info.getDecimals());
         assertEquals(autoRenew, EntityIdUtils.accountIdFromEvmAddress(info.getAutoRenewAccount()));
@@ -625,27 +615,22 @@ class StateViewTest {
     void getsContractInfo() throws Exception {
         final var target = EntityNum.fromContractId(cid);
         given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
-        final var expectedTotalStorage =
-                StateView.BYTES_PER_EVM_KEY_VALUE_PAIR * wellKnownNumKvPairs;
+        final var expectedTotalStorage = StateView.BYTES_PER_EVM_KEY_VALUE_PAIR * wellKnownNumKvPairs;
         given(networkInfo.ledgerId()).willReturn(ledgerId);
 
-        List<TokenRelationship> rels =
-                List.of(
-                        TokenRelationship.newBuilder()
-                                .setTokenId(TokenID.newBuilder().setTokenNum(123L))
-                                .setFreezeStatus(TokenFreezeStatus.FreezeNotApplicable)
-                                .setKycStatus(TokenKycStatus.KycNotApplicable)
-                                .setBalance(321L)
-                                .build());
+        List<TokenRelationship> rels = List.of(TokenRelationship.newBuilder()
+                .setTokenId(TokenID.newBuilder().setTokenNum(123L))
+                .setFreezeStatus(TokenFreezeStatus.FreezeNotApplicable)
+                .setKycStatus(TokenKycStatus.KycNotApplicable)
+                .setBalance(321L)
+                .build());
         mockedStatic = mockStatic(StateView.class);
         mockedStatic
                 .when(() -> StateView.tokenRels(subject, contract, maxTokensFprAccountInfo))
                 .thenReturn(rels);
 
-        final var info =
-                subject.infoForContract(
-                                cid, aliasManager, maxTokensFprAccountInfo, rewardCalculator)
-                        .get();
+        final var info = subject.infoForContract(cid, aliasManager, maxTokensFprAccountInfo, rewardCalculator)
+                .get();
 
         assertEquals(cid, info.getContractID());
         assertEquals(asAccount(cid), info.getAccountID());
@@ -660,8 +645,7 @@ class StateViewTest {
         assertEquals(ledgerId, info.getLedgerId());
         assertTrue(info.getDeleted());
         assertEquals(expectedTotalStorage, info.getStorage());
-        assertEquals(
-                contract.getMaxAutomaticAssociations(), info.getMaxAutomaticTokenAssociations());
+        assertEquals(contract.getMaxAutomaticAssociations(), info.getMaxAutomaticTokenAssociations());
         mockedStatic.close();
     }
 
@@ -670,27 +654,22 @@ class StateViewTest {
         final var target = EntityNum.fromContractId(cid);
         given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
         contract.setAlias(ByteString.EMPTY);
-        final var expectedTotalStorage =
-                StateView.BYTES_PER_EVM_KEY_VALUE_PAIR * wellKnownNumKvPairs;
+        final var expectedTotalStorage = StateView.BYTES_PER_EVM_KEY_VALUE_PAIR * wellKnownNumKvPairs;
         given(networkInfo.ledgerId()).willReturn(ledgerId);
 
-        List<TokenRelationship> rels =
-                List.of(
-                        TokenRelationship.newBuilder()
-                                .setTokenId(TokenID.newBuilder().setTokenNum(123L))
-                                .setFreezeStatus(TokenFreezeStatus.FreezeNotApplicable)
-                                .setKycStatus(TokenKycStatus.KycNotApplicable)
-                                .setBalance(321L)
-                                .build());
+        List<TokenRelationship> rels = List.of(TokenRelationship.newBuilder()
+                .setTokenId(TokenID.newBuilder().setTokenNum(123L))
+                .setFreezeStatus(TokenFreezeStatus.FreezeNotApplicable)
+                .setKycStatus(TokenKycStatus.KycNotApplicable)
+                .setBalance(321L)
+                .build());
         mockedStatic = mockStatic(StateView.class);
         mockedStatic
                 .when(() -> StateView.tokenRels(subject, contract, maxTokensFprAccountInfo))
                 .thenReturn(rels);
 
-        final var info =
-                subject.infoForContract(
-                                cid, aliasManager, maxTokensFprAccountInfo, rewardCalculator)
-                        .get();
+        final var info = subject.infoForContract(cid, aliasManager, maxTokensFprAccountInfo, rewardCalculator)
+                .get();
 
         assertEquals(cid, info.getContractID());
         assertEquals(asAccount(cid), info.getAccountID());
@@ -713,26 +692,25 @@ class StateViewTest {
         given(tokens.getOrDefault(EntityNum.fromTokenId(nftTokenId), REMOVED_TOKEN))
                 .willReturn(nft);
 
-        List<TokenRelationship> expectedRels =
-                List.of(
-                        TokenRelationship.newBuilder()
-                                .setTokenId(tokenId)
-                                .setSymbol("UnfrozenToken")
-                                .setBalance(123L)
-                                .setKycStatus(TokenKycStatus.Granted)
-                                .setFreezeStatus(TokenFreezeStatus.Unfrozen)
-                                .setAutomaticAssociation(true)
-                                .setDecimals(1)
-                                .build(),
-                        TokenRelationship.newBuilder()
-                                .setTokenId(nftTokenId)
-                                .setSymbol("UnfrozenToken")
-                                .setBalance(2L)
-                                .setKycStatus(TokenKycStatus.Granted)
-                                .setFreezeStatus(TokenFreezeStatus.Unfrozen)
-                                .setAutomaticAssociation(false)
-                                .setDecimals(1)
-                                .build());
+        List<TokenRelationship> expectedRels = List.of(
+                TokenRelationship.newBuilder()
+                        .setTokenId(tokenId)
+                        .setSymbol("UnfrozenToken")
+                        .setBalance(123L)
+                        .setKycStatus(TokenKycStatus.Granted)
+                        .setFreezeStatus(TokenFreezeStatus.Unfrozen)
+                        .setAutomaticAssociation(true)
+                        .setDecimals(1)
+                        .build(),
+                TokenRelationship.newBuilder()
+                        .setTokenId(nftTokenId)
+                        .setSymbol("UnfrozenToken")
+                        .setBalance(2L)
+                        .setKycStatus(TokenKycStatus.Granted)
+                        .setFreezeStatus(TokenFreezeStatus.Unfrozen)
+                        .setAutomaticAssociation(false)
+                        .setDecimals(1)
+                        .build());
 
         final var actualRels = StateView.tokenRels(subject, tokenAccount, maxTokensFprAccountInfo);
 
@@ -741,7 +719,8 @@ class StateViewTest {
 
     @Test
     void getInfoForNftMissing() {
-        final var nftID = NftID.newBuilder().setTokenID(tokenId).setSerialNumber(123L).build();
+        final var nftID =
+                NftID.newBuilder().setTokenID(tokenId).setSerialNumber(123L).build();
 
         final var actualTokenNftInfo = subject.infoForNft(nftID);
 
@@ -782,35 +761,29 @@ class StateViewTest {
                 .thenReturn(Collections.emptyList());
         given(networkInfo.ledgerId()).willReturn(ledgerId);
 
-        final var expectedResponse =
-                CryptoGetInfoResponse.AccountInfo.newBuilder()
-                        .setLedgerId(ledgerId)
-                        .setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
-                        .setAccountID(tokenAccountId)
-                        .setAlias(tokenAccount.getAlias())
-                        .setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
-                        .setDeleted(tokenAccount.isDeleted())
-                        .setMemo(tokenAccount.getMemo())
-                        .setAutoRenewPeriod(
-                                Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
-                        .setBalance(tokenAccount.getBalance())
-                        .setExpirationTime(
-                                Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
-                        .setContractAccountID(EntityIdUtils.asHexedEvmAddress(tokenAccountId))
-                        .setOwnedNfts(tokenAccount.getNftsOwned())
-                        .setMaxAutomaticTokenAssociations(
-                                tokenAccount.getMaxAutomaticAssociations())
-                        .setStakingInfo(
-                                StakingInfo.newBuilder()
-                                        .setDeclineReward(true)
-                                        .setStakedAccountId(
-                                                AccountID.newBuilder().setAccountNum(10L).build())
-                                        .build())
-                        .build();
+        final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
+                .setLedgerId(ledgerId)
+                .setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
+                .setAccountID(tokenAccountId)
+                .setAlias(tokenAccount.getAlias())
+                .setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
+                .setDeleted(tokenAccount.isDeleted())
+                .setMemo(tokenAccount.getMemo())
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
+                .setBalance(tokenAccount.getBalance())
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
+                .setContractAccountID(EntityIdUtils.asHexedEvmAddress(tokenAccountId))
+                .setOwnedNfts(tokenAccount.getNftsOwned())
+                .setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
+                .setStakingInfo(StakingInfo.newBuilder()
+                        .setDeclineReward(true)
+                        .setStakedAccountId(
+                                AccountID.newBuilder().setAccountNum(10L).build())
+                        .build())
+                .build();
 
         final var actualResponse =
-                subject.infoForAccount(
-                        tokenAccountId, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
+                subject.infoForAccount(tokenAccountId, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
 
         assertEquals(expectedResponse, actualResponse.get());
         mockedStatic.close();
@@ -819,8 +792,10 @@ class StateViewTest {
     @Test
     void stakingInfoReturnedCorrectly() {
         final var startPeriod = 10000L;
-        tokenAccount =
-                MerkleAccountFactory.newAccount().isSmartContract(false).tokens(tokenId).get();
+        tokenAccount = MerkleAccountFactory.newAccount()
+                .isSmartContract(false)
+                .tokens(tokenId)
+                .get();
         tokenAccount.setStakedId(-10L);
         tokenAccount.setDeclineReward(false);
         tokenAccount.setStakePeriodStart(startPeriod);
@@ -834,16 +809,14 @@ class StateViewTest {
                 .thenReturn(Collections.emptyList());
         given(networkInfo.ledgerId()).willReturn(ledgerId);
 
-        final var expectedResponse =
-                StakingInfo.newBuilder()
-                        .setDeclineReward(false)
-                        .setStakedNodeId(9L)
-                        .setStakePeriodStart(Timestamp.newBuilder().setSeconds(1_234_567L))
-                        .build();
+        final var expectedResponse = StakingInfo.newBuilder()
+                .setDeclineReward(false)
+                .setStakedNodeId(9L)
+                .setStakePeriodStart(Timestamp.newBuilder().setSeconds(1_234_567L))
+                .build();
 
         final var actualResponse =
-                subject.infoForAccount(
-                        tokenAccountId, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
+                subject.infoForAccount(tokenAccountId, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
 
         assertEquals(expectedResponse, actualResponse.get().getStakingInfo());
         mockedStatic.close();
@@ -851,8 +824,7 @@ class StateViewTest {
 
     @Test
     void infoForExternallyOperatedAccount() {
-        final byte[] ecdsaKey =
-                Hex.decode("033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
+        final byte[] ecdsaKey = Hex.decode("033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
         given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
         tokenAccount.setAccountKey(new JECDSASecp256k1Key(ecdsaKey));
         final var expectedAddress = CommonUtils.hex(recoverAddressFromPubKey(ecdsaKey));
@@ -863,35 +835,29 @@ class StateViewTest {
                 .thenReturn(Collections.emptyList());
         given(networkInfo.ledgerId()).willReturn(ledgerId);
 
-        final var expectedResponse =
-                CryptoGetInfoResponse.AccountInfo.newBuilder()
-                        .setLedgerId(ledgerId)
-                        .setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
-                        .setAccountID(tokenAccountId)
-                        .setAlias(tokenAccount.getAlias())
-                        .setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
-                        .setDeleted(tokenAccount.isDeleted())
-                        .setMemo(tokenAccount.getMemo())
-                        .setAutoRenewPeriod(
-                                Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
-                        .setBalance(tokenAccount.getBalance())
-                        .setExpirationTime(
-                                Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
-                        .setContractAccountID(expectedAddress)
-                        .setOwnedNfts(tokenAccount.getNftsOwned())
-                        .setMaxAutomaticTokenAssociations(
-                                tokenAccount.getMaxAutomaticAssociations())
-                        .setStakingInfo(
-                                StakingInfo.newBuilder()
-                                        .setStakedAccountId(
-                                                AccountID.newBuilder().setAccountNum(10).build())
-                                        .setDeclineReward(true)
-                                        .build())
-                        .build();
+        final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
+                .setLedgerId(ledgerId)
+                .setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
+                .setAccountID(tokenAccountId)
+                .setAlias(tokenAccount.getAlias())
+                .setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
+                .setDeleted(tokenAccount.isDeleted())
+                .setMemo(tokenAccount.getMemo())
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
+                .setBalance(tokenAccount.getBalance())
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
+                .setContractAccountID(expectedAddress)
+                .setOwnedNfts(tokenAccount.getNftsOwned())
+                .setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
+                .setStakingInfo(StakingInfo.newBuilder()
+                        .setStakedAccountId(
+                                AccountID.newBuilder().setAccountNum(10).build())
+                        .setDeclineReward(true)
+                        .build())
+                .build();
 
         final var actualResponse =
-                subject.infoForAccount(
-                        tokenAccountId, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
+                subject.infoForAccount(tokenAccountId, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
         mockedStatic.close();
 
         assertEquals(expectedResponse, actualResponse.get());
@@ -911,34 +877,28 @@ class StateViewTest {
                 .thenReturn(Collections.emptyList());
         given(networkInfo.ledgerId()).willReturn(ledgerId);
 
-        final var expectedResponse =
-                CryptoGetInfoResponse.AccountInfo.newBuilder()
-                        .setLedgerId(ledgerId)
-                        .setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
-                        .setAccountID(tokenAccountId)
-                        .setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
-                        .setDeleted(tokenAccount.isDeleted())
-                        .setMemo(tokenAccount.getMemo())
-                        .setAutoRenewPeriod(
-                                Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
-                        .setBalance(tokenAccount.getBalance())
-                        .setExpirationTime(
-                                Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
-                        .setContractAccountID(expectedAddress)
-                        .setOwnedNfts(tokenAccount.getNftsOwned())
-                        .setMaxAutomaticTokenAssociations(
-                                tokenAccount.getMaxAutomaticAssociations())
-                        .setStakingInfo(
-                                StakingInfo.newBuilder()
-                                        .setStakedAccountId(
-                                                AccountID.newBuilder().setAccountNum(10).build())
-                                        .setDeclineReward(true)
-                                        .build())
-                        .build();
+        final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
+                .setLedgerId(ledgerId)
+                .setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
+                .setAccountID(tokenAccountId)
+                .setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
+                .setDeleted(tokenAccount.isDeleted())
+                .setMemo(tokenAccount.getMemo())
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
+                .setBalance(tokenAccount.getBalance())
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
+                .setContractAccountID(expectedAddress)
+                .setOwnedNfts(tokenAccount.getNftsOwned())
+                .setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
+                .setStakingInfo(StakingInfo.newBuilder()
+                        .setStakedAccountId(
+                                AccountID.newBuilder().setAccountNum(10).build())
+                        .setDeclineReward(true)
+                        .build())
+                .build();
 
         final var actualResponse =
-                subject.infoForAccount(
-                        tokenAccountId, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
+                subject.infoForAccount(tokenAccountId, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
         mockedStatic.close();
 
         assertEquals(expectedResponse, actualResponse.get());
@@ -953,32 +913,26 @@ class StateViewTest {
                 .when(() -> StateView.tokenRels(subject, tokenAccount, maxTokensFprAccountInfo))
                 .thenReturn(Collections.emptyList());
         given(networkInfo.ledgerId()).willReturn(ledgerId);
-        final var expectedResponse =
-                GetAccountDetailsResponse.AccountDetails.newBuilder()
-                        .setLedgerId(ledgerId)
-                        .setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
-                        .setAccountId(tokenAccountId)
-                        .setAlias(tokenAccount.getAlias())
-                        .setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
-                        .setDeleted(tokenAccount.isDeleted())
-                        .setMemo(tokenAccount.getMemo())
-                        .setAutoRenewPeriod(
-                                Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
-                        .setBalance(tokenAccount.getBalance())
-                        .setExpirationTime(
-                                Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
-                        .setContractAccountId(EntityIdUtils.asHexedEvmAddress(tokenAccountId))
-                        .setOwnedNfts(tokenAccount.getNftsOwned())
-                        .setMaxAutomaticTokenAssociations(
-                                tokenAccount.getMaxAutomaticAssociations())
-                        .addAllGrantedCryptoAllowances(getCryptoGrantedAllowancesList(tokenAccount))
-                        .addAllGrantedTokenAllowances(
-                                getFungibleGrantedTokenAllowancesList(tokenAccount))
-                        .addAllGrantedNftAllowances(getNftGrantedAllowancesList(tokenAccount))
-                        .build();
+        final var expectedResponse = GetAccountDetailsResponse.AccountDetails.newBuilder()
+                .setLedgerId(ledgerId)
+                .setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
+                .setAccountId(tokenAccountId)
+                .setAlias(tokenAccount.getAlias())
+                .setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
+                .setDeleted(tokenAccount.isDeleted())
+                .setMemo(tokenAccount.getMemo())
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
+                .setBalance(tokenAccount.getBalance())
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
+                .setContractAccountId(EntityIdUtils.asHexedEvmAddress(tokenAccountId))
+                .setOwnedNfts(tokenAccount.getNftsOwned())
+                .setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
+                .addAllGrantedCryptoAllowances(getCryptoGrantedAllowancesList(tokenAccount))
+                .addAllGrantedTokenAllowances(getFungibleGrantedTokenAllowancesList(tokenAccount))
+                .addAllGrantedNftAllowances(getNftGrantedAllowancesList(tokenAccount))
+                .build();
 
-        final var actualResponse =
-                subject.accountDetails(tokenAccountId, aliasManager, maxTokensFprAccountInfo);
+        final var actualResponse = subject.accountDetails(tokenAccountId, aliasManager, maxTokensFprAccountInfo);
         mockedStatic.close();
 
         assertEquals(expectedResponse, actualResponse.get());
@@ -994,35 +948,29 @@ class StateViewTest {
                 .thenReturn(Collections.emptyList());
         given(networkInfo.ledgerId()).willReturn(ledgerId);
 
-        final var expectedResponse =
-                CryptoGetInfoResponse.AccountInfo.newBuilder()
-                        .setLedgerId(ledgerId)
-                        .setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
-                        .setAccountID(tokenAccountId)
-                        .setAlias(tokenAccount.getAlias())
-                        .setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
-                        .setDeleted(tokenAccount.isDeleted())
-                        .setMemo(tokenAccount.getMemo())
-                        .setAutoRenewPeriod(
-                                Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
-                        .setBalance(tokenAccount.getBalance())
-                        .setExpirationTime(
-                                Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
-                        .setContractAccountID(EntityIdUtils.asHexedEvmAddress(tokenAccountId))
-                        .setOwnedNfts(tokenAccount.getNftsOwned())
-                        .setMaxAutomaticTokenAssociations(
-                                tokenAccount.getMaxAutomaticAssociations())
-                        .setStakingInfo(
-                                StakingInfo.newBuilder()
-                                        .setDeclineReward(true)
-                                        .setStakedAccountId(
-                                                AccountID.newBuilder().setAccountNum(10L).build())
-                                        .build())
-                        .build();
+        final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
+                .setLedgerId(ledgerId)
+                .setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
+                .setAccountID(tokenAccountId)
+                .setAlias(tokenAccount.getAlias())
+                .setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
+                .setDeleted(tokenAccount.isDeleted())
+                .setMemo(tokenAccount.getMemo())
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
+                .setBalance(tokenAccount.getBalance())
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
+                .setContractAccountID(EntityIdUtils.asHexedEvmAddress(tokenAccountId))
+                .setOwnedNfts(tokenAccount.getNftsOwned())
+                .setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
+                .setStakingInfo(StakingInfo.newBuilder()
+                        .setDeclineReward(true)
+                        .setStakedAccountId(
+                                AccountID.newBuilder().setAccountNum(10L).build())
+                        .build())
+                .build();
 
         final var actualResponse =
-                subject.infoForAccount(
-                        accountWithAlias, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
+                subject.infoForAccount(accountWithAlias, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
         mockedStatic.close();
         assertEquals(expectedResponse, actualResponse.get());
     }
@@ -1039,34 +987,28 @@ class StateViewTest {
         given(networkInfo.ledgerId()).willReturn(ledgerId);
 
         tokenAccount.setAlias(ByteStringUtils.wrapUnsafely(pretendAddress));
-        final var expectedResponse =
-                CryptoGetInfoResponse.AccountInfo.newBuilder()
-                        .setLedgerId(ledgerId)
-                        .setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
-                        .setAccountID(tokenAccountId)
-                        .setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
-                        .setDeleted(tokenAccount.isDeleted())
-                        .setMemo(tokenAccount.getMemo())
-                        .setAutoRenewPeriod(
-                                Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
-                        .setBalance(tokenAccount.getBalance())
-                        .setExpirationTime(
-                                Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
-                        .setContractAccountID(CommonUtils.hex(pretendAddress))
-                        .setOwnedNfts(tokenAccount.getNftsOwned())
-                        .setMaxAutomaticTokenAssociations(
-                                tokenAccount.getMaxAutomaticAssociations())
-                        .setStakingInfo(
-                                StakingInfo.newBuilder()
-                                        .setDeclineReward(true)
-                                        .setStakedAccountId(
-                                                AccountID.newBuilder().setAccountNum(10L).build())
-                                        .build())
-                        .build();
+        final var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
+                .setLedgerId(ledgerId)
+                .setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
+                .setAccountID(tokenAccountId)
+                .setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
+                .setDeleted(tokenAccount.isDeleted())
+                .setMemo(tokenAccount.getMemo())
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
+                .setBalance(tokenAccount.getBalance())
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
+                .setContractAccountID(CommonUtils.hex(pretendAddress))
+                .setOwnedNfts(tokenAccount.getNftsOwned())
+                .setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
+                .setStakingInfo(StakingInfo.newBuilder()
+                        .setDeclineReward(true)
+                        .setStakedAccountId(
+                                AccountID.newBuilder().setAccountNum(10L).build())
+                        .build())
+                .build();
 
         final var actualResponse =
-                subject.infoForAccount(
-                        accountWithAlias, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
+                subject.infoForAccount(accountWithAlias, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
         mockedStatic.close();
         assertEquals(expectedResponse, actualResponse.get());
     }
@@ -1083,8 +1025,7 @@ class StateViewTest {
         given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(null);
 
         final var actualResponse =
-                subject.infoForAccount(
-                        tokenAccountId, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
+                subject.infoForAccount(tokenAccountId, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
 
         assertEquals(Optional.empty(), actualResponse);
     }
@@ -1097,8 +1038,7 @@ class StateViewTest {
         given(contracts.get(mockedEntityNum)).willReturn(null);
 
         final var actualResponse =
-                subject.infoForAccount(
-                        accountWithAlias, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
+                subject.infoForAccount(accountWithAlias, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
         assertEquals(Optional.empty(), actualResponse);
     }
 
@@ -1117,16 +1057,18 @@ class StateViewTest {
     @Test
     void getStorageAndContractStorage() {
         final var children = new MutableStateChildren();
-        children.setContractStorage(contractStorage);
-        children.setStorage(storage);
+        final var setBlobs = storage;
+        final var setStorage = contractStorage;
+        children.setContractStorage(setStorage);
+        children.setStorage(setBlobs);
 
         subject = new StateView(null, children, null);
 
         final var actualStorage = subject.storage();
         final var actualContractStorage = subject.contractStorage();
 
-        assertEquals(storage, actualStorage);
-        assertEquals(contractStorage, actualContractStorage);
+        assertSame(setBlobs, actualStorage);
+        assertSame(setStorage, actualContractStorage);
     }
 
     @Test
@@ -1163,10 +1105,8 @@ class StateViewTest {
     void returnsEmptyOptionalIfContractMissing() {
         given(contracts.get(any())).willReturn(null);
 
-        assertTrue(
-                subject.infoForContract(
-                                cid, aliasManager, maxTokensFprAccountInfo, rewardCalculator)
-                        .isEmpty());
+        assertTrue(subject.infoForContract(cid, aliasManager, maxTokensFprAccountInfo, rewardCalculator)
+                .isEmpty());
     }
 
     @Test
@@ -1174,15 +1114,11 @@ class StateViewTest {
         given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
         mockedStatic = mockStatic(StateView.class);
-        mockedStatic
-                .when(() -> StateView.tokenRels(any(), any(), anyInt()))
-                .thenReturn(Collections.emptyList());
+        mockedStatic.when(() -> StateView.tokenRels(any(), any(), anyInt())).thenReturn(Collections.emptyList());
         contract.setAccountKey(null);
 
-        final var info =
-                subject.infoForContract(
-                                cid, aliasManager, maxTokensFprAccountInfo, rewardCalculator)
-                        .get();
+        final var info = subject.infoForContract(cid, aliasManager, maxTokensFprAccountInfo, rewardCalculator)
+                .get();
 
         assertFalse(info.hasAdminKey());
         mockedStatic.close();
@@ -1193,15 +1129,11 @@ class StateViewTest {
         given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
         mockedStatic = mockStatic(StateView.class);
-        mockedStatic
-                .when(() -> StateView.tokenRels(any(), any(), anyInt()))
-                .thenReturn(Collections.emptyList());
+        mockedStatic.when(() -> StateView.tokenRels(any(), any(), anyInt())).thenReturn(Collections.emptyList());
         contract.setAutoRenewAccount(null);
 
-        final var info =
-                subject.infoForContract(
-                                cid, aliasManager, maxTokensFprAccountInfo, rewardCalculator)
-                        .get();
+        final var info = subject.infoForContract(cid, aliasManager, maxTokensFprAccountInfo, rewardCalculator)
+                .get();
 
         assertFalse(info.hasAutoRenewAccountId());
         mockedStatic.close();
@@ -1333,7 +1265,7 @@ class StateViewTest {
 
     @Test
     void abortsNftGetWhenMissingTreasuryAsExpected() {
-        tokens = mock(MerkleMap.class);
+        tokens = mock(MerkleMapLike.class);
         targetNft.setOwner(MISSING_ENTITY_ID);
 
         final var optionalNftInfo = subject.infoForNft(targetNftId);
@@ -1399,15 +1331,22 @@ class StateViewTest {
         assertTrue(subject.asReadOnlyTokenStore() instanceof BackingTokens);
         assertTrue(subject.asReadOnlyNftStore() instanceof BackingNfts);
         assertTrue(subject.asReadOnlyAssociationStore() instanceof BackingTokenRels);
-        assertEquals(tokens, ((BackingTokens) subject.asReadOnlyTokenStore()).getDelegate().get());
+        assertEquals(
+                tokens,
+                ((BackingTokens) subject.asReadOnlyTokenStore()).getDelegate().get());
         assertEquals(
                 contracts,
-                ((BackingAccounts) subject.asReadOnlyAccountStore()).getDelegate().get());
+                ((BackingAccounts) subject.asReadOnlyAccountStore())
+                        .getDelegate()
+                        .get());
         assertEquals(
-                uniqueTokens, ((BackingNfts) subject.asReadOnlyNftStore()).getDelegate().get());
+                uniqueTokens,
+                ((BackingNfts) subject.asReadOnlyNftStore()).getDelegate().get());
         assertEquals(
                 tokenRels,
-                ((BackingTokenRels) subject.asReadOnlyAssociationStore()).getDelegate().get());
+                ((BackingTokenRels) subject.asReadOnlyAssociationStore())
+                        .getDelegate()
+                        .get());
     }
 
     @Test
@@ -1436,63 +1375,46 @@ class StateViewTest {
 
     private final Instant nftCreation = Instant.ofEpochSecond(1_234_567L, 8);
     private final byte[] nftMeta = "abcdefgh".getBytes();
-    private final NftID targetNftId =
-            NftID.newBuilder().setTokenID(IdUtils.asToken("0.0.3")).setSerialNumber(4L).build();
-    private final NftID missingNftId =
-            NftID.newBuilder().setTokenID(IdUtils.asToken("0.0.9")).setSerialNumber(5L).build();
+    private final NftID targetNftId = NftID.newBuilder()
+            .setTokenID(IdUtils.asToken("0.0.3"))
+            .setSerialNumber(4L)
+            .build();
+    private final NftID missingNftId = NftID.newBuilder()
+            .setTokenID(IdUtils.asToken("0.0.9"))
+            .setSerialNumber(5L)
+            .build();
     private final EntityNumPair targetNftKey = EntityNumPair.fromLongs(3, 4);
     private final EntityNumPair treasuryNftKey = EntityNumPair.fromLongs(3, 5);
-    private final UniqueTokenAdapter targetNft =
-            UniqueTokenAdapter.wrap(
-                    new MerkleUniqueToken(
-                            EntityId.fromGrpcAccountId(nftOwnerId),
-                            nftMeta,
-                            fromJava(nftCreation)));
-    private final UniqueTokenAdapter treasuryNft =
-            UniqueTokenAdapter.wrap(
-                    new MerkleUniqueToken(
-                            EntityId.fromGrpcAccountId(treasuryOwnerId),
-                            nftMeta,
-                            fromJava(nftCreation)));
+    private final UniqueTokenAdapter targetNft = UniqueTokenAdapter.wrap(
+            new MerkleUniqueToken(EntityId.fromGrpcAccountId(nftOwnerId), nftMeta, fromJava(nftCreation)));
+    private final UniqueTokenAdapter treasuryNft = UniqueTokenAdapter.wrap(
+            new MerkleUniqueToken(EntityId.fromGrpcAccountId(treasuryOwnerId), nftMeta, fromJava(nftCreation)));
 
     private final CustomFeeBuilder builder = new CustomFeeBuilder(payerAccountId);
     private final CustomFee customFixedFeeInHbar = builder.withFixedFee(fixedHbar(100L));
     private final CustomFee customFixedFeeInHts = builder.withFixedFee(fixedHts(tokenId, 100L));
     private final CustomFee customFixedFeeSameToken = builder.withFixedFee(fixedHts(50L));
-    private final CustomFee customFractionalFee =
-            builder.withFractionalFee(
-                    fractional(15L, 100L).setMinimumAmount(10L).setMaximumAmount(50L));
+    private final CustomFee customFractionalFee = builder.withFractionalFee(
+            fractional(15L, 100L).setMinimumAmount(10L).setMaximumAmount(50L));
     private final CustomFee customRoyaltyFee =
-            builder.withRoyaltyFee(
-                    com.hederahashgraph.api.proto.java.RoyaltyFee.newBuilder()
-                            .setExchangeValueFraction(
-                                    Fraction.newBuilder().setNumerator(15).setDenominator(100)));
-    private final List<CustomFee> grpcCustomFees =
-            List.of(
-                    customFixedFeeInHbar,
-                    customFixedFeeInHts,
-                    customFixedFeeSameToken,
-                    customFractionalFee,
-                    customRoyaltyFee);
+            builder.withRoyaltyFee(com.hederahashgraph.api.proto.java.RoyaltyFee.newBuilder()
+                    .setExchangeValueFraction(
+                            Fraction.newBuilder().setNumerator(15).setDenominator(100)));
+    private final List<CustomFee> grpcCustomFees = List.of(
+            customFixedFeeInHbar, customFixedFeeInHts, customFixedFeeSameToken, customFractionalFee, customRoyaltyFee);
 
-    private List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee>
-            customFees() {
-        FixedFee fixedFeeInHbar =
-                new FixedFee(
-                        100, null, true, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
-        FixedFee fixedFeeInHts =
-                new FixedFee(
-                        100,
-                        EntityIdUtils.asTypedEvmAddress(tokenId),
-                        false,
-                        false,
-                        EntityIdUtils.asTypedEvmAddress(payerAccountId));
+    private List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee> customFees() {
+        FixedFee fixedFeeInHbar = new FixedFee(100, null, true, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
+        FixedFee fixedFeeInHts = new FixedFee(
+                100,
+                EntityIdUtils.asTypedEvmAddress(tokenId),
+                false,
+                false,
+                EntityIdUtils.asTypedEvmAddress(payerAccountId));
         FixedFee fixedFeeSameToken =
-                new FixedFee(
-                        50, null, true, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
+                new FixedFee(50, null, true, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
         FractionalFee fractionalFee =
-                new FractionalFee(
-                        15, 100, 10, 50, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
+                new FractionalFee(15, 100, 10, 50, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
 
         RoyaltyFee royaltyFee = new RoyaltyFee(15, 100, 0, Address.ZERO, true, Address.ZERO);
 

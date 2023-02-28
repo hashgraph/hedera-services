@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.suites;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -76,9 +77,7 @@ public class StakeSuite extends HapiSuite {
         } else {
             return keyFromFile(
                             STAKER_KEY_IF_NEEDED,
-                            uncheckedKeyFileFor(
-                                            configManager.keysLoc(),
-                                            "account" + numberOf(stakingAccount))
+                            uncheckedKeyFileFor(configManager.keysLoc(), "account" + numberOf(stakingAccount))
                                     .getAbsolutePath())
                     .yahcliLogged();
         }

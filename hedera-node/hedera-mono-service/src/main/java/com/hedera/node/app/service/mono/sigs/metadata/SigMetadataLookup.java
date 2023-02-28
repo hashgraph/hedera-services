@@ -13,15 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.metadata;
 
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TopicID;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.*;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
@@ -30,20 +27,15 @@ import java.time.Instant;
  * (account, smart contract, file, topic, or token).
  */
 public interface SigMetadataLookup {
-    SafeLookupResult<FileSigningMetadata> fileSigningMetaFor(
-            FileID id, @Nullable LinkedRefs linkedRefs);
+    SafeLookupResult<FileSigningMetadata> fileSigningMetaFor(FileID id, @Nullable LinkedRefs linkedRefs);
 
-    SafeLookupResult<TopicSigningMetadata> topicSigningMetaFor(
-            TopicID id, @Nullable LinkedRefs linkedRefs);
+    SafeLookupResult<TopicSigningMetadata> topicSigningMetaFor(TopicID id, @Nullable LinkedRefs linkedRefs);
 
-    SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(
-            TokenID id, @Nullable LinkedRefs linkedRefs);
+    SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(TokenID id, @Nullable LinkedRefs linkedRefs);
 
-    SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(
-            AccountID id, @Nullable LinkedRefs linkedRefs);
+    SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(AccountID id, @Nullable LinkedRefs linkedRefs);
 
-    SafeLookupResult<ScheduleSigningMetadata> scheduleSigningMetaFor(
-            ScheduleID id, @Nullable LinkedRefs linkedRefs);
+    SafeLookupResult<ScheduleSigningMetadata> scheduleSigningMetaFor(ScheduleID id, @Nullable LinkedRefs linkedRefs);
 
     SafeLookupResult<ContractSigningMetadata> aliasableContractSigningMetaFor(
             ContractID idOrAlias, @Nullable LinkedRefs linkedRefs);
@@ -52,4 +44,14 @@ public interface SigMetadataLookup {
             AccountID idOrAlias, @Nullable LinkedRefs linkedRefs);
 
     Instant sourceSignedAt();
+
+    /**
+     * Gets the unaliased form of an account. If the account is not an alias, returns the account.
+     * Otherwise, returns the account to which the alias points.
+     *
+     * @param idOrAlias id of the account or alias
+     * @param linkedRefs the linked references
+     * @return the unaliased account
+     */
+    EntityNum unaliasedAccount(AccountID idOrAlias, @Nullable LinkedRefs linkedRefs);
 }

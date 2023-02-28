@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.state.logic;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -46,24 +47,25 @@ class InvariantChecksTest {
     private final long now = 1_234_567L;
     private final long submittingMember = 1L;
     private final Instant lastConsensusTime = Instant.ofEpochSecond(now);
-    private final Transaction mockTxn =
-            Transaction.newBuilder()
-                    .setBodyBytes(
-                            TransactionBody.newBuilder()
-                                    .setTransactionID(
-                                            TransactionID.newBuilder()
-                                                    .setAccountID(IdUtils.asAccount("0.0.2")))
-                                    .build()
-                                    .toByteString())
-                    .build();
+    private final Transaction mockTxn = Transaction.newBuilder()
+            .setBodyBytes(TransactionBody.newBuilder()
+                    .setTransactionID(TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.2")))
+                    .build()
+                    .toByteString())
+            .build();
     private PlatformTxnAccessor accessor;
 
-    @Mock private NodeInfo nodeInfo;
-    @Mock private MerkleNetworkContext networkCtx;
+    @Mock
+    private NodeInfo nodeInfo;
 
-    @LoggingTarget private LogCaptor logCaptor;
+    @Mock
+    private MerkleNetworkContext networkCtx;
 
-    @LoggingSubject private InvariantChecks subject;
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private InvariantChecks subject;
 
     @BeforeEach
     void setUp() throws InvalidProtocolBufferException {
@@ -76,8 +78,7 @@ class InvariantChecksTest {
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(lastConsensusTime);
 
         // when:
-        final var result =
-                subject.holdFor(accessor, lastConsensusTime.minusNanos(1L), submittingMember);
+        final var result = subject.holdFor(accessor, lastConsensusTime.minusNanos(1L), submittingMember);
 
         // then:
         assertFalse(result);
@@ -89,8 +90,7 @@ class InvariantChecksTest {
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(null);
 
         // when:
-        final var result =
-                subject.holdFor(accessor, lastConsensusTime.minusNanos(1L), submittingMember);
+        final var result = subject.holdFor(accessor, lastConsensusTime.minusNanos(1L), submittingMember);
 
         // then:
         assertTrue(result);
@@ -101,8 +101,7 @@ class InvariantChecksTest {
         given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(lastConsensusTime);
 
         // when:
-        final var result =
-                subject.holdFor(accessor, lastConsensusTime.plusNanos(1_000L), submittingMember);
+        final var result = subject.holdFor(accessor, lastConsensusTime.plusNanos(1_000L), submittingMember);
 
         // then:
         assertTrue(result);
@@ -113,8 +112,7 @@ class InvariantChecksTest {
         given(nodeInfo.isZeroStake(submittingMember)).willReturn(true);
 
         // when:
-        final var result =
-                subject.holdFor(accessor, lastConsensusTime.plusNanos(1_000L), submittingMember);
+        final var result = subject.holdFor(accessor, lastConsensusTime.plusNanos(1_000L), submittingMember);
 
         // then:
         assertFalse(result);

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.yahcli.commands.files;
 
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED;
@@ -29,7 +30,8 @@ import picocli.CommandLine.ParentCommand;
         subcommands = {picocli.CommandLine.HelpCommand.class},
         description = "Checks the hash of a special file")
 public class SpecialFileHashCommand implements Callable<Integer> {
-    @ParentCommand private SysFilesCommand sysFilesCommand;
+    @ParentCommand
+    private SysFilesCommand sysFilesCommand;
 
     @Parameters(paramLabel = "<special-file>", description = "{ software-zip, telemetry-zip }")
     private String specialFile;

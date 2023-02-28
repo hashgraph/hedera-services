@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.reconnect;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
@@ -33,8 +34,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ValidatePermissionStateAfterReconnect extends HapiSuite {
-    private static final Logger log =
-            LogManager.getLogger(ValidatePermissionStateAfterReconnect.class);
+    private static final Logger log = LogManager.getLogger(ValidatePermissionStateAfterReconnect.class);
     public static final String NODE_ACCOUNT = "0.0.6";
 
     public static void main(String... args) {
@@ -64,9 +64,7 @@ public class ValidatePermissionStateAfterReconnect extends HapiSuite {
                                 .within(180, TimeUnit.SECONDS)
                                 .loggingAvailabilityEvery(30)
                                 .sleepingBetweenRetriesFor(10),
-                        fileUpdate("effectivelyImmutable")
-                                .setNode(NODE_ACCOUNT)
-                                .hasPrecheck(NOT_SUPPORTED));
+                        fileUpdate("effectivelyImmutable").setNode(NODE_ACCOUNT).hasPrecheck(NOT_SUPPORTED));
     }
 
     @Override
