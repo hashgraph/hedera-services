@@ -1,14 +1,23 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.platform.event.preconsensus;
 
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
-import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
-import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.time.Time;
-import com.swirlds.common.utility.LongRunningAverage;
 import com.swirlds.common.utility.Startable;
 import com.swirlds.common.utility.Stoppable;
-import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.platform.internal.EventImpl;
 import java.time.Duration;
 
@@ -66,4 +75,12 @@ public interface PreConsensusEventWriter extends Startable, Stoppable {
      * @throws InterruptedException if interrupted while waiting
      */
     boolean waitUntilDurable(EventImpl event, final Duration timeToWait) throws InterruptedException;
+
+    /**
+     * Flush events if necessary.
+     *
+     * @param force
+     * 		if true then force the flush, if false then only flush if we haven't flushed recently
+     */
+    void flush(final boolean force);
 }

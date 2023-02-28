@@ -19,22 +19,16 @@ package com.swirlds.platform.event.preconsensus;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
-import com.swirlds.common.threading.framework.BlockingQueueInserter;
-import com.swirlds.common.threading.framework.MultiQueueThread;
-import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
-import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.LongRunningAverage;
 import com.swirlds.common.utility.Startable;
 import com.swirlds.common.utility.Stoppable;
 import com.swirlds.common.utility.Units;
-import com.swirlds.common.utility.throttle.MinimumTime;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.platform.internal.EventImpl;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -49,21 +43,6 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * Provides wall clock time.
      */
     private final Time time;
-
-    /**
-     * Background work is performed on this thread.
-     */
-    private final MultiQueueThread handleThread;
-
-    /**
-     * Used to the minimum generation non-ancient onto the handle queue.
-     */
-    private final BlockingQueueInserter<Long> minimumGenerationNonAncientInserter;
-
-    /**
-     * Used to push events onto the handle queue.
-     */
-    private final BlockingQueueInserter<EventImpl> eventInserter;
 
     /**
      * Limits how often we attempt to flush.
@@ -85,11 +64,6 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * Only read and written on the handle thread.
      */
     private long minimumGenerationNonAncient = 0;
-
-    /**
-     * When there is no work to do, wait this amount of time before checking for more work. Prevents busy loop.
-     */
-    private final Duration idleWaitPeriod;
 
     /**
      * The desired file size, in megabytes. Is not a hard limit, it's possible that we may exceed this
@@ -148,29 +122,25 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     /**
      * The highest event sequence number that has been flushed.
      */
-    private AtomicLong lastFlushedEvent = new AtomicLong(-1);
+    private long lastFlushedEvent = -1;
 
     /**
      * Create a new PreConsensusEventWriter.
      *
-     * @param config
-     * 		configuration for preconsensus event streams
-     * @param threadManager
-     * 		responsible for creating new threads
      * @param time
      * 		provides the wall clock time
+     * @param config
+     * 		configuration for preconsensus event streams
      * @param fileManager
      * 		manages all preconsensus event stream files currently on disk
      */
     public SyncPreConsensusEventWriter(
-            final PreConsensusEventStreamConfig config,
-            final ThreadManager threadManager,
             final Time time,
+            final PreConsensusEventStreamConfig config,
             final PreConsensusEventFileManager fileManager) {
 
         this.time = time;
         flushLimiter = new RateLimiter(time, config.flushPeriod());
-        idleWaitPeriod = config.idleWaitPeriod();
         preferredFileSizeMegabytes = config.preferredFileSizeMegabytes();
 
         averageGenerationalSpanUtilization =
@@ -180,18 +150,6 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
         minimumGenerationalCapacity = config.minimumGenerationalCapacity();
 
         this.fileManager = fileManager;
-
-        handleThread = new MultiQueueThreadConfiguration(threadManager)
-                .setComponent("pre-consensus")
-                .setThreadName("event-writer")
-                .setCapacity(config.writeQueueCapacity())
-                .setWaitForItemRunnable(this::waitForNextEvent)
-                .addHandler(Long.class, this::minimumGenerationNonAncientHandler)
-                .addHandler(EventImpl.class, this::eventHandler)
-                .build();
-
-        minimumGenerationNonAncientInserter = handleThread.getInserter(Long.class);
-        eventInserter = handleThread.getInserter(EventImpl.class);
     }
 
     /**
@@ -200,7 +158,14 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     @Override
     public void addEvent(final EventImpl event) throws InterruptedException {
         event.setStreamSequenceNumber(nextEventSequenceNumber++);
-        eventInserter.put(event);
+        if (event.getGeneration() >= minimumGenerationNonAncient) {
+            writeEvent(event);
+            lastWrittenEvent = event.getStreamSequenceNumber();
+
+            flush(false);
+        } else {
+            event.setStreamSequenceNumber(EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER);
+        }
     }
 
     /**
@@ -208,7 +173,15 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      */
     @Override
     public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) throws InterruptedException {
-        minimumGenerationNonAncientInserter.put(minimumGenerationNonAncient);
+        if (minimumGenerationNonAncient < this.minimumGenerationNonAncient) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "Minimum generation non-ancient cannot be decreased. Current = " + this.minimumGenerationNonAncient
+                            + ", requested = " + minimumGenerationNonAncient);
+            return;
+        }
+
+        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
     }
 
     /**
@@ -231,10 +204,10 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
         }
 
         if (event.getStreamSequenceNumber() == EventImpl.NO_STREAM_SEQUENCE_NUMBER) {
-            // The event has not yet been enqueued for writing
+            // The event has not yet been assigned a sequence number.
             return false;
         }
-        return event.getStreamSequenceNumber() <= lastFlushedEvent.get();
+        return event.getStreamSequenceNumber() <= lastFlushedEvent;
     }
 
     /**
@@ -281,52 +254,10 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     }
 
     /**
-     * Write an event to the stream. Not thread safe with respect to {@link #minimumGenerationNonAncientHandler(Long)},
-     * must be called on the same thread.
-     * @param event the event to be written.
-     */
-    private void eventHandler(final EventImpl event) {
-        if (event.getGeneration() >= minimumGenerationNonAncient) {
-            writeEvent(event);
-            lastWrittenEvent = event.getStreamSequenceNumber();
-
-            flush(false);
-        } else {
-            event.setStreamSequenceNumber(EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER);
-        }
-    }
-
-    /**
-     * Set the current minimum generation required to not be ancient. Not thread safe with respect to
-     * {@link #eventHandler(EventImpl)}, must be called on the same thread.
-     * @param minimumGenerationNonAncient the minimum generation required to not be ancient
-     */
-    private void minimumGenerationNonAncientHandler(final Long minimumGenerationNonAncient) {
-        if (minimumGenerationNonAncient < this.minimumGenerationNonAncient) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "Minimum generation non-ancient cannot be decreased. Current = " + this.minimumGenerationNonAncient
-                            + ", requested = " + minimumGenerationNonAncient);
-            return;
-        }
-
-        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
-    }
-
-    /**
-     * This method is called when we run out of events to write and are waiting for more events
-     * to enter the queue. When this happens, we might as well spend our time flushing, even if we
-     * have flushed recently.
-     */
-    public void waitForNextEvent() throws InterruptedException {
-        MinimumTime.runWithMinimumTime(time, () -> flush(true), idleWaitPeriod);
-    }
-
-    /**
      * Mark all unflushed events as durable.
      */
     private void markEventsAsFlushed() {
-        lastFlushedEvent.set(lastWrittenEvent);
+        lastFlushedEvent = lastWrittenEvent;
     }
 
     /**
@@ -335,8 +266,8 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * @param force
      * 		if true then force the flush, if false then only flush if we haven't flushed recently
      */
-    private void flush(final boolean force) {
-        if (lastFlushedEvent.get() == lastWrittenEvent || currentMutableFile == null) {
+    public void flush(final boolean force) {
+        if (lastFlushedEvent == lastWrittenEvent || currentMutableFile == null) {
             // There is nothing to be flushed.
             flushLimiter.force();
             return;
@@ -441,7 +372,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      */
     @Override
     public void start() {
-        handleThread.start();
+        // no work needed
     }
 
     /**
@@ -449,7 +380,6 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      */
     @Override
     public void stop() {
-        handleThread.stop();
         if (currentMutableFile != null) {
             try {
                 currentMutableFile.close();

@@ -36,12 +36,14 @@ import com.swirlds.common.test.io.FileManipulation;
 import com.swirlds.common.test.metrics.NoOpMetrics;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.common.utility.Units;
+import com.swirlds.platform.event.preconsensus.AsyncPreConsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFile;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventMultiFileIterator;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
-import com.swirlds.platform.event.preconsensus.SyncPreConsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventMetrics;
+import com.swirlds.platform.event.preconsensus.SyncPreConsensusEventWriter;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.event.source.StandardEventSource;
@@ -69,8 +71,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-@DisplayName("PreConsensusEventWriter Tests")
-class PreConsensusEventWriterTests {
+@DisplayName("AsyncPreConsensusEventWriter Tests")
+class AsyncPreConsensusEventWriterTests {
 
     /**
      * Temporary directory provided by JUnit
@@ -101,12 +103,9 @@ class PreConsensusEventWriterTests {
     /**
      * Build a transaction generator.
      *
-     * @param transactionCount
-     * 		the number of transactions in each event
-     * @param averageTransactionSizeKb
-     * 		the average size of a transaction, in kb
-     * @param transactionStandardDeviationKb
-     * 		the standard deviation of the size of a transaction, in kb
+     * @param transactionCount               the number of transactions in each event
+     * @param averageTransactionSizeKb       the average size of a transaction, in kb
+     * @param transactionStandardDeviationKb the standard deviation of the size of a transaction, in kb
      */
     private static TransactionGenerator buildTransactionGenerator(
             final int transactionCount, final int averageTransactionSizeKb, final int transactionStandardDeviationKb) {
@@ -138,10 +137,8 @@ class PreConsensusEventWriterTests {
     /**
      * Perform verification on a stream written by a {@link SyncPreConsensusEventWriter}.
      *
-     * @param events
-     * 		the events that were written to the stream
-     * @param config
-     * 		the configuration of the writer
+     * @param events the events that were written to the stream
+     * @param config the configuration of the writer
      */
     private static void verifyStream(
             final List<EventImpl> events, final PreConsensusEventStreamConfig config, final int truncatedFileCount)
@@ -258,8 +255,11 @@ class PreConsensusEventWriterTests {
         final PreConsensusEventFileManager fileManager =
                 new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
 
-        final SyncPreConsensusEventWriter writer =
-                new SyncPreConsensusEventWriter(config, getStaticThreadManager(), OSTime.getInstance(), fileManager);
+        final PreConsensusEventWriter writer = new AsyncPreConsensusEventWriter(
+                getStaticThreadManager(),
+                OSTime.getInstance(),
+                config,
+                new SyncPreConsensusEventWriter(OSTime.getInstance(), config, fileManager));
 
         writer.start();
 
@@ -308,8 +308,8 @@ class PreConsensusEventWriterTests {
     }
 
     /**
-     * In this test, increase the first non-ancient generation as events are added. When this happens,
-     * we should never have to include more than the preferred number of events in each file.
+     * In this test, increase the first non-ancient generation as events are added. When this happens, we should never
+     * have to include more than the preferred number of events in each file.
      */
     @ParameterizedTest
     @MethodSource("advanceNonAncientGenerationArguments")
@@ -354,8 +354,11 @@ class PreConsensusEventWriterTests {
         final PreConsensusEventFileManager fileManager =
                 new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
 
-        final SyncPreConsensusEventWriter writer =
-                new SyncPreConsensusEventWriter(config, getStaticThreadManager(), OSTime.getInstance(), fileManager);
+        final PreConsensusEventWriter writer = new AsyncPreConsensusEventWriter(
+                getStaticThreadManager(),
+                OSTime.getInstance(),
+                config,
+                new SyncPreConsensusEventWriter(OSTime.getInstance(), config, fileManager));
 
         writer.start();
 
@@ -475,8 +478,11 @@ class PreConsensusEventWriterTests {
         final PreConsensusEventFileManager fileManager =
                 new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
 
-        final SyncPreConsensusEventWriter writer1 =
-                new SyncPreConsensusEventWriter(config, getStaticThreadManager(), OSTime.getInstance(), fileManager);
+        final PreConsensusEventWriter writer1 = new AsyncPreConsensusEventWriter(
+                getStaticThreadManager(),
+                OSTime.getInstance(),
+                config,
+                new SyncPreConsensusEventWriter(OSTime.getInstance(), config, fileManager));
 
         writer1.start();
 
@@ -516,8 +522,11 @@ class PreConsensusEventWriterTests {
             events1.remove(events1.size() - 1);
         }
 
-        final SyncPreConsensusEventWriter writer2 =
-                new SyncPreConsensusEventWriter(config, getStaticThreadManager(), OSTime.getInstance(), fileManager);
+        final PreConsensusEventWriter writer2 = new AsyncPreConsensusEventWriter(
+                getStaticThreadManager(),
+                OSTime.getInstance(),
+                config,
+                new SyncPreConsensusEventWriter(OSTime.getInstance(), config, fileManager));
         writer2.start();
 
         final Set<EventImpl> rejectedEvents2 = new HashSet<>();
