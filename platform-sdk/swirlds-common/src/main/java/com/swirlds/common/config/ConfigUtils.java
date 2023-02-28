@@ -59,13 +59,13 @@ public final class ConfigUtils {
      */
     @NonNull
     public static ConfigurationBuilder scanAndRegisterAllConfigTypes(
-            @NonNull final ConfigurationBuilder configurationBuilder,
-            @Nullable final String... packagePrefixes) {
+            @NonNull final ConfigurationBuilder configurationBuilder, @Nullable final String... packagePrefixes) {
         CommonUtils.throwArgNull(configurationBuilder, "configurationBuilder");
         if (packagePrefixes == null) {
             return scanAndRegisterAllConfigTypes(configurationBuilder, Collections.emptySet(), Collections.emptyList());
         } else {
-            return scanAndRegisterAllConfigTypes(configurationBuilder,
+            return scanAndRegisterAllConfigTypes(
+                    configurationBuilder,
                     Arrays.stream(packagePrefixes).collect(Collectors.toSet()),
                     Collections.emptyList());
         }
@@ -84,8 +84,8 @@ public final class ConfigUtils {
             @NonNull final ConfigurationBuilder configurationBuilder,
             @NonNull final Set<String> packagePrefixes,
             @NonNull final List<URLClassLoaderWithLookup> additionalClassLoaders) {
-        loadAllConfigDataRecords(packagePrefixes, additionalClassLoaders).forEach(
-                configurationBuilder::withConfigDataType);
+        loadAllConfigDataRecords(packagePrefixes, additionalClassLoaders)
+                .forEach(configurationBuilder::withConfigDataType);
         return configurationBuilder;
     }
 
@@ -115,5 +115,4 @@ public final class ConfigUtils {
                     .collect(Collectors.toSet());
         }
     }
-
 }
