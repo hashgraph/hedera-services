@@ -16,11 +16,26 @@
 
 package com.swirlds.platform.test.simulated;
 
-import java.time.Duration;
+import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.system.NodeId;
 
-public record Latency(Duration delay) {
+/**
+ * An interface for test classes that handle gossiped messages
+ */
+public interface GossipMessageHandler {
 
-    public boolean isZero() {
-        return delay().isZero();
-    }
+    /**
+     * Handle a message received from a peer
+     *
+     * @param msg      the message received
+     * @param fromPeer the peer who sent the message
+     */
+    void handleMessage(final SelfSerializable msg, final long fromPeer);
+
+    /**
+     * Get the node id of this handler
+     *
+     * @return the node id
+     */
+    NodeId getNodeId();
 }

@@ -16,32 +16,32 @@
 
 package com.swirlds.platform.chatter.protocol.messages;
 
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
-import java.time.Instant;
 
 /**
- * Describes an event, hiding interface details that are not relevant to a gossip algorithm.
+ * A stripped down description of an event.
  */
-public interface ChatterEvent extends SelfSerializable {
+public interface EventDescriptor extends SelfSerializable {
 
     /**
-     * Get the descriptor of the event.
+     * Get the hash of the event.
      *
-     * @return the descriptor
+     * @return the event's hash
      */
-    EventDescriptor getDescriptor();
+    Hash getHash();
 
     /**
-     * @return the time at which the event has been received
-     */
-    Instant getTimeReceived();
-
-    /**
-     * Get the generation of the event
+     * Get the node ID of the event's creator.
      *
-     * @return the generation of the event
+     * @return a node ID
      */
-    default long getGeneration() {
-        return getDescriptor().getGeneration();
-    }
+    long getCreator();
+
+    /**
+     * Get the generation of the event described
+     *
+     * @return the generation of the event described
+     */
+    long getGeneration();
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,16 +22,18 @@ import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.common.utility.DurationUtils;
 import com.swirlds.platform.test.consensus.TestIntake;
-import com.swirlds.platform.test.simulated.Latency;
+import com.swirlds.platform.test.simulated.GossipMessage;
+import com.swirlds.platform.test.simulated.NetworkLatency;
 import com.swirlds.platform.test.simulated.SimpleSimulatedGossip;
 import com.swirlds.platform.test.simulated.SimulatedEventCreationNode;
+import com.swirlds.platform.test.simulated.config.ListBuilder;
+import com.swirlds.platform.test.simulated.config.NodeConfig;
+import com.swirlds.platform.test.simulated.config.NodeConfigBuilder;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -47,35 +49,41 @@ public class EventCreationSimulationTest {
                 // this
                 Arguments.of(new EventCreationSimulationParams(
                         1,
-                        10,
-                        Duration.ofMillis(20),
+                        ListBuilder.builder(NodeConfig.class)
+                                .useElement(NodeConfigBuilder.builder()
+                                        .setCreateEventEvery(Duration.ofMillis(20))
+                                        .build())
+                                .times(10)
+                                .build(),
                         Duration.ofMillis(240),
                         Duration.ofSeconds(5),
                         Duration.ofMillis(10),
-                        true,
-                        r -> {
-                            Assertions.assertTrue(2400 < r.numEventsCreated());
-                            Assertions.assertTrue(1800 < r.numConsEvents());
-                            Assertions.assertNotNull(r.avgC2C());
-                            Assertions.assertNotNull(r.maxC2C());
-                            Assertions.assertTrue(DurationUtils.isLonger(Duration.ofSeconds(2), r.maxC2C()));
-                            Assertions.assertTrue(DurationUtils.isLonger(Duration.ofMillis(1600), r.avgC2C()));
-                            Assertions.assertNotNull(r.maxRoundSize());
-                            Assertions.assertTrue(280 > r.maxRoundSize());
-                        })),
+                        EventCreationExpectedResults.get()
+                                .setConsensusExpected(true)
+                                .setNumEventsCreatedMin(2400)
+                                .setNumConsEventsMin(1800)
+                                .setMaxC2CMax(Duration.ofSeconds(2))
+                                .setAvgC2CMax(Duration.ofMillis(1600))
+                                .setMaxRoundSizeMax(280))),
                 // tests whether we stop creating events after a while if we dont have supermajority
                 Arguments.of(new EventCreationSimulationParams(
                         1,
-                        10,
-                        Duration.ofMillis(20),
+                        ListBuilder.builder(NodeConfig.class)
+                                .useElement(NodeConfigBuilder.builder()
+                                        .setCreateEventEvery(Duration.ofMillis(20))
+                                        .build())
+                                .times(5)
+                                .useElement(NodeConfigBuilder.builder()
+                                        .setCreateEventEvery(Duration.ofMillis(0))
+                                        .build())
+                                .times(5)
+                                .build(),
                         Duration.ofMillis(240),
                         Duration.ofSeconds(5),
                         Duration.ofMillis(10),
-                        false,
-                        r -> {
-                            Assertions.assertEquals(0, r.numConsEvents());
-                            Assertions.assertTrue(250 > r.numEventsCreated());
-                        })));
+                        EventCreationExpectedResults.get()
+                                .setConsensusExpected(false)
+                                .setNumEventsCreatedMax(260))));
     }
 
     /**
@@ -98,33 +106,35 @@ public class EventCreationSimulationTest {
                 .build();
         final FakeTime time = new FakeTime();
         final TestIntake consensus = new TestIntake(addressBook, time);
-        final SimpleSimulatedGossip gossip =
-                new SimpleSimulatedGossip(params.numNodes(), new Latency(addressBook, params.maxDelay(), random), time);
+        final NetworkLatency latency = new NetworkLatency(addressBook, params.maxDelay(), random);
+        List<NodeConfig> nodeConfigs = params.nodeConfigs();
+        for (int i = 0; i < nodeConfigs.size(); i++) {
+            final NodeConfig nodeConfig = nodeConfigs.get(i);
+            if (!nodeConfig.customLatency().isZero()) {
+                latency.setLatency(i, nodeConfig.customLatency());
+            }
+        }
+        final SimpleSimulatedGossip gossip = new SimpleSimulatedGossip(params.numNodes(), latency, time);
 
         final List<SimulatedEventCreationNode> nodes = new ArrayList<>();
-        for (int i = 0; i < params.numNodes(); i++) {
+        int i = 0;
+        for (NodeConfig nodeConfig : params.nodeConfigs()) {
+            final NodeId selfId = NodeId.createMain(i++);
             final SimulatedEventCreationNode node = new SimulatedEventCreationNode(
                     random,
                     time,
                     addressBook,
-                    List.of(gossip::gossipEvent, consensus::addEvent),
-                    NodeId.createMain(i),
+                    List.of(e -> gossip.gossipPayload(GossipMessage.toAll(e, selfId.getId())), consensus::addEvent),
+                    selfId,
                     h -> consensus.getShadowGraph().getEvent(h),
-                    params.superMajority() || i > params.numNodes() / 2);
+                    nodeConfig);
             nodes.add(node);
             gossip.setNode(node);
         }
 
-        Instant nextEventCreation = time.now();
         while (DurationUtils.isLonger(params.simulatedTime(), time.elapsed())) {
-            if (!time.now().isBefore(nextEventCreation)) {
-                for (final SimulatedEventCreationNode node : nodes) {
-                    node.createEvent();
-                }
-                nextEventCreation = nextEventCreation.plus(params.createEventEvery());
-            }
+            nodes.forEach(SimulatedEventCreationNode::maybeCreateEvent);
             gossip.distribute();
-
             time.tick(params.simulationStep());
         }
 
@@ -132,6 +142,6 @@ public class EventCreationSimulationTest {
                 consensus.getNumEventsAdded(), consensus.getConsensusRounds());
 
         results.printResults();
-        params.validator().accept(results);
+        params.expectedResults().validate(results);
     }
 }

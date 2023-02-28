@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.logging.LogMarker;
-import com.swirlds.platform.chatter.protocol.messages.ChatterEventDescriptor;
+import com.swirlds.platform.chatter.protocol.messages.EventDescriptor;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
@@ -44,17 +44,14 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
     private final Queue<EventImpl> eventOutput;
     private final Queue<EventImpl> newlyLinkedEvents;
     private final SequenceMap<ParentDescriptor, Set<ChildEvent>> missingParents;
-    private final SequenceMap<ChatterEventDescriptor, ChildEvent> orphanMap;
+    private final SequenceMap<EventDescriptor, ChildEvent> orphanMap;
 
     /**
      * Create a new orphan buffer.
      *
-     * @param config
-     * 		consensus configuration
-     * @param parentFinder
-     * 		responsible for finding parents of an event
-     * @param futureGenerationLimit
-     * 		the maximum number of future generations we are willing to store
+     * @param config                consensus configuration
+     * @param parentFinder          responsible for finding parents of an event
+     * @param futureGenerationLimit the maximum number of future generations we are willing to store
      */
     public OrphanBufferingLinker(
             final ConsensusConfig config, final ParentFinder parentFinder, final int futureGenerationLimit) {
@@ -62,7 +59,7 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
         this.parentFinder = parentFinder;
         this.eventOutput = new ArrayDeque<>();
         this.newlyLinkedEvents = new ArrayDeque<>();
-        this.orphanMap = new StandardSequenceMap<>(0, futureGenerationLimit, ChatterEventDescriptor::getGeneration);
+        this.orphanMap = new StandardSequenceMap<>(0, futureGenerationLimit, EventDescriptor::getGeneration);
         this.missingParents = new StandardSequenceMap<>(0, futureGenerationLimit, ParentDescriptor::generation);
     }
 
@@ -79,7 +76,7 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
         }
     }
 
-    private static void orphanPurged(final ChatterEventDescriptor key, final ChildEvent orphan) {
+    private static void orphanPurged(final EventDescriptor key, final ChildEvent orphan) {
         // this should never happen. an events parents should become ancient and at that point it will no longer be an
         // orphan
         if (orphan == null) {
@@ -200,11 +197,10 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
     /**
      * Is the event described an orphan we are keeping in the buffer
      *
-     * @param descriptor
-     * 		the event descriptor
+     * @param descriptor the event descriptor
      * @return true if the event is an orphan this linker is buffering
      */
-    public boolean isOrphan(final ChatterEventDescriptor descriptor) {
+    public boolean isOrphan(final EventDescriptor descriptor) {
         return orphanMap.get(descriptor) != null;
     }
 

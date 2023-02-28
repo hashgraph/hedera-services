@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,14 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.SerializableHashable;
-import com.swirlds.common.system.EventCreationRuleResponse;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.chatter.ChatterSubSetting;
+import com.swirlds.platform.chatter.config.ChatterConfig;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.event.EventCreatorThread;
@@ -40,6 +40,9 @@ import com.swirlds.platform.event.creation.ParentBasedCreationRule;
 import com.swirlds.platform.event.creation.StaticCreationRules;
 import com.swirlds.platform.event.intake.ChatterEventMapper;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.test.simulated.config.NodeConfig;
+import com.swirlds.test.framework.config.TestConfigBuilder;
+import java.time.Instant;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -52,15 +55,18 @@ import org.mockito.Mockito;
  * Used for simulating a node's event creation, this node will create and send events as well as receive events from
  * other nodes
  */
-public class SimulatedEventCreationNode {
+public class SimulatedEventCreationNode implements GossipMessageHandler {
     private static final ParentBasedCreationRule NULL_OTHER_PARENT = StaticCreationRules::nullOtherParent;
+    private final Time time;
     private final NodeId nodeId;
     private final Function<Hash, EventImpl> eventByHash;
     private final CriticalQuorum criticalQuorum;
+    private final NodeConfig config;
     private final ChatterEventCreator chatterEventCreator;
     private final EventCreatorThread creatorThread;
     private final ChatterEventMapper chatterEventMapper;
     private boolean genesisCreated = false;
+    private Instant nextEventCreation;
 
     /**
      * @param random
@@ -75,8 +81,8 @@ public class SimulatedEventCreationNode {
      * 		this node's ID
      * @param eventByHash
      * 		retrive an {@link EventImpl} by its hash
-     * @param shouldCreateEvents
-     * 		should this node create events
+     * @param config
+     * 		the configuration for this node
      */
     public SimulatedEventCreationNode(
             final Random random,
@@ -85,16 +91,21 @@ public class SimulatedEventCreationNode {
             final List<Consumer<GossipEvent>> consumers,
             final NodeId nodeId,
             final Function<Hash, EventImpl> eventByHash,
-            final boolean shouldCreateEvents) {
+            final NodeConfig config) {
+        this.time = time;
         this.nodeId = nodeId;
         this.eventByHash = eventByHash;
-        criticalQuorum =
-                new CriticalQuorumImpl(addressBook, false, new ChatterSubSetting().getCriticalQuorumSoftening());
+        criticalQuorum = new CriticalQuorumImpl(
+                addressBook,
+                false,
+                new TestConfigBuilder()
+                        .getOrCreateConfig()
+                        .getConfigData(ChatterConfig.class)
+                        .criticalQuorumSoftening());
+        this.config = config;
         final OtherParentTracker otherParentTracker = new OtherParentTracker();
         final LoggingEventCreationRules eventCreationRules = LoggingEventCreationRules.create(
-                List.of(() ->
-                        shouldCreateEvents ? EventCreationRuleResponse.PASS : EventCreationRuleResponse.DONT_CREATE),
-                List.of(NULL_OTHER_PARENT, otherParentTracker, criticalQuorum));
+                List.of(), List.of(NULL_OTHER_PARENT, otherParentTracker, criticalQuorum));
         chatterEventMapper = new ChatterEventMapper();
 
         final Cryptography cryptography = Mockito.mock(Cryptography.class);
@@ -127,16 +138,22 @@ public class SimulatedEventCreationNode {
                 addressBook,
                 chatterEventCreator::createEvent,
                 random);
+        nextEventCreation = time.now();
     }
 
+    @Override
     public NodeId getNodeId() {
         return nodeId;
     }
 
     /**
-     * Maybe create an event (depends on the creation rules) and send it to the provided consumers
+     * Maybe create an event (depends on the creation rules and creation rate) and send it to the provided consumers
      */
-    public void createEvent() {
+    public void maybeCreateEvent() {
+        if (config.createEventEvery().isZero() || time.now().isBefore(nextEventCreation)) {
+            return;
+        }
+        nextEventCreation = nextEventCreation.plus(config.createEventEvery());
         if (!genesisCreated) {
             chatterEventCreator.createGenesisEvent();
             genesisCreated = true;
@@ -147,12 +164,17 @@ public class SimulatedEventCreationNode {
     /**
      * Add an event created by another nodes
      *
-     * @param event
-     * 		the event to add
+     * @param msg
+     * 		the message to add
      */
-    public void addEvent(final GossipEvent event) {
-        notifyCriticalQuorum(event);
-        chatterEventMapper.mapEvent(event);
+    @Override
+    public void handleMessage(final SelfSerializable msg, final long fromPeer) {
+        if (msg instanceof final GossipEvent event) {
+            notifyCriticalQuorum(event);
+            chatterEventMapper.mapEvent(event);
+        } else {
+            throw new RuntimeException("unrecognized message received via simulated gossip");
+        }
     }
 
     private void notifyCriticalQuorum(final GossipEvent event) {

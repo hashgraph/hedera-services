@@ -17,7 +17,6 @@
 package com.swirlds.platform.chatter.protocol.messages;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.utility.CommonUtils;
@@ -25,9 +24,9 @@ import java.io.IOException;
 import java.util.Objects;
 
 /**
- * A stripped down description of an event.
+ * A stripped down description of a chatter event.
  */
-public class ChatterEventDescriptor implements SelfSerializable {
+public class ChatterEventDescriptor implements EventDescriptor {
 
     public static final long CLASS_ID = 0x825e17f25c6e2566L;
 
@@ -46,12 +45,9 @@ public class ChatterEventDescriptor implements SelfSerializable {
     /**
      * Create a new gossip event descriptor.
      *
-     * @param hash
-     * 		the hash of the event
-     * @param creator
-     * 		the creator of the event
-     * @param generation
-     * 		the age of an event, smaller is older
+     * @param hash       the hash of the event
+     * @param creator    the creator of the event
+     * @param generation the age of an event, smaller is older
      */
     public ChatterEventDescriptor(final Hash hash, final long creator, final long generation) {
         this.hash = Objects.requireNonNull(hash);
@@ -100,27 +96,21 @@ public class ChatterEventDescriptor implements SelfSerializable {
     }
 
     /**
-     * Get the hash of the event.
-     *
-     * @return the event's hash
+     * {@inheritDoc}
      */
     public Hash getHash() {
         return hash;
     }
 
     /**
-     * Get the node ID of the event's creator.
-     *
-     * @return a node ID
+     * {@inheritDoc}
      */
     public long getCreator() {
         return creator;
     }
 
     /**
-     * Get the generation of the event described
-     *
-     * @return the generation of the event described
+     * {@inheritDoc}
      */
     public long getGeneration() {
         return generation;

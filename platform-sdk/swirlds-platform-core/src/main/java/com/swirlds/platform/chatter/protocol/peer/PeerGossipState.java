@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import com.swirlds.common.sequence.Shiftable;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.platform.chatter.protocol.messages.ChatterEvent;
-import com.swirlds.platform.chatter.protocol.messages.ChatterEventDescriptor;
+import com.swirlds.platform.chatter.protocol.messages.EventDescriptor;
 import com.swirlds.platform.consensus.GraphGenerations;
 import org.apache.commons.lang3.ObjectUtils;
 
@@ -29,41 +29,38 @@ import org.apache.commons.lang3.ObjectUtils;
  */
 public class PeerGossipState implements Shiftable {
     /** non-ancient events we know the peer knows */
-    private final SequenceMap<ChatterEventDescriptor, ObjectUtils.Null> events;
+    private final SequenceMap<EventDescriptor, ObjectUtils.Null> events;
     /** the maximum generation of all event descriptors received */
     private long maxReceivedDescriptorGeneration;
 
     /**
      * Create a new object for tracking communication with a peer.
      *
-     * @param futureGenerationLimit
-     * 		the maximum number of generations in the future we are willing to accept from
-     * 		the peer
+     * @param futureGenerationLimit the maximum number of generations in the future we are willing to accept from the
+     *                              peer
      */
     public PeerGossipState(final int futureGenerationLimit) {
         events = new StandardSequenceMap<>(
-                GraphGenerations.FIRST_GENERATION, futureGenerationLimit, ChatterEventDescriptor::getGeneration);
+                GraphGenerations.FIRST_GENERATION, futureGenerationLimit, EventDescriptor::getGeneration);
         maxReceivedDescriptorGeneration = GraphGenerations.FIRST_GENERATION;
     }
 
     /**
      * Mark an event represented by this descriptor as known by the peer
      *
-     * @param event
-     * 		the descriptor of the event the peer knows
+     * @param event the descriptor of the event the peer knows
      */
-    public synchronized void setPeerKnows(final ChatterEventDescriptor event) {
+    public synchronized void setPeerKnows(final EventDescriptor event) {
         events.put(event, ObjectUtils.NULL);
     }
 
     /**
      * Query the state about the knowledge of this event
      *
-     * @param event
-     * 		the descriptor of the event being queried
+     * @param event the descriptor of the event being queried
      * @return true if the peer knows this event, false otherwise
      */
-    public synchronized boolean getPeerKnows(final ChatterEventDescriptor event) {
+    public synchronized boolean getPeerKnows(final EventDescriptor event) {
         return events.get(event) != null;
     }
 
@@ -81,10 +78,9 @@ public class PeerGossipState implements Shiftable {
     /**
      * Handle the descriptor received by this peer
      *
-     * @param descriptor
-     * 		the descriptor received
+     * @param descriptor the descriptor received
      */
-    public synchronized void handleDescriptor(final ChatterEventDescriptor descriptor) {
+    public synchronized void handleDescriptor(final EventDescriptor descriptor) {
         maxReceivedDescriptorGeneration = Math.max(maxReceivedDescriptorGeneration, descriptor.getGeneration());
         setPeerKnows(descriptor);
     }
@@ -92,8 +88,7 @@ public class PeerGossipState implements Shiftable {
     /**
      * Handle the event received by this peer
      *
-     * @param event
-     * 		the event received
+     * @param event the event received
      */
     public synchronized void handleEvent(final ChatterEvent event) {
         setPeerKnows(event.getDescriptor());

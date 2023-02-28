@@ -14,34 +14,22 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.chatter.protocol.messages;
+package com.swirlds.platform.test.chatter.network;
 
-import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.platform.chatter.protocol.messages.ChatterEvent;
 import java.time.Instant;
 
 /**
- * Describes an event, hiding interface details that are not relevant to a gossip algorithm.
+ * A simulated chatter event. Operationally, the time received is set when the event is received via gossip and
+ * deserialized. This simulation does not use real events or serialization, so all events must have their time received
+ * set by the simulation.
  */
-public interface ChatterEvent extends SelfSerializable {
+public interface SimulatedChatterEvent extends ChatterEvent {
 
     /**
-     * Get the descriptor of the event.
+     * Sets the time this event was received by the node.
      *
-     * @return the descriptor
+     * @param timeReceived the time this event was received
      */
-    EventDescriptor getDescriptor();
-
-    /**
-     * @return the time at which the event has been received
-     */
-    Instant getTimeReceived();
-
-    /**
-     * Get the generation of the event
-     *
-     * @return the generation of the event
-     */
-    default long getGeneration() {
-        return getDescriptor().getGeneration();
-    }
+    void setTimeReceived(final Instant timeReceived);
 }

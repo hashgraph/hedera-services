@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.sequence.map.ConcurrentSequenceMap;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.platform.chatter.protocol.messages.ChatterEventDescriptor;
+import com.swirlds.platform.chatter.protocol.messages.EventDescriptor;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -47,8 +48,8 @@ public class EventTracker {
     /**
      * All events that are currently being tracked. Events are removed as they are purged.
      */
-    private final SequenceMap<ChatterEventDescriptor, TrackedEvent> events =
-            new ConcurrentSequenceMap<>(0, 100_000, ChatterEventDescriptor::getGeneration);
+    private final SequenceMap<EventDescriptor, TrackedEvent> events =
+            new ConcurrentSequenceMap<>(0, 100_000, EventDescriptor::getGeneration);
 
     /**
      * The total number of nodes in the simulation.
@@ -130,7 +131,7 @@ public class EventTracker {
      * @param receiveTime
      * 		the time when the event was received
      */
-    public void registerEvent(final ChatterEventDescriptor descriptor, final long nodeId, final Instant receiveTime) {
+    public void registerEvent(final EventDescriptor descriptor, final long nodeId, final Instant receiveTime) {
 
         final TrackedEvent trackedEvent = events.get(descriptor);
 
@@ -168,7 +169,7 @@ public class EventTracker {
      * @param event
      * 		the destination event
      */
-    private void captureStatistics(final ChatterEventDescriptor descriptor, final TrackedEvent event) {
+    private void captureStatistics(final EventDescriptor descriptor, final TrackedEvent event) {
 
         final List<Duration> times = new ArrayList<>(event.getPropagationTimes());
         times.sort(Duration::compareTo);

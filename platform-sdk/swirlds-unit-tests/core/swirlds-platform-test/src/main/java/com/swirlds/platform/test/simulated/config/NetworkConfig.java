@@ -14,13 +14,20 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.simulated;
+package com.swirlds.platform.test.simulated.config;
 
 import java.time.Duration;
+import java.util.Map;
 
-public record Latency(Duration delay) {
+/**
+ * @param duration
+ * 		the amount of time this list of configs will be in effect
+ * @param nodeConfigs
+ * 		configuration for nodes
+ */
+public record NetworkConfig(Duration duration, Map<Long, NodeConfig> nodeConfigs) {
 
-    public boolean isZero() {
-        return delay().isZero();
+    public int getNumConfigs() {
+        return nodeConfigs.size();
     }
 }

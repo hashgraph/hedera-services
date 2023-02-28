@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.validation;
 
-import com.swirlds.platform.chatter.protocol.messages.ChatterEventDescriptor;
+import com.swirlds.platform.chatter.protocol.messages.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import java.util.List;
@@ -26,18 +26,20 @@ import java.util.function.Predicate;
  * A {@link GossipEventValidator} that checks a list of predicates to see if this event is a duplicate
  */
 public class EventDeduplication implements GossipEventValidator {
-    private final Predicate<ChatterEventDescriptor> isDuplicate;
+
+    private final Predicate<EventDescriptor> isDuplicate;
     private final EventIntakeMetrics stats;
 
-    public EventDeduplication(
-            final Predicate<ChatterEventDescriptor> isDuplicateCheck, final EventIntakeMetrics stats) {
+    public EventDeduplication(final Predicate<EventDescriptor> isDuplicateCheck, final EventIntakeMetrics stats) {
+
         this(List.of(isDuplicateCheck), stats);
     }
 
     public EventDeduplication(
-            final List<Predicate<ChatterEventDescriptor>> isDuplicateChecks, final EventIntakeMetrics stats) {
-        Predicate<ChatterEventDescriptor> chain = null;
-        for (final Predicate<ChatterEventDescriptor> check : isDuplicateChecks) {
+            final List<Predicate<EventDescriptor>> isDuplicateChecks, final EventIntakeMetrics stats) {
+        Predicate<EventDescriptor> chain = null;
+        for (final Predicate<EventDescriptor> check : isDuplicateChecks) {
+
             if (chain == null) {
                 chain = check;
             } else {

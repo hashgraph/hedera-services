@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,18 +39,15 @@ public class ProcessingTimeSendReceive implements MessageProvider, MessageHandle
     /**
      * Creates a new instance.
      *
-     * @param processingTimeInterval
-     * 		the interval at which to send processing time messages
-     * @param time
-     * 		provides a point in time in nanoseconds, should only be used to measure relative time (from one point to
-     * 		another), not absolute time (wall clock time)
-     * @param selfProcessingNanos
-     * 		provides the current value of this node's event processing time in nanoseconds.
+     * @param processingTimeInterval the interval at which to send processing time messages
+     * @param time                   provides a point in time in nanoseconds, should only be used to measure relative
+     *                               time (from one point to another), not absolute time (wall clock time)
+     * @param selfProcessingNanos    provides the current value of this node's event processing time in nanoseconds.
      */
     public ProcessingTimeSendReceive(
             final Time time, final Duration processingTimeInterval, final LongSupplier selfProcessingNanos) {
-        this.processingTimeInterval = processingTimeInterval;
         this.time = time;
+        this.processingTimeInterval = processingTimeInterval;
         this.selfProcessingNanos = selfProcessingNanos;
         this.lastSentTime = time.nanoTime();
         this.peerProcessingTime = new AtomicLong(NO_PROCESSING_TIME);

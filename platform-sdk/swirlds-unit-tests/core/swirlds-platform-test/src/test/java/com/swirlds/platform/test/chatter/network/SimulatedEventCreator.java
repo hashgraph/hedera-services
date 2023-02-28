@@ -14,13 +14,19 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.simulated;
+package com.swirlds.platform.test.chatter.network;
 
-import java.time.Duration;
+/**
+ * A class that creates simulated events.
+ *
+ * @param <T>
+ */
+public interface SimulatedEventCreator<T extends SimulatedChatterEvent> {
 
-public record Latency(Duration delay) {
-
-    public boolean isZero() {
-        return delay().isZero();
-    }
+    /**
+     * Creates and returns a new event, or {@code null} if no event should be created.
+     *
+     * @return the event, or {@code null} if no event should be created.
+     */
+    T maybeCreateEvent();
 }

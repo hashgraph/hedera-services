@@ -20,6 +20,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
+import java.time.Duration;
 
 /**
  * A message sent periodically that informs peers how long it takes for this node to process an event, from the time an
@@ -63,5 +64,10 @@ public class ProcessingTimeMessage implements SelfSerializable {
     @Override
     public int getVersion() {
         return ClassVersion.ORIGINAL;
+    }
+
+    @Override
+    public String toString() {
+        return "processing time: " + Duration.ofNanos(processingTimeInNanos).toMillis() + "ms";
     }
 }
