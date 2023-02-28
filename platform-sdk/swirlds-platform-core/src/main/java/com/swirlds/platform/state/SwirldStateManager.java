@@ -16,9 +16,7 @@
 
 package com.swirlds.platform.state;
 
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
@@ -31,8 +29,6 @@ import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
-import java.time.Instant;
-import java.util.List;
 
 /**
  * The methods used to interact with instances of {@link SwirldState}.
@@ -95,33 +91,6 @@ public interface SwirldStateManager
      * @return the transaction pool
      */
     EventTransactionPool getTransactionPool();
-
-    /**
-     * Updates the platform state object in the current round.
-     *
-     * @param round
-     * 		the current round that is being handled
-     * @param numEventsCons
-     * 		the number of events since genesis that have been handled at the end of this round
-     * @param hashEventsCons
-     * 		a running hash of all events
-     * @param events
-     * 		events that should be stored in the state
-     * @param consensusTimestamp
-     * 		the timestamp of this round
-     * @param minGenInfo
-     * 		information about minimum generations in this round
-     * @param softwareVersion
-     * 		the version of the software currently running
-     */
-    void updatePlatformState(
-            final long round,
-            final long numEventsCons,
-            final Hash hashEventsCons,
-            final EventImpl[] events,
-            final Instant consensusTimestamp,
-            final List<MinGenInfo> minGenInfo,
-            final SoftwareVersion softwareVersion);
 
     /**
      * Handles the events in a consensus round. Implementations are responsible for invoking {@link
