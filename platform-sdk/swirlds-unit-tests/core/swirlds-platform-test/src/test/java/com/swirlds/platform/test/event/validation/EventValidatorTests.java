@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.BaseEventHashedData;
@@ -40,6 +41,7 @@ import com.swirlds.platform.event.validation.TransactionSizeValidator;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.test.event.GossipEventBuilder;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -86,9 +88,12 @@ class EventValidatorTests {
 
     @Test
     void eventValidator() {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
         final Set<GossipEvent> intakeEvents = new HashSet<>();
         final AtomicBoolean isValid = new AtomicBoolean(true);
-        final EventValidator eventValidator = new EventValidator((e) -> isValid.get(), intakeEvents::add);
+        final EventValidator eventValidator =
+                new EventValidator(platformContext, (e) -> isValid.get(), intakeEvents::add);
 
         final GossipEvent validEvent = GossipEventBuilder.builder().buildEvent();
         eventValidator.validateEvent(validEvent);

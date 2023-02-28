@@ -1057,6 +1057,7 @@ public class SwirldsPlatform implements Platform, PlatformWithDeprecatedMethods,
             eventCreator = new EventCreator(
                     selfId,
                     PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
+                    platformContext,
                     consensusRef::get,
                     swirldStateManager.getTransactionPool(),
                     eventIntake::addEvent,

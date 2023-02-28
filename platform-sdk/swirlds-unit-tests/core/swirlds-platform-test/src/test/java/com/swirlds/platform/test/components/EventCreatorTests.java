@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.stream.Signer;
@@ -53,6 +54,7 @@ import com.swirlds.platform.sync.Generations;
 import com.swirlds.platform.test.event.EventMocks;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -289,6 +291,8 @@ class EventCreatorTests {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Transactions Are Put Into Events Test")
     void transactionsArePutIntoEventsTest() {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
 
         final SwirldTransaction[] transactions = new SwirldTransaction[10];
         for (int index = 0; index < transactions.length; index++) {
@@ -303,6 +307,7 @@ class EventCreatorTests {
 
         final AccessibleEventCreator eventCreator = new AccessibleEventCreator(
                 selfId,
+                platformContext,
                 mockMapper(recentEvents, null),
                 noOpSigner,
                 defaultGenerationsSupplier,
@@ -329,6 +334,8 @@ class EventCreatorTests {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Verify Event Data Test")
     void verifyEventDataTest() {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
 
         final Queue<EventImpl> events = new LinkedList<>();
 
@@ -358,6 +365,7 @@ class EventCreatorTests {
 
         final AccessibleEventCreator eventCreator = new AccessibleEventCreator(
                 selfId,
+                platformContext,
                 mockMapper(recentEvents, selfParentImpl),
                 noOpSigner,
                 defaultGenerationsSupplier,
@@ -403,6 +411,8 @@ class EventCreatorTests {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Sequence Of Events Test")
     void sequenceOfEventsTest() {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
 
         final Queue<EventImpl> events = new LinkedList<>();
 
@@ -421,6 +431,7 @@ class EventCreatorTests {
 
         final AccessibleEventCreator eventCreator = new AccessibleEventCreator(
                 selfId,
+                platformContext,
                 mapper,
                 noOpSigner,
                 defaultGenerationsSupplier,
@@ -453,6 +464,9 @@ class EventCreatorTests {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Test Throttle")
     void testThrottle() {
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         final EventCreationRule mockRule = mock(EventCreationRule.class);
         when(mockRule.shouldCreateEvent()).thenReturn(DONT_CREATE);
 
@@ -464,6 +478,7 @@ class EventCreatorTests {
 
         final AccessibleEventCreator eventCreator = new AccessibleEventCreator(
                 selfId,
+                platformContext,
                 mockMapper(recentEvents, null),
                 noOpSigner,
                 defaultGenerationsSupplier,
