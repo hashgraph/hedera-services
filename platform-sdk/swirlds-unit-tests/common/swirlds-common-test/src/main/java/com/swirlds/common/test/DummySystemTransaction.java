@@ -29,7 +29,7 @@ public class DummySystemTransaction extends SystemTransaction {
 
     @Override
     public long getClassId() {
-        return 0;
+        return 0x4509c61070fdcc93L;
     }
 
     @Override
