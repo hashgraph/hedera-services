@@ -80,8 +80,8 @@ class AllIntegrationTests extends IntegrationTestBase {
                 TEST_CONTAINER_NODE0_STREAMS,
                 new BalanceReconciliationValidator(),
                 new BlockNoValidator(),
-                new ExpiryRecordsValidator()
-//                new TokenReconciliationValidator()
+                new ExpiryRecordsValidator(),
+                new TokenReconciliationValidator()
         ));
     }
 }
