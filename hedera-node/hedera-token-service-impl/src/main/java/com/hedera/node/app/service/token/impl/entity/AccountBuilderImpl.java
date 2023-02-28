@@ -28,7 +28,7 @@ import java.util.Optional;
 
 /**
  * An implementation of {@link AccountBuilder} for building Account instances. This class is
- * <strong>not</strong> exported from the module. FUTURE: Should be moved to token-service-impl
+ * <strong>not</strong> exported from the module.
  * module
  */
 public class AccountBuilderImpl implements AccountBuilder {

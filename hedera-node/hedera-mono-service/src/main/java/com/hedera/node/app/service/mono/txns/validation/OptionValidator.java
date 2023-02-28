@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.mono.txns.validation;
 
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asSecondsTimestamp;
+
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
@@ -47,11 +49,19 @@ public interface OptionValidator {
 
     boolean isValidExpiry(Timestamp expiry);
 
+    default boolean isValidExpiry(final long then) {
+        return isValidExpiry(asSecondsTimestamp(then));
+    }
+
     boolean isThisNodeAccount(AccountID id);
 
     boolean isValidTxnDuration(long duration);
 
     boolean isAfterConsensusSecond(long now);
+
+    default boolean isValidAutoRenewPeriod(final long len) {
+        return isValidAutoRenewPeriod(Duration.newBuilder().setSeconds(len).build());
+    }
 
     boolean isValidAutoRenewPeriod(Duration autoRenewPeriod);
 

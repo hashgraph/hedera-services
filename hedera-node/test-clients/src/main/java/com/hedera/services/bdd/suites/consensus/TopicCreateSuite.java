@@ -202,7 +202,7 @@ public class TopicCreateSuite extends HapiSuite {
                         newKeyNamed("adminKey"),
                         newKeyNamed("submitKey"),
                         cryptoCreate("autoRenewAccount"),
-                        cryptoCreate("payer"))
+                        cryptoCreate("payer").balance(ONE_HUNDRED_HBARS))
                 .when(createTopic("testTopic")
                         .topicMemo("testmemo")
                         .adminKeyName("adminKey")
