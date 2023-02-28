@@ -20,7 +20,7 @@ import static com.hedera.node.app.service.mono.contracts.ContractsV_0_34Module.E
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -387,7 +387,7 @@ class ContractCallTransitionLogicTest {
                                 relayerAccount.getId(),
                                 maxGas,
                                 biOfferedGasPrice),
-                INVALID_ACCOUNT_ID);
+                INVALID_CONTRACT_ID);
     }
 
     @Test
