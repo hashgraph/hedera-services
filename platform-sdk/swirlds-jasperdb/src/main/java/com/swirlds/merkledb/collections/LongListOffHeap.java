@@ -40,8 +40,8 @@ import sun.misc.Unsafe;
  * A {@link LongList} that stores its contents off-heap via a {@link AtomicReferenceArray} of direct
  * {@link ByteBuffer}s. Each {@link ByteBuffer} is the same size, so the "chunk" containing the
  * value for any given index is easily found using modular arithmetic. Note that <br>
- * To reduce memory consumption one can use {@link LongListOffHeap#updateMinValidIndex(long)}. A
- * call to this method discards memory chunks reserved for the indices that are before the index
+ * to reduce memory consumption one can use {@link LongListOffHeap#updateMinValidIndex(long)}.
+ * A call to this method discards memory chunks reserved for the indices that are before the index
  * passed as an argument subtracted by {@link LongListOffHeap#reservedBufferLength}. The idea is to
  * keep the amount of memory defined by {@link LongListOffHeap#reservedBufferLength} reserved even
  * though it serves indices that are before the minimal index. It may be a good idea because there
@@ -129,11 +129,12 @@ public final class LongListOffHeap extends LongList {
      */
     public LongListOffHeap(final Path file) throws IOException {
         super(FileChannel.open(file, StandardOpenOption.READ));
-        final int numberOfChunksWithData = calculateNumberOfChunks(size());
+        final int totalNumberOfChunks = calculateNumberOfChunks(size());
+        final int firstChunkWithDataIndex = (int) (minValidIndex.get() / numLongsPerChunk);
         chunkList = new AtomicReferenceArray<>(calculateNumberOfChunks(maxLongs));
         reservedBufferLength = DEFAULT_RESERVED_BUFFER_LENGTH;
         // read data
-        for (int i = 0; i < numberOfChunksWithData; i++) {
+        for (int i = firstChunkWithDataIndex; i < totalNumberOfChunks; i++) {
             final ByteBuffer directBuffer = createChunk();
             MerkleDbFileUtils.completelyRead(fileChannel, directBuffer);
             directBuffer.position(0);
@@ -145,7 +146,7 @@ public final class LongListOffHeap extends LongList {
     }
 
     /**
-     * @return number of memory chunks tha this list may have
+     * @return number of memory chunks that this list may have
      */
     private int calculateNumberOfChunks(final long rightBoundary) {
         return (int) ((rightBoundary - 1) / numLongsPerChunk + 1);
@@ -182,15 +183,15 @@ public final class LongListOffHeap extends LongList {
     }
 
     /**
-     * Updates the minimal valid index of the list. After this value is set, {@link
-     * LongList#get(long)} ) calls will return {@link LongList#IMPERMISSIBLE_VALUE} for indices that
-     * are before {@code newMinValidIndex}. Also, a call to this method releases memory taken by
-     * unused byte buffers.
+     * After invocation of this method, {@link LongList#get(long)}) calls
+     * will return {@link LongList#IMPERMISSIBLE_VALUE} for indices that
+     * are before {@code newMinValidIndex}.
+     * Also, a call to this method releases memory taken by unused byte buffers.
      *
      * @param newMinValidIndex minimal valid index of the list
      */
     @Override
-    public void updateMinValidIndex(final long newMinValidIndex) {
+    public void onUpdateMinValidIndex(final long newMinValidIndex) {
         if (newMinValidIndex < 0) {
             throw new IndexOutOfBoundsException("Min valid index " + newMinValidIndex + " must be non-negative");
         }
@@ -239,16 +240,17 @@ public final class LongListOffHeap extends LongList {
      */
     @Override
     protected void writeLongsData(final FileChannel fc) throws IOException {
-        final int numOfChunks = calculateNumberOfChunks(size());
+        final int totalNumOfChunks = calculateNumberOfChunks(size());
+        final int firstChunkWithDataIndex = (int) minValidIndex.get() / numLongsPerChunk;
         // write data
         final ByteBuffer emptyBuffer = createChunk();
         try {
-            for (int i = 0; i < numOfChunks; i++) {
+            for (int i = firstChunkWithDataIndex; i < totalNumOfChunks; i++) {
                 final ByteBuffer byteBuffer = chunkList.get(i);
                 final ByteBuffer nonNullBuffer = requireNonNullElse(byteBuffer, emptyBuffer);
                 final ByteBuffer buf = nonNullBuffer.slice(); // slice so we don't mess with state
                 buf.position(0);
-                if (i == (numOfChunks - 1)) {
+                if (i == (totalNumOfChunks - 1)) {
                     // last array, so set limit to only the data needed
                     final long bytesWrittenSoFar = (long) memoryChunkSize * (long) i;
                     final long remainingBytes = (size() * Long.BYTES) - bytesWrittenSoFar;
