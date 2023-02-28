@@ -150,7 +150,7 @@ class ReadableKVStateBaseTest extends StateTestBase {
     }
 
     @Test
-    @DisplayName("size returns backing map size")
+    @DisplayName("Size returns backing map size")
     void testSize() {
         assertThat(state.size()).isEqualTo(backingMap.size());
     }

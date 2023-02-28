@@ -74,9 +74,10 @@ public class WrappedWritableKVState<K extends Comparable<K>, V> extends Writable
         return delegate.keys();
     }
 
+    /** {@inheritDoc} */
     @NonNull
     @Override
-    public long size() {
+    public long sizeOfDataSource() {
         return delegate.size();
     }
 }

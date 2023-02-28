@@ -164,6 +164,39 @@ public abstract class WritableKVStateBase<K extends Comparable<K>, V> extends Re
     }
 
     /**
+     * {@inheritDoc}
+     * For the size of a {@link WritableKVState}, we need to take into account the size of the
+     * underlying data source, and the modifications that have been made to the state.
+     * <ol>
+     *     <li>if the key is in backing store and is removed in modifications, then it is counted as removed
+     *     <li>if the key is not in backing store and is added in modifications, then it is counted as addition
+     *     <li>if the key is in backing store and is added in modifications, then it is not counted as the
+     *     key already exists in state
+     *     <li>if the key is not in backing store and is being tried to be removed in modifications,
+     *     then it is not counted as the key does not exist in state.
+     *     </ol>
+     * @return The size of the state.
+     */
+    @NonNull
+    public long size() {
+        final var sizeOfBackingMap = sizeOfDataSource();
+        int numAdditions = 0;
+        int numRemovals = 0;
+
+        for (final var mod : modifications.entrySet()) {
+            boolean isPresentInBackingMap = readFromDataSource(mod.getKey()) != null;
+            boolean isRemovedInMod = mod.getValue() == null;
+
+            if (isPresentInBackingMap && isRemovedInMod) {
+                numRemovals++;
+            } else if (!isPresentInBackingMap && !isRemovedInMod) {
+                numAdditions++;
+            }
+        }
+        return sizeOfBackingMap + numAdditions - numRemovals;
+    }
+
+    /**
      * Reads from the underlying data source in such a way as to cause any fast-copyable data
      * structures underneath to make a fast copy.
      *
@@ -186,6 +219,12 @@ public abstract class WritableKVStateBase<K extends Comparable<K>, V> extends Re
      * @param key key to remove from the underlying data source
      */
     protected abstract void removeFromDataSource(@NonNull K key);
+
+    /**
+     * Returns the size of the underlying data source. This can be a merkle map or a virtual map.
+     * @return size of the underlying data source.
+     */
+    protected abstract long sizeOfDataSource();
 
     /**
      * A special iterator which includes all keys in the backend iterator, and all keys that have

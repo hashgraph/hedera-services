@@ -65,6 +65,7 @@ public final class OnDiskReadableKVState<K extends Comparable<K>, V> extends Rea
         throw new UnsupportedOperationException("You cannot iterate over a virtual map's keys!");
     }
 
+    /** {@inheritDoc} */
     @NonNull
     @Override
     public long size() {

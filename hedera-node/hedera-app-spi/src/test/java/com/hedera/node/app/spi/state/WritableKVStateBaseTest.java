@@ -269,25 +269,28 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
         }
     }
 
+    /**
+     * Gives size of backing store plus modifications (additions or removals).
+     * If a new key is added by calling {@code put()}, then size increases, as new key is added to modifications map for addition.
+     * If an existing key is removed by calling {@code remove()}, then size decreases, as new key is added to modifications map for removal.
+     */
     @Nested
     @DisplayName("size")
     final class SizeTest {
-        /**
-         * Gives size of backing store. It doesn't consider modifications and read keys maps.
-         * If a new key is committed to the backing store, then size of backing store increases.
-         * All the changes happen only on commit and not only put or remove.
-         */
         @Test
-        @DisplayName("Put a key that does not already exist in the backing store")
+        @DisplayName("Adding a key that does not already exist in the backing store impacts size")
         void putNew() {
             assertThat(state.readKeys()).isEmpty();
             assertThat(state.modifiedKeys()).isEmpty();
 
-            state.put(C_KEY, CHERRY);
-            // Before commit, the size should be 1
+            // Before doing put, the size should be 2
             assertEquals(2, state.size());
+            state.put(C_KEY, CHERRY);
 
-            // Commit should cause the size to be increased by 1
+            // After put, size includes modifications as well. So the size should be 3.
+            assertEquals(3, state.size());
+
+            // Commit should keep the size, as the modifications are considered in size.
             state.commit();
             Mockito.verify(state, Mockito.times(1)).putIntoDataSource(anyString(), anyString());
             Mockito.verify(state, Mockito.times(1)).putIntoDataSource(C_KEY, CHERRY);
@@ -295,34 +298,28 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
             assertEquals(3, state.size());
         }
 
-        /**
-         * Gives size of backing store. It doesn't consider modifications and read keys maps.
-         * If a key is removed from the backing store, then size of backing store decreases.
-         * All the changes happen only on commit and not only put or remove.
-         */
         @Test
-        @DisplayName("Remove a key existing in the backing store")
+        @DisplayName("Removing a key that exists in the backing store impacts size")
         void removeExisting() {
             assertThat(state.readKeys()).isEmpty();
             assertThat(state.modifiedKeys()).isEmpty();
 
-            state.remove(A_KEY);
-            // Before commit, the size should be 2
+            // Before remove, the size should be 2
             assertEquals(2, state.size());
 
-            // Commit should cause the size to be decreased by 1
+            state.remove(A_KEY);
+            // After remove, size includes modifications as well. So the size should be 1.
+            assertEquals(1, state.size());
+
+            // Commit should not cause any change in size, as the modifications were considered
             state.commit();
             Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
             Mockito.verify(state, Mockito.times(1)).removeFromDataSource(A_KEY);
             assertEquals(1, state.size());
         }
 
-        /**
-         * Gives size of backing store. It doesn't consider modifications and read keys maps.
-         * All the changes happen only on commit and not only put.
-         */
         @Test
-        @DisplayName("Get a key existing in the backing store doesn't affect size")
+        @DisplayName("Getting a key from the backing store doesn't affect size")
         void getDoesntAffect() {
             assertThat(state.readKeys()).isEmpty();
             assertThat(state.modifiedKeys()).isEmpty();
@@ -338,12 +335,8 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
             assertEquals(2, state.size());
         }
 
-        /**
-         * Gives size of backing store. It doesn't consider modifications and read keys maps.
-         * All the changes happen only on commit and not only put or remove.
-         */
         @Test
-        @DisplayName("Get a key existing in the backing store doesn't affect size")
+        @DisplayName("Doing a getForModify on a key existing in the backing store doesn't affect size")
         void getForModifyDoesntAffect() {
             assertThat(state.readKeys()).isEmpty();
             assertThat(state.modifiedKeys()).isEmpty();

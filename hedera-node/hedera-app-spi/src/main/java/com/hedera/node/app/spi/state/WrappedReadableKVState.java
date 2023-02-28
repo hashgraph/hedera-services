@@ -54,6 +54,7 @@ public class WrappedReadableKVState<K extends Comparable<K>, V> extends Readable
         return delegate.keys();
     }
 
+    /** {@inheritDoc} */
     @NonNull
     @Override
     public long size() {

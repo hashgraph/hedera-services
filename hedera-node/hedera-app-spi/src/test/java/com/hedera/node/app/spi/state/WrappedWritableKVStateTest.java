@@ -64,56 +64,64 @@ class WrappedWritableKVStateTest extends WritableKVStateBaseTest {
     @Nested
     @DisplayName("size")
     final class SizeTest {
-        /**
-         * Gives size of backing store. Since on WrappedWritableKVState, all the changes are only
-         * buffered to modifications, size of backing store will not change on committing new values.
-         */
         @Test
-        @DisplayName("Put a key that does not already exist in the backing store")
+        @DisplayName("Adding a key that is not in the backing store impacts the size")
         void putNew() {
             assertThat(state.readKeys()).isEmpty();
             assertThat(state.modifiedKeys()).isEmpty();
 
+            // Before inserting, the size of backing store should be 2 and modifications are none
+            assertEquals(2, state.size());
+            assertEquals(2, delegate.size());
+            assertEquals(0, delegate.modifiedKeys().size());
+
             state.put(C_KEY, CHERRY);
 
-            // Before commit, the size of backing store should be 2 and modifications are none
-            assertEquals(2, state.size());
+            // After doing a put, the size is increased as modifications are considered.
+            // But the modifiedKeys or size of delegate doesn't change until commit
+            assertEquals(3, state.size());
             assertEquals(2, delegate.size());
             assertEquals(0, delegate.modifiedKeys().size());
 
             // Commit should not cause the size of backing store to be increased by 1.
-            // Instead, modifications on delegate should have the committed value
+            // Instead, modifications on delegate have increased.
+            // Since modifications are increased, size of delegate also increases.
             state.commit();
             Mockito.verify(state, Mockito.times(1)).putIntoDataSource(anyString(), anyString());
             Mockito.verify(state, Mockito.times(1)).putIntoDataSource(C_KEY, CHERRY);
             Mockito.verify(state, Mockito.never()).removeFromDataSource(anyString());
-            assertEquals(2, state.size());
-            assertEquals(2, delegate.size());
+            assertEquals(3, state.size());
+            assertEquals(3, delegate.size());
             assertEquals(1, delegate.modifiedKeys().size());
         }
 
-        /**
-         * Gives size of backing store. Since on WrappedWritableKVState, all the changes are only
-         * buffered to modifications, size of backing store will not change on removing existing values.
-         */
         @Test
-        @DisplayName("Remove a key existing in the backing store")
+        @DisplayName("Removing a key that is in the backing store impacts the size")
         void removeExisting() {
             assertThat(state.readKeys()).isEmpty();
             assertThat(state.modifiedKeys()).isEmpty();
 
-            state.remove(A_KEY);
-            // Before commit, the size should be 2
+            // Before remove, the size of backing store should be 2 and modifications are none
             assertEquals(2, state.size());
             assertEquals(2, delegate.size());
             assertEquals(0, delegate.modifiedKeys().size());
 
-            // Commit should cause the size to be decreased by 1
+            state.remove(A_KEY);
+
+            // After remove, the size of backing store should be 2 and modifications are 1
+            // So the size of state should be 1. But those changes don't affect delegate
+            // until commit.
+            assertEquals(1, state.size());
+            assertEquals(2, delegate.size());
+            assertEquals(0, delegate.modifiedKeys().size());
+
+            // Commit should cause change in modifications on delegate.
+            // So the size of the delegate also decreases by 1.
             state.commit();
             Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
             Mockito.verify(state, Mockito.times(1)).removeFromDataSource(A_KEY);
-            assertEquals(2, state.size());
-            assertEquals(2, delegate.size());
+            assertEquals(1, state.size());
+            assertEquals(1, delegate.size());
             assertEquals(1, delegate.modifiedKeys().size());
         }
     }

@@ -68,8 +68,7 @@ class InMemoryWritableStateTest extends MerkleTestBase {
             add(fruitMerkleMap, fruitMetadata, A_KEY, APPLE);
             add(fruitMerkleMap, fruitMetadata, B_KEY, BANANA);
             add(fruitMerkleMap, fruitMetadata, C_KEY, CHERRY);
-            assertThat(state.size()).isEqualTo(fruitMerkleMap.size());
-            assertThat(state.size()).isEqualTo(3);
+            assertThat(state.sizeOfDataSource()).isEqualTo(fruitMerkleMap.size());
         }
     }
 

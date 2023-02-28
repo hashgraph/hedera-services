@@ -20,14 +20,12 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
 /**
- * Factory for all stores. Besides providing helpers to create stores, this class also tracks, which
- * {@link WritableStates} have been used.
+ * Factory for all writable stores. It creates new writable stores based on the {@link HederaState}.
  */
 public class WritableStoreFactory {
     private final HederaState state;
@@ -44,7 +42,7 @@ public class WritableStoreFactory {
     }
 
     /**
-     * Get a {@link WritableTopicStore}
+     * Get a {@link WritableTopicStore} from the {@link HederaState}
      *
      * @return a new {@link WritableTopicStore}
      */
