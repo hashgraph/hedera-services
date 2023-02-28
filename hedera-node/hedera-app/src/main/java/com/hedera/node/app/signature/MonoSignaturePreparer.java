@@ -30,6 +30,7 @@ import com.hedera.node.app.state.HederaState;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -51,9 +52,9 @@ public class MonoSignaturePreparer implements SignaturePreparer {
     }
 
     @Override
-    public ResponseCodeEnum syncGetPayerSigStatus(final @NonNull byte[] transactionBytes) {
+    public ResponseCodeEnum syncGetPayerSigStatus(final @NonNull Transaction transaction) {
         try {
-            final var accessor = SignedTxnAccessor.from(transactionBytes);
+            final var accessor = SignedTxnAccessor.uncheckedFrom(transaction);
             return precheckVerifier.hasNecessarySignatures(accessor) ? OK : INVALID_SIGNATURE;
         } catch (final KeyPrefixMismatchException ignore) {
             return KEY_PREFIX_MISMATCH;

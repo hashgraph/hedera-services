@@ -19,7 +19,6 @@ package com.hedera.node.app.workflows.ingest;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
@@ -28,7 +27,6 @@ import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
-import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
@@ -145,21 +143,28 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
 
                 // 4. Get payer account
                 final var payerID = txBody.getTransactionID().getAccountID();
-                final var tokenStates = state.createReadableStates(TokenService.NAME);
-                final var accountStore = storeSupplier.apply(tokenStates);
-                final var payer = accountStore
-                        .getAccount(payerID)
-                        .orElseThrow(() -> new PreCheckException(PAYER_ACCOUNT_NOT_FOUND));
+                // TODO - should we fall back to working state in this case?
+                if (state != null) {
+                    // TODO - figure out how to support the rebuilt ALIASES map in States API),
+                    // or maybe denormalize with a new ALIASES map in state?
+                    /*
+                    final var tokenStates = state.createReadableStates(TokenService.NAME);
+                    final var accountStore = storeSupplier.apply(tokenStates);
+                    final var payer = accountStore
+                            .getAccount(payerID)
+                            .orElseThrow(() -> new PreCheckException(PAYER_ACCOUNT_NOT_FOUND));
+                     */
+                }
 
                 // 5. Check payer's signature
-                checker.checkPayerSignature(state, requestBuffer, signatureMap, payerID);
+                checker.checkPayerSignature(state, onsetResult.transaction(), signatureMap, payerID);
 
                 // 6. Check account balance
-                checker.checkSolvency(requestBuffer);
+                checker.checkSolvency(onsetResult.transaction());
 
                 // 7. Submit to platform
-                final var byteArray = checker.extractByteArray(requestBuffer);
-                submissionManager.submit(txBody, byteArray, ctx.txBodyParser());
+                // TODO - figure out how to get just the user transaction from the requestBuffer array
+                submissionManager.submit(txBody, onsetResult.transaction().toByteArray(), ctx.txBodyParser());
 
                 opCounters.countSubmitted(functionality);
             } catch (final InsufficientBalanceException e) {

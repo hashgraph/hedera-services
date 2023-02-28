@@ -51,28 +51,28 @@ class MonoSignaturePreparerTest {
     @Test
     void delegatesPayerSigCheck() throws Exception {
         given(precheckVerifier.hasNecessarySignatures(any())).willReturn(true);
-        final var status = subject.syncGetPayerSigStatus(MOCK_TXN.toByteArray());
+        final var status = subject.syncGetPayerSigStatus(MOCK_TXN);
         assertEquals(OK, status);
     }
 
     @Test
     void translatesKeyPrefixMismatch() throws Exception {
         given(precheckVerifier.hasNecessarySignatures(any())).willThrow(KeyPrefixMismatchException.class);
-        final var status = subject.syncGetPayerSigStatus(MOCK_TXN.toByteArray());
+        final var status = subject.syncGetPayerSigStatus(MOCK_TXN);
         assertEquals(KEY_PREFIX_MISMATCH, status);
     }
 
     @Test
     void translatesInvalidIdException() throws Exception {
         given(precheckVerifier.hasNecessarySignatures(any())).willThrow(InvalidAccountIDException.class);
-        final var status = subject.syncGetPayerSigStatus(MOCK_TXN.toByteArray());
+        final var status = subject.syncGetPayerSigStatus(MOCK_TXN);
         assertEquals(INVALID_ACCOUNT_ID, status);
     }
 
     @Test
     void translatesUnrecognizedFailure() throws Exception {
         given(precheckVerifier.hasNecessarySignatures(any())).willThrow(IllegalArgumentException.class);
-        final var status = subject.syncGetPayerSigStatus(MOCK_TXN.toByteArray());
+        final var status = subject.syncGetPayerSigStatus(MOCK_TXN);
         assertEquals(INVALID_SIGNATURE, status);
     }
 }

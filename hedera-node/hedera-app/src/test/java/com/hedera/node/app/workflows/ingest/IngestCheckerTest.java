@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.ingest;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -45,7 +44,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.crypto.Cryptography;
-import java.nio.ByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,13 +62,12 @@ class IngestCheckerTest {
     private static final TransactionBody MOCK_TXN = TransactionBody.newBuilder()
             .setTransactionID(TransactionID.newBuilder().setAccountID(MOCK_PAYER_ID))
             .build();
-    private static final ByteBuffer MOCK_REQUEST_BUFFER = ByteBuffer.wrap(Transaction.newBuilder()
+    private static final Transaction MOCK_TRANSACTION = Transaction.newBuilder()
             .setSignedTransactionBytes(SignedTransaction.newBuilder()
                     .setBodyBytes(MOCK_TXN.toByteString())
                     .build()
                     .toByteString())
-            .build()
-            .toByteArray());
+            .build();
 
     @Mock
     private HederaState state;
@@ -97,7 +94,7 @@ class IngestCheckerTest {
 
         assertFailsWithPrecheck(
                 INVALID_SIGNATURE,
-                () -> subject.checkPayerSignature(state, MOCK_REQUEST_BUFFER, MOCK_SIGNATURE_MAP, MOCK_PAYER_ID));
+                () -> subject.checkPayerSignature(state, MOCK_TRANSACTION, MOCK_SIGNATURE_MAP, MOCK_PAYER_ID));
     }
 
     @Test
@@ -105,7 +102,7 @@ class IngestCheckerTest {
         given(signaturePreparer.syncGetPayerSigStatus(any())).willReturn(OK);
 
         assertDoesNotThrow(
-                () -> subject.checkPayerSignature(state, MOCK_REQUEST_BUFFER, MOCK_SIGNATURE_MAP, MOCK_PAYER_ID));
+                () -> subject.checkPayerSignature(state, MOCK_TRANSACTION, MOCK_SIGNATURE_MAP, MOCK_PAYER_ID));
     }
 
     @Test
@@ -114,21 +111,14 @@ class IngestCheckerTest {
         given(solvencyPrecheck.solvencyOfVerifiedPayer(any(), eq(false)))
                 .willReturn(new TxnValidityAndFeeReq(OK, 123L));
 
-        assertDoesNotThrow(() -> subject.checkSolvency(MOCK_REQUEST_BUFFER));
+        assertDoesNotThrow(() -> subject.checkSolvency(MOCK_TRANSACTION));
     }
 
     @Test
     void propagatesBadPayerAccountViaPreCheckException() {
         given(solvencyPrecheck.payerAccountStatus(MOCK_PAYER_NUM)).willReturn(PAYER_ACCOUNT_DELETED);
 
-        assertFailsWithPrecheck(PAYER_ACCOUNT_DELETED, () -> subject.checkSolvency(MOCK_REQUEST_BUFFER));
-    }
-
-    @Test
-    void propagatesUnparseableAsPreCheckException() {
-        final var invalidBuffer = ByteBuffer.wrap("OOPS".getBytes());
-
-        assertFailsWithPrecheck(INVALID_TRANSACTION, () -> subject.checkSolvency(invalidBuffer));
+        assertFailsWithPrecheck(PAYER_ACCOUNT_DELETED, () -> subject.checkSolvency(MOCK_TRANSACTION));
     }
 
     @Test
@@ -139,7 +129,7 @@ class IngestCheckerTest {
         given(solvencyPrecheck.solvencyOfVerifiedPayer(captor.capture(), eq(false)))
                 .willReturn(solvencySummary);
 
-        assertFailsWithInsufficientBalance(INSUFFICIENT_TX_FEE, 123L, () -> subject.checkSolvency(MOCK_REQUEST_BUFFER));
+        assertFailsWithInsufficientBalance(INSUFFICIENT_TX_FEE, 123L, () -> subject.checkSolvency(MOCK_TRANSACTION));
         final var accessor = captor.getValue();
         assertEquals(MOCK_PAYER_ID, accessor.getPayer());
     }

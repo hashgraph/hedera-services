@@ -18,12 +18,10 @@ package com.hedera.node.app.workflows.ingest;
 
 import static com.hedera.node.app.service.mono.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 import static java.util.Objects.requireNonNull;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.txns.submission.SolvencyPrecheck;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
@@ -45,7 +43,9 @@ import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** The {@code IngestChecker} contains checks that are specific to the ingest workflow */
+/**
+ * The {@code IngestChecker} contains checks that are specific to the ingest workflow
+ */
 @Singleton
 public class IngestChecker {
 
@@ -80,11 +80,11 @@ public class IngestChecker {
     /**
      * Checks a transaction for semantic errors
      *
-     * @param txBody the {@link TransactionBody}
+     * @param txBody        the {@link TransactionBody}
      * @param functionality the {@link HederaFunctionality} of the transaction
      * @throws NullPointerException if one of the arguments is {@code null}
-     * @throws PreCheckException if a semantic error was discovered. The contained {@code responseCode} provides the
-     * error reason.
+     * @throws PreCheckException    if a semantic error was discovered. The contained {@code responseCode} provides the
+     *                              error reason.
      */
     public void checkTransactionSemantics(
             @NonNull final TransactionBody txBody, @NonNull final HederaFunctionality functionality)
@@ -105,24 +105,22 @@ public class IngestChecker {
     /**
      * Checks the signature of the payer. <em>Currently not implemented.</em>
      *
-     * @param state the {@link HederaState} that should be used to read state
+     * @param state         the {@link HederaState} that should be used to read state
      * @param requestBuffer the {@link ByteBuffer} containing the {@link Transaction}
-     * @param signatureMap the {@link SignatureMap} contained in the transaction
-     * @param payerID the {@link AccountID} of the payer
+     * @param signatureMap  the {@link SignatureMap} contained in the transaction
+     * @param payerID       the {@link AccountID} of the payer
      * @throws NullPointerException if one of the arguments is {@code null}
-     * @throws PreCheckException if an error is found while checking the signature. The contained {@code responseCode}
-     * provides the error reason.
+     * @throws PreCheckException    if an error is found while checking the signature. The contained {@code responseCode}
+     *                              provides the error reason.
      */
     public void checkPayerSignature(
             @NonNull final HederaState state,
-            @NonNull final ByteBuffer requestBuffer,
+            @NonNull final Transaction transaction,
             @NonNull final SignatureMap signatureMap,
             @NonNull final AccountID payerID)
             throws PreCheckException {
-        final var transactionBytes = extractByteArray(requestBuffer);
-
         // TODO - replace with a refactored version of the keys and signatures API
-        final var payerSigStatus = signaturePreparer.syncGetPayerSigStatus(transactionBytes);
+        final var payerSigStatus = signaturePreparer.syncGetPayerSigStatus(transaction);
 
         if (payerSigStatus != OK) {
             throw new PreCheckException(payerSigStatus);
@@ -130,28 +128,24 @@ public class IngestChecker {
     }
 
     /**
-     * Checks the solvency of the payer
-     *
+     * Checks the solvency of the payer account for the given transaction.
+     * <p>
      * TODO - replace with a refactored version of the mono solvency check
      *
-     * @param requestBuffer the {@link ByteBuffer} containing the {@link Transaction}
-     * @throws NullPointerException if any argument is {@code null}
+     * @param transaction the {@link Transaction} in question
+     * @throws NullPointerException         if any argument is {@code null}
      * @throws InsufficientBalanceException if the payer balance is not sufficient
      */
-    public void checkSolvency(@NonNull final ByteBuffer requestBuffer) throws PreCheckException {
-        try {
-            final var accessor = SignedTxnAccessor.from(extractByteArray(requestBuffer));
-            final var payerNum = EntityNum.fromAccountId(accessor.getPayer());
-            final var payerStatus = solvencyPrecheck.payerAccountStatus(payerNum);
-            if (payerStatus != OK) {
-                throw new PreCheckException(payerStatus);
-            }
-            final var solvencySummary = solvencyPrecheck.solvencyOfVerifiedPayer(accessor, false);
-            if (solvencySummary.getValidity() != OK) {
-                throw new InsufficientBalanceException(solvencySummary.getValidity(), solvencySummary.getRequiredFee());
-            }
-        } catch (final InvalidProtocolBufferException e) {
-            throw new PreCheckException(INVALID_TRANSACTION);
+    public void checkSolvency(@NonNull final Transaction transaction) throws PreCheckException {
+        final var accessor = SignedTxnAccessor.uncheckedFrom(transaction);
+        final var payerNum = EntityNum.fromAccountId(accessor.getPayer());
+        final var payerStatus = solvencyPrecheck.payerAccountStatus(payerNum);
+        if (payerStatus != OK) {
+            throw new PreCheckException(payerStatus);
+        }
+        final var solvencySummary = solvencyPrecheck.solvencyOfVerifiedPayer(accessor, false);
+        if (solvencySummary.getValidity() != OK) {
+            throw new InsufficientBalanceException(solvencySummary.getValidity(), solvencySummary.getRequiredFee());
         }
     }
 

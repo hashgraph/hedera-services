@@ -21,13 +21,14 @@ import com.hedera.node.app.state.HederaState;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Map;
 
 public interface SignaturePreparer {
-    ResponseCodeEnum syncGetPayerSigStatus(@NonNull byte[] transactionBytes);
+    ResponseCodeEnum syncGetPayerSigStatus(@NonNull Transaction transaction);
 
     /**
      * Prepares the signature data for a single key (usually the payer's key).
