@@ -38,12 +38,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * The {@code IngestChecker} contains checks that are specific to the ingest workflow
  */
-@Singleton
 public class IngestChecker {
 
     private final AccountID nodeAccountID;
@@ -54,7 +52,7 @@ public class IngestChecker {
      * Constructor of the {@code IngestChecker}
      *
      * @param nodeAccountID     the {@link AccountID} of the <em>node</em>
-     * @param solvencyPrecheck
+     * @param solvencyPrecheck  the {@link SolvencyPrecheck} that checks payer balance
      * @param signaturePreparer the {@link SignaturePreparer} that prepares signature data
      * @throws NullPointerException if one of the arguments is {@code null}
      */
