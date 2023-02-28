@@ -48,15 +48,13 @@ public class TestConfigBuilder {
 
     /**
      * Creates a new instance and add all records on classpath that are annotated with {@link ConfigData} as config data
-     * types if the
-     * {@code registerAllTypes} param is true.
+     * types if the {@code registerAllTypes} param is true.
      *
-     * @param registerAllTypes
-     * 		if true all config data records on classpath will automatically be registered
+     * @param registerAllTypes if true all config data records on classpath will automatically be registered
      */
     public TestConfigBuilder(final boolean registerAllTypes) {
         if (registerAllTypes) {
-            this.builder = ConfigUtils.addAllConfigDataOnClasspath(ConfigurationBuilder.create());
+            this.builder = ConfigUtils.scanAndRegisterAllConfigTypes(ConfigurationBuilder.create());
         } else {
             this.builder = ConfigurationBuilder.create();
         }
@@ -65,10 +63,8 @@ public class TestConfigBuilder {
     /**
      * Sets the value for the config.
      *
-     * @param propertyName
-     * 		name of the property
-     * @param value
-     * 		the value
+     * @param propertyName name of the property
+     * @param value        the value
      * @return the {@link TestConfigBuilder} instance (for fluent API)
      */
     public TestConfigBuilder withValue(final String propertyName, final String value) {
@@ -78,10 +74,8 @@ public class TestConfigBuilder {
     /**
      * Sets the value for the config.
      *
-     * @param propertyName
-     * 		name of the property
-     * @param value
-     * 		the value
+     * @param propertyName name of the property
+     * @param value        the value
      * @return the {@link TestConfigBuilder} instance (for fluent API)
      */
     public TestConfigBuilder withValue(final String propertyName, final int value) {
@@ -91,10 +85,8 @@ public class TestConfigBuilder {
     /**
      * Sets the value for the config.
      *
-     * @param propertyName
-     * 		name of the property
-     * @param value
-     * 		the value
+     * @param propertyName name of the property
+     * @param value        the value
      * @return the {@link TestConfigBuilder} instance (for fluent API)
      */
     public TestConfigBuilder withValue(final String propertyName, final double value) {
@@ -104,10 +96,8 @@ public class TestConfigBuilder {
     /**
      * Sets the value for the config.
      *
-     * @param propertyName
-     * 		name of the property
-     * @param value
-     * 		the value
+     * @param propertyName name of the property
+     * @param value        the value
      * @return the {@link TestConfigBuilder} instance (for fluent API)
      */
     public TestConfigBuilder withValue(final String propertyName, final long value) {
@@ -117,10 +107,8 @@ public class TestConfigBuilder {
     /**
      * Sets the value for the config.
      *
-     * @param propertyName
-     * 		name of the property
-     * @param value
-     * 		the value
+     * @param propertyName name of the property
+     * @param value        the value
      * @return the {@link TestConfigBuilder} instance (for fluent API)
      */
     public TestConfigBuilder withValue(final String propertyName, final boolean value) {
@@ -128,15 +116,15 @@ public class TestConfigBuilder {
     }
 
     /**
-     * This method returns the {@link Configuration} instance. If the method is called for the first time the
-     * {@link Configuration} instance will be created. All values that have been set (see
-     * {@link #withValue(String, int)}) methods will be part of the config. Next to this the config will support
-     * all config data record types (see {@link ConfigData}) that are on the classpath.
+     * This method returns the {@link Configuration} instance. If the method is called for the first time the {@link
+     * Configuration} instance will be created. All values that have been set (see {@link #withValue(String, int)})
+     * methods will be part of the config. Next to this the config will support all config data record types (see {@link
+     * ConfigData}) that are on the classpath.
      *
      * @return the created configuration
      */
     public Configuration getOrCreateConfig() {
-        try (Locked ignore = configLock.lock()) {
+        try (final Locked ignore = configLock.lock()) {
             if (configuration == null) {
                 configuration = builder.build();
                 ConfigurationHolder.getInstance().setConfiguration(configuration);
@@ -146,7 +134,7 @@ public class TestConfigBuilder {
     }
 
     private void checkConfigState() {
-        try (Locked ignore = configLock.lock()) {
+        try (final Locked ignore = configLock.lock()) {
             if (configuration != null) {
                 throw new IllegalStateException("Configuration already created!");
             }
@@ -156,8 +144,7 @@ public class TestConfigBuilder {
     /**
      * Adds the given config source to the builder
      *
-     * @param configSource
-     * 		the config source that will be added
+     * @param configSource the config source that will be added
      * @return the {@link TestConfigBuilder} instance (for fluent API)
      */
     public TestConfigBuilder withSource(final ConfigSource configSource) {
