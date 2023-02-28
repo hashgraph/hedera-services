@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state.merkle.logic;
+package com.hedera.node.app.state;
 
-import com.hedera.node.app.service.mono.state.org.StateMetadata;
-import com.hedera.node.app.state.HederaState;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SwirldDualState;
+import dagger.Module;
+import dagger.Provides;
+import javax.inject.Singleton;
 
-@FunctionalInterface
-public interface OnHandleConsensusRound {
-    void accept(Round round, HederaState state, SwirldDualState dualState, StateMetadata metadata);
+@Module
+public interface HederaStateModule {
+    @Provides
+    @Singleton
+    static HederaState provideWorkingHederaState(WorkingStateAccessor workingStateAccessor) {
+        return workingStateAccessor.getHederaState();
+    }
 }

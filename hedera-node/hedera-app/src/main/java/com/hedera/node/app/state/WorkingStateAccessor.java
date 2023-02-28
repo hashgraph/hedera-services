@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,25 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state.merkle.logic;
+package com.hedera.node.app.state;
 
-import com.hedera.node.app.service.mono.state.org.StateMetadata;
-import com.hedera.node.app.state.HederaState;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SwirldDualState;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
-@FunctionalInterface
-public interface OnHandleConsensusRound {
-    void accept(Round round, HederaState state, SwirldDualState dualState, StateMetadata metadata);
+@Singleton
+public class WorkingStateAccessor {
+    private HederaState hederaState = null;
+
+    @Inject
+    public WorkingStateAccessor() {
+        // Default constructor
+    }
+
+    public HederaState getHederaState() {
+        return hederaState;
+    }
+
+    public void setHederaState(HederaState hederaState) {
+        this.hederaState = hederaState;
+    }
 }

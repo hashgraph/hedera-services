@@ -108,7 +108,7 @@ public class ServicesMain implements SwirldMain {
         return new MerkleHederaState(
                 migration,
                 (event, metadata, provider) -> metadata.app().eventExpansion().expandAllSigs(event, provider),
-                (round, dualState, metadata) -> {
+                (round, state, dualState, metadata) -> {
                     final var metaApp = metadata.app();
                     metaApp.dualStateAccessor().setDualState(dualState);
                     metaApp.logic().incorporateConsensus(round);

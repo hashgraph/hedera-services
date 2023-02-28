@@ -26,6 +26,7 @@ import static com.swirlds.common.system.InitTrigger.RECONNECT;
 import static com.swirlds.common.system.InitTrigger.RESTART;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.HederaApp;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.ContractService;
@@ -69,6 +70,7 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualVa
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.node.app.service.network.NetworkService;
 import com.hedera.node.app.service.network.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.ScheduleService;
@@ -323,6 +325,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
                     .consoleCreator(SwirldsGui::createConsole)
                     .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
                     .crypto(CryptographyHolder.get())
+                    .workingState(new NonAtomicReference<>(this))
                     .selfId(selfId)
                     .build();
             APPS.save(selfId, app);
@@ -477,6 +480,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         final var that = new MerkleHederaState(this);
         if (metadata != null) {
             metadata.app().workingState().updateFrom(that);
+            ((HederaApp) metadata.app()).workingStateAccessor().get().setHederaState(that);
         }
         return that;
     }
@@ -488,7 +492,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     public void handleConsensusRound(@NonNull final Round round, @NonNull final SwirldDualState swirldDualState) {
         throwIfImmutable();
         if (onHandleConsensusRound != null) {
-            onHandleConsensusRound.accept(round, swirldDualState, metadata);
+            onHandleConsensusRound.accept(round, this, swirldDualState, metadata);
         }
     }
 

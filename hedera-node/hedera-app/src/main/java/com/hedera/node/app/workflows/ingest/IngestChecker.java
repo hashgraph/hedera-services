@@ -26,7 +26,6 @@ import com.hedera.node.app.service.mono.txns.submission.SolvencyPrecheck;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.node.app.signature.SignaturePreparer;
-import com.hedera.node.app.spi.accounts.Account;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
