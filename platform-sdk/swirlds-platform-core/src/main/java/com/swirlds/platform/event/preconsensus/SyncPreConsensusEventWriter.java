@@ -156,7 +156,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
-    public void addEvent(final EventImpl event) throws InterruptedException {
+    public void addEvent(final EventImpl event) {
         event.setStreamSequenceNumber(nextEventSequenceNumber++);
         if (event.getGeneration() >= minimumGenerationNonAncient) {
             writeEvent(event);
@@ -172,7 +172,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
-    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) throws InterruptedException {
+    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
         if (minimumGenerationNonAncient < this.minimumGenerationNonAncient) {
             logger.error(
                     EXCEPTION.getMarker(),
