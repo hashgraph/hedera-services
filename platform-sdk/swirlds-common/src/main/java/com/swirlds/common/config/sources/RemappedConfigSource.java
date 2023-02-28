@@ -55,8 +55,8 @@ public class RemappedConfigSource extends AbstractConfigSource {
      * @param mappings the property mappings
      */
     public RemappedConfigSource(final ConfigSource source, final Map<String, String> mappings) {
-        this.configSource = Objects.requireNonNull(source, "The argument 'source' cannot be null");
-        Objects.requireNonNull(source, "The argument 'mappings' cannot be null");
+        this.configSource = Objects.requireNonNull(source, "source cannot be null");
+        Objects.requireNonNull(mappings, "mappings cannot be null");
 
         this.properties = new HashMap<>();
         this.remappedKeys = new HashMap<>();
