@@ -14,38 +14,39 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.dispatcher;
+package com.hedera.node.app.dispatcher;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.state.HederaState;
-import org.junit.jupiter.api.BeforeEach;
+import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class WritableStoreFactoryTest {
+public class WritableStoreFactoryTest {
     private WritableStoreFactory subject;
 
     @Mock
     private HederaState state;
 
     @Mock
-    WritableStates writableStates;
+    private MapWritableStates writableStates;
 
-    @BeforeEach
-    void setUp() {
-        subject = new WritableStoreFactory(state);
+    @Test
+    void emptyConstructor() {
+        assertNotNull(new WritableStoreFactory(state));
     }
 
     @Test
-    void returnsTopicStore() {
-        given(state.createWritableStates("ConsensusService")).willReturn(writableStates);
-        final var store = subject.createTopicStore();
-        assertNotNull(store);
+    void createsWritableStore() {
+        given(state.createWritableStates(ConsensusService.NAME)).willReturn(writableStates);
+        subject = new WritableStoreFactory(state);
+        assertNotNull(subject.createTopicStore());
     }
 }

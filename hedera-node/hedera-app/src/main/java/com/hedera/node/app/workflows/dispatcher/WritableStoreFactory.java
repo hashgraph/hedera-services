@@ -23,8 +23,6 @@ import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.HashMap;
-import java.util.Map;
 import javax.inject.Inject;
 
 /**
@@ -32,8 +30,7 @@ import javax.inject.Inject;
  * {@link WritableStates} have been used.
  */
 public class WritableStoreFactory {
-    private final HederaState hederaState;
-    private final Map<String, WritableStates> usedStates = new HashMap<>();
+    private final HederaState state;
 
     /**
      * Constructor of {@link WritableStoreFactory}
@@ -43,32 +40,7 @@ public class WritableStoreFactory {
      */
     @Inject
     public WritableStoreFactory(@NonNull final HederaState hederaState) {
-        this.hederaState = requireNonNull(hederaState);
-    }
-
-    /**
-     * Get a {@link Map} of all {@link WritableStates} that have been used to construct stores. The
-     * key of the {@code Map} is the key of the particular {@code ReadableStates}.
-     *
-     * @return a {@link Map} that contains all {@link WritableStates} that have been used
-     */
-    @NonNull
-    public Map<String, WritableStates> getUsedStates() {
-        return usedStates;
-    }
-
-    /**
-     * Get a specific {@link WritableStates}. If the {@code WritableStates} does not exist yet, a
-     * new one is created.
-     *
-     * @param key the {@code key} of the {@link WritableStates}
-     * @return the {@link WritableStates}, either one that was created earlier or a new one
-     * @throws NullPointerException if one of the parameters is {@code null}
-     */
-    @NonNull
-    public WritableStates getWritableStates(@NonNull final String key) {
-        requireNonNull(key);
-        return usedStates.computeIfAbsent(key, hederaState::createWritableStates);
+        this.state = requireNonNull(hederaState);
     }
 
     /**
@@ -77,8 +49,8 @@ public class WritableStoreFactory {
      * @return a new {@link WritableTopicStore}
      */
     @NonNull
-    public WritableTopicStore getTopicStore() {
-        final var topicStates = getWritableStates(ConsensusService.NAME);
+    public WritableTopicStore createTopicStore() {
+        final var topicStates = state.createWritableStates(ConsensusService.NAME);
         return new WritableTopicStore(topicStates);
     }
 }

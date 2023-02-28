@@ -249,7 +249,7 @@ public class TransactionDispatcher {
                 new ConsensusServiceConfig(
                         dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
                 recordBuilder,
-                storeFactory.getTopicStore());
+                storeFactory.createTopicStore());
         txnCtx.setCreated(TopicID.newBuilder()
                 .setTopicNum(recordBuilder.getCreatedTopic())
                 .build());
