@@ -17,6 +17,8 @@
 package com.swirlds.platform.test.event.preconsensus;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
+import static com.swirlds.common.units.DataUnit.UNIT_KILOBYTES;
 import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 import static com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager.NO_MINIMUM_GENERATION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -35,7 +37,6 @@ import com.swirlds.common.test.TransactionGenerator;
 import com.swirlds.common.test.io.FileManipulation;
 import com.swirlds.common.test.metrics.NoOpMetrics;
 import com.swirlds.common.time.OSTime;
-import com.swirlds.common.utility.Units;
 import com.swirlds.platform.event.preconsensus.AsyncPreConsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFile;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager;
@@ -114,9 +115,9 @@ class AsyncPreConsensusEventWriterTests {
             final ConsensusTransactionImpl[] transactions = new ConsensusTransactionImpl[transactionCount];
             for (int index = 0; index < transactionCount; index++) {
 
-                final int transactionSize = ((int) Math.max(
-                                1, averageTransactionSizeKb + random.nextDouble() * transactionStandardDeviationKb))
-                        * Units.KIBIBYTES_TO_BYTES;
+                final int transactionSize = (int) UNIT_KILOBYTES.convertTo(
+                        Math.max(1, averageTransactionSizeKb + random.nextDouble() * transactionStandardDeviationKb),
+                        UNIT_BYTES);
                 final byte[] bytes = new byte[transactionSize];
                 random.nextBytes(bytes);
 
@@ -264,7 +265,7 @@ class AsyncPreConsensusEventWriterTests {
         writer.start();
 
         for (final EventImpl event : events) {
-            writer.addEvent(event);
+            writer.writeEvent(event);
 
             // This component is fundamentally asynchronous, and part of its functionality is related
             // to how it handles this. Simulate random pauses now and again to ensure that we handle
@@ -369,7 +370,7 @@ class AsyncPreConsensusEventWriterTests {
 
             assertFalse(writer.isEventDurable(event));
 
-            writer.addEvent(event);
+            writer.writeEvent(event);
 
             if (event.getGeneration() < minimumGenerationNonAncient) {
                 // This event is ancient and will have been rejected.
@@ -492,7 +493,7 @@ class AsyncPreConsensusEventWriterTests {
 
             assertFalse(writer1.isEventDurable(event));
 
-            writer1.addEvent(event);
+            writer1.writeEvent(event);
 
             if (event.getGeneration() < minimumGenerationNonAncient) {
                 // This event is ancient and will have been rejected.
@@ -533,7 +534,7 @@ class AsyncPreConsensusEventWriterTests {
         for (final EventImpl event : events2) {
             assertFalse(writer2.isEventDurable(event));
 
-            writer2.addEvent(event);
+            writer2.writeEvent(event);
 
             if (event.getGeneration() < minimumGenerationNonAncient) {
                 // This event is ancient and will have been rejected.

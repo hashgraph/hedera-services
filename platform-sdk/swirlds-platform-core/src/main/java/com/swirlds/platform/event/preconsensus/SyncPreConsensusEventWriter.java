@@ -156,10 +156,18 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
-    public void addEvent(final EventImpl event) {
+    public void writeEvent(final EventImpl event) {
         event.setStreamSequenceNumber(nextEventSequenceNumber++);
         if (event.getGeneration() >= minimumGenerationNonAncient) {
-            writeEvent(event);
+
+            // TODO could we catch exceptions deeper?
+            try {
+                prepareOutputStream(event);
+                currentMutableFile.writeEvent(event);
+            } catch (final IOException e) {
+                throw new UncheckedIOException(e);
+            }
+
             lastWrittenEvent = event.getStreamSequenceNumber();
 
             flushIfNeeded(false);
@@ -355,21 +363,6 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
             currentMutableFile = fileManager
                     .getNextFileDescriptor(minimumGenerationNonAncient, maximumGeneration)
                     .getMutableFile();
-        }
-    }
-
-    /**
-     * Write an event to a file.
-     *
-     * @param eventToWrite
-     * 		the event to write
-     */
-    private void writeEvent(final EventImpl eventToWrite) {
-        try {
-            prepareOutputStream(eventToWrite);
-            currentMutableFile.writeEvent(eventToWrite);
-        } catch (final IOException e) {
-            throw new UncheckedIOException(e);
         }
     }
 

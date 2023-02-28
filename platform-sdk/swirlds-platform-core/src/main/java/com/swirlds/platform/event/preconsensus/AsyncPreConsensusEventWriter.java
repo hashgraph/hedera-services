@@ -105,15 +105,15 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
      */
     @Override
     public void stop() {
-        writer.stop();
         handleThread.stop();
+        writer.stop();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void addEvent(final EventImpl event) throws InterruptedException {
+    public void writeEvent(final EventImpl event) throws InterruptedException {
         // TODO we should we update sequence number here?
         eventInserter.put(event);
     }
@@ -192,7 +192,7 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
         // Unless we do something silly like wrapping an asynchronous writer inside another asynchronous writer,
         // this should never throw an InterruptedException.
         abortAndThrowIfInterrupted(
-                () -> writer.addEvent(event), "interrupted while attempting to call addEvent on writer");
+                () -> writer.writeEvent(event), "interrupted while attempting to call addEvent on writer");
     }
 
     /**

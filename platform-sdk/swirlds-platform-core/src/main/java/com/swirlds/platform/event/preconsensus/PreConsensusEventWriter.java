@@ -34,7 +34,7 @@ public interface PreConsensusEventWriter extends Startable, Stoppable {
      * @throws InterruptedException
      * 		if interrupted while waiting on queue to drain
      */
-    void addEvent(EventImpl event) throws InterruptedException;
+    void writeEvent(EventImpl event) throws InterruptedException;
 
     /**
      * Let the event writer know the minimum generation for non-ancient events. Ancient events will be
@@ -90,5 +90,4 @@ public interface PreConsensusEventWriter extends Startable, Stoppable {
      * @param event the event that should be flushed as soon as possible
      */
     void requestUrgentFlushFor(EventImpl event); // TODO perhaps we only need this flush...?
-
 }
