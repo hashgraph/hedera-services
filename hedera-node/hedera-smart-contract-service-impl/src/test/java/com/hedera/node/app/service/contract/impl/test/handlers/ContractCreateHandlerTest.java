@@ -23,7 +23,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.meta.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hederahashgraph.api.proto.java.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

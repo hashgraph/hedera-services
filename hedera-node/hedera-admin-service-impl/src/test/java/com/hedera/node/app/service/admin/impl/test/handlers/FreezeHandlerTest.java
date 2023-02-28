@@ -14,38 +14,26 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.dispatcher;
+package com.hedera.node.app.service.admin.impl.test.handlers;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.BDDMockito.given;
+import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.state.HederaState;
-import org.junit.jupiter.api.BeforeEach;
+import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class StoreFactoryTest {
-    private StoreFactory subject;
-
+class FreezeHandlerTest {
     @Mock
-    private HederaState state;
+    private PreHandleContext preHandleContext;
 
-    @Mock
-    ReadableStates readableStates;
-
-    @BeforeEach
-    void setUp() {
-        subject = new StoreFactory(state);
-    }
+    private FreezeHandler subject = new FreezeHandler();
 
     @Test
-    void returnsTopicStore() {
-        given(state.createReadableStates("ConsensusService")).willReturn(readableStates);
-        final var store = subject.getTopicStore();
-        assertNotNull(store);
+    void preHandleNotSupported() {
+        assertThrows(UnsupportedOperationException.class, () -> subject.preHandle(preHandleContext));
     }
 }

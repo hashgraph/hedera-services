@@ -28,7 +28,9 @@ configurations.all {
 }
 
 dependencies {
+  annotationProcessor(libs.dagger.compiler)
   api(project(":hedera-node:hedera-admin-service"))
+  implementation(libs.bundles.di)
   implementation(project(":hedera-node:hedera-mono-service"))
   testImplementation(testLibs.bundles.mockito)
 }

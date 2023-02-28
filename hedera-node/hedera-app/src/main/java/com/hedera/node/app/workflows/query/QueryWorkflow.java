@@ -27,8 +27,8 @@ public interface QueryWorkflow {
      * Called to handle a single query.
      *
      * @param session The per-request {@link SessionContext}.
-     * @param requestBuffer The raw protobuf query bytes. Must be a {@link
-     *     com.hederahashgraph.api.proto.java.Query} object.
+     * @param requestBuffer The raw protobuf query bytes. Must be a {@link com.hederahashgraph.api.proto.java.Query}
+     * object.
      * @param responseBuffer The raw protobuf response bytes.
      */
     void handleQuery(
