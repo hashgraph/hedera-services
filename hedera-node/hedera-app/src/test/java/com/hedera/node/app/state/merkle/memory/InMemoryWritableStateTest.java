@@ -58,6 +58,19 @@ class InMemoryWritableStateTest extends MerkleTestBase {
             final var state = new InMemoryWritableKVState<>(fruitMetadata, fruitMerkleMap);
             assertThat(state.getStateKey()).isEqualTo(FRUIT_STATE_KEY);
         }
+
+        @Test
+        @DisplayName("The size of the state is the size of the merkle map")
+        void sizeWorks() {
+            final var state = new InMemoryWritableKVState<>(fruitMetadata, fruitMerkleMap);
+            assertThat(state.size()).isEqualTo(0);
+
+            add(fruitMerkleMap, fruitMetadata, A_KEY, APPLE);
+            add(fruitMerkleMap, fruitMetadata, B_KEY, BANANA);
+            add(fruitMerkleMap, fruitMetadata, C_KEY, CHERRY);
+            assertThat(state.size()).isEqualTo(fruitMerkleMap.size());
+            assertThat(state.size()).isEqualTo(3);
+        }
     }
 
     @Nested
