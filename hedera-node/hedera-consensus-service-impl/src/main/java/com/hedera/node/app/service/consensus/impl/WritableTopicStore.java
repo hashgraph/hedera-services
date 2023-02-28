@@ -27,6 +27,7 @@ import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Optional;
 
 /**
  * Provides write methods for modifying underlying data storage mechanisms for
@@ -35,7 +36,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * <p>This class is not exported from the module. It is an internal implementation detail.
  * This class is not complete, it will be extended with other methods like remove, update etc.,
  */
-public class WritableTopicStore {
+public class WritableTopicStore extends TopicStore {
     /** The underlying data storage class that holds the topic data. */
     private final WritableKVState<Long, MerkleTopic> topicState;
 
@@ -62,10 +63,35 @@ public class WritableTopicStore {
         topicState.put(topic.topicNumber(), asMerkleTopic(topic));
     }
 
-    public long size() {
-        return topicState.size();
+    /**
+     * Returns the {@link Topic} with the given number. If no such topic exists, returns {@code Optional.empty()}
+     * @param topicNum - the number of the topic to be retrieved.
+     */
+    public Optional<TopicMetadata> get(@NonNull final long topicNum) {
+        requireNonNull(topicState);
+        requireNonNull(topicNum);
+        final var topic = topicState.get(topicNum);
+
+        if (topic == null) {
+
+            return Optional.empty();
+        }
+        return Optional.of(topicMetaFrom(topic));
     }
 
+    /**
+     * Returns the number of topics modified in the state.
+     * @return the number of topics modified in the state.
+     */
+    public WritableKVState<Long, MerkleTopic> getTopicState() {
+        return requireNonNull(topicState);
+    }
+
+    /**
+     * Maps a {@link Topic} to a {@link MerkleTopic} to insert into state.
+     * @param topic - the topic to be mapped.
+     * @return the mapped topic.
+     */
     private MerkleTopic asMerkleTopic(@NonNull final Topic topic) {
         final var merkle = new MerkleTopic();
         topic.getAdminKey().ifPresent(key -> merkle.setAdminKey((JKey) key));

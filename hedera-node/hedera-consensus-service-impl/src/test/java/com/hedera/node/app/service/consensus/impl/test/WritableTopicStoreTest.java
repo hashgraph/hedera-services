@@ -67,5 +67,24 @@ class WritableTopicStoreTest extends ConsensusHandlerTestBase {
         assertEquals(topic.deleted(), merkleTopic.isDeleted());
 
         assertTrue(writableTopicState.modifiedKeys().contains(topicNum));
+
+        assertEquals(writableStore.get(topicNum), topic);
+    }
+
+    @Test
+    void getReturnsMetadata() {
+        topic = createTopic();
+        writableStore.put(topic);
+
+        final var topicFromStore = writableStore.get(topicNum);
+
+        assertTrue(topicFromStore.isPresent());
+        final var actualTopic = topicFromStore.get();
+        assertEquals(actualTopic.memo().get(), topic.memo());
+        assertEquals(actualTopic.autoRenewDurationSeconds(), topic.autoRenewSecs());
+        assertEquals(actualTopic.autoRenewAccountId().get().longValue(), topic.autoRenewAccountNumber());
+        assertEquals(actualTopic.adminKey().get(), topic.getAdminKey().get());
+        assertEquals(actualTopic.submitKey().get(), topic.getSubmitKey().get());
+        assertEquals(actualTopic.sequenceNumber(), topic.sequenceNumber());
     }
 }

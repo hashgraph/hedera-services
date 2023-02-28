@@ -19,26 +19,40 @@ package com.hedera.node.app.service.consensus.impl.test.handlers;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_B;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertOkResponse;
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
 
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
-import com.hedera.node.app.service.mono.Utils;
+import com.hedera.node.app.service.consensus.impl.records.CreateTopicRecordBuilder;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.spi.exceptions.HandleStatusException;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.meta.PreHandleContext;
+import com.hedera.node.app.spi.state.WritableKVStateBase;
+import com.hedera.node.app.spi.validation.AttributeValidator;
+import com.hedera.node.app.spi.validation.ExpiryMeta;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -52,10 +66,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ConsensusCreateTopicHandlerTest {
+class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
     private static final AccountID ACCOUNT_ID_3 = IdUtils.asAccount("0.0.3");
+    private static final AccountID AUTO_RENEW_ACCOUNT = IdUtils.asAccount("0.0.4");
 
-    private final ConsensusServiceConfig consensusConfig = new ConsensusServiceConfig(1234L, 5678);
+    private final ConsensusServiceConfig consensusConfig = new ConsensusServiceConfig(1L, 5678);
 
     @Mock
     private AccountAccess keyFinder;
@@ -64,17 +79,18 @@ class ConsensusCreateTopicHandlerTest {
     private HandleContext handleContext;
 
     @Mock
-    private TransactionBody transactionBody;
+    private AttributeValidator validator;
 
     @Mock
+    private ExpiryValidator expiryValidator;
+
     private ConsensusCreateTopicRecordBuilder recordBuilder;
+    private ConsensusServiceConfig config;
 
-    @Mock
     private WritableTopicStore topicStore;
-
     private ConsensusCreateTopicHandler subject;
 
-    private static TransactionBody newCreateTxn(Key adminKey, Key submitKey) {
+    private static TransactionBody newCreateTxn(Key adminKey, Key submitKey, boolean hasAutoRenewAccount) {
         final var txnId = TransactionID.newBuilder().setAccountID(ACCOUNT_ID_3).build();
         final var createTopicBuilder = ConsensusCreateTopicTransactionBody.newBuilder();
         if (adminKey != null) {
@@ -82,6 +98,12 @@ class ConsensusCreateTopicHandlerTest {
         }
         if (submitKey != null) {
             createTopicBuilder.setSubmitKey(submitKey);
+        }
+        createTopicBuilder.setAutoRenewPeriod(
+                Duration.newBuilder().setSeconds(10000L).build());
+        createTopicBuilder.setMemo("memo");
+        if (hasAutoRenewAccount) {
+            createTopicBuilder.setAutoRenewAccount(AUTO_RENEW_ACCOUNT);
         }
         return TransactionBody.newBuilder()
                 .setTransactionID(txnId)
@@ -92,6 +114,9 @@ class ConsensusCreateTopicHandlerTest {
     @BeforeEach
     void setUp() {
         subject = new ConsensusCreateTopicHandler();
+        topicStore = new WritableTopicStore(writableStates);
+        config = new ConsensusServiceConfig(10L, 100);
+        recordBuilder = new CreateTopicRecordBuilder();
     }
 
     @Test
@@ -103,14 +128,14 @@ class ConsensusCreateTopicHandlerTest {
         final var submitKey = SIMPLE_KEY_B;
 
         // when:
-        final var context = new PreHandleContext(keyFinder, newCreateTxn(adminKey, submitKey), ACCOUNT_ID_3);
+        final var context = new PreHandleContext(keyFinder, newCreateTxn(adminKey, submitKey, false), ACCOUNT_ID_3);
         subject.preHandle(context);
 
         // then:
         assertOkResponse(context);
         assertThat(context.getPayerKey()).isEqualTo(payerKey);
-        final var expectedHederaAdminKey = Utils.asHederaKey(adminKey).orElseThrow();
-        final var expectedHederaSubmitKey = Utils.asHederaKey(submitKey).orElseThrow();
+        final var expectedHederaAdminKey = asHederaKey(adminKey).orElseThrow();
+        final var expectedHederaSubmitKey = asHederaKey(submitKey).orElseThrow();
         assertThat(context.getRequiredNonPayerKeys()).containsExactly(expectedHederaAdminKey, expectedHederaSubmitKey);
     }
 
@@ -122,13 +147,13 @@ class ConsensusCreateTopicHandlerTest {
         final var adminKey = SIMPLE_KEY_A;
 
         // when:
-        final var context = new PreHandleContext(keyFinder, newCreateTxn(adminKey, null), ACCOUNT_ID_3);
+        final var context = new PreHandleContext(keyFinder, newCreateTxn(adminKey, null, false), ACCOUNT_ID_3);
         subject.preHandle(context);
 
         // then:
         assertOkResponse(context);
         assertThat(context.getPayerKey()).isEqualTo(payerKey);
-        final var expectedHederaAdminKey = Utils.asHederaKey(adminKey).orElseThrow();
+        final var expectedHederaAdminKey = asHederaKey(adminKey).orElseThrow();
         assertThat(context.getRequiredNonPayerKeys()).isEqualTo(List.of(expectedHederaAdminKey));
     }
 
@@ -140,13 +165,13 @@ class ConsensusCreateTopicHandlerTest {
         final var submitKey = SIMPLE_KEY_B;
 
         // when:
-        final var context = new PreHandleContext(keyFinder, newCreateTxn(null, submitKey), ACCOUNT_ID_3);
+        final var context = new PreHandleContext(keyFinder, newCreateTxn(null, submitKey, false), ACCOUNT_ID_3);
         subject.preHandle(context);
 
         // then:
         assertOkResponse(context);
         assertThat(context.getPayerKey()).isEqualTo(payerKey);
-        final var expectedHederaSubmitKey = Utils.asHederaKey(submitKey).orElseThrow();
+        final var expectedHederaSubmitKey = asHederaKey(submitKey).orElseThrow();
         assertThat(context.getRequiredNonPayerKeys()).containsExactly(expectedHederaSubmitKey);
     }
 
@@ -158,7 +183,7 @@ class ConsensusCreateTopicHandlerTest {
         final var payerKey = mockPayerLookup(protoPayerKey);
 
         // when:
-        final var context = new PreHandleContext(keyFinder, newCreateTxn(protoPayerKey, null), ACCOUNT_ID_3);
+        final var context = new PreHandleContext(keyFinder, newCreateTxn(protoPayerKey, null, false), ACCOUNT_ID_3);
         subject.preHandle(context);
 
         // then:
@@ -175,7 +200,7 @@ class ConsensusCreateTopicHandlerTest {
         final var payerKey = mockPayerLookup(protoPayerKey);
 
         // when:
-        final var context = new PreHandleContext(keyFinder, newCreateTxn(null, protoPayerKey), ACCOUNT_ID_3);
+        final var context = new PreHandleContext(keyFinder, newCreateTxn(null, protoPayerKey, false), ACCOUNT_ID_3);
         subject.preHandle(context);
 
         // then:
@@ -191,7 +216,7 @@ class ConsensusCreateTopicHandlerTest {
         given(keyFinder.getKey((AccountID) any()))
                 .willReturn(KeyOrLookupFailureReason.withFailureReason(
                         ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST)); // Any error response code
-        final var inputTxn = newCreateTxn(null, null);
+        final var inputTxn = newCreateTxn(null, null, false);
 
         // when:
         final var context = new PreHandleContext(keyFinder, inputTxn, IdUtils.asAccount("0.0.1234"));
@@ -235,7 +260,7 @@ class ConsensusCreateTopicHandlerTest {
     void requiresPayerKey() {
         // given:
         final var payerKey = mockPayerLookup();
-        final var context = new PreHandleContext(keyFinder, newCreateTxn(null, null), ACCOUNT_ID_3);
+        final var context = new PreHandleContext(keyFinder, newCreateTxn(null, null, false), ACCOUNT_ID_3);
 
         // when:
         subject.preHandle(context);
@@ -247,18 +272,90 @@ class ConsensusCreateTopicHandlerTest {
     }
 
     @Test
-    @DisplayName("Handle method not implemented")
-    void handleNotImplemented() {
-        final var op = transactionBody.getConsensusCreateTopic();
-        // expect:
+    @DisplayName("Handle works as expected")
+    void handleWorksAsExpected() {
+        final var adminKey = SIMPLE_KEY_A;
+        final var submitKey = SIMPLE_KEY_B;
+        final var op = newCreateTxn(adminKey, submitKey, true).getConsensusCreateTopic();
+
+        given(handleContext.attributeValidator()).willReturn(validator);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(expiryValidator.validateCreationAttempt(anyBoolean(), any()))
+                .willReturn(new ExpiryMeta(
+                        1_234_567L + op.getAutoRenewPeriod().getSeconds(),
+                        op.getAutoRenewPeriod().getSeconds(),
+                        op.getAutoRenewAccount().getAccountNum()));
+        given(handleContext.newEntityNumSupplier()).willReturn(() -> 1_234L);
+
+        subject.handle(handleContext, op, config, recordBuilder, topicStore);
+
+        final var createdTopic = topicStore.get(1_234L);
+        assertTrue(createdTopic.isPresent());
+
+        final var actualTopic = createdTopic.get();
+        assertEquals(0L, actualTopic.sequenceNumber());
+        assertEquals("memo", actualTopic.memo().get());
+        assertEquals(asHederaKey(adminKey), actualTopic.adminKey());
+        assertEquals(asHederaKey(submitKey), actualTopic.submitKey());
+        assertEquals(1244567, actualTopic.expirationTimestamp().getSeconds());
+        assertEquals(10000, actualTopic.autoRenewDurationSeconds());
+        assertEquals(
+                AUTO_RENEW_ACCOUNT.getAccountNum(),
+                actualTopic.autoRenewAccountId().get().longValue());
+        assertEquals(1_234L, recordBuilder.getCreatedTopic());
+        assertTrue(topicStore.getTopicState().modifiedKeys().contains(1234L));
+    }
+
+    @Test
+    @DisplayName("Memo Validation Failure will throw")
+    void handleThrowsIfAttributeValidatorFails() {
+        final var adminKey = SIMPLE_KEY_A;
+        final var submitKey = SIMPLE_KEY_B;
+        final var op = newCreateTxn(adminKey, submitKey, true).getConsensusCreateTopic();
+
+        given(handleContext.attributeValidator()).willReturn(validator);
+
+        doThrow(new HandleStatusException(MEMO_TOO_LONG)).when(validator).validateMemo(op.getMemo());
+
         assertThrows(
-                UnsupportedOperationException.class,
-                () -> subject.handle(
-                        handleContext,
-                        transactionBody.getConsensusCreateTopic(),
-                        consensusConfig,
-                        recordBuilder,
-                        topicStore));
+                HandleStatusException.class,
+                () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
+        assertEquals(0, topicStore.getTopicState().modifiedKeys().size());
+    }
+
+    @Test
+    @DisplayName("Key Validation Failure will throw")
+    void handleThrowsIfKeyValidatorFails() {
+        final var adminKey = SIMPLE_KEY_A;
+        final var submitKey = SIMPLE_KEY_B;
+        final var op = newCreateTxn(adminKey, submitKey, true).getConsensusCreateTopic();
+
+        given(handleContext.attributeValidator()).willReturn(validator);
+
+        doThrow(new HandleStatusException(BAD_ENCODING)).when(validator).validateKey(adminKey);
+        assertThrows(
+                HandleStatusException.class,
+                () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
+        assertEquals(0, topicStore.getTopicState().modifiedKeys().size());
+    }
+
+    @Test
+    @DisplayName("Key Validation Failure will throw")
+    void failsWhenMaxRegimeExceeds() {
+        final var adminKey = SIMPLE_KEY_A;
+        final var submitKey = SIMPLE_KEY_B;
+        final var op = newCreateTxn(adminKey, submitKey, true).getConsensusCreateTopic();
+        topicStore.getTopicState().put(1L, topic);
+        ((WritableKVStateBase) topicStore.getTopicState()).commit();
+        assertEquals(1, topicStore.getTopicState().modifiedKeys().size());
+
+        given(handleContext.attributeValidator()).willReturn(validator);
+        config = new ConsensusServiceConfig(1, 1);
+
+        assertThrows(
+                HandleStatusException.class,
+                () -> subject.handle(handleContext, op, config, recordBuilder, topicStore));
+        assertEquals(1, topicStore.getTopicState().modifiedKeys().size());
     }
 
     @Test
@@ -273,8 +370,8 @@ class ConsensusCreateTopicHandlerTest {
     }
 
     private HederaKey mockPayerLookup(Key key) {
-        final var returnKey = Utils.asHederaKey(key).orElseThrow();
-        given(keyFinder.getKey(ACCOUNT_ID_3)).willReturn(KeyOrLookupFailureReason.withKey(returnKey));
+        final var returnKey = asHederaKey(key).orElseThrow();
+        given(keyFinder.getKey(ACCOUNT_ID_3)).willReturn(withKey(returnKey));
         return returnKey;
     }
 }

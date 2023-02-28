@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore.TopicMetadata;
+import com.hedera.node.app.service.consensus.impl.TopicStore.TopicMetadata;
 import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusHandlerTestBase;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.Timestamp;

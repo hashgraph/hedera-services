@@ -118,6 +118,11 @@ public abstract class ReadableKVStateBase<K extends Comparable<K>, V> implements
     @NonNull
     protected abstract Iterator<K> iterateFromDataSource();
 
+    /**
+     * Gets the size of the data source(which may be a merkle data structure, a
+     * fast-copyable data structure, or something else).
+     * @return size of the data source.
+     */
     @NonNull
     protected abstract long sizeOfDataSource();
 

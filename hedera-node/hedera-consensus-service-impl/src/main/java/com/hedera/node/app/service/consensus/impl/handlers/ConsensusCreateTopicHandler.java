@@ -105,7 +105,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         }
 
         /* validate if the current topic can be created */
-        if (topicStore.size() >= consensusServiceConfig.maxTopics()) {
+        if (topicStore.getTopicState().size() >= consensusServiceConfig.maxTopics()) {
             throw new HandleStatusException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }
 
@@ -133,7 +133,11 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         builder.topicNumber(handleContext.newEntityNumSupplier().getAsLong());
 
         /* --- Persist the topic --- */
-        topicStore.put(builder.build());
+        final var topic = builder.build();
+        topicStore.put(topic);
+
+        /* --- Build the record --- */
+        recordBuilder.setCreatedTopic(topic.topicNumber());
     }
 
     @Override
