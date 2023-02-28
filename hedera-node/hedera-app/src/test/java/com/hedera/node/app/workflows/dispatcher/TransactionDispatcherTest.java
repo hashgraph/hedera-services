@@ -619,7 +619,7 @@ class TransactionDispatcherTest {
                                 .setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody.getDefaultInstance())
                                 .build(),
                         (BiConsumer<TransactionHandlers, PreHandleContext>) (handlers, meta) ->
-                                verify(handlers.consensusSubmitMessageHandler()).preHandle(meta)),
+                                verify(handlers.consensusSubmitMessageHandler()).preHandle(eq(meta), any())),
 
                 // contract
                 Arguments.of(
