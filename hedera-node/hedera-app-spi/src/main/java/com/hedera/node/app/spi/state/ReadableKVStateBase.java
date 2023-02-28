@@ -113,15 +113,6 @@ public abstract class ReadableKVStateBase<K extends Comparable<K>, V> implements
     protected abstract Iterator<K> iterateFromDataSource();
 
     /**
-     * Gets the size of the data source(which may be a merkle data structure, a
-     * fast-copyable data structure, or something else).
-     * @return size of the data source.
-     */
-    @Override
-    @NonNull
-    public abstract long size();
-
-    /**
      * Records the given key and associated value were read. {@link WritableKVStateBase} will call
      * this method in some cases when a key is read as part of a modification (for example, with
      * {@link WritableKVStateBase#getForModify(Comparable)}).
