@@ -29,6 +29,7 @@ public final class ServicesStatsConfig {
 
     static final String COUNTER_HANDLED_NAME_TPL = "%sHdl";
     static final String COUNTER_RECEIVED_NAME_TPL = "%sRcv";
+    static final String COUNTER_HANDLED_RESPONSE_CODE_NAME = "%sResponseCode";
     static final String COUNTER_DEPRECATED_TXNS_NAME = "DeprTxnsRcv";
     static final String COUNTER_ANSWERED_NAME_TPL = "%sSub";
     static final String COUNTER_SUBMITTED_NAME_TPL = "%sSub";

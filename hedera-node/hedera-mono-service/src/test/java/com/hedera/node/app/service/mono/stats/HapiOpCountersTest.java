@@ -102,7 +102,7 @@ class HapiOpCountersTest {
 
     @Test
     void registersExpectedStatEntries() {
-        verify(metrics, times(300)).getOrCreate(any());
+        verify(metrics, times(301)).getOrCreate(any());
     }
 
     @Test

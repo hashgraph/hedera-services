@@ -175,11 +175,10 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
         }
 
         // 8. Return PreCheck code and evtl. estimated fee
-        final var transactionResponse =
-                TransactionResponse.newBuilder()
-                        .setNodeTransactionPrecheckCode(result)
-                        .setCost(estimatedFee)
-                        .build();
+        final var transactionResponse = TransactionResponse.newBuilder()
+                .setNodeTransactionPrecheckCode(result)
+                .setCost(estimatedFee)
+                .build();
         responseBuffer.put(transactionResponse.toByteArray());
     }
 }
