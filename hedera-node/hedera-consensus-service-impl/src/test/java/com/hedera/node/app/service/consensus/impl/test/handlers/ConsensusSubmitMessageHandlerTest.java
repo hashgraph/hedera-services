@@ -53,19 +53,32 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
+import com.hedera.node.app.spi.meta.HandleContext;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ConsensusSubmitMessageHandlerTest {
+    private static final ConsensusServiceConfig consensusConfig = new ConsensusServiceConfig(1234L, 5678);
+
     private AccountKeyLookup keyLookup;
     private ReadableTopicStore topicStore;
+
+    @Mock
+    private HandleContext handleContext;
+    @Mock
+    private TransactionBody transactionBody;
+    @Mock
+    private ConsensusSubmitMessageRecordBuilder recordBuilder;
 
     private ConsensusSubmitMessageHandler subject;
 
     @BeforeEach
     void setUp() {
-        keyLookup = mock(AccountKeyLookup.class);
-        topicStore = mock(ReadableTopicStore.class);
         subject = new ConsensusSubmitMessageHandler();
     }
 
@@ -200,6 +213,22 @@ class ConsensusSubmitMessageHandlerTest {
             Assertions.assertThat(context.failed()).isTrue();
             Assertions.assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_TOPIC_ID);
         }
+    }
+
+    @Test
+    @DisplayName("Correct RecordBuilder type returned")
+    void returnsExpectedRecordBuilderType() {
+        assertInstanceOf(ConsensusSubmitMessageRecordBuilder.class, subject.newRecordBuilder());
+    }
+
+    @Test
+    @DisplayName("Handle method not implemented")
+    void handleNotImplemented() {
+        final var op = transactionBody.getConsensusSubmitMessage();
+        // expect:
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> subject.handle(handleContext, op, consensusConfig, recordBuilder));
     }
 
     private HederaKey mockPayerLookup() {

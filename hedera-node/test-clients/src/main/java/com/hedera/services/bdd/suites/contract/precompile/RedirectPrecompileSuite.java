@@ -104,7 +104,7 @@ public class RedirectPrecompileSuite extends HapiSuite {
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
                 .when(withOpContext((spec, opLog) -> allRunFor(
@@ -116,7 +116,7 @@ public class RedirectPrecompileSuite extends HapiSuite {
                                                 .setTokenNum(spec.registry()
                                                                 .getContractId(CONTRACT)
                                                                 .getContractNum()
-                                                        + 5)
+                                                        + 5_555_555)
                                                 .build())),
                                         asHeadlongAddress(
                                                 asAddress(spec.registry().getAccountID(TOKEN_TREASURY))))

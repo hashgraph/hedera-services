@@ -19,10 +19,14 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
+import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
+import com.hedera.node.app.service.consensus.impl.records.SubmitMessageRecordBuilder;
+import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -42,7 +46,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
      * <p>Determines signatures needed for submitting a new message to a consensus topic
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@link #handle(TransactionMetadata)}
+     *     passed to {@code handle()}
      * @param topicStore the {@link ReadableTopicStore} to use to resolve topic metadata
      * @throws NullPointerException if one of the arguments is {@code null}
      */
@@ -66,16 +70,26 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
     }
 
     /**
-     * This method is called during the handle workflow. It executes the actual transaction.
+     * Given the appropriate context, submits a message to a topic.
      *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
+     * TODO: Provide access to writable topic store.
      *
-     * @param metadata the {@link TransactionMetadata} that was generated during pre-handle.
+     * @param handleContext the {@link HandleContext} for the active transaction
+     * @param submitMessage the {@link ConsensusSubmitMessageTransactionBody} of the active transaction
+     * @param consensusServiceConfig the {@link ConsensusServiceConfig} for the active transaction
+     * @param recordBuilder the {@link ConsensusSubmitMessageRecordBuilder} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(@NonNull final TransactionMetadata metadata) {
-        requireNonNull(metadata);
+    public void handle(
+            @NonNull final HandleContext handleContext,
+            @NonNull final ConsensusSubmitMessageTransactionBody submitMessage,
+            @NonNull final ConsensusServiceConfig consensusServiceConfig,
+            @NonNull final ConsensusSubmitMessageRecordBuilder recordBuilder) {
         throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public ConsensusSubmitMessageRecordBuilder newRecordBuilder() {
+        return new SubmitMessageRecordBuilder();
     }
 }
