@@ -89,7 +89,7 @@ public class ChatterWithFakeNetworkTest {
                         initialNetworkConfig
                         //								,
                         //								oneSlowNodeNetworkConfig
-                ),
+                        ),
                 Duration.ofMillis(240),
                 Duration.ofSeconds(1),
                 Duration.ofMillis(10))));
@@ -144,7 +144,7 @@ public class ChatterWithFakeNetworkTest {
             final InOrderOrphanBuffer orphanBuffer = new InOrderOrphanBuffer(nodeId.getId());
 
             final SimulatedEventPipeline<CountingChatterEvent> pipeline = new SimulatedEventPipelineBuilder<
-                    CountingChatterEvent>()
+                            CountingChatterEvent>()
                     .next(gossipRecorder)
                     .next(intakeQueue)
                     .next(orphanBuffer)
