@@ -53,10 +53,10 @@ public class TokenBalanceValidation extends HapiSuite {
 
     /**
      * Set up validator. Private constructor for use from main(_).
-     * If <code>createTransferTranscations</code> is true, this constructor sets up HAPI transactions
+     * If <code>createTransferTransactions</code> is true, this constructor sets up HAPI transactions
      * to create and transfer tokens to the given account.
      *
-     * @param expectedTokenBalances Map of (accountnum, tokennum) -> token balance.
+     * @param expectedTokenBalances Map of (accountNum, tokenNum) -> token balance.
      * @param accountClassifier whether the accounts are contracts
      * @param createTransferTransactions If true, create and transfer the tokens as part of setup.
      *                          If false, assume that the tokens have already been created.
@@ -75,7 +75,7 @@ public class TokenBalanceValidation extends HapiSuite {
      * Assumes that the tokens have already been created, and validation is only to check that
      * <code>expectedTokenBalances</code> match values returned by <code>hasTokenBalance</code>
      *
-     * @param expectedTokenBalances Map of (accountnum, tokennum) -> token balance.
+     * @param expectedTokenBalances Map of (accountNum, tokenNum) -> token balance.
      * @param accountClassifier whether the accounts are contracts
      */
     public TokenBalanceValidation(

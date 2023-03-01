@@ -48,7 +48,7 @@ public class TokenReconciliationValidator implements RecordStreamValidator {
     @Override
     public void validateRecordsAndSidecars(final List<RecordWithSidecars> recordsWithSidecars) {
         getExpectedBalanceFrom(recordsWithSidecars);
-        log.info("Expected token balances: {}", expectedTokenBalances);
+        log.debug("Expected token balances: {}", expectedTokenBalances);
 
         final var validationSpecs = TestBase.extractContextualizedSpecsFrom(
                 List.of(() -> new TokenBalanceValidation(expectedTokenBalances, accountClassifier)),
