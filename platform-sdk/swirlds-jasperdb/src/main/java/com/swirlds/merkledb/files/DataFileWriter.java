@@ -279,27 +279,13 @@ public final class DataFileWriter<D> {
 
     /** A helper method to write a byte buffer to the file. */
     private void writeBytes(final ByteBuffer data) throws IOException {
-        final int currentWritingMmapPos = writingMmap.position();
-        final int pos = data.position();
-        try {
-            writingMmap.put(data);
-        } catch (final BufferOverflowException e) {
-            // Buffer overflow indicates the current writing mapped byte buffer needs to be
-            // mapped to a new location
+        final int needToWrite = data.remaining();
+        if (needToWrite > writingMmap.remaining()) {
+            final int currentWritingMmapPos = writingMmap.position();
             moveMmapBuffer(currentWritingMmapPos);
-            // Reset data buffer to the old position and retry
-            data.position(pos);
-            try {
-                writingMmap.put(data);
-            } catch (final BufferOverflowException t) {
-                // If still a buffer overflow, it means the mapped buffer is smaller than even a single
-                // data item
-                throw new IOException(
-                        "Data item is too large to write to a data file. Increase data file"
-                                + "mapped byte buffer size",
-                        e);
-            }
         }
+        // Assuming the data is small enough to fit into the mmaped writing buffer
+        writingMmap.put(data);
     }
 
     /**
