@@ -110,6 +110,11 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         }
 
         @Override
+        public Address newContractAddress(Address sponsor) {
+            return null;
+        }
+
+        @Override
         public long getSbhRefund() {
             return 0;
         }

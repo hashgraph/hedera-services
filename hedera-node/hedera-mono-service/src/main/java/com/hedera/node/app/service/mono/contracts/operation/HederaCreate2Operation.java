@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.contracts.operation;
 import static com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils.keccak256DigestOf;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
+import com.hedera.node.app.service.evm.contracts.operations.HederaEvmCreate2Operation;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
@@ -32,8 +33,10 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
-public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
+public class HederaCreate2Operation extends HederaEvmCreate2Operation {
     private static final Bytes PREFIX = Bytes.fromHexString("0xFF");
+
+    private final GlobalDynamicProperties dynamicProperties;
 
     @Inject
     public HederaCreate2Operation(
@@ -42,17 +45,10 @@ public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
             final SyntheticTxnFactory syntheticTxnFactory,
             final RecordsHistorian recordsHistorian,
             final GlobalDynamicProperties dynamicProperties) {
-        super(
-                0xF5,
-                "ħCREATE2",
-                4,
-                1,
-                1,
-                gasCalculator,
-                creator,
-                syntheticTxnFactory,
-                recordsHistorian,
-                dynamicProperties);
+        super(gasCalculator);
+        setCreateOperationTracking(
+                new HederaCreateOperationTracking(creator, syntheticTxnFactory, recordsHistorian, dynamicProperties));
+        this.dynamicProperties = dynamicProperties;
     }
 
     @Override

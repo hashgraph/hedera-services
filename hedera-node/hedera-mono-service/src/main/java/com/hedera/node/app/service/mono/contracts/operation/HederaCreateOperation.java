@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.contracts.operation;
 
+import com.hedera.node.app.service.evm.contracts.operations.HederaEvmCreateOperation;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
@@ -23,7 +24,6 @@ import com.hedera.node.app.service.mono.store.contracts.HederaWorldUpdater;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 /**
@@ -34,7 +34,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
  * <p>Gas costs are based on the expiry of the parent and the provided storage bytes per hour
  * variable
  */
-public class HederaCreateOperation extends AbstractRecordingCreateOperation {
+public class HederaCreateOperation extends HederaEvmCreateOperation {
     @Inject
     public HederaCreateOperation(
             final GasCalculator gasCalculator,
@@ -42,34 +42,8 @@ public class HederaCreateOperation extends AbstractRecordingCreateOperation {
             final SyntheticTxnFactory syntheticTxnFactory,
             final RecordsHistorian recordsHistorian,
             final GlobalDynamicProperties dynamicProperties) {
-        super(
-                0xF0,
-                "ħCREATE",
-                3,
-                1,
-                1,
-                gasCalculator,
-                creator,
-                syntheticTxnFactory,
-                recordsHistorian,
-                dynamicProperties);
-    }
-
-    @Override
-    public long cost(final MessageFrame frame) {
-        return gasCalculator().createOperationGasCost(frame);
-    }
-
-    @Override
-    protected boolean isEnabled() {
-        return true;
-    }
-
-    @Override
-    protected Address targetContractAddress(final MessageFrame frame) {
-        final var updater = (HederaWorldUpdater) frame.getWorldUpdater();
-        final Address address = updater.newContractAddress(frame.getRecipientAddress());
-        frame.warmUpAddress(address);
-        return address;
+        super(gasCalculator);
+        setCreateOperationTracking(
+                new HederaCreateOperationTracking(creator, syntheticTxnFactory, recordsHistorian, dynamicProperties));
     }
 }
