@@ -24,9 +24,8 @@ import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.node.app.service.mono.txns.contract.ContractCreateTransitionLogic.STANDIN_CONTRACT_ID_KEY;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFromEvmAddress;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
-import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
+import com.hedera.node.app.service.evm.contracts.operations.AbstractEvmRecordingCreateOperation;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
@@ -40,29 +39,11 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.Collections;
 import java.util.List;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
-import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.account.MutableAccount;
-import org.hyperledger.besu.evm.code.CodeFactory;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.Words;
-import org.hyperledger.besu.evm.operation.AbstractOperation;
-import org.hyperledger.besu.evm.operation.Operation;
 
-public abstract class AbstractRecordingCreateOperation extends AbstractOperation {
-    private static final int MAX_STACK_DEPTH = 1024;
-
-    protected static final Operation.OperationResult INVALID_RESPONSE =
-            new OperationResult(0L, ExceptionalHaltReason.INVALID_OPERATION);
-    protected static final Operation.OperationResult UNDERFLOW_RESPONSE =
-            new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
-
+public abstract class AbstractRecordingCreateOperation extends AbstractEvmRecordingCreateOperation {
     protected final GlobalDynamicProperties dynamicProperties;
     private final EntityCreator creator;
     private final SyntheticTxnFactory syntheticTxnFactory;
@@ -87,170 +68,54 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
     }
 
     @Override
-    public Operation.OperationResult execute(final MessageFrame frame, final EVM evm) {
-        // We have a feature flag for CREATE2
-        if (!isEnabled()) {
-            return INVALID_RESPONSE;
-        }
-
-        // manual check because some reads won't come until the "complete" step.
-        if (frame.stackSize() < getStackItemsConsumed()) {
-            return UNDERFLOW_RESPONSE;
-        }
-
-        final long cost = cost(frame);
-        if (frame.isStatic()) {
-            return haltWith(cost, ILLEGAL_STATE_CHANGE);
-        } else if (frame.getRemainingGas() < cost) {
-            return new Operation.OperationResult(cost, ExceptionalHaltReason.INSUFFICIENT_GAS);
-        }
-        final Wei value = Wei.wrap(frame.getStackItem(0));
-
-        final Address address = frame.getRecipientAddress();
-        final MutableAccount account =
-                frame.getWorldUpdater().getAccount(address).getMutable();
-
-        frame.clearReturnData();
-
-        if (value.compareTo(account.getBalance()) > 0 || frame.getMessageStackDepth() >= MAX_STACK_DEPTH) {
-            fail(frame);
-        } else {
-            spawnChildMessage(frame);
-        }
-
-        return new Operation.OperationResult(cost, null);
-    }
-
-    static Operation.OperationResult haltWith(final long cost, final ExceptionalHaltReason reason) {
-        return new Operation.OperationResult(cost, reason);
-    }
-
-    protected abstract boolean isEnabled();
-
-    protected abstract long cost(final MessageFrame frame);
-
-    protected abstract Address targetContractAddress(MessageFrame frame);
-
-    private void fail(final MessageFrame frame) {
-        final long inputOffset = clampedToLong(frame.getStackItem(1));
-        final long inputSize = clampedToLong(frame.getStackItem(2));
-        frame.readMutableMemory(inputOffset, inputSize);
-        frame.popStackItems(getStackItemsConsumed());
-        frame.pushStackItem(UInt256.ZERO);
-    }
-
-    private void spawnChildMessage(final MessageFrame frame) {
-        // memory cost needs to be calculated prior to memory expansion
-        final long cost = cost(frame);
-        frame.decrementRemainingGas(cost);
-
-        final Address address = frame.getRecipientAddress();
-        final MutableAccount account =
-                frame.getWorldUpdater().getAccount(address).getMutable();
-
-        account.incrementNonce();
-
-        final Wei value = Wei.wrap(frame.getStackItem(0));
-        final long inputOffset = clampedToLong(frame.getStackItem(1));
-        final long inputSize = clampedToLong(frame.getStackItem(2));
-        final Bytes inputData = frame.readMemory(inputOffset, inputSize);
-
-        final Address contractAddress = targetContractAddress(frame);
-
+    protected boolean failForExistingHollowAccount(MessageFrame frame, Address contractAddress) {
         if (!dynamicProperties.isLazyCreationEnabled()) {
             final var hollowAccountID =
                     matchingHollowAccountId((HederaStackedWorldStateUpdater) frame.getWorldUpdater(), contractAddress);
 
             if (hollowAccountID != null) {
                 fail(frame);
-                return;
+                return true;
             }
         }
-
-        final long childGasStipend = gasCalculator().gasAvailableForChildCreate(frame.getRemainingGas());
-        frame.decrementRemainingGas(childGasStipend);
-
-        final MessageFrame childFrame = MessageFrame.builder()
-                .type(MessageFrame.Type.CONTRACT_CREATION)
-                .messageFrameStack(frame.getMessageFrameStack())
-                .worldUpdater(frame.getWorldUpdater().updater())
-                .initialGas(childGasStipend)
-                .address(contractAddress)
-                .originator(frame.getOriginatorAddress())
-                .contract(contractAddress)
-                .gasPrice(frame.getGasPrice())
-                .inputData(Bytes.EMPTY)
-                .sender(frame.getRecipientAddress())
-                .value(value)
-                .apparentValue(value)
-                .code(CodeFactory.createCode(inputData, Hash.EMPTY, 0, false))
-                .blockValues(frame.getBlockValues())
-                .depth(frame.getMessageStackDepth() + 1)
-                .completer(child -> complete(frame, child))
-                .miningBeneficiary(frame.getMiningBeneficiary())
-                .blockHashLookup(frame.getBlockHashLookup())
-                .maxStackSize(frame.getMaxStackSize())
-                .build();
-
-        frame.incrementRemainingGas(cost);
-
-        frame.getMessageFrameStack().addFirst(childFrame);
-        frame.setState(MessageFrame.State.CODE_SUSPENDED);
+        return false;
     }
 
-    private void complete(final MessageFrame frame, final MessageFrame childFrame) {
-        frame.setState(MessageFrame.State.CODE_EXECUTING);
+    @Override
+    protected void sideEffects(MessageFrame frame, MessageFrame childFrame) {
+        // Add an in-progress record so that if everything succeeds, we can externalize the
+        // newly
+        // created contract in the record stream with both its 0.0.X id and its EVM address.
+        // C.f. https://github.com/hashgraph/hedera-services/issues/2807
+        final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+        final var sideEffects = new SideEffectsTracker();
 
-        frame.incrementRemainingGas(childFrame.getRemainingGas());
-        frame.addLogs(childFrame.getLogs());
-        frame.addSelfDestructs(childFrame.getSelfDestructs());
-        frame.incrementGasRefund(childFrame.getGasRefund());
-        frame.popStackItems(getStackItemsConsumed());
+        ContractID createdContractId;
+        final var hollowAccountID = matchingHollowAccountId(updater, childFrame.getContractAddress());
 
-        if (childFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
-            frame.mergeWarmedUpFields(childFrame);
-            frame.pushStackItem(Words.fromAddress(childFrame.getContractAddress()));
-
-            // Add an in-progress record so that if everything succeeds, we can externalize the
-            // newly
-            // created contract in the record stream with both its 0.0.X id and its EVM address.
-            // C.f. https://github.com/hashgraph/hedera-services/issues/2807
-            final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-            final var sideEffects = new SideEffectsTracker();
-
-            ContractID createdContractId;
-            final var hollowAccountID = matchingHollowAccountId(updater, childFrame.getContractAddress());
-
-            // if a hollow account exists at the alias address, finalize it to a contract
-            if (hollowAccountID != null) {
-                finalizeHollowAccountIntoContract(hollowAccountID, updater);
-                createdContractId = EntityIdUtils.asContract(hollowAccountID);
-            } else {
-                createdContractId = updater.idOfLastNewAddress();
-            }
-
-            sideEffects.trackNewContract(createdContractId, childFrame.getContractAddress());
-            final var childRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
-            childRecord.onlyExternalizeIfSuccessful();
-            final var opCustomizer = updater.customizerForPendingCreation();
-            final var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer);
-            if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_BYTECODE)) {
-                final var contractBytecodeSidecar = SidecarUtils.createContractBytecodeSidecarFrom(
-                        createdContractId,
-                        childFrame.getCode().getContainerBytes().toArrayUnsafe(),
-                        updater.get(childFrame.getContractAddress()).getCode().toArrayUnsafe());
-                updater.manageInProgressRecord(
-                        recordsHistorian, childRecord, syntheticOp, List.of(contractBytecodeSidecar));
-            } else {
-                updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticOp, Collections.emptyList());
-            }
+        // if a hollow account exists at the alias address, finalize it to a contract
+        if (hollowAccountID != null) {
+            finalizeHollowAccountIntoContract(hollowAccountID, updater);
+            createdContractId = EntityIdUtils.asContract(hollowAccountID);
         } else {
-            frame.setReturnData(childFrame.getOutputData());
-            frame.pushStackItem(UInt256.ZERO);
+            createdContractId = updater.idOfLastNewAddress();
         }
 
-        final int currentPC = frame.getPC();
-        frame.setPC(currentPC + 1);
+        sideEffects.trackNewContract(createdContractId, childFrame.getContractAddress());
+        final var childRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+        childRecord.onlyExternalizeIfSuccessful();
+        final var opCustomizer = updater.customizerForPendingCreation();
+        final var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer);
+        if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_BYTECODE)) {
+            final var contractBytecodeSidecar = SidecarUtils.createContractBytecodeSidecarFrom(
+                    createdContractId,
+                    childFrame.getCode().getContainerBytes().toArrayUnsafe(),
+                    updater.get(childFrame.getContractAddress()).getCode().toArrayUnsafe());
+            updater.manageInProgressRecord(
+                    recordsHistorian, childRecord, syntheticOp, List.of(contractBytecodeSidecar));
+        } else {
+            updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticOp, Collections.emptyList());
+        }
     }
 
     private AccountID matchingHollowAccountId(HederaStackedWorldStateUpdater updater, Address contract) {

@@ -523,6 +523,11 @@ class AbstractRecordingCreateOperationTest {
     }
 
     static class Subject extends AbstractRecordingCreateOperation {
+        public static final Operation.OperationResult INVALID_RESPONSE =
+                AbstractRecordingCreateOperation.INVALID_RESPONSE;
+
+        public static final Operation.OperationResult UNDERFLOW_RESPONSE =
+                AbstractRecordingCreateOperation.UNDERFLOW_RESPONSE;
         static final long PRETEND_GAS_COST = 123L;
         static final Address PRETEND_CONTRACT_ADDRESS = Address.ALTBN128_ADD;
         static final long PRETEND_COST = PRETEND_GAS_COST;
