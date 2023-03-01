@@ -494,7 +494,6 @@ class AsyncPreConsensusEventWriterTests {
         final Set<EventImpl> rejectedEvents1 = new HashSet<>();
         for (final EventImpl event : events1) {
 
-
             sequencer1.assignStreamSequenceNumber(event);
             assertFalse(writer1.isEventDurable(event));
             writer1.writeEvent(event);

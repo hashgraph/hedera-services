@@ -22,8 +22,6 @@ import com.swirlds.common.threading.framework.BlockingQueueInserter;
 import com.swirlds.common.threading.framework.MultiQueueThread;
 import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.time.Time;
-import com.swirlds.common.utility.throttle.MinimumTime;
 import com.swirlds.platform.internal.EventImpl;
 import java.time.Duration;
 
@@ -100,8 +98,8 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
      */
     @Override
     public void writeEvent(final EventImpl event) throws InterruptedException {
-        if (event.getStreamSequenceNumber() == EventImpl.NO_STREAM_SEQUENCE_NUMBER ||
-                event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
+        if (event.getStreamSequenceNumber() == EventImpl.NO_STREAM_SEQUENCE_NUMBER
+                || event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             throw new IllegalStateException("Event must have a valid stream sequence number");
         }
         eventInserter.put(event);
