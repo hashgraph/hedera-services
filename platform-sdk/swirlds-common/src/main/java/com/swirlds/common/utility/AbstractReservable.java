@@ -31,8 +31,9 @@ public abstract class AbstractReservable implements Reservable {
     /**
      * This lambda method is used to increment the reservation count when {@link #reserve()} is called.
      */
-    private static final IntUnaryOperator RESERVE = current -> {
+    private final IntUnaryOperator RESERVE = current -> {
         if (current == DESTROYED_REFERENCE_COUNT) {
+            onReferenceCountException();
             throw new ReferenceCountException("can not reserve node that has already been destroyed");
         } else {
             return current + 1;
@@ -53,8 +54,9 @@ public abstract class AbstractReservable implements Reservable {
     /**
      * This lambda method is used to decrement the reservation count when {@link #release()} is called.
      */
-    private static final IntUnaryOperator RELEASE = (final int current) -> {
+    private final IntUnaryOperator RELEASE = (final int current) -> {
         if (current == DESTROYED_REFERENCE_COUNT) {
+            onReferenceCountException();
             throw new ReferenceCountException("can not release node that has already been destroyed");
         } else if (current == IMPLICIT_REFERENCE_COUNT || current == 1) {
             return DESTROYED_REFERENCE_COUNT;
@@ -113,5 +115,22 @@ public abstract class AbstractReservable implements Reservable {
      */
     protected void onDestroy() {
         // override this method if needed
+    }
+
+    /**
+     * This method is executed if there is a {@link ReferenceCountException} when calling {@link #reserve()}.
+     * It might be helpful to do extra logging in certain cases here.
+     */
+    protected void onReferenceCountException() {
+        // override this method if needed
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void throwIfDestroyed(final String errorMessage) {
+        onReferenceCountException();
+        Reservable.super.throwIfDestroyed(errorMessage);
     }
 }

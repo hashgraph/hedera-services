@@ -126,7 +126,7 @@ public class SignedState implements SignedStateInfo {
     /**
      * Keeps track of reservations on this object.
      */
-    private final ReferenceCounter reservations = new ReferenceCounter(this::destroy);
+    private final ReferenceCounter reservations = new ReferenceCounter(this::destroy, this::onReferenceCountException);
 
     /**
      * Instantiate a signed state.
@@ -261,6 +261,13 @@ public class SignedState implements SignedStateInfo {
                 delete();
             }
         }
+    }
+
+    /**
+     * This method is called when there is a reference count exception.
+     */
+    private void onReferenceCountException() {
+        logger.error(EXCEPTION.getMarker(), history.toString());
     }
 
     /**
