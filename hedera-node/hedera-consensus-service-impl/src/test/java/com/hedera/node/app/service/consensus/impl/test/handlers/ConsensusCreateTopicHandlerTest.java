@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
+import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils.fromGrpcKey;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_A;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.SIMPLE_KEY_B;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.assertOkResponse;
@@ -34,9 +35,11 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 
+import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
+import com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.CreateTopicRecordBuilder;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
@@ -295,10 +298,10 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var actualTopic = createdTopic.get();
         assertEquals(0L, actualTopic.sequenceNumber());
         assertEquals("memo", actualTopic.memo());
-        assertEquals(asHederaKey(adminKey), actualTopic.getAdminKey());
-        assertEquals(asHederaKey(submitKey), actualTopic.getSubmitKey());
+        assertEquals(fromGrpcKey(adminKey), actualTopic.adminKey());
+        assertEquals(fromGrpcKey(submitKey), actualTopic.submitKey());
         assertEquals(1244567, actualTopic.expiry());
-        assertEquals(10000, actualTopic.autoRenewSecs());
+        assertEquals(10000, actualTopic.autoRenewPeriod());
         assertEquals(AUTO_RENEW_ACCOUNT.getAccountNum(), actualTopic.autoRenewAccountNumber());
         assertEquals(1_234L, recordBuilder.getCreatedTopic());
         assertTrue(topicStore.get(1234L).isPresent());
@@ -345,7 +348,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var op = newCreateTxn(adminKey, submitKey, true).getConsensusCreateTopic();
         final var writableState = writableTopicStateWithOneKey();
 
-        given(writableStates.<EntityNum, MerkleTopic>get(TOPICS)).willReturn(writableState);
+        given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableState);
         final var topicStore = new WritableTopicStore(writableStates);
         assertEquals(1, topicStore.sizeOfState());
 
@@ -367,7 +370,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var op = newCreateTxn(adminKey, submitKey, true).getConsensusCreateTopic();
         final var writableState = writableTopicStateWithOneKey();
 
-        given(writableStates.<EntityNum, MerkleTopic>get(TOPICS)).willReturn(writableState);
+        given(writableStates.<EntityNum, Topic>get(TOPICS)).willReturn(writableState);
         final var topicStore = new WritableTopicStore(writableStates);
         assertEquals(1, topicStore.sizeOfState());
 

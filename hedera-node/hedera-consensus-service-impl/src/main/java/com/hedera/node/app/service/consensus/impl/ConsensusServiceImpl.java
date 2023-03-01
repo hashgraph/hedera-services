@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl;
 
+import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.serdes.EntityNumSerdes;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
@@ -23,10 +24,12 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.serdes.MonoMapSerdesAdapter;
+import com.hedera.node.app.spi.state.serdes.SerdesFactory;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
+import com.hedera.hapi.node.state.consensus.writer.TopicWriter;
+import com.hedera.hapi.node.state.consensus.parser.TopicProtoParser;
 
 /**
  * Standard implementation of the {@link ConsensusService} {@link com.hedera.node.app.spi.Service}.
@@ -52,10 +55,12 @@ public final class ConsensusServiceImpl implements ConsensusService {
         };
     }
 
-    private StateDefinition<EntityNum, MerkleTopic> topicsDef() {
+    private StateDefinition<EntityNum, Topic> topicsDef() {
         final var keySerdes = new EntityNumSerdes();
-        final var valueSerdes =
-                MonoMapSerdesAdapter.serdesForSelfSerializable(MerkleTopic.CURRENT_VERSION, MerkleTopic::new);
+
+        final var valueSerdes = SerdesFactory.newInMemorySerdes(
+                TopicProtoParser::parse, TopicWriter::write);
+
         return StateDefinition.inMemory(TOPICS_KEY, keySerdes, valueSerdes);
     }
 }

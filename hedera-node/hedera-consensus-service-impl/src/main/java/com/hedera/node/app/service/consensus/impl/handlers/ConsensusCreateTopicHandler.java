@@ -16,14 +16,17 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
+import com.hedera.hapi.node.base.parser.KeyProtoParser;
+
+import static com.hedera.node.app.service.consensus.impl.handlers.TemporaryUtils.fromGrpcKey;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
-import com.hedera.node.app.service.consensus.impl.entity.TopicBuilderImpl;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.CreateTopicRecordBuilder;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
@@ -36,6 +39,7 @@ import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -46,7 +50,8 @@ import javax.inject.Singleton;
 @Singleton
 public class ConsensusCreateTopicHandler implements TransactionHandler {
     @Inject
-    public ConsensusCreateTopicHandler() {}
+    public ConsensusCreateTopicHandler() {
+    }
 
     /**
      * This method is called during the pre-handle workflow.
@@ -59,7 +64,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      * change.
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to the handle stage
+     *                passed to the handle stage
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final PreHandleContext context) {
@@ -79,7 +84,6 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
     /**
      * Given the appropriate context, creates a new topic.
      *
-     *
      * @param handleContext          the {@link HandleContext} for the active transaction
      * @param op                     the {@link ConsensusCreateTopicTransactionBody} of the active transaction
      * @param consensusServiceConfig the {@link ConsensusServiceConfig} for the active transaction
@@ -92,16 +96,16 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
             @NonNull final ConsensusServiceConfig consensusServiceConfig,
             @NonNull final ConsensusCreateTopicRecordBuilder recordBuilder,
             @NonNull final WritableTopicStore topicStore) {
-        final var builder = new TopicBuilderImpl();
+        final var builder = new Topic.Builder();
 
         /* Validate admin and submit keys and set them */
         if (op.hasAdminKey()) {
             handleContext.attributeValidator().validateKey(op.getAdminKey());
-            asHederaKey(op.getAdminKey()).ifPresent(builder::adminKey);
+            builder.adminKey(fromGrpcKey(op.getAdminKey()));
         }
         if (op.hasSubmitKey()) {
             handleContext.attributeValidator().validateKey(op.getSubmitKey());
-            asHederaKey(op.getSubmitKey()).ifPresent(builder::submitKey);
+            builder.submitKey(fromGrpcKey(op.getSubmitKey()));
         }
 
         /* Validate if the current topic can be created */
@@ -126,7 +130,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         final var effectiveExpiryMeta =
                 handleContext.expiryValidator().validateCreationAttempt(false, entityExpiryMeta);
-        builder.autoRenewSecs(effectiveExpiryMeta.autoRenewPeriod());
+        builder.autoRenewPeriod(effectiveExpiryMeta.autoRenewPeriod());
         builder.expiry(effectiveExpiryMeta.expiry());
         builder.autoRenewAccountNumber(effectiveExpiryMeta.autoRenewNum());
 

@@ -18,7 +18,7 @@ package com.hedera.node.app.service.consensus.impl;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.consensus.entity.Topic;
+import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -29,6 +29,8 @@ import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -41,7 +43,7 @@ import java.util.Set;
  */
 public class WritableTopicStore extends TopicStore {
     /** The underlying data storage class that holds the topic data. */
-    private final WritableKVState<EntityNum, MerkleTopic> topicState;
+    private final WritableKVState<EntityNum, Topic> topicState;
 
     /**
      * Create a new {@link WritableTopicStore} instance.
@@ -61,9 +63,9 @@ public class WritableTopicStore extends TopicStore {
      * @param topic - the topic to be mapped onto a new {@link MerkleTopic} and persisted.
      */
     public void put(@NonNull final Topic topic) {
-        requireNonNull(topicState);
-        requireNonNull(topic);
-        topicState.put(EntityNum.fromLong(topic.topicNumber()), asMerkleTopic(topic));
+        Objects.requireNonNull(topicState).put(
+                EntityNum.fromLong(topic.topicNumber()),
+                Objects.requireNonNull(topic));
     }
 
     /**
@@ -79,15 +81,9 @@ public class WritableTopicStore extends TopicStore {
      * Returns the {@link Topic} with the given number. If no such topic exists, returns {@code Optional.empty()}
      * @param topicNum - the number of the topic to be retrieved.
      */
-    public Optional<Topic> get(@NonNull final long topicNum) {
-        requireNonNull(topicState);
-        requireNonNull(topicNum);
-        final var topic = topicState.get(EntityNum.fromLong(topicNum));
-
-        if (topic == null) {
-            return Optional.empty();
-        }
-        return Optional.of(topicFrom(topic));
+    public Optional<Topic> get(final long topicNum) {
+        final var topic = Objects.requireNonNull(topicState).get(EntityNum.fromLong(topicNum));
+        return Optional.ofNullable(topic);
     }
 
     /**
@@ -104,25 +100,5 @@ public class WritableTopicStore extends TopicStore {
      */
     public Set<EntityNum> modifiedTopics() {
         return topicState.modifiedKeys();
-    }
-
-    /**
-     * Maps a {@link Topic} to a {@link MerkleTopic} to insert into state.
-     * @param topic - the topic to be mapped.
-     * @return the mapped topic.
-     */
-    private MerkleTopic asMerkleTopic(@NonNull final Topic topic) {
-        final var merkle = new MerkleTopic();
-        merkle.setKey(EntityNum.fromLong(topic.topicNumber()));
-        topic.getAdminKey().ifPresent(key -> merkle.setAdminKey((JKey) key));
-        topic.getSubmitKey().ifPresent(key -> merkle.setSubmitKey((JKey) key));
-        merkle.setMemo(topic.memo());
-        merkle.setAutoRenewAccountId(EntityId.fromNum(topic.autoRenewAccountNumber()));
-        merkle.setAutoRenewDurationSeconds(topic.autoRenewSecs());
-        merkle.setExpirationTimestamp(RichInstant.fromGrpc(
-                Timestamp.newBuilder().setSeconds(topic.expiry()).build()));
-        merkle.setDeleted(topic.deleted());
-        merkle.setSequenceNumber(topic.sequenceNumber());
-        return merkle;
     }
 }

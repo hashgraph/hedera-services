@@ -25,6 +25,7 @@ import com.hedera.node.app.service.consensus.impl.TopicStore.TopicMetadata;
 import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusHandlerTestBase;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.util.Optional;
@@ -51,14 +52,14 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
 
         final var meta = topicMeta.metadata();
         assertEquals(topicEntityNum.longValue(), meta.key());
-        assertEquals(Optional.of(adminKey), meta.adminKey());
-        assertEquals(Optional.of(adminKey), meta.submitKey());
-        assertEquals(1L, meta.sequenceNumber());
-        assertEquals(100L, meta.autoRenewDurationSeconds());
+        assertEquals(adminKey.toString(), meta.adminKey().map(Object::toString).orElse("N/A"));
+        assertEquals(adminKey.toString(), meta.submitKey().map(Object::toString).orElse("N/A"));
+        assertEquals(topic.sequenceNumber(), meta.sequenceNumber());
+        assertEquals(topic.autoRenewPeriod(), meta.autoRenewDurationSeconds());
         assertEquals(Optional.of(autoRenewId.getAccountNum()), meta.autoRenewAccountId());
         assertEquals(Optional.of(memo), meta.memo());
         assertFalse(meta.isDeleted());
-        assertArrayEquals(new byte[48], meta.runningHash());
+        assertArrayEquals(runningHash, meta.runningHash());
     }
 
     @Test
@@ -101,8 +102,12 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
 
     @Test
     void getsTopicMetadataIfTopicExistsWithNoAutoRenewAccount() {
-        givenValidTopic();
-        given(topic.getAutoRenewAccountId()).willReturn(EntityId.MISSING_ENTITY_ID);
+        givenValidTopic(0L);
+        readableTopicState = readableTopicState();
+        given(readableStates.<EntityNum, com.hedera.hapi.node.state.consensus.Topic>get(TOPICS)).willReturn(readableTopicState);
+        readableStore = new ReadableTopicStore(readableStates);
+        subject = new ReadableTopicStore(readableStates);
+
         final var topicMeta = subject.getTopicMetadata(topicId);
 
         assertNotNull(topicMeta);
@@ -112,14 +117,14 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
 
         final var meta = topicMeta.metadata();
         assertEquals(topicEntityNum.longValue(), meta.key());
-        assertEquals(Optional.of(adminKey), meta.adminKey());
-        assertEquals(Optional.of(adminKey), meta.submitKey());
-        assertEquals(1L, meta.sequenceNumber());
-        assertEquals(100L, meta.autoRenewDurationSeconds());
+        assertEquals(adminKey.toString(), meta.adminKey().map(Object::toString).orElse("N/A"));
+        assertEquals(adminKey.toString(), meta.submitKey().map(Object::toString).orElse("N/A"));
+        assertEquals(topic.sequenceNumber(), meta.sequenceNumber());
+        assertEquals(topic.autoRenewPeriod(), meta.autoRenewDurationSeconds());
         assertEquals(Optional.empty(), meta.autoRenewAccountId());
         assertEquals(Optional.of(memo), meta.memo());
         assertFalse(meta.isDeleted());
-        assertArrayEquals(new byte[48], meta.runningHash());
+        assertArrayEquals(runningHash, meta.runningHash());
     }
 
     @Test
