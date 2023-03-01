@@ -164,7 +164,7 @@ public class WorkflowOnset {
         }
 
         // 4. return TransactionBody
-        return new OnsetResult(txBody, bodyBytes.toByteArray(), errorCode, signatureMap, functionality);
+        return new OnsetResult(tx, txBody, bodyBytes.toByteArray(), errorCode, signatureMap, functionality);
     }
 
     @FunctionalInterface

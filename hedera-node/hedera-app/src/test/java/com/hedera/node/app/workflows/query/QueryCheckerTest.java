@@ -129,10 +129,11 @@ class QueryCheckerTest {
     @Test
     void testValidateCryptoTransferSucceeds() throws PreCheckException {
         // given
+        final var txn = Transaction.getDefaultInstance();
         final var txBody = TransactionBody.newBuilder().build();
         final var signatureMap = SignatureMap.newBuilder().build();
-        final var onsetResult =
-                new OnsetResult(txBody, txBody.toByteArray(), OK, signatureMap, HederaFunctionality.CryptoTransfer);
+        final var onsetResult = new OnsetResult(
+                txn, txBody, txBody.toByteArray(), OK, signatureMap, HederaFunctionality.CryptoTransfer);
         final var transaction = Transaction.newBuilder().build();
         when(onset.doParseAndCheck(ctx, transaction)).thenReturn(onsetResult);
 
@@ -159,10 +160,11 @@ class QueryCheckerTest {
     @Test
     void testValidateCryptoTransferWithWrongTransactionType() throws PreCheckException {
         // given
+        final var txn = Transaction.getDefaultInstance();
         final var txBody = TransactionBody.newBuilder().build();
         final var signatureMap = SignatureMap.newBuilder().build();
         final var onsetResult = new OnsetResult(
-                txBody, txBody.toByteArray(), OK, signatureMap, HederaFunctionality.ConsensusCreateTopic);
+                txn, txBody, txBody.toByteArray(), OK, signatureMap, HederaFunctionality.ConsensusCreateTopic);
         final var transaction = Transaction.newBuilder().build();
         when(onset.doParseAndCheck(ctx, transaction)).thenReturn(onsetResult);
         final var checker = new QueryChecker(onset, accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler);
@@ -176,10 +178,11 @@ class QueryCheckerTest {
     @Test
     void testValidateCryptoTransferWithFailingValidation() throws PreCheckException {
         // given
+        final var txn = Transaction.getDefaultInstance();
         final var txBody = TransactionBody.newBuilder().build();
         final var signatureMap = SignatureMap.newBuilder().build();
-        final var onsetResult =
-                new OnsetResult(txBody, txBody.toByteArray(), OK, signatureMap, HederaFunctionality.CryptoTransfer);
+        final var onsetResult = new OnsetResult(
+                txn, txBody, txBody.toByteArray(), OK, signatureMap, HederaFunctionality.CryptoTransfer);
         final var transaction = Transaction.newBuilder().build();
         when(onset.doParseAndCheck(ctx, transaction)).thenReturn(onsetResult);
         doThrow(new PreCheckException(INVALID_ACCOUNT_AMOUNTS))

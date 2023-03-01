@@ -18,6 +18,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.schedule.impl,
             com.hedera.node.app,
             com.hedera.node.app.service.schedule.impl.test;
+    exports com.hedera.node.app.service.mono.context.domain.process to
+            com.hedera.node.app;
     exports com.hedera.node.app.service.mono.legacy.core.jproto to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app.service.token.impl,
@@ -235,6 +237,7 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.fees.calculation.token;
     exports com.hedera.node.app.service.mono.fees.calculation.crypto;
     exports com.hedera.node.app.service.mono.fees.calculation.ethereum;
+    exports com.hedera.node.app.service.mono.legacy.exception;
 
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.swirlds.common;
