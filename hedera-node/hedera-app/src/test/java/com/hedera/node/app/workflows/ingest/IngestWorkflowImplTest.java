@@ -65,6 +65,7 @@ import java.nio.ByteBuffer;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -81,9 +82,15 @@ class IngestWorkflowImplTest {
             TransactionID.newBuilder().setAccountID(ACCOUNT_ID).build();
     private static final TransactionBody TRANSACTION_BODY =
             TransactionBody.newBuilder().setTransactionID(TRANSACTION_ID).build();
+    private static final Transaction TRANSACTION = Transaction.newBuilder()
+            .setSignedTransactionBytes(SignedTransaction.newBuilder()
+                    .setBodyBytes(TRANSACTION_BODY.toByteString())
+                    .build()
+                    .toByteString())
+            .build();
     private static final SignatureMap SIGNATURE_MAP = SignatureMap.newBuilder().build();
-    private static final OnsetResult ONSET_RESULT =
-            new OnsetResult(TRANSACTION_BODY, TRANSACTION_BODY.toByteArray(), OK, SIGNATURE_MAP, ConsensusCreateTopic);
+    private static final OnsetResult ONSET_RESULT = new OnsetResult(
+            TRANSACTION, TRANSACTION_BODY, TRANSACTION_BODY.toByteArray(), OK, SIGNATURE_MAP, ConsensusCreateTopic);
 
     @Mock
     private NodeInfo nodeInfo;
@@ -98,12 +105,12 @@ class IngestWorkflowImplTest {
     private WorkflowOnset onset;
 
     @Mock(strictness = LENIENT)
-    ReadableAccountStore accountStore;
+    private ReadableAccountStore accountStore;
 
     @Mock
-    Account account;
+    private Account account;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private IngestChecker checker;
 
     @Mock
@@ -140,6 +147,7 @@ class IngestWorkflowImplTest {
         requestBuffer = ByteBuffer.wrap(new byte[] {1, 2, 3});
         ctx = new SessionContext(queryParser, txParser, signedParser, txBodyParser);
         when(onset.parseAndCheck(ctx, requestBuffer)).thenReturn(ONSET_RESULT);
+        when(checker.extractByteArray(any())).thenReturn(new byte[0]);
 
         workflow = new IngestWorkflowImpl(
                 nodeInfo,
@@ -250,7 +258,7 @@ class IngestWorkflowImplTest {
         assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(OK);
         assertThat(response.getCost()).isZero();
         verify(opCounters).countReceived(ConsensusCreateTopic);
-        verify(submissionManager).submit(TRANSACTION_BODY, requestBuffer.array(), txBodyParser);
+        verify(submissionManager).submit(eq(TRANSACTION_BODY), any(), eq(txBodyParser));
         verify(opCounters).countSubmitted(ConsensusCreateTopic);
     }
 
@@ -354,7 +362,7 @@ class IngestWorkflowImplTest {
     @Test
     void testThrottleFails() throws PreCheckException, InvalidProtocolBufferException {
         // given
-        when(throttleAccumulator.shouldThrottle(ConsensusCreateTopic)).thenReturn(true);
+        when(throttleAccumulator.shouldThrottle(TRANSACTION_BODY)).thenReturn(true);
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
@@ -370,6 +378,7 @@ class IngestWorkflowImplTest {
     }
 
     @Test
+    @Disabled("Exercises code that cannot run until ALIASES k/v state has appropriate support")
     void testPayerAccountNotFoundFails(@Mock ReadableAccountStore localAccountStore)
             throws PreCheckException, InvalidProtocolBufferException {
         // given
@@ -402,7 +411,7 @@ class IngestWorkflowImplTest {
         // given
         doThrow(new PreCheckException(INVALID_PAYER_SIGNATURE))
                 .when(checker)
-                .checkPayerSignature(eq(TRANSACTION_BODY), eq(SIGNATURE_MAP), any());
+                .checkPayerSignature(any(), eq(TRANSACTION), eq(SIGNATURE_MAP), any());
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
@@ -422,7 +431,7 @@ class IngestWorkflowImplTest {
         // given
         doThrow(new InsufficientBalanceException(INSUFFICIENT_ACCOUNT_BALANCE, 42L))
                 .when(checker)
-                .checkSolvency(eq(TRANSACTION_BODY), eq(ConsensusCreateTopic), any());
+                .checkSolvency(TRANSACTION);
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
@@ -442,7 +451,7 @@ class IngestWorkflowImplTest {
         // given
         doThrow(new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED))
                 .when(submissionManager)
-                .submit(eq(TRANSACTION_BODY), eq(requestBuffer.array()), any());
+                .submit(eq(TRANSACTION_BODY), any(), any());
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when

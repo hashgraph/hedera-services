@@ -19,7 +19,6 @@ package com.hedera.node.app.workflows.ingest;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
@@ -28,7 +27,6 @@ import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
-import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
@@ -36,7 +34,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -64,8 +61,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
      * @param nodeInfo the {@link NodeInfo} of the current node
      * @param currentPlatformStatus the {@link CurrentPlatformStatus}
      * @param stateAccessor a {@link Supplier} that provides the latest immutable state
-     * @param onset the {@link WorkflowOnset} that pre-processes the {@link ByteBuffer} of a
-     *     transaction
+     * @param onset the {@link WorkflowOnset} that pre-processes the {@link ByteBuffer} of a transaction
      * @param checker the {@link IngestChecker} with specific checks of an ingest-workflow
      * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
@@ -138,7 +134,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 opCounters.countReceived(functionality);
 
                 // 2. Check throttles
-                if (throttleAccumulator.shouldThrottle(functionality)) {
+                if (throttleAccumulator.shouldThrottle(onsetResult.txBody())) {
                     throw new PreCheckException(BUSY);
                 }
 
@@ -146,39 +142,40 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 checker.checkTransactionSemantics(txBody, functionality);
 
                 // 4. Get payer account
-                final AccountID payerID = txBody.getTransactionID().getAccountID();
-                final var tokenStates = state.createReadableStates(TokenService.NAME);
-                final var accountStore = storeSupplier.apply(tokenStates);
-                final var payer = accountStore
-                        .getAccount(payerID)
-                        .orElseThrow(() -> new PreCheckException(PAYER_ACCOUNT_NOT_FOUND));
+                final var payerID = txBody.getTransactionID().getAccountID();
+                // TODO - should we fall back to working state in this case?
+                if (state != null) {
+                    // TODO - figure out how to support the rebuilt ALIASES map in States API),
+                    // or maybe denormalize with a new ALIASES map in state?
+                    /*
+                    final var tokenStates = state.createReadableStates(TokenService.NAME);
+                    final var accountStore = storeSupplier.apply(tokenStates);
+                    final var payer = accountStore
+                            .getAccount(payerID)
+                            .orElseThrow(() -> new PreCheckException(PAYER_ACCOUNT_NOT_FOUND));
+                     */
+                }
 
                 // 5. Check payer's signature
-                checker.checkPayerSignature(txBody, signatureMap, payer);
+                checker.checkPayerSignature(state, onsetResult.transaction(), signatureMap, payerID);
 
                 // 6. Check account balance
-                checker.checkSolvency(txBody, functionality, payer);
+                checker.checkSolvency(onsetResult.transaction());
 
                 // 7. Submit to platform
-                final byte[] byteArray;
-                if (requestBuffer.hasArray()) {
-                    byteArray = requestBuffer.array();
-                } else {
-                    byteArray = new byte[requestBuffer.limit()];
-                    requestBuffer.get(byteArray);
-                }
-                submissionManager.submit(txBody, byteArray, ctx.txBodyParser());
+                // TODO - figure out how to get just the user transaction from the requestBuffer array
+                submissionManager.submit(txBody, onsetResult.transaction().toByteArray(), ctx.txBodyParser());
 
                 opCounters.countSubmitted(functionality);
-            } catch (InsufficientBalanceException e) {
+            } catch (final InsufficientBalanceException e) {
                 estimatedFee = e.getEstimatedFee();
                 result = e.responseCode();
-            } catch (PreCheckException e) {
+            } catch (final PreCheckException e) {
                 result = e.responseCode();
             }
         }
 
-        // 8. Return PreCheck code and evtl. estimated fee
+        // 8. Return PreCheck code and eventually estimated fee
         final var transactionResponse = TransactionResponse.newBuilder()
                 .setNodeTransactionPrecheckCode(result)
                 .setCost(estimatedFee)
