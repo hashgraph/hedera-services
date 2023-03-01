@@ -20,14 +20,13 @@ import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.SIGNED_STATE;
 
-import com.swirlds.common.Reservable;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.time.OSTime;
-import com.swirlds.common.utility.AbstractReservable;
+import com.swirlds.common.utility.ReferenceCounter;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.platform.Settings;
@@ -69,7 +68,7 @@ import org.apache.logging.log4j.Logger;
  * rejoining after a long absence.
  * </p>
  */
-public class SignedState extends AbstractReservable implements Reservable, SignedStateInfo {
+public class SignedState implements SignedStateInfo {
 
     private static final Logger logger = LogManager.getLogger(SignedState.class);
 
@@ -122,6 +121,11 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
      * Information about how this signed state was used.
      */
     private final SignedStateHistory history;
+
+    /**
+     * Keeps track of reservations on this object.
+     */
+    private final ReferenceCounter reservations = new ReferenceCounter(this::destroy);
 
     /**
      * Instantiate a signed state.
@@ -226,33 +230,34 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
     }
 
     /**
-     * Reserves the SignedState for use. While reserved, this SignedState cannot be deleted, so it is very important to
-     * call releaseState() on it when done.
+     * Reserves the SignedState for use. While reserved, this SignedState will not be deleted.
+     * @param reason a short description of why this SignedState is being reserved. Each location
+     *               where a SignedState is reserved should attempt to use a unique reason, as this
+     *               makes debugging reservation bugs easier.
+     * @return a wrapper that holds the state and the reservation
      */
-    @Override
-    public void reserve() {
+    public ReservedSignedState reserve(final String reason) {
         if (history != null) {
             history.recordAction(SignedStateHistory.SignedStateAction.RESERVE, getReservationCount());
         }
-        super.reserve();
+        reservations.reserve();
+        return new ReservedSignedState(this, reason);
     }
 
     /**
      * Releases a reservation previously obtained in reserveState()
      */
-    @Override
-    public boolean release() {
+    void release(final ReservedSignedState reservation) {
         if (history != null) {
             history.recordAction(SignedStateAction.RELEASE, getReservationCount());
         }
-        return super.release();
+        reservations.release();
     }
 
     /**
      * Add this state to the queue to be deleted on a background thread.
      */
-    @Override
-    protected void onDestroy() {
+    private void destroy() {
         if (signedStateGarbageCollector == null
                 || !signedStateGarbageCollector.executeOnGarbageCollectionThread(this::delete)) {
             logger.warn(
@@ -279,7 +284,7 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
     private synchronized void delete() {
         final Instant start = Instant.now();
 
-        if (isDestroyed()) {
+        if (reservations.isDestroyed()) { // TODO why is this check necessary?
             if (!deleted) {
                 try {
                     deleted = true;
@@ -303,9 +308,8 @@ public class SignedState extends AbstractReservable implements Reservable, Signe
     /**
      * Get the number of reservations.
      */
-    @Override
     public synchronized int getReservationCount() {
-        return super.getReservationCount();
+        return reservations.getReservationCount();
     }
 
     /**

@@ -78,17 +78,17 @@ class SignedStateReferenceTests {
         assertTrue(reference.isNull(), "should point to a null value");
         assertEquals(-1, reference.getRound(), "round should be -1 if state is null");
 
-        final AutoCloseableWrapper<SignedState> wrapper1 = reference.get();
+        final AutoCloseableWrapper<SignedState> wrapper1 = reference.getAndReserve();
         assertNotNull(wrapper1, "wrapper should never be null");
         assertNull(wrapper1.get(), "state should be null");
         wrapper1.close();
 
-        final AutoCloseableWrapper<SignedState> wrapper2 = reference.get();
+        final AutoCloseableWrapper<SignedState> wrapper2 = reference.getAndReserve();
         assertNotNull(wrapper2, "wrapper should never be null");
         assertNull(wrapper2.get(), "state should be null");
         wrapper2.close();
 
-        final AutoCloseableWrapper<SignedState> wrapper3 = reference.get();
+        final AutoCloseableWrapper<SignedState> wrapper3 = reference.getAndReserve();
         assertNotNull(wrapper3, "wrapper should never be null");
         assertNull(wrapper3.get(), "state should be null");
         wrapper3.close();
@@ -119,7 +119,7 @@ class SignedStateReferenceTests {
         assertEquals(1234, reference.getRound(), "invalid round");
         assertEquals(1, count.get(), "invalid reference count");
 
-        final AutoCloseableWrapper<SignedState> wrapper1 = reference.get();
+        final AutoCloseableWrapper<SignedState> wrapper1 = reference.getAndReserve();
         assertNotNull(wrapper1, "wrapper should never be null");
         assertSame(state, wrapper1.get(), "incorrect state");
         assertEquals(2, count.get(), "incorrect reference count");

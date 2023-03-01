@@ -30,7 +30,7 @@ public interface Releasable {
      *
      * @return true if this call to release() caused the object to become destroyed
      */
-    default boolean release() {
+    default boolean release() { // TODO why do we need a boolean again?
         // override if needed
         return false;
     }

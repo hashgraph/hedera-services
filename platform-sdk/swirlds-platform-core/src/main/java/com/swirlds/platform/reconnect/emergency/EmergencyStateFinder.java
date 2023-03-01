@@ -17,8 +17,7 @@
 package com.swirlds.platform.reconnect.emergency;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 
 @FunctionalInterface
 public interface EmergencyStateFinder {
@@ -35,7 +34,10 @@ public interface EmergencyStateFinder {
      *
      * @param round the round of the state to find
      * @param hash  the hash of the state to find
+     * @param reason a short description of why this SignedState is being reserved. Each location
+     *                     where a SignedState is reserved should attempt to use a unique reason, as this
+     *                     makes debugging reservation bugs easier.
      * @return the requested state, or a later state that is fully signed, or null if no such state is available
      */
-    AutoCloseableWrapper<SignedState> find(final long round, final Hash hash);
+    ReservedSignedState find(final long round, final Hash hash, final String reason);
 }

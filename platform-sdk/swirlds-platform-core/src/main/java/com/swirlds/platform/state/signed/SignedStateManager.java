@@ -24,7 +24,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.sequence.set.SequenceSet;
 import com.swirlds.common.sequence.set.StandardSequenceSet;
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
@@ -157,21 +156,25 @@ public class SignedStateManager implements EmergencyStateFinder {
 
     /**
      * Get a wrapper containing the last complete signed state.
-     *
+     * @param reason a short description of why this SignedState is being reserved. Each location
+     *                     where a SignedState is reserved should attempt to use a unique reason, as this
+     *                     makes debugging reservation bugs easier.
      * @return a wrapper with the latest complete signed state, or null if no recent states that are complete
      */
-    public AutoCloseableWrapper<SignedState> getLatestSignedState() {
-        return lastCompleteSignedState.get();
+    public ReservedSignedState getLatestSignedState(final String reason) {
+        return lastCompleteSignedState.getAndReserve(reason);
     }
 
     /**
      * Get a wrapper containing the latest immutable signed state. May be unhashed, may or may not have all required
      * signatures. State is returned with a reservation.
-     *
+     * @param reason a short description of why this SignedState is being reserved. Each location
+     *                     where a SignedState is reserved should attempt to use a unique reason, as this
+     *                     makes debugging reservation bugs easier.
      * @return a wrapper with the latest signed state, or null if none are complete
      */
-    public AutoCloseableWrapper<SignedState> getLatestImmutableState() {
-        return lastState.get();
+    public ReservedSignedState getLatestImmutableState(final String reason) {
+        return lastState.getAndReserve(reason);
     }
 
     /**
@@ -201,7 +204,7 @@ public class SignedStateManager implements EmergencyStateFinder {
         // The map makes sure that duplicates are not returned to the caller.
         final Map<Long, SignedState> stateMap = new HashMap<>();
 
-        try (final AutoCloseableWrapper<SignedState> wrapper = lastCompleteSignedState.get()) {
+        try (final ReservedSignedState wrapper = lastCompleteSignedState.getAndReserve("getSignedStateInfo")) {
             if (wrapper.get() != null) {
                 stateMap.put(wrapper.get().getRound(), wrapper.get());
             }
@@ -230,9 +233,9 @@ public class SignedStateManager implements EmergencyStateFinder {
      * @param signedState the signed state to be kept by the manager
      */
     public synchronized void addUnsignedState(final SignedState signedState) {
-        lastState.set(signedState);
+        lastState.set(signedState, "addUnsignedState-lastState.set");
 
-        freshUnsignedStates.put(signedState);
+        freshUnsignedStates.put(signedState, "addUnsignedState-freshUnsignedStates.put");
 
         gatherSavedSignatures(signedState);
 
@@ -266,7 +269,7 @@ public class SignedStateManager implements EmergencyStateFinder {
                     signedState.getRound());
             // If the state is an emergency recovery state, it will not be fully signed. But it needs
             // to be stored here regardless so this node is able to be the teacher in emergency reconnects.
-            freshUnsignedStates.put(signedState);
+            freshUnsignedStates.put(signedState, "addCompleteSignedState-freshUnsignedStates.put");
             setLastStateIfNewer(signedState);
         } else if (signedState.getRound() <= lastCompleteSignedState.getRound()) {
             // We have a newer signed state
@@ -289,7 +292,7 @@ public class SignedStateManager implements EmergencyStateFinder {
      */
     private void setLastStateIfNewer(final SignedState signedState) {
         if (signedState.getRound() > lastState.getRound()) {
-            lastState.set(signedState);
+            lastState.set(signedState, "setLastStateIfNewer-lastState.set");
         }
     }
 
@@ -311,8 +314,7 @@ public class SignedStateManager implements EmergencyStateFinder {
             signedStateMetrics.getStateSignatureAge().update(signatureAge);
         }
 
-        try (final AutoCloseableWrapper<SignedState> wrapper = getIncompleteState(round)) {
-
+        try (final ReservedSignedState wrapper = getIncompleteState(round, "preConsensusSignatureObserver")) {
             final SignedState signedState = wrapper.get();
             if (signedState == null) {
                 // This round has already been completed, or it is really old or in the future
@@ -328,25 +330,24 @@ public class SignedStateManager implements EmergencyStateFinder {
      * {@inheritDoc}
      */
     @Override
-    public synchronized AutoCloseableWrapper<SignedState> find(final long round, final Hash hash) {
+    public synchronized ReservedSignedState find(final long round, final Hash hash, final String reason) {
         if (!lastCompleteSignedState.isNull()) {
             // Return a more recent fully signed state, if available
             if (round < lastCompleteSignedState.getRound()) {
-                return lastCompleteSignedState.get();
+                return lastCompleteSignedState.getAndReserve(reason);
             }
 
             // If the latest state exactly matches the request, return it
-            try (final AutoCloseableWrapper<SignedState> lastComplete = lastCompleteSignedState.get()) {
+            try (final ReservedSignedState lastComplete = lastCompleteSignedState.getAndReserve("find for " + reason)) {
                 if (stateMatches(lastComplete.get(), round, hash)) {
-                    lastComplete.get().reserve();
-                    return lastComplete;
+                    return lastComplete.getAndReserve(reason);
                 }
             }
         }
 
         // The requested round is later than the latest fully signed state.
         // Check if any of the fresh states match the request exactly.
-        return freshUnsignedStates.find(ss -> stateMatches(ss, round, hash));
+        return freshUnsignedStates.find(ss -> stateMatches(ss, round, hash), reason);
     }
 
     private static boolean stateMatches(final SignedState signedState, final long round, final Hash hash) {
@@ -366,7 +367,7 @@ public class SignedStateManager implements EmergencyStateFinder {
                             + ", cannot set last complete state from round " + signedState.getRound());
         }
 
-        lastCompleteSignedState.set(signedState);
+        lastCompleteSignedState.set(signedState, "setLastCompleteSignedState-lastCompleteSignedState.set");
 
         freshUnsignedStates.atomicIteration(iterator -> {
             while (iterator.hasNext()) {
@@ -374,7 +375,7 @@ public class SignedStateManager implements EmergencyStateFinder {
 
                 if (next.getRound() < signedState.getRound()) {
                     // This state is older than the most recently signed state, so it is stale now
-                    staleUnsignedStates.put(next);
+                    staleUnsignedStates.put(next, "setLastCompleteSignedState-staleUnsignedStates.put");
                     iterator.remove();
                 }
             }
@@ -420,7 +421,7 @@ public class SignedStateManager implements EmergencyStateFinder {
         signedStateMetrics.getStaleStatesMetric().update(staleUnsignedStates.getSize());
 
         if (lastCompleteSignedState.getRound() < getEarliestPermittedRound()) {
-            lastCompleteSignedState.set(null);
+            lastCompleteSignedState.set(null, "");
         }
     }
 
@@ -428,15 +429,18 @@ public class SignedStateManager implements EmergencyStateFinder {
      * Get an unsigned state for a particular round, if it exists.
      *
      * @param round the round in question
+     * @param reason a short description of why this SignedState is being reserved. Each location
+     *                     where a SignedState is reserved should attempt to use a unique reason, as this
+     *                     makes debugging reservation bugs easier.
      * @return a wrapper around a signed state for a round, or a wrapper around null if a signed state for that round is
      * not present
      */
-    private AutoCloseableWrapper<SignedState> getIncompleteState(final long round) {
-        final AutoCloseableWrapper<SignedState> wrapper = freshUnsignedStates.get(round);
+    private ReservedSignedState getIncompleteState(final long round, final String reason) {
+        final ReservedSignedState wrapper = freshUnsignedStates.get(round, reason);
         if (wrapper.get() != null) {
             return wrapper;
         }
-        return staleUnsignedStates.get(round);
+        return staleUnsignedStates.get(round, reason);
     }
 
     /**

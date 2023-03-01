@@ -16,13 +16,11 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-import static com.swirlds.platform.state.signed.SignedStateUtilities.newSignedStateWrapper;
-
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -31,7 +29,7 @@ import java.util.function.Predicate;
  */
 public class SignedStateMap {
 
-    private final Map<Long, SignedState> map = new HashMap<>();
+    private final Map<Long, ReservedSignedState> map = new HashMap<>();
 
     /**
      * Create a new map for signed states.
@@ -43,45 +41,36 @@ public class SignedStateMap {
     /**
      * Get a signed state. A reservation is taken on the state before this method returns.
      *
-     * @param round the round to get
+     * @param round  the round to get
+     * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
+     *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
      * @return an auto-closable object that wraps a signed state. May point to a null state if there is no state for the
      * given round. Will automatically release the state when closed.
      */
-    public synchronized AutoCloseableWrapper<SignedState> get(final long round) {
-
-        final SignedState signedState = map.get(round);
-
-        return newSignedStateWrapper(signedState);
-    }
-
-    /**
-     * Take a reservation.
-     */
-    private static void reserve(final SignedState signedState) {
-        signedState.reserve();
-    }
-
-    /**
-     * Release a reservation.
-     */
-    private static void release(final SignedState signedState) {
-        signedState.release();
+    public synchronized ReservedSignedState get(final long round, final String reason) {
+        final ReservedSignedState reservedSignedState = map.get(round);
+        if (reservedSignedState == null) {
+            // TODO is this the correct behavior?
+            return new ReservedSignedState();
+        }
+        return reservedSignedState.getAndReserve(reason);
     }
 
     /**
      * Add a signed state to the map.
      *
      * @param signedState the signed state to add
+     * @param reason      a short description of why this SignedState is being reserved. Each location where a
+     *                    SignedState is reserved should attempt to use a unique reason, as this makes debugging
+     *                    reservation bugs easier.
      */
-    public synchronized void put(final SignedState signedState) {
-        throwArgNull(signedState, "signedState");
+    public synchronized void put(final SignedState signedState, final String reason) {
+        Objects.requireNonNull(signedState, "signedState");
 
-        reserve(signedState);
-
-        final SignedState previousState = map.put(signedState.getRound(), signedState);
-
+        final ReservedSignedState previousState =
+                map.put(signedState.getRound(), new ReservedSignedState(signedState, reason));
         if (previousState != null) {
-            release(previousState);
+            previousState.close();
         }
     }
 
@@ -91,9 +80,9 @@ public class SignedStateMap {
      * @param round the round to remove
      */
     public synchronized void remove(final long round) {
-        final SignedState signedState = map.remove(round);
-        if (signedState != null) {
-            release(signedState);
+        final ReservedSignedState reservedSignedState = map.remove(round);
+        if (reservedSignedState != null) {
+            reservedSignedState.close();
         }
     }
 
@@ -101,8 +90,8 @@ public class SignedStateMap {
      * Remove all signed states from this collection.
      */
     public synchronized void clear() {
-        for (final SignedState signedState : map.values()) {
-            release(signedState);
+        for (final ReservedSignedState reservedSignedState : map.values()) {
+            reservedSignedState.close();
         }
         map.clear();
     }
@@ -111,16 +100,19 @@ public class SignedStateMap {
      * Finds the first signed state matching the supplied {@code predicate} and returns it with a reservation.
      *
      * @param predicate the search criteria
+     * @param reason    a short description of why this SignedState is being reserved. Each location where a SignedState
+     *                  is reserved should attempt to use a unique reason, as this makes debugging reservation bugs
+     *                  easier.
      * @return an {@link AutoCloseableWrapper} with the first matching signed state with the specified reservation take
      * out on it, or an {@link AutoCloseableWrapper} with null if none was found
      */
-    public synchronized AutoCloseableWrapper<SignedState> find(final Predicate<SignedState> predicate) {
-        for (final SignedState signedState : map.values()) {
-            if (predicate.test(signedState)) {
-                return newSignedStateWrapper(signedState);
+    public synchronized ReservedSignedState find(final Predicate<SignedState> predicate, final String reason) {
+        for (final ReservedSignedState reservedSignedState : map.values()) {
+            if (predicate.test(reservedSignedState.get())) {
+                return reservedSignedState.getAndReserve(reason);
             }
         }
-        return newSignedStateWrapper(null);
+        return new ReservedSignedState();
     }
 
     /**
@@ -137,10 +129,10 @@ public class SignedStateMap {
      */
     public synchronized void atomicIteration(final Consumer<Iterator<SignedState>> operation) {
 
-        final Iterator<SignedState> baseIterator = map.values().iterator();
+        final Iterator<ReservedSignedState> baseIterator = map.values().iterator();
 
         final Iterator<SignedState> iterator = new Iterator<>() {
-            private SignedState previous;
+            private ReservedSignedState previous;
 
             @Override
             public boolean hasNext() {
@@ -150,14 +142,14 @@ public class SignedStateMap {
             @Override
             public SignedState next() {
                 previous = baseIterator.next();
-                return previous;
+                return previous.get();
             }
 
             @Override
             public void remove() {
                 baseIterator.remove();
                 if (previous != null) {
-                    release(previous);
+                    previous.close();
                 }
             }
         };
