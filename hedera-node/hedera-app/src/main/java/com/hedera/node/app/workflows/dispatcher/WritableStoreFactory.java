@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.state.WorkingStateAccessor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
@@ -28,17 +29,17 @@ import javax.inject.Inject;
  * Factory for all writable stores. It creates new writable stores based on the {@link HederaState}.
  */
 public class WritableStoreFactory {
-    private final HederaState state;
+    private final WorkingStateAccessor stateAccessor;
 
     /**
      * Constructor of {@link WritableStoreFactory}
      *
-     * @param hederaState the {@link HederaState} that all stores are based upon
+     * @param stateAccessor the {@link WorkingStateAccessor} that all stores are based upon
      * @throws NullPointerException if one of the parameters is {@code null}
      */
     @Inject
-    public WritableStoreFactory(@NonNull final HederaState hederaState) {
-        this.state = requireNonNull(hederaState);
+    public WritableStoreFactory(@NonNull final WorkingStateAccessor stateAccessor) {
+        this.stateAccessor = requireNonNull(stateAccessor);
     }
 
     /**
@@ -48,7 +49,7 @@ public class WritableStoreFactory {
      */
     @NonNull
     public WritableTopicStore createTopicStore() {
-        final var topicStates = state.createWritableStates(ConsensusService.NAME);
+        final var topicStates = stateAccessor.getHederaState().createWritableStates(ConsensusService.NAME);
         return new WritableTopicStore(topicStates);
     }
 }

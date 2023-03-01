@@ -64,8 +64,9 @@ public class ConsensusHandlerTestBase {
             .get();
     protected final HederaKey adminKey = asHederaKey(key).get();
     protected final Long payerNum = payer.getAccountNum();
-    protected final Long topicNum = 1L;
-    protected final TopicID topicId = TopicID.newBuilder().setTopicNum(topicNum).build();
+    protected final EntityNum topicEntityNum = EntityNum.fromLong(1L);
+    protected final TopicID topicId =
+            TopicID.newBuilder().setTopicNum(topicEntityNum.longValue()).build();
     protected final String beneficiaryIdStr = "0.0.3";
     protected final long paymentAmount = 1_234L;
     protected final ByteString ledgerId = ByteString.copyFromUtf8("0x03");
@@ -86,8 +87,8 @@ public class ConsensusHandlerTestBase {
     @Mock
     protected QueryContext queryContext;
 
-    protected MapReadableKVState<Long, MerkleTopic> readableTopicState;
-    protected MapWritableKVState<Long, MerkleTopic> writableTopicState;
+    protected MapReadableKVState<EntityNum, MerkleTopic> readableTopicState;
+    protected MapWritableKVState<EntityNum, MerkleTopic> writableTopicState;
 
     protected ReadableTopicStore readableStore;
     protected WritableTopicStore writableStore;
@@ -96,28 +97,28 @@ public class ConsensusHandlerTestBase {
     void commonSetUp() {
         readableTopicState = readableTopicState();
         writableTopicState = emptyWritableTopicState();
-        given(readableStates.<Long, MerkleTopic>get(TOPICS)).willReturn(readableTopicState);
-        given(writableStates.<Long, MerkleTopic>get(TOPICS)).willReturn(writableTopicState);
+        given(readableStates.<EntityNum, MerkleTopic>get(TOPICS)).willReturn(readableTopicState);
+        given(writableStates.<EntityNum, MerkleTopic>get(TOPICS)).willReturn(writableTopicState);
         readableStore = new ReadableTopicStore(readableStates);
         writableStore = new WritableTopicStore(writableStates);
     }
 
     @NonNull
-    protected MapWritableKVState<Long, MerkleTopic> emptyWritableTopicState() {
-        return MapWritableKVState.<Long, MerkleTopic>builder("TOPICS").build();
+    protected MapWritableKVState<EntityNum, MerkleTopic> emptyWritableTopicState() {
+        return MapWritableKVState.<EntityNum, MerkleTopic>builder("TOPICS").build();
     }
 
     @NonNull
-    protected MapWritableKVState<Long, MerkleTopic> writableTopicStateWithOneKey() {
-        return MapWritableKVState.<Long, MerkleTopic>builder("TOPICS")
-                .value(topicNum, topic)
+    protected MapWritableKVState<EntityNum, MerkleTopic> writableTopicStateWithOneKey() {
+        return MapWritableKVState.<EntityNum, MerkleTopic>builder("TOPICS")
+                .value(topicEntityNum, topic)
                 .build();
     }
 
     @NonNull
-    protected MapReadableKVState<Long, MerkleTopic> readableTopicState() {
-        return MapReadableKVState.<Long, MerkleTopic>builder("TOPICS")
-                .value(topicNum, topic)
+    protected MapReadableKVState<EntityNum, MerkleTopic> readableTopicState() {
+        return MapReadableKVState.<EntityNum, MerkleTopic>builder("TOPICS")
+                .value(topicEntityNum, topic)
                 .build();
     }
 
@@ -130,7 +131,7 @@ public class ConsensusHandlerTestBase {
         given(topic.getExpirationTimestamp()).willReturn(RichInstant.MISSING_INSTANT);
         given(topic.getSequenceNumber()).willReturn(sequenceNumber);
         given(topic.getRunningHash()).willReturn(new byte[48]);
-        given(topic.getKey()).willReturn(EntityNum.fromLong(topicNum));
+        given(topic.getKey()).willReturn(topicEntityNum);
         given(topic.isDeleted()).willReturn(false);
     }
 

@@ -42,9 +42,7 @@ import com.hedera.node.app.service.mono.store.StoresModule;
 import com.hedera.node.app.service.mono.throttling.ThrottlingModule;
 import com.hedera.node.app.service.mono.txns.TransactionsModule;
 import com.hedera.node.app.service.mono.txns.submission.SubmissionModule;
-import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.node.app.services.ServiceModule;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.HederaStateModule;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
@@ -98,7 +96,7 @@ public interface HederaApp extends ServicesApp {
 
     Provider<IngestComponent.Factory> ingestComponentFactory();
 
-    Provider<WorkingStateAccessor> workingStateAccessor();
+    WorkingStateAccessor workingStateAccessor();
 
     @Component.Builder
     interface Builder {
@@ -125,9 +123,6 @@ public interface HederaApp extends ServicesApp {
 
         @BindsInstance
         Builder maxSignedTxnSize(@MaxSignedTxnSize final int maxSignedTxnSize);
-
-        @BindsInstance
-        Builder workingState(NonAtomicReference<HederaState> workingStateRef);
 
         HederaApp build();
     }

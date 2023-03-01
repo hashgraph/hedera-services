@@ -24,7 +24,7 @@ import javax.inject.Singleton;
 public interface HederaStateModule {
     @Provides
     @Singleton
-    static HederaState provideWorkingHederaState(WorkingStateAccessor workingStateAccessor) {
-        return workingStateAccessor.getHederaState();
+    static WorkingStateAccessor provideWorkingStateAccessor() {
+        return new WorkingStateAccessor();
     }
 }

@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -37,7 +38,7 @@ import java.util.Optional;
  */
 public class ReadableTopicStore extends TopicStore {
     /** The underlying data storage class that holds the topic data. */
-    private final ReadableKVState<Long, MerkleTopic> topicState;
+    private final ReadableKVState<EntityNum, MerkleTopic> topicState;
 
     /**
      * Create a new {@link ReadableTopicStore} instance.
@@ -70,7 +71,7 @@ public class ReadableTopicStore extends TopicStore {
     }
 
     private Optional<MerkleTopic> getTopicLeaf(TopicID id) {
-        final var topic = topicState.get(id.getTopicNum());
+        final var topic = topicState.get(EntityNum.fromTopicId(id));
         return Optional.ofNullable(topic);
     }
 

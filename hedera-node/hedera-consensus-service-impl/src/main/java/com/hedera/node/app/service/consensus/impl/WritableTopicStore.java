@@ -25,6 +25,7 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -40,7 +41,7 @@ import java.util.Set;
  */
 public class WritableTopicStore extends TopicStore {
     /** The underlying data storage class that holds the topic data. */
-    private final WritableKVState<Long, MerkleTopic> topicState;
+    private final WritableKVState<EntityNum, MerkleTopic> topicState;
 
     /**
      * Create a new {@link WritableTopicStore} instance.
@@ -62,7 +63,16 @@ public class WritableTopicStore extends TopicStore {
     public void put(@NonNull final Topic topic) {
         requireNonNull(topicState);
         requireNonNull(topic);
-        topicState.put(topic.topicNumber(), asMerkleTopic(topic));
+        topicState.put(EntityNum.fromLong(topic.topicNumber()), asMerkleTopic(topic));
+    }
+
+    /**
+     * Commits the changes to the underlying data storage.
+     * TODO: Not sure if the stores have responsibility of committing the changes. This might change in the future.
+     */
+    public void commit() {
+        requireNonNull(topicState);
+        ((WritableKVStateBase) topicState).commit();
     }
 
     /**
@@ -72,7 +82,7 @@ public class WritableTopicStore extends TopicStore {
     public Optional<Topic> get(@NonNull final long topicNum) {
         requireNonNull(topicState);
         requireNonNull(topicNum);
-        final var topic = topicState.get(topicNum);
+        final var topic = topicState.get(EntityNum.fromLong(topicNum));
 
         if (topic == null) {
             return Optional.empty();
@@ -92,7 +102,7 @@ public class WritableTopicStore extends TopicStore {
      * Returns the set of topics modified in existing state.
      * @return the set of topics modified in existing state
      */
-    public Set<Long> modifiedTopics() {
+    public Set<EntityNum> modifiedTopics() {
         return topicState.modifiedKeys();
     }
 

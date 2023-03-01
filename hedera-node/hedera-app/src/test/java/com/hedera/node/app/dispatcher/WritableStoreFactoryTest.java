@@ -22,7 +22,9 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -32,21 +34,29 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class WritableStoreFactoryTest {
     private WritableStoreFactory subject;
 
+    private WorkingStateAccessor stateAccessor;
+
     @Mock
     private HederaState state;
 
     @Mock
     private MapWritableStates writableStates;
 
+    @BeforeEach
+    void setUp() {
+        stateAccessor = new WorkingStateAccessor();
+        stateAccessor.setHederaState(state);
+    }
+
     @Test
     void emptyConstructor() {
-        assertNotNull(new WritableStoreFactory(state));
+        assertNotNull(new WritableStoreFactory(stateAccessor));
     }
 
     @Test
     void createsWritableStore() {
         given(state.createWritableStates(ConsensusService.NAME)).willReturn(writableStates);
-        subject = new WritableStoreFactory(state);
+        subject = new WritableStoreFactory(stateAccessor);
         assertNotNull(subject.createTopicStore());
     }
 }

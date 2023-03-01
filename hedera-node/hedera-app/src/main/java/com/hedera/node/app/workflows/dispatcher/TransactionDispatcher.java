@@ -241,17 +241,21 @@ public class TransactionDispatcher {
             @NonNull final UsageLimits usageLimits) {
         final var handler = handlers.consensusCreateTopicHandler();
         final var recordBuilder = handler.newRecordBuilder();
+        final var topicStore = storeFactory.createTopicStore();
         handler.handle(
                 handleContext,
                 topicCreation,
                 new ConsensusServiceConfig(
                         dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
                 recordBuilder,
-                storeFactory.createTopicStore());
+                topicStore);
         txnCtx.setCreated(TopicID.newBuilder()
                 .setTopicNum(recordBuilder.getCreatedTopic())
                 .build());
         usageLimits.refreshTopics();
+        // TODO: Commit will be called in workflow or some other place when handle workflow is implemented
+        // This is temporary solution to make sure that topic is created
+        topicStore.commit();
     }
 
     private void dispatchConsensusSubmitMessage(
