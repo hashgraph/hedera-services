@@ -29,6 +29,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -69,7 +70,8 @@ public class TopicCreateSuite extends HapiSuite {
                 .then(createTopic("testTopic")
                         .adminKeyName(NONSENSE_KEY)
                         .signedBy(GENESIS)
-                        .hasPrecheck(BAD_ENCODING));
+                        .hasPrecheckFrom(OK, BAD_ENCODING)
+                        .hasKnownStatus(BAD_ENCODING));
     }
 
     private HapiSpec submitKeyIsValidated() {

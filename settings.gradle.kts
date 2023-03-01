@@ -99,7 +99,7 @@ gitRepositories {
     uri.set("https://github.com/hashgraph/hedera-protobufs.git")
     // choose tag or branch of HAPI you would like to test with
     // This version needs to match tha HAPI version below in versionCatalogs
-    tag.set("v0.35.0")
+    tag.set("05111-use-pbj-for-hcs-state")
     // do not load project from repo
     autoInclude.set(false)
   }
@@ -114,7 +114,7 @@ dependencyResolutionManagement {
     // runtime.
     create("libs") {
       // The HAPI API version to use, this need to match the tag set on gitRepositories above
-      version("hapi-version", "0.35.0")
+      version("hapi-version", "0.36.0-alpha.0-SNAPSHOT")
 
       // Definition of version numbers for all libraries
       version("pbj-version", "0.3.0")

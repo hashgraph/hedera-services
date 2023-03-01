@@ -10,6 +10,7 @@ module com.hedera.node.app.service.consensus.impl {
     requires com.google.protobuf;
     requires com.hedera.node.app.service.token;
     requires com.swirlds.config;
+    requires com.hedera.node.hapi;
     requires com.hedera.node.app.service.evm;
 
     provides com.hedera.node.app.service.consensus.ConsensusService with

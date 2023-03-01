@@ -18,4 +18,6 @@ plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Hedera Consensus Service API"
 
-dependencies { api(project(":hedera-node:hedera-app-spi")) }
+dependencies {
+    api(project(":hedera-node:hedera-app-spi"))
+}

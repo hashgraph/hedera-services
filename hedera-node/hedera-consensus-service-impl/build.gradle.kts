@@ -29,6 +29,7 @@ configurations.all {
 
 dependencies {
   annotationProcessor(libs.dagger.compiler)
+  api(project(":hedera-node:hapi"))
   api(project(":hedera-node:hedera-consensus-service"))
   implementation(project(":hedera-node:hedera-mono-service"))
   implementation(libs.bundles.di)
