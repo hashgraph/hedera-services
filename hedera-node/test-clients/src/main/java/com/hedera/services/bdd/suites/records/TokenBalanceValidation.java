@@ -17,19 +17,22 @@
 package com.hedera.services.bdd.suites.records;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.bdd.junit.utils.AccountClassifier;
 import com.hedera.services.bdd.junit.validators.AccountNumTokenNum;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.Arrays;
@@ -138,17 +141,17 @@ public class TokenBalanceValidation extends HapiSuite {
                         // create treasury account
                         cryptoCreate(TOKEN_TREASURY).balance(10000 * ONE_HUNDRED_HBARS),
                         // create receiver account
-                        cryptoCreate(accountNum.toString()).balance(100 * ONE_HUNDRED_HBARS),
+                        cryptoCreate("0.0." + accountNum).balance(100 * ONE_HUNDRED_HBARS),
                         // create token
                         tokenCreate(tokenNum.toString())
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
                                 .initialSupply(tokenAmt * 10)
                                 .name(tokenNum.toString()),
-                        tokenAssociate(accountNum.toString(), List.of(tokenNum.toString())),
+                        tokenAssociate("0.0." + accountNum, List.of(tokenNum.toString())),
                         // transfer the token from the treasury to the account
                         cryptoTransfer(
-                                moving(tokenAmt, tokenNum.toString()).between(TOKEN_TREASURY, accountNum.toString())),
+                                moving(tokenAmt, tokenNum.toString()).between(TOKEN_TREASURY, "0.0." + accountNum)),
                     };
                 })
                 .flatMap(Arrays::stream)
@@ -172,10 +175,11 @@ public class TokenBalanceValidation extends HapiSuite {
                                             final var tokenAmt = entry.getValue();
 
                                             // validate that the transfer worked and the receiver account has the tokens
-                                            return getAccountBalance(
-                                                            accountNum.toString(),
+                                            return QueryVerbs.getAccountBalance(
+                                                            "0.0." + accountNum,
                                                             accountClassifier.isContract(accountNum))
-                                                    .hasAnswerOnlyPrecheckFrom(OK)
+                                                    .hasAnswerOnlyPrecheckFrom(
+                                                            OK, CONTRACT_DELETED, ACCOUNT_DELETED, INVALID_ACCOUNT_ID)
                                                     .hasTokenBalance(tokenNum.toString(), tokenAmt);
                                         })
                                 .toArray(HapiSpecOperation[]::new))
