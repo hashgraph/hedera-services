@@ -38,7 +38,7 @@ public final class SignedStateUtilities {
 
         return new AutoCloseableWrapper<>(signedState, () -> {
             if (signedState != null) {
-                signedState.release();
+                signedState.decrementResrvationCount();
             }
         });
     }

@@ -16,9 +16,11 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.SIGNED_STATE;
+import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.CREATION;
+import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RELEASE;
+import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RESERVE;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -29,7 +31,6 @@ import com.swirlds.common.time.OSTime;
 import com.swirlds.common.utility.ReferenceCounter;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
-import com.swirlds.platform.Settings;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.MinGenInfo;
@@ -95,7 +96,7 @@ public class SignedState implements SignedStateInfo {
     /**
      * The root of the merkle state.
      */
-    private State state;
+    private final State state;
 
     /**
      * The timestamp of when this object was created.
@@ -130,19 +131,12 @@ public class SignedState implements SignedStateInfo {
     /**
      * Instantiate a signed state.
      *
-     * @param state
-     * 		a fast copy of the state resulting from all transactions in consensus order from all
-     * 		events with received rounds up through the round this SignedState represents
-     * @param freezeState
-     * 		specifies whether this state is the last one saved before the freeze
+     * @param state       a fast copy of the state resulting from all transactions in consensus order from all events
+     *                    with received rounds up through the round this SignedState represents
+     * @param freezeState specifies whether this state is the last one saved before the freeze
      */
     public SignedState(final State state, final boolean freezeState) {
         this(state);
-
-        if (history != null) {
-            history.setRound(state.getPlatformState().getPlatformData().getRound());
-        }
-
         this.freezeState = freezeState;
         sigSet = new SigSet();
     }
@@ -151,13 +145,8 @@ public class SignedState implements SignedStateInfo {
         state.reserve();
 
         this.state = state;
-
-        if (Settings.getInstance().getState().signedStateSentinelEnabled) {
-            history = new SignedStateHistory(OSTime.getInstance());
-            history.recordAction(SignedStateHistory.SignedStateAction.CREATION, getReservationCount());
-        } else {
-            history = null;
-        }
+        history = new SignedStateHistory(OSTime.getInstance(), getRound());
+        history.recordAction(CREATION, getReservationCount(), null, null);
         registryRecord = RuntimeObjectRegistry.createRecord(getClass(), history);
     }
 
@@ -231,26 +220,30 @@ public class SignedState implements SignedStateInfo {
 
     /**
      * Reserves the SignedState for use. While reserved, this SignedState will not be deleted.
-     * @param reason a short description of why this SignedState is being reserved. Each location
-     *               where a SignedState is reserved should attempt to use a unique reason, as this
-     *               makes debugging reservation bugs easier.
+     *
+     * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
+     *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
      * @return a wrapper that holds the state and the reservation
      */
     public ReservedSignedState reserve(final String reason) {
-        if (history != null) {
-            history.recordAction(SignedStateHistory.SignedStateAction.RESERVE, getReservationCount());
-        }
-        reservations.reserve();
         return new ReservedSignedState(this, reason);
     }
 
+    // TODO catch reservation exceptions and log history
+
     /**
-     * Releases a reservation previously obtained in reserveState()
+     * Increment reservation count.
      */
-    void release(final ReservedSignedState reservation) {
-        if (history != null) {
-            history.recordAction(SignedStateAction.RELEASE, getReservationCount());
-        }
+    void incrementReservationCount(final ReservedSignedState reservation) {
+        history.recordAction(RESERVE, getReservationCount(), reservation.getReason(), reservation.getReservationId());
+        reservations.reserve();
+    }
+
+    /**
+     * Decrement reservation count.
+     */
+    void decrementReservationCount(final ReservedSignedState reservation) {
+        history.recordAction(RELEASE, getReservationCount(), reservation.getReason(), reservation.getReservationId());
         reservations.release();
     }
 
@@ -289,9 +282,7 @@ public class SignedState implements SignedStateInfo {
                 try {
                     deleted = true;
 
-                    if (history != null) {
-                        history.recordAction(SignedStateHistory.SignedStateAction.RELEASE, getReservationCount());
-                    }
+                    history.recordAction(SignedStateAction.DESTROY, getReservationCount(), null, null);
                     registryRecord.release();
                     state.release();
 
@@ -542,8 +533,8 @@ public class SignedState implements SignedStateInfo {
      * state is either not complete or was previously complete prior to this signature
      */
     private boolean addSignature(final AddressBook addressBook, final long nodeId, final Signature signature) {
-        throwArgNull(addressBook, "addressBook");
-        throwArgNull(signature, "signature");
+        Objects.requireNonNull(addressBook, "addressBook");
+        Objects.requireNonNull(signature, "signature");
 
         if (isComplete()) {
             // No need to add more signatures

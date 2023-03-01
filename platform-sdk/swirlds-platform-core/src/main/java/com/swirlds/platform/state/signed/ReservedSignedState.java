@@ -18,22 +18,30 @@ package com.swirlds.platform.state.signed;
 
 import com.swirlds.common.AutoCloseableNonThrowing;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * A wrapper around a signed state that holds a reservation. Until this wrapper is released/closed, the signed state
  * contained within will not be destroyed.
  */
-public class ReservedSignedState implements AutoCloseableNonThrowing {
+public final class ReservedSignedState implements AutoCloseableNonThrowing {
 
     private final SignedState signedState;
     private final String reason;
+    private final long reservationId = nextReservationId.getAndIncrement();
     private final AtomicBoolean closed = new AtomicBoolean(false);
+
+    /**
+     * The next reservation id to use. It is ok that this is static, since we don't care which ID any particular
+     * reservation has, as long as that ID is unique.
+     */
+    private static final AtomicLong nextReservationId = new AtomicLong(0);
 
     /**
      * Create a wrapper around null (for scenarios where we are storing a null signed state).
      */
     ReservedSignedState() {
-        this(null, "");
+        this(null, null);
     }
 
     /**
@@ -43,9 +51,12 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
      * @param reason      the reason why this state was reserved
      */
     ReservedSignedState(final SignedState signedState, final String reason) {
-        // TODO we should increase reference count here!
         this.signedState = signedState;
         this.reason = reason;
+
+        // It is safe to "leak this" here.
+        // All fields are final, this class is final, and everything has been instantiated.
+        signedState.incrementReservationCount(this);
     }
 
     /**
@@ -87,7 +98,7 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
         }
 
         if (signedState != null) {
-            signedState.release(this);
+            signedState.decrementReservationCount(this);
         }
     }
 
@@ -96,5 +107,12 @@ public class ReservedSignedState implements AutoCloseableNonThrowing {
      */
     String getReason() {
         return reason;
+    }
+
+    /**
+     * Get the reservation id.
+     */
+    long getReservationId() {
+        return reservationId;
     }
 }

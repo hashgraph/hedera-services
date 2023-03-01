@@ -203,7 +203,7 @@ public class SignedStateFileManager implements Startable {
                         e);
             } finally {
                 stateToDiskAttemptConsumer.stateToDiskAttempt(new SignedStateWrapper(signedState), directory, success);
-                signedState.release();
+                signedState.decrementResrvationCount();
                 if (finishedCallback != null) {
                     finishedCallback.accept(success);
                 }
@@ -212,7 +212,7 @@ public class SignedStateFileManager implements Startable {
         });
 
         if (!accepted) {
-            signedState.release();
+            signedState.decrementResrvationCount();
             if (finishedCallback != null) {
                 finishedCallback.accept(false);
             }

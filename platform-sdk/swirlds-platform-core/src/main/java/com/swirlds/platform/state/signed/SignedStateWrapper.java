@@ -55,7 +55,7 @@ public class SignedStateWrapper implements Releasable {
         throwIfDestroyed();
         isReleased = true;
         if (signedState != null) {
-            signedState.release();
+            signedState.decrementResrvationCount();
         }
         return true;
     }
