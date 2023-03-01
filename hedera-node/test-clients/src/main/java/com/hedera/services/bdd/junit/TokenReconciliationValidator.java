@@ -24,8 +24,6 @@ import com.hedera.services.bdd.suites.records.TokenBalanceValidation;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * This validator "reconciles" (compares) the HTS token balances of all accounts between the record
@@ -39,8 +37,6 @@ import org.apache.logging.log4j.Logger;
  * <p>It uses the {@link com.hedera.services.bdd.suites.records.TokenBalanceValidation} suite to perform the queries.
  */
 public class TokenReconciliationValidator implements RecordStreamValidator {
-    private static final Logger log = LogManager.getLogger(TokenReconciliationValidator.class);
-
     private final Map<AccountNumTokenNum, Long> expectedTokenBalances = new HashMap<>();
 
     private final AccountClassifier accountClassifier = new AccountClassifier();
@@ -48,7 +44,6 @@ public class TokenReconciliationValidator implements RecordStreamValidator {
     @Override
     public void validateRecordsAndSidecars(final List<RecordWithSidecars> recordsWithSidecars) {
         getExpectedBalanceFrom(recordsWithSidecars);
-        log.debug("Expected token balances: {}", expectedTokenBalances);
 
         final var validationSpecs = TestBase.extractContextualizedSpecsFrom(
                 List.of(() -> new TokenBalanceValidation(expectedTokenBalances, accountClassifier)),
