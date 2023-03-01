@@ -33,6 +33,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
+import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
@@ -319,6 +320,9 @@ class TransactionDispatcherTest {
     private WritableStoreFactory writableStoreFactory;
 
     @Mock
+    private WritableTopicStore writableTopicStore;
+
+    @Mock
     private UsageLimits usageLimits;
 
     private TransactionBody transactionBody = TransactionBody.getDefaultInstance();
@@ -483,7 +487,7 @@ class TransactionDispatcherTest {
         given(dynamicProperties.messageMaxBytesAllowed()).willReturn(456);
         given(createBuilder.getCreatedTopic()).willReturn(666L);
         final var expectedConfig = new ConsensusServiceConfig(123L, 456);
-
+        given(writableStoreFactory.createTopicStore()).willReturn(writableTopicStore);
         doAnswer(invocation -> {
                     final var builder =
                             (ConsensusCreateTopicRecordBuilder) invocation.getArguments()[3];
@@ -501,6 +505,7 @@ class TransactionDispatcherTest {
         dispatcher.dispatchHandle(ConsensusCreateTopic, transactionBody, writableStoreFactory);
 
         verify(txnCtx).setCreated(TopicID.newBuilder().setTopicNum(666L).build());
+        verify(writableTopicStore).commit();
     }
 
     @Test

@@ -40,6 +40,7 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicH
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.CreateTopicRecordBuilder;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
@@ -344,7 +345,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var op = newCreateTxn(adminKey, submitKey, true).getConsensusCreateTopic();
         final var writableState = writableTopicStateWithOneKey();
 
-        given(writableStates.<Long, MerkleTopic>get(TOPICS)).willReturn(writableState);
+        given(writableStates.<EntityNum, MerkleTopic>get(TOPICS)).willReturn(writableState);
         final var topicStore = new WritableTopicStore(writableStates);
         assertEquals(1, topicStore.sizeOfState());
 
@@ -366,7 +367,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var op = newCreateTxn(adminKey, submitKey, true).getConsensusCreateTopic();
         final var writableState = writableTopicStateWithOneKey();
 
-        given(writableStates.<Long, MerkleTopic>get(TOPICS)).willReturn(writableState);
+        given(writableStates.<EntityNum, MerkleTopic>get(TOPICS)).willReturn(writableState);
         final var topicStore = new WritableTopicStore(writableStates);
         assertEquals(1, topicStore.sizeOfState());
 

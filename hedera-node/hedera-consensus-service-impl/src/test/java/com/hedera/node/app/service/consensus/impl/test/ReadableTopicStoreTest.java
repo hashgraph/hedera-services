@@ -50,7 +50,7 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
         assertNull(topicMeta.failureReason());
 
         final var meta = topicMeta.metadata();
-        assertEquals(topicNum, meta.key());
+        assertEquals(topicEntityNum.longValue(), meta.key());
         assertEquals(Optional.of(adminKey), meta.adminKey());
         assertEquals(Optional.of(adminKey), meta.submitKey());
         assertEquals(1L, meta.sequenceNumber());
@@ -72,7 +72,7 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
                 Timestamp.newBuilder().setSeconds(100L).build(),
                 1L,
                 new byte[48],
-                topicNum,
+                topicEntityNum.longValue(),
                 false);
 
         final var expectedString =
@@ -93,7 +93,7 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
                 Timestamp.newBuilder().setSeconds(100L).build(),
                 1L,
                 new byte[48],
-                topicNum,
+                topicEntityNum.longValue(),
                 true);
         assertNotEquals(meta, meta2);
         assertNotEquals(meta.hashCode(), meta2.hashCode());
@@ -111,7 +111,7 @@ class ReadableTopicStoreTest extends ConsensusHandlerTestBase {
         assertNull(topicMeta.failureReason());
 
         final var meta = topicMeta.metadata();
-        assertEquals(topicNum, meta.key());
+        assertEquals(topicEntityNum.longValue(), meta.key());
         assertEquals(Optional.of(adminKey), meta.adminKey());
         assertEquals(Optional.of(adminKey), meta.submitKey());
         assertEquals(1L, meta.sequenceNumber());

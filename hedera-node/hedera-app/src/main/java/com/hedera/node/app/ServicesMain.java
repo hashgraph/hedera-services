@@ -111,6 +111,7 @@ public class ServicesMain implements SwirldMain {
                 (round, state, dualState, metadata) -> {
                     final var metaApp = metadata.app();
                     metaApp.dualStateAccessor().setDualState(dualState);
+                    ((HederaApp) metaApp).workingStateAccessor().setHederaState(state);
                     metaApp.logic().incorporateConsensus(round);
                 });
     }

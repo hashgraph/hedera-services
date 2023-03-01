@@ -50,12 +50,12 @@ class WritableTopicStoreTest extends ConsensusHandlerTestBase {
     @Test
     void commitsTopicChanges() {
         topic = createTopic();
-        assertFalse(writableTopicState.contains(topicNum));
+        assertFalse(writableTopicState.contains(topicEntityNum));
 
         writableStore.put(topic);
 
-        assertTrue(writableTopicState.contains(topicNum));
-        final var merkleTopic = writableTopicState.get(topicNum);
+        assertTrue(writableTopicState.contains(topicEntityNum));
+        final var merkleTopic = writableTopicState.get(topicEntityNum);
 
         assertEquals(topic.getAdminKey().get(), merkleTopic.getAdminKey());
         assertEquals(topic.getSubmitKey().get(), merkleTopic.getSubmitKey());
@@ -68,10 +68,10 @@ class WritableTopicStoreTest extends ConsensusHandlerTestBase {
         assertEquals(topic.memo(), merkleTopic.getMemo());
         assertEquals(topic.deleted(), merkleTopic.isDeleted());
 
-        assertTrue(writableTopicState.modifiedKeys().contains(topicNum));
+        assertTrue(writableTopicState.modifiedKeys().contains(topicEntityNum));
 
         final var expectedTopic = new TopicImpl(
-                topicNum,
+                topicEntityNum.longValue(),
                 topic.getAdminKey().get(),
                 topic.getSubmitKey().get(),
                 topic.memo(),
@@ -81,7 +81,7 @@ class WritableTopicStoreTest extends ConsensusHandlerTestBase {
                 topic.deleted(),
                 topic.sequenceNumber());
 
-        assertEquals(Optional.of(expectedTopic), writableStore.get(topicNum));
+        assertEquals(Optional.of(expectedTopic), writableStore.get(topicEntityNum.longValue()));
     }
 
     @Test
@@ -89,7 +89,7 @@ class WritableTopicStoreTest extends ConsensusHandlerTestBase {
         topic = createTopic();
         writableStore.put(topic);
 
-        final var topicFromStore = writableStore.get(topicNum);
+        final var topicFromStore = writableStore.get(topicEntityNum.longValue());
 
         assertTrue(topicFromStore.isPresent());
         final var actualTopic = topicFromStore.get();
