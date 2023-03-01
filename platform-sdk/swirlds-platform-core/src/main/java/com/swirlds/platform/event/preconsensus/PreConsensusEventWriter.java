@@ -51,7 +51,7 @@ public interface PreConsensusEventWriter extends Startable, Stoppable {
      * @param minimumGenerationToStore
      * 		the minimum generation required to be stored on disk
      */
-    void setMinimumGenerationToStore(long minimumGenerationToStore); // TODO should this method be here?
+    void setMinimumGenerationToStore(long minimumGenerationToStore);
 
     /**
      * Check if an event is guaranteed to be durable, i.e. flushed to disk.
@@ -77,17 +77,8 @@ public interface PreConsensusEventWriter extends Startable, Stoppable {
     boolean waitUntilDurable(EventImpl event, final Duration timeToWait) throws InterruptedException;
 
     /**
-     * Flush events if necessary. May not flush if we have flushed very recently or if there is nothing to flush.
-     *
-     * @param force
-     * 		if true then force the flush if there is any unflushed data, even if we have flushed recently.
-     * 		If false then only flush if we haven't flushed recently
-     */
-    void flushIfNeeded(final boolean force);
-
-    /**
      * Request that the event writer flushes an event to disk as soon as possible.
      * @param event the event that should be flushed as soon as possible
      */
-    void requestUrgentFlushFor(EventImpl event); // TODO perhaps we only need this flush...?
+    void requestFlush(EventImpl event);
 }

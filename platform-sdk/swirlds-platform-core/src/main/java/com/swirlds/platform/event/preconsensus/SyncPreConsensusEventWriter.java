@@ -24,11 +24,11 @@ import com.swirlds.common.utility.LongRunningAverage;
 import com.swirlds.common.utility.Startable;
 import com.swirlds.common.utility.Stoppable;
 import com.swirlds.common.utility.Units;
-import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.platform.internal.EventImpl;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
+import java.util.PriorityQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,11 +43,6 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * Provides wall clock time.
      */
     private final Time time;
-
-    /**
-     * Limits how often we attempt to flush.
-     */
-    private final RateLimiter flushLimiter;
 
     /**
      * Keeps track of the event stream files on disk.
@@ -110,11 +105,6 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
     private final double generationalSpanOverlapFactor;
 
     /**
-     * The sequence number that will be assigned to the next event written to the stream.
-     */
-    private long nextEventSequenceNumber = 0;
-
-    /**
      * The highest event sequence number that has been written to the stream (but possibly not yet flushed).
      */
     private long lastWrittenEvent = -1;
@@ -123,6 +113,11 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * The highest event sequence number that has been flushed.
      */
     private long lastFlushedEvent = -1;
+
+    /**
+     * Events that should be flushed ASAP.
+     */
+    private final PriorityQueue<Long> flushableEvents = new PriorityQueue<>();
 
     /**
      * Create a new PreConsensusEventWriter.
@@ -140,7 +135,6 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
             final PreConsensusEventFileManager fileManager) {
 
         this.time = time;
-        flushLimiter = new RateLimiter(time, config.flushPeriod());
         preferredFileSizeMegabytes = config.preferredFileSizeMegabytes();
 
         averageGenerationalSpanUtilization =
@@ -156,8 +150,12 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
-    public void writeEvent(final EventImpl event) {
-        event.setStreamSequenceNumber(nextEventSequenceNumber++);
+    public synchronized void writeEvent(final EventImpl event) {
+        if (event.getStreamSequenceNumber() == EventImpl.NO_STREAM_SEQUENCE_NUMBER ||
+                event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
+            throw new IllegalStateException("Event must have a valid stream sequence number");
+        }
+
         if (event.getGeneration() >= minimumGenerationNonAncient) {
 
             // TODO could we catch exceptions deeper?
@@ -170,7 +168,24 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
 
             lastWrittenEvent = event.getStreamSequenceNumber();
 
-            flushIfNeeded(false);
+            // TODO extract this to a method
+            // Remove all events that have already been flushed. This may happen when a file is closed.
+            while (!flushableEvents.isEmpty() && flushableEvents.peek() < lastWrittenEvent) {
+                flushableEvents.remove();
+            }
+            if (!flushableEvents.isEmpty()) {
+                final long nextFlushableEvent = flushableEvents.peek();
+                if (nextFlushableEvent == lastWrittenEvent) {
+                    try {
+                        currentMutableFile.flush();
+                    } catch (final IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                    markEventsAsFlushed();
+                    flushableEvents.remove();
+                }
+            }
+
         } else {
             event.setStreamSequenceNumber(EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER);
         }
@@ -180,7 +195,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
-    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
+    public synchronized void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
         if (minimumGenerationNonAncient < this.minimumGenerationNonAncient) {
             logger.error(
                     EXCEPTION.getMarker(),
@@ -205,18 +220,15 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
-    public boolean isEventDurable(final EventImpl event) {
+    public synchronized boolean isEventDurable(final EventImpl event) {
         if (event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             // Stale events are not written to disk.
             return false;
         }
-
-        if (event.getStreamSequenceNumber() == EventImpl.NO_STREAM_SEQUENCE_NUMBER) {
-            // The event has not yet been assigned a sequence number.
-            return false;
-        }
         return event.getStreamSequenceNumber() <= lastFlushedEvent;
     }
+
+    // TODO can this be done without a busy wait?
 
     /**
      * {@inheritDoc}
@@ -272,34 +284,33 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
-    public void flushIfNeeded(final boolean force) {
-        if (lastFlushedEvent == lastWrittenEvent || currentMutableFile == null) {
-            // There is nothing to be flushed.
-            flushLimiter.force();
+    public synchronized void requestFlush(final EventImpl event) {
+        final long eventSequenceNumber = event.getStreamSequenceNumber();
+        if (eventSequenceNumber == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
+            // Stale events are not written to disk.
+            throw new IllegalStateException("Event is stale and will never be written to disk");
+        }
+
+        if (lastFlushedEvent >= eventSequenceNumber) {
+            // The event has already been flushed.
             return;
         }
 
-        try {
-            if (force) {
-                currentMutableFile.flush();
-                flushLimiter.force();
-                markEventsAsFlushed();
-            } else if (flushLimiter.request()) {
-                currentMutableFile.flush();
-                markEventsAsFlushed();
-            }
+        if (lastWrittenEvent < eventSequenceNumber) {
+            // We haven't yet written this event, event will be flushed as soon as it is written.
+            // TODO write a test that is sensitive to queue ordered in the wrong way
+            // TODO write a test that requests flushes out of order
+            flushableEvents.add(eventSequenceNumber);
+            return;
+        }
 
+        // We have written the event to the stream, flush immediately
+        try {
+            currentMutableFile.flush();
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void requestUrgentFlushFor(EventImpl event) {
-        // TODO
+        markEventsAsFlushed();
     }
 
     /**
@@ -309,8 +320,10 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
         try {
             averageGenerationalSpanUtilization.add(currentMutableFile.getUtilizedGenerationalSpan());
             currentMutableFile.close();
+
+            // Future work: "compactify" file name here
+
             fileManager.finishedWritingFile(currentMutableFile);
-            flushLimiter.force();
             markEventsAsFlushed();
             currentMutableFile = null;
 
@@ -378,7 +391,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * {@inheritDoc}
      */
     @Override
-    public void stop() {
+    public synchronized void stop() {
         if (currentMutableFile != null) {
             try {
                 currentMutableFile.close();

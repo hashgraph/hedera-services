@@ -53,16 +53,6 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
     private final BlockingQueueInserter<EventImpl> eventInserter;
 
     /**
-     * Provides wall clock time.
-     */
-    private final Time time;
-
-    /**
-     * When there is no work to do, wait this amount of time before checking for more work. Prevents busy loop.
-     */
-    private final Duration idleWaitPeriod;
-
-    /**
      * Create a new AsyncPreConsensusEventWriter.
      * @param threadManager responsible for creating new threads
      * @param config preconsensus event stream configuration
@@ -70,19 +60,15 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
      */
     public AsyncPreConsensusEventWriter(
             final ThreadManager threadManager,
-            final Time time,
             final PreConsensusEventStreamConfig config,
             final PreConsensusEventWriter writer) {
 
-        this.time = time;
         this.writer = writer;
-        idleWaitPeriod = config.idleWaitPeriod();
 
         handleThread = new MultiQueueThreadConfiguration(threadManager)
                 .setComponent("pre-consensus")
                 .setThreadName("event-writer")
                 .setCapacity(config.writeQueueCapacity())
-                .setWaitForItemRunnable(this::waitForNextEvent)
                 .addHandler(Long.class, this::setMinimumGenerationNonAncientHandler)
                 .addHandler(EventImpl.class, this::addEventHandler)
                 .build();
@@ -114,7 +100,10 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
      */
     @Override
     public void writeEvent(final EventImpl event) throws InterruptedException {
-        // TODO we should we update sequence number here?
+        if (event.getStreamSequenceNumber() == EventImpl.NO_STREAM_SEQUENCE_NUMBER ||
+                event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
+            throw new IllegalStateException("Event must have a valid stream sequence number");
+        }
         eventInserter.put(event);
     }
 
@@ -162,16 +151,8 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
-    public void flushIfNeeded(boolean force) {
-        writer.flushIfNeeded(force);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void requestUrgentFlushFor(EventImpl event) {
-        writer.requestUrgentFlushFor(event);
+    public void requestFlush(EventImpl event) {
+        writer.requestFlush(event);
     }
 
     /**
@@ -193,14 +174,5 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
         // this should never throw an InterruptedException.
         abortAndThrowIfInterrupted(
                 () -> writer.writeEvent(event), "interrupted while attempting to call addEvent on writer");
-    }
-
-    /**
-     * This method is called when we run out of events to write and are waiting for more events
-     * to enter the queue. When this happens, we might as well spend our time flushing, even if we
-     * have flushed recently.
-     */
-    private void waitForNextEvent() throws InterruptedException {
-        MinimumTime.runWithMinimumTime(time, () -> flushIfNeeded(true), idleWaitPeriod);
     }
 }

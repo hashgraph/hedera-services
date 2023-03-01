@@ -56,7 +56,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * An internal platform event. It holds all the event data relevant to the platform. It implements the Event interface
@@ -119,7 +118,7 @@ public class EventImpl extends AbstractSerializableHashable
      * Each event is assigned a sequence number as it is written to the preconsensus event stream. This is used to
      * signal when events have been made durable.
      */
-    private final AtomicLong streamSequenceNumber = new AtomicLong(NO_STREAM_SEQUENCE_NUMBER);
+    private long streamSequenceNumber = NO_STREAM_SEQUENCE_NUMBER; // needs to be atomic, thread will mark as stale
 
     public EventImpl() {}
 
@@ -193,18 +192,12 @@ public class EventImpl extends AbstractSerializableHashable
      *
      * @param streamSequenceNumber the sequence number
      */
-    public void setStreamSequenceNumber(final long streamSequenceNumber) {
-        if (streamSequenceNumber == STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
-            this.streamSequenceNumber.set(STALE_EVENT_STREAM_SEQUENCE_NUMBER);
-            return;
+    public void setStreamSequenceNumber(final long streamSequenceNumber) { // TODO test
+        if (this.streamSequenceNumber != NO_STREAM_SEQUENCE_NUMBER
+                && streamSequenceNumber != STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
+            throw new IllegalArgumentException("sequence number already set");
         }
-
-        final boolean sequenceNumberSet =
-                this.streamSequenceNumber.compareAndSet(NO_STREAM_SEQUENCE_NUMBER, streamSequenceNumber);
-
-        if (!sequenceNumberSet) {
-            throw new IllegalStateException("Stream sequence number already set");
-        }
+        this.streamSequenceNumber = streamSequenceNumber;
     }
 
     /**
@@ -212,8 +205,11 @@ public class EventImpl extends AbstractSerializableHashable
      *
      * @return the sequence number
      */
-    public long getStreamSequenceNumber() {
-        return streamSequenceNumber.get();
+    public long getStreamSequenceNumber() { // TODO test
+        if (streamSequenceNumber == NO_STREAM_SEQUENCE_NUMBER) {
+            throw new IllegalStateException("sequence number not set");
+        }
+        return streamSequenceNumber;
     }
 
     /**

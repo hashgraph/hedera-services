@@ -44,6 +44,7 @@ import com.swirlds.platform.event.preconsensus.PreConsensusEventMultiFileIterato
 import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
 import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventMetrics;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.SyncPreConsensusEventWriter;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
@@ -256,15 +257,16 @@ class AsyncPreConsensusEventWriterTests {
         final PreConsensusEventFileManager fileManager =
                 new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
 
+        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer = new AsyncPreConsensusEventWriter(
                 getStaticThreadManager(),
-                OSTime.getInstance(),
                 config,
                 new SyncPreConsensusEventWriter(OSTime.getInstance(), config, fileManager));
 
         writer.start();
 
         for (final EventImpl event : events) {
+            sequencer.assignStreamSequenceNumber(event);
             writer.writeEvent(event);
 
             // This component is fundamentally asynchronous, and part of its functionality is related
@@ -355,9 +357,9 @@ class AsyncPreConsensusEventWriterTests {
         final PreConsensusEventFileManager fileManager =
                 new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
 
+        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer = new AsyncPreConsensusEventWriter(
                 getStaticThreadManager(),
-                OSTime.getInstance(),
                 config,
                 new SyncPreConsensusEventWriter(OSTime.getInstance(), config, fileManager));
 
@@ -368,8 +370,8 @@ class AsyncPreConsensusEventWriterTests {
         long minimumGenerationNonAncient = 0;
         for (final EventImpl event : events) {
 
+            sequencer.assignStreamSequenceNumber(event);
             assertFalse(writer.isEventDurable(event));
-
             writer.writeEvent(event);
 
             if (event.getGeneration() < minimumGenerationNonAncient) {
@@ -393,6 +395,7 @@ class AsyncPreConsensusEventWriterTests {
         events.removeIf(rejectedEvents::contains);
 
         // Events should become durable as they are written to disk
+        writer.requestFlush(events.get(events.size() - 1));
         for (final EventImpl event : events) {
             assertTrue(writer.waitUntilDurable(event, Duration.ofSeconds(1)));
         }
@@ -479,9 +482,9 @@ class AsyncPreConsensusEventWriterTests {
         final PreConsensusEventFileManager fileManager =
                 new PreConsensusEventFileManager(OSTime.getInstance(), config, buildMetrics());
 
+        final PreconsensusEventStreamSequencer sequencer1 = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer1 = new AsyncPreConsensusEventWriter(
                 getStaticThreadManager(),
-                OSTime.getInstance(),
                 config,
                 new SyncPreConsensusEventWriter(OSTime.getInstance(), config, fileManager));
 
@@ -491,8 +494,9 @@ class AsyncPreConsensusEventWriterTests {
         final Set<EventImpl> rejectedEvents1 = new HashSet<>();
         for (final EventImpl event : events1) {
 
-            assertFalse(writer1.isEventDurable(event));
 
+            sequencer1.assignStreamSequenceNumber(event);
+            assertFalse(writer1.isEventDurable(event));
             writer1.writeEvent(event);
 
             if (event.getGeneration() < minimumGenerationNonAncient) {
@@ -523,17 +527,18 @@ class AsyncPreConsensusEventWriterTests {
             events1.remove(events1.size() - 1);
         }
 
+        final PreconsensusEventStreamSequencer sequencer2 = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer2 = new AsyncPreConsensusEventWriter(
                 getStaticThreadManager(),
-                OSTime.getInstance(),
                 config,
                 new SyncPreConsensusEventWriter(OSTime.getInstance(), config, fileManager));
         writer2.start();
 
         final Set<EventImpl> rejectedEvents2 = new HashSet<>();
         for (final EventImpl event : events2) {
-            assertFalse(writer2.isEventDurable(event));
 
+            sequencer2.assignStreamSequenceNumber(event);
+            assertFalse(writer2.isEventDurable(event));
             writer2.writeEvent(event);
 
             if (event.getGeneration() < minimumGenerationNonAncient) {
@@ -549,6 +554,7 @@ class AsyncPreConsensusEventWriterTests {
         events2.removeIf(rejectedEvents2::contains);
 
         // Events should become durable as they are written to disk
+        writer2.requestFlush(events2.get(events2.size() - 1));
         for (final EventImpl event : events2) {
             assertTrue(writer2.waitUntilDurable(event, Duration.ofSeconds(1)));
         }
