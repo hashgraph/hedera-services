@@ -155,7 +155,10 @@ public class EthereumSuite extends HapiSuite {
                                 etx031InvalidNonceEthereumTxFailsAndChargesRelayer(),
                                 etxSvc003ContractGetBytecodeQueryReturnsDeployedCode(),
                                 sendingLargerBalanceThanAvailableFailsGracefully(),
-                                setApproveForAllUsingLocalNodeSetupPasses()))
+                                setApproveForAllUsingLocalNodeSetupPasses(),
+                                directTransferWorksForERC20(),
+                                nftApprove(),
+                                transferErc20TokenSenderAccount()))
                 .toList();
     }
 

@@ -2029,13 +2029,13 @@ public class ContractCallSuite extends HapiSuite {
         final var withdrawAbi = "{ \"inputs\": [ { \"internalType\": \"uint256\", \"name\": \"_pid\", \"type\":"
                 + " \"uint256\" }, { \"internalType\": \"uint256\", \"name\": \"_amount\","
                 + " \"type\": \"uint256\" } ], \"name\": \"withdraw\", \"outputs\": [],"
-                + " \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+                + STATE_MUTABILITY_NONPAYABLE_TYPE_FUNCTION;
         final var setSauceAbi = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"_sauce\", \"type\":"
                 + " \"address\" } ], \"name\": \"setSauceAddress\", \"outputs\": [],"
-                + " \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+                + STATE_MUTABILITY_NONPAYABLE_TYPE_FUNCTION;
         final var transferAbi = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"newOwner\", \"type\":"
                 + " \"address\" } ], \"name\": \"transferOwnership\", \"outputs\": [],"
-                + " \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+                + STATE_MUTABILITY_NONPAYABLE_TYPE_FUNCTION;
         final var initcode = "farmInitcode";
         final var farm = "farm";
         final var dev = "dev";
