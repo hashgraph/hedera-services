@@ -24,11 +24,8 @@ import org.hyperledger.besu.datatypes.Address;
 public abstract class HederaEvmContractAliases {
 
     public static final int EVM_ADDRESS_LEN = 20;
-    private static final Supplier<byte[]> MIRROR_PREFIX = Suppliers.memoize(() -> {
-        /* A placeholder to store the 12-byte of zeros prefix that marks an EVM
-         * address as a "mirror" address. */
-        return new byte[12];
-    });
+    /* A placeholder to store the 12-byte of zeros prefix that marks an EVM address as a "mirror" address. */
+    private static final Supplier<byte[]> MIRROR_PREFIX = Suppliers.memoize(() -> new byte[12]);
 
     public abstract Address resolveForEvm(Address addressOrAlias);
 
