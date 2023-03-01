@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.bdd.junit.utils.AccountClassifier;
@@ -167,23 +168,24 @@ public class TokenBalanceValidation extends HapiSuite {
                 .given(getHapiSpecsForTransferTxs()) // set up transfers if needed
                 .when()
                 .then(inParallel(expectedTokenBalances.entrySet().stream()
-                                .map(
-                                        entry -> { // for each expectedTokenBalance
-                                            final var accountNum =
-                                                    entry.getKey().accountNum();
-                                            final var tokenNum = entry.getKey().tokenNum();
-                                            final var tokenAmt = entry.getValue();
+                        .map(
+                                entry -> { // for each expectedTokenBalance
+                                    final var accountNum = entry.getKey().accountNum();
+                                    final var tokenNum = entry.getKey().tokenNum();
+                                    final var tokenAmt = entry.getValue();
 
-                                            // validate that the transfer worked and the receiver account has the tokens
-                                            return QueryVerbs.getAccountBalance(
-                                                            "0.0." + accountNum,
-                                                            accountClassifier.isContract(accountNum))
-                                                    .hasAnswerOnlyPrecheckFrom(
-                                                            OK, CONTRACT_DELETED, ACCOUNT_DELETED, INVALID_ACCOUNT_ID)
-                                                    .hasTokenBalance(tokenNum.toString(), tokenAmt);
-                                        })
-                                .toArray(HapiSpecOperation[]::new))
-                        .failOnErrors());
+                                    // validate that the transfer worked and the receiver account has the tokens
+                                    return QueryVerbs.getAccountBalance(
+                                                    "0.0." + accountNum, accountClassifier.isContract(accountNum))
+                                            .hasAnswerOnlyPrecheckFrom(
+                                                    OK,
+                                                    CONTRACT_DELETED,
+                                                    ACCOUNT_DELETED,
+                                                    INVALID_CONTRACT_ID,
+                                                    INVALID_ACCOUNT_ID)
+                                            .hasTokenBalance("0.0." + tokenNum, tokenAmt);
+                                })
+                        .toArray(HapiSpecOperation[]::new)));
     }
 
     @Override
