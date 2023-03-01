@@ -18,8 +18,6 @@ package com.swirlds.common.metrics.platform;
 
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.MetricConfig;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.common.statistics.StatsBuffered;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.List;
 import java.util.Objects;
@@ -36,7 +34,7 @@ public abstract class DefaultMetric implements Metric {
     private final String unit;
     private final String format;
 
-    DefaultMetric(MetricConfig<?, ?> config) {
+    DefaultMetric(MetricConfig<?> config) {
         CommonUtils.throwArgNull(config, "config");
         this.category = config.getCategory();
         this.name = config.getName();
@@ -87,9 +85,22 @@ public abstract class DefaultMetric implements Metric {
      * requires it to be reset in regular intervals, it is done automatically after the snapshot was generated.
      * The list of {@code ValueTypes} will always be in the same order.
      *
-     * @return the list of {@code ValueTypes} with their current values
+     * @return the list of {@link LegacySnapshotEntry} with their current values
      */
-    public abstract List<SnapshotEntry> takeSnapshot();
+    public abstract List<LegacySnapshotEntry> takeSnapshot();
+
+    /**
+     * Temporary solution until {@link ValueType} is removed.
+     *
+     * @deprecated This is only a temporary solution which will be removed soon
+     */
+    @SuppressWarnings("removal")
+    @Deprecated(forRemoval = true)
+    record LegacySnapshotEntry(ValueType valueType, Object value) {
+        public LegacySnapshotEntry {
+            CommonUtils.throwArgNull(valueType, "valueType");
+        }
+    }
 
     /**
      * {@inheritDoc}
@@ -97,15 +108,6 @@ public abstract class DefaultMetric implements Metric {
     @Override
     public void reset() {
         // default implementation is empty
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @SuppressWarnings("removal")
-    @Override
-    public StatsBuffered getStatsBuffered() {
-        return null;
     }
 
     /**

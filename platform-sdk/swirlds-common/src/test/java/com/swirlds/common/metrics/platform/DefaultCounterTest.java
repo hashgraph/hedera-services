@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
+import com.swirlds.common.metrics.platform.DefaultMetric.LegacySnapshotEntry;
 import com.swirlds.common.statistics.StatsBuffered;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -122,12 +122,12 @@ class DefaultCounterTest {
         counter.add(2L);
 
         // when
-        final List<SnapshotEntry> snapshot = counter.takeSnapshot();
+        final List<LegacySnapshotEntry> snapshot = counter.takeSnapshot();
 
         // then
         assertEquals(2L, counter.get(), "Value should be 2");
         assertEquals(2L, counter.get(VALUE), "Value should be 2");
-        assertThat(snapshot).containsExactly(new SnapshotEntry(VALUE, 2L));
+        assertThat(snapshot).containsExactly(new LegacySnapshotEntry(VALUE, 2L));
     }
 
     @Test

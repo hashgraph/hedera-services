@@ -167,7 +167,7 @@ public class DefaultMetrics implements Metrics {
      * {@inheritDoc}
      */
     @Override
-    public <T extends Metric> T getOrCreate(final MetricConfig<T, ?> config) {
+    public <T extends Metric> T getOrCreate(final MetricConfig<T> config) {
         throwArgNull(config, "config");
 
         // first we check the happy path, if the metric is already registered
@@ -240,7 +240,7 @@ public class DefaultMetrics implements Metrics {
      * {@inheritDoc}
      */
     @Override
-    public void remove(final MetricConfig<?, ?> config) {
+    public void remove(final MetricConfig<?> config) {
         throwArgNull(config, "config");
         final String metricKey = calculateMetricKey(config);
         throwIfGlobal(metricKey);
@@ -349,7 +349,7 @@ public class DefaultMetrics implements Metrics {
      * 		the {@code MetricConfig} for which the key should be calculated
      * @return the calculated key
      */
-    public static String calculateMetricKey(final MetricConfig<?, ?> config) {
+    public static String calculateMetricKey(final MetricConfig<?> config) {
         return calculateMetricKey(config.getCategory(), config.getName());
     }
 

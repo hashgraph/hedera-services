@@ -20,9 +20,11 @@ import static com.swirlds.common.metrics.platform.prometheus.NameConverter.fix;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.GLOBAL;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.PLATFORM;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.NODE_LABEL;
+import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.TYPE_LABEL;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.common.metrics.Metric;
+import com.swirlds.common.metrics.Metric.DataType;
 import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType;
 import com.swirlds.common.system.NodeId;
@@ -31,10 +33,10 @@ import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Gauge;
 
 /**
- * Adapter that synchronizes a {@link Metric} with a single numeric value
+ * Adapter that synchronizes a {@link Metric} with a single numeric or boolean value
  * with the corresponding Prometheus {@link Collector}.
  */
-public class NumberAdapter extends AbstractMetricAdapter {
+public class MultipleGaugeAdapter extends AbstractMetricAdapter {
 
     private final Gauge gauge;
 
@@ -49,7 +51,7 @@ public class NumberAdapter extends AbstractMetricAdapter {
      * 		Scope of the {@link Metric}, either {@link AdapterType#GLOBAL} or {@link AdapterType#PLATFORM}
      * @throws IllegalArgumentException if one of the parameters is {@code null}
      */
-    public NumberAdapter(final CollectorRegistry registry, final Metric metric, final AdapterType adapterType) {
+    public MultipleGaugeAdapter(final CollectorRegistry registry, final Metric metric, final AdapterType adapterType) {
         super(adapterType);
         throwArgNull(registry, "registry");
         throwArgNull(metric, "metric");
@@ -59,7 +61,9 @@ public class NumberAdapter extends AbstractMetricAdapter {
                 .help(metric.getDescription())
                 .unit(metric.getUnit());
         if (adapterType == PLATFORM) {
-            builder.labelNames(NODE_LABEL);
+            builder.labelNames(NODE_LABEL, TYPE_LABEL);
+        } else {
+            builder.labelNames(TYPE_LABEL);
         }
         this.gauge = builder.register(registry);
     }
@@ -70,12 +74,18 @@ public class NumberAdapter extends AbstractMetricAdapter {
     @Override
     public void update(final Snapshot snapshot, final NodeId nodeId) {
         throwArgNull(snapshot, "snapshot");
-        final double newValue = ((Number) snapshot.getValue()).doubleValue();
-        if (adapterType == GLOBAL) {
-            gauge.set(newValue);
-        } else {
+        if (adapterType != GLOBAL) {
             throwArgNull(nodeId, "nodeId");
-            final Gauge.Child child = gauge.labels(Long.toString(nodeId.getId()));
+        }
+        final var nodeIdLabel = Long.toString(nodeId.getId());
+        for (final Snapshot.SnapshotEntry entry : snapshot.entries()) {
+            final Gauge.Child child = adapterType == GLOBAL
+                    ? gauge.labels(entry.type())
+                    : gauge.labels(nodeIdLabel, entry.type());
+            final double newValue = snapshot.metric().getDataType() == DataType.BOOLEAN
+                    ? convertBoolean(entry.value())
+                    : convertDouble(entry.value());
+
             child.set(newValue);
         }
     }

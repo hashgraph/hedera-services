@@ -17,7 +17,6 @@
 package com.swirlds.common.metrics.platform;
 
 import com.swirlds.common.metrics.MetricConfig;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.statistics.StatsBuffered;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.List;
@@ -32,7 +31,7 @@ public abstract class AbstractDistributionMetric extends DefaultMetric {
      */
     protected final double halfLife;
 
-    AbstractDistributionMetric(final MetricConfig<?, ?> config, final double halfLife) {
+    AbstractDistributionMetric(final MetricConfig<?> config, final double halfLife) {
         super(config);
         this.halfLife = halfLife;
     }
@@ -55,7 +54,12 @@ public abstract class AbstractDistributionMetric extends DefaultMetric {
 
     /**
      * {@inheritDoc}
+     *
+     * @deprecated {@code ValueType} turned out to be too limited. You can get sub-metrics via
+     * {@link #getBaseMetrics()}.
      */
+    @SuppressWarnings("removal")
+    @Deprecated(forRemoval = true)
     @Override
     public Double get(final ValueType valueType) {
         CommonUtils.throwArgNull(valueType, "valueType");
@@ -71,14 +75,15 @@ public abstract class AbstractDistributionMetric extends DefaultMetric {
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("removal")
     @Override
-    public List<SnapshotEntry> takeSnapshot() {
+    public List<LegacySnapshotEntry> takeSnapshot() {
         final StatsBuffered statsBuffered = getStatsBuffered();
         return List.of(
-                new SnapshotEntry(ValueType.VALUE, get()),
-                new SnapshotEntry(ValueType.MAX, statsBuffered.getMax()),
-                new SnapshotEntry(ValueType.MIN, statsBuffered.getMin()),
-                new SnapshotEntry(ValueType.STD_DEV, statsBuffered.getStdDev()));
+                new LegacySnapshotEntry(ValueType.VALUE, get()),
+                new LegacySnapshotEntry(ValueType.MAX, statsBuffered.getMax()),
+                new LegacySnapshotEntry(ValueType.MIN, statsBuffered.getMin()),
+                new LegacySnapshotEntry(ValueType.STD_DEV, statsBuffered.getStdDev()));
     }
 
     /**

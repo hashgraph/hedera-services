@@ -35,7 +35,7 @@ import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.StatEntry;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
+import com.swirlds.common.metrics.platform.DefaultMetric.LegacySnapshotEntry;
 import com.swirlds.common.statistics.StatsBuffered;
 import java.util.List;
 import java.util.function.Consumer;
@@ -160,7 +160,7 @@ class DefaultStatEntryTest {
         when(buffered.getMean()).thenReturn(3 * Math.PI);
         when(buffered.getMax()).thenReturn(5 * Math.PI);
         when(buffered.getStdDev()).thenReturn(Math.PI);
-        final List<SnapshotEntry> snapshot = statEntry.takeSnapshot();
+        final List<LegacySnapshotEntry> snapshot = statEntry.takeSnapshot();
 
         // then
         assertEquals(2 * Math.PI, statEntry.get(MIN));
@@ -187,11 +187,11 @@ class DefaultStatEntryTest {
 
         // when
         when(getter.get()).thenReturn("Hello World");
-        final List<SnapshotEntry> snapshot = statEntry.takeSnapshot();
+        final List<LegacySnapshotEntry> snapshot = statEntry.takeSnapshot();
 
         // then
         assertEquals("Hello World", statEntry.get(VALUE), "Value should be \"Hello World\"");
-        assertThat(snapshot).containsExactly(new SnapshotEntry(VALUE, "Hello World"));
+        assertThat(snapshot).containsExactly(new LegacySnapshotEntry(VALUE, "Hello World"));
     }
 
     @SuppressWarnings({"unchecked", "removal"})

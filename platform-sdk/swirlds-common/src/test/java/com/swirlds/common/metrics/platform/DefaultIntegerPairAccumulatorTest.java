@@ -30,7 +30,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
+import com.swirlds.common.metrics.platform.DefaultMetric.LegacySnapshotEntry;
 import com.swirlds.common.statistics.StatsBuffered;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -163,7 +163,7 @@ class DefaultIntegerPairAccumulatorTest {
         accumulator.update(2, 3);
 
         // when
-        final List<SnapshotEntry> snapshot = accumulator.takeSnapshot();
+        final List<LegacySnapshotEntry> snapshot = accumulator.takeSnapshot();
 
         // then
         assertEquals(0.0, accumulator.get(), EPSILON, "Value should be 2");

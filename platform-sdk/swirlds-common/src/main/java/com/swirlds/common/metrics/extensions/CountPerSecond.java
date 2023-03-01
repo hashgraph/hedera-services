@@ -62,7 +62,7 @@ public class CountPerSecond {
     public CountPerSecond(final Metrics metrics, final CountPerSecond.Config config, final Time time) {
         this.time = time;
         this.accumulator = metrics.getOrCreate(new IntegerPairAccumulator.Config<>(
-                        config.getCategory(), config.getName(), Double.class, this::perSecond)
+                config.getCategory(), config.getName(), Double.class, this::perSecond)
                 .withDescription(config.getDescription())
                 .withUnit(config.getUnit())
                 .withFormat(config.getFormat())

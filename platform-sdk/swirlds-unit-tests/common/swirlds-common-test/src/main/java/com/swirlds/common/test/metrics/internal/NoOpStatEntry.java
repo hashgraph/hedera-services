@@ -29,7 +29,7 @@ import java.util.function.Supplier;
  */
 public class NoOpStatEntry extends AbstractNoOpMetric implements StatEntry {
 
-    public NoOpStatEntry(final MetricConfig<?, ?> config) {
+    public NoOpStatEntry(final MetricConfig<?> config) {
         super(config);
     }
 

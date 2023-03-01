@@ -20,10 +20,12 @@ import static com.swirlds.common.metrics.platform.prometheus.NameConverter.fix;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.GLOBAL;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType.PLATFORM;
 import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.NODE_LABEL;
+import static com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.TYPE_LABEL;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.Snapshot;
+import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint.AdapterType;
 import com.swirlds.common.system.NodeId;
 import io.prometheus.client.Collector;
@@ -60,7 +62,13 @@ public class CounterAdapter extends AbstractMetricAdapter {
                 .help(metric.getDescription())
                 .unit(metric.getUnit())
                 .withoutExemplars();
-        if (adapterType == PLATFORM) {
+        if (metric.isMetricGroup()) {
+            if (adapterType == PLATFORM) {
+                builder.labelNames(NODE_LABEL, TYPE_LABEL);
+            } else {
+                builder.labelNames(TYPE_LABEL);
+            }
+        } else if (adapterType == PLATFORM) {
             builder.labelNames(NODE_LABEL);
         }
         this.counter = builder.register(registry);
@@ -72,7 +80,9 @@ public class CounterAdapter extends AbstractMetricAdapter {
     @Override
     public void update(final Snapshot snapshot, final NodeId nodeId) {
         throwArgNull(snapshot, "snapshot");
-        final double newValue = ((Number) snapshot.getValue()).doubleValue();
+        // A CounterAdapter can have only one entry
+        SnapshotEntry snapshotEntry = snapshot.entries().get(0);
+        final long newValue = (Long) snapshotEntry.value();
         if (adapterType == GLOBAL) {
             final double oldValue = counter.get();
             counter.inc(newValue - oldValue);

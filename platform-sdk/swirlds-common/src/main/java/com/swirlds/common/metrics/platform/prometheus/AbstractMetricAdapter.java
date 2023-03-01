@@ -17,10 +17,14 @@
 package com.swirlds.common.metrics.platform.prometheus;
 
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
+import static java.lang.Boolean.TRUE;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class AbstractMetricAdapter implements MetricAdapter {
+
+    private static final double TRUE_VALUE = 1.0;
+    private static final double FALSE_VALUE = 0.0;
 
     protected final PrometheusEndpoint.AdapterType adapterType;
     private final AtomicInteger referenceCount = new AtomicInteger();
@@ -38,4 +42,14 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
     public int decAndGetReferenceCount() {
         return referenceCount.decrementAndGet();
     }
+
+    protected static double convertBoolean(final Object value) {
+        return TRUE.equals(value) ? TRUE_VALUE : FALSE_VALUE;
+    }
+
+    protected static double convertDouble(final Object value) {
+        return ((Number) value).doubleValue();
+    }
+
+
 }

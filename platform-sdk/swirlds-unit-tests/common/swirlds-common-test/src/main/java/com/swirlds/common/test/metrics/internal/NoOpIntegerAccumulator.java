@@ -24,7 +24,7 @@ import com.swirlds.common.metrics.MetricConfig;
  */
 public class NoOpIntegerAccumulator extends AbstractNoOpMetric implements IntegerAccumulator {
 
-    public NoOpIntegerAccumulator(final MetricConfig<?, ?> config) {
+    public NoOpIntegerAccumulator(final MetricConfig<?> config) {
         super(config);
     }
 

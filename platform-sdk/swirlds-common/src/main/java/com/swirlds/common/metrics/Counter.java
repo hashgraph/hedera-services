@@ -17,8 +17,10 @@
 package com.swirlds.common.metrics;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.common.utility.CommonUtils.throwArgBlank;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
+import com.swirlds.common.metrics.IntegerAccumulator.ConfigBuilder;
 import java.util.EnumSet;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
@@ -27,11 +29,15 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  * <p>
  * The value of a {@code Counter} is initially {@code 0} and can only be increased.
  */
-public interface Counter extends Metric {
+public non-sealed interface Counter extends BaseMetric {
 
     /**
      * {@inheritDoc}
+     *
+     * @deprecated {@link MetricType} turned out to be too limited. You can use the class-name instead.
      */
+    @SuppressWarnings("removal")
+    @Deprecated(forRemoval = true)
     @Override
     default MetricType getMetricType() {
         return MetricType.COUNTER;
@@ -47,7 +53,12 @@ public interface Counter extends Metric {
 
     /**
      * {@inheritDoc}
+     *
+     * @deprecated {@code ValueType} turned out to be too limited. You can get sub-metrics via
+     * {@link #getBaseMetrics()}.
      */
+    @SuppressWarnings("removal")
+    @Deprecated(forRemoval = true)
     @Override
     default EnumSet<ValueType> getValueTypes() {
         return EnumSet.of(VALUE);
@@ -55,7 +66,12 @@ public interface Counter extends Metric {
 
     /**
      * {@inheritDoc}
+     *
+     * @deprecated {@code ValueType} turned out to be too limited. You can get sub-metrics via
+     * {@link #getBaseMetrics()}.
      */
+    @SuppressWarnings("removal")
+    @Deprecated(forRemoval = true)
     @Override
     default Long get(final ValueType valueType) {
         throwArgNull(valueType, "valueType");
@@ -92,45 +108,77 @@ public interface Counter extends Metric {
     /**
      * Configuration of a {@link Counter}.
      */
-    final class Config extends MetricConfig<Counter, Counter.Config> {
+    record Config (
+            String category,
+            String name,
+            String description,
+            String unit,
+            String format
+    ) implements MetricConfig<Counter> {
 
         /**
          * Constructor of {@code Counter.Config}
          *
-         * @param category
-         * 		the kind of metric (metrics are grouped or filtered by this)
-         * @param name
-         * 		a short name for the metric
-         * @throws IllegalArgumentException
-         * 		if one of the parameters is {@code null} or consists only of whitespaces
+         * @param category the kind of metric (metrics are grouped or filtered by this)
+         * @param name a short name for the metric
+         * @param description a longer description of the metric
+         * @param unit the unit of the metric
+         * @param format the format of the metric
+         * @throws IllegalArgumentException if one of the parameters is {@code null} or consists only of whitespaces
+         * (except for {@code unit} which can be empty)
+         */
+        public Config {
+            throwArgBlank(category, "category");
+            throwArgBlank(name, "name");
+            MetricConfig.checkDescription(description);
+            throwArgNull(unit, "unit");
+            throwArgBlank(format, "format");
+        }
+
+        /**
+         * Constructor of {@code Counter.Config}
+         *
+         * @param category the kind of metric (metrics are grouped or filtered by this)
+         * @param name a short name for the metric
+         * @throws IllegalArgumentException if one of the parameters is {@code null} or consists only of whitespaces
          */
         public Config(final String category, final String name) {
-            super(category, name, "%d");
-        }
-
-        private Config(final String category, final String name, final String description, final String unit) {
-            super(category, name, description, unit, "%d");
+            this(category, name, name, "", "%d");
         }
 
         /**
-         * {@inheritDoc}
+         * Sets the {@link Metric#getDescription() Metric.description} in fluent style.
+         *
+         * @param description the description
+         * @return a new configuration-object with updated {@code description}
+         * @throws IllegalArgumentException if {@code description} is {@code null}, too long or consists only of whitespaces
+         * @deprecated Please use {@link ConfigBuilder} instead.
          */
-        @Override
+        @Deprecated(forRemoval = true)
         public Counter.Config withDescription(final String description) {
-            return new Counter.Config(getCategory(), getName(), description, getUnit());
+            return new Counter.Config(category, name, description, unit, format);
         }
 
         /**
-         * {@inheritDoc}
+         * Sets the {@link Metric#getUnit() Metric.unit} in fluent style.
+         *
+         * @param unit the unit
+         * @return a new configuration-object with updated {@code unit}
+         * @throws IllegalArgumentException if {@code unit} is {@code null}
+         * @deprecated Please use {@link ConfigBuilder} instead
          */
-        @Override
+        @Deprecated(forRemoval = true)
         public Counter.Config withUnit(final String unit) {
-            return new Counter.Config(getCategory(), getName(), getDescription(), unit);
+            return new Counter.Config(category, name, description, unit, format);
         }
 
         /**
          * {@inheritDoc}
+         *
+         * @deprecated This functionality will be removed soon
          */
+        @SuppressWarnings("removal")
+        @Deprecated(forRemoval = true)
         @Override
         public Class<Counter> getResultClass() {
             return Counter.class;
@@ -140,7 +188,7 @@ public interface Counter extends Metric {
          * {@inheritDoc}
          */
         @Override
-        Counter create(final MetricsFactory factory) {
+        public Counter create(final MetricsFactory factory) {
             return factory.createCounter(this);
         }
 
@@ -149,7 +197,13 @@ public interface Counter extends Metric {
          */
         @Override
         public String toString() {
-            return new ToStringBuilder(this).appendSuper(super.toString()).toString();
+            return new ToStringBuilder(this)
+                    .append("category", category)
+                    .append("name", name)
+                    .append("description", description)
+                    .append("unit", unit)
+                    .append("format", format)
+                    .toString();
         }
     }
 }

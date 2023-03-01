@@ -18,8 +18,10 @@ package com.swirlds.common.metrics;
 
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_11_3;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.common.utility.CommonUtils.throwArgBlank;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
+import com.swirlds.common.metrics.IntegerAccumulator.ConfigBuilder;
 import java.util.EnumSet;
 import java.util.function.DoubleBinaryOperator;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -32,11 +34,15 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  * A {@code DoubleAccumulator} is reset to the {@link #getInitialValue() initialValue}.
  * If no {@code initialValue} was specified, the {@code DoubleAccumulator} is reset to {@code 0.0}.
  */
-public interface DoubleAccumulator extends Metric {
+public non-sealed interface DoubleAccumulator extends BaseMetric {
 
     /**
      * {@inheritDoc}
+     *
+     * @deprecated {@link MetricType} turned out to be too limited. You can use the class-name instead.
      */
+    @SuppressWarnings("removal")
+    @Deprecated(forRemoval = true)
     @Override
     default MetricType getMetricType() {
         return MetricType.ACCUMULATOR;
@@ -52,7 +58,12 @@ public interface DoubleAccumulator extends Metric {
 
     /**
      * {@inheritDoc}
+     *
+     * @deprecated {@code ValueType} turned out to be too limited. You can get sub-metrics via
+     * {@link #getBaseMetrics()}.
      */
+    @SuppressWarnings("removal")
+    @Deprecated(forRemoval = true)
     @Override
     default EnumSet<ValueType> getValueTypes() {
         return EnumSet.of(VALUE);
@@ -60,7 +71,12 @@ public interface DoubleAccumulator extends Metric {
 
     /**
      * {@inheritDoc}
+     *
+     * @deprecated {@code ValueType} turned out to be too limited. You can get sub-metrics via
+     * {@link #getBaseMetrics()}.
      */
+    @SuppressWarnings("removal")
+    @Deprecated(forRemoval = true)
     @Override
     default Double get(final ValueType valueType) {
         throwArgNull(valueType, "valueType");
@@ -99,17 +115,44 @@ public interface DoubleAccumulator extends Metric {
     /**
      * Configuration of a {@link DoubleAccumulator}
      */
-    final class Config extends MetricConfig<DoubleAccumulator, DoubleAccumulator.Config> {
+    record Config (
+            String category,
+            String name,
+            String description,
+            String unit,
+            String format,
+            DoubleBinaryOperator accumulator,
+            double initialValue
+    ) implements MetricConfig<DoubleAccumulator> {
 
-        private final DoubleBinaryOperator accumulator;
-        private final double initialValue;
+        /**
+         * Constructor of {@code Counter.Config}
+         *
+         * @param category the kind of metric (metrics are grouped or filtered by this)
+         * @param name a short name for the metric
+         * @param description a longer description of the metric
+         * @param unit the unit of the metric
+         * @param format the format of the metric
+         * @param accumulator the accumulator-function
+         * @param initialValue the initial value of the metric
+         * @throws IllegalArgumentException if one of the parameters is {@code null} or consists only of whitespaces
+         * (except for {@code unit} which can be empty)
+         */
+        public Config {
+            throwArgBlank(category, "category");
+            throwArgBlank(name, "name");
+            MetricConfig.checkDescription(description);
+            throwArgNull(unit, "unit");
+            throwArgBlank(format, "format");
+            throwArgNull(accumulator, "accumulator");
+        }
 
         /**
          * Constructor of {@code DoubleAccumulator.Config}
          *
-         * By default, the {@link #getAccumulator() accumulator} is set to {@code Double::max},
-         * the {@link #getInitialValue() initialValue} is set to {@code 0.0},
-         * and {@link #getFormat() format} is set to {@link FloatFormats#FORMAT_11_3}.
+         * By default, the {@link #accumulator} is set to {@code Double::max},
+         * the {@link #initialValue} is set to {@code 0.0},
+         * and {@link #format} is set to {@link FloatFormats#FORMAT_11_3}.
          *
          * @param category
          * 		the kind of metric (metrics are grouped or filtered by this)
@@ -119,62 +162,55 @@ public interface DoubleAccumulator extends Metric {
          * 		if one of the parameters is {@code null} or consists only of whitespaces
          */
         public Config(final String category, final String name) {
-            super(category, name, FORMAT_11_3);
-            this.accumulator = Double::max;
-            this.initialValue = 0.0;
-        }
-
-        private Config(
-                final String category,
-                final String name,
-                final String description,
-                final String unit,
-                final String format,
-                final DoubleBinaryOperator accumulator,
-                final double initialValue) {
-
-            super(category, name, description, unit, format);
-            this.accumulator = throwArgNull(accumulator, "accumulator");
-            this.initialValue = initialValue;
+            this(category, name, name, "", FORMAT_11_3, Double::max, 0.0);
         }
 
         /**
-         * {@inheritDoc}
+         * Sets the {@link Metric#getDescription() Metric.description} in fluent style.
+         *
+         * @param description the description
+         * @return a new configuration-object with updated {@code description}
+         * @throws IllegalArgumentException if {@code description} is {@code null}, too long or consists only of whitespaces
+         * @deprecated Please use {@link ConfigBuilder} instead.
          */
-        @Override
+        @Deprecated(forRemoval = true)
         public DoubleAccumulator.Config withDescription(final String description) {
-            return new DoubleAccumulator.Config(
-                    getCategory(), getName(), description, getUnit(), getFormat(), getAccumulator(), getInitialValue());
+            return new DoubleAccumulator.Config(category, name, description, unit, format, accumulator, initialValue);
         }
 
         /**
-         * {@inheritDoc}
+         * Sets the {@link Metric#getUnit() Metric.unit} in fluent style.
+         *
+         * @param unit the unit
+         * @return a new configuration-object with updated {@code unit}
+         * @throws IllegalArgumentException if {@code unit} is {@code null}
+         * @deprecated Please use {@link ConfigBuilder} instead
          */
-        @Override
+        @Deprecated(forRemoval = true)
         public DoubleAccumulator.Config withUnit(final String unit) {
-            return new DoubleAccumulator.Config(
-                    getCategory(), getName(), getDescription(), unit, getFormat(), getAccumulator(), getInitialValue());
+            return new DoubleAccumulator.Config(category, name, description, unit, format, accumulator, initialValue);
         }
 
         /**
          * Sets the {@link Metric#getFormat() Metric.format} in fluent style.
          *
-         * @param format
-         * 		the format-string
+         * @param format the format-string
          * @return a new configuration-object with updated {@code format}
-         * @throws IllegalArgumentException
-         * 		if {@code format} is {@code null} or consists only of whitespaces
+         * @throws IllegalArgumentException if {@code format} is {@code null} or consists only of whitespaces
+         * @deprecated Please use {@link ConfigBuilder} instead
          */
+        @Deprecated(forRemoval = true)
         public DoubleAccumulator.Config withFormat(final String format) {
-            return new DoubleAccumulator.Config(
-                    getCategory(), getName(), getDescription(), getUnit(), format, getAccumulator(), getInitialValue());
+            return new DoubleAccumulator.Config(category, name, description, unit, format, accumulator, initialValue);
         }
 
         /**
          * Getter of the {@code accumulator}
          *
          * @return the accumulator
+         * @deprecated Please use {@link #accumulator()} instead
          */
+        @Deprecated(forRemoval = true)
         public DoubleBinaryOperator getAccumulator() {
             return accumulator;
         }
@@ -188,17 +224,20 @@ public interface DoubleAccumulator extends Metric {
          * @param accumulator
          * 		The {@link DoubleBinaryOperator} that is used to accumulate the value.
          * @return a new configuration-object with updated {@code initialValue}
+         * @deprecated Please use {@link ConfigBuilder} instead
          */
+        @Deprecated(forRemoval = true)
         public DoubleAccumulator.Config withAccumulator(final DoubleBinaryOperator accumulator) {
-            return new DoubleAccumulator.Config(
-                    getCategory(), getName(), getDescription(), getUnit(), getFormat(), accumulator, getInitialValue());
+            return new DoubleAccumulator.Config(category, name, description, unit, format, accumulator, initialValue);
         }
 
         /**
          * Getter of the initial value
          *
          * @return the initial value
+         * @deprecated Please use {@link #initialValue()} instead
          */
+        @Deprecated(forRemoval = true)
         public double getInitialValue() {
             return initialValue;
         }
@@ -209,15 +248,20 @@ public interface DoubleAccumulator extends Metric {
          * @param initialValue
          * 		the initial value
          * @return a new configuration-object with updated {@code initialValue}
+         * @deprecated Please use {@link ConfigBuilder} instead
          */
+        @Deprecated(forRemoval = true)
         public DoubleAccumulator.Config withInitialValue(final double initialValue) {
-            return new DoubleAccumulator.Config(
-                    getCategory(), getName(), getDescription(), getUnit(), getFormat(), getAccumulator(), initialValue);
+            return new DoubleAccumulator.Config(category, name, description, unit, format, accumulator, initialValue);
         }
 
         /**
          * {@inheritDoc}
+         *
+         * @deprecated this feature will be removed soon
          */
+        @SuppressWarnings("removal")
+        @Deprecated(forRemoval = true)
         @Override
         public Class<DoubleAccumulator> getResultClass() {
             return DoubleAccumulator.class;
@@ -227,7 +271,7 @@ public interface DoubleAccumulator extends Metric {
          * {@inheritDoc}
          */
         @Override
-        DoubleAccumulator create(final MetricsFactory factory) {
+        public DoubleAccumulator create(final MetricsFactory factory) {
             return factory.createDoubleAccumulator(this);
         }
 
@@ -237,7 +281,11 @@ public interface DoubleAccumulator extends Metric {
         @Override
         public String toString() {
             return new ToStringBuilder(this)
-                    .appendSuper(super.toString())
+                    .append("category", category)
+                    .append("name", name)
+                    .append("description", description)
+                    .append("unit", unit)
+                    .append("format", format)
                     .append("initialValue", initialValue)
                     .toString();
         }

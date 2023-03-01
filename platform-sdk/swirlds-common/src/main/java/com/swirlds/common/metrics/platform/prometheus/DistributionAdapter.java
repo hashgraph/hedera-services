@@ -77,16 +77,9 @@ public class DistributionAdapter extends AbstractMetricAdapter {
             throwArgNull(nodeId, "nodeId");
         }
         for (final Snapshot.SnapshotEntry entry : snapshot.entries()) {
-            final String valueType =
-                    switch (entry.valueType()) {
-                        case MIN -> "min";
-                        case MAX -> "max";
-                        case STD_DEV -> "stddev";
-                        default -> "mean";
-                    };
             final Gauge.Child child = adapterType == GLOBAL
-                    ? gauge.labels(valueType)
-                    : gauge.labels(Long.toString(nodeId.getId()), valueType);
+                    ? gauge.labels(entry.type())
+                    : gauge.labels(Long.toString(nodeId.getId()), entry.type());
             child.set(((Number) entry.value()).doubleValue());
         }
     }

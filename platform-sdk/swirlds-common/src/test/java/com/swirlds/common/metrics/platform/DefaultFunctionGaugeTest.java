@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
+import com.swirlds.common.metrics.platform.DefaultMetric.LegacySnapshotEntry;
 import com.swirlds.common.statistics.StatsBuffered;
 import java.util.List;
 import java.util.function.Supplier;
@@ -97,12 +97,12 @@ class DefaultFunctionGaugeTest {
 
         // when
         when(supplier.get()).thenReturn("Hello World");
-        final List<SnapshotEntry> snapshot = gauge.takeSnapshot();
+        final List<LegacySnapshotEntry> snapshot = gauge.takeSnapshot();
 
         // then
         assertEquals("Hello World", gauge.get(), "Value should be 'Hello World'");
         assertEquals("Hello World", gauge.get(VALUE), "Value should be 'Hello World'");
-        assertThat(snapshot).containsExactly(new SnapshotEntry(VALUE, "Hello World"));
+        assertThat(snapshot).containsExactly(new LegacySnapshotEntry(VALUE, "Hello World"));
     }
 
     @SuppressWarnings("unchecked")

@@ -17,8 +17,10 @@
 package com.swirlds.common.metrics;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.common.utility.CommonUtils.throwArgBlank;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
+import com.swirlds.common.metrics.IntegerAccumulator.ConfigBuilder;
 import java.util.EnumSet;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
@@ -28,11 +30,15 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  * Only the current value is stored, no history or distribution is kept. Special values ({@link Double#NaN},
  * {@link Double#POSITIVE_INFINITY}, {@link Double#NEGATIVE_INFINITY}) are supported.
  */
-public interface DoubleGauge extends Metric {
+public non-sealed interface DoubleGauge extends BaseMetric {
 
     /**
      * {@inheritDoc}
+     *
+     * @deprecated {@link MetricType} turned out to be too limited. You can use the class-name instead.
      */
+    @SuppressWarnings("removal")
+    @Deprecated(forRemoval = true)
     @Override
     default MetricType getMetricType() {
         return MetricType.GAUGE;
@@ -48,7 +54,12 @@ public interface DoubleGauge extends Metric {
 
     /**
      * {@inheritDoc}
+     *
+     * @deprecated {@code ValueType} turned out to be too limited. You can get sub-metrics via
+     * {@link #getBaseMetrics()}.
      */
+    @SuppressWarnings("removal")
+    @Deprecated(forRemoval = true)
     @Override
     default EnumSet<ValueType> getValueTypes() {
         return EnumSet.of(VALUE);
@@ -56,7 +67,12 @@ public interface DoubleGauge extends Metric {
 
     /**
      * {@inheritDoc}
+     *
+     * @deprecated {@code ValueType} turned out to be too limited. You can get sub-metrics via
+     * {@link #getBaseMetrics()}.
      */
+    @SuppressWarnings("removal")
+    @Deprecated(forRemoval = true)
     @Override
     default Double get(final ValueType valueType) {
         throwArgNull(valueType, "valueType");
@@ -86,97 +102,117 @@ public interface DoubleGauge extends Metric {
     /**
      * Configuration of a {@link DoubleGauge}
      */
-    final class Config extends MetricConfig<DoubleGauge, DoubleGauge.Config> {
+    record Config (
+            String category,
+            String name,
+            String description,
+            String unit,
+            String format,
+            double initialValue
+    ) implements MetricConfig<DoubleGauge> {
 
-        private final double initialValue;
+        /**
+         * Constructor of {@code Counter.Config}
+         *
+         * @param category the kind of metric (metrics are grouped or filtered by this)
+         * @param name a short name for the metric
+         * @param description a longer description of the metric
+         * @param unit the unit of the metric
+         * @param format the format of the metric
+         * @param initialValue the initial value of the metric
+         * @throws IllegalArgumentException if one of the parameters is {@code null} or consists only of whitespaces
+         * (except for {@code unit} which can be empty)
+         */
+        public Config {
+            throwArgBlank(category, "category");
+            throwArgBlank(name, "name");
+            MetricConfig.checkDescription(description);
+            throwArgNull(unit, "unit");
+            throwArgBlank(format, "format");
+        }
 
         /**
          * Constructor of {@code DoubleGauge.Config}
          *
-         * The {@link #getInitialValue() initialValue} is by default set to {@code 0.0}
+         * The {@link #initialValue} is by default set to {@code 0.0}
          *
-         * The initial value is set to {@code 0.0}.
-         *
-         * @param category
-         * 		the kind of metric (metrics are grouped or filtered by this)
-         * @param name
-         * 		a short name for the metric
-         * @throws IllegalArgumentException
-         * 		if one of the parameters is {@code null} or consists only of whitespaces
+         * @param category the kind of metric (metrics are grouped or filtered by this)
+         * @param name a short name for the metric
+         * @throws IllegalArgumentException if one of the parameters is {@code null} or consists only of whitespaces
          */
         public Config(final String category, final String name) {
-            super(category, name, FloatFormats.FORMAT_11_3);
-            this.initialValue = 0.0;
-        }
-
-        private Config(
-                final String category,
-                final String name,
-                final String description,
-                final String unit,
-                final String format,
-                final double initialValue) {
-
-            super(category, name, description, unit, format);
-            this.initialValue = initialValue;
+            this(category, name, name, "", FloatFormats.FORMAT_11_3, 0.0);
         }
 
         /**
-         * {@inheritDoc}
+         * Sets the {@link Metric#getDescription() Metric.description} in fluent style.
+         *
+         * @param description the description
+         * @return a new configuration-object with updated {@code description}
+         * @throws IllegalArgumentException if {@code description} is {@code null}, too long or consists only of whitespaces
+         * @deprecated Please use {@link ConfigBuilder} instead.
          */
-        @Override
+        @Deprecated(forRemoval = true)
         public DoubleGauge.Config withDescription(final String description) {
-            return new DoubleGauge.Config(
-                    getCategory(), getName(), description, getUnit(), getFormat(), getInitialValue());
+            return new DoubleGauge.Config(category, name, description, unit, format, initialValue);
         }
 
         /**
-         * {@inheritDoc}
+         * Sets the {@link Metric#getUnit() Metric.unit} in fluent style.
+         *
+         * @param unit the unit
+         * @return a new configuration-object with updated {@code unit}
+         * @throws IllegalArgumentException if {@code unit} is {@code null}
+         * @deprecated Please use {@link ConfigBuilder} instead
          */
-        @Override
+        @Deprecated(forRemoval = true)
         public DoubleGauge.Config withUnit(final String unit) {
-            return new DoubleGauge.Config(
-                    getCategory(), getName(), getDescription(), unit, getFormat(), getInitialValue());
+            return new DoubleGauge.Config(category, name, description, unit, format, initialValue);
         }
 
         /**
          * Sets the {@link Metric#getFormat() Metric.format} in fluent style.
          *
-         * @param format
-         * 		the format-string
+         * @param format the format-string
          * @return a new configuration-object with updated {@code format}
-         * @throws IllegalArgumentException
-         * 		if {@code format} is {@code null} or consists only of whitespaces
+         * @throws IllegalArgumentException if {@code format} is {@code null} or consists only of whitespaces
+         * @deprecated Please use {@link ConfigBuilder} instead
          */
+        @Deprecated(forRemoval = true)
         public DoubleGauge.Config withFormat(final String format) {
-            return new DoubleGauge.Config(
-                    getCategory(), getName(), getDescription(), getUnit(), format, getInitialValue());
+            return new DoubleGauge.Config(category, name, description, unit, format, initialValue);
         }
 
         /**
          * Getter of the {@code initialValue}
          *
          * @return the {@code initialValue}
+         * @deprecated Please use {@link #initialValue()} instead
          */
+        @Deprecated(forRemoval = true)
         public double getInitialValue() {
-            return initialValue;
+            return initialValue();
         }
 
         /**
          * Fluent-style setter of the initial value.
          *
-         * @param initialValue
-         * 		the initial value
+         * @param initialValue the initial value
          * @return a new configuration-object with updated {@code initialValue}
+         * @deprecated Please use {@link ConfigBuilder} instead
          */
+        @Deprecated(forRemoval = true)
         public DoubleGauge.Config withInitialValue(final double initialValue) {
-            return new DoubleGauge.Config(
-                    getCategory(), getName(), getDescription(), getUnit(), getFormat(), initialValue);
+            return new DoubleGauge.Config(category, name, description, unit, format, initialValue);
         }
 
         /**
          * {@inheritDoc}
+         *
+         * @deprecated This functionality will be removed soon
          */
+        @SuppressWarnings("removal")
+        @Deprecated(forRemoval = true)
         @Override
         public Class<DoubleGauge> getResultClass() {
             return DoubleGauge.class;
@@ -186,7 +222,7 @@ public interface DoubleGauge extends Metric {
          * {@inheritDoc}
          */
         @Override
-        DoubleGauge create(final MetricsFactory factory) {
+        public DoubleGauge create(final MetricsFactory factory) {
             return factory.createDoubleGauge(this);
         }
 
@@ -196,7 +232,11 @@ public interface DoubleGauge extends Metric {
         @Override
         public String toString() {
             return new ToStringBuilder(this)
-                    .appendSuper(super.toString())
+                    .append("category", category)
+                    .append("name", name)
+                    .append("description", description)
+                    .append("unit", unit)
+                    .append("format", format)
                     .append("initialValue", initialValue)
                     .toString();
         }

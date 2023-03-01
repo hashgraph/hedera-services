@@ -47,8 +47,11 @@ public class DefaultRunningAverageMetric extends AbstractDistributionMetric impl
 
     /**
      * {@inheritDoc}
+     *
+     * @deprecated This method is only temporary and will be removed soon
      */
     @SuppressWarnings("removal")
+    @Deprecated(forRemoval = true)
     @Override
     public StatsBuffered getStatsBuffered() {
         return runningAverage;

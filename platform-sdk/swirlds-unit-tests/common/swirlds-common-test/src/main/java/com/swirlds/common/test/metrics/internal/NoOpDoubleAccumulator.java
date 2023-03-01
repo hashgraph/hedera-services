@@ -24,7 +24,7 @@ import com.swirlds.common.metrics.MetricConfig;
  */
 public class NoOpDoubleAccumulator extends AbstractNoOpMetric implements DoubleAccumulator {
 
-    public NoOpDoubleAccumulator(final MetricConfig<?, ?> config) {
+    public NoOpDoubleAccumulator(final MetricConfig<?> config) {
         super(config);
     }
 

@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.metrics.IntegerAccumulator;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
+import com.swirlds.common.metrics.platform.DefaultMetric.LegacySnapshotEntry;
 import com.swirlds.common.statistics.StatsBuffered;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -144,12 +144,12 @@ class DefaultIntegerAccumulatorTest {
         accumulator.update(5);
 
         // when
-        final List<SnapshotEntry> snapshot = accumulator.takeSnapshot();
+        final List<LegacySnapshotEntry> snapshot = accumulator.takeSnapshot();
 
         // then
         assertEquals(3, accumulator.get(), "Value should be 7");
         assertEquals(3, accumulator.get(VALUE), "Value should be 7");
-        assertThat(snapshot).containsExactly(new SnapshotEntry(VALUE, 5));
+        assertThat(snapshot).containsExactly(new LegacySnapshotEntry(VALUE, 5));
     }
 
     @Test
@@ -160,12 +160,12 @@ class DefaultIntegerAccumulatorTest {
         accumulator.update(5);
 
         // when
-        final List<SnapshotEntry> snapshot = accumulator.takeSnapshot();
+        final List<LegacySnapshotEntry> snapshot = accumulator.takeSnapshot();
 
         // then
         assertEquals(2, accumulator.get(), "Value should be 2");
         assertEquals(2, accumulator.get(VALUE), "Value should be 2");
-        assertThat(snapshot).containsExactly(new SnapshotEntry(VALUE, 5));
+        assertThat(snapshot).containsExactly(new LegacySnapshotEntry(VALUE, 5));
     }
 
     @Test

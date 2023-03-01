@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.metrics.DoubleAccumulator;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
+import com.swirlds.common.metrics.platform.DefaultMetric.LegacySnapshotEntry;
 import com.swirlds.common.statistics.StatsBuffered;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -118,7 +118,7 @@ class DefaultDoubleAccumulatorTest {
         accumulator.update(Math.PI);
 
         // when
-        final List<SnapshotEntry> snapshot = accumulator.takeSnapshot();
+        final List<LegacySnapshotEntry> snapshot = accumulator.takeSnapshot();
 
         // then
         assertEquals(Math.E, accumulator.get(), EPSILON, "Value should be " + Math.E);

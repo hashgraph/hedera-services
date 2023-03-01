@@ -52,9 +52,12 @@ import com.swirlds.common.internal.ApplicationDefinition;
 import com.swirlds.common.internal.ConfigurationException;
 import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.metrics.IntegerAccumulator;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsProvider;
 import com.swirlds.common.metrics.config.MetricsConfig;
+import com.swirlds.common.metrics.auxiliary.AverageAndMaxMetric;
+import com.swirlds.common.metrics.auxiliary.MaxIntegerMetric;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.common.system.NodeId;
@@ -108,7 +111,11 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import javax.swing.JFrame;
 import javax.swing.UIManager;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -645,6 +652,28 @@ public class Browser {
         final DefaultMetricsProvider metricsProvider = new DefaultMetricsProvider(configuration);
         final Metrics globalMetrics = metricsProvider.createGlobalMetrics();
         CryptoMetrics.registerMetrics(globalMetrics);
+
+
+
+        // TODO: Temporary code added for testing. Do not forget to remove before pushing.
+        final AverageAndMaxMetric groupMetric = globalMetrics.getOrCreate(
+                new AverageAndMaxMetric.ConfigBuilder("michaelsTest", "myGroupMetric").build()
+        );
+        final MaxIntegerMetric metricWrapper = globalMetrics.getOrCreate(
+                new MaxIntegerMetric.ConfigBuilder("michaelsTest", "myMetricWrapper").build()
+        );
+        final IntegerAccumulator baseMetric = globalMetrics.getOrCreate(
+                new IntegerAccumulator.ConfigBuilder("michaelsTest", "myBaseMetric").build()
+        );
+
+        final Random random = new Random();
+        final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        executor.scheduleAtFixedRate(() -> {
+            groupMetric.update(random.nextInt(100));
+            metricWrapper.update(random.nextInt(100));
+            baseMetric.update(random.nextInt(100));
+        }, 0, 500, TimeUnit.MILLISECONDS);
+
 
         // Create all instances for all nodes that should run locally
         createLocalPlatforms(appDefinition, crypto, infoSwirld, appLoader, configuration, metricsProvider);

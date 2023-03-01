@@ -24,7 +24,7 @@ import com.swirlds.common.metrics.SpeedometerMetric;
  */
 public class NoOpSpeedometerMetric extends AbstractNoOpMetric implements SpeedometerMetric {
 
-    public NoOpSpeedometerMetric(final MetricConfig<?, ?> config) {
+    public NoOpSpeedometerMetric(final MetricConfig<?> config) {
         super(config);
     }
 

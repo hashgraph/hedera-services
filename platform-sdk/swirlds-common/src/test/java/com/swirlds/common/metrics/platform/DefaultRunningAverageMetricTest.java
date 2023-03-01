@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.RunningAverageMetric;
-import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
+import com.swirlds.common.metrics.platform.DefaultMetric.LegacySnapshotEntry;
 import com.swirlds.common.test.fixtures.FakeTime;
 import java.time.Duration;
 import java.util.List;
@@ -246,7 +246,7 @@ class DefaultRunningAverageMetricTest {
         recordValues(metric, time, 0, 1000, Math.PI);
         time.set(Duration.ofSeconds(1000));
         final double avg = metric.get();
-        final List<SnapshotEntry> snapshot = metric.takeSnapshot();
+        final List<LegacySnapshotEntry> snapshot = metric.takeSnapshot();
 
         // then
         assertEquals(Math.PI, avg, EPSILON, "Value should be " + Math.PI);

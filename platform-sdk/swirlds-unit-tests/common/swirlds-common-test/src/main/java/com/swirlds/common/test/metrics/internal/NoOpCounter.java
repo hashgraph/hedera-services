@@ -24,7 +24,7 @@ import com.swirlds.common.metrics.MetricConfig;
  */
 public class NoOpCounter extends AbstractNoOpMetric implements Counter {
 
-    public NoOpCounter(final MetricConfig<?, ?> config) {
+    public NoOpCounter(final MetricConfig<?> config) {
         super(config);
     }
 

@@ -29,7 +29,7 @@ public class NoOpFunctionGauge<T> extends AbstractNoOpMetric implements Function
 
     private final T value;
 
-    public NoOpFunctionGauge(final MetricConfig<?, ?> config, final T value) {
+    public NoOpFunctionGauge(final MetricConfig<?> config, final T value) {
         super(config);
         this.value = value;
     }

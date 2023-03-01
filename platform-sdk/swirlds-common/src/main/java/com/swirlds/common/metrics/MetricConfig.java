@@ -17,9 +17,6 @@
 package com.swirlds.common.metrics;
 
 import static com.swirlds.common.utility.CommonUtils.throwArgBlank;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * An instance of {@code MetricConfig} contains all configuration parameters needed to create a {@link Metric}.
@@ -33,150 +30,102 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  *
  * @param <T> the {@code Class} for which the configuration is
  */
-@SuppressWarnings("removal")
-public abstract sealed class MetricConfig<T extends Metric, C extends MetricConfig<T, C>>
-        permits Counter.Config,
-                DoubleAccumulator.Config,
-                DoubleGauge.Config,
-                DurationGauge.Config,
-                FunctionGauge.Config,
-                IntegerAccumulator.Config,
-                IntegerGauge.Config,
-                IntegerPairAccumulator.Config,
-                LongAccumulator.Config,
-                LongGauge.Config,
-                RunningAverageMetric.Config,
-                SpeedometerMetric.Config,
-                StatEntry.Config {
+public interface MetricConfig<T extends Metric> {
 
-    private static final int MAX_DESCRIPTION_LENGTH = 255;
+    int MAX_DESCRIPTION_LENGTH = 255;
 
-    private final String category;
-    private final String name;
-
-    private final String description;
-    private final String unit;
-    private final String format;
-
-    /**
-     * Constructor of {@code MetricConfig}
-     *
-     * @param category
-     * 		the kind of metric (metrics are grouped or filtered by this)
-     * @param name
-     * 		a short name for the metric
-     * @param format
-     * 		a string that can be passed to String.format() to format the metric
-     * @throws IllegalArgumentException
-     * 		if one of the parameters is {@code null} or consists only of whitespaces
-     */
-    MetricConfig(
-            final String category,
-            final String name,
-            final String description,
-            final String unit,
-            final String format) {
-
-        this.category = throwArgBlank(category, "category");
-        this.name = throwArgBlank(name, "name");
-        this.description = throwArgBlank(description, "description");
+    static String checkDescription(final String description) {
+        throwArgBlank(description, "description");
         if (description.length() > MAX_DESCRIPTION_LENGTH) {
             throw new IllegalArgumentException(
-                    "Description must not be longer than " + MAX_DESCRIPTION_LENGTH + " characters: " + description);
+                    String.format("Description must be less than %d characters", MAX_DESCRIPTION_LENGTH));
         }
-        this.unit = throwArgNull(unit, "unit");
-        this.format = throwArgBlank(format, "format");
-    }
-
-    /**
-     * Constructor of {@code MetricConfig}
-     *
-     * @param category
-     * 		the kind of metric (metrics are grouped or filtered by this)
-     * @param name
-     * 		a short name for the metric
-     * @param defaultFormat
-     * 		a string that can be passed to String.format() to format the metric
-     * @throws IllegalArgumentException
-     * 		if one of the parameters is {@code null} or consists only of whitespaces
-     */
-    MetricConfig(final String category, final String name, final String defaultFormat) {
-        this(category, name, name, "", defaultFormat);
-    }
-
-    /**
-     * Getter of the {@link Metric#getCategory() Metric.category}
-     *
-     * @return the {@code category}
-     */
-    public String getCategory() {
-        return category;
-    }
-
-    /**
-     * Getter of the {@link Metric#getName() Metric.name}
-     *
-     * @return the {@code name}
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * Getter of the {@link Metric#getDescription() Metric.description}
-     *
-     * @return the {@code description}
-     */
-    public String getDescription() {
         return description;
     }
 
     /**
-     * Sets the {@link Metric#getDescription() Metric.description} in fluent style.
+     * Gets the {@code category}
      *
-     * @param description
-     * 		the description
-     * @return a new configuration-object with updated {@code description}
-     * @throws IllegalArgumentException
-     * 		if {@code description} is {@code null}, too long or consists only of whitespaces
+     * @return the {@code category}
      */
-    public abstract C withDescription(final String description);
+    String category();
 
     /**
-     * Getter of the {@link Metric#getUnit() Metric.unit}
+     * @deprecated Please use {@link #category()} instead
+     */
+    @Deprecated(forRemoval = true)
+    default String getCategory() {
+        return category();
+    }
+
+    /**
+     * Gets the {@code name}
+     *
+     * @return the {@code name}
+     */
+    String name();
+
+    /**
+     * @deprecated Please use {@link #name()} instead
+     */
+    @Deprecated(forRemoval = true)
+    default String getName() {
+        return name();
+    }
+
+    /**
+     * Gets the {@code description}
+     *
+     * @return the {@code description}
+     */
+    String description();
+
+    /**
+     * @deprecated Please use {@link #description()} instead
+     */
+    @Deprecated(forRemoval = true)
+    default String getDescription() {
+        return description();
+    }
+
+    /**
+     * Gets the {@code unit}
      *
      * @return the {@code unit}
      */
-    public String getUnit() {
-        return unit;
+    String unit();
+
+    /**
+     * @deprecated Please use {@link #unit()} instead
+     */
+    @Deprecated(forRemoval = true)
+    default String getUnit() {
+        return unit();
     }
 
     /**
-     * Sets the {@link Metric#getUnit() Metric.unit} in fluent style.
-     *
-     * @param unit
-     * 		the unit
-     * @return a new configuration-object with updated {@code unit}
-     * @throws IllegalArgumentException
-     * 		if {@code unit} is {@code null}
-     */
-    public abstract C withUnit(final String unit);
-
-    /**
-     * Getter of the {@link Metric#getFormat() Metric.format}
+     * Gets the {@code format}
      *
      * @return the format-{@code String}
      */
-    public String getFormat() {
-        return format;
+    String format();
+
+    /**
+     * @deprecated Please use {@link #format()} instead
+     */
+    @Deprecated(forRemoval = true)
+    default String getFormat() {
+        return format();
     }
 
     /**
-     * Class of the {@code Metric} that this configuration is meant for
+     * Gets the class of the {@code Metric} that this configuration is meant for
      *
      * @return the {@code Class}
+     * @deprecated this feature will be removed soon
      */
-    public abstract Class<T> getResultClass();
+    @Deprecated(forRemoval = true)
+    Class<T> getResultClass();
 
     /**
      * Create a {@code Metric} using the given {@link MetricsFactory}
@@ -188,24 +137,9 @@ public abstract sealed class MetricConfig<T extends Metric, C extends MetricConf
      * 		the {@code MetricFactory}
      * @return the new {@code Metric}-instance
      */
-    abstract T create(final MetricsFactory factory);
+    T create(final MetricsFactory factory);
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String toString() {
-        return new ToStringBuilder(this)
-                .append("category", category)
-                .append("name", name)
-                .append("description", description)
-                .append("unit", unit)
-                .append("format", format)
-                .append("resultClass", getResultClass())
-                .toString();
-    }
-
-    public static Metric.DataType mapDataType(final Class<?> type) {
+    static Metric.DataType mapDataType(final Class<?> type) {
         if (Double.class.equals(type) || Float.class.equals(type)) {
             return Metric.DataType.FLOAT;
         }

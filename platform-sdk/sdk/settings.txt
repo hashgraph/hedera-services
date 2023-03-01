@@ -14,3 +14,4 @@ useLoopbackIp,             false
 csvFileName,               PlatformTesting
 checkSignedStateFromDisk,  1
 loadKeysFromPfxFiles,      0
+prometheusEndpointEnabled, true

@@ -93,7 +93,7 @@ public class NoOpMetrics implements Metrics {
      */
     @SuppressWarnings("unchecked")
     @Override
-    public synchronized <T extends Metric> T getOrCreate(final MetricConfig<T, ?> config) {
+    public synchronized <T extends Metric> T getOrCreate(final MetricConfig<T> config) {
 
         final String category = config.getCategory();
         final String name = config.getName();
@@ -132,7 +132,7 @@ public class NoOpMetrics implements Metrics {
      * {@inheritDoc}
      */
     @Override
-    public void remove(final MetricConfig<?, ?> config) {
+    public void remove(final MetricConfig<?> config) {
         remove(config.getCategory(), config.getName());
     }
 
