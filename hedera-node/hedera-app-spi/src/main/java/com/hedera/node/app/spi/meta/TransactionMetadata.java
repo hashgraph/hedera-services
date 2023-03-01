@@ -16,75 +16,27 @@
 
 package com.hedera.node.app.spi.meta;
 
-import static java.util.Objects.requireNonNull;
-
-import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.common.crypto.TransactionSignature;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Map;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle". This happens with
  * multiple background threads. Any state read or computed as part of this pre-handle, including any
  * errors, are captured in the TransactionMetadata. This is then made available to the transaction
  * during the "handle" phase as part of the HandleContext.
- *
- * @param txnBody Transaction that is being pre-handled
- * @param payer payer for the transaction
- * @param status {@link ResponseCodeEnum} status of the transaction
- * @param payerKey payer key required to sign the transaction. It is null if payer is missing
- * @param payerSignature {@link TransactionSignature} of the payer
- * @param otherSignatures lit {@link TransactionSignature} of other keys that need to sign
- * @param innerMetadata {@link TransactionMetadata} of the inner transaction (where appropriate)
  */
-public record TransactionMetadata(
-        @Nullable TransactionBody txnBody,
-        @Nullable AccountID payer,
-        @Nullable SignatureMap signatureMap,
-        @NonNull ResponseCodeEnum status,
-        @Nullable HederaKey payerKey,
-        @Nullable TransactionSignature payerSignature,
-        @NonNull Map<HederaKey, TransactionSignature> otherSignatures,
-        @Nullable TransactionMetadata innerMetadata) {
+public interface TransactionMetadata {
 
-    public TransactionMetadata {
-        requireNonNull(status);
-        requireNonNull(otherSignatures);
-    }
-
-    public TransactionMetadata(
-            @NonNull final PreHandleContext context,
-            @NonNull final SignatureMap signatureMap,
-            @Nullable final TransactionSignature payerSignature,
-            @NonNull final Map<HederaKey, TransactionSignature> otherSignatures,
-            @Nullable final TransactionMetadata innerMetadata) {
-        this(
-                requireNonNull(context).getTxn(),
-                context.getPayer(),
-                requireNonNull(signatureMap),
-                context.getStatus(),
-                context.getPayerKey(),
-                payerSignature,
-                otherSignatures,
-                innerMetadata);
-    }
-
-    public TransactionMetadata(@NonNull final ResponseCodeEnum status) {
-        this(null, null, null, status, null, null, Map.of(), null);
-    }
+    /**
+     * Gets the error code for the transaction
+     *
+     * @return the {@code errorCode}
+     */
+    ResponseCodeEnum status();
 
     /**
      * Checks the failure by validating the status is not {@link ResponseCodeEnum OK}
      *
      * @return returns true if status is not OK
      */
-    public boolean failed() {
-        return status != ResponseCodeEnum.OK;
-    }
+    boolean failed();
 }

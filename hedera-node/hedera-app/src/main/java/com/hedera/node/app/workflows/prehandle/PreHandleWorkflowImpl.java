@@ -19,6 +19,8 @@ package com.hedera.node.app.workflows.prehandle;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.SessionContext;
+import com.hedera.node.app.meta.InvalidTransactionMetadata;
+import com.hedera.node.app.meta.ValidTransactionMetadata;
 import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
@@ -131,7 +133,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         CompletableFuture.allOf(array).join();
     }
 
-    private TransactionMetadata securePreHandle(
+    @Override
+    public TransactionMetadata securePreHandle(
             final HederaState state, final com.swirlds.common.system.transaction.Transaction platformTx) {
         try {
             return preHandle(state, platformTx);
@@ -209,17 +212,33 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     }
 
     @NonNull
+    private Map<HederaKey, TransactionSignature> verifySignatures(
+            @NonNull final HederaState state,
+            @NonNull final PreHandleContext context,
+            @NonNull final byte[] txBodyBytes,
+            @NonNull final SignatureMap signatureMap) {
+        final Map<HederaKey, >
+        if (context.getPayerKey() != null) {
+            final var payerSignature = signaturePreparer.prepareSignature(state, txBodyBytes, signatureMap, context.getPayer());
+            cryptography.verifyAsync(payerSignature);
+        }
+        final var otherSignatures = signaturePreparer.prepareSignatures(
+                state, txBodyBytes, signatureMap, context.getRequiredNonPayerKeys());
+        cryptography.verifyAsync(new ArrayList<>(otherSignatures.values()));
+        return otherSignatures;
+    }
+
+    @NonNull
     private static TransactionMetadata createTransactionMetadata(
             @NonNull final PreHandleContext context,
             @NonNull final SignatureMap signatureMap,
-            @Nullable final TransactionSignature payerSignature,
             @NonNull final Map<HederaKey, TransactionSignature> otherSignatures,
             @Nullable final TransactionMetadata innerMetadata) {
-        return new TransactionMetadata(context, signatureMap, payerSignature, otherSignatures, innerMetadata);
+        return new ValidTransactionMetadata(context, signatureMap, otherSignatures, innerMetadata);
     }
 
     @NonNull
     private static TransactionMetadata createInvalidTransactionMetadata(@NonNull final ResponseCodeEnum responseCode) {
-        return new TransactionMetadata(responseCode);
+        return new InvalidTransactionMetadata(responseCode);
     }
 }

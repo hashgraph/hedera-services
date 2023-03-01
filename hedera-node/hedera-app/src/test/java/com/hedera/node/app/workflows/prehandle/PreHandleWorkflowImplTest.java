@@ -52,7 +52,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -160,7 +159,6 @@ class PreHandleWorkflowImplTest {
         assertThatCode(() -> workflow.start(state, localEvent)).doesNotThrowAnyException();
     }
 
-    @SuppressWarnings("JUnitMalformedDeclaration")
     @Test
     void testStartEventWithTwoTransactions(@Mock Event localEvent, @Mock SwirldTransaction transaction2) {
         // given
@@ -176,18 +174,15 @@ class PreHandleWorkflowImplTest {
         verify(transaction2).setMetadata(any());
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     void testPreHandleSuccess() {
         // when
         workflow.start(state, event);
 
         // then
-        final ArgumentCaptor<Future<TransactionMetadata>> captor = ArgumentCaptor.forClass(Future.class);
         verify(transaction).setMetadata(any());
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     void testPreHandleOnsetCatastrophicFail(@Mock WorkflowOnset localOnset) throws PreCheckException {
         // given

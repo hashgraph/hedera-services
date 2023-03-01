@@ -20,12 +20,7 @@ package com.hedera.node.app.workflows.dispatcher;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.consensus.ConsensusService;
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
-import com.hedera.node.app.service.schedule.ScheduleService;
-import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
-import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -41,46 +36,13 @@ public class WritableStoreFactory {
     }
 
     /**
-     * Get a {@link WritableAccountStore}
+     * Get a {@link WritableTopicStore}
      *
-     * @return a new {@link ReadableAccountStore}
+     * @return a new {@link WritableTopicStore}
      */
     @NonNull
-    public ReadableAccountStore createAccountStore() {
-        final var tokenStates = state.createReadableStates(TokenService.NAME);
-        return new ReadableAccountStore(tokenStates);
-    }
-
-    /**
-     * Get a {@link ReadableTopicStore}
-     *
-     * @return a new {@link ReadableTopicStore}
-     */
-    @NonNull
-    public ReadableTopicStore createTopicStore() {
-        final var topicStates = state.createReadableStates(ConsensusService.NAME);
-        return new ReadableTopicStore(topicStates);
-    }
-
-    /**
-     * Get a {@link ReadableScheduleStore}
-     *
-     * @return a new {@link ReadableScheduleStore}
-     */
-    @NonNull
-    public ReadableScheduleStore createScheduleStore() {
-        final var scheduleStates = state.createReadableStates(ScheduleService.NAME);
-        return new ReadableScheduleStore(scheduleStates);
-    }
-
-    /**
-     * Get a {@link ReadableTokenStore}
-     *
-     * @return a new {@link ReadableTokenStore}
-     */
-    @NonNull
-    public ReadableTokenStore createTokenStore() {
-        final var tokenStates = state.createReadableStates(TokenService.NAME);
-        return new ReadableTokenStore(tokenStates);
+    public WritableTopicStore createTopicStore() {
+        final var topicStates = state.createWritableStates(ConsensusService.NAME);
+        return new WritableTopicStore(topicStates);
     }
 }

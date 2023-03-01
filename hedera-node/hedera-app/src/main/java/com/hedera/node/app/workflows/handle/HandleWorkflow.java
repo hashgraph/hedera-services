@@ -17,29 +17,40 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.clock.SystemClock;
 import com.hedera.node.app.meta.InvalidTransactionMetadata;
 import com.hedera.node.app.meta.ValidTransactionMetadata;
 import com.hedera.node.app.signature.SignaturePreparer;
+import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.workflows.onset.OnsetResult;
+import com.hedera.node.app.workflows.onset.WorkflowOnset;
+import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
 
 public class HandleWorkflow {
 
+    private final PreHandleWorkflow preHandleWorkflow;
     private final SystemClock systemClock;
     private final SignaturePreparer signaturePreparer;
     private final Cryptography cryptography;
@@ -82,34 +93,62 @@ public class HandleWorkflow {
         final Instant consensusTimestamp = txn.getConsensusTimestamp();
         systemClock.advance(consensusTimestamp);
 
-        // Get data that was prepared during pre-handle
-        TransactionMetadata rawMetadata = txn.getMetadata();
+        final var rawMetadata = txn.getMetadata();
         txn.setMetadata(null);
 
-        if (rawMetadata instanceof InvalidTransactionMetadata) {
-            // TODO: Need to handle cases when we had a fatal error during pre-handle
+        // In some special situations, it is possible that pre-handle was not executed at all
+        final List<TransactionSignature> signatures;
+        if (rawMetadata == null) {
+            preHandleWorkflow.securePreHandle(state, txn);
+            signatures =
+            final TransactionMetadata metadata = txn.getMetadata();
+            txn.setMetadata(null);
+            if (metadata.failed()) {
+                // TODO: Need to handle cases when we had a fatal error during pre-handle
+                throw new UnsupportedOperationException("Fatal error during pre-handle, which is not supported yet");
+            }
 
-        } else if (rawMetadata instanceof ValidTransactionMetadata metadata) {
-            // Check if keys have changed
+        } else if (rawMetadata instanceof InvalidTransactionMetadata) {
+            // TODO: Need to handle cases when we had a fatal error during pre-handle
+            throw new UnsupportedOperationException("Fatal error during pre-handle, which is not supported yet");
+
+        } else {
+            // At this point, we know that pre-handle was executed and we have valid metadata
+            final var metadata = (ValidTransactionMetadata) rawMetadata;
+
+            // Rerun pre-handle to determine keys
             final var storeFactory = new ReadableStoreFactory(state);
             final var accountStore = storeFactory.createAccountStore();
             final var context = new PreHandleContext(accountStore, metadata.txnBody());
             dispatcher.dispatchPreHandle(storeFactory, context);
 
             // if the keys changed, we need to revalidate signatures
-            final var payerSignature = metadata.payerSignature() != null && Objects.equals(context.getPayerKey(), metadata.payerKey())
-                    ? metadata.payerSignature()
-                    : signaturePreparer.prepareSignature(state, metadata.txnBodyBytes(), metadata.signatureMap(), metadata.payer());
-            if (payerSignature.getSignatureStatus() != VerificationStatus.VALID) {
-                cryptography.verifyAsync(payerSignature);
-            }
-            final var otherSignatures = metadata.requiredNonPayerKeys().stream()
-                    .map(key -> {
+            final var signatures = checker.determineSignatures(state, metadata, context);
+        }
+
+
+            final var innerSignatures = metadata.innerMetadata() != null
+                    ? checker.determineSignatures(state, metadata.innerMetadata(), context)
+                    : List.of();
+
+
+            final var otherSignatures = metadata.otherSignatures().entrySet().stream()
+                    .map(entry -> {
                         final var sig = metadata.nonPayerSignature(key);
                         return sig != null && Objects.equals(key, sig.getKey())
                                 ? sig
                                 : signaturePreparer.prepareSignature(state, metadata.txnBodyBytes(), metadata.signatureMap(), key);
                     })
+
+
+            // TODO: What do we need to do, if the verification is ongoing?
+            try {
+                payerSignature.getFuture().get();
+            } catch (InterruptedException | ExecutionException e) {
+                // TODO: Handle this case
+                throw new RuntimeException(e);
+            }
+
             if (metadata.payerSignature() == null || !Objects.equals(context.getPayerKey(), metadata.payerKey()) || metadata.payerSignature().getSignatureStatus() != VerificationStatus.VALID) {
                 // Would it be better to wait a little until
                 checkPayerSignature(metadata, context);
@@ -120,6 +159,10 @@ public class HandleWorkflow {
             signaturesInvalid = signaturesInvalid
                     || !Objects.equals(context.getPayerKey(), metadata.payerKey())
                     || !Objects.equals(context.getRequiredNonPayerKeys(), metadata.requiredNonPayerKeys());
+        }
+
+
+
 
             // use the fresh metadata
             metadata = new TransactionMetadata(context, List.of());

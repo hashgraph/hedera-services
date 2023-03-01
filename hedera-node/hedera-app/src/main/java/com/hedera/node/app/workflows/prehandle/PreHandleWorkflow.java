@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
+import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.state.HederaState;
 import com.swirlds.common.system.events.Event;
+import com.swirlds.common.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** A workflow to pre-handle transactions. */
@@ -31,4 +33,6 @@ public interface PreHandleWorkflow {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     void start(@NonNull HederaState state, @NonNull Event event);
+
+    TransactionMetadata securePreHandle(final HederaState state, final Transaction platformTx);
 }

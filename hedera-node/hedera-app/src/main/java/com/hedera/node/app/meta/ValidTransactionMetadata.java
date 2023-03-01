@@ -41,7 +41,6 @@ import java.util.Map;
  * @param payer payer for the transaction
  * @param status {@link ResponseCodeEnum} status of the transaction
  * @param payerKey payer key required to sign the transaction. It is null if payer is missing
- * @param payerSignature {@link TransactionSignature} of the payer
  * @param otherSignatures lit {@link TransactionSignature} of other keys that need to sign
  * @param innerMetadata {@link ValidTransactionMetadata} of the inner transaction (where appropriate)
  */
@@ -51,7 +50,6 @@ public record ValidTransactionMetadata(
         @NonNull SignatureMap signatureMap,
         @NonNull ResponseCodeEnum status,
         @Nullable HederaKey payerKey,
-        @Nullable TransactionSignature payerSignature,
         @NonNull Map<HederaKey, TransactionSignature> otherSignatures,
         @Nullable TransactionMetadata innerMetadata)
         implements com.hedera.node.app.spi.meta.TransactionMetadata {
@@ -67,7 +65,6 @@ public record ValidTransactionMetadata(
     public ValidTransactionMetadata(
             @NonNull final PreHandleContext context,
             @NonNull final SignatureMap signatureMap,
-            @Nullable final TransactionSignature payerSignature,
             @NonNull final Map<HederaKey, TransactionSignature> otherSignatures,
             @Nullable final TransactionMetadata innerMetadata) {
         this(
@@ -76,16 +73,10 @@ public record ValidTransactionMetadata(
                 signatureMap,
                 context.getStatus(),
                 context.getPayerKey(),
-                payerSignature,
                 otherSignatures,
                 innerMetadata);
     }
 
-    /**
-     * Checks the failure by validating the status is not {@link ResponseCodeEnum OK}
-     *
-     * @return returns true if status is not OK
-     */
     @Override
     public boolean failed() {
         return status != ResponseCodeEnum.OK;
