@@ -1082,6 +1082,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         if (!initialized.get()) {
             throw new IllegalStateException("handleConsensusRound() called before init()");
         }
+        delay();
         round.forEachEventTransaction((event, transaction) ->
                 handleConsensusTransaction(event, transaction, swirldDualState, round.getRoundNum()));
     }
@@ -1167,8 +1168,6 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                                 LOGM_EXCEPTION, "" + "InvalidProtocolBufferException while chekcing signature", error));
             }
         }
-
-        delay();
 
         //////////// start timing/////////////
         final long startTime = System.nanoTime();

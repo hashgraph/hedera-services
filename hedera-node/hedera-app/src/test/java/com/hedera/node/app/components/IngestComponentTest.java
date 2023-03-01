@@ -23,6 +23,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.DaggerHederaApp;
 import com.hedera.node.app.HederaApp;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
@@ -39,10 +40,15 @@ class IngestComponentTest {
     @Mock
     private Platform platform;
 
+    @Mock
+    private Cryptography cryptography;
+
     private HederaApp app;
 
     @BeforeEach
     void setUp() {
+        given(platform.getCryptography()).willReturn(cryptography);
+
         final var selfNodeId = new NodeId(false, 666L);
 
         app = DaggerHederaApp.builder()
