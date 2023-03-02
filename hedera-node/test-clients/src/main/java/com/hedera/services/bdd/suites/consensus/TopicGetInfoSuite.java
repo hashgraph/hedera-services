@@ -21,8 +21,9 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.deleteTopic;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
@@ -38,7 +39,7 @@ public class TopicGetInfoSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(postCreateTopicCase());
+        return List.of(allFieldsSetHappyCase());
     }
 
     @Override
@@ -46,13 +47,14 @@ public class TopicGetInfoSuite extends HapiSuite {
         return true;
     }
 
-    private HapiSpec postCreateTopicCase() {
+    private HapiSpec allFieldsSetHappyCase() {
         // sequenceNumber should be 0 and runningHash should be 48 bytes all 0s.
         return defaultHapiSpec("AllFieldsSetHappyCase")
                 .given(
                         newKeyNamed("adminKey"),
                         newKeyNamed("submitKey"),
                         cryptoCreate("autoRenewAccount"),
+                        cryptoCreate("payer"),
                         createTopic("testTopic")
                                 .topicMemo("testmemo")
                                 .adminKeyName("adminKey")
@@ -69,7 +71,17 @@ public class TopicGetInfoSuite extends HapiSuite {
                                 .hasAutoRenewAccount("autoRenewAccount")
                                 .hasSeqNo(0)
                                 .hasRunningHash(new byte[48]),
-                        getTxnRecord("createTopic").logged());
+                        getTxnRecord("createTopic").logged(),
+                        submitMessageTo("testTopic")
+                                .blankMemo()
+                                .payingWith("payer")
+                                .message(new String("test".getBytes()))
+                                .via("submitMessage"),
+                        getTxnRecord("submitMessage").logged(),
+                        deleteTopic("testTopic")
+                                .via("deleteTopic"),
+                        getTxnRecord("deleteTopic").logged()
+                );
     }
 
     @Override
