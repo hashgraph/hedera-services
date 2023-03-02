@@ -146,7 +146,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         }
 
         /* Check if the topic exists */
-        if (topic == null || topic.isEmpty()) {
+        if (topic.isEmpty()) {
             throw new HandleStatusException(INVALID_TOPIC_ID);
         }
         /* If the message is too large, user will be able to submit the message fragments in chunks. Validate if chunk info is correct */
