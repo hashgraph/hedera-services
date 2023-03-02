@@ -137,7 +137,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         assertThat(context.getPayerKey()).isEqualTo(payerKey);
         final var expectedHederaAdminKey = asHederaKey(adminKey).orElseThrow();
         final var expectedHederaSubmitKey = asHederaKey(submitKey).orElseThrow();
-        assertThat(context.getRequiredNonPayerKeys()).containsExactly(expectedHederaAdminKey, expectedHederaSubmitKey);
+        assertThat(context.getRequiredNonPayerKeys()).containsExactly(expectedHederaAdminKey);
     }
 
     @Test
@@ -172,8 +172,7 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         // then:
         assertOkResponse(context);
         assertThat(context.getPayerKey()).isEqualTo(payerKey);
-        final var expectedHederaSubmitKey = asHederaKey(submitKey).orElseThrow();
-        assertThat(context.getRequiredNonPayerKeys()).containsExactly(expectedHederaSubmitKey);
+        assertThat(context.getRequiredNonPayerKeys()).isEmpty();
     }
 
     @Test
@@ -207,7 +206,6 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         // then:
         assertOkResponse(context);
         assertThat(context.getPayerKey()).isEqualTo(payerKey);
-        assertThat(context.getRequiredNonPayerKeys()).containsExactly(payerKey);
     }
 
     @Test

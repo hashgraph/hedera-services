@@ -34,44 +34,52 @@ import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFacto
 import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.sigs.verification.PrecheckVerifier;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
+import java.util.List;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
-import java.util.function.Function;
-
 @ExtendWith(MockitoExtension.class)
 class MonoSignaturePreparerTest {
     private static final Transaction MOCK_TXN = Transaction.getDefaultInstance();
 
     private static final JKey PAYER_KEY = new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
-    private static final List<JKey> OTHER_PARTY_KEYS = List.of(
+    private static final List<HederaKey> OTHER_PARTY_KEYS = List.of(
             new JEd25519Key("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes()),
             new JEd25519Key("cccccccccccccccccccccccccccccccc".getBytes()));
     private static final Transaction MOCK_TRANSACTION = Transaction.getDefaultInstance();
 
     @Mock
     private PrecheckVerifier precheckVerifier;
+
     @Mock
     private Expansion.CryptoSigsCreation cryptoSigsCreation;
+
     @Mock
     private PubKeyToSigBytes keyToSigBytes;
+
     @Mock
     private Function<SignatureMap, PubKeyToSigBytes> keyToSigFactory;
+
     @Mock
     private TxnScopedPlatformSigFactory scopedFactory;
+
     @Mock
     private Function<TxnAccessor, TxnScopedPlatformSigFactory> scopedFactoryProvider;
+
     @Mock
     private PlatformSigsCreationResult payerResult;
+
     @Mock
     private PlatformSigsCreationResult otherPartiesResult;
+
     @Mock
     private TransactionSignature mockSig;
 
@@ -79,11 +87,12 @@ class MonoSignaturePreparerTest {
 
     @BeforeEach
     void setUp() {
-        subject = new MonoSignaturePreparer(
-                precheckVerifier, cryptoSigsCreation, keyToSigFactory, scopedFactoryProvider);
+        subject =
+                new MonoSignaturePreparer(precheckVerifier, cryptoSigsCreation, keyToSigFactory, scopedFactoryProvider);
     }
 
     @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
     void happyPathContainsBothPayerAndOtherPartySigsWithOK() {
         given(keyToSigFactory.apply(any())).willReturn(keyToSigBytes);
         given(scopedFactoryProvider.apply(any())).willReturn(scopedFactory);
@@ -91,7 +100,7 @@ class MonoSignaturePreparerTest {
         given(cryptoSigsCreation.createFrom(List.of(PAYER_KEY), keyToSigBytes, scopedFactory))
                 .willReturn(payerResult);
         givenHappyTwo(otherPartiesResult);
-        given(cryptoSigsCreation.createFrom(OTHER_PARTY_KEYS, keyToSigBytes, scopedFactory))
+        given(cryptoSigsCreation.createFrom((List) OTHER_PARTY_KEYS, keyToSigBytes, scopedFactory))
                 .willReturn(otherPartiesResult);
 
         final var result = subject.expandedSigsFor(MOCK_TRANSACTION, PAYER_KEY, OTHER_PARTY_KEYS);
@@ -115,6 +124,7 @@ class MonoSignaturePreparerTest {
     }
 
     @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
     void abortsAfterOtherPartyFailureAndIncludesOnlyPayerSigs() {
         given(keyToSigFactory.apply(any())).willReturn(keyToSigBytes);
         given(scopedFactoryProvider.apply(any())).willReturn(scopedFactory);
@@ -122,7 +132,7 @@ class MonoSignaturePreparerTest {
         given(cryptoSigsCreation.createFrom(List.of(PAYER_KEY), keyToSigBytes, scopedFactory))
                 .willReturn(payerResult);
         givenUnhappy(otherPartiesResult);
-        given(cryptoSigsCreation.createFrom(OTHER_PARTY_KEYS, keyToSigBytes, scopedFactory))
+        given(cryptoSigsCreation.createFrom((List) OTHER_PARTY_KEYS, keyToSigBytes, scopedFactory))
                 .willReturn(otherPartiesResult);
 
         final var result = subject.expandedSigsFor(MOCK_TRANSACTION, PAYER_KEY, OTHER_PARTY_KEYS);

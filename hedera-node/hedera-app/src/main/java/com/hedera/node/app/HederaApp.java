@@ -46,7 +46,7 @@ import com.hedera.node.app.services.ServiceModule;
 import com.hedera.node.app.state.HederaStateModule;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
-import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
+import com.hedera.node.app.workflows.prehandle.AdaptedMonoEventExpansion;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowModule;
 import com.hedera.node.app.workflows.query.QueryWorkflowModule;
 import com.swirlds.common.crypto.Cryptography;
@@ -101,7 +101,7 @@ public interface HederaApp extends ServicesApp {
 
     WorkingStateAccessor workingStateAccessor();
 
-    PreHandleWorkflow preHandleWorkflow();
+    AdaptedMonoEventExpansion adaptedMonoEventExpansion();
 
     @Component.Builder
     interface Builder {

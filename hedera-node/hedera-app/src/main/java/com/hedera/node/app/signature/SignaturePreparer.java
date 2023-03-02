@@ -16,12 +16,10 @@
 
 package com.hedera.node.app.signature;
 
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.PlatformSigsCreationResult;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.state.HederaState;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -49,9 +47,7 @@ public interface SignaturePreparer {
      * @return the result of the signature expansion
      */
     SigExpansionResult expandedSigsFor(
-            @NonNull Transaction transaction,
-            @NonNull JKey payerKey,
-            @NonNull List<JKey> otherPartyKeys);
+            @NonNull Transaction transaction, @NonNull HederaKey payerKey, @NonNull List<HederaKey> otherPartyKeys);
 
     /**
      * Prepares the signature data for a single key (usually the payer's key).

@@ -21,14 +21,11 @@ import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.sigs.order.SigReqsManager;
 import com.hedera.node.app.service.mono.txns.prefetch.PrefetchProcessor;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpan;
-import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
-import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.system.events.Event;
+import com.swirlds.common.system.transaction.Transaction;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import com.swirlds.common.system.transaction.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

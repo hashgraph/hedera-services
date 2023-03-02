@@ -25,7 +25,6 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.exception.InvalidAccountIDException;
 import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.node.app.service.mono.sigs.Expansion;
-import com.hedera.node.app.service.mono.sigs.PlatformSigsCreationResult;
 import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.sigs.verification.PrecheckVerifier;
@@ -39,7 +38,6 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -75,21 +73,22 @@ public class MonoSignaturePreparer implements SignaturePreparer {
      * {@inheritDoc}
      */
     @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public SigExpansionResult expandedSigsFor(
             final @NonNull Transaction transaction,
-            final @NonNull JKey payerKey,
-            final @NonNull List<JKey> otherPartyKeys) {
+            final @NonNull HederaKey payerKey,
+            final @NonNull List<HederaKey> otherPartyKeys) {
         final var accessor = SignedTxnAccessor.uncheckedFrom(transaction);
         final var keyToSig = keyToSigFactory.apply(accessor.getSigMap());
         final var scopedFactory = scopedFactoryProvider.apply(accessor);
 
         final List<TransactionSignature> netCryptoSigs = new ArrayList<>();
-        final var payerResult = cryptoSigsCreation.createFrom(List.of(payerKey), keyToSig, scopedFactory);
+        final var payerResult = cryptoSigsCreation.createFrom(List.of((JKey) payerKey), keyToSig, scopedFactory);
         if (payerResult.hasFailed()) {
             return new SigExpansionResult(netCryptoSigs, payerResult.asCode());
         }
         netCryptoSigs.addAll(payerResult.getPlatformSigs());
-        final var otherPartiesResult = cryptoSigsCreation.createFrom(otherPartyKeys, keyToSig, scopedFactory);
+        final var otherPartiesResult = cryptoSigsCreation.createFrom((List) otherPartyKeys, keyToSig, scopedFactory);
         if (otherPartiesResult.hasFailed()) {
             return new SigExpansionResult(netCryptoSigs, otherPartiesResult.asCode());
         }

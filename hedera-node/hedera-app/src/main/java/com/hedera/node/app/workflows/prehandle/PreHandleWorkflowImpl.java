@@ -16,11 +16,12 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.signature.SignaturePreparer;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -41,17 +42,17 @@ import com.swirlds.common.system.events.Event;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Implementation of {@link PreHandleWorkflow} */
 @Singleton
@@ -163,68 +164,49 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         } catch (PreCheckException preCheckException) {
             return createInvalidTransactionMetadata(preCheckException.responseCode());
         }
-        final var signatureMap = onsetResult.signatureMap();
 
         // Call PreTransactionHandler to do transaction-specific checks and get list of required keys
         final var storeFactory = new ReadableStoreFactory(state);
         final var accountStore = storeFactory.createAccountStore();
         final var context = new PreHandleContext(accountStore, onsetResult.txBody(), onsetResult.errorCode());
+        if (context.getStatus() == DUPLICATE_TRANSACTION) {
+            // TODO - figure out any other checks above that should be skipped
+            context.status(OK);
+        }
         dispatcher.dispatchPreHandle(storeFactory, context);
 
-        // Prepare and verify signature-data
-        final var txBodyBytes = onsetResult.bodyBytes();
-        final var payerSignature = verifyPayerSignature(state, context, txBodyBytes, signatureMap);
-        final var otherSignatures = verifyOtherSignatures(state, context, txBodyBytes, signatureMap);
+        LOG.info(
+                "Got a PreHandleContext with payer key {} and other party keys {}",
+                context.getPayerKey(),
+                context.getRequiredNonPayerKeys());
 
-        // Eventually prepare and verify signatures of inner transaction
-        final var innerContext = context.getInnerContext();
-        TransactionMetadata innerMetadata = null;
-        if (innerContext != null) {
-            final var innerTxBodyBytes = innerContext.getTxn().toByteArray();
-            final var innerPayerSignature = verifyPayerSignature(state, innerContext, innerTxBodyBytes, signatureMap);
-            final var innerOtherSignatures = verifyOtherSignatures(state, innerContext, innerTxBodyBytes, signatureMap);
-            innerMetadata = createTransactionMetadata(
-                    innerContext, signatureMap, innerPayerSignature, innerOtherSignatures, null);
+        // Prepare and verify signature-data
+        List<TransactionSignature> cryptoSigs = Collections.emptyList();
+        if (context.getPayerKey() != null) {
+            final var sigExpansionResult = signaturePreparer.expandedSigsFor(
+                    onsetResult.transaction(), context.getPayerKey(), context.getRequiredNonPayerKeys());
+            if (sigExpansionResult.status() != OK) {
+                context.status(sigExpansionResult.status());
+            }
+            if (!sigExpansionResult.cryptoSigs().isEmpty()) {
+                cryptoSigs = sigExpansionResult.cryptoSigs();
+                cryptography.verifyAsync(cryptoSigs);
+            }
         }
+
+        // TODO - prepare and verify signatures of inner transaction, if present
 
         // 5. Return TransactionMetadata
-        return createTransactionMetadata(context, signatureMap, payerSignature, otherSignatures, innerMetadata);
-    }
-
-    @Nullable
-    private TransactionSignature verifyPayerSignature(
-            @NonNull final HederaState state,
-            @NonNull final PreHandleContext context,
-            @NonNull byte[] txBytes,
-            @NonNull SignatureMap signatureMap) {
-        if (context.getPayerKey() == null) {
-            return null;
-        }
-        final var payerSignature = signaturePreparer.prepareSignature(state, txBytes, signatureMap, context.getPayer());
-        cryptography.verifyAsync(payerSignature);
-        return payerSignature;
-    }
-
-    @NonNull
-    private Map<HederaKey, TransactionSignature> verifyOtherSignatures(
-            @NonNull final HederaState state,
-            @NonNull final PreHandleContext context,
-            @NonNull final byte[] txBodyBytes,
-            @NonNull final SignatureMap signatureMap) {
-        final var otherSignatures = signaturePreparer.prepareSignatures(
-                state, txBodyBytes, signatureMap, context.getRequiredNonPayerKeys());
-        cryptography.verifyAsync(new ArrayList<>(otherSignatures.values()));
-        return otherSignatures;
+        return createTransactionMetadata(context, onsetResult.signatureMap(), cryptoSigs, null);
     }
 
     @NonNull
     private static TransactionMetadata createTransactionMetadata(
             @NonNull final PreHandleContext context,
             @NonNull final SignatureMap signatureMap,
-            @Nullable final TransactionSignature payerSignature,
-            @NonNull final Map<HederaKey, TransactionSignature> otherSignatures,
+            @NonNull final List<TransactionSignature> cryptoSigs,
             @Nullable final TransactionMetadata innerMetadata) {
-        return new TransactionMetadata(context, signatureMap, payerSignature, otherSignatures, innerMetadata);
+        return new TransactionMetadata(context, signatureMap, cryptoSigs, innerMetadata);
     }
 
     @NonNull

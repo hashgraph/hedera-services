@@ -42,8 +42,8 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.inject.Singleton;
 import java.util.function.Function;
+import javax.inject.Singleton;
 
 @Module
 public interface HandleWorkflowModule {
@@ -61,6 +61,7 @@ public interface HandleWorkflowModule {
     static Function<TxnAccessor, TxnScopedPlatformSigFactory> provideScopedFactoryProvider() {
         return ReusableBodySigningFactory::new;
     }
+
     @Binds
     @Singleton
     TransactionLastStep bindLastStep(AdaptedMonoTransitionRunner adaptedTransitionRunner);

@@ -107,7 +107,10 @@ public class ServicesMain implements SwirldMain {
         final var migration = migrationFactory.apply(servicesSemVer);
         return new MerkleHederaState(
                 migration,
-                (event, metadata, provider) -> metadata.app().eventExpansion().expandAllSigs(event, provider),
+                (event, metadata, immutableState) -> {
+                    final var metaApp = metadata.app();
+                    ((HederaApp) metaApp).adaptedMonoEventExpansion().expand(event, immutableState);
+                },
                 (round, state, dualState, metadata) -> {
                     final var metaApp = metadata.app();
                     metaApp.dualStateAccessor().setDualState(dualState);

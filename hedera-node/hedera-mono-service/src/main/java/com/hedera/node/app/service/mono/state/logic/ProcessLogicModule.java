@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.signature;
+package com.hedera.node.app.service.mono.state.logic;
 
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.common.crypto.TransactionSignature;
-import java.util.List;
+import com.hedera.node.app.service.mono.txns.ProcessLogic;
+import dagger.Binds;
+import dagger.Module;
+import javax.inject.Singleton;
 
-/**
- * Represents the result of attempting to expand a transaction's signature list.
- *
- * @param cryptoSigs the expanded list of crypto signatures
- * @param status the status of the expansion attempt
- */
-public record SigExpansionResult(List<TransactionSignature> cryptoSigs, ResponseCodeEnum status) {}
+@Module
+public interface ProcessLogicModule {
+    @Binds
+    @Singleton
+    ProcessLogic provideProcessLogic(StandardProcessLogic standardProcessLogic);
+}

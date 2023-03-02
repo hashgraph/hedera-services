@@ -816,7 +816,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
         @NonNull
         @Override
-        public <K extends Comparable<K>, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
+        public <K extends Comparable<? super K>, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
             final ReadableKVState<K, V> instance = (ReadableKVState<K, V>) kvInstances.get(stateKey);
             if (instance != null) {
                 return instance;
@@ -963,7 +963,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
         @NonNull
         @Override
-        public <K extends Comparable<K>, V> WritableKVState<K, V> get(@NonNull String stateKey) {
+        public <K extends Comparable<? super K>, V> WritableKVState<K, V> get(@NonNull String stateKey) {
             return (WritableKVState<K, V>) super.get(stateKey);
         }
 
