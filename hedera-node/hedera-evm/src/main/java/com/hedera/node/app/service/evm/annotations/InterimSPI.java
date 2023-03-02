@@ -19,6 +19,7 @@ package com.hedera.node.app.service.evm.annotations;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.SOURCE;
 
+import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
@@ -29,5 +30,6 @@ import java.lang.annotation.Target;
  * of this module.  This will mark classes suitable for being extended in the meantime.
  */
 @Target(TYPE)
+@Inherited
 @Retention(SOURCE)
 public @interface InterimSPI {}
