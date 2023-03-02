@@ -115,7 +115,9 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         /* since we have validated topic exists, topic.get() is safe to be called */
         try {
             final var updatedTopic = updateRunningHashAndSequenceNumber(txn, topic.get(), handleContext.consensusNow());
-            /* persist the updated topic */
+
+            /* --- Put the modified topic. It will be in underlying state's modifications map.
+            It will not be committed to state until commit is called on the state.--- */
             topicStore.put(updatedTopic);
         } catch (IOException e) {
             throw new HandleStatusException(INVALID_TRANSACTION);

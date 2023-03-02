@@ -236,6 +236,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
             final SoftwareVersion deserializedVersion) {
         this.platform = platform;
         if (trigger == GENESIS) {
+            log.info("Init called on Services node {} WITHOUT Merkle saved state", platform.getSelfId());
             // Create the top-level children in the Merkle tree
             onMigrate.accept(this);
             final var bootstrapProps = new BootstrapProperties(false);

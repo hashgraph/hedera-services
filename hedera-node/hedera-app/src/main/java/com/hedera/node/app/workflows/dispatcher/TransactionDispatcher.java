@@ -104,8 +104,8 @@ public class TransactionDispatcher {
         switch (function) {
             case ConsensusCreateTopic -> dispatchConsensusCreateTopic(
                     txn.getConsensusCreateTopic(), topicStore, usageLimits);
-            case ConsensusUpdateTopic -> dispatchConsensusUpdateTopic(txn.getConsensusUpdateTopic());
-            case ConsensusDeleteTopic -> dispatchConsensusDeleteTopic(txn.getConsensusDeleteTopic());
+            case ConsensusUpdateTopic -> dispatchConsensusUpdateTopic(txn.getConsensusUpdateTopic(), topicStore);
+            case ConsensusDeleteTopic -> dispatchConsensusDeleteTopic(txn.getConsensusDeleteTopic(), topicStore);
             case ConsensusSubmitMessage -> dispatchConsensusSubmitMessage(txn, topicStore);
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
@@ -214,18 +214,23 @@ public class TransactionDispatcher {
         return context -> dispatchPreHandle(storeFactory, context);
     }
 
-    private void dispatchConsensusDeleteTopic(@NonNull final ConsensusDeleteTopicTransactionBody topicDeletion) {
+    private void dispatchConsensusDeleteTopic(
+            @NonNull final ConsensusDeleteTopicTransactionBody topicDeletion,
+            @NonNull final WritableTopicStore topicStore) {
         final var handler = handlers.consensusDeleteTopicHandler();
         final var recordBuilder = handler.newRecordBuilder();
         handler.handle(
-                handleContext,
                 topicDeletion,
-                new ConsensusServiceConfig(
-                        dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
-                recordBuilder);
+                topicStore);
+        // TODO: Commit will be called in workflow or some other place when handle workflow is implemented
+        // This is temporary solution to make sure that topic is created
+        topicStore.commit();
+
     }
 
-    private void dispatchConsensusUpdateTopic(@NonNull final ConsensusUpdateTopicTransactionBody topicUpdate) {
+    private void dispatchConsensusUpdateTopic(
+            @NonNull final ConsensusUpdateTopicTransactionBody topicUpdate,
+            @NonNull final WritableTopicStore topicStore) {
         final var handler = handlers.consensusUpdateTopicHandler();
         final var recordBuilder = handler.newRecordBuilder();
         handler.handle(
@@ -233,7 +238,11 @@ public class TransactionDispatcher {
                 topicUpdate,
                 new ConsensusServiceConfig(
                         dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
-                recordBuilder);
+                recordBuilder,
+                topicStore);
+        // TODO: Commit will be called in workflow or some other place when handle workflow is implemented
+        // This is temporary solution to make sure that topic is created
+        topicStore.commit();
     }
 
     private void dispatchConsensusCreateTopic(

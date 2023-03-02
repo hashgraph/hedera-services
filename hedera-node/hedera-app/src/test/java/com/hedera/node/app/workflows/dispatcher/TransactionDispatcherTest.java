@@ -522,7 +522,12 @@ class TransactionDispatcherTest {
                     return null;
                 })
                 .when(consensusUpdateTopicHandler)
-                .handle(eq(handleContext), eq(transactionBody.getConsensusUpdateTopic()), eq(expectedConfig), any());
+                .handle(
+                        eq(handleContext),
+                        eq(transactionBody.getConsensusUpdateTopic()),
+                        eq(expectedConfig),
+                        any(),
+                        any());
 
         dispatcher.dispatchHandle(ConsensusUpdateTopic, transactionBody, writableStoreFactory);
 
@@ -543,7 +548,7 @@ class TransactionDispatcherTest {
                     return null;
                 })
                 .when(consensusDeleteTopicHandler)
-                .handle(eq(handleContext), eq(transactionBody.getConsensusDeleteTopic()), eq(expectedConfig), any());
+                .handle(eq(transactionBody.getConsensusDeleteTopic()), any());
 
         dispatcher.dispatchHandle(ConsensusDeleteTopic, transactionBody, writableStoreFactory);
 

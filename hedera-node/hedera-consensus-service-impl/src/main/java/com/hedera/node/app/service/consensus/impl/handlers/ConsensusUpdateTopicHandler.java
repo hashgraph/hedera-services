@@ -18,6 +18,7 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.UpdateTopicRecordBuilder;
@@ -61,20 +62,22 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
 
     /**
      * Given the appropriate context, updates a topic.
-     *
+     * <p>
      * TODO: Provide access to writable topic store.
      *
-     * @param handleContext the {@link HandleContext} for the active transaction
-     * @param topicUpdate the {@link ConsensusUpdateTopicTransactionBody} of the active transaction
+     * @param handleContext          the {@link HandleContext} for the active transaction
+     * @param topicUpdate            the {@link ConsensusUpdateTopicTransactionBody} of the active transaction
      * @param consensusServiceConfig the {@link ConsensusServiceConfig} for the active transaction
-     * @param recordBuilder the {@link ConsensusUpdateTopicRecordBuilder} for the active transaction
+     * @param recordBuilder          the {@link ConsensusUpdateTopicRecordBuilder} for the active transaction
+     * @param topicStore
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(
             @NonNull final HandleContext handleContext,
             @NonNull final ConsensusUpdateTopicTransactionBody topicUpdate,
             @NonNull final ConsensusServiceConfig consensusServiceConfig,
-            @NonNull final ConsensusUpdateTopicRecordBuilder recordBuilder) {
+            @NonNull final ConsensusUpdateTopicRecordBuilder recordBuilder,
+            @NonNull final WritableTopicStore topicStore) {
         throw new UnsupportedOperationException("Not implemented");
     }
 

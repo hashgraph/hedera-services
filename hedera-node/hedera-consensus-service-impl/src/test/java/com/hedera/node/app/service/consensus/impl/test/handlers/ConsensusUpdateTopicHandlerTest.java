@@ -30,7 +30,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ConsensusUpdateTopicHandlerTest {
+class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase{
     private final ConsensusServiceConfig consensusConfig = new ConsensusServiceConfig(1234L, 5678);
 
     @Mock
@@ -56,6 +56,6 @@ class ConsensusUpdateTopicHandlerTest {
         // expect:
         assertThrows(
                 UnsupportedOperationException.class,
-                () -> subject.handle(handleContext, op, consensusConfig, recordBuilder));
+                () -> subject.handle(handleContext, op, consensusConfig, recordBuilder, writableStore));
     }
 }
