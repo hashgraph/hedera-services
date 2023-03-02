@@ -117,6 +117,9 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             final var updatedTopic = updateRunningHashAndSequenceNumber(txn, topic.get(), handleContext.consensusNow());
             /* persist the updated topic */
             topicStore.put(updatedTopic);
+
+            recordBuilder.setNewTopicMetadata(
+                    unwrapPbj(updatedTopic.runningHash()), updatedTopic.sequenceNumber(), RUNNING_HASH_VERSION);
         } catch (IOException e) {
             throw new HandleStatusException(INVALID_TRANSACTION);
         }
