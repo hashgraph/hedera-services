@@ -24,9 +24,11 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import org.apache.tuweni.bytes.Bytes;
 
+@InterimSPI
 public interface EvmIsFrozenPrecompile {
 
     Function IS_FROZEN_TOKEN_FUNCTION = new Function("isFrozen(address,address)", INT_BOOL_PAIR);

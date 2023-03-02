@@ -18,11 +18,13 @@ package com.hedera.node.app.service.evm.accounts;
 
 import com.google.common.base.Suppliers;
 import com.google.common.primitives.Longs;
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import java.util.Arrays;
 import java.util.function.Supplier;
 import org.hyperledger.besu.datatypes.Address;
 
+@InterimSPI
 public abstract class HederaEvmContractAliases {
 
     public static final int EVM_ADDRESS_LEN = 20;

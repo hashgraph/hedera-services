@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.execution;
 
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -28,6 +29,7 @@ import org.hyperledger.besu.evm.log.Log;
  * Model object holding all the necessary data to build and externalise the result of a single EVM
  * transaction
  */
+@InterimSPI
 public class HederaEvmTransactionProcessingResult {
     /** The status of the transaction after being processed. */
     public enum Status {

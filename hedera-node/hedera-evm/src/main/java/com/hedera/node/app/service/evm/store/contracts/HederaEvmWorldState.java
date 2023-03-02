@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.evm.store.contracts;
 
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import java.util.stream.Stream;
@@ -27,6 +28,7 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
+@InterimSPI
 public class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
     private final HederaEvmEntityAccess hederaEvmEntityAccess;

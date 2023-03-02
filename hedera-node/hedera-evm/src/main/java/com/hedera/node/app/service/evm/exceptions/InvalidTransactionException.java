@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.exceptions;
 
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -27,6 +28,7 @@ import org.apache.tuweni.bytes.Bytes;
  * some form of user error. The {@code FAIL_INVALID} code indicates an internal system error; and it
  * is usually desirable in that case to include a detail message in the constructor.
  */
+@InterimSPI
 public class InvalidTransactionException extends RuntimeException {
 
     private final ResponseCodeEnum responseCode;

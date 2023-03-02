@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -28,6 +29,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.FixedStack;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
 
+@InterimSPI
 public class HederaEvmSLoadOperation extends AbstractOperation {
     protected final long warmCost;
     protected final long coldCost;

@@ -24,9 +24,11 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import org.apache.tuweni.bytes.Bytes;
 
+@InterimSPI
 public interface EvmIsKycPrecompile {
 
     Function IS_KYC_TOKEN_FUNCTION = new Function("isKyc(address,address)", INT_BOOL_PAIR);

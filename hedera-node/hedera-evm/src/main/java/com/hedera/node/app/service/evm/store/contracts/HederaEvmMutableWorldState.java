@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.store.contracts;
 
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import org.hyperledger.besu.evm.worldstate.WorldState;
 import org.hyperledger.besu.evm.worldstate.WorldView;
 
@@ -23,6 +24,7 @@ import org.hyperledger.besu.evm.worldstate.WorldView;
  * Hedera adapted interface for a view over the accounts of the world state and methods for
  * persisting state changes
  */
+@InterimSPI
 public interface HederaEvmMutableWorldState extends WorldState, WorldView {
     /**
      * Creates an updater for this mutable world view.

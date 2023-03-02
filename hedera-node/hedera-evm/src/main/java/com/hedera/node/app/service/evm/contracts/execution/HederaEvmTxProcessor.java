@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.execution;
 
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
@@ -44,6 +45,7 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
  * long, long, long, Bytes, boolean, Address)} method that handles the end-to-end execution of an
  * EVM transaction.
  */
+@InterimSPI
 public abstract class HederaEvmTxProcessor {
     private static final int MAX_STACK_SIZE = 1024;
 

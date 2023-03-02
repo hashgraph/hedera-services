@@ -23,9 +23,11 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
 import org.apache.tuweni.bytes.Bytes;
 
+@InterimSPI
 public interface EvmGetTokenExpiryInfoPrecompile {
     Function GET_TOKEN_EXPIRY_INFO_FUNCTION = new Function("getTokenExpiryInfo(address)");
     Bytes GET_TOKEN_EXPIRY_INFO_SELECTOR = Bytes.wrap(GET_TOKEN_EXPIRY_INFO_FUNCTION.selector());

@@ -24,9 +24,11 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
 import org.apache.tuweni.bytes.Bytes;
 
+@InterimSPI
 public interface EvmIsTokenPrecompile {
     Function IS_TOKEN_FUNCTION = new Function("isToken(address)", INT_BOOL_PAIR);
     Bytes IS_TOKEN_FUNCTION_SELECTOR = Bytes.wrap(IS_TOKEN_FUNCTION.selector());

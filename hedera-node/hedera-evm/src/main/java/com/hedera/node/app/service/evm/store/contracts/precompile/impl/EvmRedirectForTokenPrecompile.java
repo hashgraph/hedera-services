@@ -22,9 +22,11 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.ExplicitRedirectForTokenWrapper;
 import org.apache.tuweni.bytes.Bytes;
 
+@InterimSPI
 public interface EvmRedirectForTokenPrecompile {
     Function REDIRECT_FOR_TOKEN_FUNCTION = new Function("redirectForToken(address,bytes)");
     Bytes REDIRECT_FOR_TOKEN_SELECTOR = Bytes.wrap(REDIRECT_FOR_TOKEN_FUNCTION.selector());

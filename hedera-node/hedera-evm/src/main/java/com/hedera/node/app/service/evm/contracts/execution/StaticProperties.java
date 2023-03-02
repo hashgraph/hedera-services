@@ -16,7 +16,10 @@
 
 package com.hedera.node.app.service.evm.contracts.execution;
 
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
+
 @SuppressWarnings("java:S1118") // Add a private constructor to hide the implicit public one.
+@InterimSPI
 public abstract class StaticProperties {
 
     protected static long shard = 0;

@@ -22,9 +22,11 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
 import org.apache.tuweni.bytes.Bytes;
 
+@InterimSPI
 public interface EvmNonFungibleTokenInfoPrecompile {
 
     Function GET_NON_FUNGIBLE_TOKEN_INFO_FUNCTION = new Function("getNonFungibleTokenInfo(address,int64)");

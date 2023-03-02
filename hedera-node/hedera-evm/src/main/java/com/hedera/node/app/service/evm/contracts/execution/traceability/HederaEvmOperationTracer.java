@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.service.evm.contracts.execution.traceability;
 
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
+@InterimSPI
 public interface HederaEvmOperationTracer extends OperationTracer {
 
     /**

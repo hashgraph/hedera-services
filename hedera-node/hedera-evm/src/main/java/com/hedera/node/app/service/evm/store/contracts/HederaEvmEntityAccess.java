@@ -17,9 +17,11 @@
 package com.hedera.node.app.service.evm.store.contracts;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+@InterimSPI
 public interface HederaEvmEntityAccess {
 
     boolean isUsable(Address address);

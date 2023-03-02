@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.evm.store.contracts;
 
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import com.hedera.node.app.service.evm.store.models.UpdatedHederaEvmAccount;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,6 +32,7 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.evm.worldstate.WorldView;
 import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
+@InterimSPI
 public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A extends Account> implements WorldUpdater {
 
     protected final W world;

@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.service.evm.accounts;
 
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import org.hyperledger.besu.datatypes.Address;
 
+@InterimSPI
 public interface AccountAccessor {
 
     Address canonicalAddress(final Address addressOrAlias);

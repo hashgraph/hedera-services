@@ -24,9 +24,11 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import org.apache.tuweni.bytes.Bytes;
 
+@InterimSPI
 public interface EvmGetTokenDefaultFreezeStatus {
     Function GET_TOKEN_DEFAULT_FREEZE_STATUS_FUNCTION = new Function("getTokenDefaultFreezeStatus(address)", INT);
     Bytes GET_TOKEN_DEFAULT_FREEZE_STATUS_SELECTOR = Bytes.wrap(GET_TOKEN_DEFAULT_FREEZE_STATUS_FUNCTION.selector());

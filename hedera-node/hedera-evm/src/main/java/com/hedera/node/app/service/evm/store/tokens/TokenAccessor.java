@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.store.tokens;
 
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 
+@InterimSPI
 public interface TokenAccessor {
     Optional<EvmTokenInfo> evmInfoForToken(final Address token);
 

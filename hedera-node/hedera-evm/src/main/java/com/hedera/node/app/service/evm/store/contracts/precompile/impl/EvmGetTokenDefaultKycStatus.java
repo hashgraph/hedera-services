@@ -24,9 +24,11 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
 import org.apache.tuweni.bytes.Bytes;
 
+@InterimSPI
 public interface EvmGetTokenDefaultKycStatus {
     Function GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION = new Function("getTokenDefaultKycStatus(address)", INT);
     Bytes GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR = Bytes.wrap(GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION.selector());

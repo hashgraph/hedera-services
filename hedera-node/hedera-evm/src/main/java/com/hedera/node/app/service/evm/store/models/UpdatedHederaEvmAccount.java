@@ -18,6 +18,7 @@ package com.hedera.node.app.service.evm.store.models;
 
 import static org.apache.tuweni.units.bigints.UInt256.ZERO;
 
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
@@ -36,6 +37,7 @@ import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 
+@InterimSPI
 public class UpdatedHederaEvmAccount<A extends Account> implements MutableAccount, EvmAccount {
     protected Hash addressHash;
     private Address address;

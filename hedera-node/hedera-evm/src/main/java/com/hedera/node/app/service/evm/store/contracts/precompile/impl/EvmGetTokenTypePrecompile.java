@@ -23,9 +23,11 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
 import org.apache.tuweni.bytes.Bytes;
 
+@InterimSPI
 public interface EvmGetTokenTypePrecompile {
     Function GET_TOKEN_TYPE_FUNCTION = new Function("getTokenType(address)", "(int,int32)");
     Bytes GET_TOKEN_TYPE_SELECTOR = Bytes.wrap(GET_TOKEN_TYPE_FUNCTION.selector());

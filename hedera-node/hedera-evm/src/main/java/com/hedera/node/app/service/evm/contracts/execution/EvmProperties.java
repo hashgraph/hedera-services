@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.service.evm.contracts.execution;
 
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import org.hyperledger.besu.datatypes.Address;
 
+@InterimSPI
 public interface EvmProperties {
 
     String evmVersion();

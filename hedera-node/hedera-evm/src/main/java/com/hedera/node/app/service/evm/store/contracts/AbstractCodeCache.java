@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStat
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import com.hedera.node.app.service.evm.store.contracts.utils.BytesKey;
 import java.util.concurrent.TimeUnit;
 import org.hyperledger.besu.datatypes.Address;
@@ -27,6 +28,7 @@ import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.code.CodeFactory;
 
+@InterimSPI
 public class AbstractCodeCache {
     protected final HederaEvmEntityAccess entityAccess;
     protected final Cache<BytesKey, Code> cache;

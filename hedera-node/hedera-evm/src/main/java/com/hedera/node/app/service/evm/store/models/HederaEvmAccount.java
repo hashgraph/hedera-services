@@ -18,12 +18,14 @@ package com.hedera.node.app.service.evm.store.models;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+@InterimSPI
 public class HederaEvmAccount {
 
     public static final ByteString ECDSA_KEY_ALIAS_PREFIX = ByteString.copyFrom(new byte[] {0x3a, 0x21});

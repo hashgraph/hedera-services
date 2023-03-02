@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.store.contracts;
 
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 /**
@@ -23,6 +24,7 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
  * org.hyperledger.besu.evm.frame.MessageFrame} in order to provide a layered view for read/writes
  * of the state during EVM transaction execution
  */
+@InterimSPI
 public interface HederaEvmWorldUpdater extends WorldUpdater {
     /**
      * Tracks how much Gas should be refunded to the sender account for the TX. SBH price is

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.execution;
 
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.ImmutableHash;
 import org.apache.tuweni.bytes.Bytes32;
@@ -23,6 +24,7 @@ import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.frame.BlockValues;
 
 /** Provides block information to a {@link HederaEvmTxProcessor}. */
+@InterimSPI
 public interface BlockMetaSource {
     Hash UNAVAILABLE_BLOCK_HASH = ethHashFrom(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
 

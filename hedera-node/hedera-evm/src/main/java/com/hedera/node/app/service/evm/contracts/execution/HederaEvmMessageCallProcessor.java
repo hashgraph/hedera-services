@@ -21,6 +21,7 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCES
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
+import com.hedera.node.app.service.evm.annotations.InterimSPI;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
@@ -39,6 +40,7 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /** Overrides Besu precompiler handling, so we can break model layers in Precompile execution */
+@InterimSPI
 public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
     private static final Optional<ExceptionalHaltReason> ILLEGAL_STATE_CHANGE =
             Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
