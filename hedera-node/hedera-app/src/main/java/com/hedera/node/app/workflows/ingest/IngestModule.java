@@ -16,15 +16,27 @@
 
 package com.hedera.node.app.workflows.ingest;
 
+import com.hedera.node.app.service.mono.sigs.Expansion;
+import com.hedera.node.app.service.mono.sigs.PlatformSigOps;
+import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
+import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
+import com.hedera.node.app.service.mono.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
+import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.signature.MonoSignaturePreparer;
 import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.state.HederaState;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -34,9 +46,6 @@ import java.util.function.Supplier;
 public interface IngestModule {
     @Binds
     IngestWorkflow bindIngestWorkflow(IngestWorkflowImpl ingestWorkflow);
-
-    @Binds
-    SignaturePreparer bindSignaturePreparer(MonoSignaturePreparer signaturePreparer);
 
     @Provides
     @SuppressWarnings({"unchecked", "rawtypes"})

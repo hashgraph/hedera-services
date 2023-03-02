@@ -46,6 +46,8 @@ import com.hedera.node.app.services.ServiceModule;
 import com.hedera.node.app.state.HederaStateModule;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
+import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
+import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowModule;
 import com.hedera.node.app.workflows.query.QueryWorkflowModule;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
@@ -88,6 +90,7 @@ import javax.inject.Singleton;
             ServiceModule.class,
             QueryWorkflowModule.class,
             HandleWorkflowModule.class,
+            PreHandleWorkflowModule.class,
             HederaStateModule.class
         })
 public interface HederaApp extends ServicesApp {
@@ -97,6 +100,8 @@ public interface HederaApp extends ServicesApp {
     Provider<IngestComponent.Factory> ingestComponentFactory();
 
     WorkingStateAccessor workingStateAccessor();
+
+    PreHandleWorkflow preHandleWorkflow();
 
     @Component.Builder
     interface Builder {

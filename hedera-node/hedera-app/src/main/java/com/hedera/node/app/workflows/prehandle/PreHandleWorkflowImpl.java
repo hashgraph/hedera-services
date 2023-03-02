@@ -41,14 +41,20 @@ import com.swirlds.common.system.events.Event;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 /** Implementation of {@link PreHandleWorkflow} */
+@Singleton
 public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
     private static final Logger LOG = LoggerFactory.getLogger(PreHandleWorkflowImpl.class);
@@ -78,6 +84,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      * @param cryptography the {@link Cryptography} component used to verify signatures
      * @throws NullPointerException if any of the parameters is {@code null}
      */
+    @Inject
     public PreHandleWorkflowImpl(
             @NonNull final ExecutorService exe,
             @NonNull final TransactionDispatcher dispatcher,
@@ -108,15 +115,17 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
     @Override
     public void start(@NonNull final HederaState state, @NonNull final Event event) {
-        requireNonNull(state);
-        requireNonNull(event);
+        preHandle(Objects.requireNonNull(event).transactionIterator(), requireNonNull(state));
+    }
 
+    public void preHandle(
+            @NonNull final Iterator<com.swirlds.common.system.transaction.Transaction> itr,
+            @NonNull final HederaState state) {
         // Each transaction in the event will go through pre-handle using a background thread
         // from the executor service. The Future representing that work is stored on the
         // platform transaction. The HandleTransactionWorkflow will pull this future back
         // out and use it to block until the pre handle work is done, if needed.
         final ArrayList<CompletableFuture<Void>> futures = new ArrayList<>();
-        final var itr = event.transactionIterator();
         while (itr.hasNext()) {
             final var platformTx = itr.next();
             final var future = runner.apply(() -> {

@@ -16,9 +16,12 @@
 
 package com.hedera.node.app.signature;
 
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.sigs.PlatformSigsCreationResult;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.state.HederaState;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -29,6 +32,26 @@ import java.util.Map;
 
 public interface SignaturePreparer {
     ResponseCodeEnum syncGetPayerSigStatus(@NonNull Transaction transaction);
+
+    /**
+     * Computes the cryptographic signatures implied by the given transaction's
+     * {@link SignatureMap}, body, and required signing keys.
+     *
+     * <p>Note that if the {@link PlatformSigsCreationResult#asCode()} is not {@code OK},
+     * then we failed to create the signatures for either the payer or other parties. If
+     * the payer signatures failed, then the {@link PlatformSigsCreationResult#getPlatformSigs()}
+     * list will be empty. If the other party signatures failed, then the list will contain
+     * at least one cryptographic signature.
+     *
+     * @param transaction a {@link Transaction} being signed
+     * @param payerKey the payer key that must have an active signature
+     * @param otherPartyKeys other party keys that must have active signatures
+     * @return the result of the signature expansion
+     */
+    SigExpansionResult expandedSigsFor(
+            @NonNull Transaction transaction,
+            @NonNull JKey payerKey,
+            @NonNull List<JKey> otherPartyKeys);
 
     /**
      * Prepares the signature data for a single key (usually the payer's key).
