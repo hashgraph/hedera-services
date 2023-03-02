@@ -65,12 +65,6 @@ public class InternalEventData {
     /** the time at which each unique famous witness in the received round first received this event */
     private ArrayList<Instant> recTimes;
 
-    /**
-     * only used for event streaming
-     * this is the last event to be written to event stream before restart
-     */
-    private boolean isLastEventBeforeShutdown = false;
-
     public InternalEventData() {
         this.timeReceived = Instant.now();
         this.estimatedTime = this.timeReceived; // until a better estimate is found, just guess the time it was received
@@ -449,20 +443,5 @@ public class InternalEventData {
      */
     public void setRecTimes(ArrayList<Instant> recTimes) {
         this.recTimes = recTimes;
-    }
-
-    /**
-     * @return whether this event is the last event to be written to event stream before shut down
-     */
-    public boolean isLastEventBeforeShutdown() {
-        return isLastEventBeforeShutdown;
-    }
-
-    /**
-     * @param isLastEventBeforeShutdown
-     * 		whether this event is the last event to be written to event stream before shut down
-     */
-    public void setLastEventBeforeShutdown(boolean isLastEventBeforeShutdown) {
-        this.isLastEventBeforeShutdown = isLastEventBeforeShutdown;
     }
 }

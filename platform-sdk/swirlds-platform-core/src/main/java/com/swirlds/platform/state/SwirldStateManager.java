@@ -171,12 +171,6 @@ public interface SwirldStateManager
     boolean submitTransaction(ConsensusTransactionImpl transaction, boolean priority);
 
     /**
-     * Called during recovery. Updates the dual state status to clear any possible inconsistency between freezeTime
-     * and lastFrozenTime.
-     */
-    void clearFreezeTimes();
-
-    /**
      * Gets the stop behavior of the threads applying transactions to the state
      *
      * @return the type of stop behavior of the threads applying transactions to the state
