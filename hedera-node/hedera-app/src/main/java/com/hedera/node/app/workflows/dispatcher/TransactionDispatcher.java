@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -31,7 +32,6 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
-import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -100,12 +100,13 @@ public class TransactionDispatcher {
             @NonNull final HederaFunctionality function,
             @NonNull final TransactionBody txn,
             @NonNull final WritableStoreFactory writableStoreFactory) {
+        final var topicStore = writableStoreFactory.createTopicStore();
         switch (function) {
             case ConsensusCreateTopic -> dispatchConsensusCreateTopic(
-                    txn.getConsensusCreateTopic(), writableStoreFactory, usageLimits);
+                    txn.getConsensusCreateTopic(), topicStore, usageLimits);
             case ConsensusUpdateTopic -> dispatchConsensusUpdateTopic(txn.getConsensusUpdateTopic());
             case ConsensusDeleteTopic -> dispatchConsensusDeleteTopic(txn.getConsensusDeleteTopic());
-            case ConsensusSubmitMessage -> dispatchConsensusSubmitMessage(txn.getConsensusSubmitMessage());
+            case ConsensusSubmitMessage -> dispatchConsensusSubmitMessage(txn, topicStore);
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
     }
@@ -237,11 +238,10 @@ public class TransactionDispatcher {
 
     private void dispatchConsensusCreateTopic(
             @NonNull final ConsensusCreateTopicTransactionBody topicCreation,
-            @NonNull final WritableStoreFactory storeFactory,
+            @NonNull final WritableTopicStore topicStore,
             @NonNull final UsageLimits usageLimits) {
         final var handler = handlers.consensusCreateTopicHandler();
         final var recordBuilder = handler.newRecordBuilder();
-        final var topicStore = storeFactory.createTopicStore();
         handler.handle(
                 handleContext,
                 topicCreation,
@@ -259,7 +259,7 @@ public class TransactionDispatcher {
     }
 
     private void dispatchConsensusSubmitMessage(
-            @NonNull final ConsensusSubmitMessageTransactionBody messageSubmission) {
+            @NonNull final TransactionBody messageSubmission, @NonNull final WritableTopicStore topicStore) {
         final var handler = handlers.consensusSubmitMessageHandler();
         final var recordBuilder = handler.newRecordBuilder();
         handler.handle(
@@ -267,7 +267,8 @@ public class TransactionDispatcher {
                 messageSubmission,
                 new ConsensusServiceConfig(
                         dynamicProperties.maxNumTopics(), dynamicProperties.messageMaxBytesAllowed()),
-                recordBuilder);
+                recordBuilder,
+                topicStore);
         txnCtx.setTopicRunningHash(recordBuilder.getNewTopicRunningHash(), recordBuilder.getNewTopicSequenceNumber());
     }
 }

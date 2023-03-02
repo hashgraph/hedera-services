@@ -91,6 +91,22 @@ public class WritableTopicStore extends TopicStore {
     }
 
     /**
+     * Returns the {@link Topic} with the given number. If no such topic exists,
+     * returns {@code Optional.empty()}
+     * @param topicNum - the number of the topic to be retrieved.
+     */
+    public Optional<Topic> getForModify(@NonNull final long topicNum) {
+        requireNonNull(topicState);
+        requireNonNull(topicNum);
+        final var topic = topicState.getForModify(EntityNum.fromLong(topicNum));
+
+        if (topic == null) {
+            return Optional.empty();
+        }
+        return Optional.of(topicFrom(topic));
+    }
+
+    /**
      * Returns the number of topics in the state.
      * @return the number of topics in the state.
      */

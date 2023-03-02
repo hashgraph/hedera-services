@@ -568,7 +568,7 @@ class TransactionDispatcherTest {
                     return null;
                 })
                 .when(consensusSubmitMessageHandler)
-                .handle(eq(handleContext), eq(transactionBody.getConsensusSubmitMessage()), eq(expectedConfig), any());
+                .handle(eq(handleContext), eq(transactionBody), eq(expectedConfig), any(), eq(writableTopicStore));
 
         dispatcher.dispatchHandle(ConsensusSubmitMessage, transactionBody, writableStoreFactory);
 

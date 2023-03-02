@@ -79,7 +79,8 @@ class WritableTopicStoreTest extends ConsensusHandlerTestBase {
                 topic.autoRenewSecs(),
                 topic.expiry(),
                 topic.deleted(),
-                topic.sequenceNumber());
+                topic.sequenceNumber(),
+                topic.runningHash());
 
         assertEquals(Optional.of(expectedTopic), writableStore.get(topicEntityNum.longValue()));
     }

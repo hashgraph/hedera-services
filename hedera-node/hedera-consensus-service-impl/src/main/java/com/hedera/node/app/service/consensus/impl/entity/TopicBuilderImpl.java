@@ -39,6 +39,8 @@ public class TopicBuilderImpl implements TopicBuilder {
     private long expiry;
     private boolean deleted;
     private long sequenceNumber;
+    private byte[] runningHash;
+
     /**
      * Create a builder for creating {@link Topic}s, using the given copy as the basis for all
      * settings that are not overridden.
@@ -56,6 +58,7 @@ public class TopicBuilderImpl implements TopicBuilder {
         this.autoRenewSecs = copyOf.autoRenewSecs();
         this.expiry = copyOf.expiry();
         this.sequenceNumber = copyOf.sequenceNumber();
+        this.runningHash = copyOf.runningHash();
     }
 
     public TopicBuilderImpl() {
@@ -130,6 +133,16 @@ public class TopicBuilderImpl implements TopicBuilder {
         return this;
     }
 
+    @NonNull
+    @Override
+    public TopicBuilder runningHash(@NonNull byte[] runningHash) {
+        this.runningHash = requireNonNull(runningHash);
+        if (runningHash.length != 48) {
+            throw new IllegalArgumentException("runningHash must be 48 bytes");
+        }
+        return this;
+    }
+
     @Override
     @NonNull
     public TopicBuilder autoRenewSecs(long value) {
@@ -152,6 +165,7 @@ public class TopicBuilderImpl implements TopicBuilder {
                 autoRenewSecs,
                 expiry,
                 deleted,
-                sequenceNumber);
+                sequenceNumber,
+                runningHash);
     }
 }

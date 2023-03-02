@@ -159,6 +159,7 @@ public class ConsensusHandlerTestBase {
                 autoRenewSecs,
                 expirationTime,
                 true,
-                sequenceNumber);
+                sequenceNumber,
+                new byte[48]);
     }
 }

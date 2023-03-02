@@ -11,6 +11,7 @@ module com.hedera.node.app.service.consensus.impl {
     requires com.hedera.node.app.service.token;
     requires com.swirlds.config;
     requires com.hedera.node.app.service.evm;
+    requires com.hedera.node.app.hapi.utils;
 
     provides com.hedera.node.app.service.consensus.ConsensusService with
             ConsensusServiceImpl;

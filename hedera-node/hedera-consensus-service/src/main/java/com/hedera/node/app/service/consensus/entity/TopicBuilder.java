@@ -98,6 +98,15 @@ public interface TopicBuilder {
     TopicBuilder sequenceNumber(@NonNull long sequenceNumber);
 
     /**
+     * Override the running hash of the topic
+     *
+     * @param runningHash running hash
+     * @return builder object
+     */
+    @NonNull
+    TopicBuilder runningHash(@NonNull byte[] runningHash);
+
+    /**
      * Builds and returns an account with the state specified in the builder
      *
      * @return A non-null reference to a **new** topic. Two calls to this method return different

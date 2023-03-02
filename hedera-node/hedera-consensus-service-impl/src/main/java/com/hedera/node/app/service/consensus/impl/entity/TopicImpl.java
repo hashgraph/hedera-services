@@ -16,11 +16,14 @@
 
 package com.hedera.node.app.service.consensus.impl.entity;
 
+import static com.swirlds.common.utility.CommonUtils.hex;
+
 import com.hedera.node.app.service.consensus.entity.Topic;
 import com.hedera.node.app.service.consensus.entity.TopicBuilder;
 import com.hedera.node.app.spi.key.HederaKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -34,7 +37,8 @@ public record TopicImpl(
         long autoRenewSecs,
         long expiry,
         boolean deleted,
-        long sequenceNumber)
+        long sequenceNumber,
+        byte[] runningHash)
         implements Topic {
     @Override
     public Optional<HederaKey> getAdminKey() {
@@ -69,7 +73,8 @@ public record TopicImpl(
                 && sequenceNumber == topic.sequenceNumber
                 && Objects.equals(adminKey, topic.adminKey)
                 && Objects.equals(submitKey, topic.submitKey)
-                && Objects.equals(memo, topic.memo);
+                && Objects.equals(memo, topic.memo)
+                && Arrays.equals(runningHash, topic.runningHash);
     }
 
     @Override
@@ -83,7 +88,8 @@ public record TopicImpl(
                 autoRenewSecs,
                 expiry,
                 deleted,
-                sequenceNumber);
+                sequenceNumber,
+                runningHash);
     }
 
     @Override
@@ -97,6 +103,7 @@ public record TopicImpl(
                 + autoRenewSecs + ", expiry="
                 + expiry + ", deleted="
                 + deleted + ", sequenceNumber="
-                + sequenceNumber + '}';
+                + sequenceNumber + ", runningHash="
+                + ((runningHash != null) ? hex(runningHash) : "<N/A>") + '}';
     }
 }

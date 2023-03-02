@@ -60,7 +60,8 @@ public class TopicStore {
                 topic.getAutoRenewDurationSeconds(),
                 topic.getExpirationTimestamp().getSeconds(),
                 topic.isDeleted(),
-                topic.getSequenceNumber());
+                topic.getSequenceNumber(),
+                topic.getRunningHash());
     }
 
     // TODO : Remove use of TopicMetadata and change to use Topic instead
