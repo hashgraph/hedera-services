@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state.merkle.logic;
+package com.hedera.node.app.service.mono.state.logic;
 
-import com.hedera.node.app.service.mono.state.org.StateMetadata;
-import com.hedera.node.app.state.HederaState;
-import com.swirlds.common.system.events.Event;
+import com.hedera.node.app.service.mono.txns.ProcessLogic;
+import dagger.Binds;
+import dagger.Module;
+import javax.inject.Singleton;
 
-@FunctionalInterface
-public interface OnPreHandle {
-    void accept(Event event, StateMetadata metadata, HederaState state);
+@Module
+public interface ProcessLogicModule {
+    @Binds
+    @Singleton
+    ProcessLogic provideProcessLogic(StandardProcessLogic standardProcessLogic);
 }

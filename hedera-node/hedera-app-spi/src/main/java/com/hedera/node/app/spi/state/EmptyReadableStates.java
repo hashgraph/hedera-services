@@ -25,7 +25,7 @@ import java.util.Set;
 public final class EmptyReadableStates implements ReadableStates {
     @NonNull
     @Override
-    public <K extends Comparable<K>, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
+    public <K extends Comparable<? super K>, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
         Objects.requireNonNull(stateKey);
         throw new IllegalArgumentException("There are no k/v states");
     }

@@ -70,8 +70,6 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         final var op = context.getTxn().getConsensusCreateTopic();
         final var adminKey = asHederaKey(op.getAdminKey());
         adminKey.ifPresent(context::addToReqNonPayerKeys);
-        final var submitKey = asHederaKey(op.getSubmitKey());
-        submitKey.ifPresent(context::addToReqNonPayerKeys);
 
         if (op.hasAutoRenewAccount()) {
             final var autoRenewAccount = op.getAutoRenewAccount();

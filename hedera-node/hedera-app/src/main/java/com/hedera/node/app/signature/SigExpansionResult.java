@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state.merkle.logic;
+package com.hedera.node.app.signature;
 
-import com.hedera.node.app.service.mono.state.org.StateMetadata;
-import com.hedera.node.app.state.HederaState;
-import com.swirlds.common.system.events.Event;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.swirlds.common.crypto.TransactionSignature;
+import java.util.List;
 
-@FunctionalInterface
-public interface OnPreHandle {
-    void accept(Event event, StateMetadata metadata, HederaState state);
-}
+/**
+ * Represents the result of attempting to expand a transaction's signature list.
+ *
+ * @param cryptoSigs the expanded list of crypto signatures
+ * @param status the status of the expansion attempt
+ */
+public record SigExpansionResult(List<TransactionSignature> cryptoSigs, ResponseCodeEnum status) {}

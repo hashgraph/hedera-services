@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl;
 
 import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKeySerializer;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
@@ -28,6 +29,7 @@ import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.serdes.EntityNumSerdes;
+import com.hedera.node.app.service.token.impl.serdes.StringSerdes;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -46,6 +48,7 @@ public class TokenServiceImpl implements TokenService {
 
     public static final String NFTS_KEY = "NFTS";
     public static final String TOKENS_KEY = "TOKENS";
+    public static final String ALIASES_KEY = "ALIASES";
     public static final String ACCOUNTS_KEY = "ACCOUNTS";
     public static final String TOKEN_RELS_KEY = "TOKEN_RELS";
     public static final String PAYER_RECORDS_KEY = "PAYER_RECORDS";
@@ -62,7 +65,12 @@ public class TokenServiceImpl implements TokenService {
             @Override
             public Set<StateDefinition> statesToCreate() {
                 return Set.of(
-                        tokensDef(), onDiskAccountsDef(), onDiskNftsDef(), onDiskTokenRelsDef(), payerRecordsDef());
+                        tokensDef(),
+                        onDiskAccountsDef(),
+                        onDiskAliasesDef(),
+                        onDiskNftsDef(),
+                        onDiskTokenRelsDef(),
+                        payerRecordsDef());
             }
         };
     }
@@ -73,6 +81,13 @@ public class TokenServiceImpl implements TokenService {
         final var valueSerdes =
                 MonoMapSerdesAdapter.serdesForVirtualValue(OnDiskAccount.CURRENT_VERSION, OnDiskAccount::new);
         return StateDefinition.onDisk(ACCOUNTS_KEY, keySerdes, valueSerdes, MAX_ACCOUNTS);
+    }
+
+    private StateDefinition<String, EntityNumValue> onDiskAliasesDef() {
+        final var keySerdes = new StringSerdes();
+        final var valueSerdes =
+                MonoMapSerdesAdapter.serdesForVirtualValue(EntityNumValue.CURRENT_VERSION, EntityNumValue::new);
+        return StateDefinition.onDisk(ALIASES_KEY, keySerdes, valueSerdes, MAX_ACCOUNTS);
     }
 
     private StateDefinition<EntityNum, MerklePayerRecords> payerRecordsDef() {

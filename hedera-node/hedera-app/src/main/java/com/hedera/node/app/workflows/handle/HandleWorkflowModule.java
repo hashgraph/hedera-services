@@ -21,7 +21,14 @@ import com.hedera.node.app.service.admin.impl.components.AdminComponent;
 import com.hedera.node.app.service.consensus.impl.components.ConsensusComponent;
 import com.hedera.node.app.service.contract.impl.components.ContractComponent;
 import com.hedera.node.app.service.file.impl.components.FileComponent;
+import com.hedera.node.app.service.mono.sigs.Expansion;
+import com.hedera.node.app.service.mono.sigs.PlatformSigOps;
+import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
+import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
+import com.hedera.node.app.service.mono.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
+import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.txns.TransactionLastStep;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.service.network.impl.components.NetworkComponent;
 import com.hedera.node.app.service.schedule.impl.components.ScheduleComponent;
 import com.hedera.node.app.service.token.impl.components.TokenComponent;
@@ -30,14 +37,31 @@ import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
 import com.hedera.node.app.workflows.handle.validation.MonoExpiryValidator;
+import com.hederahashgraph.api.proto.java.SignatureMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Function;
 import javax.inject.Singleton;
 
 @Module
 public interface HandleWorkflowModule {
+    @Provides
+    static Expansion.CryptoSigsCreation provideCryptoSigsCreation() {
+        return PlatformSigOps::createCryptoSigsFrom;
+    }
+
+    @Provides
+    static Function<SignatureMap, PubKeyToSigBytes> provideKeyToSigFactory() {
+        return PojoSigMapPubKeyToSigBytes::new;
+    }
+
+    @Provides
+    static Function<TxnAccessor, TxnScopedPlatformSigFactory> provideScopedFactoryProvider() {
+        return ReusableBodySigningFactory::new;
+    }
+
     @Binds
     @Singleton
     TransactionLastStep bindLastStep(AdaptedMonoTransitionRunner adaptedTransitionRunner);

@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.workflows.ingest;
 
-import com.hedera.node.app.signature.MonoSignaturePreparer;
-import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.state.HederaState;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -34,9 +32,6 @@ import java.util.function.Supplier;
 public interface IngestModule {
     @Binds
     IngestWorkflow bindIngestWorkflow(IngestWorkflowImpl ingestWorkflow);
-
-    @Binds
-    SignaturePreparer bindSignaturePreparer(MonoSignaturePreparer signaturePreparer);
 
     @Provides
     @SuppressWarnings({"unchecked", "rawtypes"})
