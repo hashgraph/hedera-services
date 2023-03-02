@@ -23,12 +23,9 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusDeleteTopicRecordBuilder;
-import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.DeleteTopicRecordBuilder;
 import com.hedera.node.app.spi.exceptions.HandleStatusException;
-import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
@@ -84,8 +81,7 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(
-            @NonNull final ConsensusDeleteTopicTransactionBody op,
-            @NonNull final WritableTopicStore topicStore) {
+            @NonNull final ConsensusDeleteTopicTransactionBody op, @NonNull final WritableTopicStore topicStore) {
         var topicId = op.getTopicID();
 
         var optionalTopic = topicStore.get(topicId.getTopicNum());

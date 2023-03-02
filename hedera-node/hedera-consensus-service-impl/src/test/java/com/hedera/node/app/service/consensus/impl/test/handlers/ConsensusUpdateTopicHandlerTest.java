@@ -30,7 +30,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase{
+class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
     private final ConsensusServiceConfig consensusConfig = new ConsensusServiceConfig(1234L, 5678);
 
     @Mock
