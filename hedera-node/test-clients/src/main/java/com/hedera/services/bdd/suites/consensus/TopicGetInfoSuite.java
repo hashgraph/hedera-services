@@ -24,6 +24,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.deleteTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
@@ -78,10 +80,19 @@ public class TopicGetInfoSuite extends HapiSuite {
                                 .message(new String("test".getBytes()))
                                 .via("submitMessage"),
                         getTxnRecord("submitMessage").logged(),
-                        deleteTopic("testTopic")
-                                .via("deleteTopic"),
-                        getTxnRecord("deleteTopic").logged()
-                );
+                        getTopicInfo("testTopic")
+                                .hasExpectedLedgerId("0x03")
+                                .hasMemo("testmemo")
+                                .hasAdminKey("adminKey")
+                                .hasSubmitKey("submitKey")
+                                .hasAutoRenewAccount("autoRenewAccount")
+                                .hasSeqNo(1)
+                                .logged(),
+                        deleteTopic("testTopic").via("deleteTopic"),
+                        getTxnRecord("deleteTopic").logged(),
+                        getTopicInfo("testTopic")
+                                .hasCostAnswerPrecheck(INVALID_TOPIC_ID)
+                                .logged());
     }
 
     @Override

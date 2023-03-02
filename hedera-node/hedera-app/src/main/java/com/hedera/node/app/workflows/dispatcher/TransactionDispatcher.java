@@ -276,5 +276,6 @@ public class TransactionDispatcher {
                 recordBuilder,
                 topicStore);
         txnCtx.setTopicRunningHash(recordBuilder.getNewTopicRunningHash(), recordBuilder.getNewTopicSequenceNumber());
+        topicStore.commit();
     }
 }
