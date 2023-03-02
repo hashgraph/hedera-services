@@ -28,8 +28,8 @@ import static org.mockito.BDDMockito.given;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.mono.Utils;
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.accounts.AccountAccess;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -63,7 +63,7 @@ public final class ConsensusTestUtils {
         assertThat(context.failed()).isFalse();
     }
 
-    static HederaKey mockPayerLookup(Key key, AccountID accountId, AccountKeyLookup keyLookup) {
+    static HederaKey mockPayerLookup(Key key, AccountID accountId, AccountAccess keyLookup) {
         final var returnKey = Utils.asHederaKey(key).orElseThrow();
         given(keyLookup.getKey(accountId)).willReturn(KeyOrLookupFailureReason.withKey(returnKey));
         return returnKey;
