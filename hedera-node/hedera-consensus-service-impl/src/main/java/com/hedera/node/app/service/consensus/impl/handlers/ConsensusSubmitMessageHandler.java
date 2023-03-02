@@ -134,21 +134,27 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         final var payer = txn.getTransactionID().getAccountID();
         final var op = txn.getConsensusSubmitMessage();
 
+        /* Check if the message submitted is empty */
+        // Question do we need this check ?
         if (op.getMessage().isEmpty()) {
             throw new HandleStatusException(INVALID_TOPIC_MESSAGE);
         }
 
+        /* Check if the message submitted is greater than acceptable size */
         if (op.getMessage().size() > config.maxMessageSize()) {
             throw new HandleStatusException(MESSAGE_SIZE_TOO_LARGE);
         }
 
+        /* Check if the topic exists */
         if (topic == null || topic.isEmpty()) {
             throw new HandleStatusException(INVALID_TOPIC_ID);
         }
+        /* If the message is too large, user will be able to submit the message fragments in chunks. Validate if chunk info is correct */
         validateChunkInfo(txnId, payer, op);
     }
 
     /**
+     * If the message is too large, user will be able to submit the message fragments in chunks.
      * Validates the chunk info in the transaction body.
      * Throws {@link HandleStatusException} if any of the validations fail.
      * @param txnId the {@link TransactionID} of the active transaction
@@ -159,12 +165,18 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             final TransactionID txnId, final AccountID payer, final ConsensusSubmitMessageTransactionBody op) {
         if (op.hasChunkInfo()) {
             var chunkInfo = op.getChunkInfo();
+
+            /* Validate chunk number */
             if (!(1 <= chunkInfo.getNumber() && chunkInfo.getNumber() <= chunkInfo.getTotal())) {
                 throw new HandleStatusException(INVALID_CHUNK_NUMBER);
             }
+
+            /* Validate the initial chunk transaction payer is the same payer for the current transaction*/
             if (!chunkInfo.getInitialTransactionID().getAccountID().equals(payer)) {
                 throw new HandleStatusException(INVALID_CHUNK_TRANSACTION_ID);
             }
+
+            /* Validate if the transaction is submitting initial chunk,payer in initial transaction Id should be same as payer of the transaction */
             if (1 == chunkInfo.getNumber()
                     && !chunkInfo.getInitialTransactionID().equals(txnId)) {
                 throw new HandleStatusException(INVALID_CHUNK_TRANSACTION_ID);
@@ -217,6 +229,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             out.writeLong(consensusNow.getEpochSecond());
             out.writeInt(consensusNow.getNano());
 
+            /* Update the sequence number */
             topicBuilder.sequenceNumber(++sequenceNumber);
 
             out.writeLong(sequenceNumber);
@@ -224,6 +237,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             out.flush();
             runningHash = Bytes.wrap(noThrowSha384HashOf(boas.toByteArray()));
 
+            /* Update the running hash */
             topicBuilder.runningHash(runningHash);
         }
         return topicBuilder.build();
